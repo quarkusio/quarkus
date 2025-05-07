@@ -85,11 +85,12 @@ then add the relevant configuration properties in `{config-file}`.
 .Example `{config-file}`
 ----
 quarkus.datasource.db-kind = postgresql <1>
-quarkus.datasource.username = hibernate
-quarkus.datasource.password = hibernate
-quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 
 quarkus.hibernate-orm.schema-management.strategy=drop-and-create <2>
+
+%prod.quarkus.datasource.username = hibernate
+%prod.quarkus.datasource.password = hibernate
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 ----
 <1> xref:datasource.adoc[Configure the datasource].
 <2> Drop and create the database at startup (use `update` to only update the schema).
@@ -137,8 +138,7 @@ public class Gift {
     private String name;
 
     @Id
-    @SequenceGenerator(name = "giftSeq", sequenceName = "gift_id_seq", allocationSize = 1, initialValue = 1)
-    @GeneratedValue(generator = "giftSeq")
+    @GeneratedValue
     public Long getId() {
         return id;
     }
@@ -189,9 +189,10 @@ you can set the database version explicitly:
 ----
 quarkus.datasource.db-kind = postgresql
 quarkus.datasource.db-version = 14.0 <1>
-quarkus.datasource.username = hibernate
-quarkus.datasource.password = hibernate
-quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
+
+%prod.quarkus.datasource.username = hibernate
+%prod.quarkus.datasource.password = hibernate
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:5432/hibernate_db
 ----
 <1> Set the database version. The Hibernate ORM dialect will target that version.
 
@@ -232,11 +233,12 @@ you will need to set the link:{hibernate-orm-docs-url}#database-dialect[Hibernat
 .`{config-file}` with an explicit `dialect`
 ----
 quarkus.datasource.db-kind = postgresql
-quarkus.datasource.username = hibernate
-quarkus.datasource.password = hibernate
-quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
 
 quarkus.hibernate-orm.dialect=Cockroach <1>
+
+%prod.quarkus.datasource.username = hibernate
+%prod.quarkus.datasource.password = hibernate
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
 ----
 <1> Set the Hibernate ORM dialect.
 +
@@ -261,11 +263,12 @@ you can configure the DB version explicitly to get the most out of Hibernate ORM
 ----
 quarkus.datasource.db-kind = postgresql
 quarkus.datasource.db-version = 22.2 <1>
-quarkus.datasource.username = hibernate
-quarkus.datasource.password = hibernate
-quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
 
 quarkus.hibernate-orm.dialect=Cockroach <2>
+
+%prod.quarkus.datasource.username = hibernate
+%prod.quarkus.datasource.password = hibernate
+%prod.quarkus.datasource.jdbc.url = jdbc:postgresql://localhost:26257/hibernate_db
 ----
 <1> Set the database version. The Hibernate ORM dialect will target that version.
 Since we're targeting CockroachDB here, we're passing the CockroachDB version, not the PostgreSQL version.
@@ -524,7 +527,7 @@ quarkus.hibernate-orm."pg".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."pg".active=false
 quarkus.datasource."pg".db-kind=h2
 quarkus.datasource."pg".active=false
-quarkus.datasource."pg".jdbc.url=jdbc:postgresql:///your_database
+%prod.quarkus.datasource."pg".jdbc.url=jdbc:postgresql:///your_database
 
 quarkus.hibernate-orm."oracle".packages=org.acme.model.shared
 quarkus.hibernate-orm."oracle".datasource=oracle
@@ -532,7 +535,7 @@ quarkus.hibernate-orm."oracle".schema-management.strategy=drop-and-create
 quarkus.hibernate-orm."oracle".active=false
 quarkus.datasource."oracle".db-kind=oracle
 quarkus.datasource."oracle".active=false
-quarkus.datasource."oracle".jdbc.url=jdbc:oracle:///your_database
+%prod.quarkus.datasource."oracle".jdbc.url=jdbc:oracle:///your_database
 ----
 
 xref:config-reference.adoc#configuration-sources[Setting] `quarkus.hibernate-orm."pg".active=true` and `quarkus.datasource."pg".active=true` at runtime
@@ -1209,13 +1212,14 @@ quarkus.hibernate-orm.schema-management.strategy=none <1>
 quarkus.hibernate-orm.multitenant=SCHEMA <2>
 
 quarkus.datasource.db-kind=postgresql <3>
-quarkus.datasource.username=quarkus_test
-quarkus.datasource.password=quarkus_test
-%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 
 quarkus.flyway.schemas=base,mycompany <4>
 quarkus.flyway.locations=classpath:schema
 quarkus.flyway.migrate-at-start=true
+
+%prod.quarkus.datasource.username=quarkus_test
+%prod.quarkus.datasource.password=quarkus_test
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 ----
 <1> Disable schema generation, because it is not supported by Hibernate ORM for schema multi-tenancy.
 We'll use Flyway instead, see further down.
@@ -1231,27 +1235,27 @@ Here is an example of the Flyway SQL (`V1.0.0__create_fruits.sql`) to be created
 
 [source,sql]
 ----
-CREATE SEQUENCE base.known_fruits_id_seq;
-SELECT setval('base."known_fruits_id_seq"', 3);
-CREATE TABLE base.known_fruits
+CREATE SEQUENCE base.fruit_seq INCREMENT BY 50; -- 50 is quarkus default
+CREATE TABLE base.fruit
 (
-  id   INT,
-  name VARCHAR(40)
+    id   INT,
+    name VARCHAR(40)
 );
-INSERT INTO base.known_fruits(id, name) VALUES (1, 'Cherry');
-INSERT INTO base.known_fruits(id, name) VALUES (2, 'Apple');
-INSERT INTO base.known_fruits(id, name) VALUES (3, 'Banana');
+INSERT INTO base.fruit(id, name) VALUES (1, 'Cherry');
+INSERT INTO base.fruit(id, name) VALUES (2, 'Apple');
+INSERT INTO base.fruit(id, name) VALUES (3, 'Banana');
+ALTER SEQUENCE base.fruit_seq RESTART WITH 4;
 
-CREATE SEQUENCE mycompany.known_fruits_id_seq;
-SELECT setval('mycompany."known_fruits_id_seq"', 3);
-CREATE TABLE mycompany.known_fruits
+CREATE SEQUENCE mycompany.fruit_seq INCREMENT BY 50; -- 50 is quarkus default
+CREATE TABLE mycompany.fruit
 (
   id   INT,
   name VARCHAR(40)
 );
-INSERT INTO mycompany.known_fruits(id, name) VALUES (1, 'Avocado');
-INSERT INTO mycompany.known_fruits(id, name) VALUES (2, 'Apricots');
-INSERT INTO mycompany.known_fruits(id, name) VALUES (3, 'Blackberries');
+INSERT INTO mycompany.fruit(id, name) VALUES (1, 'Avocado');
+INSERT INTO mycompany.fruit(id, name) VALUES (2, 'Apricots');
+INSERT INTO mycompany.fruit(id, name) VALUES (3, 'Blackberries');
+ALTER SEQUENCE mycompany.fruit_seq RESTART WITH 4;
 ----
 
 [[database-approach]]
@@ -1280,19 +1284,19 @@ quarkus.hibernate-orm.datasource=base <3>
 
 # Default tenant 'base'
 quarkus.datasource.base.db-kind=postgresql <4>
-quarkus.datasource.base.username=quarkus_test
-quarkus.datasource.base.password=quarkus_test
-%prod.quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 quarkus.flyway.base.locations=classpath:database/base <5>
 quarkus.flyway.base.migrate-at-start=true
+%prod.quarkus.datasource.base.username=base
+%prod.quarkus.datasource.base.password=base
+%prod.quarkus.datasource.base.jdbc.url=jdbc:postgresql://localhost:5432/base
 
 # Tenant 'mycompany'
 quarkus.datasource.mycompany.db-kind=postgresql <6>
-quarkus.datasource.mycompany.username=mycompany
-quarkus.datasource.mycompany.password=mycompany
-%prod.quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
 quarkus.flyway.mycompany.locations=classpath:database/mycompany <7>
 quarkus.flyway.mycompany.migrate-at-start=true
+%prod.quarkus.datasource.mycompany.username=mycompany
+%prod.quarkus.datasource.mycompany.password=mycompany
+%prod.quarkus.datasource.mycompany.jdbc.url=jdbc:postgresql://localhost:5433/mycompany
 ----
 <1> Disable schema generation, because it is not supported by Hibernate ORM for database multi-tenancy.
 We'll use Flyway instead, see further down.
@@ -1316,32 +1320,32 @@ Schema for tenant `base` (`src/main/resources/database/base/V1.0.0__create_fruit
 
 [source,sql]
 ----
-CREATE SEQUENCE known_fruits_id_seq;
-SELECT setval('known_fruits_id_seq', 3);
-CREATE TABLE known_fruits
+CREATE SEQUENCE fruit_seq INCREMENT BY 50; -- 50 is quarkus default
+CREATE TABLE fruit
 (
-  id   INT,
-  name VARCHAR(40)
+    id   INT,
+    name VARCHAR(40)
 );
-INSERT INTO known_fruits(id, name) VALUES (1, 'Cherry');
-INSERT INTO known_fruits(id, name) VALUES (2, 'Apple');
-INSERT INTO known_fruits(id, name) VALUES (3, 'Banana');
+INSERT INTO fruit(id, name) VALUES (1, 'Cherry');
+INSERT INTO fruit(id, name) VALUES (2, 'Apple');
+INSERT INTO fruit(id, name) VALUES (3, 'Banana');
+ALTER SEQUENCE fruit_seq RESTART WITH 4;
 ----
 
 Schema for tenant `mycompany` (`src/main/resources/database/mycompany/V1.0.0__create_fruits.sql`):
 
 [source,sql]
 ----
-CREATE SEQUENCE known_fruits_id_seq;
-SELECT setval('known_fruits_id_seq', 3);
-CREATE TABLE known_fruits
+CREATE SEQUENCE fruit_seq INCREMENT BY 50; -- 50 is quarkus default
+CREATE TABLE fruit
 (
   id   INT,
   name VARCHAR(40)
 );
-INSERT INTO known_fruits(id, name) VALUES (1, 'Avocado');
-INSERT INTO known_fruits(id, name) VALUES (2, 'Apricots');
-INSERT INTO known_fruits(id, name) VALUES (3, 'Blackberries');
+INSERT INTO fruit(id, name) VALUES (1, 'Avocado');
+INSERT INTO fruit(id, name) VALUES (2, 'Apricots');
+INSERT INTO fruit(id, name) VALUES (3, 'Blackberries');
+ALTER SEQUENCE fruit_seq RESTART WITH 4;
 ----
 
 [[discriminator-approach]]
@@ -1355,9 +1359,10 @@ The default data source will be used for all tenants. All entities defining a fi
 quarkus.hibernate-orm.multitenant=DISCRIMINATOR <1>
 
 quarkus.datasource.db-kind=postgresql <2>
-quarkus.datasource.username=quarkus_test
-quarkus.datasource.password=quarkus_test
-quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
+
+%prod.quarkus.datasource.username=quarkus_test
+%prod.quarkus.datasource.password=quarkus_test
+%prod.quarkus.datasource.jdbc.url=jdbc:postgresql://localhost:5432/quarkus_test
 ----
 <1> Enable discriminator multi-tenancy.
 <2> xref:datasource.adoc[Configure the datasource].
@@ -1602,6 +1607,7 @@ import jakarta.validation.constraints.Size;
 @Entity
 public class MyEntity {
     @Id
+    @GeneratedValue
     public long id;
 
     @NotNull

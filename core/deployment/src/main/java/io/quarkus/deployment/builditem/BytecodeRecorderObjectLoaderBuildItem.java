@@ -10,6 +10,11 @@ public final class BytecodeRecorderObjectLoaderBuildItem extends MultiBuildItem 
         this.objectLoader = objectLoader;
     }
 
+    /**
+     * Returns the {@link ObjectLoader} of the BuildItem.
+     *
+     * @return The {@link ObjectLoader} of the BuildItem.
+     */
     public ObjectLoader getObjectLoader() {
         return objectLoader;
     }

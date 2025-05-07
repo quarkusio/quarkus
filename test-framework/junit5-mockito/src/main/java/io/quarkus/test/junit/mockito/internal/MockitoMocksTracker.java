@@ -48,6 +48,17 @@ final class MockitoMocksTracker {
         return Optional.empty();
     }
 
-    record Mocked(Object mock, Object beanInstance) {
+    // don't use a Record because we don't want the auto-generated methods which delegate to the components
+    // see https://github.com/quarkusio/quarkus/issues/47739
+    @SuppressWarnings("ClassCanBeRecord")
+    final static class Mocked {
+
+        final Object mock;
+        final Object beanInstance;
+
+        Mocked(Object mock, Object beanInstance) {
+            this.mock = mock;
+            this.beanInstance = beanInstance;
+        }
     }
 }

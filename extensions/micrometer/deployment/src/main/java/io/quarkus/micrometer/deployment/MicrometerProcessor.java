@@ -1,6 +1,5 @@
 package io.quarkus.micrometer.deployment;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -8,8 +7,6 @@ import java.util.function.BooleanSupplier;
 
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.MethodInfo;
@@ -22,12 +19,9 @@ import io.micrometer.core.instrument.binder.MeterBinder;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.config.NamingConvention;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.InterceptorBindingRegistrarBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
-import io.quarkus.arc.processor.Annotations;
-import io.quarkus.arc.processor.AnnotationsTransformer;
 import io.quarkus.arc.processor.InterceptorBindingRegistrar;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -56,7 +50,6 @@ import io.quarkus.micrometer.runtime.MeterRegistryCustomizer;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraints;
 import io.quarkus.micrometer.runtime.MeterTagsSupport;
-import io.quarkus.micrometer.runtime.MicrometerCounted;
 import io.quarkus.micrometer.runtime.MicrometerCountedInterceptor;
 import io.quarkus.micrometer.runtime.MicrometerRecorder;
 import io.quarkus.micrometer.runtime.MicrometerTimedInterceptor;
@@ -75,7 +68,6 @@ public class MicrometerProcessor {
     private static final DotName NAMING_CONVENTION = DotName.createSimple(NamingConvention.class.getName());
 
     private static final DotName COUNTED_ANNOTATION = DotName.createSimple(Counted.class.getName());
-    private static final DotName COUNTED_BINDING = DotName.createSimple(MicrometerCounted.class.getName());
     private static final DotName COUNTED_INTERCEPTOR = DotName.createSimple(MicrometerCountedInterceptor.class.getName());
     private static final DotName TIMED_ANNOTATION = DotName.createSimple(Timed.class.getName());
     private static final DotName TIMED_INTERCEPTOR = DotName.createSimple(MicrometerTimedInterceptor.class.getName());
@@ -143,16 +135,16 @@ public class MicrometerProcessor {
                 .addBeanClass(TIMED_ANNOTATION.toString())
                 .addBeanClass(TIMED_INTERCEPTOR.toString())
                 .addBeanClass(COUNTED_ANNOTATION.toString())
-                .addBeanClass(COUNTED_BINDING.toString())
                 .addBeanClass(COUNTED_INTERCEPTOR.toString())
                 .addBeanClass(METER_TAG_SUPPORT.toString())
                 .build());
 
-        // @Timed is registered as an additional interceptor binding
+        // @Timed and @Counted are registered as additional interceptor bindings
         interceptorBindings.produce(new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
             @Override
             public List<InterceptorBinding> getAdditionalBindings() {
-                return List.of(InterceptorBinding.of(Timed.class, m -> true));
+                return List.of(InterceptorBinding.of(Timed.class, m -> true),
+                        InterceptorBinding.of(Counted.class, m -> true));
             }
         }));
 
@@ -176,30 +168,6 @@ public class MicrometerProcessor {
 
         return UnremovableBeanBuildItem.beanTypes(METER_REGISTRY, METER_BINDER, METER_FILTER, METER_REGISTRY_CUSTOMIZER,
                 NAMING_CONVENTION);
-    }
-
-    @BuildStep
-    AnnotationsTransformerBuildItem processAnnotatedMetrics(
-            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers) {
-        return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-
-            @Override
-            public boolean appliesTo(Kind kind) {
-                // @Counted is only applicable to a method
-                return kind == Kind.METHOD;
-            }
-
-            @Override
-            public void transform(TransformationContext ctx) {
-                final Collection<AnnotationInstance> annotations = ctx.getAnnotations();
-                AnnotationInstance counted = Annotations.find(annotations, COUNTED_ANNOTATION);
-                if (counted == null) {
-                    return;
-                }
-                // Copy all the values so that the interceptor can use the binding annotation instead of java.lang.reflect.Method
-                ctx.transform().add(COUNTED_BINDING, counted.values().toArray(new AnnotationValue[] {})).done();
-            }
-        });
     }
 
     @BuildStep

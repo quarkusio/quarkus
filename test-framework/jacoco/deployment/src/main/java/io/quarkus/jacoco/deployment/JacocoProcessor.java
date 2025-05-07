@@ -80,7 +80,6 @@ public class JacocoProcessor {
                 transformers.produce(
                         new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
                                 .setCacheable(true)
-                                .setEager(true)
                                 .setInputTransformer(new BiFunction<String, byte[], byte[]>() {
                                     @Override
                                     public byte[] apply(String className, byte[] bytes) {

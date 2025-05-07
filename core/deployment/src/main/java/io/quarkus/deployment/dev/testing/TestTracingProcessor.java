@@ -125,7 +125,7 @@ public class TestTracingProcessor {
         for (ClassInfo clazz : combinedIndexBuildItem.getIndex().getKnownClasses()) {
             String theClassName = clazz.name().toString();
             if (isAppClass(theClassName)) {
-                transformerProducer.produce(new BytecodeTransformerBuildItem.Builder().setEager(false)
+                transformerProducer.produce(new BytecodeTransformerBuildItem.Builder()
                         .setClassToTransform(theClassName)
                         .setVisitorFunction(
                                 new BiFunction<String, ClassVisitor, ClassVisitor>() {

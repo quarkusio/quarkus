@@ -113,7 +113,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
         return requireConstPoolEntry;
     }
 
-    @Deprecated
+    @Deprecated(since = "3.11", forRemoval = true)
     public boolean isEager() {
         return false;
     }
@@ -191,7 +191,7 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
             return this;
         }
 
-        @Deprecated
+        @Deprecated(since = "3.11", forRemoval = true)
         public Builder setEager(boolean eager) {
             return this;
         }

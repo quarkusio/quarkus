@@ -791,6 +791,8 @@ public class KeycloakDevServicesProcessor {
                 //                ClientScopeRepresentation scope = realm.getClientScopes().stream().filter(cs -> cs.getName().equals("roles"))
                 //                        .findFirst().orElse(null);
                 // not correct: clientRep.getDefaultClientScopes().add("roles");
+                
+                clientRep.setDefaultClientScopes(List.of("roles", "role_list"));
 
                 //TODO:: cleanup. Didn't work, still no roles in client jwt. Don't think we need these; assign to service account, not client?
                 realm.getRoles().setClient(

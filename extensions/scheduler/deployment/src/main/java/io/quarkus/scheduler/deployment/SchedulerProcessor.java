@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -176,6 +177,7 @@ public class SchedulerProcessor {
             BuildProducer<ScheduledBusinessMethodItem> scheduledBusinessMethods) {
 
         // First collect static scheduled methods
+        Map<MethodInfo, List<AnnotationInstance>> staticScheduledMethods = new HashMap<>();
         List<AnnotationInstance> schedules = new ArrayList<>(
                 beanArchives.getIndex().getAnnotations(SchedulerDotNames.SCHEDULED_NAME));
         for (AnnotationInstance annotationInstance : beanArchives.getIndex().getAnnotations(SchedulerDotNames.SCHEDULES_NAME)) {
@@ -198,11 +200,21 @@ public class SchedulerProcessor {
                         method.name(), declaringClass.name()));
             }
             if (Modifier.isStatic(method.flags()) && !KotlinUtil.isSuspendMethod(method)) {
-                scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, schedules,
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
-                        transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
-                LOGGER.debugf("Found scheduled static method %s declared on %s", method, declaringClass.name());
+                List<AnnotationInstance> methodSchedules = staticScheduledMethods.get(method);
+                if (methodSchedules == null) {
+                    methodSchedules = new ArrayList<>();
+                    staticScheduledMethods.put(method, methodSchedules);
+                }
+                methodSchedules.add(annotationInstance);
             }
+        }
+
+        for (Entry<MethodInfo, List<AnnotationInstance>> e : staticScheduledMethods.entrySet()) {
+            MethodInfo method = e.getKey();
+            scheduledBusinessMethods.produce(new ScheduledBusinessMethodItem(null, method, e.getValue(),
+                    transformedAnnotations.hasAnnotation(method, SchedulerDotNames.NON_BLOCKING),
+                    transformedAnnotations.hasAnnotation(method, SchedulerDotNames.RUN_ON_VIRTUAL_THREAD)));
+            LOGGER.debugf("Found scheduled static method %s declared on %s", method, method.declaringClass().name());
         }
 
         // Then collect all business methods annotated with @Scheduled

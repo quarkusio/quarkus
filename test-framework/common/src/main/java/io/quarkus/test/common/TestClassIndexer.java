@@ -71,8 +71,8 @@ public final class TestClassIndexer {
     }
 
     public static Index readIndex(Path testClassLocation, Class<?> testClass) {
-        Path path = indexPath(testClassLocation);
-        if (path.toFile().exists()) {
+        final Path path = indexPath(testClassLocation);
+        if (Files.exists(path)) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 return new IndexReader(fis).read();
             } catch (UnsupportedVersion e) {
@@ -112,7 +112,7 @@ public final class TestClassIndexer {
 
             @Override
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                if (!file.toString().endsWith(".class")) {
+                if (!file.getFileName().toString().endsWith(".class")) {
                     return FileVisitResult.CONTINUE;
                 }
                 try (InputStream inputStream = Files.newInputStream(file, StandardOpenOption.READ)) {
@@ -136,13 +136,10 @@ public final class TestClassIndexer {
     }
 
     public static void removeIndex(Class<?> requiredTestClass) {
-        Path indexPath = indexPath(requiredTestClass);
-        if (Files.exists(indexPath)) {
-            try {
-                Files.delete(indexPath);
-            } catch (IOException e) {
-                throw new IllegalStateException("Unable to delete file index", e);
-            }
+        try {
+            Files.deleteIfExists(indexPath(requiredTestClass));
+        } catch (IOException e) {
+            throw new IllegalStateException("Unable to delete file index", e);
         }
     }
 }

@@ -10,10 +10,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -25,7 +22,6 @@ import org.jboss.jandex.Index;
 import io.quarkus.bootstrap.BootstrapAppModelFactory;
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
-import io.quarkus.bootstrap.app.AugmentAction;
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.StartupAction;
@@ -37,6 +33,7 @@ import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
+import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.test.common.PathTestHelper;
@@ -49,27 +46,8 @@ public class AppMakerHelper {
     protected static final String TEST_LOCATION = "test-location";
     protected static final String TEST_CLASS = "test-class";
     protected static final String TEST_PROFILE = "test-profile";
+
     /// end copied
-
-    private static Class<?> quarkusTestMethodContextClass;
-    private static boolean hasPerTestResources;
-
-    private static List<Object> testMethodInvokers;
-    private Runnable configCleanup;
-
-    public static class PrepareResult {
-        protected final AugmentAction augmentAction;
-        public final QuarkusTestProfile profileInstance;
-        protected final CuratedApplication curatedApplication;
-
-        public PrepareResult(AugmentAction augmentAction, QuarkusTestProfile profileInstance,
-                CuratedApplication curatedApplication) {
-
-            this.augmentAction = augmentAction;
-            this.profileInstance = profileInstance;
-            this.curatedApplication = curatedApplication;
-        }
-    }
 
     public static ApplicationModel getGradleAppModelForIDE(Path projectRoot) throws IOException, AppModelResolverException {
         return System.getProperty(BootstrapConstants.SERIALIZED_TEST_APP_MODEL) == null
@@ -77,67 +55,15 @@ public class AppMakerHelper {
                 : null;
     }
 
-    private PrepareResult createAugmentor(final Class<?> requiredTestClass, String displayName, boolean isContinuousTesting,
+    static PrepareResult prepare(final Class<?> requiredTestClass,
             CuratedApplication curatedApplication,
-            Class<? extends QuarkusTestProfile> profile,
-            Collection<Runnable> shutdownTasks) throws AppModelResolverException, BootstrapException, IOException,
-            NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+            Class<? extends QuarkusTestProfile> profile)
+            throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
 
-        if (curatedApplication == null) {
-            curatedApplication = makeCuratedApplication(requiredTestClass, displayName, isContinuousTesting, shutdownTasks);
-        }
         Path testClassLocation = getTestClassesLocation(requiredTestClass, curatedApplication);
 
         // clear the test.url system property as the value leaks into the run when using different profiles
         System.clearProperty("test.url");
-        Map<String, String> additional = new HashMap<>();
-
-        QuarkusTestProfile profileInstance = null;
-        if (profile != null) {
-
-            profileInstance = new ClassCoercingTestProfile(profile.getConstructor()
-                    .newInstance());
-            // TODO we make this twice, also in abstractjvmextension can we streamline that?
-            // TODO We can't get rid of the one here because config needs to be set before augmentation, but maybe we can get rid of it on the test side?
-            additional.putAll(profileInstance.getConfigOverrides());
-            if (!profileInstance.getEnabledAlternatives()
-                    .isEmpty()) {
-                additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives()
-                        .stream()
-                        .peek((c) -> {
-                            try {
-                                // TODO is string comparison more efficient?
-                                if (!c.isAnnotationPresent((Class<? extends Annotation>) profile.getClassLoader()
-                                        .loadClass(Alternative.class.getName()))) {
-                                    throw new RuntimeException(
-                                            "Enabled alternative " + c + " is not annotated with @Alternative");
-                                }
-                            } catch (ClassNotFoundException e) {
-                                throw new RuntimeException(e);
-                            }
-                        })
-                        .map(Class::getName)
-                        .collect(Collectors.joining(",")));
-            }
-            if (profileInstance.disableApplicationLifecycleObservers()) {
-                additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
-            }
-            if (profileInstance.getConfigProfile() != null) {
-                additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
-            }
-
-            //we just use system properties for now
-            //it's a lot simpler
-            // TODO this is really ugly, set proper config on the app
-            // Sadly, I don't think #42715 helps, because it kicks in after this code
-            configCleanup = RestorableSystemProperties.setProperties(additional)::close;
-        }
-
-        if (curatedApplication
-                .getApplicationModel().getRuntimeDependencies().isEmpty()) {
-            throw new RuntimeException(
-                    "The tests were run against a directory that does not contain a Quarkus project. Please ensure that the test is configured to use the proper working directory.");
-        }
 
         // TODO should we do this here, or when we prepare the curated application?
         // Or is it needed at all?
@@ -157,13 +83,53 @@ public class AppMakerHelper {
             props.put(TEST_PROFILE, profile.getName());
         }
         return new PrepareResult(curatedApplication
-                .createAugmentor(TestBuildChainFunction.class.getName(), props), profileInstance,
+                .createAugmentor(TestBuildChainFunction.class.getName(), props), getQuarkusTestProfile(profile),
                 curatedApplication);
     }
 
-    public CuratedApplication makeCuratedApplication(Class<?> requiredTestClass, String displayName,
-            boolean isContinuousTesting,
-            Collection<Runnable> shutdownTasks) throws IOException, AppModelResolverException, BootstrapException {
+    static QuarkusTestProfile getQuarkusTestProfile(Class<? extends QuarkusTestProfile> profile)
+            throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+        return profile == null ? null : new ClassCoercingTestProfile(profile.getConstructor().newInstance());
+    }
+
+    static Runnable setExtraProperties(Class<?> profileClass, QuarkusTestProfile profileInstance) {
+        final Map<String, String> additional = new HashMap<>();
+        // TODO we make this twice, also in abstractjvmextension can we streamline that?
+        // TODO We can't get rid of the one here because config needs to be set before augmentation, but maybe we can get rid of it on the test side?
+        additional.putAll(profileInstance.getConfigOverrides());
+        if (!profileInstance.getEnabledAlternatives().isEmpty()) {
+            additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives()
+                    .stream()
+                    .peek((c) -> {
+                        try {
+                            // TODO is string comparison more efficient?
+                            if (!c.isAnnotationPresent((Class<? extends Annotation>) profileClass.getClassLoader()
+                                    .loadClass(Alternative.class.getName()))) {
+                                throw new RuntimeException(
+                                        "Enabled alternative " + c + " is not annotated with @Alternative");
+                            }
+                        } catch (ClassNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
+                    })
+                    .map(Class::getName)
+                    .collect(Collectors.joining(",")));
+        }
+        if (profileInstance.disableApplicationLifecycleObservers()) {
+            additional.put("quarkus.arc.test.disable-application-lifecycle-observers", "true");
+        }
+        if (profileInstance.getConfigProfile() != null) {
+            additional.put(LaunchMode.TEST.getProfileKey(), profileInstance.getConfigProfile());
+        }
+        //we just use system properties for now
+        //it's a lot simpler
+        // TODO this is really ugly, set proper config on the app
+        // Sadly, I don't think #42715 helps, because it kicks in after this code
+        return RestorableSystemProperties.setProperties(additional)::close;
+    }
+
+    public static CuratedApplication makeCuratedApplication(Class<?> requiredTestClass, String displayName,
+            boolean isContinuousTesting) throws IOException, AppModelResolverException, BootstrapException {
         final PathList.Builder rootBuilder = PathList.builder();
         final Consumer<Path> addToBuilderIfConditionMet = path -> {
             if (path != null && !rootBuilder.contains(path) && Files.exists(path)) {
@@ -253,22 +219,12 @@ public class AppMakerHelper {
                 .setApplicationRoot(rootBuilder.build())
                 .build()
                 .bootstrap();
-        shutdownTasks.add(curatedApplication::close);
 
-        // TODO can we consolidate some of this with TestSupport? The code over there is
-        //        final QuarkusBootstrap.Builder bootstrapConfig = curatedApplication.getQuarkusBootstrap().clonedBuilder()
-        //                                                                           .setMode(QuarkusBootstrap.Mode.TEST)
-        //                                                                           .setAssertionsEnabled(true)
-        //                                                                           .setDisableClasspathCache(false)
-        //                                                                           .setIsolateDeployment(true)
-        //                                                                           .setExistingModel(null)
-        //                                                                           .setBaseClassLoader(getClass().getClassLoader().getParent())
-        //                                                                           .setTest(true)
-        //                                                                           .setAuxiliaryApplication(true)
-        //                                                                           .setHostApplicationIsTestOnly(devModeType == DevModeType.TEST_ONLY)
-        //                                                                           .setProjectRoot(projectDir)
-        //                                                                           .setApplicationRoot(getRootPaths(module, mainModule))
-        //                                                                           .clearLocalArtifacts();
+        if (!curatedApplication.getApplicationModel().getDependencies(DependencyFlags.RUNTIME_CP).iterator().hasNext()) {
+            throw new RuntimeException(
+                    "The tests were run against a directory that does not contain a Quarkus project. Please ensure that the test is configured to use the proper working directory.");
+
+        }
 
         return curatedApplication;
     }
@@ -276,21 +232,22 @@ public class AppMakerHelper {
     // Note that curated application cannot be re-used between restarts, so this application
     // should have been freshly created
     // TODO maybe don't even accept one? is that comment right?
-    public StartupAction getStartupAction(Class testClass, CuratedApplication curatedApplication,
-            boolean isContinuousTesting, Class profile) throws AppModelResolverException, BootstrapException, IOException,
+    public static StartupAction getStartupAction(Class<?> testClass, CuratedApplication curatedApplication, Class profile)
+            throws AppModelResolverException, BootstrapException, IOException,
             InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 
-        Collection<Runnable> shutdownTasks = new HashSet();
-        PrepareResult result = createAugmentor(testClass, "(QuarkusTest)", isContinuousTesting, curatedApplication, profile,
-                shutdownTasks);
-        AugmentAction augmentAction = result.augmentAction;
+        PrepareResult prepareResult = prepare(testClass,
+                curatedApplication,
+                profile);
+
+        final Runnable configCleanup = prepareResult.profileInstance() == null ? null
+                : setExtraProperties(profile, prepareResult.profileInstance());
 
         try {
-            StartupAction startupAction = augmentAction.createInitialRuntimeApplication();
 
             // To check changes here run integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
 
-            return startupAction;
+            return prepareResult.augmentAction().createInitialRuntimeApplication();
         } catch (Throwable e) {
             // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
             // Give a little help to debuggers
@@ -303,7 +260,5 @@ public class AppMakerHelper {
                 configCleanup.run();
             }
         }
-
     }
-
 }

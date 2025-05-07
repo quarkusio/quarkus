@@ -204,6 +204,7 @@ import io.quarkus.resteasy.reactive.spi.CustomExceptionMapperBuildItem;
 import io.quarkus.resteasy.reactive.spi.DynamicFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem;
 import io.quarkus.resteasy.reactive.spi.ExceptionMapperBuildItem;
+import io.quarkus.resteasy.reactive.spi.GeneratedJaxRsResourceBuildItem;
 import io.quarkus.resteasy.reactive.spi.JaxrsFeatureBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderBuildItem;
 import io.quarkus.resteasy.reactive.spi.MessageBodyReaderOverrideBuildItem;
@@ -474,7 +475,8 @@ public class ResteasyReactiveProcessor {
             ResourceInterceptorsBuildItem resourceInterceptorsBuildItem,
             Capabilities capabilities,
             Optional<AllowNotRestParametersBuildItem> allowNotRestParametersBuildItem,
-            List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems) {
+            List<EndpointValidationPredicatesBuildItem> validationPredicatesBuildItems,
+            List<GeneratedJaxRsResourceBuildItem> generatedJaxRsResourcesBuildItems) {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -512,13 +514,18 @@ public class ResteasyReactiveProcessor {
 
             List<ResteasyReactiveResourceMethodEntriesBuildItem.Entry> resourceMethodEntries = new ArrayList<>();
 
+            // Generated JAX-RS resources are application classes
+            Set<String> applicationGeneratedJaxRsResources = generatedJaxRsResourcesBuildItems.stream()
+                    .map(r -> r.binaryName())
+                    .collect(Collectors.toSet());
+
             Predicate<String> applicationClassPredicate = s -> {
                 for (ApplicationClassPredicateBuildItem i : applicationClassPredicateBuildItems) {
                     if (i.test(s)) {
                         return true;
                     }
                 }
-                return false;
+                return applicationGeneratedJaxRsResources.contains(s);
             };
 
             final boolean filtersAccessResourceMethod = filtersAccessResourceMethod(

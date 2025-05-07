@@ -18,9 +18,9 @@ public class SetMockitoMockAsBeanMockCallback implements QuarkusTestBeforeEachCa
 
     private void installMock(MockitoMocksTracker.Mocked mocked) {
         try {
-            QuarkusMock.installMockForInstance(mocked.mock(), mocked.beanInstance());
+            QuarkusMock.installMockForInstance(mocked.mock, mocked.beanInstance);
         } catch (Exception e) {
-            throw new RuntimeException(mocked.beanInstance()
+            throw new RuntimeException(mocked.beanInstance
                     + " is not a normal scoped CDI bean, make sure the bean is a normal scope like @ApplicationScoped or @RequestScoped."
                     + " Alternatively you can use '@InjectMock(convertScopes=true)' instead of '@InjectMock' if you would like"
                     + " Quarkus to automatically make that conversion (you should only use this if you understand the implications).");

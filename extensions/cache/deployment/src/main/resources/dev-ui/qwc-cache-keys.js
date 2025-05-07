@@ -12,10 +12,14 @@ import '@vaadin/grid/vaadin-grid-sort-column.js';
 export class QwcCacheKeys extends LitElement {
     
      static styles = css`
+        .datatable {
+            height: 100%;
+        }
         .keys {
             padding-left: 20px;
             justify-content: space-between;
             padding-right: 20px;
+            height: 100%;
         }
     
         .keys h4 {

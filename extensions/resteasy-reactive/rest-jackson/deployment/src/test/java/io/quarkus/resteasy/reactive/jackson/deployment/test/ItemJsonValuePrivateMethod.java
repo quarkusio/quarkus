@@ -3,11 +3,11 @@ package io.quarkus.resteasy.reactive.jackson.deployment.test;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public class ItemId {
-    final int value;
+public class ItemJsonValuePrivateMethod {
+    private final int value;
 
     @JsonCreator
-    public ItemId(int value) {
+    public ItemJsonValuePrivateMethod(int value) {
         this.value = value;
     }
 
@@ -16,7 +16,7 @@ public class ItemId {
     }
 
     @JsonValue
-    public String format() {
-        return "ItemId:" + value;
+    private String format() {
+        return Integer.toString(value);
     }
 }

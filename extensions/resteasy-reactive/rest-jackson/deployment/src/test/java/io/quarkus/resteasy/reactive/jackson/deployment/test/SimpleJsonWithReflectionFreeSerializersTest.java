@@ -29,7 +29,9 @@ public class SimpleJsonWithReflectionFreeSerializersTest extends AbstractSimpleJ
                                     Pond.class, FrogBodyParts.class, FrogBodyParts.BodyPart.class, ContainerDTO.class,
                                     NestedInterface.class, StateRecord.class, MapWrapper.class, GenericWrapper.class,
                                     Fruit.class, Price.class, DogRecord.class, ItemExtended.class, Book.class, LombokBook.class,
-                                    PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class, ItemId.class)
+                                    PrimitiveTypesBean.class, PrimitiveTypesRecord.class, TokenResponse.class,
+                                    ItemJsonValuePublicMethod.class, ItemJsonValuePublicField.class,
+                                    ItemJsonValuePrivateMethod.class, ItemJsonValuePrivateField.class)
                             .addAsResource(new StringAsset("admin-expression=admin\n" +
                                     "user-expression=user\n" +
                                     "birth-date-roles=alice,bob\n" +

@@ -797,13 +797,43 @@ public abstract class AbstractSimpleJsonTest {
     }
 
     @Test
-    void testJsonValue() {
+    void testJsonValuePublicMethod() {
         RestAssured.given()
                 .queryParam("value", 240)
-                .post("/simple/json-value")
+                .post("/simple/json-value-public-method")
                 .then()
                 .statusCode(200)
-                .body(Matchers.equalTo('\"' + new ItemId(240).format() + '\"'));
+                .body(Matchers.equalTo("\"" + Integer.toString(240) + "\""));
+    }
+
+    @Test
+    void testJsonValuePublicField() {
+        RestAssured.given()
+                .queryParam("value", 368)
+                .post("/simple/json-value-public-field")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo(Integer.toString(368)));
+    }
+
+    @Test
+    void testJsonValuePrivateMethod() {
+        RestAssured.given()
+                .queryParam("value", 256)
+                .post("/simple/json-value-private-method")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo("\"" + Integer.toString(256) + "\""));
+    }
+
+    @Test
+    void testJsonValuePrivateField() {
+        RestAssured.given()
+                .queryParam("value", 795)
+                .post("/simple/json-value-private-field")
+                .then()
+                .statusCode(200)
+                .body(Matchers.equalTo(Integer.toString(795)));
     }
 
     @Test

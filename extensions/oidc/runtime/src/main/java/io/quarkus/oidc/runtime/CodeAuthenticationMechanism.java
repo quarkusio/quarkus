@@ -864,10 +864,15 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             if (isIdTokenRequired(configContext)) {
                                 LOG.errorf("ID token is not available in the authorization code grant response");
                                 return Uni.createFrom().failure(new AuthenticationCompletionException());
-                            } else {
+                            } else if (tokens.getAccessToken() != null) {
                                 tokens.setIdToken(generateInternalIdToken(configContext, null, null,
                                         tokens.getAccessTokenExpiresIn()));
                                 internalIdToken = true;
+                            } else {
+                                LOG.errorf(
+                                        "Neither ID token nor access tokens are available in the authorization code grant response."
+                                                + " Please check logs for more details, enable debug log level if no details are visible.");
+                                return Uni.createFrom().failure(new AuthenticationCompletionException());
                             }
                         } else {
                             if (!prepareNonceForVerification(context, configContext.oidcConfig(), stateBean)) {

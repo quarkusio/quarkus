@@ -1,3 +1,4 @@
+ifdef::extension-status[]
 [NOTE]
 ====
 This technology is considered {extension-status}.
@@ -21,3 +22,4 @@ endif::[]
 
 For a full list of possible statuses, check our https://quarkus.io/faq/#what-are-the-extension-statuses[FAQ entry].
 ====
+endif::[]

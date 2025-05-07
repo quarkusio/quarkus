@@ -260,11 +260,12 @@ public interface RestClientsConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
      * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
      * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
      * <p>
      * If no TLS configuration is set, then the keys-tore, trust-store, etc. properties will be used.
+     * <p>
+     * The default TLS configuration is <strong>not</strong> used by default.
      * <p>
      * This property is not applicable to the RESTEasy Client.
      */
@@ -543,11 +544,12 @@ public interface RestClientsConfig {
         /**
          * The name of the TLS configuration to use.
          * <p>
-         * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
          * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
          * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
          * <p>
          * If no TLS configuration is set, then the keys-tore, trust-store, etc. properties will be used.
+         * <p>
+         * The default TLS configuration is <strong>not</strong> used by default.
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */

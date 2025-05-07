@@ -263,7 +263,10 @@ public class QuartzProcessor {
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.triggerListeners(), TriggerListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.jobListeners(), JobListener.class));
         reflectiveClasses.addAll(getAdditionalConfigurationReflectiveClasses(config.plugins(), SchedulerPlugin.class));
-
+        reflectiveClasses
+                .add(ReflectiveClassBuildItem.builder("io.quarkus.quartz.runtime.QuartzSchedulerImpl$NonconcurrentInvokerJob")
+                        .reason(getClass().getName())
+                        .methods().build());
         return reflectiveClasses;
     }
 

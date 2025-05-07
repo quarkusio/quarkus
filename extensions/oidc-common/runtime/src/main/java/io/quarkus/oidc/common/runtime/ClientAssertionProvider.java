@@ -75,6 +75,11 @@ public final class ClientAssertionProvider implements Closeable {
         if (Files.exists(bearerTokenPath)) {
             try {
                 String bearerToken = Files.readString(bearerTokenPath).trim();
+                if (bearerToken.isEmpty()) {
+                    LOG.error(String.format("Bearer token file at path %s is empty or contains only whitespace",
+                            bearerTokenPath));
+                    return null;
+                }
                 Long expiresAt = getExpiresAtFromExpClaim(bearerToken);
                 if (expiresAt != null) {
                     return new ClientAssertion(bearerToken, expiresAt, scheduleRefresh(expiresAt));

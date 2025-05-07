@@ -33,21 +33,54 @@ export class RouterController {
         };
 
         document.addEventListener('click', async (e) => {
-            const anchor = e.composedPath().find(el => el.tagName === 'A' && el.href);
-            if (anchor && anchor.href.startsWith(window.location.origin)) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
+            
+            if(RouterController.guardedComponents.size < 1){
+                return;
+            }
+            
+            var location = RouterController.router.location;
+            if (location.route && location.route.path) {
+                let p = RouterController.pageMap.get(location.route.path);
+                let currentComponentName = p.componentName;
+                // Now check if it's guarded
+                const isCurrentComponentGuarded = Array.from(RouterController.guardedComponents).some(
+                    (el) => el.tagName.toLowerCase() === currentComponentName
+                );
 
-                const shouldProceed = await RouterController._checkUnsavedChanges();
-                if (shouldProceed) {
+                if(!isCurrentComponentGuarded){
+                    return;
+                }
+                const anchor = e.composedPath().find(el => el.tagName === 'A' && el.href);
+                if (anchor && anchor.href.startsWith(window.location.origin)) {
                     const url = new URL(anchor.href);
-                    RouterController._skipNextGuard = true;
-                    RouterController.router.constructor.go(url.pathname + url.search + url.hash);
+                    const relativePath = url.pathname + url.search + url.hash;
+
+                    try {
+                        const matchingRoute = await RouterController.router.resolve(relativePath);
+
+                        // If no matching route, let the browser handle it (likely REST or external link)
+                        if (!matchingRoute || !matchingRoute.route || !matchingRoute.route.component) {
+                            return;
+                        }
+
+                        // Intercept SPA route
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+
+                        const shouldProceed = await RouterController._checkUnsavedChanges();
+                        if (shouldProceed) {
+                            RouterController._skipNextGuard = true;
+                            RouterController.router.constructor.go(relativePath);
+                        }
+                    } catch (err) {
+                        return;
+                    }
                 }
             }
         }, true);
+
     }
-c
+    
     static async _checkUnsavedChanges() {
         try {
             for (const component of RouterController.guardedComponents) {

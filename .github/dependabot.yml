@@ -216,6 +216,13 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
       - dependency-name: org.apache.kafka:*
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Elasticsearch - major updates usually require more work and synchronization, we do them manually.
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client
+        update-types: ["version-update:semver-major"]
+      - dependency-name: org.elasticsearch.client:elasticsearch-rest-client-sniffer
+        update-types: ["version-update:semver-major"]
+      - dependency-name: co.elastic.clients:elasticsearch-java
+        update-types: ["version-update:semver-major"]
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/devtools/gradle"

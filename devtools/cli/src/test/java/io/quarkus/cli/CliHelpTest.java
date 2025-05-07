@@ -168,7 +168,7 @@ public class CliHelpTest {
     @Test
     @Order(52)
     public void testRegistryRemoveHelp() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "rm", "--help");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "registry", "remove", "--help");
         result.echoSystemOut();
         assertThat(result.stdout).contains("Usage");
     }

@@ -27,7 +27,8 @@ public final class TokenConfigBuilder {
             Optional<Duration> age, boolean issuedAtRequired, Optional<String> principalClaim, boolean refreshExpired,
             Optional<Duration> refreshTokenTimeSkew, Duration forcedJwkRefreshInterval, Optional<String> header,
             String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
-            Optional<String> decryptionKeyLocation, boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
+            Optional<String> decryptionKeyLocation, Optional<Boolean> decryptIdToken, boolean decryptAccessToken,
+            boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
             boolean allowOpaqueTokenIntrospection, Optional<String> customizerName,
             Optional<Boolean> verifyAccessTokenWithUserInfo, Binding binding) implements OidcTenantConfig.Token {
     }
@@ -49,6 +50,8 @@ public final class TokenConfigBuilder {
     private String authorizationScheme;
     private Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm;
     private Optional<String> decryptionKeyLocation;
+    Optional<Boolean> decryptIdToken;
+    private boolean decryptAccessToken;
     private boolean allowJwtIntrospection;
     private boolean requireJwtIntrospectionOnly;
     private boolean allowOpaqueTokenIntrospection;
@@ -83,6 +86,8 @@ public final class TokenConfigBuilder {
         this.authorizationScheme = token.authorizationScheme();
         this.signatureAlgorithm = token.signatureAlgorithm();
         this.decryptionKeyLocation = token.decryptionKeyLocation();
+        this.decryptIdToken = token.decryptIdToken();
+        this.decryptAccessToken = token.decryptAccessToken();
         this.allowJwtIntrospection = token.allowJwtIntrospection();
         this.requireJwtIntrospectionOnly = token.requireJwtIntrospectionOnly();
         this.allowOpaqueTokenIntrospection = token.allowOpaqueTokenIntrospection();
@@ -333,6 +338,42 @@ public final class TokenConfigBuilder {
     }
 
     /**
+     * Sets {@link OidcTenantConfig.Token#decryptIdToken()} to true
+     *
+     * @return this builder
+     */
+    public TokenConfigBuilder decryptIdToken() {
+        return decryptIdToken(true);
+    }
+
+    /**
+     * @param decryptIdToken {@link OidcTenantConfig.Token#decryptIdToken()}
+     * @return this builder
+     */
+    public TokenConfigBuilder decryptIdToken(boolean decryptIdToken) {
+        this.decryptIdToken = Optional.of(decryptIdToken);
+        return this;
+    }
+
+    /**
+     * Sets {@link OidcTenantConfig.Token#decryptAccessToken()} to true.
+     *
+     * @return this builder
+     */
+    public TokenConfigBuilder decryptAccessToken() {
+        return decryptAccessToken(true);
+    }
+
+    /**
+     * @param decryptAccessToken {@link OidcTenantConfig.Token#decryptAccessToken()}
+     * @return this builder
+     */
+    public TokenConfigBuilder decryptAccessToken(boolean decryptAccessToken) {
+        this.decryptAccessToken = decryptAccessToken;
+        return this;
+    }
+
+    /**
      * Sets {@link OidcTenantConfig.Token#allowJwtIntrospection()} to true.
      *
      * @return this builder
@@ -447,7 +488,9 @@ public final class TokenConfigBuilder {
         return new TokenImpl(issuer, optionalAudience, subjectRequired, Map.copyOf(requiredClaims), tokenType,
                 lifespanGrace, age, issuedAtRequired, principalClaim, refreshExpired, refreshTokenTimeSkew,
                 forcedJwkRefreshInterval, header, authorizationScheme, signatureAlgorithm, decryptionKeyLocation,
-                allowJwtIntrospection, requireJwtIntrospectionOnly, allowOpaqueTokenIntrospection, customizerName,
+                decryptIdToken,
+                decryptAccessToken, allowJwtIntrospection, requireJwtIntrospectionOnly, allowOpaqueTokenIntrospection,
+                customizerName,
                 verifyAccessTokenWithUserInfo, binding);
     }
 

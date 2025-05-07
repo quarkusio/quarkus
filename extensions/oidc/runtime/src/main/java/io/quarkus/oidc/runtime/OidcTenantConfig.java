@@ -1112,16 +1112,30 @@ public interface OidcTenantConfig extends OidcClientCommonConfig {
         Optional<SignatureAlgorithm> signatureAlgorithm();
 
         /**
-         * Decryption key location.
-         * JWT tokens can be inner-signed and encrypted by OpenId Connect providers.
-         * However, it is not always possible to remotely introspect such tokens because
-         * the providers might not control the private decryption keys.
-         * In such cases set this property to point to the file containing the decryption private key in
-         * PEM or JSON Web Key (JWK) format.
-         * If this property is not set and the `private_key_jwt` client authentication method is used, the private key
-         * used to sign the client authentication JWT tokens are also used to decrypt the encrypted ID tokens.
+         * Decryption key location for encrypted ID and access tokens.
          */
         Optional<String> decryptionKeyLocation();
+
+        /**
+         * Decrypt ID token.
+         *
+         * If the {@link Token#decryptionKeyLocation()} property is configured then the decryption key will be loaded from this
+         * location.
+         * Otherwise, if the JWT authentication token key is available, then it will be used to decrypt the token.
+         * Finally, if a client secret is configured, it will be used as a secret key to decrypt the token.
+         */
+        Optional<Boolean> decryptIdToken();
+
+        /**
+         * Decrypt access token.
+         *
+         * If the {@link Token#decryptionKeyLocation()} property is configured then the decryption key will be loaded from this
+         * location.
+         * Otherwise, if the JWT authentication token key is available, then it will be used to decrypt the token.
+         * Finally, if a client secret is configured, it will be used as a secret key to decrypt the token.
+         */
+        @WithDefault("false")
+        boolean decryptAccessToken();
 
         /**
          * Allow the remote introspection of JWT tokens when no matching JWK key is available.

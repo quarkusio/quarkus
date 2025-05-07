@@ -187,6 +187,8 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
         TOKEN_AUTHORIZATION_SCHEME,
         TOKEN_SIGNATURE_ALGORITHM,
         TOKEN_DECRYPTION_KEY_LOCATION,
+        TOKEN_DECRYPT_ID_TOKEN,
+        TOKEN_DECRYPT_ACCESS_TOKEN,
         TOKEN_ALLOW_JWT_INTROSPECTION,
         TOKEN_REQUIRE_JWT_INTROSPECTION_ONLY,
         TOKEN_ALLOW_OPAQUE_TOKEN_INTROSPECTION,
@@ -412,6 +414,18 @@ final class OidcTenantConfigImpl implements OidcTenantConfig {
             public Optional<String> decryptionKeyLocation() {
                 invocationsRecorder.put(ConfigMappingMethods.TOKEN_DECRYPTION_KEY_LOCATION, true);
                 return Optional.empty();
+            }
+
+            @Override
+            public Optional<Boolean> decryptIdToken() {
+                invocationsRecorder.put(ConfigMappingMethods.TOKEN_DECRYPT_ID_TOKEN, true);
+                return Optional.of(false);
+            }
+
+            @Override
+            public boolean decryptAccessToken() {
+                invocationsRecorder.put(ConfigMappingMethods.TOKEN_DECRYPT_ACCESS_TOKEN, true);
+                return false;
             }
 
             @Override

@@ -86,17 +86,15 @@ public class OidcProvider implements Closeable {
     final String issuer;
     final String[] audience;
     final Map<String, Set<String>> requiredClaims;
-    final Key tokenDecryptionKey;
     final AlgorithmConstraints requiredAlgorithmConstraints;
 
-    public OidcProvider(OidcProviderClientImpl client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks,
-            Key tokenDecryptionKey) {
-        this(client, oidcConfig, jwks, TenantFeatureFinder.find(oidcConfig), tokenDecryptionKey,
+    public OidcProvider(OidcProviderClientImpl client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks) {
+        this(client, oidcConfig, jwks, TenantFeatureFinder.find(oidcConfig),
                 TenantFeatureFinder.find(oidcConfig, Validator.class));
     }
 
     public OidcProvider(OidcProviderClientImpl client, OidcTenantConfig oidcConfig, JsonWebKeySet jwks,
-            TokenCustomizer tokenCustomizer, Key tokenDecryptionKey, List<Validator> customValidators) {
+            TokenCustomizer tokenCustomizer, List<Validator> customValidators) {
         this.client = client;
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = tokenCustomizer;
@@ -116,7 +114,6 @@ public class OidcProvider implements Closeable {
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
         this.requiredClaims = checkRequiredClaimsProp();
-        this.tokenDecryptionKey = tokenDecryptionKey;
         this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
         this.customValidators = customValidators == null ? List.of() : customValidators;
         if (client != null) {
@@ -124,7 +121,7 @@ public class OidcProvider implements Closeable {
         }
     }
 
-    public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig, Key tokenDecryptionKey) {
+    public OidcProvider(String publicKeyEnc, OidcTenantConfig oidcConfig) {
         this.client = null;
         this.oidcConfig = oidcConfig;
         this.tokenCustomizer = TenantFeatureFinder.find(oidcConfig);
@@ -139,7 +136,6 @@ public class OidcProvider implements Closeable {
         this.issuer = checkIssuerProp();
         this.audience = checkAudienceProp();
         this.requiredClaims = checkRequiredClaimsProp();
-        this.tokenDecryptionKey = tokenDecryptionKey;
         this.requiredAlgorithmConstraints = checkSignatureAlgorithm();
         this.customValidators = TenantFeatureFinder.find(oidcConfig, Validator.class);
     }

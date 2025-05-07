@@ -22,11 +22,9 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 import org.jose4j.jwt.consumer.ErrorCodes;
 import org.jose4j.jwt.consumer.InvalidJwtException;
-import org.jose4j.lang.JoseException;
 import org.jose4j.lang.UnresolvableKeyException;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
-import io.quarkus.logging.Log;
 import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.IdTokenCredential;
 import io.quarkus.oidc.JavaScriptRequestChecker;
@@ -49,7 +47,6 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.quarkus.security.spi.runtime.SecurityEventHelper;
 import io.quarkus.vertx.http.runtime.security.ChallengeData;
-import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.build.JwtClaimsBuilder;
 import io.smallrye.jwt.build.JwtSignatureBuilder;
@@ -355,7 +352,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(OidcConstants.ACCESS_TOKEN_VALUE, session.getAccessToken());
                         context.put(AuthorizationCodeTokens.class.getName(), session);
                         // Default token state manager may have encrypted ID token when it was saved in a cookie
-                        final String currentIdToken = decryptIdTokenIfEncryptedByProvider(configContext, session.getIdToken());
+                        final String currentIdToken = decryptIdToken(configContext, session.getIdToken());
                         return authenticate(identityProviderManager, context,
                                 new IdTokenCredential(currentIdToken,
                                         isInternalIdToken(currentIdToken, configContext)))
@@ -504,22 +501,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         return removeSessionCookie(context, configContext.oidcConfig())
                 .chain(() -> Uni.createFrom().failure(new AuthenticationRedirectException(
                         filterRedirect(context, configContext, sessionExpiredUri, Redirect.Location.SESSION_EXPIRED_PAGE))));
-    }
-
-    private static String decryptIdTokenIfEncryptedByProvider(TenantConfigContext resolvedContext, String token) {
-        if ((resolvedContext.provider().tokenDecryptionKey != null
-                || resolvedContext.provider().client.getClientJwtKey() != null)
-                && OidcUtils.isEncryptedToken(token)) {
-            try {
-                return OidcUtils.decryptString(token,
-                        resolvedContext.provider().tokenDecryptionKey != null ? resolvedContext.provider().tokenDecryptionKey
-                                : resolvedContext.provider().client.getClientJwtKey(),
-                        KeyEncryptionAlgorithm.RSA_OAEP);
-            } catch (JoseException ex) {
-                Log.debugf("Failed to decrypt a token: %s, a token introspection will be attempted instead", ex.getMessage());
-            }
-        }
-        return token;
     }
 
     private boolean isLogout(RoutingContext context, TenantConfigContext configContext, SecurityIdentity identity) {
@@ -881,7 +862,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                         context.put(AuthorizationCodeTokens.class.getName(), tokens);
 
                         // Default token state manager may have encrypted ID token
-                        final String idToken = decryptIdTokenIfEncryptedByProvider(configContext, tokens.getIdToken());
+                        final String idToken = decryptIdToken(configContext, tokens.getIdToken());
 
                         LOG.debug("Authorization code has been exchanged, verifying ID token");
                         return authenticate(identityProviderManager, context,
@@ -1004,7 +985,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
             JsonObject json = null;
 
             try {
-                json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getStateEncryptionKey());
+                json = OidcUtils.decryptJson(parsedStateCookieValue[1], configContext.getStateCookieEncryptionKey());
             } catch (Exception ex) {
                 LOG.errorf("State cookie value can not be decrypted for the %s tenant",
                         configContext.oidcConfig().tenantId().get());
@@ -1054,7 +1035,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             .getEncoded()));
         } else {
             LOG.debug("Signing internal ID token with a generated secret key");
-            return sigBuilder.sign(context.getInternalIdTokenSecretKey());
+            return sigBuilder.sign(context.getInternalIdTokenSigningKey());
         }
     }
 
@@ -1157,6 +1138,19 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         }
     }
 
+    private static String decryptIdToken(TenantConfigContext configContext, String idToken) {
+        if (configContext.oidcConfig().token().decryptIdToken().isPresent() &&
+                !configContext.oidcConfig().token().decryptIdToken().get()) {
+            return idToken;
+        }
+        if (configContext.oidcConfig().token().decryptIdToken().orElse(false)
+                || configContext.oidcConfig().token().decryptionKeyLocation().isPresent()) {
+            return OidcUtils.decryptToken(configContext, idToken);
+        } else {
+            return idToken;
+        }
+    }
+
     private String getRedirectPath(OidcTenantConfig oidcConfig, RoutingContext context) {
         Authentication auth = oidcConfig.authentication();
         return auth.redirectPath().isPresent() ? auth.redirectPath().get() : context.request().path();
@@ -1233,7 +1227,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                 json.put(OidcUtils.STATE_COOKIE_RESTORE_PATH, extraStateValue.getRestorePath());
             }
             try {
-                return OidcUtils.encryptJson(json, configContext.getStateEncryptionKey());
+                return OidcUtils.encryptJson(json, configContext.getStateCookieEncryptionKey());
             } catch (Exception ex) {
                 LOG.errorf("State containing the code verifier can not be encrypted: %s", ex.getMessage());
                 throw new AuthenticationCompletionException(ex);
@@ -1343,7 +1337,7 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
                             context.put(REFRESH_TOKEN_GRANT_RESPONSE, Boolean.TRUE);
 
                             // Default token state manager may have encrypted the refreshed ID token
-                            final String idToken = decryptIdTokenIfEncryptedByProvider(configContext, tokens.getIdToken());
+                            final String idToken = decryptIdToken(configContext, tokens.getIdToken());
 
                             LOG.debug("Verifying the refreshed ID token");
                             return authenticate(identityProviderManager, context,

@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.security.Key;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -31,11 +32,13 @@ public sealed interface TenantConfigContext permits TenantConfigContextImpl, Laz
 
     OidcProviderClientImpl getOidcProviderClient();
 
-    SecretKey getStateEncryptionKey();
+    SecretKey getStateCookieEncryptionKey();
 
-    SecretKey getTokenEncSecretKey();
+    SecretKey getSessionCookieEncryptionKey();
 
-    SecretKey getInternalIdTokenSecretKey();
+    SecretKey getInternalIdTokenSigningKey();
+
+    Key getTokenDecryptionKey();
 
     List<OidcRedirectFilter> getOidcRedirectFilters(Redirect.Location loc);
 

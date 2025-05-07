@@ -1,5 +1,6 @@
 package io.quarkus.oidc.runtime;
 
+import java.security.Key;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -66,18 +67,23 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     }
 
     @Override
-    public SecretKey getStateEncryptionKey() {
-        return delegate.getStateEncryptionKey();
+    public SecretKey getStateCookieEncryptionKey() {
+        return delegate.getStateCookieEncryptionKey();
     }
 
     @Override
-    public SecretKey getTokenEncSecretKey() {
-        return delegate.getTokenEncSecretKey();
+    public SecretKey getSessionCookieEncryptionKey() {
+        return delegate.getSessionCookieEncryptionKey();
     }
 
     @Override
-    public SecretKey getInternalIdTokenSecretKey() {
-        return delegate.getInternalIdTokenSecretKey();
+    public SecretKey getInternalIdTokenSigningKey() {
+        return delegate.getInternalIdTokenSigningKey();
+    }
+
+    @Override
+    public Key getTokenDecryptionKey() {
+        return delegate.getTokenDecryptionKey();
     }
 
     @Override

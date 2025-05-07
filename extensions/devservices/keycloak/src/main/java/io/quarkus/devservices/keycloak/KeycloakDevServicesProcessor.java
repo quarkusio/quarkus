@@ -769,37 +769,41 @@ public class KeycloakDevServicesProcessor {
                 String clientId = clientRep.getClientId();//to ensure we have the accurate id
                 log.info("Client id: {}", clientId);
 
-                
                 //TODO:: I think this is the closest so far (but still not working)? I don't think credentials are needed.
-//                UserRepresentation serviceAccount = new UserRepresentation();
-//                serviceAccount.setServiceAccountClientId(clientId);
-//                serviceAccount.setUsername("service-account-" + clientId);
-//                serviceAccount.setRealmRoles(clientRoles.get().stream().toList());
-//
-//                //Role mapping: default-roles-oqm
-//
-//                CredentialRepresentation saCreds = new CredentialRepresentation();
-//                //                saCreds.setCredentialData(oidcClientSecret);
-//                saCreds.setType(CredentialRepresentation.SECRET);
-//                saCreds.setSecretData(oidcClientSecret);
-//                serviceAccount.setCredentials(List.of(saCreds));
-//
-//                realm.getUsers().add(serviceAccount);
+                //                UserRepresentation serviceAccount = new UserRepresentation();
+                //                serviceAccount.setServiceAccountClientId(clientId);
+                //                serviceAccount.setUsername("service-account-" + clientId);
+                //                serviceAccount.setRealmRoles(clientRoles.get().stream().toList());
+
+                //Role mapping: default-roles-oqm
+
+                //                CredentialRepresentation saCreds = new CredentialRepresentation();
+                //                //                saCreds.setCredentialData(oidcClientSecret);
+                //                saCreds.setType(CredentialRepresentation.SECRET);
+                //                saCreds.setSecretData(oidcClientSecret);
+                //                serviceAccount.setCredentials(List.of(saCreds));
+
+                //                realm.getUsers().add(serviceAccount);
 
                 log.info("Users: {}", realm.getUsers());
 
+                //TODO:: I think this is the closest yet- need to add the "roles" scope to the client, but no scopes exist yet. what should it be?
+                //                ClientScopeRepresentation scope = realm.getClientScopes().stream().filter(cs -> cs.getName().equals("roles"))
+                //                        .findFirst().orElse(null);
+                // not correct: clientRep.getDefaultClientScopes().add("roles");
+
                 //TODO:: cleanup. Didn't work, still no roles in client jwt. Don't think we need these; assign to service account, not client?
-                //                realm.getRoles().setClient(
-                //                        Map.of(
-                //                                clientRep.getClientId(),
-                //                                clientRoles.get().stream()
-                //                                        .map((String roleStr) -> {
-                //                                            RoleRepresentation role = new RoleRepresentation();
-                //                                            role.setName(roleStr);
-                //                                            role.setDescription("Client role" + roleStr);
-                //                                            return role;
-                //                                        })
-                //                                        .toList()));
+                realm.getRoles().setClient(
+                        Map.of(
+                                clientRep.getClientId(),
+                                clientRoles.get().stream()
+                                        .map((String roleStr) -> {
+                                            RoleRepresentation role = new RoleRepresentation();
+                                            role.setName(roleStr);
+                                            role.setDescription("Client role" + roleStr);
+                                            return role;
+                                        })
+                                        .toList()));
 
                 //TODO:: cleanup, didn't work (getClient() returns null)
                 //                List<RoleRepresentation> clientRolesReps = realm.getRoles().getClient().get(clientRep.getClientId());

@@ -810,6 +810,10 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
 
         LOG.debug("Requesting UserInfo");
         String contextAccessToken = (String) requestData.get(OidcConstants.ACCESS_TOKEN_VALUE);
+        if (contextAccessToken == null && isIdToken(request)) {
+            throw new AuthenticationCompletionException(
+                    "Authorization code flow access token which is required to get UserInfo is missing");
+        }
         final String accessToken = contextAccessToken != null ? contextAccessToken : request.getToken().getToken();
 
         UserInfoCache userInfoCache = tenantResolver.getUserInfoCache();

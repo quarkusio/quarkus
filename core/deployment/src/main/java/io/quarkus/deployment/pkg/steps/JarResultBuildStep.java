@@ -1296,6 +1296,8 @@ public class JarResultBuildStep {
         Files.createDirectories(manifestPath.getParent());
         Attributes attributes = manifest.getMainAttributes();
         attributes.put(Attributes.Name.MANIFEST_VERSION, "1.0");
+        // JDK 24+ needs --add-opens=java.base/java.lang=ALL-UNNAMED for org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals()
+        attributes.put(new Attributes.Name("Add-Opens"), "java.base/java.lang");
 
         for (Map.Entry<String, String> attribute : config.jar().manifest().attributes().entrySet()) {
             attributes.putValue(attribute.getKey(), attribute.getValue());

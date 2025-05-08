@@ -43,9 +43,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -68,6 +65,7 @@ import io.quarkus.deployment.builditem.MainClassBuildItem;
 import io.quarkus.deployment.builditem.QuarkusBuildCloseablesBuildItem;
 import io.quarkus.deployment.builditem.TransformedClassesBuildItem;
 import io.quarkus.deployment.configuration.ClassLoadingConfig;
+import io.quarkus.deployment.pkg.JarUnsigner;
 import io.quarkus.deployment.pkg.PackageConfig;
 import io.quarkus.deployment.pkg.builditem.ArtifactResultBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
@@ -959,7 +957,7 @@ public class JarResultBuildStep {
                 } else {
                     // we copy jars for which we remove entries to the same directory
                     // which seems a bit odd to me
-                    filterJarFile(resolvedDep, targetPath, removedFromThisArchive);
+                    JarUnsigner.unsignJar(resolvedDep, targetPath, Predicate.not(removedFromThisArchive::contains));
 
                     var list = new ArrayList<>(removedFromThisArchive);
                     Collections.sort(list);
@@ -1135,7 +1133,6 @@ public class JarResultBuildStep {
             TransformedClassesBuildItem transformedClasses, Path libDir,
             StringBuilder classPath, Collection<ResolvedDependency> appDeps, Map<String, List<byte[]>> services,
             Predicate<String> ignoredEntriesPredicate, Set<ArtifactKey> removedDependencies) throws IOException {
-
         for (ResolvedDependency appDep : appDeps) {
 
             // Exclude files that are not jars (typically, we can have XML files here, see https://github.com/quarkusio/quarkus/issues/2852)
@@ -1150,7 +1147,8 @@ public class JarResultBuildStep {
                     if (transformedFromThisArchive == null || transformedFromThisArchive.isEmpty()) {
                         final String fileName = appDep.getGroupId() + "." + resolvedDep.getFileName();
                         final Path targetPath = libDir.resolve(fileName);
-                        Files.copy(resolvedDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                        // Unsign the jar before copying it
+                        JarUnsigner.unsignJar(resolvedDep, targetPath);
                         classPath.append(" lib/").append(fileName);
                     } else {
                         //we have transformed classes, we need to handle them correctly
@@ -1158,7 +1156,7 @@ public class JarResultBuildStep {
                                 + resolvedDep.getFileName();
                         final Path targetPath = libDir.resolve(fileName);
                         classPath.append(" lib/").append(fileName);
-                        filterJarFile(resolvedDep, targetPath, transformedFromThisArchive);
+                        JarUnsigner.unsignJar(resolvedDep, targetPath, Predicate.not(transformedFromThisArchive::contains));
                     }
                 } else {
                     // This case can happen when we are building a jar from inside the Quarkus repository
@@ -1270,66 +1268,6 @@ public class JarResultBuildStep {
                 }
             }
         }
-    }
-
-    static void filterJarFile(Path resolvedDep, Path targetPath, Set<String> transformedFromThisArchive) {
-        try {
-            byte[] buffer = new byte[10000];
-            try (JarFile in = new JarFile(resolvedDep.toFile(), false)) {
-                Manifest manifest = in.getManifest();
-                if (manifest != null) {
-                    // Remove signature entries
-                    manifest.getEntries().clear();
-                } else {
-                    manifest = new Manifest();
-                }
-                try (JarOutputStream out = new JarOutputStream(Files.newOutputStream(targetPath))) {
-                    JarEntry manifestEntry = new JarEntry(JarFile.MANIFEST_NAME);
-                    // Set manifest time to epoch to always make the same jar
-                    manifestEntry.setTime(0);
-                    out.putNextEntry(manifestEntry);
-                    manifest.write(out);
-                    out.closeEntry();
-                    Enumeration<JarEntry> entries = in.entries();
-                    while (entries.hasMoreElements()) {
-                        JarEntry entry = entries.nextElement();
-                        String entryName = entry.getName();
-                        if (!transformedFromThisArchive.contains(entryName)
-                                && !entryName.equals(JarFile.MANIFEST_NAME)
-                                && !entryName.equals("META-INF/INDEX.LIST")
-                                && !isSignatureFile(entryName)) {
-                            entry.setCompressedSize(-1);
-                            out.putNextEntry(entry);
-                            try (InputStream inStream = in.getInputStream(entry)) {
-                                int r = 0;
-                                while ((r = inStream.read(buffer)) > 0) {
-                                    out.write(buffer, 0, r);
-                                }
-                            } finally {
-                                out.closeEntry();
-                            }
-                        } else {
-                            log.debugf("Removed %s from %s", entryName, resolvedDep);
-                        }
-                    }
-                }
-                // let's make sure we keep the original timestamp
-                Files.setLastModifiedTime(targetPath, Files.getLastModifiedTime(resolvedDep));
-            }
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
-    }
-
-    private static boolean isSignatureFile(String entry) {
-        entry = entry.toUpperCase();
-        if (entry.startsWith("META-INF/") && entry.indexOf('/', "META-INF/".length()) == -1) {
-            return entry.endsWith(".SF")
-                    || entry.endsWith(".DSA")
-                    || entry.endsWith(".RSA")
-                    || entry.endsWith(".EC");
-        }
-        return false;
     }
 
     /**

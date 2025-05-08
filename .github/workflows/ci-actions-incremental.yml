@@ -283,9 +283,11 @@ jobs:
         id: get-gib-config
         env:
           PULL_REQUEST_BASE: ${{ github.event.pull_request.base.ref }}
+          PULL_REQUEST_HEAD: ${{ github.event.pull_request.head.ref }}
+          PUSH_BRANCH: ${{ github.event_name == 'push' && github.ref_name }}
           GIB_DISABLED: ${{ needs.configure.outputs.maven-disable-gib }}
         run: |
-          if [ "$GIB_DISABLED" == "true" ]; then
+          if [[ "$GIB_DISABLED" == "true" ]] || [[ "$PUSH_BRANCH" =~ ^main|[0-9]+\.[0-9]+$ ]] || [[ "$PULL_REQUEST_HEAD" =~ ^.*backport.*$ ]]; then
             GIB_ARGS=''
             GIB_IMPACTED='_all_'
           else
@@ -305,7 +307,6 @@ jobs:
               # - the current branch is a backport branch which is going to target some released branch like 1.10 (merge target is not main)
               GIB_ARGS+=" -Dgib.referenceBranch=refs/remotes/quarkusio/main -Dgib.fetchReferenceBranch -Dgib.disableIfBranchMatches='main|\d+\.\d+|.*backport.*'"
             fi
-            echo "GIB_ARGS: $GIB_ARGS"
 
             # mvnw just for creating gib-impacted.log ("validate" should not waste much time if not incremental at all, e.g. on main)
             ./mvnw -q -T1C $COMMON_MAVEN_ARGS -Dscan=false -Dtcks -Dquickly-ci $GIB_ARGS -Dgib.logImpactedTo=gib-impacted.log validate
@@ -314,7 +315,11 @@ jobs:
               GIB_IMPACTED=$(cat gib-impacted.log)
             else
               GIB_IMPACTED='_all_'
+              # when we impact all modules, we do not need to run GIB in further jobs
+              GIB_ARGS=''
             fi
+
+            echo "GIB_ARGS: $GIB_ARGS"
           fi
 
           echo "gib_args=${GIB_ARGS}" >> $GITHUB_OUTPUT

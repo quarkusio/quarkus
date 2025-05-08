@@ -1,8 +1,5 @@
 package io.quarkus.hibernate.orm.runtime.dev.ui;
 
-import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevController;
-import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfo;
-
 import static org.hibernate.query.sqm.internal.SqmUtil.isMutation;
 
 import java.net.URI;
@@ -29,6 +26,8 @@ import io.quarkus.devui.runtime.comms.JsonRpcMessage;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.comms.MessageType;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevController;
+import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevInfo;
 import io.quarkus.runtime.LaunchMode;
 
 public class HibernateOrmDevJsonRpcService {

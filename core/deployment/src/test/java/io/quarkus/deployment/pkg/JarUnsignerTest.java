@@ -1,4 +1,4 @@
-package io.quarkus.deployment.pkg.steps;
+package io.quarkus.deployment.pkg;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -16,7 +16,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -41,9 +40,9 @@ import org.junit.jupiter.api.io.TempDir;
 import jdk.security.jarsigner.JarSigner;
 
 /**
- * Test for {@link JarResultBuildStep}
+ * Test for {@link JarUnsigner}
  */
-class JarResultBuildStepTest {
+class JarUnsignerTest {
 
     @Test
     void should_unsign_jar_when_filtered(@TempDir Path tempDir) throws Exception {
@@ -58,7 +57,7 @@ class JarResultBuildStepTest {
                 FileOutputStream out = new FileOutputStream(signedJarPath.toFile())) {
             signer.sign(in, out);
         }
-        JarResultBuildStep.filterJarFile(signedJarPath, unsignedJarToTestPath, Set.of("java/lang/Integer.class"));
+        JarUnsigner.unsignJar(signedJarPath, unsignedJarToTestPath, p -> !p.equals("java/lang/Integer.class"));
         try (JarFile jarFile = new JarFile(unsignedJarToTestPath.toFile())) {
             assertThat(jarFile.stream().map(JarEntry::getName)).doesNotContain("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF");
             // Check that the manifest is still present
@@ -76,7 +75,7 @@ class JarResultBuildStepTest {
         Path initialJar = tempDir.resolve("initial.jar");
         Path filteredJar = tempDir.resolve("filtered.jar");
         archive.as(ZipExporter.class).exportTo(new File(initialJar.toUri()), true);
-        JarResultBuildStep.filterJarFile(initialJar, filteredJar, Set.of("java/lang/Integer.class"));
+        JarUnsigner.unsignJar(initialJar, filteredJar, p -> !p.equals("java/lang/Integer.class"));
         try (JarFile jarFile = new JarFile(filteredJar.toFile())) {
             assertThat(jarFile.stream())
                     .filteredOn(jarEntry -> jarEntry.getName().equals(JarFile.MANIFEST_NAME))

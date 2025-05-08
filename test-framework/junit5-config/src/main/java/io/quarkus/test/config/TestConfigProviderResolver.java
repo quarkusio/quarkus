@@ -62,7 +62,8 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
             resolver.registerConfig(config, classLoader);
             return config;
         }
-        throw new IllegalStateException();
+        throw new IllegalStateException("Context ClassLoader mismatch. Should be " + classLoader + " but was "
+                + Thread.currentThread().getContextClassLoader());
     }
 
     public void restoreConfig() {
@@ -70,7 +71,8 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
             resolver.releaseConfig(classLoader);
             resolver.registerConfig(configs.get(LaunchMode.TEST), classLoader);
         } else {
-            throw new IllegalStateException();
+            throw new IllegalStateException("Context ClassLoader mismatch. Should be " + classLoader + " but was "
+                    + Thread.currentThread().getContextClassLoader());
         }
     }
 

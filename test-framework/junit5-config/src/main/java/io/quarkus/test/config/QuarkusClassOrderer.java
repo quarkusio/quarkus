@@ -16,15 +16,26 @@ public class QuarkusClassOrderer implements ClassOrderer {
     private final ClassOrderer delegate;
 
     public QuarkusClassOrderer() {
-        SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        TestConfig testConfig = config.getConfigMapping(TestConfig.class);
 
-        delegate = testConfig.classOrderer()
-                .map(klass -> ReflectionUtils.tryToLoadClass(klass)
-                        .andThenTry(ReflectionUtils::newInstance)
-                        .andThenTry(instance -> (ClassOrderer) instance)
-                        .toOptional().orElse(EMPTY))
-                .orElse(EMPTY);
+        // Our config will have been initialised onto the classloader that was active when JUnit starts, so read it from there
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());
+
+        try {
+            SmallRyeConfig config = ConfigProvider.getConfig()
+                    .unwrap(SmallRyeConfig.class);
+            TestConfig testConfig = config.getConfigMapping(TestConfig.class);
+
+            delegate = testConfig.classOrderer()
+                    .map(klass -> ReflectionUtils.tryToLoadClass(klass)
+                            .andThenTry(ReflectionUtils::newInstance)
+                            .andThenTry(instance -> (ClassOrderer) instance)
+                            .toOptional()
+                            .orElse(EMPTY))
+                    .orElse(EMPTY);
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 
     @Override

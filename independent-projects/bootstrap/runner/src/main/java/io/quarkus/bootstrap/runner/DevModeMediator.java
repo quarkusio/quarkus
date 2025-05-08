@@ -51,10 +51,29 @@ public class DevModeMediator {
                     throw new RuntimeException(e);
                 }
             }).toArray(URL[]::new));
-            closeable = (Closeable) loader.loadClass("io.quarkus.deployment.mutability.DevModeTask")
-                    .getDeclaredMethod("main", Path.class).invoke(null, appRoot);
+            closeable = new AppProcessCleanup(
+                    (Closeable) loader.loadClass("io.quarkus.deployment.mutability.DevModeTask")
+                            .getDeclaredMethod("main", Path.class).invoke(null, appRoot),
+                    loader);
         }
         return closeable;
+    }
+
+    private static class AppProcessCleanup implements Closeable {
+
+        private final Closeable app;
+        private final URLClassLoader baseCl;
+
+        public AppProcessCleanup(Closeable app, URLClassLoader baseCl) {
+            this.app = app;
+            this.baseCl = baseCl;
+        }
+
+        @Override
+        public void close() throws IOException {
+            app.close();
+            baseCl.close();
+        }
     }
 
     private static class ChangeDetector extends TimerTask {
@@ -95,8 +114,11 @@ public class DevModeMediator {
                     final List<Path> pathsToDelete = removedFiles.pollFirst();
                     if (pathsToDelete != null) {
                         for (Path p : pathsToDelete) {
-                            LOGGER.info("Deleting " + p);
-                            Files.deleteIfExists(p);
+                            var sb = new StringBuilder().append("Deleting ").append(p);
+                            if (!Files.deleteIfExists(p)) {
+                                sb.append(" didn't succeed");
+                            }
+                            LOGGER.info(sb.toString());
                         }
                     }
                     try {

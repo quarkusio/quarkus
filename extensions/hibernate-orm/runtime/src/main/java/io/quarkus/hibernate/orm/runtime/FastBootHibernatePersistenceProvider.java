@@ -63,6 +63,17 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
     @Override
     public EntityManagerFactory createEntityManagerFactory(String persistenceUnitName, Map properties) {
         log.tracef("Starting createEntityManagerFactory for persistenceUnitName %s", persistenceUnitName);
+
+        boolean isReactive = (boolean) properties.get(JPAConfig.IS_REACTIVE_KEY);
+        if (isReactive) {
+            log.debug(
+                    "FastBootHibernatePersistenceProvider called on a reactive initialization thread, skipping this provider");
+            return null;
+        }
+
+        // There's a check to not have any init properties later
+        properties = null;
+
         final EntityManagerFactoryBuilder builder = getEntityManagerFactoryBuilderOrNull(persistenceUnitName,
                 properties);
         if (builder == null) {
@@ -170,7 +181,7 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                 continue;
             }
 
-            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName);
+            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName, false);
 
             if (recordedState.isReactive()) {
                 throw new IllegalStateException(

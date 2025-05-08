@@ -75,7 +75,8 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
                     .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/", 200));
 
             runningAgent = new RunningInvoker(agentDir, false);
-            runningAgent.execute(Arrays.asList("compile", "quarkus:remote-dev"), Collections.emptyMap());
+            runningAgent.execute(Arrays.asList("compile", "quarkus:remote-dev", "-Dquarkus.analytics.disabled=true"),
+                    Collections.emptyMap());
 
             Thread.sleep(1000);
             await().pollDelay(100, TimeUnit.MILLISECONDS)

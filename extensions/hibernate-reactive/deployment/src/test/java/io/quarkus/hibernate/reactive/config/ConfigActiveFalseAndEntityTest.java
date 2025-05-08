@@ -18,7 +18,7 @@ public class ConfigActiveFalseAndEntityTest {
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
-            .overrideConfigKey("quarkus.hibernate-orm.\"default-reactive\".active", "false");
+            .overrideConfigKey("quarkus.hibernate-orm.active", "false");
 
     @Test
     public void mutinySessionFactory() {
@@ -32,7 +32,7 @@ public class ConfigActiveFalseAndEntityTest {
         assertThatThrownBy(sessionFactory::getMetamodel)
                 .isInstanceOf(CreationException.class)
                 .hasMessageContainingAll(
-                        "Cannot retrieve the Mutiny.SessionFactory for persistence unit default-reactive",
+                        "Cannot retrieve the Mutiny.SessionFactory for persistence unit <default>",
                         "Hibernate Reactive was deactivated through configuration properties");
     }
 

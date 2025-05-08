@@ -13,6 +13,8 @@ import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.runtime.annotations.Recorder;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
 @Recorder
 public class HibernateReactiveRecorder {
 
@@ -43,15 +45,15 @@ public class HibernateReactiveRecorder {
                 // "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit"
                 // See io/quarkus/hibernate/orm/runtime/JPAConfig.getEntityManagerFactory:96
                 if (jpaConfig.getDeactivatedPersistenceUnitNames()
-                        .contains(HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME)) {
+                        .contains(DEFAULT_PERSISTENCE_UNIT_NAME)) {
                     throw new IllegalStateException(
                             "Cannot retrieve the Mutiny.SessionFactory for persistence unit "
-                                    + HibernateReactive.DEFAULT_REACTIVE_PERSISTENCE_UNIT_NAME
+                                    + DEFAULT_PERSISTENCE_UNIT_NAME
                                     + ": Hibernate Reactive was deactivated through configuration properties");
                 }
 
                 SessionFactory sessionFactory = jpaConfig
-                        .getEntityManagerFactory(persistenceUnitName)
+                        .getEntityManagerFactory(persistenceUnitName, true)
                         .unwrap(SessionFactory.class);
 
                 return sessionFactory.unwrap(Mutiny.SessionFactory.class);

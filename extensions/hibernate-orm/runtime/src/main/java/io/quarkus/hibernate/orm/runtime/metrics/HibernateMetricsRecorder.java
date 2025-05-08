@@ -28,7 +28,8 @@ public class HibernateMetricsRecorder {
             public void accept(MetricsFactory metricsFactory) {
                 JPAConfig jpaConfig = Arc.container().instance(JPAConfig.class).get();
                 for (String puName : jpaConfig.getPersistenceUnits()) {
-                    SessionFactory sessionFactory = jpaConfig.getEntityManagerFactory(puName).unwrap(SessionFactory.class);
+                    SessionFactory sessionFactory = jpaConfig.getEntityManagerFactory(puName, false)
+                            .unwrap(SessionFactory.class);
                     if (sessionFactory != null) {
                         registerMetrics(metricsFactory, puName, sessionFactory.getStatistics());
                     }

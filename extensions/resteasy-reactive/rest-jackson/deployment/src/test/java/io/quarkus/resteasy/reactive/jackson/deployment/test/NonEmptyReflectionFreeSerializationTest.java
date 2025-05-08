@@ -9,7 +9,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import io.quarkus.test.QuarkusUnitTest;
 
-public class NonEmptyReflectionFreeSerializationTest extends NonEmptySerializationTest {
+public class NonEmptyReflectionFreeSerializationTest extends AbstractNonEmptySerializationTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()

@@ -145,10 +145,6 @@ public class OidcDevServicesProcessor {
             LOG.debug("Not starting Dev Services for OIDC as it has been disabled in the config");
             return true;
         }
-        if (devServicesConfig.enabled().isEmpty() && dockerStatusBuildItem.isContainerRuntimeAvailable()) {
-            LOG.debug("Not starting Dev Services for OIDC as detected support the container functionality");
-            return true;
-        }
         if (!isOidcEnabled()) {
             LOG.debug("Not starting Dev Services for OIDC as OIDC extension has been disabled in the config");
             return true;
@@ -163,6 +159,11 @@ public class OidcDevServicesProcessor {
         }
         if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
             LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.provider' has been provided");
+            return true;
+        }
+        if (devServicesConfig.enabled().isEmpty() && dockerStatusBuildItem.isContainerRuntimeAvailable()) {
+            LOG.debug(
+                    "Not starting Dev Services for OIDC as a container runtime is available and a Keycloak Dev Services will be started");
             return true;
         }
         return false;
@@ -713,9 +714,9 @@ public class OidcDevServicesProcessor {
                 .audience(clientId)
                 .subject(user)
                 .upn(user)
-                .claim("name", capitalize(user))
-                .claim(Claims.preferred_username, user + "@example.com")
-                .claim(Claims.email, user + "@example.com")
+                .claim("name", buildNameClaimValue(user))
+                .claim(Claims.preferred_username, buildEmailClaimValue(user))
+                .claim(Claims.email, buildEmailClaimValue(user))
                 .groups(roles)
                 .jws()
                 .keyId(kid)
@@ -730,13 +731,27 @@ public class OidcDevServicesProcessor {
                 .subject(user)
                 .scope(scope)
                 .upn(user)
-                .claim("name", capitalize(user))
-                .claim(Claims.preferred_username, user + "@example.com")
-                .claim(Claims.email, user + "@example.com")
+                .claim("name", buildNameClaimValue(user))
+                .claim(Claims.preferred_username, buildEmailClaimValue(user))
+                .claim(Claims.email, buildEmailClaimValue(user))
                 .groups(roles)
                 .jws()
                 .keyId(kid)
                 .sign(kp.getPrivate());
+    }
+
+    private static String buildNameClaimValue(String user) {
+        if (user.contains("@")) {
+            return capitalize(user.split("@")[0]);
+        }
+        return capitalize(user);
+    }
+
+    private static String buildEmailClaimValue(String user) {
+        if (user.contains("@")) {
+            return user;
+        }
+        return user + "@example.com";
     }
 
     /*
@@ -800,13 +815,13 @@ public class OidcDevServicesProcessor {
                         {
                             "preferred_username": "%1$s",
                             "sub": "%2$s",
-                            "name": "%2$s",
-                            "family_name": "%2$s",
-                            "given_name": "%2$s",
-                            "email": "%3$s"
+                            "name": "%3$s",
+                            "family_name": "%3$s",
+                            "given_name": "%3$s",
+                            "email": "%4$s"
                         }
                         """.formatted(claims.getString(Claims.preferred_username.name()),
-                        claims.getString(Claims.sub.name()), claims.getString(Claims.email.name()));
+                        claims.getString(Claims.sub.name()), claims.getString("name"), claims.getString(Claims.email.name()));
                 rc.response()
                         .putHeader("Content-Type", "application/json")
                         .endAndForget(data);

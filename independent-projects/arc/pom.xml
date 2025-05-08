@@ -49,10 +49,10 @@
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
         <version.mutiny>2.8.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
-        <version.smallrye-common>2.11.0</version.smallrye-common>
+        <version.smallrye-common>2.12.0</version.smallrye-common>
         <!-- test versions -->
         <version.assertj>3.27.3</version.assertj>
-        <version.junit5>5.10.5</version.junit5>
+        <version.junit5>5.12.1</version.junit5>
         <version.kotlin>2.0.21</version.kotlin>
         <version.kotlin-coroutines>1.9.0</version.kotlin-coroutines>
         <version.mockito>5.15.2</version.mockito>

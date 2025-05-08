@@ -236,6 +236,12 @@ public class HibernateOrmCdiProcessor {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
             boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
             boolean isNamedPU = !isDefaultPU;
+            AnnotationInstance sessionFactoryQualifier;
+            if (isDefaultPU) {
+                sessionFactoryQualifier = defaultQualifierInstance;
+            } else {
+                sessionFactoryQualifier = createPersistenceUnitQualifier.apply(persistenceUnitName);
+            }
 
             produceSessionFactoryBean(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName, isDefaultPU,
                     isNamedPU);

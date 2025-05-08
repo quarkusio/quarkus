@@ -207,6 +207,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     public String toString() {
         return "QuarkusPersistenceUnitDescriptor{" +
                 "name='" + name + '\'' +
+                ", isReactive=" + reactive +
                 ", providerClassName='" + providerClassName + '\'' +
                 ", useQuotedIdentifiers=" + useQuotedIdentifiers +
                 ", transactionType=" + transactionType +
@@ -214,7 +215,6 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
                 ", sharedCacheMode=" + sharedCacheMode +
                 ", managedClassNames=" + managedClassNames +
                 ", properties=" + properties +
-                ", isReactive=" + reactive +
                 '}';
     }
 

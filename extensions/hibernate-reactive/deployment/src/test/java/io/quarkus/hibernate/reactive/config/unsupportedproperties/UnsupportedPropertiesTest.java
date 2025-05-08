@@ -68,7 +68,7 @@ public class UnsupportedPropertiesTest {
                         .as("Warnings on startup")
                         .hasSize(2);
                 assertion.element(0).satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record))
-                        .contains("Persistence-unit [default-reactive] sets unsupported properties",
+                        .contains("Persistence-unit [<default>] sets unsupported properties",
                                 "These properties may not work correctly",
                                 "may change when upgrading to a newer version of Quarkus (even just a micro/patch version)",
                                 "Consider using a supported configuration property",
@@ -79,7 +79,7 @@ public class UnsupportedPropertiesTest {
                         .doesNotContain("some-value"));
                 assertion.element(1).satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record))
                         .contains(
-                                "Persistence-unit [default-reactive] sets unsupported properties that override Quarkus' own settings",
+                                "Persistence-unit [<default>] sets unsupported properties that override Quarkus' own settings",
                                 "These properties may break assumptions in Quarkus code and cause malfunctions",
                                 "make sure to file a feature request or bug report so that a solution can be implemented in Quarkus")
                         .contains(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION)

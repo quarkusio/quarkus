@@ -14,6 +14,7 @@ import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
+import io.quarkus.arc.processor.DotNames;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -61,6 +62,8 @@ public class HibernateReactiveCdiProcessor {
 
                 if (isDefaultPU) {
                     configurator.addQualifier(Default.class);
+                } else {
+                    configurator.addQualifier().annotation(DotNames.NAMED).addValue("value", persistenceUnitName).done();
                 }
 
                 syntheticBeanBuildItemBuildProducer

@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.orm.deployment;
 
-import static org.apache.commons.lang3.BooleanUtils.isFalse;
-
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -234,6 +232,12 @@ public class HibernateOrmCdiProcessor {
             String persistenceUnitName = persistenceUnitDescriptor.getPersistenceUnitName();
             boolean isDefaultPU = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
             boolean isNamedPU = !isDefaultPU;
+            AnnotationInstance sessionFactoryQualifier;
+            if (isDefaultPU) {
+                sessionFactoryQualifier = defaultQualifierInstance;
+            } else {
+                sessionFactoryQualifier = createPersistenceUnitQualifier.apply(persistenceUnitName);
+            }
 
             produceSessionFactoryBean(syntheticBeanBuildItemBuildProducer, recorder, persistenceUnitName, isDefaultPU,
                     isNamedPU);

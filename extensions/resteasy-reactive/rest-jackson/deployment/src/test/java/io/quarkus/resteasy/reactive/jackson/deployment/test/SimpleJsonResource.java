@@ -510,10 +510,31 @@ public class SimpleJsonResource extends SuperClass<Person> {
     }
 
     @POST
-    @Path("/json-value")
+    @Path("/json-value-public-method")
     @Produces(MediaType.APPLICATION_JSON)
-    public ItemId generate(@RestQuery int value) {
-        return new ItemId(value);
+    public ItemJsonValuePublicMethod echoJsonValuePublicMethod(@RestQuery int value) {
+        return new ItemJsonValuePublicMethod(value);
+    }
+
+    @POST
+    @Path("/json-value-public-field")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePublicField echoJsonValuePublicField(@RestQuery int value) {
+        return new ItemJsonValuePublicField(value);
+    }
+
+    @POST
+    @Path("/json-value-private-method")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePrivateMethod echoJsonValuePrivateMethod(@RestQuery int value) {
+        return new ItemJsonValuePrivateMethod(value);
+    }
+
+    @POST
+    @Path("/json-value-private-field")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePrivateField echoJsonValuePrivateField(@RestQuery int value) {
+        return new ItemJsonValuePrivateField(value);
     }
 
     @POST

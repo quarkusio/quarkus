@@ -228,15 +228,28 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     }
 
     private Optional<FieldSpecs> jsonValueFieldSpecs(ClassInfo classInfo) {
+        var jsonValueAnnotationFound = classInfo.hasAnnotation(JsonValue.class);
+        if (!jsonValueAnnotationFound) {
+            //  Early exit;don't generate reflection-free serializer
+            //  based on JsonValue
+            return Optional.empty();
+        }
         var jsonValueMethodFieldSpecs = classInfo.methods().stream()
                 .filter(mi -> mi.annotation(JsonValue.class) != null)
                 .filter(this::isJsonValueMethod).findFirst().map(FieldSpecs::new);
         var jsonValueFieldFieldSpecs = classInfo.fields().stream()
                 .filter(f -> f.annotation(JsonValue.class) != null)
+                .filter(this::isJsonValueField)
                 .findFirst().map(FieldSpecs::new);
 
         if (jsonValueFieldFieldSpecs.isPresent()) {
             return jsonValueMethodFieldSpecs.isPresent() ? null : jsonValueFieldFieldSpecs;
+        }
+        //  If none valid reflection-free JsonValue annotated target has been found,but
+        //  a non-public element annotated is present,just use standard Jackson
+        //  serializer
+        if (jsonValueMethodFieldSpecs.isEmpty() && jsonValueAnnotationFound) {
+            return null;
         }
         return jsonValueMethodFieldSpecs;
     }
@@ -297,6 +310,10 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
         return Modifier.isPublic(methodInfo.flags()) && !Modifier.isStatic(methodInfo.flags())
                 && methodInfo.parametersCount() == 0
                 && !methodInfo.returnType().equals(VoidType.VOID);
+    }
+
+    private boolean isJsonValueField(FieldInfo fieldInfo) {
+        return Modifier.isPublic(fieldInfo.flags()) && !Modifier.isStatic(fieldInfo.flags());
     }
 
     private boolean isGetterMethod(MethodInfo methodInfo) {
@@ -367,8 +384,8 @@ public class JacksonSerializerFactory extends JacksonCodeGenerator {
     private String writeMethodForPrimitiveFields(String typeName) {
         return switch (typeName) {
             case "java.lang.String", "char", "java.lang.Character" -> "writeString";
-            case "short", "java.lang.Short", "int", "java.lang.Integer", "long", "java.lang.Long", "float",
-                    "java.lang.Float", "double", "java.lang.Double" ->
+            case "short", "java.lang.Short", "int", "java.lang.Integer", "long", "java.lang.Long", "float", "java.lang.Float",
+                    "double", "java.lang.Double" ->
                 "writeNumber";
             case "boolean", "java.lang.Boolean" -> "writeBoolean";
             default -> null;

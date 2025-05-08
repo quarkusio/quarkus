@@ -2,6 +2,7 @@ package io.quarkus.resteasy.reactive.server.deployment;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.jboss.jandex.ClassInfo;
@@ -22,11 +23,14 @@ import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
 public class QuarkusInvokerFactory implements EndpointInvokerFactory {
 
+    private final Predicate<String> applicationClassPredicate;
     final BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer;
     final ResteasyReactiveRecorder recorder;
 
-    public QuarkusInvokerFactory(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+    public QuarkusInvokerFactory(Predicate<String> applicationClassPredicate,
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
             ResteasyReactiveRecorder recorder) {
+        this.applicationClassPredicate = applicationClassPredicate;
         this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
         this.recorder = recorder;
     }
@@ -43,7 +47,9 @@ public class QuarkusInvokerFactory implements EndpointInvokerFactory {
         String baseName = currentClassInfo.name() + "$quarkusrestinvoker$" + method.getName() + "_"
                 + HashUtil.sha1(endpointIdentifier);
         try (ClassCreator classCreator = new ClassCreator(
-                new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer, true), baseName, null,
+                new GeneratedClassGizmoAdaptor(generatedClassBuildItemBuildProducer,
+                        applicationClassPredicate.test(currentClassInfo.name().toString())),
+                baseName, null,
                 Object.class.getName(), EndpointInvoker.class.getName())) {
             MethodCreator mc = classCreator.getMethodCreator("invoke", Object.class, Object.class, Object[].class);
             ResultHandle[] args = new ResultHandle[method.getParameters().length];

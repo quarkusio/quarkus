@@ -1,5 +1,8 @@
 package io.quarkus.vertx.http.runtime.attribute;
 
+import java.util.Map;
+import java.util.Optional;
+
 import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.ext.web.RoutingContext;
 
@@ -7,7 +10,7 @@ import io.vertx.ext.web.RoutingContext;
  * The query string
  *
  */
-public class QueryStringAttribute implements ExchangeAttribute {
+public class QueryStringAttribute implements ExchangeAttribute, ExchangeAttributeSerializable {
 
     public static final String QUERY_STRING_SHORT = "%q";
     public static final String QUERY_STRING = "%{QUERY_STRING}";
@@ -21,12 +24,19 @@ public class QueryStringAttribute implements ExchangeAttribute {
     public static final ExchangeAttribute INSTANCE_ORIGINAL_REQUEST = new QueryStringAttribute(true, true);
     public static final ExchangeAttribute BARE_INSTANCE_ORIGINAL_REQUEST = new QueryStringAttribute(false, true);
 
+    public static final String NAME = "Query String";
+
     private final boolean includeQuestionMark;
     private final boolean useOriginalRequest;
 
     private QueryStringAttribute(boolean includeQuestionMark, boolean useOriginalRequest) {
         this.includeQuestionMark = includeQuestionMark;
         this.useOriginalRequest = useOriginalRequest;
+    }
+
+    @Override
+    public Map<String, Optional<String>> serialize(RoutingContext exchange) {
+        return Map.of(NAME, Optional.ofNullable(this.readAttribute(exchange)));
     }
 
     @Override
@@ -50,7 +60,7 @@ public class QueryStringAttribute implements ExchangeAttribute {
 
         @Override
         public String name() {
-            return "Query String";
+            return QueryStringAttribute.NAME;
         }
 
         @Override

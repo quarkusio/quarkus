@@ -3,8 +3,6 @@ package io.quarkus.opentelemetry.runtime;
 import static io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle.setContextSafe;
 import static io.smallrye.common.vertx.VertxContext.isDuplicatedContext;
 
-import java.util.Map;
-
 import org.jboss.logging.Logger;
 
 import io.opentelemetry.context.Context;
@@ -66,8 +64,7 @@ public enum QuarkusContextStorage implements ContextStorage {
             return Scope.noop();
         }
         vertxContext.putLocal(OTEL_CONTEXT, toAttach);
-        final Map<String, String> spanDataToAttach = OpenTelemetryUtil.getSpanData(toAttach);
-        OpenTelemetryUtil.setMDCData(spanDataToAttach, vertxContext);
+        OpenTelemetryUtil.setMDCData(toAttach, vertxContext);
 
         return new Scope() {
 
@@ -77,7 +74,7 @@ public enum QuarkusContextStorage implements ContextStorage {
                 if (before != toAttach) {
                     log.info("Context in storage not the expected context, Scope.close was not called correctly. Details:" +
                             " OTel context before: " + OpenTelemetryUtil.getSpanData(before) +
-                            ". OTel context toAttach: " + spanDataToAttach);
+                            ". OTel context toAttach: " + OpenTelemetryUtil.getSpanData(toAttach));
                 }
 
                 if (beforeAttach == null) {

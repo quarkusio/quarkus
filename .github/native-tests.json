@@ -27,7 +27,7 @@
         {
             "category": "Data4",
             "timeout": 60,
-            "test-modules": "mongodb-client, mongodb-devservices, mongodb-panache, mongodb-rest-data-panache, mongodb-panache-kotlin, redis-client, hibernate-orm-rest-data-panache",
+            "test-modules": "mongodb-client, mongodb-devservices, mongodb-panache, mongodb-rest-data-panache, mongodb-panache-kotlin, redis/redis-client, hibernate-orm-rest-data-panache",
             "os-name": "ubuntu-latest"
         },
         {
@@ -93,7 +93,7 @@
         {
             "category": "Cache",
             "timeout": 75,
-            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis-cache, infinispan-cache",
+            "test-modules": "infinispan-cache-jpa, infinispan-client, cache, redis/redis-cache, infinispan-cache",
             "os-name": "ubuntu-latest"
         },
         {

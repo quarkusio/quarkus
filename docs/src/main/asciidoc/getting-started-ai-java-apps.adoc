@@ -1,0 +1,111 @@
+////
+This document is maintained in the main Quarkus repository
+and pull requests should be submitted there:
+https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
+////
+////
+TODO:
+- Title: https://quarkus.io/guides/doc-reference#titles-headings
+- Use the file name as the ID
+- Choose appropriate categories: https://quarkus.io/guides/doc-reference#categories
+////
+[id="getting-started-ai-java-apps"]
+= Creating your first AI Java application using the LangChain4j extension
+include::_attributes.adoc[]
+:diataxis-type: tutorial
+:categories: getting-started, ai
+////
+:extension-status: preview
+TODO: uncomment the above for experimental or tech-preview content.
+The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
+////
+
+Create a simple RESTful Java AI application that asks a large language model (LLM, or genAI) to write a short poem based on a topic provided by the user. The service responds to GET requests made to the `http://localhost:8080/poems/{topic}/{lines}` URL. The user enters the topic and length of the desired poem; for example `http://localhost:8080/poems/stars/5`, to generate a poem such as:
+
+----
+In velvet skies, the stars do dance,
+A million whispers, a cosmic romance.
+They weave tales of old, in shimmering light,
+Guiding lost souls through the velvet night.
+In their glow, the universe finds its chance.
+----
+
+You will create a Java class and a Java interface. The class represents a resource which defines the application's endpoint and calls the AI model by using the interface to implement an AI service. The AI service uses the parameter values passed in through the endpoint to build a prompt, a natural language text request, and sends it to the AI.
+
+The AI (the large language model, or LLM) parses the prompt and returns a poem according to the topic and number of lines requested in the prompt. LLMs are AI models that are trained to generate output based on the natural language requests they receive. The input and output of LLMs are usually text, as in this application, but some LLMs specialise in other formats such as images or video.
+
+Much of the work needed to build the prompt and to connect to the LLM in order to send the request and get a response is handled for you by LangChain4j, an open source extension to Quarkus.
+
+image::xxxx.png[alt=Architecture, align=center]
+// TODO: Create diagram.
+
+
+
+// TODO: If this is a tutorial for an experimental or tech-preview extension, uncomment the following (otherwise delete)
+include::{includes}/extension-status.adoc[]
+
+
+== Prerequisites
+
+:prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[]
+
+For this guide, the application is so simple that we can use a demo key for OpenAI.
+
+:sectnums:
+:sectnumlevels: 3
+
+== Solution
+
+Follow the instructions in this guide to create the application.
+
+However, you can first run the completed example to see how it works:
+
+1. Download an {quickstarts-archive-url}[archive] or clone the git repository:
++
+[source,bash,subs=attributes+]
+----
+git clone {quickstarts-clone-url}
+----
++
+The solution is located in the `xxx` link:{quickstarts-tree-url}/getting-started-ai-java-apps[directory].
+
+
+== 
+
+
+
+
+== Outline steps
+
+- xref:../doc-create-tutorial.adoc[Tutorial: Create a tutorial]
+- xref:../doc-concept.adoc#tutorial[Quarkus documentation content types: Tutorials]
+- xref:../doc-reference.adoc[Quarkus style and content guidelines]
+
+Each step should conclude with a comprehensible/observable result.
+
+== Use the right language
+
+- Give your learner plenty of clues to help confirm they are on the right track and orient themselves.
+    - "Notice that...", "Remember that..."
+
+- Provide minimal explanation of actions in the most basic language possible.
+Link to more detailed explanation.
+    - "We must always do x before we do y because… (see Explanation for more details)."
+
+:sectnums!:
+== Summary
+
+In closing, describe (and admire, in a mild way) what your learner has accomplished (not: “you have learned…”).
+
+== References
+
+To help direct the reader to more information about the content topic, optionally add a *References* section to the end of the page and include `links` or `xrefs` to other related content resources.
+
+=== Create cross-references
+
+To create anchors for in-file and cross-file navigation, see the following detailed instructions in the Quarkus style and content guidelines.
+
+* xref:../doc-contribute-docs-howto.adoc#anchors-howto[Cross-reference in-file and cross-file content by using anchors]
+
+* xref:../doc-reference.adoc#cross-references[Cross-references]

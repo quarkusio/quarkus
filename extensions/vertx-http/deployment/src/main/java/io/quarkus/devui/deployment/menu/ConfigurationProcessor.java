@@ -180,6 +180,7 @@ public class ConfigurationProcessor {
                 .replace("\n", "<br>");
     }
 
+    // TODO does this need updating to the config source? Or just deleting? Or consolidating?
     private static boolean isSetByDevServices(Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             String propertyName) {
         if (devServicesLauncherConfig.isPresent()) {

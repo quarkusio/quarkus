@@ -38,6 +38,10 @@
             <artifactId>smallrye-common-vertx-context</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-assistant</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkus.security</groupId>
             <artifactId>quarkus-security</artifactId>
             <exclusions>

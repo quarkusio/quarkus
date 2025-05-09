@@ -594,7 +594,16 @@
             </dependency>
 
             <!-- Quarkus libraries -->
-
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-assistant</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-assistant-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-caffeine</artifactId>

@@ -311,6 +311,7 @@ public class OpenshiftProcessor {
                         new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name,
                                 new EnvBuilder().withName(EnvConverter.convertName(e.getName())).withValue(e.getValue())
                                         .withSecret(e.getSecret()).withConfigmap(e.getConfigMap()).withField(e.getField())
+                                        .withPrefix(e.getPrefix())
                                         .build()))));
 
         // Enalbe local lookup policy for all image streams

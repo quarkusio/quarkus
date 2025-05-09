@@ -9,6 +9,14 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.builder.item.SimpleBuildItem;
 
+/**
+ * Represents a build item for managing {@link Closeable} resources during the build
+ * <p>
+ * This build item collects {@link Closeable} resources that need to be closed
+ * <p>
+ * It provides a central place to register closeable resources (like file systems)
+ * and ensures they are all closed at the end of the build.
+ */
 public final class QuarkusBuildCloseablesBuildItem extends SimpleBuildItem implements Closeable {
 
     private static final Logger log = Logger.getLogger(QuarkusBuildCloseablesBuildItem.class);

@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.20.1]
+        kubernetes: [v1.33.0]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,7 +59,7 @@ jobs:
       - name: Set up Minikube-Kubernetes
         uses: manusa/actions-setup-minikube@v2.14.0
         with:
-          minikube version: v1.16.0
+          minikube version: v1.34.0
           kubernetes version: ${{ matrix.kubernetes }}
           github token: ${{ secrets.GITHUB_TOKEN }}
           start args: '--addons=metrics-server --force'
@@ -92,8 +92,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        kubernetes: [v1.20.1]
-        knative: [v1.2.0]
+        kubernetes: [v1.33.0]
+        knative: [v1.18.0]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -112,7 +112,6 @@ jobs:
       - name: Kubernetes KinD Cluster
         uses: container-tools/kind-action@v2
         with:
-          version: v0.11.1
           registry: true
           kubectl_version: ${{ matrix.kubernetes }}
           knative_serving: ${{ matrix.knative }}

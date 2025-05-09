@@ -55,6 +55,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     PrepareResult prepareResult;
     LinkedBlockingDeque<Runnable> shutdownTasks;
+    protected ClassLoader originalCl;
 
     /**
      * The result from an {@link Launch} test

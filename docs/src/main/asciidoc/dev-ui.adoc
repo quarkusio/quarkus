@@ -1319,6 +1319,17 @@ public boolean updateProperties(String content, String type) {
 
 To test that `updateProperties` executes correctly via JsonRPC, you can add a test that extends `DevUIJsonRPCTest`.
 
+The following dependency might also be required to be added to your pom, if it's not yet added by other dependencies, otherwise Dev UI will not start during testing:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-vertx-http-deployment</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
 [source,java]
 ----
 public class SomeTest extends DevUIJsonRPCTest {

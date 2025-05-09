@@ -47,6 +47,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
 import io.mvnpm.importmap.model.Imports;
+import io.quarkus.assistant.deployment.AssistantBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsDevelopment;
@@ -443,6 +444,7 @@ public class BuildTimeContentProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
+            Optional<AssistantBuildItem> assistantBuildItem,
             DevUIConfig devUIConfig) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
@@ -450,7 +452,8 @@ public class BuildTimeContentProcessor {
         addThemeBuildTimeData(internalBuildTimeData, devUIConfig, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem, devUIConfig);
-        addVersionInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem);
+        addApplicationInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem,
+                assistantBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
     }
@@ -555,9 +558,10 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS);
     }
 
-    private void addVersionInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+    private void addApplicationInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Optional<AssistantBuildItem> assistantBuildItem) {
 
         Map<String, String> applicationInfo = new HashMap<>();
 
@@ -575,6 +579,10 @@ public class BuildTimeContentProcessor {
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         applicationInfo.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+        // Add assistant info
+        if (assistantBuildItem.isPresent()) {
+            applicationInfo.put("assistantAvailable", "true");
+        }
         internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
     }
 

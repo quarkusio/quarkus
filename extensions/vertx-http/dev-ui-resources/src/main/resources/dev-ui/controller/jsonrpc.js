@@ -141,7 +141,7 @@ export class JsonRpc {
                     return function (...args) {
                         var uid = JsonRpc.messageCounter++;
 
-                        let method = this._extensionName + "." + prop.toString();
+                        let method = this._extensionName + "/" + prop.toString();
 
                         let params = new Object();
                         if (args.length > 0) {

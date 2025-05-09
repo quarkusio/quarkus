@@ -21,7 +21,7 @@ import org.hibernate.query.spi.SqmQuery;
 
 import io.agroal.api.AgroalDataSource;
 import io.agroal.api.configuration.AgroalDataSourceConfiguration;
-import io.quarkus.devui.runtime.comms.JsonRpcMessage;
+import io.quarkus.devui.runtime.comms.JsonRpcResponseMessage;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.comms.MessageType;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
@@ -65,16 +65,17 @@ public class HibernateOrmDevJsonRpcService {
      * based on pageNumber and pageSize are returned. For mutation statements, a custom message including the number of affected
      * records is returned.
      * <p>
-     * This method handles result serialization (to JSON) internally, and returns a {@link JsonRpcMessage<String>} to avoid
+     * This method handles result serialization (to JSON) internally, and returns a {@link JsonRpcResponseMessage<String>} to
+     * avoid
      * further processing by the {@link JsonRpcRouter}.
      *
      * @param persistenceUnit The name of the persistence unit within which the query will be executed
      * @param hql The Hibernate Query Language (HQL) statement to execute
      * @param pageNumber The page number, used for selection query results pagination
      * @param pageSize The page size, used for selection query results pagination
-     * @return a {@link JsonRpcMessage<String>} containing the resulting {@link DataSet} serialized to JSON.
+     * @return a {@link JsonRpcResponseMessage<String>} containing the resulting {@link DataSet} serialized to JSON.
      */
-    public JsonRpcMessage<Object> executeHQL(String persistenceUnit, String hql, Integer pageNumber, Integer pageSize) {
+    public JsonRpcResponseMessage<Object> executeHQL(String persistenceUnit, String hql, Integer pageNumber, Integer pageSize) {
         if (!isDev) {
             return errorDataSet("This method is only allowed in dev mode");
         }
@@ -114,7 +115,7 @@ public class HibernateOrmDevJsonRpcService {
                         transaction.commit();
 
                         String message = "Query executed correctly. Rows affected: " + updateCount;
-                        return new JsonRpcMessage<>(new DataSet(null, -1, message, null), MessageType.Response);
+                        return new JsonRpcResponseMessage<>(new DataSet(null, -1, message, null), MessageType.Response);
                     } catch (Exception e) {
                         // an error happened in executeUpdate() or during commit
                         transaction.rollback();
@@ -137,19 +138,19 @@ public class HibernateOrmDevJsonRpcService {
 
                         // manually serialize data within the transaction to ensure lazy-loading can function
                         String result = writeValueAsString(new DataSet(results, resultCount, null, null));
-                        JsonRpcMessage<Object> message = new JsonRpcMessage<>(result, MessageType.Response);
+                        JsonRpcResponseMessage<Object> message = new JsonRpcResponseMessage<>(result, MessageType.Response);
                         message.setAlreadySerialized(true);
                         return message;
                     }
                 }
             } catch (Exception ex) {
-                return new JsonRpcMessage<>(new DataSet(null, -1, null, ex.getMessage()), MessageType.Response);
+                return new JsonRpcResponseMessage<>(new DataSet(null, -1, null, ex.getMessage()), MessageType.Response);
             }
         });
     }
 
-    private static JsonRpcMessage<Object> errorDataSet(String errorMessage) {
-        return new JsonRpcMessage<>(new DataSet(null, -1, null, errorMessage), MessageType.Response);
+    private static JsonRpcResponseMessage<Object> errorDataSet(String errorMessage) {
+        return new JsonRpcResponseMessage<>(new DataSet(null, -1, null, errorMessage), MessageType.Response);
     }
 
     private static String writeValueAsString(DataSet value) {

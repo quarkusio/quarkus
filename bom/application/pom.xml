@@ -2121,16 +2121,7 @@
                 <artifactId>quarkus-vertx-http</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-http-dev-console-spi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-vertx-http-dev-console-runtime-spi</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+            
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-vertx-http-deployment</artifactId>

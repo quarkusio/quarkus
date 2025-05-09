@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
+import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -8,30 +9,30 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.enterprise.inject.Any;
 import jakarta.enterprise.inject.Default;
-import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Singleton;
+import jakarta.interceptor.Interceptor;
 import jakarta.persistence.AttributeConverter;
 import jakarta.transaction.TransactionManager;
 
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.StatelessSession;
-import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassType;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
-import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 
-import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
+import io.quarkus.arc.Arc;
+import io.quarkus.arc.ArcContainer;
+import io.quarkus.arc.InstanceHandle;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.ObserverRegistrationPhaseBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -47,6 +48,8 @@ import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.gizmo.MethodDescriptor;
+import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -56,10 +59,12 @@ import io.quarkus.hibernate.orm.runtime.RequestScopedSessionHolder;
 import io.quarkus.hibernate.orm.runtime.RequestScopedStatelessSessionHolder;
 import io.quarkus.hibernate.orm.runtime.TransactionSessions;
 import io.quarkus.hibernate.orm.runtime.cdi.QuarkusArcBeanContainer;
+import io.quarkus.runtime.ShutdownEvent;
 
 @BuildSteps(onlyIf = HibernateOrmEnabled.class)
 public class HibernateOrmCdiProcessor {
 
+    private static final int JPA_CONFIG_SHUTDOWN_PRIORITY = Interceptor.Priority.LIBRARY_AFTER + 100;
     private static final List<DotName> SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER_FACTORY,
             ClassNames.SESSION_FACTORY);
     private static final List<DotName> SESSION_EXPOSED_TYPES = Arrays.asList(ClassNames.ENTITY_MANAGER, ClassNames.SESSION);
@@ -131,7 +136,6 @@ public class HibernateOrmCdiProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void generateJpaConfigBean(HibernateOrmRecorder recorder,
-            Capabilities capabilities,
             HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
@@ -140,26 +144,44 @@ public class HibernateOrmCdiProcessor {
                 .scope(Singleton.class)
                 .unremovable()
                 .setRuntimeInit()
-                .supplier(recorder.jpaConfigSupplier(hibernateOrmRuntimeConfig))
-                .destroyer(JPAConfig.Destroyer.class);
-
-        // Add a synthetic dependency from JPAConfig to any datasource/pool,
-        // so that JPAConfig is destroyed before the datasource/pool.
-        // The alternative would be adding an application destruction observer
-        // (@Observes @BeforeDestroyed(ApplicationScoped.class)) to JPAConfig,
-        // but that would force initialization of JPAConfig upon application shutdown,
-        // which may cause cascading failures if the shutdown happened before JPAConfig was initialized.
-        if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
-            configurator.addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                    new Type[] { ClassType.create(DotName.createSimple("io.vertx.sqlclient.Pool")) }, null),
-                    AnnotationInstance.builder(Any.class).build());
-        } else {
-            configurator.addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
-                    new Type[] { ClassType.create(DotName.createSimple(AgroalDataSource.class)) }, null),
-                    AnnotationInstance.builder(Any.class).build());
-        }
+                .supplier(recorder.jpaConfigSupplier(hibernateOrmRuntimeConfig));
 
         syntheticBeanBuildItemBuildProducer.produce(configurator.done());
+    }
+
+    @BuildStep
+    @Record(ExecutionTime.RUNTIME_INIT)
+    void generateJpaConfigBeanObserver(
+            HibernateOrmRecorder recorder,
+            ObserverRegistrationPhaseBuildItem observerRegistrationPhase,
+            BuildProducer<ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem> observerConfigurationRegistry) {
+        observerConfigurationRegistry.produce(
+                new ObserverRegistrationPhaseBuildItem.ObserverConfiguratorBuildItem(observerRegistrationPhase.getContext()
+                        .configure()
+                        .beanClass(DotName.createSimple("io.quarkus.hibernate.orm.runtime.JPAConfig"))
+                        .observedType(ShutdownEvent.class)
+                        .priority(JPA_CONFIG_SHUTDOWN_PRIORITY)
+                        .notify(mc -> {
+                            // Essentially do the following:
+                            // Arc.container().instance( JPAConfig.class ).get().shutdown();
+                            ResultHandle arcContainer = mc.invokeStaticMethod(
+                                    MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+                            ResultHandle jpaConfigInstance = mc.invokeInterfaceMethod(
+                                    MethodDescriptor.ofMethod(ArcContainer.class, "instance", InstanceHandle.class,
+                                            Class.class, Annotation[].class),
+                                    arcContainer,
+                                    mc.loadClassFromTCCL(JPAConfig.class),
+                                    mc.newArray(Annotation.class, 0));
+                            ResultHandle jpaConfig = mc.invokeInterfaceMethod(
+                                    MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class),
+                                    jpaConfigInstance);
+
+                            mc.invokeVirtualMethod(
+                                    MethodDescriptor.ofMethod(JPAConfig.class, "shutdown", void.class),
+                                    jpaConfig);
+
+                            mc.returnValue(null);
+                        })));
     }
 
     // These beans must be initialized at runtime because their initialization

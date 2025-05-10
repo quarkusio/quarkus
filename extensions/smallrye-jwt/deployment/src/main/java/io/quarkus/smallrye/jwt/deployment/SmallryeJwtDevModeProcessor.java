@@ -28,10 +28,12 @@ public class SmallryeJwtDevModeProcessor {
 
     private static final String MP_JWT_VERIFY_PUBLIC_KEY = "mp.jwt.verify.publickey";
     private static final String MP_JWT_VERIFY_ISSUER = "mp.jwt.verify.issuer";
+    private static final String MP_JWT_DECRYPT_KEY_LOCATION = "mp.jwt.decrypt.key.location";
 
     private static final String SMALLRYE_JWT_NEW_TOKEN_ISSUER = "smallrye.jwt.new-token.issuer";
     private static final String SMALLRYE_JWT_SIGN_KEY_LOCATION = "smallrye.jwt.sign.key.location";
     private static final String SMALLRYE_JWT_SIGN_KEY = "smallrye.jwt.sign.key";
+    private static final String SMALLRYE_JWT_ENCRYPT_KEY_LOCATION = "smallrye.jwt.encrypt.key.location";
 
     private static final String NONE = "NONE";
     private static final String DEFAULT_ISSUER = "https://quarkus.io/issuer";
@@ -41,8 +43,10 @@ public class SmallryeJwtDevModeProcessor {
     private static final Set<String> JWT_SIGN_KEY_PROPERTIES = Set.of(
             MP_JWT_VERIFY_KEY_LOCATION,
             MP_JWT_VERIFY_PUBLIC_KEY,
+            MP_JWT_DECRYPT_KEY_LOCATION,
             SMALLRYE_JWT_SIGN_KEY_LOCATION,
-            SMALLRYE_JWT_SIGN_KEY);
+            SMALLRYE_JWT_SIGN_KEY,
+            SMALLRYE_JWT_ENCRYPT_KEY_LOCATION);
 
     /**
      * This build step generates an RSA-256 key pair for development and test modes.

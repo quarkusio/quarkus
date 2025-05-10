@@ -38,38 +38,83 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
         this.name = DotName.createSimple(configClass.getName());
     }
 
+    /**
+     * Returns the class of the BuildItem.
+     *
+     * @return the class of the ConfigClass
+     */
     public Class<?> getConfigClass() {
         return configClass;
     }
 
+    /**
+     * Returns a Set of interface classes for the ConfigComponent
+     *
+     * @return a Set of interface classes for the ConfigComponent
+     */
     public Set<Class<?>> getConfigComponentInterfaces() {
         return configComponentInterfaces;
     }
 
+    /**
+     * Returns a Set of types for the ConfigComponent
+     *
+     * @return a Set of types for the ConfigComponent
+     */
     public Set<Type> getTypes() {
         return types;
     }
 
+    /**
+     * Returns a Set of generated classes for the ConfigComponent
+     *
+     * @return a Set of generated classes for the ConfigComponent
+     */
     public Set<String> getGeneratedClasses() {
         return generatedClasses;
     }
 
+    /**
+     * Returns the prefix for the ConfigComponent
+     *
+     * @return the prefix for the ConfigComponent
+     */
     public String getPrefix() {
         return prefix;
     }
 
+    /**
+     * Returns the {@link Kind} of the ConfigComponent
+     *
+     * @return a {@link Kind} object for the ConfigComponent
+     */
     public Kind getKind() {
         return kind;
     }
 
+    /**
+     * Returns the name of the ConfigComponent
+     *
+     * @return the name of the ConfigComponent
+     */
     public DotName getName() {
         return name;
     }
 
+    /**
+     * Returns whether the {@link Kind} of the ConfigComponent is a Mapping
+     *
+     * @return true if the {@link Kind} of the ConfigComponent is a Mapping and false if it is not
+     */
     public boolean isMapping() {
         return Kind.MAPPING.equals(kind);
     }
 
+    /**
+     * Returns whether the {@link Kind} of the ConfigComponent is a Property
+     *
+     * @return true if the {@link Kind} of the ConfigComponent is a Property and false if it is not
+     */
     public boolean isProperties() {
         return Kind.PROPERTIES.equals(kind);
     }

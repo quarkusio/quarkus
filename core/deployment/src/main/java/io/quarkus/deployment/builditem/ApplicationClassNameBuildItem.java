@@ -9,6 +9,11 @@ public final class ApplicationClassNameBuildItem extends SimpleBuildItem {
         this.className = className;
     }
 
+    /**
+     * Returns the class name of the BuildItem.
+     *
+     * @return The class name
+     */
     public String getClassName() {
         return className;
     }

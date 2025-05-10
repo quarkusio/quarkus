@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -30,7 +30,7 @@ import io.quarkus.devui.spi.page.Page;
 public class ContinuousTestingProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void continuousTestingState(
             ContinuousTestingRecorder recorder,
             LaunchModeBuildItem launchModeBuildItem,
@@ -49,7 +49,7 @@ public class ContinuousTestingProcessor {
 
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createContinuousTestingPages() {
 
         InternalPageBuildItem continuousTestingPages = new InternalPageBuildItem("Continuous Testing", 30);
@@ -64,7 +64,7 @@ public class ContinuousTestingProcessor {
 
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void registerBuildTimeActions(LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
 
@@ -81,7 +81,7 @@ public class ContinuousTestingProcessor {
         buildTimeActionProducer.produce(actions);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(NAMESPACE, ContinuousTestingJsonRPCService.class);
     }

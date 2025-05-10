@@ -5,7 +5,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
@@ -20,7 +20,7 @@ public class ReadmeProcessor {
 
     private static final String NS = "devui-readme";
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createReadmePage(BuildProducer<InternalPageBuildItem> internalPageProducer) {
 
         String readme = getContents("README.md")
@@ -42,7 +42,7 @@ public class ReadmeProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCServiceForCache() {
         return new JsonRPCProvidersBuildItem(NS, ReadmeJsonRPCService.class);
     }

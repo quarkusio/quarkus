@@ -18,6 +18,7 @@
         <module>runtime</module>
         <module>test-supplement</module>
         <module>test-supplement-decorator</module>
+        <module>runtime-dev</module>
     </modules>
 
 </project>

@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
@@ -31,14 +31,14 @@ public class LogStreamProcessor {
 
     private final String namespace = "devui-logstream";
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
         additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
                 .addBeanClass(LogStreamBroadcaster.class)
                 .setUnremovable().build());
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
     @SuppressWarnings("unchecked")
     public void handler(BuildProducer<StreamingLogHandlerBuildItem> streamingLogHandlerBuildItem,
@@ -52,7 +52,7 @@ public class LogStreamProcessor {
         streamingLogHandlerBuildItem.produce(new StreamingLogHandlerBuildItem((RuntimeValue) mutinyLogHandler));
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void registerBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             LaunchModeBuildItem launchModeBuildItem) {
 
@@ -137,7 +137,7 @@ public class LogStreamProcessor {
         buildTimeActionProducer.produce(keyStrokeActions);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(namespace, LogStreamJsonRPCService.class);
     }

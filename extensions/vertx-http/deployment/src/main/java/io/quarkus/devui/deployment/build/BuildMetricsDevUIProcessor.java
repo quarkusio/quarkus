@@ -4,7 +4,7 @@ import static io.quarkus.deployment.annotations.ExecutionTime.RUNTIME_INIT;
 
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.processor.DotNames;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.Record;
@@ -13,7 +13,7 @@ import io.quarkus.devui.runtime.build.BuildMetricsDevUIRecorder;
 import io.quarkus.devui.runtime.build.BuildMetricsJsonRPCService;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 
-@BuildSteps(onlyIf = { IsDevelopment.class })
+@BuildSteps(onlyIf = { IsLocalDevelopment.class })
 public class BuildMetricsDevUIProcessor {
 
     @BuildStep

@@ -7,7 +7,7 @@ import java.util.Optional;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -21,9 +21,9 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.deployment.DevUiConfig;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.deployment.devservices.AbstractDevUIProcessor;
-import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
-import io.quarkus.oidc.runtime.devui.OidcDevLoginObserver;
-import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevLoginObserver;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpConfig;
@@ -33,7 +33,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     OidcBuildTimeConfig oidcConfig;
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void produceProviderComponent(Optional<KeycloakDevServicesConfigBuildItem> configProps,
             BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer,
@@ -76,12 +76,12 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem produceOidcDevJsonRpcService() {
         return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     AdditionalBeanBuildItem registerOidcDevLoginObserver() {
         // TODO: this is called even when Keycloak DEV UI is disabled and OIDC DEV UI is enabled
         //   we should fine a mechanism to switch where the endpoints are registered or have shared build steps
@@ -89,7 +89,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void invokeEndpoint(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         // TODO: this is called even when Keycloak DEV UI is disabled and OIDC DEV UI is enabled

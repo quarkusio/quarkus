@@ -20,6 +20,7 @@
         <module>runtime</module>
         <module>kotlin</module>
         <module>spi</module>
+        <module>runtime-dev</module>
     </modules>
 
 </project>

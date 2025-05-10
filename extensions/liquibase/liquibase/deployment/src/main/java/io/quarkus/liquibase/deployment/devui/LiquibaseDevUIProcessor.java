@@ -4,13 +4,13 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.jar.Manifest;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.liquibase.runtime.devui.LiquibaseJsonRpcService;
+import io.quarkus.liquibase.runtime.dev.ui.LiquibaseJsonRpcService;
 import liquibase.changelog.DatabaseChangeLog;
 
 /**
@@ -18,7 +18,7 @@ import liquibase.changelog.DatabaseChangeLog;
  */
 public class LiquibaseDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createCard(BuildProducer<CardPageBuildItem> cardPageBuildItemBuildProducer) {
         final CardPageBuildItem card = new CardPageBuildItem();
 
@@ -40,7 +40,7 @@ public class LiquibaseDevUIProcessor {
         cardPageBuildItemBuildProducer.produce(card);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem registerJsonRpcBackend() {
         return new JsonRPCProvidersBuildItem(LiquibaseJsonRpcService.class);
     }

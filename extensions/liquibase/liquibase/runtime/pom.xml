@@ -64,7 +64,7 @@
             <artifactId>quarkus-vertx-http</artifactId>
             <optional>true</optional>
         </dependency>
-        
+
         <!-- test dependencies -->
         <dependency>
             <groupId>io.quarkus</groupId>
@@ -82,6 +82,9 @@
                     <capabilities>
                         <provides>io.quarkus.liquibase</provides>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

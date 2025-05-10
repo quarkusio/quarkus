@@ -730,11 +730,12 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                 }
             }
 
-            const urlPattern = /^jdbc:[^:]+:\/\/([^:/]+)(:\d+)?/;
+            const urlPattern = /\/\/([^:/?#]+)|@([^:/?#]+)/;
             const match = jdbcUrl.match(urlPattern);
 
             if (match) {
-                const host = match[1];
+                // match[1] is for //host, match[2] is for @host
+                const host = match[1] || match[2];
                 if(host === "localhost" || host === "127.0.0.1" || host === "::1"){
                     return true;
                 }

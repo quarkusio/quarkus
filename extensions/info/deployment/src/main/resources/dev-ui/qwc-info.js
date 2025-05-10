@@ -191,10 +191,15 @@ export class QwcInfo extends LitElement {
             externalConstributors.map(key => {
                     const extInfo = info[key];
                     const rows = [];
+                    let displayName = key;
                     for (const property of Object.keys(extInfo)){
-                        rows.push(html`<tr><td class="row-header">${property}</td><td>${extInfo[property]}</td></tr>`);
+                        if (property === 'displayName'){
+                            displayName = extInfo[property];
+                        }else{
+                            rows.push(html`<tr><td class="row-header">${property}</td><td>${extInfo[property]}</td></tr>`);
+                        }
                     }
-                    cards.push(html`<qui-card header=${key}>
+                    cards.push(html`<qui-card header=${displayName}>
                         <div class="cardContent" slot="content">
                             <vaadin-icon icon="font-awesome-solid:circle-info"></vaadin-icon>
                             <table class="table">

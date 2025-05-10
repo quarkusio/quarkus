@@ -12,6 +12,11 @@ public class OsInfoContributor implements InfoContributor {
     }
 
     @Override
+    public String displayName() {
+        return "Operating System";
+    }
+
+    @Override
     public Map<String, Object> data() {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("name", getName());

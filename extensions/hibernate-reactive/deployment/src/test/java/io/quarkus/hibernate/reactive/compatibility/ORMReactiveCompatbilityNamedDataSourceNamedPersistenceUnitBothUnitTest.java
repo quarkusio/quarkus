@@ -35,9 +35,10 @@ public class ORMReactiveCompatbilityNamedDataSourceNamedPersistenceUnitBothUnitT
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            // Hibernate Reactive doesn't support explicitly setting the datasource (yet),
-                            // so it will just notice the default datasource is not configured!
-                            "The default datasource must be configured for Hibernate Reactive",
+                            // Hibernate Reactive doesn't support named persistence unit
+                            // so it will just notice the datasource is not configured!
+                            // We probably need a better error message when named persistence unit is supported
+                            "The datasource must be configured for Hibernate Reactive",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test

@@ -57,6 +57,40 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
 
     }
 
+    @Test
+    public void testNestedQuarkusTestMixedWithNormalTests()
+            throws MavenInvocationException, InterruptedException {
+        String sourceDir = "projects/test-nested-tests-mixed-with-normal-tests";
+        testDir = initProject(sourceDir, sourceDir + "-processed");
+        RunningInvoker invoker = new RunningInvoker(testDir, false);
+
+        MavenProcessInvocationResult installInvocation = invoker.execute(
+                List.of("clean", "verify", "-Dquarkus.analytics.disabled=true"),
+                Collections.emptyMap());
+        assertThat(installInvocation.getProcess().waitFor(2, TimeUnit.MINUTES)).isTrue();
+        assertThat(installInvocation.getExecutionException()).isNull();
+        assertThat(installInvocation.getExitCode()).isEqualTo(0);
+
+    }
+
+    @Disabled("See https://github.com/quarkusio/quarkus/issues/47671")
+    @Test
+    public void testNestedQuarkusTestMixedWithNormalTestsContinuousTesting()
+            throws MavenInvocationException, FileNotFoundException {
+        // This test will fail if the test extension does not reset the TCCL properly
+        String sourceDir = "projects/test-nested-tests-mixed-with-normal-tests";
+        testDir = initProject(sourceDir, sourceDir + "-processed-devmode");
+
+        runAndCheck();
+
+        ContinuousTestingMavenTestUtils testingTestUtils = new ContinuousTestingMavenTestUtils(getPort());
+        ContinuousTestingMavenTestUtils.TestStatus results = testingTestUtils.waitForNextCompletion();
+        // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
+        // so we need to check the pass count explicitly
+        Assertions.assertEquals(0, results.getTestsFailed());
+        Assertions.assertEquals(3, results.getTestsPassed());
+    }
+
     /**
      * Tests that if @QuarkusTest is added as a JUnitExtension through META-INF/services, things still work.
      * JBeret does this, for example.

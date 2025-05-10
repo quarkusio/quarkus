@@ -26,8 +26,6 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
     protected static final String TEST_CLASS = "test-class";
     protected static final String TEST_PROFILE = "test-profile";
 
-    protected ClassLoader originalCl;
-
     // Used to preserve state from the previous run, so we know if we should restart an application
     protected static RunningQuarkusApplication runningQuarkusApplication;
 

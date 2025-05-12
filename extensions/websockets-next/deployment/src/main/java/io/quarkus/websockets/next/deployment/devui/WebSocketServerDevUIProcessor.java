@@ -14,7 +14,7 @@ import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.jandex.Type.Kind;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -24,11 +24,11 @@ import io.quarkus.websockets.next.deployment.Callback;
 import io.quarkus.websockets.next.deployment.GeneratedEndpointBuildItem;
 import io.quarkus.websockets.next.deployment.WebSocketEndpointBuildItem;
 import io.quarkus.websockets.next.deployment.WebSocketProcessor;
-import io.quarkus.websockets.next.runtime.devui.WebSocketNextJsonRPCService;
+import io.quarkus.websockets.next.runtime.dev.ui.WebSocketNextJsonRPCService;
 
 public class WebSocketServerDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void pages(List<WebSocketEndpointBuildItem> endpoints, List<GeneratedEndpointBuildItem> generatedEndpoints,
             BuildProducer<CardPageBuildItem> cardPages) {
 
@@ -45,7 +45,7 @@ public class WebSocketServerDevUIProcessor {
         cardPages.produce(pageBuildItem);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem rpcProvider() {
         return new JsonRPCProvidersBuildItem(WebSocketNextJsonRPCService.class);
     }

@@ -24,5 +24,6 @@
         <module>xds</module>
         <module>inprocess</module>
         <module>cli</module>
+        <module>runtime-dev</module>
     </modules>
 </project>

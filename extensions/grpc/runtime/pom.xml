@@ -152,7 +152,9 @@
                         </goals>
                         <phase>process-resources</phase>
                         <configuration>
-                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+                            <conditionalDevDependencies>
+                                <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                            </conditionalDevDependencies>
                         </configuration>
                     </execution>
                 </executions>

@@ -541,7 +541,7 @@ public class QuteProcessor {
         } else {
             defaultName = nameValue.asString();
         }
-        String name = target.kind() == Kind.METHOD ? target.asMethod().name() : target.asClass().simpleName();
+        String name = getTargetName(target);
         if (checkedFragment) {
             // the name is the part before the last occurence of a dollar sign
             name = name.substring(0, name.lastIndexOf('$'));
@@ -556,7 +556,7 @@ public class QuteProcessor {
         if (ignoreFragmentsValue != null && ignoreFragmentsValue.asBoolean()) {
             return null;
         }
-        String name = target.kind() == Kind.METHOD ? target.asMethod().name() : target.asClass().simpleName();
+        String name = getTargetName(target);
         // the id is the part after the last occurence of a dollar sign
         int idx = name.lastIndexOf('$');
         if (idx == -1 || idx == name.length()) {
@@ -572,6 +572,15 @@ public class QuteProcessor {
             defaultName = nameValue.asString();
         }
         return defaultedName(defaultName, name.substring(idx + 1, name.length()));
+    }
+
+    private String getTargetName(AnnotationTarget target) {
+        if (target.kind() == Kind.METHOD) {
+            return target.asMethod().name();
+        }
+        ClassInfo targetClass = target.asClass();
+        return targetClass.nestingType() == NestingType.TOP_LEVEL ? targetClass.name().withoutPackagePrefix()
+                : targetClass.simpleName();
     }
 
     private String defaultedName(String defaultNameStrategy, String value) {

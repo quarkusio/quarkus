@@ -613,6 +613,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         .getCuratedApplication()
                 : null;
         boolean isSameCuratedApplication = cl.getCuratedApplication() == curatedApplication;
+
+        if (cl.getCuratedApplication() == null) {
+            throw new IllegalStateException(
+                    "Internal error: ClassLoader " + cl + " does not have a linked curated application.");
+        }
         cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
 
         // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,

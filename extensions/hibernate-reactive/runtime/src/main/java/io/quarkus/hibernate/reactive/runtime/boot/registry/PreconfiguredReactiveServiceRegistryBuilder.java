@@ -24,6 +24,7 @@ import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInit
 import org.hibernate.reactive.engine.jdbc.mutation.internal.ReactiveMutationExecutorServiceInitiator;
 import org.hibernate.reactive.loader.ast.internal.ReactiveBatchLoaderFactoryInitiator;
 import org.hibernate.reactive.provider.service.NativeParametersHandling;
+import org.hibernate.reactive.provider.service.NoJdbcEnvironmentInitiator;
 import org.hibernate.reactive.provider.service.NoJtaPlatformInitiator;
 import org.hibernate.reactive.provider.service.ReactiveMarkerServiceInitiator;
 import org.hibernate.reactive.provider.service.ReactivePersisterClassResolverInitiator;
@@ -53,7 +54,6 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectResolve
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.CheckingVertxContextInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
-import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcEnvironmentInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -72,10 +72,10 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
     private final Collection<Integrator> integrators;
     private final StandardServiceRegistryImpl destroyedRegistry;
 
-    public PreconfiguredReactiveServiceRegistryBuilder(String puName, RecordedState rs,
+    public PreconfiguredReactiveServiceRegistryBuilder(String puConfigName, RecordedState rs,
             HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         checkIsReactive(rs);
-        this.initiators = buildQuarkusServiceInitiatorList(puName, rs, puConfig);
+        this.initiators = buildQuarkusServiceInitiatorList(puConfigName, rs, puConfig);
         this.integrators = rs.getIntegrators();
         this.destroyedRegistry = (StandardServiceRegistryImpl) rs.getMetadata()
                 .getMetadataBuildingOptions()
@@ -145,7 +145,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
      *
      * @return
      */
-    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(String puName, RecordedState rs,
+    private static List<StandardServiceInitiator<?>> buildQuarkusServiceInitiatorList(String puConfigName, RecordedState rs,
             HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
@@ -189,8 +189,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         // TODO disable?
         serviceInitiators.add(SchemaManagementToolInitiator.INSTANCE);
 
-        // Replaces JdbcEnvironmentInitiator.INSTANCE :
-        serviceInitiators.add(new QuarkusNoJdbcEnvironmentInitiator(rs.getDialect()));
+        serviceInitiators.add(NoJdbcEnvironmentInitiator.INSTANCE);
 
         // Custom one!
         serviceInitiators.add(QuarkusJndiServiceInitiator.INSTANCE);
@@ -207,7 +206,7 @@ public class PreconfiguredReactiveServiceRegistryBuilder {
         serviceInitiators.add(new QuarkusRuntimeInitDialectResolverInitiator(rs.getDialect()));
 
         // Custom one: Dialect is injected explicitly
-        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puName, rs.isFromPersistenceXml(),
+        serviceInitiators.add(new QuarkusRuntimeInitDialectFactoryInitiator(puConfigName, rs.isFromPersistenceXml(),
                 rs.getDialect(), rs.getBuildTimeSettings().getSource(), puConfig));
 
         // Default implementation

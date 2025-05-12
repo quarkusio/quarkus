@@ -29,12 +29,14 @@ public class TemplateRecordTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloInt.class, helloWorld.class)
+                    .addClasses(HelloInt.class, helloWorld.class, hello.class, hello$name.class, hello$top.class)
                     .addAsResource(new StringAsset("Hello {val}!"),
                             "templates/TemplateRecordTest/HelloInt.txt")
                     .addAsResource(new StringAsset("Hello {name}!"),
                             "templates/hello_world.txt")
-                    .addAsResource(new StringAsset("Hello {#fragment name}{name}{/fragment} and {foo}!"),
+                    .addAsResource(
+                            new StringAsset(
+                                    "Hello {#fragment name}{name}{/fragment}::{#fragment top}{index}{/fragment} and {foo}!"),
                             "templates/hello.txt")
                     .addAsResource(new StringAsset("{alpha}:{bravo}:{charlie}"),
                             "templates/TemplateRecordTest/multiParams.txt"));
@@ -72,13 +74,17 @@ public class TemplateRecordTest {
 
         assertEquals("Hello Lu!", new helloWorld("Lu").render());
 
-        hello hello = new hello("Ma", "bar");
+        hello hello = new hello("Ma", "bar", 1);
         assertFalse(hello.getTemplate().isFragment());
-        assertEquals("Hello Ma and bar!", hello.render());
+        assertEquals("Hello Ma::1 and bar!", hello.render());
 
-        hello$name hello$name = new hello$name("Lu");
+        hello$name hello$name = new hello$name("Lu", 1);
         assertTrue(hello$name.getTemplate().isFragment());
         assertEquals("Lu", hello$name.render());
+
+        hello$top hello$top = new hello$top("Lu", 1);
+        assertTrue(hello$top.getTemplate().isFragment());
+        assertEquals("1", hello$top.render());
 
         assertEquals("15:true:foo", new multiParams(true, 15, "foo").render());
         assertThrows(IllegalArgumentException.class, () -> new multiParams(false, 50, null));
@@ -92,11 +98,11 @@ public class TemplateRecordTest {
     }
 
     @CheckedTemplate(basePath = "")
-    record hello(String name, String foo) implements TemplateInstance {
+    record hello(String name, String foo, int index) implements TemplateInstance {
     }
 
     @CheckedTemplate(basePath = "")
-    record hello$name(String name) implements TemplateInstance {
+    record hello$name(String name, int index) implements TemplateInstance {
     }
 
     record multiParams(boolean bravo, int alpha, String charlie) implements TemplateInstance {

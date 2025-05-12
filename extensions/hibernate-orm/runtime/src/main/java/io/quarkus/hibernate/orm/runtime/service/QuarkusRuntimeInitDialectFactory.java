@@ -98,12 +98,13 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
     }
 
     private Optional<DatabaseVersion> retrieveDbVersion(DialectResolutionInfoSource resolutionInfoSource) {
-        var resolutionInfo = resolutionInfoSource == null ? null
-                : resolutionInfoSource.getDialectResolutionInfo();
-        if (resolutionInfo == null) {
-            return Optional.empty();
-        }
         try {
+            var resolutionInfo = resolutionInfoSource == null ? null
+                    // This may throw an exception if the DB cannot be reached, in particular with Hibernate Reactive.
+                    : resolutionInfoSource.getDialectResolutionInfo();
+            if (resolutionInfo == null) {
+                return Optional.empty();
+            }
             triedToRetrieveDbVersion = true;
             return Optional.of(dialect.determineDatabaseVersion(resolutionInfo));
         } catch (RuntimeException e) {

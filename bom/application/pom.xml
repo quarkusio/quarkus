@@ -96,7 +96,7 @@
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
-        <narayana.version>7.2.1.Final</narayana.version>
+        <narayana.version>7.2.2.Final</narayana.version>
         <narayana-lra.version>1.0.0.Final</narayana-lra.version>
         <agroal.version>2.6</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>

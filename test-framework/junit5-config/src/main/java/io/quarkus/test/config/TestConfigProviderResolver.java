@@ -12,6 +12,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
@@ -50,15 +51,28 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
     public Config getConfig(final LaunchMode mode) {
         if (classLoader.equals(Thread.currentThread().getContextClassLoader())) {
             resolver.releaseConfig(classLoader);
+            LaunchMode current = LaunchMode.current();
+            LaunchMode.set(mode);
             SmallRyeConfig config = configs.computeIfAbsent(mode, new Function<LaunchMode, SmallRyeConfig>() {
                 @Override
                 public SmallRyeConfig apply(final LaunchMode launchMode) {
                     return ConfigUtils.configBuilder(false, true, mode)
-                            .withProfile(mode.getDefaultProfile())
+                            .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+                                @Override
+                                public void configBuilder(final SmallRyeConfigBuilder builder) {
+                                    builder.withDefaultValue("quarkus.profile", launchMode.getDefaultProfile());
+                                }
+
+                                @Override
+                                public int priority() {
+                                    return Integer.MAX_VALUE;
+                                }
+                            })
                             .withMapping(TestConfig.class, "quarkus.test")
                             .build();
                 }
             });
+            LaunchMode.set(current);
             resolver.registerConfig(config, classLoader);
             return config;
         }

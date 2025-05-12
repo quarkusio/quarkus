@@ -38,6 +38,7 @@
         <module>reactive-routes-virtual-threads</module>
         <module>security-webauthn-virtual-threads</module>
         <module>metrics-virtual-threads</module>
+        <module>graphql-virtual-threads</module>
     </modules>
 
     <build>

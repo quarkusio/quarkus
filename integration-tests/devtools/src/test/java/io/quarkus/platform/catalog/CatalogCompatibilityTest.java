@@ -8,6 +8,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.CodestartResourceLoadersBuilder;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.devtools.testing.PlatformAwareTestBase;
@@ -65,7 +66,7 @@ public class CatalogCompatibilityTest extends PlatformAwareTestBase {
 
     private static void checkCodestarts(ExtensionCatalog extensionCatalog, CatalogProcessor processed) throws IOException {
         final List<ResourceLoader> codestartResourceLoaders = CodestartResourceLoadersBuilder
-                .getCodestartResourceLoaders(extensionCatalog);
+                .getCodestartResourceLoaders(MessageWriter.info(), extensionCatalog);
         final QuarkusCodestartCatalog quarkusCodestartCatalog = QuarkusCodestartCatalog
                 .fromExtensionsCatalog(extensionCatalog, codestartResourceLoaders);
         assertThat(quarkusCodestartCatalog.getCodestarts()).isNotNull();

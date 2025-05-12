@@ -30,7 +30,8 @@ public class WelcomeProcessor {
 
         InternalPageBuildItem welcomePageBuildItem = new InternalPageBuildItem("Welcome", 99999);
 
-        welcomePageBuildItem.addBuildTimeData("welcomeData", createWelcomeData(curateOutcomeBuildItem, extensionsBuildItem));
+        welcomePageBuildItem.addBuildTimeData("welcomeData", createWelcomeData(curateOutcomeBuildItem, extensionsBuildItem),
+                "Contains high level information about the Quarkus application, including the configFile, resourcesDir, sourceDir and selectedExtensions");
 
         welcomePageBuildItem.addPage(Page.webComponentPageBuilder()
                 .namespace("devui-welcome")

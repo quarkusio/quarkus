@@ -6,6 +6,7 @@ import java.io.UncheckedIOException;
 import java.util.Map;
 
 import io.quarkus.devtools.codestarts.quarkus.QuarkusCodestartCatalog;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.registry.catalog.ExtensionCatalog;
 
 public final class FakeExtensionCatalog {
@@ -20,6 +21,7 @@ public final class FakeExtensionCatalog {
     private static QuarkusCodestartCatalog getQuarkusCodestartCatalog() {
         try {
             return QuarkusCodestartCatalog.fromBaseCodestartsResources(
+                    MessageWriter.info(),
                     QuarkusCodestartCatalog.buildExtensionsMapping(FAKE_EXTENSION_CATALOG.getExtensions()));
         } catch (IOException e) {
             throw new UncheckedIOException(e);

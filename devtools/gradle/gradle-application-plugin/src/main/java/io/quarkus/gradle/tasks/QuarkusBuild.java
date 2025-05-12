@@ -351,13 +351,16 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
                     jarType(), sourceDir, buildDir);
         }
         getFileSystemOperations().copy(
-                copy -> copy.into(buildDir).from(sourceDir)
-                        .include(QUARKUS_ARTIFACT_PROPERTIES,
-                                nativeRunnerFileName(),
-                                runnerJarFileName(),
-                                "jib-image*",
-                                NATIVE_SOURCES,
-                                nativeImageSourceJarDirName() + "/**"));
+                copy -> {
+                    copy.eachFile(new CopyActionDeleteNonWriteableTarget(buildDir.toPath()));
+                    copy.into(buildDir).from(sourceDir)
+                            .include(QUARKUS_ARTIFACT_PROPERTIES,
+                                    nativeRunnerFileName(),
+                                    runnerJarFileName(),
+                                    "jib-image*",
+                                    NATIVE_SOURCES,
+                                    nativeImageSourceJarDirName() + "/**");
+                });
     }
 
     private String expandConfigurationKey(String shortKey) {

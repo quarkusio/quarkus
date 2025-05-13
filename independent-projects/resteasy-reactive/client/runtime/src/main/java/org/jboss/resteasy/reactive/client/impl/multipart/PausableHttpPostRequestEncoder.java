@@ -511,8 +511,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
         }
         bodyListDatas.add(checkNotNull(data, "data"));
         if (!isMultipart) {
-            if (data instanceof Attribute) {
-                Attribute attribute = (Attribute) data;
+            if (data instanceof Attribute attribute) {
                 try {
                     // name=value& with encoded name and attribute
                     String key = encodeAttribute(attribute.getName(), charset);
@@ -523,9 +522,8 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
                 } catch (IOException e) {
                     throw new ErrorDataEncoderException(e);
                 }
-            } else if (data instanceof FileUpload) {
+            } else if (data instanceof FileUpload fileUpload) {
                 // since not Multipart, only name=filename => Attribute
-                FileUpload fileUpload = (FileUpload) data;
                 // name=filename& with encoded name and filename
                 String key = encodeAttribute(fileUpload.getName(), charset);
                 String value = encodeAttribute(fileUpload.getFilename(), charset);
@@ -567,7 +565,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
          * if duringmixedmode: endmixedmultipart + endmultipart
          * else only endmultipart
          */
-        if (data instanceof Attribute) {
+        if (data instanceof Attribute attribute) {
             if (duringMixedMode) {
                 QuarkusInternalAttribute internal = new QuarkusInternalAttribute(charset);
                 internal.addValue("\r\n--" + multipartMixedBoundary + "--");
@@ -583,7 +581,6 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
             }
             internal.addValue("--" + multipartDataBoundary + "\r\n");
             // content-disposition: form-data; name="field1"
-            Attribute attribute = (Attribute) data;
             internal.addValue(HttpHeaderNames.CONTENT_DISPOSITION + ": " + HttpHeaderValues.FORM_DATA + "; "
                     + HttpHeaderValues.NAME + "=\"" + attribute.getName() + "\"\r\n");
             // Add Content-Length: xxx
@@ -602,8 +599,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
             multipartHttpDatas.add(internal);
             multipartHttpDatas.add(data);
             globalBodySize += attribute.length() + internal.size();
-        } else if (data instanceof FileUpload) {
-            FileUpload fileUpload = (FileUpload) data;
+        } else if (data instanceof FileUpload fileUpload) {
             QuarkusInternalAttribute internal = new QuarkusInternalAttribute(charset);
             if (!multipartHttpDatas.isEmpty()) {
                 // previously a data field so CRLF
@@ -856,8 +852,7 @@ public class PausableHttpPostRequestEncoder implements ChunkedInput<HttpContent>
         } else {
             // get the only one body and set it to the request
             HttpContent chunk = nextChunk();
-            if (request instanceof FullHttpRequest) {
-                FullHttpRequest fullRequest = (FullHttpRequest) request;
+            if (request instanceof FullHttpRequest fullRequest) {
                 ByteBuf chunkContent = chunk.content();
                 if (fullRequest.content() != chunkContent && chunkContent != null) {
                     fullRequest.content().clear().writeBytes(chunkContent);

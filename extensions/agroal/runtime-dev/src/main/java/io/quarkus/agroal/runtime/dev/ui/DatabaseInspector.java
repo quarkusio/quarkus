@@ -127,6 +127,9 @@ public final class DatabaseInspector {
                             while (tables.next()) {
                                 String tableName = tables.getString("TABLE_NAME");
                                 String tableSchema = tables.getString("TABLE_SCHEM");
+                                if (tableSchema == null) {
+                                    tableSchema = tables.getString("TABLE_CAT"); // fallback for MySQL
+                                }
 
                                 // Get the Primary Keys
                                 List<String> primaryKeyList = getPrimaryKeys(metaData, tableSchema, tableName);

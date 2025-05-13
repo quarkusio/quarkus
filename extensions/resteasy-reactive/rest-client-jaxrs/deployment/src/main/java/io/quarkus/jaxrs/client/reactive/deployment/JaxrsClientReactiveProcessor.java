@@ -164,6 +164,7 @@ import io.quarkus.gizmo.BytecodeCreator;
 import io.quarkus.gizmo.CatchBlockCreator;
 import io.quarkus.gizmo.ClassCreator;
 import io.quarkus.gizmo.FieldDescriptor;
+import io.quarkus.gizmo.ForEachLoop;
 import io.quarkus.gizmo.MethodCreator;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
@@ -2113,8 +2114,8 @@ public class JaxrsClientReactiveProcessor {
         return client;
     }
 
-    private void handleMultipartField(String formParamName, String partType, String partFilename,
-            String type, String parameterSignature,
+    private void handleMultipartField(IndexView index, String formParamName, String mimeType, String partFilename,
+            Type type, String parameterSignature,
             ResultHandle fieldValue, AssignableResultHandle multipartForm,
             BytecodeCreator methodCreator,
             ResultHandle client, String restClientInterfaceClassName, ResultHandle parameterAnnotations,
@@ -2122,49 +2123,81 @@ public class JaxrsClientReactiveProcessor {
 
         BytecodeCreator ifValueNotNull = methodCreator.ifNotNull(fieldValue).trueBranch();
 
+        if (isCollection(type, index)) {
+            Type componentType = null;
+            if (type.kind() == PARAMETERIZED_TYPE) {
+                Type paramType = type.asParameterizedType().arguments().get(0);
+                if ((paramType.kind() == CLASS) || (paramType.kind() == PARAMETERIZED_TYPE)) {
+                    componentType = paramType;
+                }
+            }
+            if (componentType == null) {
+                componentType = Type.create(Object.class);
+            }
+            ForEachLoop loop = ifValueNotNull.forEach(fieldValue);
+            BytecodeCreator block = loop.block();
+            doHandleMultipartField(formParamName, mimeType, partFilename, componentType, null, loop.element(),
+                    multipartForm,
+                    methodCreator,
+                    client, restClientInterfaceClassName, parameterAnnotations, genericType, errorLocation, block);
+        } else {
+            doHandleMultipartField(formParamName, mimeType, partFilename, type, parameterSignature, fieldValue, multipartForm,
+                    methodCreator,
+                    client, restClientInterfaceClassName, parameterAnnotations, genericType, errorLocation, ifValueNotNull);
+        }
+    }
+
+    private void doHandleMultipartField(String formParamName, String mimeType, String partFilename, Type type,
+            String parameterSignature, ResultHandle fieldValue, AssignableResultHandle multipartForm,
+            BytecodeCreator methodCreator, ResultHandle client, String restClientInterfaceClassName,
+            ResultHandle parameterAnnotations, ResultHandle genericType, String errorLocation,
+            BytecodeCreator bytecodeCreator) {
         // we support string, and send it as an attribute unconverted
-        if (type.equals(String.class.getName())) {
-            addString(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
-        } else if (type.equals(File.class.getName())) {
+        String typeStr = type.name().toString();
+        if (typeStr.equals(String.class.getName())) {
+            addString(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue);
+        } else if (typeStr.equals(File.class.getName())) {
             // file is sent as file :)
-            ResultHandle filePath = ifValueNotNull.invokeVirtualMethod(
+            ResultHandle filePath = bytecodeCreator.invokeVirtualMethod(
                     MethodDescriptor.ofMethod(File.class, "toPath", Path.class), fieldValue);
-            addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, filePath);
-        } else if (type.equals(Path.class.getName())) {
+            addFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, filePath);
+        } else if (typeStr.equals(Path.class.getName())) {
             // and so is path
-            addFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue);
-        } else if (type.equals(FileUpload.class.getName())) {
+            addFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue);
+        } else if (typeStr.equals(FileUpload.class.getName())) {
             addFileUpload(fieldValue, multipartForm, methodCreator);
-        } else if (type.equals(InputStream.class.getName())) {
+        } else if (typeStr.equals(InputStream.class.getName())) {
             // and so is path
-            addInputStream(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, type);
-        } else if (type.equals(Buffer.class.getName())) {
+            addInputStream(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue, typeStr);
+        } else if (typeStr.equals(Buffer.class.getName())) {
             // and buffer
-            addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
-        } else if (type.startsWith("[")) {
+            addBuffer(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue, errorLocation);
+        } else if (typeStr.startsWith("[")) {
             // byte[] can be sent as file too
-            if (!type.equals("[B")) {
-                throw new IllegalArgumentException("Array of unsupported type: " + type
+            if (!typeStr.equals("[B")) {
+                throw new IllegalArgumentException("Array of unsupported type: " + typeStr
                         + " on " + errorLocation);
             }
-            ResultHandle buffer = ifValueNotNull.invokeStaticInterfaceMethod(
+            ResultHandle buffer = bytecodeCreator.invokeStaticInterfaceMethod(
                     MethodDescriptor.ofMethod(Buffer.class, "buffer", Buffer.class, byte[].class),
                     fieldValue);
-            addBuffer(ifValueNotNull, multipartForm, formParamName, partType, partFilename, buffer, errorLocation);
-        } else if (parameterSignature.equals(MULTI_BYTE_SIGNATURE)) {
-            addMultiAsFile(ifValueNotNull, multipartForm, formParamName, partType, partFilename, fieldValue, errorLocation);
-        } else if (partType != null) {
+            addBuffer(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, buffer, errorLocation);
+        } else if (MULTI_BYTE_SIGNATURE.equals(parameterSignature)) {
+            addMultiAsFile(bytecodeCreator, multipartForm, formParamName, mimeType, partFilename, fieldValue,
+                    errorLocation);
+        } else if (mimeType != null) {
             if (partFilename != null) {
                 log.warnf("Using the @PartFilename annotation is unsupported on the type '%s'. Problematic field is: '%s'",
-                        partType, formParamName);
+                        mimeType, formParamName);
             }
             // assume POJO:
-            addPojo(ifValueNotNull, multipartForm, formParamName, partType, fieldValue, type);
+            addPojo(bytecodeCreator, multipartForm, formParamName, mimeType, fieldValue, typeStr);
         } else {
             // go via converter
-            ResultHandle convertedFormParam = convertParamToString(ifValueNotNull, client, fieldValue, type, genericType,
+            ResultHandle convertedFormParam = convertParamToString(bytecodeCreator, client, fieldValue, typeStr,
+                    genericType,
                     parameterAnnotations);
-            BytecodeCreator parameterIsStringBranch = checkStringParam(ifValueNotNull, convertedFormParam,
+            BytecodeCreator parameterIsStringBranch = checkStringParam(bytecodeCreator, convertedFormParam,
                     restClientInterfaceClassName, errorLocation);
             addString(parameterIsStringBranch, multipartForm, formParamName, null, partFilename, convertedFormParam);
         }
@@ -3231,9 +3264,9 @@ public class JaxrsClientReactiveProcessor {
             String restClientInterfaceClassName, ResultHandle client, AssignableResultHandle formParams,
             ResultHandle genericType,
             ResultHandle parameterAnnotations, boolean multipart,
-            String partType, String partFilename, String errorLocation) {
+            String mimeType, String partFilename, String errorLocation) {
         if (multipart) {
-            handleMultipartField(paramName, partType, partFilename, parameterType.name().toString(), parameterSignature,
+            handleMultipartField(index, paramName, mimeType, partFilename, parameterType, parameterSignature,
                     formParamHandle,
                     formParams, methodCreator,
                     client, restClientInterfaceClassName, parameterAnnotations, genericType,

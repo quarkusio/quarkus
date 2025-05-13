@@ -5,19 +5,16 @@ import io.quarkus.test.junit5.virtual.ShouldNotPin;
 import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
 import io.quarkus.virtual.threads.VirtualThreads;
 import io.restassured.RestAssured;
-import io.smallrye.common.annotation.Blocking;
-import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.smallrye.mutiny.Uni;
-import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 import jakarta.inject.Inject;
 import org.eclipse.microprofile.graphql.GraphQLApi;
+import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Query;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 
 @QuarkusTest
@@ -30,69 +27,11 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
     @VirtualThreads
     ExecutorService vt;
 
-
-    @Test
-    public void testOnlyObject() {
-
-        String fooRequest = getPayload("{\n" +
-                "  onlyObject {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
-
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.onlyObject.name", Matchers.startsWith("executor-thread"))
-                .and()
-                .body("data.onlyObject.vertxContextClassName", Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-    }
-
-    @Test
-    public void testAnnotatedNonBlockingObject() {
-
-        String fooRequest = getPayload("{\n" +
-                "  annotatedNonBlockingObject {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
-
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedNonBlockingObject.name", Matchers.startsWith("vert.x-eventloop-thread"))
-                .and()
-                .body("data.annotatedNonBlockingObject.vertxContextClassName",
-                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-    }
-
     @Test
     public void testAnnotatedBlockingObject() {
 
         String fooRequest = getPayload("{\n" +
-                "  annotatedBlockingObject {\n" +
+                "  annotatedRunOnVirtualThreadObject {\n" +
                 "    name\n" +
                 "    priority\n" +
                 "    state\n" +
@@ -111,17 +50,17 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .log().body().and()
-                .body("data.annotatedBlockingObject.name", Matchers.startsWith("quarkus-virtual-thread"))
+                .body("data.annotatedRunOnVirtualThreadObject.name", Matchers.startsWith("quarkus-virtual-thread"))
                 .and()
-                .body("data.annotatedBlockingObject.vertxContextClassName",
+                .body("data.annotatedRunOnVirtualThreadObject.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
     }
 
     @Test
-    public void testOnlyReactiveUni() {
+    public void testAnnotatedBlockingMutationObject() {
 
-        String fooRequest = getPayload("{\n" +
-                "  onlyReactiveUni {\n" +
+        String fooRequest = getPayload("mutation{\n" +
+                "  annotatedRunOnVirtualThreadMutationObject(test:\"test\") {\n" +
                 "    name\n" +
                 "    priority\n" +
                 "    state\n" +
@@ -140,45 +79,18 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .log().body().and()
-                .body("data.onlyReactiveUni.name", Matchers.startsWith("vert.x-eventloop-thread"))
+                .body("data.annotatedRunOnVirtualThreadMutationObject.name", Matchers.startsWith("quarkus-virtual-thread"))
                 .and()
-                .body("data.onlyReactiveUni.vertxContextClassName", Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-    }
-
-    @Test
-    public void testOnlyReactiveUniWithDelay() {
-
-        String fooRequest = getPayload("{\n" +
-                "  onlyReactiveUniWithDelay {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
-
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.onlyReactiveUniWithDelay.name", Matchers.startsWith("vert.x-eventloop-thread"))
-                .and()
-                .body("data.onlyReactiveUniWithDelay.vertxContextClassName",
+                .body("data.annotatedRunOnVirtualThreadMutationObject.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
     }
 
     @Test
-    public void testAnnotatedBlockingReactiveUni() {
+    @Disabled
+    public void testPiningThread() {
 
         String fooRequest = getPayload("{\n" +
-                "  annotatedBlockingReactiveUni {\n" +
+                "  pinThread {\n" +
                 "    name\n" +
                 "    priority\n" +
                 "    state\n" +
@@ -197,205 +109,52 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
                 .statusCode(200)
                 .and()
                 .log().body().and()
-                .body("data.annotatedBlockingReactiveUni.name", Matchers.startsWith("executor-thread"))
+                .body("data.pinThread.name", Matchers.startsWith("quarkus-virtual-thread"))
                 .and()
-                .body("data.annotatedBlockingReactiveUni.vertxContextClassName",
+                .body("data.pinThread.vertxContextClassName",
                         Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-
-    }
-
-    @Test
-    public void testAnnotatedNonBlockingReactiveUni() {
-
-        String fooRequest = getPayload("{\n" +
-                "  annotatedNonBlockingReactiveUni {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
-
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedNonBlockingReactiveUni.name", Matchers.startsWith("vert.x-eventloop-thread"))
-                .and()
-                .body("data.annotatedNonBlockingReactiveUni.vertxContextClassName",
-                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-
-    }
-
-    @Test
-    public void testOnlyCompletionStage() {
-
-        String fooRequest = getPayload("{\n" +
-                "  onlyCompletionStage {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
-
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.onlyCompletionStage.name", Matchers.startsWith("vert.x-eventloop-thread"))
-                .and()
-                .body("data.onlyCompletionStage.vertxContextClassName",
-                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-
-    }
-
-    @Test
-    public void testAnnotatedBlockingCompletionStage() {
-
-        String fooRequest = getPayload("{\n" +
-                "  annotatedBlockingCompletionStage {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
-
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedBlockingCompletionStage.name", Matchers.startsWith("executor-thread"))
-                .and()
-                .body("data.annotatedBlockingCompletionStage.vertxContextClassName",
-                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-
-    }
-
-    @Test
-    public void testAnnotatedNonBlockingCompletionStage() {
-
-        String fooRequest = getPayload("{\n" +
-                "  annotatedNonBlockingCompletionStage {\n" +
-                "    name\n" +
-                "    priority\n" +
-                "    state\n" +
-                "    group\n" +
-                "    vertxContextClassName\n" +
-                "  }\n" +
-                "}");
-
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.annotatedNonBlockingCompletionStage.name", Matchers.startsWith("vert.x-eventloop-thread"))
-                .and()
-                .body("data.annotatedNonBlockingCompletionStage.vertxContextClassName",
-                        Matchers.equalTo("io.vertx.core.impl.DuplicatedContext"));
-
     }
 
     @GraphQLApi
-    public static class TestThreadResource {
+    public static class RunOnVirtualThreadObjectTestThreadResource {
 
         @Inject
         Vertx vertx;
 
-        // Return type Object
-        @Query
-        public TestThread onlyObject() {
-            return getTestThread();
-        }
-
-        // Return type Object, Annotated with @NonBlocking
-        @Query
-        @NonBlocking
-        public TestThread annotatedNonBlockingObject() {
-            return getTestThread();
-        }
-
-        // Return type Object with @Blocking (default)
+        // Return type Object with @RunOnVirtualThread
         @Query
         @RunOnVirtualThread
-        public TestThread annotatedBlockingObject() {
+        public TestThread annotatedRunOnVirtualThreadObject() {
+            sleep();
             return getTestThread();
         }
 
-        // Return type Uni
-        @Query
-        public Uni<TestThread> onlyReactiveUni() {
-            return Uni.createFrom().item(() -> getTestThread());
-        }
-
-        // Return type Uni With Delay
-        @Query
-        public Uni<TestThread> onlyReactiveUniWithDelay() {
-            return Uni.createFrom().emitter(
-                    emitter -> {
-                        vertx.setTimer(1000, x -> emitter.complete(getTestThread()));
-                    });
-        }
-
-        // Return type Reactive with @Blocking
-        @Query
-        @Blocking
-        public Uni<TestThread> annotatedBlockingReactiveUni() {
-            return Uni.createFrom().item(() -> getTestThread());
-        }
-
-        // Return type Reactive with @NonBlocking (default)
-        @Query
-        @NonBlocking
-        public Uni<TestThread> annotatedNonBlockingReactiveUni() {
-            return Uni.createFrom().item(() -> getTestThread());
+        // Return type Object with @RunOnVirtualThread
+        @Mutation
+        @RunOnVirtualThread
+        public TestThread annotatedRunOnVirtualThreadMutationObject(String test) {
+            sleep();
+            return getTestThread();
         }
 
         @Query
-        public CompletionStage<TestThread> onlyCompletionStage() {
-            return Uni.createFrom().item(() -> getTestThread()).subscribeAsCompletionStage();
+        @RunOnVirtualThread
+        public TestThread pinThread() {
+            // Synchronize on an object to cause thread pinning
+            Object lock = new Object();
+            synchronized (lock) {
+                sleep();
+            }
+            return getTestThread();
         }
 
-        // Return type CompletionStage with @Blocking
-        @Query
-        @Blocking
-        public CompletionStage<TestThread> annotatedBlockingCompletionStage() {
-            return Uni.createFrom().item(() -> getTestThread()).subscribeAsCompletionStage();
-        }
-
-        // Return type CompletionStage with @NonBlocking (default)
-        @Query
-        @NonBlocking
-        public CompletionStage<TestThread> annotatedNonBlockingCompletionStage() {
-            return Uni.createFrom().item(() -> getTestThread()).subscribeAsCompletionStage();
+        private void sleep() {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException(e);
+            }
         }
 
         private TestThread getTestThread() {
@@ -408,74 +167,4 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
             return new TestThread(id, name, priority, state, group);
         }
     }
-
-    /**
-     * Hold info about a thread
-     */
-    public static class TestThread {
-
-        private long id;
-        private String name;
-        private int priority;
-        private String state;
-        private String group;
-
-        public TestThread() {
-            super();
-        }
-
-        public TestThread(long id, String name, int priority, String state, String group) {
-            this.id = id;
-            this.name = name;
-            this.priority = priority;
-            this.state = state;
-            this.group = group;
-        }
-
-        public long getId() {
-            return id;
-        }
-
-        public void setId(long id) {
-            this.id = id;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public int getPriority() {
-            return priority;
-        }
-
-        public void setPriority(int priority) {
-            this.priority = priority;
-        }
-
-        public String getState() {
-            return state;
-        }
-
-        public void setState(String state) {
-            this.state = state;
-        }
-
-        public String getGroup() {
-            return group;
-        }
-
-        public void setGroup(String group) {
-            this.group = group;
-        }
-
-        public String getVertxContextClassName() {
-            Context vc = Vertx.currentContext();
-            return vc.getClass().getName();
-        }
-    }
-
 }

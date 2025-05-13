@@ -10,8 +10,8 @@
         <version>999-SNAPSHOT</version>
     </parent>
 
-    <artifactId>quarkus-integration-test-virtual-threads-reseteasy-reactive</artifactId>
-    <name>Quarkus - Integration Tests - Virtual Threads - RESTEasy Reactive</name>
+    <artifactId>quarkus-integration-test-virtual-threads-graphql</artifactId>
+    <name>Quarkus - Integration Tests - Virtual Threads - Graphql</name>
 
     <dependencies>
         <dependency>

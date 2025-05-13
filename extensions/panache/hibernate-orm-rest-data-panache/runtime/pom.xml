@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-hibernate-orm-rest-data-panache-parent</artifactId>
-        <version>3.15.999-SNAPSHOT</version>
+        <version>3.15.5</version>
     </parent>
 
     <artifactId>quarkus-hibernate-orm-rest-data-panache</artifactId>

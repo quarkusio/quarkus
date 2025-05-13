@@ -6,7 +6,7 @@
     <parent>
         <artifactId>quarkus-observability-devservices-parent</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>3.15.999-SNAPSHOT</version>
+        <version>3.15.5</version>
     </parent>
 
     <artifactId>quarkus-observability-testcontainers</artifactId>

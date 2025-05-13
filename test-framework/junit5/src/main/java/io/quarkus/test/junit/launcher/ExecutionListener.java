@@ -19,7 +19,7 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
  */
 public class ExecutionListener implements TestExecutionListener {
 
-    private Deque<ClassLoader> origCl = new ArrayDeque<>();
+    private final Deque<ClassLoader> origCl = new ArrayDeque<>();
 
     @Override
     public void executionStarted(TestIdentifier testIdentifier) {
@@ -34,8 +34,6 @@ public class ExecutionListener implements TestExecutionListener {
                 if (isQuarkusTest(classLoader)) {
                     origCl.push(Thread.currentThread().getContextClassLoader());
                     Thread.currentThread().setContextClassLoader(classLoader);
-                } else {
-                    origCl = null;
                 }
             }
         }

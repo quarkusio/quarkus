@@ -158,7 +158,6 @@ public class JunitTestRunner {
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
                     TestSupport.instance()
                             .get()::isDisplayTestOutput);
-            // TODO do we want to do this setting of the TCCL? I think it just makes problems?
             Thread.currentThread().setContextClassLoader(tcl);
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
@@ -617,18 +616,16 @@ public class JunitTestRunner {
         // Most logic in the JUnitRunner counts main tests as quarkus tests, so do a (mildly irritating) special pass to get the ones which are strictly @QuarkusTest
 
         Set<String> quarkusTestClassesForFacadeClassLoader = new HashSet<>();
-        for (var a : Arrays.asList(QUARKUS_TEST)) {
-            for (AnnotationInstance i : index.getAnnotations(a)) {
-                DotName name = i.target()
-                        .asClass()
-                        .name();
-                quarkusTestClassesForFacadeClassLoader.add(name.toString());
-                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                    if (!integrationTestClasses.contains(clazz.name()
-                            .toString())) {
-                        quarkusTestClassesForFacadeClassLoader.add(clazz.name()
-                                .toString());
-                    }
+        for (AnnotationInstance i : index.getAnnotations(QUARKUS_TEST)) {
+            DotName name = i.target()
+                    .asClass()
+                    .name();
+            quarkusTestClassesForFacadeClassLoader.add(name.toString());
+            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                if (!integrationTestClasses.contains(clazz.name()
+                        .toString())) {
+                    quarkusTestClassesForFacadeClassLoader.add(clazz.name()
+                            .toString());
                 }
             }
         }
@@ -681,10 +678,16 @@ public class JunitTestRunner {
             }
             var enclosing = enclosingClasses.get(testClass);
             if (enclosing != null) {
-                if (integrationTestClasses.contains(enclosing.toString())) {
+                String enclosingString = enclosing.toString();
+                if (quarkusTestClassesForFacadeClassLoader.contains(enclosingString)) {
+                    quarkusTestClassesForFacadeClassLoader.add(name);
+                }
+
+                // No else here, this is an 'also do'
+                if (integrationTestClasses.contains(enclosingString)) {
                     integrationTestClasses.add(name);
                     continue;
-                } else if (quarkusTestClasses.contains(enclosing.toString())) {
+                } else if (quarkusTestClasses.contains(enclosingString)) {
                     quarkusTestClasses.add(name);
                     continue;
                 }
@@ -745,8 +748,6 @@ public class JunitTestRunner {
                 log.warnf(
                         "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
                         i);
-            } finally {
-                // TODO should we do this?  Thread.currentThread().setContextClassLoader(old);
             }
         }
         itClasses.sort(Comparator.comparing(new Function<Class<?>, String>() {

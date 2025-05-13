@@ -73,7 +73,6 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
 
     }
 
-    @Disabled("See https://github.com/quarkusio/quarkus/issues/47671")
     @Test
     public void testNestedQuarkusTestMixedWithNormalTestsContinuousTesting()
             throws MavenInvocationException, FileNotFoundException {
@@ -88,7 +87,8 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
         // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
         // so we need to check the pass count explicitly
         Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(3, results.getTestsPassed());
+        Assertions.assertEquals(2, results.getTestsPassed());
+        Assertions.assertEquals(1, results.getTestsSkipped());
     }
 
     /**

@@ -38,7 +38,6 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.logging.Log;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestExtension;
@@ -225,7 +224,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        Log.debugf("Facade classloader loading %s", name);
+        log.debugf("Facade classloader loading %s", name);
 
         if (peekingClassLoader == null) {
             throw new RuntimeException("Attempted to load classes with a closed classloader: " + this);
@@ -430,7 +429,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             // With -Dnative loading the KeycloakRealmResourceManager gives a class not found exception for junit's TestRule
             // java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/junit/rules/TestRule
             // TODO it would be nice to diagnose why that's happening
-            Log.warn("Could not discover field annotations: " + e);
+            log.warn("Could not discover field annotations: " + e);
             return false;
         }
 

@@ -99,6 +99,7 @@ import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.configuration.ConfigurationException;
 import io.quarkus.security.Authenticated;
@@ -106,6 +107,7 @@ import io.quarkus.security.runtime.SecurityConfig;
 import io.quarkus.security.spi.AdditionalSecuredMethodsBuildItem;
 import io.quarkus.security.spi.ClassSecurityAnnotationBuildItem;
 import io.quarkus.security.spi.RegisterClassSecurityCheckBuildItem;
+import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 import io.quarkus.tls.deployment.spi.TlsRegistryBuildItem;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
 import io.quarkus.vertx.http.deployment.EagerSecurityInterceptorBindingBuildItem;
@@ -470,6 +472,14 @@ public class OidcBuildStep {
                 .forEach(c -> registerClassSecurityCheckProducer.produce(
                         new RegisterClassSecurityCheckBuildItem(c.name(), AnnotationInstance
                                 .builder(Authenticated.class).buildWithTarget(c))));
+    }
+
+    @BuildStep
+    public void registerHealthCheck(OidcBuildTimeConfig config, BuildProducer<HealthBuildItem> healthBuildItems,
+            Capabilities capabilities) {
+        if (config.healthEnabled() && capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+            healthBuildItems.produce(new HealthBuildItem(OidcTenantHealthCheck.class.getName(), true));
+        }
     }
 
     private static boolean areEagerSecInterceptorsSupported(Capabilities capabilities,

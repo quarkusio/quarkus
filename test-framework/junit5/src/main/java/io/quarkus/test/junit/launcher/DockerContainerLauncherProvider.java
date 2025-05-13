@@ -155,8 +155,8 @@ public class DockerContainerLauncherProvider implements ArtifactLauncherProvider
         private final Map<Integer, Integer> additionalExposedPorts;
         private final Optional<String> entryPoint;
         private final List<String> programArgs;
-        private Map<String, String> labels;
-        private Map<String, String> volumeMounts;
+        private final Map<String, String> labels;
+        private final Map<String, String> volumeMounts;
 
         public DefaultDockerInitContext(int httpPort, int httpsPort, Duration waitTime, String testProfile,
                 List<String> argLine, Map<String, String> env,

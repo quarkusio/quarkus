@@ -144,7 +144,10 @@ public class QuarkusMainIntegrationTestExtension extends AbstractQuarkusTestWith
                 // propagate Quarkus properties set from the build tool
                 Properties existingSysProps = System.getProperties();
                 for (String name : existingSysProps.stringPropertyNames()) {
-                    if (name.startsWith("quarkus.")) {
+                    if (name.startsWith("quarkus.")
+                            // don't include 'quarkus.profile' as that has already been taken into account when determining the launch profile
+                            // so we don't want this to end up in multiple launch arguments
+                            && !name.equals("quarkus.profile")) {
                         additionalProperties.put(name, existingSysProps.getProperty(name));
                     }
                 }

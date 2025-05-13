@@ -1,5 +1,8 @@
 package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 
+import java.util.List;
+import java.util.concurrent.Callable;
+
 import graphql.schema.DataFetchingEnvironment;
 import io.quarkus.arc.Arc;
 import io.smallrye.context.SmallRyeThreadContext;
@@ -9,9 +12,6 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-
-import java.util.List;
-import java.util.concurrent.Callable;
 
 public class QuarkusUniDataFetcher<K, T> extends AbstractAsyncDataFetcher<K, T> {
 

@@ -569,21 +569,23 @@ public class JunitTestRunner {
         //for now this is out of scope, we are just going to do annotation based discovery
         //we will need to fix this sooner rather than later though
 
+        if (moduleInfo.getTest().isEmpty()) {
+            return DiscoveryResult.EMPTY;
+        }
+
         //we also only run tests from the current module, which we can also revisit later
         Indexer indexer = new Indexer();
-        moduleInfo.getTest().ifPresent(test -> {
-            try (Stream<Path> files = Files.walk(Paths.get(test.getClassesPath()))) {
-                files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
-                    try (InputStream in = Files.newInputStream(s)) {
-                        indexer.index(in);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        try (Stream<Path> files = Files.walk(Paths.get(moduleInfo.getTest().get().getClassesPath()))) {
+            files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
+                try (InputStream in = Files.newInputStream(s)) {
+                    indexer.index(in);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         Index index = indexer.complete();
         //we now have all the classes by name
@@ -699,6 +701,20 @@ public class JunitTestRunner {
             unitTestClasses.add(name);
         }
 
+        // if we didn't find any test classes, let's return early
+        // Make sure you also update the logic for the non-empty case above if you adjust this part
+        if (testType == TestType.ALL) {
+            if (unitTestClasses.isEmpty() && quarkusTestClasses.isEmpty()) {
+                return DiscoveryResult.EMPTY;
+            }
+        } else if (testType == TestType.UNIT) {
+            if (unitTestClasses.isEmpty()) {
+                return DiscoveryResult.EMPTY;
+            }
+        } else if (quarkusTestClasses.isEmpty()) {
+            return DiscoveryResult.EMPTY;
+        }
+
         List<Class<?>> itClasses = new ArrayList<>();
         List<Class<?>> utClasses = new ArrayList<>();
 
@@ -809,6 +825,7 @@ public class JunitTestRunner {
             }
         }
 
+        // Make sure you also update the logic for the empty case above if you adjust this part
         if (testType == TestType.ALL) {
             //run unit style tests first
             //before the quarkus tests have started
@@ -1270,6 +1287,8 @@ public class JunitTestRunner {
     }
 
     static class DiscoveryResult implements AutoCloseable {
+
+        private final static DiscoveryResult EMPTY = new DiscoveryResult(null, List.of());
 
         final QuarkusClassLoader classLoader;
         final List<Class<?>> testClasses;

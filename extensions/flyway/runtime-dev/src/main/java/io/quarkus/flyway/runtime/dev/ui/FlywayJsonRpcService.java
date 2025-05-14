@@ -30,6 +30,9 @@ public class FlywayJsonRpcService {
     @ConfigProperty(name = "quarkus.flyway.locations")
     private List<String> locations;
 
+    @ConfigProperty(name = "quarkus.flyway.clean-disabled")
+    private boolean cleanDisabled;
+
     public void setInitialSqlSuppliers(Map<String, Supplier<String>> initialSqlSuppliers) {
         this.initialSqlSuppliers = initialSqlSuppliers;
     }
@@ -48,6 +51,10 @@ public class FlywayJsonRpcService {
             }
         }
         return datasources.values();
+    }
+
+    public boolean isCleanDisabled() {
+        return this.cleanDisabled;
     }
 
     public FlywayActionResponse clean(String ds) {

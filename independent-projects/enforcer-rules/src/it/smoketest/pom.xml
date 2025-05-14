@@ -5,7 +5,7 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.22.3</version>
         <relativePath>../../../parent/pom.xml</relativePath>
     </parent>
 

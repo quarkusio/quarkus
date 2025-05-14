@@ -8,13 +8,13 @@
     <parent>
         <groupId>io.quarkus</groupId>
         <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
+        <version>3.23.0.CR1</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
     <groupId>io.quarkus.qute</groupId>
     <artifactId>qute-parent</artifactId>
     <packaging>pom</packaging>
-    <version>999-SNAPSHOT</version>
+    <version>3.23.0.CR1</version>
 
     <name>Qute - Parent</name>
     <url>https://github.com/quarkusio/quarkus</url>

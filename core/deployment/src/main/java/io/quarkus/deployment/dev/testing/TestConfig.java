@@ -160,7 +160,7 @@ public interface TestConfig {
     /**
      * The profile to use when testing using {@code @QuarkusIntegrationTest}
      */
-    @WithDefault("${quarkus.profile:prod}")
+    @WithDefault("prod")
     String integrationTestProfile();
 
     /**

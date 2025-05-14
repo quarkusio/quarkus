@@ -14,12 +14,9 @@ lib
 bin
 !devtools/cli/distribution/java-binary/bin
 dependency-reduced-pom.xml
-derby.log
-hotspot.log
 .directory
 .java-version
 .graal-install
-hs_err_pid*.log
 dumps
 *.orig
 *.rej
@@ -31,9 +28,8 @@ ObjectStore
 .gradle
 docker/distroless/bazel-*
 /.apt_generated_tests/
-quarkus.log
-quarkus.log*
-replay_*.logß
+*.log
+*.log*
 nbactions.xml
 nb-configuration.xml
 .cache

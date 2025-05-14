@@ -501,6 +501,47 @@ You can inject the `EntityManagerFactory` of a named persistence unit using the 
 EntityManagerFactory entityManagerFactory;
 ----
 
+In addition to `EntityManager` and `EntityManagerFactory`, Quarkus also supports injecting the following JPA/Hibernate components:
+
+[source,java]
+----
+@Inject
+CriteriaBuilder criteriaBuilder;
+
+@Inject
+HibernateCriteriaBuilder hibernateCriteriaBuilder;
+
+@Inject
+Metamodel metamodel;
+
+@Inject
+org.hibernate.Metamodel metamodel;
+
+@Inject
+JpaMetamodel jpaMetamodel;
+
+@Inject
+Cache cache;
+
+@Inject
+org.hibernate.Cache cache;
+
+@Inject
+jakarta.persistence.PersistenceUnitUtil persistenceUnitUtil;
+
+@Inject
+org.hibernate.relational.SchemaManager schemaManager;
+----
+
+These components can also be injected with a specific persistence unit qualifier:
+
+[source,java]
+----
+@Inject
+@PersistenceUnit("users")
+CriteriaBuilder criteriaBuilder;
+----
+
 [[persistence-unit-active]]
 === Activate/deactivate persistence units
 

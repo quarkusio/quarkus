@@ -276,7 +276,8 @@ public class ResteasyReactiveCommonProcessor {
         for (GeneratedJaxRsResourceBuildItem generatedJaxRsResource : generatedJaxRsResources) {
             indexer.index(new ByteArrayInputStream(generatedJaxRsResource.getData()));
             generatedBeansProducer
-                    .produce(new GeneratedBeanBuildItem(generatedJaxRsResource.getName(), generatedJaxRsResource.getData()));
+                    .produce(new GeneratedBeanBuildItem(generatedJaxRsResource.internalName(),
+                            generatedJaxRsResource.getData()));
         }
         return new JaxRsResourceIndexBuildItem(CompositeIndex.create(combinedIndex.getComputingIndex(), indexer.complete()));
     }

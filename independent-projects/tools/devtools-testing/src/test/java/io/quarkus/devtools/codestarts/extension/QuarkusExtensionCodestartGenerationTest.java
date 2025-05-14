@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 
 import io.quarkus.devtools.codestarts.extension.QuarkusExtensionCodestartCatalog.QuarkusExtensionData;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.testing.SnapshotTesting;
 
 class QuarkusExtensionCodestartGenerationTest {
@@ -57,7 +58,7 @@ class QuarkusExtensionCodestartGenerationTest {
     }
 
     private QuarkusExtensionCodestartCatalog getCatalog() throws IOException {
-        return QuarkusExtensionCodestartCatalog.fromBaseCodestartsResources();
+        return QuarkusExtensionCodestartCatalog.fromBaseCodestartsResources(MessageWriter.info());
     }
 
 }

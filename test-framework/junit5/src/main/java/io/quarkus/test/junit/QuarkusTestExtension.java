@@ -175,6 +175,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         String time = "10m";
         //config is not established yet
         //we can only read from system properties
+        // TODO probably it is available because of the new model
         String sysPropString = System.getProperty(QUARKUS_TEST_HANG_DETECTION_TIMEOUT);
         if (sysPropString != null) {
             time = sysPropString;
@@ -192,12 +193,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
             // clear the test.url system property as the value leaks into the run when using different profiles
             System.clearProperty("test.url");
-            Map<String, String> additional = new HashMap<>();
-            QuarkusTestProfile profileInstance = getQuarkusTestProfile(profile, shutdownTasks, additional);
+            QuarkusTestProfile profileInstance = AppMakerHelper.getQuarkusTestProfile(profile);
+            if (profileInstance != null) {
+                shutdownTasks.add(AppMakerHelper.setExtraProperties(profile, profileInstance));
+            }
             StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
-
-            // TODO this might be a good idea, but if so, we'd need to undo it
-            Thread.currentThread().setContextClassLoader(startupAction.getClassLoader());
 
             CuratedApplication curatedApplication = startupAction.getClassLoader()
                     .getCuratedApplication();
@@ -301,10 +301,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
 
             throw effectiveException;
-        } finally {
-            if (originalCl != null) {
-                Thread.currentThread().setContextClassLoader(originalCl);
-            }
         }
 
     }
@@ -383,13 +379,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
 
         if (!failedBoot) {
-            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
-            try {
-                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                invokeBeforeTestExecutionCallbacks(tuple.getKey(), tuple.getValue());
-            } finally {
-                setCCL(original);
-            }
+            Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+            invokeBeforeTestExecutionCallbacks(tuple.getKey(), tuple.getValue());
         } else {
             throwBootFailureException();
         }
@@ -402,28 +393,23 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         }
         resetHangTimeout();
         if (!failedBoot) {
-            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
-            try {
-                pushMockContext();
-                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
-                String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
-                if (runningQuarkusApplication != null) {
-                    boolean secure = false;
-                    Optional<String> insecureAllowed = runningQuarkusApplication
-                            .getConfigValue("quarkus.http.insecure-requests", String.class);
-                    if (insecureAllowed.isPresent()) {
-                        secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
-                    }
-                    runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                            .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, secure, endpointPath);
-                    runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                            .getDeclaredMethod("setup", boolean.class).invoke(null, false);
+            pushMockContext();
+            Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+            invokeBeforeEachCallbacks(tuple.getKey(), tuple.getValue());
+            String endpointPath = getEndpointPath(context, testHttpEndpointProviders);
+            if (runningQuarkusApplication != null) {
+                boolean secure = false;
+                Optional<String> insecureAllowed = runningQuarkusApplication
+                        .getConfigValue("quarkus.http.insecure-requests", String.class);
+                if (insecureAllowed.isPresent()) {
+                    secure = !insecureAllowed.get().toLowerCase(Locale.ENGLISH).equals("enabled");
                 }
-            } finally {
-                setCCL(original);
-                // TODO pretty pointless setting and unsetting, since we wrap the whole execution in this test's CL
+                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                        .getDeclaredMethod("setURL", boolean.class, String.class).invoke(null, secure, endpointPath);
+                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
+                        .getDeclaredMethod("setup", boolean.class).invoke(null, false);
             }
+
         } else {
             throwBootFailureException();
         }
@@ -521,13 +507,9 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             return;
         }
         if (!failedBoot) {
-            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
-            try {
-                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                invokeAfterTestExecutionCallbacks(tuple.getKey(), tuple.getValue());
-            } finally {
-                setCCL(original);
-            }
+            Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+            invokeAfterTestExecutionCallbacks(tuple.getKey(), tuple.getValue());
+
         }
 
     }
@@ -540,17 +522,13 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         resetHangTimeout();
         if (!failedBoot) {
             popMockContext();
-            ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
-            try {
-                Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
-                invokeAfterEachCallbacks(tuple.getKey(), tuple.getValue());
-                runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
-                        .getDeclaredMethod("clearURL").invoke(null);
-                runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
-                        .getDeclaredMethod("tearDown", boolean.class).invoke(null, false);
-            } finally {
-                setCCL(original);
-            }
+            Map.Entry<Class<?>, ?> tuple = createQuarkusTestMethodContextTuple(context);
+            invokeAfterEachCallbacks(tuple.getKey(), tuple.getValue());
+            runningQuarkusApplication.getClassLoader().loadClass(RestAssuredURLManager.class.getName())
+                    .getDeclaredMethod("clearURL").invoke(null);
+            runningQuarkusApplication.getClassLoader().loadClass(TestScopeManager.class.getName())
+                    .getDeclaredMethod("tearDown", boolean.class).invoke(null, false);
+
         }
     }
 
@@ -635,6 +613,11 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
                         .getCuratedApplication()
                 : null;
         boolean isSameCuratedApplication = cl.getCuratedApplication() == curatedApplication;
+
+        if (cl.getCuratedApplication() == null) {
+            throw new IllegalStateException(
+                    "Internal error: ClassLoader " + cl + " does not have a linked curated application.");
+        }
         cl.getCuratedApplication().setEligibleForReuse(isSameCuratedApplication);
 
         // TODO if classes are misordered, say because someone overrode the ordering, and there are profiles or resources,
@@ -655,8 +638,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             }
             PropertyTestUtil.setLogFileProperty();
             try {
-                //TODO remove the later TCCL setting
-                Thread.currentThread().setContextClassLoader(extensionContext.getRequiredTestClass().getClassLoader());
                 state = doJavaStart(extensionContext, selectedProfile);
                 setState(extensionContext, state);
 
@@ -679,13 +660,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         return Objects.equals(outerClass, enclosingTestClass) || isNested(outerClass, enclosingTestClass);
     }
 
-    private static ClassLoader setCCL(ClassLoader cl) {
-        final Thread thread = Thread.currentThread();
-        final ClassLoader original = thread.getContextClassLoader();
-        thread.setContextClassLoader(cl);
-        return original;
-    }
-
     private void throwBootFailureException() {
         if (firstException != null) {
             Throwable throwable = firstException;
@@ -698,8 +672,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
-        // TODO this originalCl logic is half in here and half in the parent class
-        originalCl = Thread.currentThread().getContextClassLoader();
+        // Be aware that this is *not* the first thing that happens in the lifecycle.
+        // The ExecutionListener runs first, and sets and unsets the TCCL.
         Class<?> requiredTestClass = context.getRequiredTestClass();
         GroovyClassValue.disable();
         currentTestClassStack.push(requiredTestClass);
@@ -713,10 +687,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         if (runningQuarkusApplication != null) {
             pushMockContext();
 
-            // Set the TCCL to be the test class's classloader, for the duration of the execution
-            // TODO almost all the other TCCL-ing will now be redundnant, go through and delete it.
-
-            Thread.currentThread().setContextClassLoader(runningQuarkusApplication.getClassLoader());
             // TODO this is now redundant, we can just get the class from requiredTestClass
             invokeBeforeClassCallbacks(Class.class,
                     runningQuarkusApplication.getClassLoader().loadClass(requiredTestClass.getName()));
@@ -768,6 +738,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         invocation.skip();
     }
 
+    // TODO why is this an interceptor and not a TestInstanceFactory?
     @Override
     public <T> T interceptTestClassConstructor(Invocation<T> invocation,
             ReflectiveInvocationContext<Constructor<T>> invocationContext, ExtensionContext extensionContext) throws Throwable {
@@ -792,35 +763,17 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             return null;
         }
         T result;
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
 
         try {
-            Thread.currentThread().setContextClassLoader(requiredTestClass.getClassLoader());
             result = invocation.proceed();
         } catch (NullPointerException e) {
             throw new RuntimeException(
                     "When using constructor injection in a test, the only legal operation is to assign the constructor values to fields. Offending class is "
                             + requiredTestClass,
                     e);
-        } finally {
-            Thread.currentThread().setContextClassLoader(old);
         }
 
-        // We do this here as well, because when @TestInstance(Lifecycle.PER_CLASS) is used on a class,
-        // interceptTestClassConstructor is called before beforeAll, meaning that the TCCL will not be set correctly
-        // (for any test other than the first) unless this is done
-        old = null;
-        if (runningQuarkusApplication != null) {
-            old = setCCL(runningQuarkusApplication.getClassLoader());
-        }
-
-        try {
-            initTestState(extensionContext, state);
-        } finally {
-            if (old != null) {
-                setCCL(old);
-            }
-        }
+        initTestState(extensionContext, state);
         return result;
     }
 
@@ -981,7 +934,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throws Throwable {
         resetHangTimeout();
 
-        ClassLoader old = setCCL(runningQuarkusApplication.getClassLoader());
         try {
             Class<?> testClassFromTCCL = extensionContext.getRequiredTestClass();
             Map<Class<?>, Object> allTestsClasses = new HashMap<>();
@@ -1051,8 +1003,6 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             throw e.getCause();
         } catch (IllegalAccessException | ClassNotFoundException e) {
             throw new RuntimeException(e);
-        } finally {
-            setCCL(old);
         }
     }
 
@@ -1111,9 +1061,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             if (!isNativeOrIntegrationTest(context.getRequiredTestClass()) && (runningQuarkusApplication != null)) {
                 popMockContext();
             }
-            if (originalCl != null) {
-                setCCL(originalCl);
-            }
+
         } finally {
             currentTestClassStack.pop();
             if (!outerInstances.isEmpty()) {
@@ -1136,12 +1084,7 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
         Object quarkusTestContextInstance = quarkusTestContextClass.getConstructor(Object.class, List.class, Throwable.class)
                 .newInstance(actualTestInstance, new ArrayList<>(outerInstances), state.getTestErrorCause());
 
-        ClassLoader original = setCCL(runningQuarkusApplication.getClassLoader());
-        try {
-            invokeAfterAllCallbacks(quarkusTestContextClass, quarkusTestContextInstance);
-        } finally {
-            setCCL(original);
-        }
+        invokeAfterAllCallbacks(quarkusTestContextClass, quarkusTestContextInstance);
     }
 
     @Override

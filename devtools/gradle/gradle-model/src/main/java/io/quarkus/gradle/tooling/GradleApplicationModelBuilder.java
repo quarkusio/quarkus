@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -36,7 +37,7 @@ import org.gradle.api.tasks.testing.Test;
 import org.gradle.internal.composite.IncludedBuildInternal;
 import org.gradle.language.jvm.tasks.ProcessResources;
 import org.gradle.tooling.provider.model.ParameterizedToolingModelBuilder;
-import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile;
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModel;
@@ -60,7 +61,6 @@ import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
 import io.quarkus.maven.dependency.GAV;
-import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -352,23 +352,20 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             }
 
             PathCollection paths = null;
-            if (workspaceDiscovery && a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
-
-                Project projectDep = project.getRootProject().findProject(
-                        ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
+            if (workspaceDiscovery && a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier compId) {
+                Project projectDep = project.getRootProject().findProject(compId.getProjectPath());
                 SourceSetContainer sourceSets = projectDep == null ? null
                         : projectDep.getExtensions().findByType(SourceSetContainer.class);
 
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
                     final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
-                            ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getBuild().getName());
+                            compId.getBuild().getName());
                     if (includedBuild != null) {
                         final PathList.Builder pathBuilder = PathList.builder();
 
-                        if (includedBuild instanceof IncludedBuildInternal) {
-                            projectDep = ToolingUtils.includedBuildProject((IncludedBuildInternal) includedBuild,
-                                    ((ProjectComponentIdentifier) a.getId().getComponentIdentifier()).getProjectPath());
+                        if (includedBuild instanceof IncludedBuildInternal ib) {
+                            projectDep = ToolingUtils.includedBuildProject(ib, compId.getProjectPath());
                         }
                         if (projectDep != null) {
                             projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
@@ -517,7 +514,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private static void initProjectModule(Project project, WorkspaceModule.Mutable module, SourceSet sourceSet,
             String classifier) {
-
         if (sourceSet == null) {
             return;
         }
@@ -570,12 +566,30 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
     private static void maybeConfigureKotlinJvmCompile(Project project, FileCollection allClassesDirs,
             List<SourceDir> sourceDirs, SourceSet sourceSet) {
-        // This "try/catch" is needed because of the way the "quarkus-cli" Gradle tests work. Without it, the tests fail.
-        try {
-            Class.forName("org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile");
-            doConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs, sourceSet);
-        } catch (ClassNotFoundException e) {
-            // ignore
+        for (var task : project.getTasks()) {
+            if (task.getName().contains("compileKotlin") && task.getEnabled()) {
+                int originalSourceDirsSize = sourceDirs.size();
+
+                // This "try/catch" is needed because of the way the "quarkus-cli" Gradle tests work. Without it, the tests fail.
+                try {
+                    Class.forName("org.jetbrains.kotlin.gradle.tasks.KotlinCompileTool");
+                    doConfigureKotlinJvmCompile(project, allClassesDirs, sourceDirs, sourceSet);
+                } catch (ClassNotFoundException e) {
+                    // ignore
+                }
+                // if the above failed, there could still be a KotlinCompile task that's not easily discoverable
+                if (originalSourceDirsSize == sourceDirs.size()) {
+                    final Path outputDir = getClassesOutputDir(task);
+                    if (outputDir != null && task.getInputs().getHasInputs()) {
+                        task.getInputs().getSourceFiles().getAsFileTree().visit(visitor -> {
+                            if (visitor.getRelativePath().getSegments().length == 1) {
+                                sourceDirs.add(SourceDir.of(visitor.getFile().getParentFile().toPath(), outputDir));
+                            }
+                        });
+                    }
+                    break;
+                }
+            }
         }
     }
 
@@ -583,32 +597,26 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             List<SourceDir> sourceDirs, SourceSet sourceSet) {
         // Use KotlinJvmCompile.class in a separate method to prevent that maybeConfigureKotlinJvmCompile() runs into
         // a ClassNotFoundException due to actually using KotlinJvmCompile.class.
-        project.getTasks().withType(KotlinJvmCompile.class, t -> configureCompileTask(t.getSources().getAsFileTree(),
+        project.getTasks().withType(KotlinCompileTool.class, t -> configureCompileTask(t.getSources().getAsFileTree(),
                 t.getDestinationDirectory(), allClassesDirs, sourceDirs, t, sourceSet));
     }
 
     private static void configureCompileTask(FileTree sources, DirectoryProperty destinationDirectory,
             FileCollection allClassesDirs, List<SourceDir> sourceDirs, Task task, SourceSet sourceSet) {
-        if (!task.getEnabled()) {
+        if (!task.getEnabled() || sources.isEmpty()) {
             return;
         }
-        if (sources.isEmpty()) {
-            return;
-        }
-
         final File destDir = destinationDirectory.getAsFile().get();
         if (!allClassesDirs.contains(destDir)) {
             return;
         }
-        sources.visit(a -> {
+        sources.visit(visitor -> {
             // we are looking for the root dirs containing sources
-            if (a.getRelativePath().getSegments().length == 1) {
-                final File srcDir = a.getFile().getParentFile();
-
-                sourceDirs
-                        .add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(),
-                                findGeneratedSourceDir(destDir, sourceSet),
-                                Map.of("compiler", task.getName())));
+            if (visitor.getRelativePath().getSegments().length == 1) {
+                final File srcDir = visitor.getFile().getParentFile();
+                sourceDirs.add(new DefaultSourceDir(srcDir.toPath(), destDir.toPath(),
+                        findGeneratedSourceDir(destDir, sourceSet),
+                        Map.of("compiler", task.getName())));
             }
         });
     }
@@ -620,9 +628,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         }
         String language = destDir.getParentFile().getName(); // java
         String sourceSetName = destDir.getName(); // main
-        if (language == null) {
-            return null;
-        }
         // find the corresponding generated sources, same pattern, but under build/generated/sources/annotationProcessor/java/main
         for (File generatedDir : sourceSet.getOutput().getGeneratedSourcesDirs().getFiles()) {
             if (generatedDir.getParentFile() == null) {
@@ -632,6 +637,37 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                     && generatedDir.getParentFile().getName().equals(language)) {
                 return generatedDir.toPath();
             }
+        }
+        return null;
+    }
+
+    /**
+     * This method is meant to figure out the output directory containing class files for a compile task
+     * which is not available in the plugin classpath. An example would be KotlinCompile.
+     *
+     * @param compileTask a compile task
+     */
+    private static Path getClassesOutputDir(Task compileTask) {
+        if (compileTask.getOutputs().getHasOutput()) {
+            final AtomicReference<Path> result = new AtomicReference<>();
+            compileTask.getOutputs().getFiles().getAsFileTree().visit(visitor -> {
+                // We are looking for the first class file, since a compile task would typically
+                // have a single output location for classes.
+                // There in fact could be a few output locations, the rest though would typically be some internal caching bits
+                if (visitor.getName().endsWith(".class")) {
+                    visitor.stopVisiting();
+                    var file = visitor.getFile();
+                    int relativeSegments = visitor.getRelativePath().getSegments().length;
+                    while (file != null && relativeSegments > 0) {
+                        relativeSegments--;
+                        file = file.getParentFile();
+                    }
+                    if (file != null) {
+                        result.set(file.toPath());
+                    }
+                }
+            });
+            return result.get();
         }
         return null;
     }

@@ -20,6 +20,7 @@ import jakarta.ws.rs.container.Suspended;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 
+import org.jboss.resteasy.reactive.RestQuery;
 import org.jboss.resteasy.reactive.RestResponse;
 import org.jboss.resteasy.reactive.server.ServerExceptionMapper;
 
@@ -506,6 +507,34 @@ public class SimpleJsonResource extends SuperClass<Person> {
         item.setNameExtended("Name-Extended");
         item.setEmailExtended("E-mail-Extended");
         return item;
+    }
+
+    @POST
+    @Path("/json-value-public-method")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePublicMethod echoJsonValuePublicMethod(@RestQuery int value) {
+        return new ItemJsonValuePublicMethod(value);
+    }
+
+    @POST
+    @Path("/json-value-public-field")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePublicField echoJsonValuePublicField(@RestQuery int value) {
+        return new ItemJsonValuePublicField(value);
+    }
+
+    @POST
+    @Path("/json-value-private-method")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePrivateMethod echoJsonValuePrivateMethod(@RestQuery int value) {
+        return new ItemJsonValuePrivateMethod(value);
+    }
+
+    @POST
+    @Path("/json-value-private-field")
+    @Produces(MediaType.APPLICATION_JSON)
+    public ItemJsonValuePrivateField echoJsonValuePrivateField(@RestQuery int value) {
+        return new ItemJsonValuePrivateField(value);
     }
 
     @POST

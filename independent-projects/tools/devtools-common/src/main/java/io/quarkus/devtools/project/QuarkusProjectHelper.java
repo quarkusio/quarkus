@@ -146,7 +146,7 @@ public class QuarkusProjectHelper {
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, BuildTool buildTool,
             JavaVersion javaVersion,
             MessageWriter log) {
-        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
+        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(log, catalog),
                 log, buildTool, javaVersion);
     }
 
@@ -161,7 +161,7 @@ public class QuarkusProjectHelper {
     public static QuarkusProject getProject(Path projectDir, ExtensionCatalog catalog, ExtensionManager extManager,
             JavaVersion javaVersion,
             MessageWriter log) {
-        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(catalog),
+        return QuarkusProject.of(projectDir, catalog, getCodestartResourceLoaders(log, catalog),
                 log, extManager, javaVersion);
     }
 

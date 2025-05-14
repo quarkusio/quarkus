@@ -22,7 +22,7 @@
         <cyclonedx.version>9.0.5</cyclonedx.version>
         <expressly.version>5.0.0</expressly.version>
         <findbugs.version>3.0.2</findbugs.version>
-        <jandex.version>3.3.0</jandex.version>
+        <jandex.version>3.3.1</jandex.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <parsson.version>1.1.7</parsson.version>
@@ -32,7 +32,7 @@
         <opentelemetry-instrumentation.version>2.10.0-alpha</opentelemetry-instrumentation.version>
         <opentelemetry-semconv.version>1.29.0-alpha</opentelemetry-semconv.version>
         <quarkus-http.version>5.3.4</quarkus-http.version>
-        <micrometer.version>1.14.6</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
+        <micrometer.version>1.14.7</micrometer.version><!-- keep in sync with hdrhistogram: https://central.sonatype.com/artifact/io.micrometer/micrometer-core -->
         <hdrhistogram.version>2.2.2</hdrhistogram.version><!-- keep in sync with micrometer -->
         <google-auth.version>0.22.0</google-auth.version>
         <graphql-java.version>22.2</graphql-java.version> <!-- keep in sync with smallrye-graphql -->
@@ -96,7 +96,7 @@
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
-        <narayana.version>7.2.1.Final</narayana.version>
+        <narayana.version>7.2.2.Final</narayana.version>
         <narayana-lra.version>1.0.0.Final</narayana-lra.version>
         <agroal.version>2.6</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
@@ -108,7 +108,7 @@
         <slf4j-jboss-logmanager.version>2.0.0.Final</slf4j-jboss-logmanager.version>
         <wildfly-common.version>2.0.1</wildfly-common.version>
         <wildfly-client-config.version>1.0.1.Final</wildfly-client-config.version>
-        <wildfly-elytron.version>2.6.3.Final</wildfly-elytron.version>
+        <wildfly-elytron.version>2.6.4.Final</wildfly-elytron.version>
         <jboss-marshalling.version>2.2.3.Final</jboss-marshalling.version>
         <jboss-threads.version>3.8.0.Final</jboss-threads.version>
         <vertx.version>4.5.14</vertx.version>

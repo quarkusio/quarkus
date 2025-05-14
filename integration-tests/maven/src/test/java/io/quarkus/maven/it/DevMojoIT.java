@@ -1701,6 +1701,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
         Assertions.assertEquals("Quarkus", devModeClient.getHttpResponse("/hello/Quarkus"));
         Assertions.assertEquals("OK", devModeClient.getHttpResponse("/hello/parameterized-type-external"));
+        Assertions.assertEquals("Hello from Quarkus REST", devModeClient.getHttpResponse("/greet"));
     }
 
     @Test

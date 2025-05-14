@@ -103,7 +103,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         } else {
             final ExtensionCatalog extensionCatalog = resolveExtensionCatalog();
             final List<ResourceLoader> codestartsResourceLoader = CodestartResourceLoadersBuilder
-                    .codestartLoadersBuilder()
+                    .codestartLoadersBuilder(log)
                     .artifactResolver(artifactResolver())
                     .catalog(extensionCatalog)
                     .build();

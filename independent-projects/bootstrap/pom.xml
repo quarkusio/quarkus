@@ -34,7 +34,7 @@
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jandex.version>3.3.0</jandex.version>
+        <jandex.version>3.3.1</jandex.version>
         <jmh.version>1.37</jmh.version>
 
         <!-- Dependency versions -->

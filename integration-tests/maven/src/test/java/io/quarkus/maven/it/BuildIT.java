@@ -47,12 +47,51 @@ class BuildIT extends MojoTestBase {
 
     @Test
     void testCustomTestSourceSets()
-            throws MavenInvocationException, IOException, InterruptedException {
+            throws MavenInvocationException, InterruptedException {
         testDir = initProject("projects/test-source-sets");
         running = new RunningInvoker(testDir, false);
         MavenProcessInvocationResult result = running.execute(List.of("clean", "verify", "-Dquarkus.analytics.disabled=true"),
                 Map.of());
         assertThat(result.getProcess().waitFor()).isZero();
+    }
+
+    /**
+     * Unlike {@link #testCustomTestSourceSets()} above, this test tests something that shouldn't work.
+     * The test project in {@link #testCustomTestSourceSets()} configures the compiler plugin and the test
+     * plugins with the custom classes locations in addition to adding custom resource directories.
+     *
+     * This test was added to fix a regression of custom resource location resolution in the
+     * {@link io.quarkus.bootstrap.resolver.maven.workspace.LocalProject},
+     * which should further be properly refactored to let only the {@link #testCustomTestSourceSets()} work,
+     * while this test should be changed to not locate custom resources on the classpath.
+     */
+    @Test
+    void testCustomResourceDir()
+            throws MavenInvocationException, InterruptedException {
+        testDir = initProject("projects/custom-resources-dir");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(List.of("clean", "test",
+                "-Dquarkus.analytics.disabled=true"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+
+        // with the source generation disabled (this will use a new resolver initialized before bootstrapping the test)
+        result = running.execute(List.of("clean", "test",
+                "-Dquarkus.analytics.disabled=true", "-Dquarkus.generate-code.skip=true"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+    }
+
+    @Test
+    void testQuarkusMainTest()
+            throws MavenInvocationException, InterruptedException, IOException {
+        testDir = initProject("projects/basic-command-mode", "projects/basic-command-mode-test");
+        running = new RunningInvoker(testDir, false);
+        MavenProcessInvocationResult result = running.execute(List.of("clean", "test"),
+                Map.of());
+        assertThat(result.getProcess().waitFor()).isZero();
+        final String log = running.log();
+        assertThat(log).contains("ARGS: [one]");
     }
 
     @Test

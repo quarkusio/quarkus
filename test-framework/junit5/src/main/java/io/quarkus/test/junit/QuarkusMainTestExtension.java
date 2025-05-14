@@ -1,19 +1,11 @@
 package io.quarkus.test.junit;
 
-import static io.quarkus.commons.classloading.ClassLoaderHelper.fromClassNameToResourceName;
-import static io.quarkus.test.common.PathTestHelper.getAppClassLocationForTestLocation;
-import static io.quarkus.test.common.PathTestHelper.getTestClassesLocation;
-import static io.quarkus.test.common.PathTestHelper.validateTestDir;
-import static io.quarkus.test.junit.AppMakerHelper.getGradleAppModelForIDE;
 import static io.quarkus.test.junit.IntegrationTestUtil.activateLogging;
 import static io.quarkus.test.junit.TestResourceUtil.TestResourceManagerReflections.copyEntriesFromProfile;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.reflect.Method;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -22,7 +14,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.LinkedBlockingDeque;
-import java.util.function.Consumer;
 import java.util.logging.Handler;
 
 import org.jboss.logmanager.LogContext;
@@ -42,25 +33,16 @@ import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.jupiter.api.extension.ReflectiveInvocationContext;
 
-import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.BootstrapException;
 import io.quarkus.bootstrap.app.CuratedApplication;
-import io.quarkus.bootstrap.app.QuarkusBootstrap;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.logging.InitialConfigurator;
 import io.quarkus.bootstrap.logging.QuarkusDelayedHandler;
-import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.workspace.ArtifactSources;
-import io.quarkus.bootstrap.workspace.SourceDir;
-import io.quarkus.bootstrap.workspace.WorkspaceModule;
-import io.quarkus.deployment.dev.testing.CurrentTestApplication;
 import io.quarkus.deployment.dev.testing.LogCapturingOutputFilter;
 import io.quarkus.dev.console.QuarkusConsole;
 import io.quarkus.dev.testing.TracingHandler;
-import io.quarkus.paths.PathList;
 import io.quarkus.runtime.logging.JBossVersion;
-import io.quarkus.test.common.PathTestHelper;
 import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.test.junit.main.Launch;
 import io.quarkus.test.junit.main.LaunchResult;
@@ -73,6 +55,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     PrepareResult prepareResult;
     LinkedBlockingDeque<Runnable> shutdownTasks;
+    protected ClassLoader originalCl;
 
     /**
      * The result from an {@link Launch} test
@@ -114,119 +97,37 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         }
         if (prepareResult == null) {
             shutdownTasks = new LinkedBlockingDeque<>();
-            prepareResult = createAugmentor(extensionContext, profile, shutdownTasks);
+            prepareResult = prepare(extensionContext, profile, shutdownTasks);
         }
     }
 
+    protected PrepareResult prepare(ExtensionContext context, Class<? extends QuarkusTestProfile> profile,
+            Collection<Runnable> shutdownTasks) throws Exception {
+
+        originalCl = Thread.currentThread().getContextClassLoader();
+        quarkusTestProfile = profile;
+        final Class<?> requiredTestClass = context.getRequiredTestClass();
+        final CuratedApplication curatedApplication = getCuratedApplication(requiredTestClass, context.getDisplayName());
+
+        var result = AppMakerHelper.prepare(requiredTestClass, curatedApplication, profile);
+        if (result.profileInstance() != null) {
+            shutdownTasks.add(AppMakerHelper.setExtraProperties(profile, result.profileInstance()));
+        }
+        return result;
+    }
+
     // Override, because in main tests the quarkus classloader isn't used for tests
-    @Override
-    protected CuratedApplication getCuratedApplication(Class<?> requiredTestClass, ExtensionContext context,
-            Collection<Runnable> shutdownTasks) throws BootstrapException, AppModelResolverException, IOException {
-        // TODO is any of this common to AppMakerHelper? Almost all of it?
-        // Also, a lot of of duplication with parent class
-        CuratedApplication curatedApplication;
-        if (CurrentTestApplication.curatedApplication != null) {
-            curatedApplication = CurrentTestApplication.curatedApplication;
-        } else {
-            final Path projectRoot = Paths.get("")
-                    .normalize()
-                    .toAbsolutePath();
-
-            final PathList.Builder rootBuilder = PathList.builder();
-            final Path testClassLocation;
-            final Path appClassLocation;
-
-            Consumer<Path> addToBuilderIfConditionMet = path -> {
-                if (path != null && Files.exists(path) && !rootBuilder.contains(path)) {
-                    rootBuilder.add(path);
-                }
-            };
-
-            // TODO replace this with the getTestClassesDir methid in PathTestHelper
-            final ApplicationModel gradleAppModel = getGradleAppModelForIDE(projectRoot);
-            // If gradle project running directly with IDE
-            if (gradleAppModel != null && gradleAppModel.getApplicationModule() != null) {
-                final WorkspaceModule module = gradleAppModel.getApplicationModule();
-                final String testClassFileName = fromClassNameToResourceName(requiredTestClass.getName());
-                Path testClassesDir = null;
-                for (String classifier : module.getSourceClassifiers()) {
-                    final ArtifactSources sources = module.getSources(classifier);
-                    if (sources.isOutputAvailable() && sources.getOutputTree().contains(testClassFileName)) {
-                        for (SourceDir src : sources.getSourceDirs()) {
-                            addToBuilderIfConditionMet.accept(src.getOutputDir());
-                            if (Files.exists(src.getOutputDir().resolve(testClassFileName))) {
-                                testClassesDir = src.getOutputDir();
-                            }
-                        }
-                        for (SourceDir src : sources.getResourceDirs()) {
-                            addToBuilderIfConditionMet.accept(src.getOutputDir());
-                        }
-                        for (SourceDir src : module.getMainSources().getSourceDirs()) {
-                            addToBuilderIfConditionMet.accept(src.getOutputDir());
-                        }
-                        for (SourceDir src : module.getMainSources().getResourceDirs()) {
-                            addToBuilderIfConditionMet.accept(src.getOutputDir());
-                        }
-                        break;
-                    }
-                }
-                validateTestDir(requiredTestClass, testClassesDir, module);
-                testClassLocation = testClassesDir;
-
-            } else {
-                if (System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR) != null) {
-                    final String[] sourceDirectories = System.getProperty(BootstrapConstants.OUTPUT_SOURCES_DIR).split(",");
-                    for (String sourceDirectory : sourceDirectories) {
-                        final Path directory = Paths.get(sourceDirectory);
-                        addToBuilderIfConditionMet.accept(directory);
-                    }
-                }
-
-                testClassLocation = getTestClassesLocation(requiredTestClass);
-                appClassLocation = getAppClassLocationForTestLocation(testClassLocation);
-                if (!appClassLocation.equals(testClassLocation)) {
-                    addToBuilderIfConditionMet.accept(testClassLocation);
-                    // if test classes is a dir, we should also check whether test resources dir exists as a separate dir (gradle)
-                    // TODO: this whole app/test path resolution logic is pretty dumb, it needs be re-worked using proper workspace discovery
-                    final Path testResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(testClassLocation,
-                            "test");
-                    addToBuilderIfConditionMet.accept(testResourcesLocation);
-                }
-
-                addToBuilderIfConditionMet.accept(appClassLocation);
-                final Path appResourcesLocation = PathTestHelper.getResourcesForClassesDirOrNull(appClassLocation, "main");
-                addToBuilderIfConditionMet.accept(appResourcesLocation);
-            }
-
-            // TODO do we need to set isContinuousTesting?
-            curatedApplication = QuarkusBootstrap.builder()
-                    //.setExistingModel(gradleAppModel) unfortunately this model is not re-usable due to PathTree serialization by Gradle
-                    .setBaseName(context.getDisplayName() + " (QuarkusTest)")
-                    .setIsolateDeployment(true)
-                    .setMode(QuarkusBootstrap.Mode.TEST)
-                    .setTest(true)
-                    .setTargetDirectory(PathTestHelper.getProjectBuildDir(projectRoot, testClassLocation))
-                    .setProjectRoot(projectRoot)
-                    .setApplicationRoot(rootBuilder.build())
-                    .build()
-                    .bootstrap();
-            shutdownTasks.add(curatedApplication::close);
-        }
-
-        if (curatedApplication.getApplicationModel()
-                .getRuntimeDependencies()
-                .isEmpty()) {
-            throw new RuntimeException(
-                    "The tests were run against a directory that does not contain a Quarkus project. Please ensure that the test is configured to use the proper working directory.");
-        }
-
-        return curatedApplication;
+    protected CuratedApplication getCuratedApplication(Class<?> requiredTestClass, String displayName)
+            throws AppModelResolverException, IOException, BootstrapException {
+        var curatedApp = AppMakerHelper.makeCuratedApplication(requiredTestClass, displayName, false);
+        shutdownTasks.add(curatedApp::close);
+        return curatedApp;
     }
 
     private LaunchResult doLaunch(ExtensionContext context, Class<? extends QuarkusTestProfile> selectedProfile,
             String[] arguments) throws Exception {
         ensurePrepared(context, selectedProfile);
-        LogCapturingOutputFilter filter = new LogCapturingOutputFilter(prepareResult.curatedApplication, false, false,
+        LogCapturingOutputFilter filter = new LogCapturingOutputFilter(prepareResult.curatedApplication(), false, false,
                 () -> true);
         QuarkusConsole.addOutputFilter(filter);
         try {
@@ -327,14 +228,14 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
         TracingHandler.quarkusStarting();
         Closeable testResourceManager = null;
         try {
-            StartupAction startupAction = prepareResult.augmentAction.createInitialRuntimeApplication();
+            StartupAction startupAction = prepareResult.augmentAction().createInitialRuntimeApplication();
             Thread.currentThread()
                     .setContextClassLoader(startupAction.getClassLoader());
             QuarkusConsole.installRedirects();
             flushAllLoggers();
             installLoggerRedirect();
 
-            QuarkusTestProfile profileInstance = prepareResult.profileInstance;
+            QuarkusTestProfile profileInstance = prepareResult.profileInstance();
 
             // We need to start up the resources, but we need to do it in the classloader
             // of the running application, not the classloader of the test

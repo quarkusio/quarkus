@@ -15,10 +15,8 @@ import java.net.URLClassLoader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,7 +38,6 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.logging.Log;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestExtension;
@@ -74,8 +71,6 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     // JUnit discovery is single threaded, so no need for concurrency on this map
     private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
     private static final String NO_PROFILE = "no-profile";
-
-    private final AppMakerHelper appMakerHelper = new AppMakerHelper();
 
     /*
      * A 'disposable' loader for holding temporary instances of the classes to allow us to inspect them.
@@ -229,7 +224,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        Log.debugf("Facade classloader loading %s", name);
+        log.debugf("Facade classloader loading %s", name);
 
         if (peekingClassLoader == null) {
             throw new RuntimeException("Attempted to load classes with a closed classloader: " + this);
@@ -434,7 +429,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             // With -Dnative loading the KeycloakRealmResourceManager gives a class not found exception for junit's TestRule
             // java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/junit/rules/TestRule
             // TODO it would be nice to diagnose why that's happening
-            Log.warn("Could not discover field annotations: " + e);
+            log.warn("Could not discover field annotations: " + e);
             return false;
         }
 
@@ -531,13 +526,10 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         CuratedApplication curatedApplication = curatedApplications.get(key);
 
         if (curatedApplication == null) {
-            Collection<Runnable> shutdownTasks = new HashSet<>();
-
             String displayName = DISPLAY_NAME_PREFIX + key;
             // TODO should we use clonedBuilder here, like TestSupport does?
-            curatedApplication = appMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
-                    isAuxiliaryApplication,
-                    shutdownTasks);
+            curatedApplication = AppMakerHelper.makeCuratedApplication(requiredTestClass, displayName,
+                    isAuxiliaryApplication);
             curatedApplications.put(key, curatedApplication);
 
         }
@@ -555,8 +547,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
-        StartupAction startupAction = appMakerHelper.getStartupAction(requiredTestClass,
-                curatedApplication, isAuxiliaryApplication, profile);
+        StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
+                curatedApplication, profile);
 
         QuarkusClassLoader loader = startupAction.getClassLoader();
 
@@ -571,6 +563,10 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
         return startupAction;
 
+    }
+
+    public boolean isServiceLoaderMechanism() {
+        return isServiceLoaderMechanism;
     }
 
     @Override

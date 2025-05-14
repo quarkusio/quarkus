@@ -462,12 +462,13 @@ public abstract class ResteasyReactiveRequestContext
 
     public String getAbsoluteURI() {
         // if we never changed the path we can use the vert.x URI
-        if (path == null)
+        if (path == null) {
             return serverRequest().getRequestAbsoluteUri();
+        }
         // Note: we could store our cache as normalised, but I'm not sure if the vertx one is normalised
         if (absoluteUri == null) {
             try {
-                absoluteUri = new URI(scheme, authority, path, null, null).toASCIIString();
+                absoluteUri = new URI(getScheme(), getAuthority(), path, null, null).toASCIIString();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -476,14 +477,16 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public String getScheme() {
-        if (scheme == null)
+        if (scheme == null) {
             return serverRequest().getRequestScheme();
+        }
         return scheme;
     }
 
     public String getAuthority() {
-        if (authority == null)
+        if (authority == null) {
             return serverRequest().getRequestHost();
+        }
         return authority;
     }
 
@@ -1012,7 +1015,7 @@ public abstract class ResteasyReactiveRequestContext
                         select.destroy(instance);
                     }
                 });
-                return (T) instance;
+                return instance;
             }
         }
         throw new IllegalStateException("Unsupported bean param type: " + type);

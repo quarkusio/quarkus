@@ -39,6 +39,7 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.spi.CDI;
 
 import org.crac.Resource;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -1549,7 +1550,7 @@ public class VertxHttpRecorder {
                                         return duplicated;
                                     },
                                     null,
-                                    new HttpServerOptions(),
+                                    createVirtualHttpServerOptions(),
                                     chctx,
                                     rootContext,
                                     "localhost",
@@ -1559,6 +1560,16 @@ public class VertxHttpRecorder {
                         });
 
                         ch.pipeline().addLast("handler", handler);
+                    }
+
+                    private static HttpServerOptions createVirtualHttpServerOptions() {
+                        var result = new HttpServerOptions();
+                        Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
+                                .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
+                        if (maybeMaxHeadersSize.isPresent()) {
+                            result.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
+                        }
+                        return result;
                     }
                 });
 

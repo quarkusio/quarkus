@@ -2,11 +2,13 @@ package io.quarkus.hibernate.orm.deployment;
 
 import static org.apache.commons.lang3.BooleanUtils.isFalse;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -24,26 +26,35 @@ import org.hibernate.StatelessSession;
 import org.hibernate.query.criteria.HibernateCriteriaBuilder;
 import org.hibernate.relational.SchemaManager;
 import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.AnnotationTarget.Kind;
 import org.jboss.jandex.AnnotationTransformation;
 import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.ClassType;
+import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.FieldInfo;
+import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
+import org.objectweb.asm.ClassVisitor;
 
 import io.agroal.api.AgroalDataSource;
 import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanDefiningAnnotationBuildItem;
+import io.quarkus.arc.deployment.BeanDiscoveryFinishedBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem.ExtendedBeanConfigurator;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.arc.deployment.ValidationPhaseBuildItem;
 import io.quarkus.arc.processor.AnnotationsTransformer;
+import io.quarkus.arc.processor.BeanInfo;
+import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.arc.processor.ScopeInfo;
 import io.quarkus.arc.processor.Transformation;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
@@ -52,7 +63,10 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.BytecodeTransformerBuildItem;
 import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
+import io.quarkus.gizmo.ClassTransformer;
+import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRecorder;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -274,6 +288,62 @@ public class HibernateOrmCdiProcessor {
         // Some user-injectable beans are retrieved programmatically and shouldn't be removed
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(AttributeConverter.class));
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(jpaModel.getPotentialCdiBeanClassNames()));
+    }
+
+    @BuildStep
+    void transformBeans(JpaModelBuildItem jpaModel, JpaModelIndexBuildItem indexBuildItem,
+            BeanDiscoveryFinishedBuildItem beans,
+            BuildProducer<BytecodeTransformerBuildItem> producer) {
+        if (!HibernateOrmProcessor.hasEntities(jpaModel)) {
+            return;
+        }
+
+        // the idea here is to remove the 'private' modifier from all methods that are annotated with JPA Listener methods
+        // and don't belong to entities
+        CompositeIndex index = indexBuildItem.getIndex();
+        for (DotName dotName : jpaModel.getPotentialCdiBeanClassNames()) {
+            if (jpaModel.getManagedClassNames().contains(dotName.toString())) {
+                continue;
+            }
+            ClassInfo classInfo = index.getClassByName(dotName);
+            List<BeanInfo> matchingBeans = beans.getBeans().stream().filter(bi -> bi.getBeanClass().equals(dotName)).toList();
+            if (matchingBeans.size() == 1) {
+                ScopeInfo beanScope = matchingBeans.get(0).getScope();
+                for (DotName jpaListenerDotName : ClassNames.JPA_LISTENER_ANNOTATIONS) {
+                    for (AnnotationInstance annotationInstance : classInfo.annotations(jpaListenerDotName)) {
+                        AnnotationTarget target = annotationInstance.target();
+                        if (target.kind() != AnnotationTarget.Kind.METHOD) {
+                            continue;
+                        }
+                        MethodInfo method = target.asMethod();
+                        if (Modifier.isPrivate(method.flags())) {
+                            if (beanScope.getDotName().equals(BuiltinScope.SINGLETON.getName())) {
+                                // we can safely transform in this case
+                                producer.produce(new BytecodeTransformerBuildItem(method.declaringClass().name().toString(),
+                                        new BiFunction<>() {
+                                            @Override
+                                            public ClassVisitor apply(String cls, ClassVisitor clsVisitor) {
+                                                var classTransformer = new ClassTransformer(cls);
+                                                classTransformer.modifyMethod(MethodDescriptor.of(method))
+                                                        .removeModifiers(Modifier.PRIVATE);
+                                                return classTransformer.applyTo(clsVisitor);
+                                            }
+                                        }));
+                            } else {
+                                // we can't transform because the client proxy does not know about the transformation and
+                                // will therefore simply copy the private method which will then likely fail because it does
+                                // not contain the injected fields
+                                throw new IllegalArgumentException(
+                                        "Methods that are annotated with JPA Listener annotations should not be private. Offending method is '"
+                                                + method.declaringClass().name() + "#" + method.name() + "'");
+                            }
+                        }
+                    }
+                }
+            } else {
+                // we don't really know what to do here, just bail and CDI will figure it out
+            }
+        }
     }
 
     @BuildStep

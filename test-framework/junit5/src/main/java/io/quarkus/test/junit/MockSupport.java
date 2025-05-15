@@ -13,11 +13,11 @@ class MockSupport {
 
     private static final Deque<List<Object>> contexts = new ArrayDeque<>();
 
-    static void pushContext() {
+    static synchronized void pushContext() {
         contexts.push(new ArrayList<>());
     }
 
-    static void popContext() {
+    static synchronized void popContext() {
         if (contexts.isEmpty()) {
             return; // can happen on error in QuarkusTestResourceLifecycleManagers etc.
         }
@@ -38,7 +38,7 @@ class MockSupport {
         }
     }
 
-    static <T> void installMock(T instance, T mock) {
+    static synchronized <T> void installMock(T instance, T mock) {
         //due to class loading issues we can't access the interface directly
         List<Object> inst = contexts.peek();
         if (inst == null) {

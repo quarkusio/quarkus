@@ -96,6 +96,19 @@ public interface QuteConfig {
     DuplicitTemplatesStrategy duplicitTemplatesStrategy();
 
     /**
+     * Use the equals character as a command to identify an output expression in all templates from the application template
+     * root, i.e. `src/main/resources/templates`.
+     *
+     * By default, no special command is used, i.e. the syntax for an output expression looks like `{foo.name}`.
+     * If set to `true` then the equals command is used instead.
+     * The alternative syntax looks like `{=foo.name}`.
+     *
+     * @asciidoclet
+     */
+    @WithDefault("false")
+    boolean altExprSyntax();
+
+    /**
      * Development mode configuration.
      */
     QuteDevModeConfig devMode();

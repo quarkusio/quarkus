@@ -607,7 +607,7 @@ public class SchedulerProcessor {
         AnnotationValue everyValue = schedule.value("every");
         if (cronValue != null && !cronValue.asString().trim().isEmpty()) {
             String cron = cronValue.asString().trim();
-            if (!SchedulerUtils.isConfigValue(cron)) {
+            if (!SchedulerUtils.isOff(cron) && !SchedulerUtils.isConfigValue(cron)) {
                 try {
                     parser.parse(cron).validate();
                 } catch (IllegalArgumentException e) {
@@ -635,7 +635,7 @@ public class SchedulerProcessor {
         } else {
             if (everyValue != null && !everyValue.asString().trim().isEmpty()) {
                 String every = everyValue.asString().trim();
-                if (!SchedulerUtils.isConfigValue(every)) {
+                if (!SchedulerUtils.isOff(every) && !SchedulerUtils.isConfigValue(every)) {
                     if (Character.isDigit(every.charAt(0))) {
                         every = "PT" + every;
                     }

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.List;
@@ -14,6 +15,21 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.qute.Expression.Part;
 
 public class ExpressionTest {
+
+    @Test
+    public void testSpecialSyntax() {
+        assertEquals("foo{bar}", Engine.builder()
+                .addDefaults()
+                .setExpressionCommand('=')
+                .build()
+                .parse("{=bar}{bar}")
+                .data("bar", "foo")
+                .render());
+        assertThrows(IllegalArgumentException.class, () -> Engine.builder().setExpressionCommand('#'));
+        assertThrows(IllegalArgumentException.class, () -> Engine.builder().setExpressionCommand('_'));
+        assertThrows(IllegalArgumentException.class, () -> Engine.builder().setExpressionCommand('1'));
+        assertThrows(IllegalArgumentException.class, () -> Engine.builder().setExpressionCommand('š'));
+    }
 
     @Test
     public void testExpressions() throws InterruptedException, ExecutionException {

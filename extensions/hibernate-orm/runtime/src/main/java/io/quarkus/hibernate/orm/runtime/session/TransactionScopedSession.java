@@ -239,22 +239,6 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
-    public <T> T find(Class<T> entityType, Object id, LockOptions lockOptions) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.find(entityType, id, lockOptions);
-        }
-    }
-
-    @Override
-    public <T> T find(Class<T> entityType, Object id, LockMode lockMode) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            return emr.session.find(entityType, id, lockMode);
-        }
-    }
-
-    @Override
     public <E> List<E> findMultiple(Class<E> entityType, List<?> ids, FindOption... options) {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
@@ -850,6 +834,13 @@ public class TransactionScopedSession implements Session {
     }
 
     @Override
+    public void lock(Object object, LockMode lockMode, LockOption... lockOptions) {
+        try (SessionResult emr = acquireSession()) {
+            emr.session.lock(object, lockMode, lockOptions);
+        }
+    }
+
+    @Override
     public void lock(Object object, LockOptions lockOptions) {
         try (SessionResult emr = acquireSession()) {
             emr.session.lock(object, lockOptions);
@@ -861,14 +852,6 @@ public class TransactionScopedSession implements Session {
         checkBlocking();
         try (SessionResult emr = acquireSession()) {
             emr.session.lock(entity, lockMode, options);
-        }
-    }
-
-    @Override
-    public void refresh(Object object, LockMode lockMode) {
-        checkBlocking();
-        try (SessionResult emr = acquireSession()) {
-            emr.session.refresh(object, lockMode);
         }
     }
 

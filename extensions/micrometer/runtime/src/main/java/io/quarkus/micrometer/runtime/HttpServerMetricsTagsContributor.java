@@ -31,6 +31,6 @@ public interface HttpServerMetricsTagsContributor {
          * work when {@link HttpServerMetricsTagsContributor#contribute(Context)} is called as the HTTP request has
          * already gone away.
          */
-        Object requestContextLocalData(Object key);
+        <T> T requestContextLocalData(Object key);
     }
 }

@@ -10,7 +10,7 @@ public class ContextLocalTag implements HttpServerMetricsTagsContributor {
 
     @Override
     public Tags contribute(Context context) {
-        String contextLocalData = (String) context.requestContextLocalData("context-local");
+        String contextLocalData = context.requestContextLocalData("context-local");
         return Tags.of("dummy", contextLocalData != null ? contextLocalData : "value");
     }
 }

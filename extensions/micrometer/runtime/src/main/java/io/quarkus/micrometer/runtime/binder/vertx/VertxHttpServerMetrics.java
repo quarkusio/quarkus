@@ -271,7 +271,7 @@ public class VertxHttpServerMetrics extends VertxTcpServerMetrics
     private record DefaultContext(HttpServerRequest request,
             HttpResponse response) implements HttpServerMetricsTagsContributor.Context {
         @Override
-        public Object requestContextLocalData(Object key) {
+        public <T> T requestContextLocalData(Object key) {
             return ((HttpServerRequestInternal) request).context().getLocal(key);
         }
     }

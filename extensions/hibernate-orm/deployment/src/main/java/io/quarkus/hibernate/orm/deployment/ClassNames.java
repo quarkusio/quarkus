@@ -263,6 +263,7 @@ public final class ClassNames {
             createConstant("org.hibernate.annotations.Checks"),
             createConstant("org.hibernate.annotations.Collate"),
             createConstant("org.hibernate.annotations.CollectionId"),
+            createConstant("org.hibernate.annotations.CollectionIdJavaClass"),
             createConstant("org.hibernate.annotations.CollectionIdJavaType"),
             createConstant("org.hibernate.annotations.CollectionIdJdbcType"),
             createConstant("org.hibernate.annotations.CollectionIdJdbcTypeCode"),

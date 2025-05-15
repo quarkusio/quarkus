@@ -23,5 +23,14 @@ public interface HttpServerMetricsTagsContributor {
         HttpServerRequest request();
 
         HttpResponse response();
+
+        /**
+         * Gives access to the contextual data that was added while the HTTP request was active.
+         * This can be found of doing something like {@link io.smallrye.common.vertx.ContextLocals#get(String)},
+         * however this method is needed because {@link io.smallrye.common.vertx.ContextLocals#get(String)} won't
+         * work when {@link HttpServerMetricsTagsContributor#contribute(Context)} is called as the HTTP request has
+         * already gone away.
+         */
+        Object requestContextLocalData(Object key);
     }
 }

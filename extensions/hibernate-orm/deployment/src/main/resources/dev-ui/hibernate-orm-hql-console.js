@@ -402,19 +402,22 @@ export class HibernateOrmHqlConsoleComponent extends QwcHotReloadElement {
     }
 
     _cellRenderer(value) {
-        if (value) {
-            if (value === 'true') {
-                return html`
-                    <vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}"
-                                 icon="font-awesome-regular:square-check"></vaadin-icon>`;
-            } else if (value === 'false') {
-                return html`
-                    <vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}"
-                                 icon="font-awesome-regular:square"></vaadin-icon>`;
-            } else if (typeof value === 'string' && (value.startsWith('http://') || value.startsWith('https://'))) {
+        if ( value === true ) {
+            return html`
+                <vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}"
+                             icon="font-awesome-regular:square-check"></vaadin-icon>`;
+        }
+        else if ( value === false ) {
+            return html`
+                <vaadin-icon style="color: var(--lumo-contrast-50pct);" title="${value}"
+                             icon="font-awesome-regular:square"></vaadin-icon>`;
+        }
+        else if ( value ) {
+            if ( typeof value === 'string' && (value.startsWith( 'http://' ) || value.startsWith( 'https://' )) ) {
                 return html`<a href="${value}" target="_blank">${value}</a>`;
-            } else {
-                const s = typeof value === 'object' ? JSON.stringify(value) : value;
+            }
+            else {
+                const s = typeof value === 'object' ? JSON.stringify( value ) : value;
                 return html`<span>${s}</span>`;
             }
         }

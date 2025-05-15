@@ -23,4 +23,22 @@ public final class EffectiveTemplatePathsBuildItem extends SimpleBuildItem {
         return templatePaths;
     }
 
+    public TemplatePathBuildItem findByPath(String path) {
+        for (TemplatePathBuildItem t : templatePaths) {
+            if (t.getPath().equals(path)) {
+                return t;
+            }
+        }
+        return null;
+    }
+
+    public boolean hasNonDefaultParserConfig() {
+        for (TemplatePathBuildItem t : templatePaths) {
+            if (t.hasNonDefaultParserConfig()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

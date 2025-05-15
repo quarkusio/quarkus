@@ -1,11 +1,13 @@
 package io.quarkus.gradle.tooling;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -187,4 +189,34 @@ public class ToolingUtils {
                 project);
     }
 
+    /**
+     * This method is meant to figure out the output directory containing class files for a compile task
+     * which is not available in the plugin classpath. An example would be KotlinCompile.
+     *
+     * @param compileTask a compile task
+     */
+    public static File getClassesOutputDir(Task compileTask) {
+        if (compileTask.getOutputs().getHasOutput()) {
+            final AtomicReference<File> result = new AtomicReference<>();
+            compileTask.getOutputs().getFiles().getAsFileTree().visit(visitor -> {
+                // We are looking for the first class file, since a compile task would typically
+                // have a single output location for classes.
+                // There in fact could be a few output locations, the rest though would typically be some internal caching bits
+                if (visitor.getName().endsWith(".class")) {
+                    visitor.stopVisiting();
+                    var file = visitor.getFile();
+                    int relativeSegments = visitor.getRelativePath().getSegments().length;
+                    while (file != null && relativeSegments > 0) {
+                        relativeSegments--;
+                        file = file.getParentFile();
+                    }
+                    if (file != null) {
+                        result.set(file);
+                    }
+                }
+            });
+            return result.get();
+        }
+        return null;
+    }
 }

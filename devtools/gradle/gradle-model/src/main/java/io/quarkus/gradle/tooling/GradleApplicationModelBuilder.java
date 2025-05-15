@@ -1,5 +1,7 @@
 package io.quarkus.gradle.tooling;
 
+import static io.quarkus.gradle.tooling.ToolingUtils.getClassesOutputDir;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
@@ -17,7 +19,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.gradle.api.Project;
 import org.gradle.api.Task;
@@ -579,11 +580,11 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 }
                 // if the above failed, there could still be a KotlinCompile task that's not easily discoverable
                 if (originalSourceDirsSize == sourceDirs.size()) {
-                    final Path outputDir = getClassesOutputDir(task);
+                    final File outputDir = getClassesOutputDir(task);
                     if (outputDir != null && task.getInputs().getHasInputs()) {
                         task.getInputs().getSourceFiles().getAsFileTree().visit(visitor -> {
                             if (visitor.getRelativePath().getSegments().length == 1) {
-                                sourceDirs.add(SourceDir.of(visitor.getFile().getParentFile().toPath(), outputDir));
+                                sourceDirs.add(SourceDir.of(visitor.getFile().getParentFile().toPath(), outputDir.toPath()));
                             }
                         });
                     }
@@ -637,37 +638,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                     && generatedDir.getParentFile().getName().equals(language)) {
                 return generatedDir.toPath();
             }
-        }
-        return null;
-    }
-
-    /**
-     * This method is meant to figure out the output directory containing class files for a compile task
-     * which is not available in the plugin classpath. An example would be KotlinCompile.
-     *
-     * @param compileTask a compile task
-     */
-    private static Path getClassesOutputDir(Task compileTask) {
-        if (compileTask.getOutputs().getHasOutput()) {
-            final AtomicReference<Path> result = new AtomicReference<>();
-            compileTask.getOutputs().getFiles().getAsFileTree().visit(visitor -> {
-                // We are looking for the first class file, since a compile task would typically
-                // have a single output location for classes.
-                // There in fact could be a few output locations, the rest though would typically be some internal caching bits
-                if (visitor.getName().endsWith(".class")) {
-                    visitor.stopVisiting();
-                    var file = visitor.getFile();
-                    int relativeSegments = visitor.getRelativePath().getSegments().length;
-                    while (file != null && relativeSegments > 0) {
-                        relativeSegments--;
-                        file = file.getParentFile();
-                    }
-                    if (file != null) {
-                        result.set(file.toPath());
-                    }
-                }
-            });
-            return result.get();
         }
         return null;
     }

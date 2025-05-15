@@ -43,6 +43,16 @@ public interface NativeConfig {
     Optional<List<String>> additionalBuildArgs();
 
     /**
+     * Comma-separated, additional arguments to pass to the build process.
+     * The arguments are appended to those provided through {@link #additionalBuildArgs()}, as a result they may override those
+     * passed through {@link #additionalBuildArgs()}.
+     * By convention, this is meant to be set on the command-line, while {@link #additionalBuildArgs()} should be preferred for
+     * use in properties files.
+     * If an argument includes the {@code ,} symbol, it needs to be escaped, e.g. {@code \\,}
+     */
+    Optional<List<String>> additionalBuildArgsAppend();
+
+    /**
      * If the HTTP url handler should be enabled, allowing you to do URL.openConnection() for HTTP URLs
      */
     @WithDefault("true")

@@ -2,7 +2,6 @@ package io.quarkus.gradle.tasks;
 
 import static io.quarkus.gradle.tooling.GradleApplicationModelBuilder.clearFlag;
 import static io.quarkus.gradle.tooling.GradleApplicationModelBuilder.isFlagOn;
-import static io.quarkus.maven.dependency.ArtifactCoords.DEFAULT_CLASSIFIER;
 import static java.util.stream.Collectors.toList;
 
 import java.io.BufferedReader;
@@ -13,9 +12,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +25,6 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 
 import org.gradle.api.DefaultTask;
-import org.gradle.api.GradleException;
 import org.gradle.api.artifacts.ArtifactCollection;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ModuleVersionIdentifier;
@@ -55,34 +51,29 @@ import org.gradle.api.tasks.Nested;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.PathSensitive;
 import org.gradle.api.tasks.PathSensitivity;
-import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.TaskAction;
-
-import com.google.common.base.Preconditions;
+import org.gradle.internal.component.external.model.ModuleComponentArtifactIdentifier;
 
 import io.quarkus.bootstrap.BootstrapConstants;
 import io.quarkus.bootstrap.model.ApplicationModelBuilder;
 import io.quarkus.bootstrap.model.CapabilityContract;
+import io.quarkus.bootstrap.model.DefaultApplicationModel;
 import io.quarkus.bootstrap.model.PlatformImportsImpl;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.bootstrap.workspace.ArtifactSources;
-import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
-import io.quarkus.bootstrap.workspace.DefaultSourceDir;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.workspace.descriptors.DefaultProjectDescriptor;
-import io.quarkus.gradle.workspace.descriptors.ProjectDescriptor.TaskType;
+import io.quarkus.gradle.workspace.descriptors.ProjectDescriptor;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.maven.dependency.ArtifactDependency;
 import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
-import io.quarkus.maven.dependency.GAV;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
-import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.util.HashUtil;
@@ -124,14 +115,14 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     @Nested
     public abstract QuarkusResolvedClasspath getDeploymentClasspath();
 
+    @Nested
+    public abstract QuarkusPlatformInfo getPlatformInfo();
+
     @Input
     public abstract Property<LaunchMode> getLaunchMode();
 
     @Input
     public abstract Property<String> getTypeModel();
-
-    @Internal
-    public abstract Property<PlatformImportsImpl> getPlatformImports();
 
     /**
      * If any project task changes, we will invalidate this task anyway
@@ -146,109 +137,46 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         getProjectBuildFile().set(getProject().getBuildFile());
     }
 
-    private void collectPlatforms(ResolvedDependencyResult resolvedDependency,
-            Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifactsByCapability,
-            PlatformImportsImpl platformImports) {
-        List<QuarkusResolvedArtifact> artifacts = findArtifacts(resolvedDependency, artifactsByCapability);
-        ModuleVersionIdentifier moduleVersionIdentifier = resolvedDependency.getSelected().getModuleVersion();
-        for (QuarkusResolvedArtifact artifact : artifacts) {
-            if (artifact != null && artifact.file.getName().endsWith(".properties")) {
-                try {
-                    platformImports.addPlatformProperties(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
-                            null, "properties", moduleVersionIdentifier.getVersion(), artifact.file.toPath());
-                } catch (AppModelResolverException e) {
-                    throw new GradleException("Failed to import platform properties " + artifact.file, e);
-                }
-            } else if (artifact != null && artifact.file.getName().endsWith(".json")) {
-                platformImports.addPlatformDescriptor(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
-                        moduleVersionIdentifier.getVersion(), "json", moduleVersionIdentifier.getVersion());
-            }
-        }
-    }
-
     @TaskAction
     public void execute() throws IOException {
-        final ResolvedDependencyBuilder appArtifact = getProjectArtifact();
-        Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifactsByCapability = getPlatformConfiguration()
-                .resolvedArtifactsByComponentIdentifier();
-        getPlatformConfiguration().getRoot().get().getDependencies().forEach(d -> {
-            if (d instanceof ResolvedDependencyResult) {
-                collectPlatforms((ResolvedDependencyResult) d, artifactsByCapability, getPlatformImports().get());
-            }
-        });
+        final DefaultProjectDescriptor projectDescriptor = getProjectDescriptor().get();
+
+        final ResolvedDependencyBuilder appArtifact = getProjectArtifact(projectDescriptor);
+
         final ApplicationModelBuilder modelBuilder = new ApplicationModelBuilder()
                 .setAppArtifact(appArtifact)
-                .setPlatformImports(getPlatformImports().get())
+                .setPlatformImports(getPlatformInfo().resolvePlatformImports())
                 .addReloadableWorkspaceModule(appArtifact.getKey());
 
-        collectDependencies(getAppClasspath(), modelBuilder, appArtifact.getWorkspaceModule().mutable());
+        collectDependencies(getAppClasspath(), modelBuilder, projectDescriptor.getWorkspaceModule(), projectDescriptor);
         collectExtensionDependencies(getDeploymentClasspath(), modelBuilder);
-        ToolingUtils.serializeAppModel(modelBuilder.build(), getApplicationModel().get().getAsFile().toPath());
+        DefaultApplicationModel model = modelBuilder.build();
+        ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath());
     }
 
-    private ResolvedDependencyBuilder getProjectArtifact() {
+    private ResolvedDependencyBuilder getProjectArtifact(DefaultProjectDescriptor projectDescriptor) {
         ModuleVersionIdentifier moduleVersion = getAppClasspath().getRoot().get().getModuleVersion();
         ResolvedDependencyBuilder appArtifact = ResolvedDependencyBuilder.newInstance()
                 .setGroupId(moduleVersion.getGroup())
                 .setArtifactId(moduleVersion.getName())
                 .setVersion(moduleVersion.getVersion());
 
-        WorkspaceModule.Mutable mainModule = WorkspaceModule.builder()
-                .setModuleId(new GAV(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()))
-                .setModuleDir(getLayout().getProjectDirectory().getAsFile().toPath())
-                .setBuildDir(getLayout().getBuildDirectory().getAsFile().get().toPath())
-                .setBuildFile(getProjectBuildFile().getAsFile().get().toPath());
+        WorkspaceModule.Mutable module = projectDescriptor.getWorkspaceModule();
+        // TODO this is necessary for now to set the proper ID, since the group ID and the version don't have proper values in the descriptor
+        module.setModuleId(
+                WorkspaceModuleId.of(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()));
 
-        DefaultProjectDescriptor projectDescriptor = getProjectDescriptor().get();
-
-        initProjectModule(projectDescriptor, mainModule, ArtifactSources.MAIN, DEFAULT_CLASSIFIER,
-                getProjectDescriptor().get().getSourceSetTasksRaw());
-        if (getLaunchMode().get().isDevOrTest()) {
-            initProjectModule(projectDescriptor, mainModule, ArtifactSources.TEST, "tests",
-                    getProjectDescriptor().get().getSourceSetTasksRaw());
-        }
-        final PathList.Builder paths = PathList.builder();
-        collectDestinationDirs(mainModule.getMainSources().getSourceDirs(), paths);
-        collectDestinationDirs(mainModule.getMainSources().getResourceDirs(), paths);
-
-        return appArtifact.setWorkspaceModule(mainModule).setResolvedPaths(paths.build());
-    }
-
-    private static void initProjectModule(DefaultProjectDescriptor projectDescriptor, WorkspaceModule.Mutable module,
-            String sourceSetName, String classifier, Map<String, Set<String>> sourceSetTasksRaw) {
-        List<SourceDir> sourceDirs = new ArrayList<>();
-        List<SourceDir> resources = new ArrayList<>();
-        Set<String> tasks = projectDescriptor.getTasksForSourceSet(sourceSetName.isEmpty()
-                ? SourceSet.MAIN_SOURCE_SET_NAME
-                : sourceSetName.equals("tests") ? SourceSet.TEST_SOURCE_SET_NAME : sourceSetName);
-        for (String task : tasks) {
-            TaskType type = projectDescriptor.getTaskType(task);
-            Path source = Path.of(projectDescriptor.getTaskSource(task));
-            Path destDir = Path.of(projectDescriptor.getTaskDestinationDir(task));
-            if (type == TaskType.COMPILE) {
-                sourceDirs.add(new DefaultSourceDir(source, destDir, null, Map.of("compiler", task)));
-            } else if (type == TaskType.RESOURCES) {
-                resources.add(new DefaultSourceDir(source, destDir, null));
-            }
+        var mainSources = module.getMainSources();
+        if (mainSources != null) {
+            final PathList.Builder paths = PathList.builder();
+            collectDestinationDirs(module.getMainSources().getSourceDirs(), paths);
+            collectDestinationDirs(module.getMainSources().getResourceDirs(), paths);
+            appArtifact.setResolvedPaths(paths.build());
+        } else {
+            appArtifact.setResolvedPaths(PathList.empty());
         }
 
-        // Issue https://github.com/quarkusio/quarkus/issues/44384
-        // no java sources are detected for compileJava before grpc configuration
-        // so we need to verify if the destination source for the task exist and add it manually
-        boolean containsJavaCompile = sourceDirs.stream()
-                .anyMatch(sourceDir -> "compileJava".equals(sourceDir.getValue("compiler", String.class)));
-        if (!containsJavaCompile && sourceSetTasksRaw.get("compileJava") != null) {
-
-            sourceSetTasksRaw.get("compileJava").forEach(s -> {
-                File output = new File(s);
-                if (output.exists() && Objects.requireNonNull(output.listFiles()).length > 0) {
-                    sourceDirs.add(
-                            new DefaultSourceDir(output.toPath(), output.toPath(), null, Map.of("compiler", "compileJava")));
-                }
-            });
-
-        }
-        module.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resources));
+        return appArtifact.setWorkspaceModule(module);
     }
 
     private static void collectDestinationDirs(Collection<SourceDir> sources, final PathList.Builder paths) {
@@ -262,15 +190,18 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     }
 
     private static void collectDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder,
-            WorkspaceModule.Mutable wsModule) {
-        Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath.resolvedArtifactsByComponentIdentifier();
+            WorkspaceModule.Mutable wsModule, ProjectDescriptor projectDescriptor) {
+        final Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath
+                .resolvedArtifactsByComponentIdentifier();
 
         Set<File> alreadyCollectedFiles = new HashSet<>(artifacts.size());
+        final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
-            if (d instanceof ResolvedDependencyResult) {
-                byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS | COLLECT_RELOADABLE_MODULES);
-                collectDependencies((ResolvedDependencyResult) d, modelBuilder, artifacts, wsModule, alreadyCollectedFiles,
-                        new HashSet<>(), flags);
+            if (d instanceof ResolvedDependencyResult resolved) {
+                final byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS
+                        | COLLECT_RELOADABLE_MODULES);
+                collectDependencies(resolved, modelBuilder, artifacts, wsModule, alreadyCollectedFiles,
+                        processedModules, flags, projectDescriptor);
             }
         });
         Set<File> fileDependencies = new HashSet<>(classpath.getAllResolvedFiles().getFiles());
@@ -321,84 +252,90 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
             WorkspaceModule.Mutable parentModule,
             Set<File> collectedArtifactFiles,
-            Set<ArtifactKey> processedModules,
-            byte flags) {
-        WorkspaceModule.Mutable projectModule = null;
-        List<QuarkusResolvedArtifact> artifacts = findArtifacts(resolvedDependency, resolvedArtifacts);
+            Set<ModuleVersionIdentifier> processedModules,
+            byte flags,
+            ProjectDescriptor projectDescriptor) {
+        final ModuleVersionIdentifier moduleId = getModuleVersion(resolvedDependency);
+        if (!processedModules.add(moduleId)) {
+            return;
+        }
+        var projectModule = projectDescriptor
+                .getWorkspaceModuleOrNull(WorkspaceModuleId.of(moduleId.getGroup(), moduleId.getName(), moduleId.getVersion()));
+        final List<QuarkusResolvedArtifact> artifacts = getResolvedModuleArtifacts(resolvedArtifacts,
+                resolvedDependency.getSelected().getId());
         if (artifacts.isEmpty()) {
-            byte finalFlags = flags;
+            final byte finalFlags = flags;
             resolvedDependency.getSelected().getDependencies().forEach((Consumer<DependencyResult>) dependencyResult -> {
-                if (dependencyResult instanceof ResolvedDependencyResult) {
-                    ModuleVersionIdentifier dependencyId = Preconditions
-                            .checkNotNull(((ResolvedDependencyResult) dependencyResult).getSelected().getModuleVersion());
-                    if (!processedModules.contains(new GACT(dependencyId.getGroup(), dependencyId.getName()))) {
-                        collectDependencies((ResolvedDependencyResult) dependencyResult, modelBuilder, resolvedArtifacts,
-                                projectModule,
-                                collectedArtifactFiles,
-                                processedModules, finalFlags);
-                    }
+                if (dependencyResult instanceof ResolvedDependencyResult result) {
+                    collectDependencies(result, modelBuilder, resolvedArtifacts,
+                            projectModule,
+                            collectedArtifactFiles,
+                            processedModules, finalFlags, projectDescriptor);
                 }
             });
             return;
         }
 
-        ModuleVersionIdentifier moduleVersionIdentifier = Preconditions
-                .checkNotNull(resolvedDependency.getSelected().getModuleVersion());
-
+        byte newFlags = flags;
         for (QuarkusResolvedArtifact artifact : artifacts) {
-            String classifier = resolveClassifier(moduleVersionIdentifier, artifact.file);
-            ArtifactKey artifactKey = new GACT(
-                    moduleVersionIdentifier.getGroup(),
-                    moduleVersionIdentifier.getName(),
+            collectedArtifactFiles.add(artifact.file);
+            String classifier = resolveClassifier(moduleId, artifact.file);
+            final ArtifactKey artifactKey = ArtifactKey.of(
+                    moduleId.getGroup(),
+                    moduleId.getName(),
                     classifier,
                     artifact.type);
-            if (!isDependency(artifact) || modelBuilder.getDependency(artifactKey) != null) {
+            if (!isDependency(artifact)
+                    || modelBuilder.getDependency(artifactKey) != null
+                    || modelBuilder.getApplicationArtifact().getKey().equals(artifactKey)) {
                 continue;
             }
 
-            final ArtifactCoords depCoords = new GACTV(artifactKey, moduleVersionIdentifier.getVersion());
+            final ArtifactCoords depCoords = new GACTV(artifactKey, moduleId.getVersion());
             ResolvedDependencyBuilder depBuilder = ResolvedDependencyBuilder.newInstance()
                     .setCoords(depCoords)
                     .setRuntimeCp()
-                    .setDeploymentCp();
+                    .setDeploymentCp()
+                    .setResolvedPath(artifact.file.toPath())
+                    .setWorkspaceModule(projectModule);
             if (isFlagOn(flags, COLLECT_DIRECT_DEPS)) {
                 depBuilder.setDirect(true);
-                flags = clearFlag(flags, COLLECT_DIRECT_DEPS);
+                newFlags = clearFlag(newFlags, COLLECT_DIRECT_DEPS);
             }
             if (parentModule != null) {
                 parentModule.addDependency(new ArtifactDependency(depCoords));
             }
 
-            PathCollection paths = null;
-
-            depBuilder.setResolvedPaths(paths == null ? PathList.of(artifact.file.toPath()) : paths)
-                    .setWorkspaceModule(projectModule);
             if (Utils.processQuarkusDependency(depBuilder, modelBuilder)) {
                 if (isFlagOn(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
                     depBuilder.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
-                    flags = clearFlag(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES);
+                    newFlags = clearFlag(newFlags, COLLECT_TOP_EXTENSION_RUNTIME_NODES);
                 }
-                flags = clearFlag(flags, COLLECT_RELOADABLE_MODULES);
+                newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);
             }
-            if (!isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
-                depBuilder.clearFlag(DependencyFlags.RELOADABLE);
+            if (isFlagOn(flags, COLLECT_RELOADABLE_MODULES)) {
+                if (projectModule != null) {
+                    depBuilder.setFlags(DependencyFlags.RELOADABLE);
+                    modelBuilder.addReloadableWorkspaceModule(artifactKey);
+                } else {
+                    newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);
+                }
             }
             modelBuilder.addDependency(depBuilder);
-            collectedArtifactFiles.add(artifact.file);
         }
 
-        processedModules.add(ArtifactKey.ga(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName()));
+        flags = newFlags;
         for (DependencyResult dependency : resolvedDependency.getSelected().getDependencies()) {
-            if (dependency instanceof ResolvedDependencyResult) {
-                ModuleVersionIdentifier dependencyId = Preconditions
-                        .checkNotNull(((ResolvedDependencyResult) dependency).getSelected().getModuleVersion());
-                if (!processedModules.contains(new GACT(dependencyId.getGroup(), dependencyId.getName()))) {
-                    collectDependencies((ResolvedDependencyResult) dependency, modelBuilder, resolvedArtifacts, projectModule,
-                            collectedArtifactFiles,
-                            processedModules, flags);
-                }
+            if (dependency instanceof ResolvedDependencyResult result) {
+                collectDependencies(result, modelBuilder, resolvedArtifacts, projectModule,
+                        collectedArtifactFiles,
+                        processedModules, flags, projectDescriptor);
             }
         }
+    }
+
+    private static ModuleVersionIdentifier getModuleVersion(ResolvedDependencyResult resolvedDependency) {
+        return Objects.requireNonNull(resolvedDependency.getSelected().getModuleVersion());
     }
 
     private static boolean isDependency(QuarkusResolvedArtifact a) {
@@ -411,8 +348,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath.resolvedArtifactsByComponentIdentifier();
         Set<ArtifactKey> alreadyVisited = new HashSet<>();
         classpath.getRoot().get().getDependencies().forEach(d -> {
-            if (d instanceof ResolvedDependencyResult) {
-                collectExtensionDependencies((ResolvedDependencyResult) d, modelBuilder, artifacts, alreadyVisited);
+            if (d instanceof ResolvedDependencyResult result) {
+                collectExtensionDependencies(result, modelBuilder, artifacts, alreadyVisited);
             }
         });
     }
@@ -422,14 +359,14 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             ApplicationModelBuilder modelBuilder,
             Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> resolvedArtifacts,
             Set<ArtifactKey> alreadyVisited) {
-        List<QuarkusResolvedArtifact> artifacts = findArtifacts(resolvedDependency, resolvedArtifacts);
+        List<QuarkusResolvedArtifact> artifacts = getResolvedModuleArtifacts(resolvedArtifacts,
+                resolvedDependency.getSelected().getId());
         if (artifacts.isEmpty()) {
             return;
         }
 
+        final ModuleVersionIdentifier moduleVersionIdentifier = getModuleVersion(resolvedDependency);
         for (QuarkusResolvedArtifact artifact : artifacts) {
-            ModuleVersionIdentifier moduleVersionIdentifier = Preconditions
-                    .checkNotNull(resolvedDependency.getSelected().getModuleVersion());
 
             String classifier = resolveClassifier(moduleVersionIdentifier, artifact.file);
             ArtifactKey artifactKey = new GACT(moduleVersionIdentifier.getGroup(), moduleVersionIdentifier.getName(),
@@ -450,16 +387,15 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
         }
         resolvedDependency.getSelected().getDependencies().forEach(d -> {
-            if (d instanceof ResolvedDependencyResult) {
-                collectExtensionDependencies((ResolvedDependencyResult) d, modelBuilder, resolvedArtifacts, alreadyVisited);
+            if (d instanceof ResolvedDependencyResult result) {
+                collectExtensionDependencies(result, modelBuilder, resolvedArtifacts, alreadyVisited);
             }
         });
     }
 
-    private static List<QuarkusResolvedArtifact> findArtifacts(
-            ResolvedDependencyResult resolvedDependency,
-            Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts) {
-        return artifacts.getOrDefault(resolvedDependency.getSelected().getId(), Collections.emptyList());
+    private static List<QuarkusResolvedArtifact> getResolvedModuleArtifacts(
+            Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts, ComponentIdentifier moduleId) {
+        return artifacts.getOrDefault(moduleId, List.of());
     }
 
     private static String resolveClassifier(ModuleVersionIdentifier moduleVersionIdentifier, File file) {
@@ -469,8 +405,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                         : moduleVersionIdentifier.getName() + "-" + moduleVersionIdentifier.getVersion();
         if ((file.getName().endsWith(".jar") || file.getName().endsWith(".pom") || file.getName().endsWith(".exe"))
                 && file.getName().startsWith(artifactIdVersion + "-")) {
-            int extensionLength = file.getName().endsWith(".exe") ? 4 : 4;
-            return file.getName().substring(artifactIdVersion.length() + 1, file.getName().length() - extensionLength);
+            return file.getName().substring(artifactIdVersion.length() + 1, file.getName().length() - 4);
         }
         return "";
     }
@@ -480,11 +415,43 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         for (int f : flags) {
             allFlags |= f;
         }
-        PathList paths = PathList.of(file.toPath());
         return ResolvedDependencyBuilder.newInstance()
                 .setCoords(artifactCoords)
-                .setResolvedPaths(paths)
+                .setResolvedPaths(PathList.of(file.toPath()))
                 .setFlags(allFlags);
+    }
+
+    public static abstract class QuarkusPlatformInfo {
+
+        /**
+         * Internal since we track defined dependencies via {@link QuarkusApplicationModelTask#getOriginalClasspath}
+         */
+        @Internal
+        public abstract Property<ArtifactCollection> getResolvedArtifactCollection();
+
+        private PlatformImportsImpl resolvePlatformImports() {
+            final PlatformImportsImpl result = new PlatformImportsImpl();
+            for (var artifact : getResolvedArtifactCollection().get().getArtifacts()) {
+                var compId = ((ModuleComponentArtifactIdentifier) artifact.getId()).getComponentIdentifier();
+                final String artifactId = artifact.getFile().getName();
+                if (artifactId.endsWith(".json")) {
+                    result.addPlatformDescriptor(compId.getGroup(), compId.getModuleIdentifier().getName(), compId.getVersion(),
+                            "json", compId.getVersion());
+                } else if (artifactId.endsWith(".properties")) {
+                    try {
+                        result.addPlatformProperties(compId.getGroup(), compId.getModuleIdentifier().getName(),
+                                ArtifactCoords.DEFAULT_CLASSIFIER, "json", compId.getVersion(), artifact.getFile().toPath());
+                    } catch (AppModelResolverException e) {
+                        throw new RuntimeException("Failed to add platform properties " + artifact, e);
+                    }
+                }
+            }
+            return result;
+        }
+
+        public void configureFrom(Configuration configuration) {
+            getResolvedArtifactCollection().set(configuration.getIncoming().getArtifacts());
+        }
     }
 
     /**
@@ -528,8 +495,7 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
 
         private QuarkusResolvedArtifact toResolvedArtifact(ResolvedArtifactResult result) {
             String type = result.getVariant().getAttributes().getAttribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE);
-            File file = result.getFile();
-            return new QuarkusResolvedArtifact(result.getId(), file, type);
+            return new QuarkusResolvedArtifact(result.getId(), result.getFile(), type);
         }
 
         public void configureFrom(Configuration configuration) {
@@ -572,10 +538,6 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         public File getFile() {
             return file;
         }
-    }
-
-    public static class QuarkusCapability {
-
     }
 
     public static class Utils {

@@ -1,0 +1,2 @@
+sly<?xml version="1.0" encoding="utf-8" ?>
+<beans xmlns="http://xmlns.jcp.org/xml/ns/javaee" bean-discovery-mode="annotated"/>

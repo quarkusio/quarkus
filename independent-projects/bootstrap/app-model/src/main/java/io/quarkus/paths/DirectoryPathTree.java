@@ -1,6 +1,7 @@
 package io.quarkus.paths;
 
 import java.io.IOException;
+import java.io.Serial;
 import java.io.Serializable;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -65,12 +66,14 @@ public class DirectoryPathTree extends OpenContainerPathTree implements Serializ
         return this;
     }
 
+    @Serial
     private void writeObject(java.io.ObjectOutputStream out) throws IOException {
         out.writeUTF(dir.toAbsolutePath().toString());
         out.writeObject(pathFilter);
         out.writeBoolean(manifestEnabled);
     }
 
+    @Serial
     private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
         dir = Path.of(in.readUTF());
         pathFilter = (PathFilter) in.readObject();

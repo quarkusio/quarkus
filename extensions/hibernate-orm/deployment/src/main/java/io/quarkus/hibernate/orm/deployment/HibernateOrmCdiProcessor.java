@@ -86,8 +86,7 @@ public class HibernateOrmCdiProcessor {
     private static final List<DotName> STATELESS_SESSION_EXPOSED_TYPES = List.of(ClassNames.STATELESS_SESSION);
     private static final List<DotName> CRITERIA_BUILDER_EXPOSED_TYPES = List.of(ClassNames.CRITERIA_BUILDER,
             ClassNames.HIBERNATE_CRITERIA_BUILDER);
-    private static final List<DotName> METAMODEL_EXPOSED_TYPES = List.of(ClassNames.METAMODEL, ClassNames.JPA_METAMODEL,
-            ClassNames.HIBERNATE_METAMODEL);
+    private static final List<DotName> METAMODEL_EXPOSED_TYPES = List.of(ClassNames.METAMODEL);
     private static final List<DotName> SCHEMA_MANAGER_EXPOSED_TYPES = List.of(ClassNames.SCHEMA_MANAGER);
     private static final List<DotName> CACHE_EXPOSED_TYPES = List.of(ClassNames.CACHE, ClassNames.HIBERNATE_CACHE);
     private static final List<DotName> PERSISTENCE_UNIT_UTIL_EXPOSED_TYPES = List.of(ClassNames.PERSISTENCE_UNIT_UTIL);
@@ -471,7 +470,7 @@ public class HibernateOrmCdiProcessor {
         // Create Metamodel bean
         producer.produce(createSyntheticBean(persistenceUnitName,
                 isDefaultPU, isNamedPU,
-                org.hibernate.Metamodel.class, METAMODEL_EXPOSED_TYPES, false)
+                jakarta.persistence.metamodel.Metamodel.class, METAMODEL_EXPOSED_TYPES, false)
                 .createWith(recorder.metamodelSupplier(persistenceUnitName))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(SessionFactory.class)),
                         sessionFactoryQualifier)

@@ -57,8 +57,6 @@ public final class ClassNames {
     public static final DotName HIBERNATE_CRITERIA_BUILDER = createConstant(
             "org.hibernate.query.criteria.HibernateCriteriaBuilder");
     public static final DotName METAMODEL = createConstant("jakarta.persistence.metamodel.Metamodel");
-    public static final DotName HIBERNATE_METAMODEL = createConstant("org.hibernate.Metamodel");
-    public static final DotName JPA_METAMODEL = createConstant("org.hibernate.metamodel.model.domain.JpaMetamodel");
     public static final DotName SCHEMA_MANAGER = createConstant("org.hibernate.relational.SchemaManager");
     public static final DotName CACHE = createConstant("jakarta.persistence.Cache");
     public static final DotName HIBERNATE_CACHE = createConstant("org.hibernate.Cache");

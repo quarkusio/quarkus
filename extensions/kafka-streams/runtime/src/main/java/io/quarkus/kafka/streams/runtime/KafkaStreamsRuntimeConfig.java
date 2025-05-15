@@ -4,7 +4,6 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
@@ -48,6 +47,13 @@ public interface KafkaStreamsRuntimeConfig {
     Optional<List<String>> topics();
 
     /**
+     * A comma-separated list of topic name patterns.
+     * The pipeline will only be started once all these topics are present in the Kafka cluster
+     * and {@code ignore.topics} is set to false.
+     */
+    Optional<List<String>> topicPatterns();
+
+    /**
      * Timeout to wait for topic names to be returned from admin client.
      * If set to 0 (or negative), {@code topics} check is ignored.
      */
@@ -88,8 +94,4 @@ public interface KafkaStreamsRuntimeConfig {
      */
     SslConfig ssl();
 
-    default List<String> getTrimmedTopics() {
-        return topics().orElseThrow(() -> new IllegalArgumentException("Missing list of topics"))
-                .stream().map(String::trim).collect(Collectors.toList());
-    }
 }

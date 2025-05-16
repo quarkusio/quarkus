@@ -35,14 +35,22 @@ public class RuntimeLaunchClassLoader extends ClassLoader {
     }
 
     private void definePackage(String name) {
-        final String pkgName = getPackageNameFromClassName(name);
-        if ((pkgName != null) && getPackage(pkgName) == null) {
-            synchronized (getClassLoadingLock(pkgName)) {
-                if (getPackage(pkgName) == null) {
-                    // this could certainly be improved to use the actual manifest
-                    definePackage(pkgName, null, null, null, null, null, null, null);
-                }
+        var pkgName = getPackageNameFromClassName(name);
+        if (pkgName == null) {
+            return;
+        }
+        if (getDefinedPackage(pkgName) != null) {
+            return;
+        }
+        try {
+            // this could certainly be improved to use the actual manifest
+            definePackage(pkgName, null, null, null, null, null, null, null);
+        } catch (IllegalArgumentException e) {
+            // retry, thrown by definePackage(), if a package for the same name is already defines by this class loader.
+            if (getDefinedPackage(pkgName) != null) {
+                return;
             }
+            throw e;
         }
     }
 

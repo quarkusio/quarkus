@@ -18,6 +18,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-graphql</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-smallrye-graphql-dev</artifactId>
+        </dependency>
         
         <dependency>
             <groupId>io.quarkus</groupId>

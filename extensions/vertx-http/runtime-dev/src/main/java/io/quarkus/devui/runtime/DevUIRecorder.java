@@ -13,12 +13,14 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.comms.JsonRpcRouter;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
@@ -49,14 +51,19 @@ public class DevUIRecorder {
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap,
             List<String> deploymentMethods,
             List<String> deploymentSubscriptions,
-            Map<String, RuntimeValue> recordedValues) {
+            Map<String, RuntimeValue> recordedValues,
+            Optional<Assistant> assistant) {
         JsonRpcRouter jsonRpcRouter = beanContainer.beanInstance(JsonRpcRouter.class);
         jsonRpcRouter.populateJsonRPCRuntimeMethods(extensionMethodsMap);
         jsonRpcRouter.setJsonRPCDeploymentActions(deploymentMethods, deploymentSubscriptions);
         if (recordedValues != null && !recordedValues.isEmpty()) {
             jsonRpcRouter.setRecordedValues(recordedValues);
         }
+
         jsonRpcRouter.initializeCodec(createJsonMapper());
+
+        jsonRpcRouter.setAssistant(assistant);
+
     }
 
     private JsonMapper createJsonMapper() {

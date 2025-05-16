@@ -66,19 +66,19 @@ public class MeterTagsSupport {
      * Precedence copied from MeterTagAnnotationHandler
      */
     private String resolveTagValue(MeterTag annotation, Object parameterValue) {
+        String value = null;
         if (annotation.resolver() != NoOpValueResolver.class) {
             ValueResolver valueResolver = valueResolvers.get(annotation.resolver());
-            return valueResolver.resolve(parameterValue);
+            value = valueResolver.resolve(parameterValue);
         } else if (StringUtils.isNotBlank(annotation.expression())) {
             if (valueExpressionResolver == null) {
                 throw new IllegalArgumentException("No valueExpressionResolver is defined");
             }
-            return valueExpressionResolver.resolve(annotation.expression(), parameterValue);
+            value = valueExpressionResolver.resolve(annotation.expression(), parameterValue);
         } else if (parameterValue != null) {
-            return parameterValue.toString();
-        } else {
-            return "";
+            value = parameterValue.toString();
         }
+        return value == null ? "" : value;
     }
 
     /*

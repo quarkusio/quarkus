@@ -189,6 +189,7 @@ public class DevServicesDatasourceProcessor {
             res.put(name + ".devservices.db-name", config.devservices().dbName());
             res.put(name + ".devservices.image-name", config.devservices().imageName());
             res.put(name + ".devservices.init-script-path", config.devservices().initScriptPath());
+            res.put(name + ".devservices.init-privileged-script-path", config.devservices().initPrivilegedScriptPath());
             res.put(name + ".devservices.password", config.devservices().password());
             res.put(name + ".devservices.port", config.devservices().port());
             res.put(name + ".devservices.properties", config.devservices().properties());
@@ -301,6 +302,7 @@ public class DevServicesDatasourceProcessor {
                     dataSourceBuildTimeConfig.devservices().username(),
                     dataSourceBuildTimeConfig.devservices().password(),
                     dataSourceBuildTimeConfig.devservices().initScriptPath(),
+                    dataSourceBuildTimeConfig.devservices().initPrivilegedScriptPath(),
                     dataSourceBuildTimeConfig.devservices().volumes(),
                     dataSourceBuildTimeConfig.devservices().reuse(),
                     dataSourceBuildTimeConfig.devservices().showLogs());

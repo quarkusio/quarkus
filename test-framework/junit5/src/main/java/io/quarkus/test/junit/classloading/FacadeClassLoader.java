@@ -546,9 +546,18 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     private StartupAction getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
+
+        // Before interacting with the profiles, set the TCCL to one which is not the FacadeClassloader
+        // This could also go in AppMakerHelper.setExtraProperties, but then it affects more code paths
+        if (profile != null) {
+            Thread.currentThread().setContextClassLoader(profile.getClassLoader());
+        }
         StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
                 curatedApplication, profile);
+
+        Thread.currentThread().setContextClassLoader(old);
 
         QuarkusClassLoader loader = startupAction.getClassLoader();
 

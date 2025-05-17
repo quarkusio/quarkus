@@ -182,6 +182,9 @@ public class ServerEndpointIndexer
     protected ServerResourceMethod createResourceMethod(MethodInfo methodInfo, ClassInfo actualEndpointClass,
             Map<String, Object> methodContext) {
         ServerResourceMethod serverResourceMethod = new ServerResourceMethod();
+        if (Modifier.isStatic(methodInfo.flags())) {
+            serverResourceMethod.setStaticMethod(true);
+        }
         List<HandlerChainCustomizer> methodCustomizers = new ArrayList<>();
         for (MethodScanner i : methodScanners) {
             List<HandlerChainCustomizer> scanned = i.scan(methodInfo, actualEndpointClass, methodContext);

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -83,6 +84,20 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
      */
     @ConfigDocMapKey("full-property-key")
     Map<String, String> unsupportedProperties();
+
+    /**
+     * Additional database object types to include in schema management operations.
+     * <p>
+     * By default, Hibernate ORM only considers tables and sequences when performing schema management operations.
+     * This setting allows you to specify additional database object types that should be included,
+     * such as "MATERIALIZED VIEW", "VIEW", or other database-specific object types.
+     * <p>
+     * The exact supported values depend on the underlying database and dialect.
+     *
+     * @return A list of additional physical table types to be managed by Hibernate ORM
+     * @asciidoclet
+     */
+    List<String> extraPhysicalTableTypes();
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitDatabase {

@@ -38,6 +38,7 @@ import io.quarkus.deployment.builditem.CuratedApplicationShutdownBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunningDevService;
 import io.quarkus.deployment.builditem.DockerStatusBuildItem;
+import io.quarkus.deployment.builditem.FailedDevServiceBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.jwt.build.Jwt;
@@ -61,6 +62,7 @@ public class OidcDevServicesProcessor {
     private static final String APPLICATION_TYPE_CONFIG_KEY = CONFIG_PREFIX + "application-type";
     private static final String CLIENT_ID_CONFIG_KEY = CONFIG_PREFIX + "client-id";
     private static final String CLIENT_SECRET_CONFIG_KEY = CONFIG_PREFIX + "credentials.secret";
+    private static final String KEYCLOAK_DEV_SERVICE_NAME = "keycloak";
 
     private static volatile KeyPair kp;
     private static volatile String kid;
@@ -72,11 +74,115 @@ public class OidcDevServicesProcessor {
     private static volatile Map<String, List<String>> userToDefaultRoles;
     private static volatile Runnable closeDevServiceTask;
 
+    private static boolean shouldNotStartServer(OidcDevServicesConfig devServicesConfig,
+            DockerStatusBuildItem dockerStatusBuildItem,
+            boolean wasKeycloakDevServiceAttemptedAndFailed) {
+
+        // Check if OIDC Dev Service is explicitly disabled
+        if (isExplicitlyDisabled(devServicesConfig)) {
+            return true;
+        }
+
+        // Check if OIDC extension is disabled
+        if (!isOidcEnabled()) {
+            LOG.debug("Not starting Dev Services for OIDC as OIDC extension has been disabled in the config");
+            return true;
+        }
+
+        // Check if auth-server-url is already configured
+        if (isAuthServerConfigured()) {
+            LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.auth-server-url' has been provided");
+            return true;
+        }
+
+        // Check if provider is already configured
+        if (isProviderConfigured()) {
+            LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.provider' has been provided");
+            return true;
+        }
+
+        // Handle Keycloak fallback scenario
+        if (wasKeycloakDevServiceAttemptedAndFailed) {
+            return handleKeycloakFailure(devServicesConfig);
+        }
+
+        // Handle explicit enabling
+        if (isExplicitlyEnabled(devServicesConfig)) {
+            LOG.debug(
+                    "Starting Dev Services for OIDC as 'quarkus.oidc.devservices.enabled' is true (and Keycloak did not fail or was not attempted).");
+            return false;
+        }
+
+        // Default behavior based on Docker availability
+        return handleDefaultBehavior(devServicesConfig, dockerStatusBuildItem);
+    }
+
+    private static boolean isExplicitlyDisabled(OidcDevServicesConfig devServicesConfig) {
+        boolean explicitlyDisabled = devServicesConfig.enabled().isPresent() && !devServicesConfig.enabled().get();
+        if (explicitlyDisabled) {
+            LOG.debug("Not starting Dev Services for OIDC as it has been disabled in the config");
+        }
+        return explicitlyDisabled;
+    }
+
+    private static void closeDevSvcIfNecessary() {
+        if (closeDevServiceTask != null) {
+            closeDevServiceTask.run();
+            closeDevServiceTask = null;
+        }
+    }
+
+    private static boolean isExplicitlyEnabled(OidcDevServicesConfig devServicesConfig) {
+        return devServicesConfig.enabled().isPresent() && devServicesConfig.enabled().get();
+    }
+
+    private static boolean isAuthServerConfigured() {
+        return ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY);
+    }
+
+    private static boolean isProviderConfigured() {
+        return ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY);
+    }
+
+    private static boolean handleKeycloakFailure(OidcDevServicesConfig devServicesConfig) {
+        if (devServicesConfig.keycloakFallback()) {
+            LOG.warn("Keycloak Dev Service (" + KEYCLOAK_DEV_SERVICE_NAME
+                    + ") failed to start. Starting lightweight OIDC Dev Service as a fallback (quarkus.oidc.devservices.keycloak-fallback=true).");
+            return false;
+        } else {
+            LOG.info("Keycloak Dev Service (" + KEYCLOAK_DEV_SERVICE_NAME
+                    + ") failed to start, but lightweight OIDC fallback is disabled (quarkus.oidc.devservices.keycloak-fallback=false).");
+            return true;
+        }
+    }
+
+    private static boolean handleDefaultBehavior(OidcDevServicesConfig devServicesConfig,
+            DockerStatusBuildItem dockerStatusBuildItem) {
+        if (devServicesConfig.enabled().isEmpty()) {
+            if (isDockerAvailable(dockerStatusBuildItem)) {
+                LOG.debug(
+                        "Not starting Dev Services for OIDC as a container runtime is available and a Keycloak Dev Services will be started."
+                                + " Set 'quarkus.oidc.devservices.enabled=true' if you prefer to start Dev Services for OIDC.");
+                return true;
+            } else {
+                LOG.debug(
+                        "Starting Dev Services for OIDC as a container runtime is not available."
+                                + "Set 'quarkus.oidc.devservices.enabled=false' if you prefer not to start Dev Services for OIDC.");
+                return false;
+            }
+        }
+        return false;
+    }
+
     @BuildStep
     DevServicesResultBuildItem startServer(CuratedApplicationShutdownBuildItem closeBuildItem,
             OidcDevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem,
+            List<FailedDevServiceBuildItem> failedDevServicesList,
             BuildProducer<OidcDevServicesConfigBuildItem> devServiceConfigProducer) {
-        if (shouldNotStartServer(devServicesConfig, dockerStatusBuildItem)) {
+
+        boolean containsKeycloakFailure = isKeycloakDevServiceInFailedList(failedDevServicesList);
+
+        if (shouldNotStartServer(devServicesConfig, dockerStatusBuildItem, containsKeycloakFailure)) {
             closeDevSvcIfNecessary();
             return null;
         }
@@ -131,46 +237,10 @@ public class OidcDevServicesProcessor {
         }, configProperties).toBuildItem();
     }
 
-    private static void closeDevSvcIfNecessary() {
-        if (closeDevServiceTask != null) {
-            closeDevServiceTask.run();
-            closeDevServiceTask = null;
-        }
-    }
-
-    private static boolean shouldNotStartServer(OidcDevServicesConfig devServicesConfig,
-            DockerStatusBuildItem dockerStatusBuildItem) {
-        boolean explicitlyDisabled = devServicesConfig.enabled().isPresent() && !devServicesConfig.enabled().get();
-        if (explicitlyDisabled) {
-            LOG.debug("Not starting Dev Services for OIDC as it has been disabled in the config");
-            return true;
-        }
-        if (!isOidcEnabled()) {
-            LOG.debug("Not starting Dev Services for OIDC as OIDC extension has been disabled in the config");
-            return true;
-        }
-        if (!isOidcTenantEnabled()) {
-            LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.tenant.enabled' is false");
-            return true;
-        }
-        if (ConfigUtils.isPropertyPresent(AUTH_SERVER_URL_CONFIG_KEY)) {
-            LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.auth-server-url' has been provided");
-            return true;
-        }
-        if (ConfigUtils.isPropertyPresent(PROVIDER_CONFIG_KEY)) {
-            LOG.debug("Not starting Dev Services for OIDC as 'quarkus.oidc.provider' has been provided");
-            return true;
-        }
-        if (devServicesConfig.enabled().isEmpty()) {
-            if (isDockerAvailable(dockerStatusBuildItem)) {
-                LOG.debug(
-                        "Not starting Dev Services for OIDC as a container runtime is available and a Keycloak Dev Services will be started."
-                                + " Set 'quarkus.oidc.devservices.enabled=true' if you prefer to start Dev Services for OIDC.");
+    public boolean isKeycloakDevServiceInFailedList(List<FailedDevServiceBuildItem> failedServices) {
+        for (FailedDevServiceBuildItem failedDevServiceBuildItem : failedServices) {
+            if (KEYCLOAK_DEV_SERVICE_NAME.equals(failedDevServiceBuildItem.getServiceName())) {
                 return true;
-            } else {
-                LOG.debug(
-                        "Starting Dev Services for OIDC as a container runtime is not available."
-                                + "Set 'quarkus.oidc.devservices.enabled=false' if you prefer not to start Dev Services for OIDC.");
             }
         }
         return false;

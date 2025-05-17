@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.orm.runtime;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -83,6 +84,8 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
      */
     @ConfigDocMapKey("full-property-key")
     Map<String, String> unsupportedProperties();
+
+    List<String> extraPhysicalTableTypes();
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitDatabase {

@@ -10,6 +10,7 @@ import java.util.Set;
 import javax.sql.DataSource;
 
 import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.PersistenceConfiguration;
 import jakarta.persistence.PersistenceException;
 import jakarta.persistence.spi.PersistenceProvider;
 import jakarta.persistence.spi.PersistenceUnitInfo;
@@ -79,6 +80,14 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         log.tracef("Starting createContainerEntityManagerFactory : %s", info.getPersistenceUnitName());
 
         return getEntityManagerFactoryBuilder(info, properties).build();
+    }
+
+    @Override
+    public EntityManagerFactory createEntityManagerFactory(PersistenceConfiguration configuration) {
+        throw new PersistenceException(
+                "This PersistenceProvider does not support createEntityManagerFactory(PersistenceConfiguration). "
+                        + " Quarkus is responsible for creating the entity manager factory, so inject your entity manager"
+                        + " factory through CDI instead: `@Inject EntityManagerFactory emf`.");
     }
 
     @SuppressWarnings("rawtypes")
@@ -229,7 +238,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-        runtimeSettingsBuilder.put("hibernate.boot.allow_jdbc_metadata_access", "true");
+        runtimeSettingsBuilder.put(AvailableSettings.ALLOW_METADATA_ON_BOOT, "true");
+        // Remove database version information, if any;
+        // it was necessary during static init to force creation of a dialect,
+        // but now the dialect is there, and we'll reuse it.
+        // Keeping this information would prevent us from getting the actual information from the database on start.
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, null);
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."

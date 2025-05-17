@@ -17,18 +17,6 @@ public class PanacheJpaUtil {
     static final Pattern FROM_PATTERN = Pattern.compile("^\\s*FROM\\s+.*",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
-    // match a FETCH
-    static final Pattern FETCH_PATTERN = Pattern.compile(".*\\s+FETCH\\s+.*",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    // match a lone SELECT
-    static final Pattern LONE_SELECT_PATTERN = Pattern.compile(".*SELECT\\s+.*",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
-    // match a leading WITH
-    static final Pattern WITH_PATTERN = Pattern.compile("^\\s*WITH\\s+.*",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
-
     public static String getEntityName(Class<?> entityClass) {
         // FIXME: not true?
         // Escape the entity name just in case some keywords are used

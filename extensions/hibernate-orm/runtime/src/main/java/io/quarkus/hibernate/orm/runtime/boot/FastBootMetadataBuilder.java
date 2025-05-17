@@ -205,10 +205,9 @@ public class FastBootMetadataBuilder {
                 .getQuarkusConfigUnsupportedProperties();
         Map<String, Object> allSettings = new HashMap<>(quarkusConfigSettings);
 
-        // Ignore properties that were already set by Quarkus;
-        // we'll log a warning about those on startup.
+        // We'll log warnings about unsupported properties and overrides on startup.
         // (see io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider.buildRuntimeSettings)
-        quarkusConfigUnsupportedProperties.forEach(allSettings::putIfAbsent);
+        allSettings.putAll(quarkusConfigUnsupportedProperties);
 
         var databaseOrmCompatibilityVersion = puDefinition.getConfig().getDatabaseOrmCompatibilityVersion();
         Map<String, String> appliedDatabaseOrmCompatibilitySettings = new HashMap<>();

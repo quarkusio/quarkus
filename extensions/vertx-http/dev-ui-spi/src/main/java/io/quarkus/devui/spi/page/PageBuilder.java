@@ -3,7 +3,11 @@ package io.quarkus.devui.spi.page;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jboss.logging.Logger;
+
 public abstract class PageBuilder<T> {
+    private static final Logger log = Logger.getLogger(PageBuilder.class);
+
     protected static final String EMPTY = "";
     protected static final String SPACE = " ";
     protected static final String DASH = "-";
@@ -12,7 +16,10 @@ public abstract class PageBuilder<T> {
     protected static final String QWC_DASH = "qwc-";
     protected static final String DOT_JS = DOT + JS;
 
-    protected String icon = "font-awesome-solid:arrow-right";
+    protected String icon = null;
+    protected String color = null;
+    protected String tooltip = null;
+    protected boolean assistantPage;
     protected String title = null;
     protected String staticLabel = null;
     protected String dynamicLabel = null;
@@ -28,9 +35,42 @@ public abstract class PageBuilder<T> {
     protected String extensionId = null;
     protected Class preprocessor = null;
 
+    protected PageBuilder() {
+        this("font-awesome-solid:arrow-right", "var(--lumo-contrast-80pct)", null, false);
+    }
+
+    protected PageBuilder(String icon, String color, String tooltip, boolean assistantPage) {
+        this.icon = icon;
+        this.color = color;
+        this.tooltip = tooltip;
+        this.assistantPage = assistantPage;
+    }
+
     @SuppressWarnings("unchecked")
     public T icon(String icon) {
-        this.icon = icon;
+        if (this.icon != null) {
+            this.icon = icon;
+        } else {
+            log.warn("Icon already set, ignoring " + icon);
+        }
+        return (T) this;
+    }
+
+    public T color(String color) {
+        if (this.color != null) {
+            this.color = color;
+        } else {
+            log.warn("Color already set, ignoring " + color);
+        }
+        return (T) this;
+    }
+
+    public T tooltip(String tooltip) {
+        if (this.tooltip != null) {
+            this.tooltip = tooltip;
+        } else {
+            log.warn("Tooltip already set, ignoring " + tooltip);
+        }
         return (T) this;
     }
 
@@ -129,6 +169,9 @@ public abstract class PageBuilder<T> {
         }
 
         Page page = new Page(icon,
+                color,
+                tooltip,
+                assistantPage,
                 title,
                 staticLabel,
                 dynamicLabel,

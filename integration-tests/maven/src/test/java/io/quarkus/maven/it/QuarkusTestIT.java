@@ -12,6 +12,8 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
 import io.quarkus.maven.it.verifier.MavenProcessInvocationResult;
@@ -73,6 +75,7 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
 
     }
 
+    @DisabledOnOs(OS.WINDOWS) // Tracked by https://github.com/quarkusio/quarkus/issues/47913
     @Test
     public void testNestedQuarkusTestMixedWithNormalTestsContinuousTesting()
             throws MavenInvocationException, FileNotFoundException {
@@ -87,7 +90,7 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
         // This is a bit brittle when we add tests, but failures are often so catastrophic they're not even reported as failures,
         // so we need to check the pass count explicitly
         Assertions.assertEquals(0, results.getTestsFailed());
-        Assertions.assertEquals(2, results.getTestsPassed());
+        Assertions.assertEquals(4, results.getTestsPassed());
         Assertions.assertEquals(1, results.getTestsSkipped());
     }
 

@@ -195,7 +195,8 @@ public class QuarkusTestExtension extends AbstractJvmQuarkusTestExtension
             System.clearProperty("test.url");
             QuarkusTestProfile profileInstance = AppMakerHelper.getQuarkusTestProfile(profile);
             if (profileInstance != null) {
-                shutdownTasks.add(AppMakerHelper.setExtraProperties(profile, profileInstance));
+                Runnable configCleaner = AppMakerHelper.setExtraPropertiesRestorably(profile, profileInstance);
+                shutdownTasks.add(configCleaner);
             }
             StartupAction startupAction = getClassLoaderFromTestClass(requiredTestClass).getStartupAction();
 

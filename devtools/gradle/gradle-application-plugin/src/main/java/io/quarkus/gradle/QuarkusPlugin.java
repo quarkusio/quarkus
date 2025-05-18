@@ -693,7 +693,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                         Project depProject = null;
 
                         if (d instanceof ProjectDependency) {
-                            depProject = project.project(((ProjectDependency) d).getPath());
+                            depProject = dep.project(((ProjectDependency) d).getPath());
                         } else if (d instanceof ExternalModuleDependency) {
                             depProject = ToolingUtils.findIncludedProject(project, (ExternalModuleDependency) d);
                         }

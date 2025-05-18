@@ -163,9 +163,6 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
         return Uni.createFrom().item(build(identity));
-
-        // Do 'return context.runBlocking(build(identity));'
-        // if a blocking call is required to customize the identity
     }
 
     private Supplier<SecurityIdentity> build(SecurityIdentity identity) {

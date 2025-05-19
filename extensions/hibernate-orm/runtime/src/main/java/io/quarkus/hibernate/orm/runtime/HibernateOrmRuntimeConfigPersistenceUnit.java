@@ -87,17 +87,20 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
 
     /**
      * Additional database object types to include in schema management operations.
-     * <p>
-     * By default, Hibernate ORM only considers tables and sequences when performing schema management operations.
+     *
+     * By default, Hibernate ORM only considers tables and sequences when performing
+     * schema management operations.
      * This setting allows you to specify additional database object types that should be included,
      * such as "MATERIALIZED VIEW", "VIEW", or other database-specific object types.
-     * <p>
+     *
      * The exact supported values depend on the underlying database and dialect.
      *
-     * @return A list of additional physical table types to be managed by Hibernate ORM
+     * == Returns
+     * A list of additional physical table types to be managed by Hibernate ORM
+     *
      * @asciidoclet
      */
-    List<String> extraPhysicalTableTypes();
+    List<@WithConverter(TrimmedStringConverter.class) String> extraPhysicalTableTypes();
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitDatabase {

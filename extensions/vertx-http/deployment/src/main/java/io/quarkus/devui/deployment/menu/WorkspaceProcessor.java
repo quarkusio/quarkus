@@ -164,9 +164,10 @@ public class WorkspaceProcessor {
                     Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
                     Object result = actionToExecute.getFunction().apply(t);
                     if (result instanceof CompletionStage<?> stage) {
-                        return stage.thenApply(res -> new WorkspaceActionResult(convertedPath, res));
+                        return stage
+                                .thenApply(res -> new WorkspaceActionResult(convertedPath, res, actionToExecute.isAssistant()));
                     } else {
-                        return new WorkspaceActionResult(convertedPath, result);
+                        return new WorkspaceActionResult(convertedPath, result, actionToExecute.isAssistant());
                     }
                 }
                 return null;
@@ -293,7 +294,7 @@ public class WorkspaceProcessor {
             DisplayType displayType) {
     }
 
-    static record WorkspaceActionResult(Path path, Object result) {
+    static record WorkspaceActionResult(Path path, Object result, boolean isAssistant) {
     }
 
     private static final String NAMESPACE = "devui-workspace";

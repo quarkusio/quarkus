@@ -14,6 +14,7 @@ public class ActionBuilder<T, R> {
     private Display display = Display.dialog;
     private DisplayType displayType = DisplayType.code;
     private Function<Path, Path> pathConverter = (p) -> p;
+    private boolean assistant = false;
 
     public ActionBuilder label(String label) {
         this.label = label;
@@ -56,11 +57,16 @@ public class ActionBuilder<T, R> {
         return this;
     }
 
+    public ActionBuilder isAssistantAction() {
+        this.assistant = true;
+        return this;
+    }
+
     public Action build() {
         if (this.label == null || this.function == null) {
             throw new RuntimeException(
                     "Not enough information to build the action. Set at least label and function");
         }
-        return new Action(label, namespace, function, filter, display, displayType, pathConverter);
+        return new Action(label, namespace, function, filter, display, displayType, pathConverter, assistant);
     }
 }

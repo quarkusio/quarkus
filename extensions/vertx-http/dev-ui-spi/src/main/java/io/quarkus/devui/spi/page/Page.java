@@ -14,6 +14,9 @@ import java.util.Map;
  */
 public class Page {
     private final String icon; // Any font awesome icon
+    private final String color; // The color of the link and icon
+    private final String tooltip; // Add a tooltip to the link
+    private final boolean assistantPage; // Assistant pages has slightly different branding
     private final String title; // This is the display name and link title for the page
     private final String staticLabel; // This is optional extra info that might be displayed next to the link
     private final String dynamicLabel; // This is optional extra info that might be displayed next to the link. This will override above static label. This expects a jsonRPC method name
@@ -34,6 +37,9 @@ public class Page {
     private String menuActionComponent = null; // Internal pages can set this
 
     protected Page(String icon,
+            String color,
+            String tooltip,
+            boolean assistantPage,
             String title,
             String staticLabel,
             String dynamicLabel,
@@ -49,6 +55,9 @@ public class Page {
             String extensionId) {
 
         this.icon = icon;
+        this.color = color;
+        this.tooltip = tooltip;
+        this.assistantPage = assistantPage;
         this.title = title;
         this.staticLabel = staticLabel;
         this.dynamicLabel = dynamicLabel;
@@ -111,6 +120,18 @@ public class Page {
         return icon;
     }
 
+    public String getColor() {
+        return color;
+    }
+
+    public String getTooltip() {
+        return tooltip;
+    }
+
+    public boolean isAssistantPage() {
+        return assistantPage;
+    }
+
     public String getTitle() {
         return title;
     }
@@ -167,6 +188,8 @@ public class Page {
     public String toString() {
         return "Page {\n\tid=" + getId()
                 + ", \n\ticon=" + icon
+                + ", \n\tcolor=" + color
+                + ", \n\ttooltip=" + tooltip
                 + ", \n\ttitle=" + title
                 + ", \n\tstaticLabel=" + staticLabel
                 + ", \n\tdynamicLabel=" + dynamicLabel
@@ -185,6 +208,15 @@ public class Page {
      */
     public static WebComponentPageBuilder webComponentPageBuilder() {
         return new WebComponentPageBuilder();
+    }
+
+    /**
+     * Here you provide the Web Component that should be rendered. You have full control over the page.
+     * You can use build time data if you made it available
+     */
+    public static WebComponentPageBuilder assistantPageBuilder() {
+        return new WebComponentPageBuilder("font-awesome-solid:brain", "var(--lumo-warning-color)",
+                "This uses the Quarkus Assistant feature");
     }
 
     /**

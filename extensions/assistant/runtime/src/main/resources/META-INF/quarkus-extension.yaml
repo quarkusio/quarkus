@@ -1,0 +1,15 @@
+---
+artifact: ${project.groupId}:${project.artifactId}:${project.version}
+name: "Assistant"
+metadata:
+  short-name: "assistant"
+  keywords:
+  - "assistant"
+  - "ai"
+  - "chappie"
+  categories:
+  - "core"
+  status: "experimental"
+  unlisted: true
+  config:
+  - "quarkus.assistant."

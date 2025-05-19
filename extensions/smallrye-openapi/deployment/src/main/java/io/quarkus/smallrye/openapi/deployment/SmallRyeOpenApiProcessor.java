@@ -206,13 +206,14 @@ public class SmallRyeOpenApiProcessor {
             SmallRyeOpenApiConfig openApiConfig,
             OpenApiFilteredIndexViewBuildItem apiFilteredIndexViewBuildItem,
             List<SecurityInformationBuildItem> securityInformationBuildItems,
-            OpenApiRecorder recorder) {
+            OpenApiRecorder recorder,
+            LaunchModeBuildItem launchMode) {
         AutoSecurityFilter autoSecurityFilter = null;
 
-        if (openApiConfig.autoAddSecurity()) {
+        if (securityConfig(launchMode, openApiConfig::autoAddSecurity)) {
             autoSecurityFilter = getAutoSecurityFilter(securityInformationBuildItems, openApiConfig)
                     .filter(securityFilter -> autoSecurityRuntimeEnabled(securityFilter,
-                            () -> hasAutoEndpointSecurity(apiFilteredIndexViewBuildItem, openApiConfig)))
+                            () -> hasAutoEndpointSecurity(apiFilteredIndexViewBuildItem, launchMode, openApiConfig)))
                     .orElse(null);
         }
 
@@ -339,6 +340,21 @@ public class SmallRyeOpenApiProcessor {
         }
     }
 
+    private boolean securityConfig(
+            LaunchModeBuildItem launchMode,
+            Supplier<Boolean> securitySetting) {
+
+        if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
+            Config config = ConfigProvider.getConfig();
+            boolean authEnabled = config.getValue("quarkus.security.auth.enabled-in-dev-mode", Boolean.class);
+            if (authEnabled)
+                return securitySetting.get();
+            return false;
+        } else {
+            return securitySetting.get();
+        }
+    }
+
     private String getManagementRoot(LaunchModeBuildItem launch,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             SmallRyeOpenApiConfig openApiConfig,
@@ -399,14 +415,14 @@ public class SmallRyeOpenApiProcessor {
             addToOpenAPIDefinitionProducer
                     .produce(new AddToOpenAPIDefinitionBuildItem(
                             new SecurityConfigFilter(config)));
-        } else if (config.autoAddSecurity()) {
+        } else if (securityConfig(launchModeBuildItem, config::autoAddSecurity)) {
             getAutoSecurityFilter(securityInformationBuildItems, config)
                     .map(AddToOpenAPIDefinitionBuildItem::new)
                     .ifPresent(addToOpenAPIDefinitionProducer::produce);
         }
 
         // Add operation filter to add tags/descriptions/security requirements
-        OASFilter operationFilter = getOperationFilter(apiFilteredIndexViewBuildItem, config);
+        OASFilter operationFilter = getOperationFilter(apiFilteredIndexViewBuildItem, launchModeBuildItem, config);
 
         if (operationFilter != null) {
             addToOpenAPIDefinitionProducer.produce(new AddToOpenAPIDefinitionBuildItem(operationFilter));
@@ -517,9 +533,10 @@ public class SmallRyeOpenApiProcessor {
 
     private boolean hasAutoEndpointSecurity(
             OpenApiFilteredIndexViewBuildItem indexViewBuildItem,
+            LaunchModeBuildItem launchMode,
             SmallRyeOpenApiConfig config) {
 
-        if (config.autoAddSecurityRequirement()) {
+        if (securityConfig(launchMode, config::autoAddSecurityRequirement)) {
             Map<String, List<String>> rolesAllowedMethods = Collections.emptyMap();
             List<String> authenticatedMethods = Collections.emptyList();
 
@@ -538,6 +555,7 @@ public class SmallRyeOpenApiProcessor {
     }
 
     private OASFilter getOperationFilter(OpenApiFilteredIndexViewBuildItem indexViewBuildItem,
+            LaunchModeBuildItem launchMode,
             SmallRyeOpenApiConfig config) {
 
         Map<String, ClassAndMethod> classNamesMethods = Collections.emptyMap();
@@ -548,7 +566,7 @@ public class SmallRyeOpenApiProcessor {
             classNamesMethods = getClassNamesMethodReferences(indexViewBuildItem);
         }
 
-        if (config.autoAddSecurityRequirement()) {
+        if (securityConfig(launchMode, config::autoAddSecurityRequirement)) {
             rolesAllowedMethods = getRolesAllowedMethodReferences(indexViewBuildItem);
 
             for (String methodRef : getPermissionsAllowedMethodReferences(indexViewBuildItem)) {

@@ -346,9 +346,10 @@ public class SmallRyeOpenApiProcessor {
 
         if (launchMode.getLaunchMode().equals(LaunchMode.DEVELOPMENT)) {
             Config config = ConfigProvider.getConfig();
-            boolean authEnabled = config.getValue("quarkus.security.auth.enabled-in-dev-mode", Boolean.class);
-            if (authEnabled)
+            Optional<Boolean> authEnabled = config.getOptionalValue("quarkus.security.auth.enabled-in-dev-mode", Boolean.class);
+            if (authEnabled.isPresent() && authEnabled.get()) {
                 return securitySetting.get();
+            }
             return false;
         } else {
             return securitySetting.get();

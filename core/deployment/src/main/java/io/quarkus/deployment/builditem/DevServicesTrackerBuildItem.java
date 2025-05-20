@@ -1,11 +1,12 @@
 package io.quarkus.deployment.builditem;
 
 import java.io.Closeable;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import io.quarkus.builder.item.SimpleBuildItem;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
+import io.quarkus.devservices.crossclassloader.runtime.ComparableDevServicesConfig;
+import io.quarkus.devservices.crossclassloader.runtime.DevServiceOwner;
 import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesTracker;
 
 // Ideally we would have a unique build item for each processor/feature, but that would need a new KeyedBuildItem or FeatureBuildItem type
@@ -20,23 +21,28 @@ public final class DevServicesTrackerBuildItem extends SimpleBuildItem {
         tracker = new RunningDevServicesTracker();
     }
 
-    public List getRunningServices(String featureName,
-            Map identifyingConfig) {
-        return tracker.getRunningServices(featureName, identifyingConfig);
+    public Set<Closeable> getRunningServices(DevServiceOwner owner, DevServicesConfig globalConfig,
+            Object identifyingConfig) {
+        ComparableDevServicesConfig key = new ComparableDevServicesConfig(owner, globalConfig, identifyingConfig);
+        return tracker.getRunningServices(key);
     }
 
-    public Set<Closeable> getAllServices(String featureName) {
-        return tracker.getAllServices(featureName);
+    public Set<Closeable> getAllRunningServices(DevServiceOwner owner) {
+        return tracker.getAllRunningServices(owner);
     }
 
-    public void addRunningService(String name, Map<String, String> identifyingConfig,
+    public void addRunningService(DevServiceOwner owner, DevServicesConfig globalConfig,
+            Object identifyingConfig,
             DevServicesResultBuildItem.RunnableDevService service) {
-        tracker.addRunningService(name, identifyingConfig, service);
+        ComparableDevServicesConfig key = new ComparableDevServicesConfig(owner, globalConfig, identifyingConfig);
+        tracker.addRunningService(key, service);
     }
 
-    public void removeRunningService(String name, Map<String, String> identifyingConfig,
+    public void removeRunningService(DevServiceOwner owner, DevServicesConfig globalConfig,
+            Object identifyingConfig,
             DevServicesResultBuildItem.RunnableDevService service) {
-        tracker.removeRunningService(name, identifyingConfig, service);
+        ComparableDevServicesConfig key = new ComparableDevServicesConfig(owner, globalConfig, identifyingConfig);
+        tracker.removeRunningService(key, service);
     }
 
 }

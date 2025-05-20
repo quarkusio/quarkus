@@ -95,19 +95,17 @@ public class DevServicesRedisProcessor {
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
 
+                // We always get a RunnableDevServices object back, but multiple of these objects might map to the same underlying container
                 RunningDevService devService = createContainer(dockerStatusBuildItem, composeProjectBuildItem,
                         connectionName,
                         entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
-                        useSharedNetwork, devServicesConfig.timeout(), tracker);
+                        useSharedNetwork, devServicesConfig.timeout(), devServicesConfig, tracker);
                 if (devService == null) {
                     continue;
                 }
 
                 newDevServices.add(devService);
-                String configKey = getConfigPrefix(connectionName) + RedisConfig.HOSTS_CONFIG_NAME;
-                log.infof("The %s redis server is ready to accept connections on %s", connectionName,
-                        devService.getConfig().get(configKey));
             }
             if (newDevServices.isEmpty()) {
                 compressor.closeAndDumpCaptured();
@@ -126,7 +124,8 @@ public class DevServicesRedisProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             String name,
             io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig, LaunchMode launchMode,
-            boolean useSharedNetwork, Optional<Duration> timeout, DevServicesTrackerBuildItem tracker) {
+            boolean useSharedNetwork, Optional<Duration> timeout,
+            DevServicesConfig globalConfig, DevServicesTrackerBuildItem tracker) {
 
         if (!devServicesConfig.enabled()) {
             // explicitly disabled
@@ -168,7 +167,6 @@ public class DevServicesRedisProcessor {
                     ? REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort()
                     : null;
 
-            // This config map is what we use for deciding if a container from another profile can be re-used
             // TODO ideally the container properties would get put into it in a centralised way, but the RunnableDevService object doesn't get passed detailed information about the container
             Map config = new HashMap();
             if (fixedExposedPort.isPresent()) {
@@ -181,14 +179,27 @@ public class DevServicesRedisProcessor {
             dynamicConfig.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, hoster);
 
             RunnableDevService answer = new RunnableDevService(
-                    Feature.REDIS_CLIENT.getName(),
+                    Feature.REDIS_CLIENT.getName(), launchMode, name,
                     redisContainer.getContainerId(),
-                    redisContainer, config, dynamicConfig, tracker);
+                    redisContainer, config, dynamicConfig, globalConfig, devServicesConfig, tracker);
 
             return answer;
 
         };
 
+        // The ideal re-use precedence order is the following:
+        // 1. Re-use existing dev service/container if one with compatible config exists (only knowable post-augmentation, or on the second run of a continuous testing session)
+        // 2. Use the container locator to find an external service (where applicable) (knowable at augmentation)
+        // 3. Create a new container
+        // This swaps 1 and 2, but that's actually ok. If an external service exists and is valid for this configuration,
+        // any matching service would be using it, so option 1 (an existing internal container) can't happen.
+        // If there's no external service, then the order is 1 and then 3, which is what we want.
+        // Because of how the labelling works, dev services we create will not be detected by the locator.
+        // The check for running services happens in RunnableDevService.start(), because it has to happen at runtime, not during augmentation.
+        // We cannot assume the order of container creation in augmentation would be the same as the runtime order.
+
+        // The container locator might find services from other tests, which would not be ok because they'd have the wrong config
+        // We can be fairly confident this isn't happening because of the tests showing config is honoured, but if we wanted to be extra sure we'd put on a special 'not external' label and filter for that, too
         return redisContainerLocator.locateContainer(devServicesConfig.serviceName(), devServicesConfig.shared(), launchMode)
                 .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
                         List.of(devServicesConfig.imageName().orElse("redis")),

@@ -30,7 +30,10 @@ public class DevServicesConfigSource implements ConfigSource {
     public String getValue(String propertyName) {
         for (Supplier<Map> o : tracker.getConfigForAllRunningServices()) {
             Map config = o.get();
-            return (String) config.get(propertyName);
+            String answer = (String) config.get(propertyName);
+            if (answer != null) {
+                return answer;
+            }
         }
         return null;
     }

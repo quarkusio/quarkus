@@ -52,7 +52,7 @@ import io.quarkus.test.junit.TestResourceUtil;
  * We need to load all our test classes in one go, during the discovery phase, before we start the applications.
  * We may need several applications and therefore, several classloaders, depending on what profiles are set.
  * To solve that, we prepare the applications, to get classloaders, and file them here.
- *
+ * <p>
  * Final, since some code does instanceof checks using the class name.
  */
 public final class FacadeClassLoader extends ClassLoader implements Closeable {
@@ -543,9 +543,24 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     private QuarkusClassLoader getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
-        StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
-                curatedApplication, profile);
+
+        // Before interacting with the profiles, set the TCCL to one which is not the FacadeClassloader
+        // This could also go in AppMakerHelper.setExtraProperties, but then it affects more code paths
+        StartupAction startupAction;
+        try {
+            if (profile != null) {
+                Thread.currentThread().setContextClassLoader(profile.getClassLoader());
+            }
+            startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
+                    curatedApplication, profile);
+
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+
+        // If the try block fails, this would be null, but there's no catch, so we'd never get to this code
         QuarkusClassLoader loader = startupAction.getClassLoader();
 
         Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());

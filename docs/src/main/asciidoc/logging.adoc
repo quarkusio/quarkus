@@ -676,7 +676,7 @@ To send logs to a centralized tool such as Graylog, Logstash, or Fluentd, see th
 
 
 === OpenTelemetry logging
-Logging entries from all appenders can be sent by using OpenTelemetry Logging.
+You can enable sending log entries from all appenders to OpenTelemetry Logging.
 
 For details, see the Quarkus xref:opentelemetry-logging.adoc[OpenTelemetry Logging] guide.
 

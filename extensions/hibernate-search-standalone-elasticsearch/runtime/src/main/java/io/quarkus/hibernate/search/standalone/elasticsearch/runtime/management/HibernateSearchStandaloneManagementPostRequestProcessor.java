@@ -65,7 +65,7 @@ class HibernateSearchStandaloneManagementPostRequestProcessor {
         }
     }
 
-    private MassIndexer createMassIndexer(SearchScope<Object, ?> scope, Set<String> tenants) {
+    private MassIndexer createMassIndexer(SearchScope<Object> scope, Set<String> tenants) {
         if (tenants == null || tenants.isEmpty()) {
             return scope.massIndexer();
         } else {

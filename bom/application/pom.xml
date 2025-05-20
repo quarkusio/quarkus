@@ -398,6 +398,12 @@
                 <scope>import</scope>
                 <type>pom</type>
             </dependency>
+            <dependency>
+                <groupId>io.perfmark</groupId>
+                <artifactId>perfmark-api</artifactId>
+                <version>${perfmark.version}</version>
+            </dependency>
+
 
             <!-- Micrometer Core and Registries, imported as BOM -->
             <dependency>

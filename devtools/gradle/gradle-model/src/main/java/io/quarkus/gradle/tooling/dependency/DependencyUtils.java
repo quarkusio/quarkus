@@ -96,7 +96,7 @@ public class DependencyUtils {
             projectDependency = getProjectExtensionDependencyOrNull(
                     project,
                     componentId.getProjectPath(),
-                    componentId.getBuild().getBuildPath());
+                    componentId.getBuild().getName());
 
             if (projectDependency != null)
                 return projectDependency;

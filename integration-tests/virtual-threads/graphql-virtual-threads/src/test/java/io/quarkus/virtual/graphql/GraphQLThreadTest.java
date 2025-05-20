@@ -1,5 +1,6 @@
 package io.quarkus.virtual.graphql;
 
+import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
@@ -17,6 +18,7 @@ import java.util.concurrent.CompletionStage;
  * Testing the thread used.
  * Copied from graphql extension to make sure threading without @RunOnVirtualThread runs the same.
  */
+@QuarkusTest
 public class GraphQLThreadTest extends AbstractGraphQLTest {
 
     @Test

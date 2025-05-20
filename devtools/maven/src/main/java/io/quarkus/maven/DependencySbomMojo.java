@@ -96,18 +96,19 @@ public class DependencySbomMojo extends AbstractMojo {
             getLog().info("Skipping config dump");
             return;
         }
-        final Path outputFile = getSbomFile().toPath();
+        final Path outputFilePath = getSbomFile().toPath();
         CycloneDxSbomGenerator.newInstance()
                 .setManifest(ApplicationManifest.fromConfig(
                         ApplicationManifestConfig.builder()
                                 .setApplicationModel(resolveApplicationModel())
                                 .build()))
-                .setOutputFile(outputFile)
+                .setOutputFile(outputFilePath)
+                .setFormat(format)
                 .setEffectiveModelResolver(EffectiveModelResolver.of(getResolver()))
                 .setSchemaVersion(schemaVersion)
                 .setIncludeLicenseText(includeLicenseText)
                 .generate();
-        getLog().info("The SBOM has been saved in " + outputFile);
+        getLog().info("The SBOM has been saved in " + outputFilePath);
     }
 
     private ApplicationModel resolveApplicationModel()
@@ -158,17 +159,18 @@ public class DependencySbomMojo extends AbstractMojo {
     }
 
     protected MavenArtifactResolver getResolver() {
-        return resolver == null
-                ? resolver = workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
-                        .setUserSettings(session.getRequest().getUserSettingsFile())
-                        // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
-                        // e.g. -Dquarkus.platform.version=xxx
-                        //.setRepositorySystem(repoSystem)
-                        // The session should be initialized with the loaded workspace
-                        //.setRepositorySystemSession(repoSession)
-                        .setRemoteRepositories(repos)
-                        // To support multi-module projects that haven't been installed
-                        .setPreferPomsFromWorkspace(true))
-                : resolver;
+        if (resolver == null) {
+            resolver = workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
+                    .setUserSettings(session.getRequest().getUserSettingsFile())
+                    // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
+                    // e.g. -Dquarkus.platform.version=xxx
+                    //.setRepositorySystem(repoSystem)
+                    // The session should be initialized with the loaded workspace
+                    //.setRepositorySystemSession(repoSession)
+                    .setRemoteRepositories(repos)
+                    // To support multi-module projects that haven't been installed
+                    .setPreferPomsFromWorkspace(true));
+        }
+        return resolver;
     }
 }

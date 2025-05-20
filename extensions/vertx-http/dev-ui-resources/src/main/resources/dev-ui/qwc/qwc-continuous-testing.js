@@ -11,9 +11,11 @@ import { columnBodyRenderer } from '@vaadin/grid/lit.js';
 import { gridRowDetailsRenderer } from '@vaadin/grid/lit.js';
 import '@qomponent/qui-badge';
 import 'qui-ide-link';
-
-
+import 'qwc-no-data';
 import 'echarts-horizontal-stacked-bar';
+import {ring} from 'ldrs';
+
+ring.register();
 
 /**
  * This component shows the Continuous Testing Page
@@ -133,19 +135,40 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     connectedCallback() {
         super.connectedCallback();
+        window.addEventListener('continuous-testing-start-stop', this._onStartStopChanged);
         this._lastKnownState();
         this._createObservers();
     }
     
     disconnectedCallback() {
+        window.removeEventListener('continuous-testing-start-stop', this._onStartStopChanged);
         this._cancelObservers();    
         super.disconnectedCallback();
+    }
+
+    _onStartStopChanged = (event) => {
+        if(this._testsEnabled){
+            this._stop();
+        }else {
+            this._start();
+        }
     }
 
     _createObservers(){
         this._streamStateObserver = this.jsonRpc.streamState().onNext(jsonRpcResponse => {
             this._tests = jsonRpcResponse.result;
+            this._broadcastState();
         });
+    }
+
+    _broadcastState(){
+        if(this._tests.inProgress){
+            this._fireStateChange("busy");
+        }else if(!this._tests.config.enabled){
+            this._fireStateChange("stopped");
+        }else if(this._tests.config.enabled){
+            this._fireStateChange("started");
+        }
     }
 
     _cancelObservers(){
@@ -159,6 +182,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
         // Get last known
         this.jsonRpc.currentState().then(jsonRpcResponse => {
             this._tests = jsonRpcResponse.result;
+            this._broadcastState();
         });
     }
 
@@ -177,11 +201,16 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     }
 
     _renderMenuBar(){
-        if(this._testsReceived) {
+        let items = [];
+        if(this._testsEnabled) {
+            items.push(... (this._testResult?.failed ?? []));
+            items.push(... (this._testResult?.passed ?? []));
+            items.push(... (this._testResult?.skipped ?? []));
+        }
+        if(items.length > 0){
             return html`
             <div class="menubar">
                 <div>
-                    ${this._renderStartStopButton()}
                     ${this._renderRunAllButton()}
                     ${this._renderRunFailedButton()}
                     ${this._renderToggleBrokenOnly()}
@@ -249,7 +278,23 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
             </vaadin-grid>`;
 
         }else{
-            return html`No tests`;
+            return html`<qwc-no-data message="Continuous Testing is not running. Click the Start button or press [r] in the console to start." 
+                                    link="https://quarkus.io/guides/continuous-testing"
+                                    linkText="Read more about Continuous Testing">
+                            ${this._renderPlayButton()}
+                </qwc-no-data>
+            `
+        }
+    }
+
+    _renderPlayButton(){
+        if(!this._busy && !this._testsEnabled){
+            return html`<vaadin-button theme="tertiary" @click=${this._start}>
+                        <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
+                        Start
+                    </vaadin-button>`;
+        }else{
+            return html`<l-ring size="26" stroke="2" color="var(--lumo-contrast-25pct)" class="ring"></l-ring>`;
         }
     }
 
@@ -340,17 +385,6 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
                     </span>`;        
     }
 
-    _renderStartStopButton(){
-        return html`<vaadin-button 
-                            id="start-cnt-testing-btn" 
-                            theme="tertiary" 
-                            @click="${!this._testsEnabled ? this._start : this._stop}" 
-                            ?disabled=${this._busy}>
-                        <vaadin-icon icon="font-awesome-solid:${!this._testsEnabled ? 'play' : 'stop'}"></vaadin-icon>
-                        ${!this._testsEnabled ? 'Start' : 'Stop'}
-                    </vaadin-button>`;
-    }
-
     _renderRunAllButton(){
         if(this._testsEnabled){
             return html`<vaadin-button id="run-all-cnt-testing-btn" theme="tertiary" @click="${this._runAll}" ?disabled=${this._state.inProgress || this._busy}>
@@ -394,6 +428,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     _start(){
         if(!this._busy){
             this._busy = true;
+            this._fireStateChange("busy");
             this.jsonRpc.start().then(jsonRpcResponse => {
                 this._busy = false;
             });
@@ -403,10 +438,20 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
     _stop(){
         if(!this._busy){
             this._busy = true;
+            this._fireStateChange("busy");
             this.jsonRpc.stop().then(jsonRpcResponse => {
                 this._busy = false;
+                this._fireStateChange("stopped");
             });
         }
+    }
+
+    _fireStateChange(state){
+        this.dispatchEvent(new CustomEvent('continuous-testing-state-change', {
+            detail: { state: state },
+            bubbles: true,
+            composed: true
+        }));
     }
 
     _runAll(){

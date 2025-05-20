@@ -117,6 +117,13 @@
             <scope>runtime</scope>
         </dependency>
         
+        <!-- Loading indicators -->
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>ldrs</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
         <!-- Markdown it -->
         <dependency>
             <groupId>org.mvnpm</groupId>

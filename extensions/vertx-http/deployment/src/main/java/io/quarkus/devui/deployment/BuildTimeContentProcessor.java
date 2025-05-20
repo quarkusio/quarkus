@@ -503,6 +503,9 @@ public class BuildTimeContentProcessor {
         for (InternalPageBuildItem internalPageBuildItem : internalPages) {
             List<Page> pages = internalPageBuildItem.getPages();
             for (Page page : pages) {
+                if (internalPageBuildItem.getMenuActionComponent() != null) {
+                    page.setMenuActionComponent(internalPageBuildItem.getMenuActionComponent());
+                }
                 sectionMenu.add(page);
             }
             internalBuildTimeData.addAllBuildTimeData(internalPageBuildItem.getBuildTimeData());

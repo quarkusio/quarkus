@@ -18,10 +18,16 @@ public final class InternalPageBuildItem extends MultiBuildItem {
     private final int position;
     private final List<Page> pages = new ArrayList<>();
     private final Map<String, Object> buildTimeData = new HashMap<>();
+    private final String menuActionComponent;
 
     public InternalPageBuildItem(String namespaceLabel, int position) {
+        this(namespaceLabel, position, null);
+    }
+
+    public InternalPageBuildItem(String namespaceLabel, int position, String menuActionComponent) {
         this.namespaceLabel = namespaceLabel;
         this.position = position;
+        this.menuActionComponent = menuActionComponent;
     }
 
     public void addPage(PageBuilder page) {
@@ -35,6 +41,10 @@ public final class InternalPageBuildItem extends MultiBuildItem {
 
     public List<Page> getPages() {
         return pages;
+    }
+
+    public String getMenuActionComponent() {
+        return menuActionComponent;
     }
 
     public int getPosition() {

@@ -17,6 +17,8 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.inject.Named;
 import jakarta.inject.Singleton;
 import jakarta.validation.ClockProvider;
 import jakarta.validation.Constraint;
@@ -28,11 +30,13 @@ import jakarta.validation.TraversableResolver;
 import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.ValidationException;
+import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import jakarta.validation.executable.ValidateOnExecution;
 import jakarta.validation.valueextraction.ValueExtractor;
 import jakarta.ws.rs.Priorities;
 
+import org.hibernate.validator.HibernateValidatorFactory;
 import org.hibernate.validator.internal.metadata.core.ConstraintHelper;
 import org.hibernate.validator.messageinterpolation.AbstractMessageInterpolator;
 import org.hibernate.validator.spi.messageinterpolation.LocaleResolver;
@@ -42,21 +46,25 @@ import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget;
 import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.ClassType;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.IndexView;
 import org.jboss.jandex.Indexer;
 import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.ParameterizedType;
 import org.jboss.jandex.Type;
 import org.jboss.logging.Logger;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
+import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.AutoAddScopeBuildItem;
 import io.quarkus.arc.deployment.BeanArchiveIndexBuildItem;
+import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
@@ -88,6 +96,7 @@ import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveFieldBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveMethodBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.RuntimeReinitializedClassBuildItem;
+import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
 import io.quarkus.deployment.logging.LogCleanupFilterBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.deployment.recording.RecorderContext;
@@ -103,12 +112,12 @@ import io.quarkus.hibernate.validator.runtime.HibernateBeanValidationConfigValid
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorBuildTimeConfig;
 import io.quarkus.hibernate.validator.runtime.HibernateValidatorRecorder;
 import io.quarkus.hibernate.validator.runtime.ValidationSupport;
-import io.quarkus.hibernate.validator.runtime.ValidatorProvider;
 import io.quarkus.hibernate.validator.runtime.interceptor.MethodValidationInterceptor;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyReactiveViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyViolationExceptionMapper;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ViolationReport;
+import io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper;
 import io.quarkus.hibernate.validator.spi.AdditionalConstrainedClassBuildItem;
 import io.quarkus.hibernate.validator.spi.BeanValidationAnnotationsBuildItem;
 import io.quarkus.jaxrs.spi.deployment.AdditionalJaxRsResourceMethodAnnotationsBuildItem;
@@ -127,10 +136,13 @@ class HibernateValidatorProcessor {
     private static final Logger LOG = Logger.getLogger(HibernateValidatorProcessor.class);
 
     private static final String META_INF_VALIDATION_XML = "META-INF/validation.xml";
+    public static final String VALIDATOR_FACTORY_NAME = "quarkus-hibernate-validator-factory";
 
+    private static final DotName CDI_INSTANCE = DotName.createSimple(Instance.class);
     private static final DotName CONSTRAINT_VALIDATOR_FACTORY = DotName
             .createSimple(ConstraintValidatorFactory.class.getName());
     private static final DotName MESSAGE_INTERPOLATOR = DotName.createSimple(MessageInterpolator.class.getName());
+    private static final DotName LOCAL_RESOLVER_WRAPPER = DotName.createSimple(LocaleResolversWrapper.class);
     private static final DotName LOCALE_RESOLVER = DotName.createSimple(LocaleResolver.class.getName());
 
     private static final DotName TRAVERSABLE_RESOLVER = DotName.createSimple(TraversableResolver.class.getName());
@@ -393,8 +405,6 @@ class HibernateValidatorProcessor {
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItems,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProvider,
             Capabilities capabilities) {
-        // The bean encapsulating the Validator and ValidatorFactory
-        additionalBeans.produce(new AdditionalBeanBuildItem(ValidatorProvider.class));
 
         // The CDI interceptor which will validate the methods annotated with @MethodValidated
         additionalBeans.produce(new AdditionalBeanBuildItem(MethodValidationInterceptor.class));
@@ -452,7 +462,10 @@ class HibernateValidatorProcessor {
             BeanValidationAnnotationsBuildItem beanValidationAnnotations,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             CombinedIndexBuildItem combinedIndexBuildItem,
             Optional<AdditionalConstrainedClassesIndexBuildItem> additionalConstrainedClassesIndexBuildItem,
@@ -586,15 +599,56 @@ class HibernateValidatorProcessor {
             valueExtractorClassProxies.add(recorderContext.classProxy(className.toString()));
         }
 
-        beanContainerListener
-                .produce(new BeanContainerListenerBuildItem(
-                        recorder.initializeValidatorFactory(classesToBeValidated, detectedBuiltinConstraints,
-                                valueExtractorClassProxies,
-                                hasXmlConfiguration(),
-                                capabilities.isPresent(Capability.HIBERNATE_ORM),
-                                shutdownContext,
-                                localesBuildTimeConfig,
-                                hibernateValidatorBuildTimeConfig)));
+        syntheticBeans.produce(SyntheticBeanBuildItem
+                .configure(HibernateValidatorFactory.class)
+                .types(ValidatorFactory.class)
+                .unremovable()
+                .scope(BuiltinScope.SINGLETON.getInfo())
+                .createWith(recorder.hibernateValidatorFactory(classesToBeValidated, detectedBuiltinConstraints,
+                        valueExtractorClassProxies,
+                        hasXmlConfiguration(),
+                        capabilities.isPresent(Capability.HIBERNATE_ORM),
+                        localesBuildTimeConfig,
+                        hibernateValidatorBuildTimeConfig))
+                .addQualifier().annotation(DotNames.NAMED).addValue("value", VALIDATOR_FACTORY_NAME).done()
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(LOCAL_RESOLVER_WRAPPER) }, null),
+                        AnnotationInstance.builder(Named.class).add("value", "locale-resolver-wrapper").build())
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(CONSTRAINT_VALIDATOR_FACTORY) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(MESSAGE_INTERPOLATOR) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(TRAVERSABLE_RESOLVER) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(PARAMETER_NAME_PROVIDER) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(CLOCK_PROVIDER) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(SCRIPT_EVALUATOR_FACTORY) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(GETTER_PROPERTY_SELECTION_STRATEGY) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(PROPERTY_NODE_NAME_PROVIDER) }, null))
+                .addInjectionPoint(ParameterizedType.create(CDI_INSTANCE,
+                        new Type[] { ClassType.create(VALIDATOR_FACTORY_CUSTOMIZER) }, null))
+                .done());
+
+        syntheticBeans.produce(SyntheticBeanBuildItem
+                .configure(Validator.class)
+                .unremovable()
+                .scope(BuiltinScope.SINGLETON.getInfo())
+                .createWith(recorder.hibernateValidator(VALIDATOR_FACTORY_NAME))
+                .addInjectionPoint(ClassType.create(HibernateValidatorFactory.class),
+                        AnnotationInstance.builder(DotNames.NAMED).value(VALIDATOR_FACTORY_NAME).build())
+                .done());
+    }
+
+    @BuildStep
+    @Record(STATIC_INIT)
+    public void init(BeanContainerBuildItem beanContainerBuildItem, HibernateValidatorRecorder recorder) {
+        recorder.hibernateValidatorFactoryInit(beanContainerBuildItem.getValue());
     }
 
     @BuildStep

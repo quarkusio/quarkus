@@ -36,7 +36,7 @@ public class ExtensionsProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createExtensionsPages(ExtensionsBuildItem extensionsBuildItem) {
 
-        InternalPageBuildItem extensionsPages = new InternalPageBuildItem("Extensions", 10);
+        InternalPageBuildItem extensionsPages = new InternalPageBuildItem("Extensions", 10, "qwc-extensions-menu-action");
 
         // Extensions
         Map<ExtensionGroup, List<Extension>> response = Map.of(

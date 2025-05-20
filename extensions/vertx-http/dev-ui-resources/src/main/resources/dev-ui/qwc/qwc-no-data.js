@@ -35,10 +35,12 @@ export class QwcNoData extends LitElement {
     }
 
     render() {
-        return html`<p class="nodata">
+        return html`
+            <div class="nodata">
                 <span>${this.message}</span>
                 ${this._renderLink()}
-            </p>
+                <slot></slot>
+            </div>
         `;
     }
     

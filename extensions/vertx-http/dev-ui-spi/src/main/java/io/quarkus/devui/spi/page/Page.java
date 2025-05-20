@@ -31,6 +31,8 @@ public class Page {
     private String namespaceLabel = null; // When more than one page belongs to the same namespace, we use the namespace as a title sometimes
     private String extensionId = null; // If this originates from an extension, then id. For internal this will be null;
 
+    private String menuActionComponent = null; // Internal pages can set this
+
     protected Page(String icon,
             String title,
             String staticLabel,
@@ -151,6 +153,14 @@ public class Page {
 
     public Map<String, String> getMetadata() {
         return metadata;
+    }
+
+    public void setMenuActionComponent(String menuActionComponent) {
+        this.menuActionComponent = menuActionComponent;
+    }
+
+    public String getMenuActionComponent() {
+        return this.menuActionComponent;
     }
 
     @Override

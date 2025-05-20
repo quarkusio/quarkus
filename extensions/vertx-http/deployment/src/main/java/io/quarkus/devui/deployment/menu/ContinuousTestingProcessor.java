@@ -52,7 +52,8 @@ public class ContinuousTestingProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createContinuousTestingPages() {
 
-        InternalPageBuildItem continuousTestingPages = new InternalPageBuildItem("Continuous Testing", 30);
+        InternalPageBuildItem continuousTestingPages = new InternalPageBuildItem("Continuous Testing", 30,
+                "qwc-continuous-testing-menu-action");
 
         continuousTestingPages.addPage(Page.webComponentPageBuilder()
                 .namespace(NAMESPACE)

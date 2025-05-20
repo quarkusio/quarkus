@@ -16,6 +16,7 @@ public class DevServicesRedisCustomPortReusableServiceITest {
     @Test
     @DisplayName("should start redis container with the given custom port")
     public void shouldStartRedisContainer() {
+        // We could strengthen this test to make sure the container is the same as seen by other tests, but it's hard since we won't know the order
         Assertions.assertTrue(SocketKit.isPortAlreadyUsed(6371));
     }
 

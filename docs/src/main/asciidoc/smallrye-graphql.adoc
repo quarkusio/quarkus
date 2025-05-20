@@ -503,6 +503,22 @@ You can mix Blocking and Non-blocking in one request,
 
 Above will fetch the film on the event-loop threads, but switch to the worker thread to fetch the heroes.
 
+=== RunOnVirtualThread
+
+Queries can be run on a virtual thread by adding `@RunOnVirtualThread` to the method:
+
+[source,java]
+----
+    @Query
+    @Description("Get a Films from a galaxy far far away")
+    @RunOnVirtualThread
+    public Film getFilm(int filmId) {
+        // ...
+    }
+----
+
+Please note the general guidelines for using xref:./virtual-threads.adoc[virtual threads]
+
 == Abstract Types
 
 The current schema is simple with only two concrete types, `Hero` and `Film`.

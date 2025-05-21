@@ -1,6 +1,9 @@
 package io.quarkus.redis.devservices.continuoustesting.it;
 
+import static io.restassured.RestAssured.when;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
@@ -22,6 +25,7 @@ import com.github.dockerjava.api.model.ContainerPort;
 import io.quarkus.redis.devservices.it.PlainQuarkusTest;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
+import io.quarkus.test.devservices.redis.TestResource;
 
 public class DevServicesRedisContinuousTestingTest {
 
@@ -37,7 +41,7 @@ public class DevServicesRedisContinuousTestingTest {
     @RegisterExtension
     public static QuarkusDevModeTest test = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses()
+                    .addClasses(TestResource.class)
                     .addAsResource(new StringAsset(ContinuousTestingTestUtils.appProperties("")),
                             "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(PlainQuarkusTest.class));
@@ -57,6 +61,33 @@ public class DevServicesRedisContinuousTestingTest {
         assertEquals(1, result.getTotalTestsFailed());
 
         // We could check the container goes away, but we'd have to check slowly, because ryuk can be slow
+    }
+
+    @Test
+    public void testDevModeServiceConfigRefresh() {
+        List<Container> started = getRedisContainers();
+        ping();
+
+        assertFalse(started.isEmpty());
+        Container container = started.get(0);
+        assertTrue(Arrays.stream(container.getPorts()).noneMatch(p -> p.getPublicPort() == 6377),
+                "Expected random port 6377, but got: " + Arrays.toString(container.getPorts()));
+
+        test.modifyResourceFile("application.properties",
+                s -> ContinuousTestingTestUtils.appProperties("quarkus.redis.devservices.port=6377"));
+
+        ping();
+        List<Container> newContainers = getRedisContainersExcludingExisting(started);
+        assertEquals(1, newContainers.size()); // this can be wrong
+        Container newContainer = newContainers.get(0);
+        assertTrue(Arrays.stream(newContainer.getPorts()).anyMatch(p -> p.getPublicPort() == 6377),
+                "Expected port 6377, but got: " + Arrays.toString(newContainer.getPorts()));
+    }
+
+    void ping() {
+        when().get("/ping").then()
+                .statusCode(200)
+                .body(is("PONG"));
     }
 
     @Test

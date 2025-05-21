@@ -23,7 +23,7 @@ public interface DevServicesConfig {
     boolean enabled();
 
     /**
-     * Global flag that can be used to force the attachmment of Dev Services to shared network. Default is false.
+     * Global flag that can be used to force the attachment of Dev Services to shared network. Default is false.
      */
     @WithDefault("false")
     boolean launchOnSharedNetwork();

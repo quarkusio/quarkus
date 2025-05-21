@@ -1,11 +1,13 @@
 package io.quarkus.devservices.crossclassloader.runtime;
 
+import static java.util.UUID.randomUUID;
+
 import java.io.Closeable;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -16,6 +18,10 @@ import java.util.function.Supplier;
  * Tracker-aware running dev services will only be registered post-augmentation, at runtime.
  */
 public class RunningDevServicesTracker {
+
+    // A useful uniqueness marker which will persist across profiles and application restarts.
+    public static final String APPLICATION_UUID = randomUUID().toString();
+
     private static volatile Set<Supplier<Map>> configTracker = null;
 
     // A dev service owner is a combination of an extension (feature) and the app type (dev or test) which identifies which dev services
@@ -24,19 +30,19 @@ public class RunningDevServicesTracker {
     private static Map<ComparableDevServicesConfig, Set<Closeable>> servicesIndexedByConfig = null;
 
     public RunningDevServicesTracker() {
-        //This needs to work across classloaders, but the QuarkusClassLoader will load us parent first
+        //This needs to work across classloaders, and the QuarkusClassLoader will load us parent first
         if (configTracker == null) {
-            configTracker = new HashSet<>();
+            configTracker = ConcurrentHashMap.newKeySet();
         }
         if (servicesIndexedByOwner == null) {
-            servicesIndexedByOwner = new HashMap<>();
+            servicesIndexedByOwner = new ConcurrentHashMap<>();
         }
         if (servicesIndexedByConfig == null) {
-            servicesIndexedByConfig = new HashMap<>();
+            servicesIndexedByConfig = new ConcurrentHashMap<>();
         }
     }
 
-    // This gets called an awful lot. Should we cache it?
+    // This gets called an awful lot. Should we cache it? If we did, we'd need to deal with cache invalidation, so maybe not.
     public Set<Supplier<Map>> getConfigForAllRunningServices() {
         return Collections.unmodifiableSet(configTracker);
     }

@@ -146,8 +146,10 @@
 
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny</artifactId>
+                <artifactId>mutiny-bom</artifactId>
                 <version>${version.mutiny}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- JUnit 5 dependencies, imported as a BOM -->

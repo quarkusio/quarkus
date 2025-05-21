@@ -240,9 +240,12 @@
 
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny</artifactId>
+                <artifactId>mutiny-bom</artifactId>
                 <version>${mutiny.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
+
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
                 <artifactId>mutiny-zero-flow-adapters</artifactId>

@@ -9,6 +9,7 @@ import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.websockets.next.UserData.TypedKey;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.buffer.Buffer;
@@ -113,6 +114,18 @@ public interface BasicWebSocketConnector {
      * @return self
      */
     BasicWebSocketConnector addSubprotocol(String value);
+
+    /**
+     * Add a value to the connection user data.
+     *
+     * @param key
+     * @param value
+     * @param <VALUE>
+     * @return self
+     * @see UserData#put(TypedKey, Object)
+     * @see WebSocketClientConnection#userData()
+     */
+    <VALUE> BasicWebSocketConnector userData(TypedKey<VALUE> key, VALUE value);
 
     /**
      * Set the execution model for callback handlers.

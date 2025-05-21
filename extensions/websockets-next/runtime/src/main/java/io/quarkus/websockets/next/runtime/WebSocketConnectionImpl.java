@@ -36,7 +36,7 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
             ConnectionManager connectionManager, Codecs codecs, RoutingContext ctx,
             TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
         super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger,
-                sendingInterceptor);
+                new UserDataImpl(), sendingInterceptor);
         this.generatedEndpointClass = generatedEndpointClass;
         this.endpointId = endpointClass;
         this.webSocket = Objects.requireNonNull(webSocket);

@@ -64,7 +64,7 @@
         <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
         <jakarta.authentication-api>3.0.0</jakarta.authentication-api>
         <jakarta.authorization-api.version>2.1.0</jakarta.authorization-api.version>
-        <jakarta.el-api.version>5.0.1</jakarta.el-api.version>
+        <jakarta.el-api.version>6.0.1</jakarta.el-api.version>
         <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
         <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
         <jakarta.interceptor-api.version>2.2.0</jakarta.interceptor-api.version>
@@ -76,7 +76,7 @@
         <jakarta.resource-api.version>2.1.0</jakarta.resource-api.version>
         <jakarta.servlet-api.version>6.0.0</jakarta.servlet-api.version>
         <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
-        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
+        <jakarta.validation-api.version>3.1.0</jakarta.validation-api.version>
         <jakarta.websocket-api.version>2.1.1</jakarta.websocket-api.version>
         <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
         <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>

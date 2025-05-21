@@ -30,7 +30,6 @@
     </scm>
     <properties>
         <angus-activation.version>1.0.0</angus-activation.version>
-        <expressly.version>5.0.0</expressly.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

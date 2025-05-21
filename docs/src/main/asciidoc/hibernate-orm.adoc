@@ -515,12 +515,6 @@ HibernateCriteriaBuilder hibernateCriteriaBuilder;
 Metamodel metamodel;
 
 @Inject
-org.hibernate.Metamodel metamodel;
-
-@Inject
-JpaMetamodel jpaMetamodel;
-
-@Inject
 Cache cache;
 
 @Inject

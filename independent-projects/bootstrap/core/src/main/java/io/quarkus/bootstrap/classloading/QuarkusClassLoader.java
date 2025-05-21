@@ -27,10 +27,11 @@ import java.util.function.Consumer;
 
 import org.jboss.logging.Logger;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.commons.classloading.ClassLoaderHelper;
-import io.quarkus.paths.ManifestAttributes;
 import io.quarkus.paths.PathVisit;
 
 /**
@@ -141,7 +142,6 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
     private final List<ClassPathElement> bannedElements;
     private final List<ClassPathElement> parentFirstElements;
     private final ConcurrentMap<ClassPathElement, ProtectionDomain> protectionDomains = new ConcurrentHashMap<>();
-    private final ConcurrentMap<String, Package> definedPackages = new ConcurrentHashMap<>();
     private final ClassLoader parent;
     /**
      * If this is true it will attempt to load from the parent first
@@ -587,28 +587,33 @@ public class QuarkusClassLoader extends ClassLoader implements Closeable {
         }
     }
 
-    private void definePackage(String name, ClassPathElement classPathElement) {
-        final String pkgName = getPackageNameFromClassName(name);
-        //we can't use getPackage here
-        //if can return a package from the parent
-        if ((pkgName != null) && definedPackages.get(pkgName) == null) {
-            synchronized (getClassLoadingLock(pkgName)) {
-                if (definedPackages.get(pkgName) == null) {
-                    ManifestAttributes manifest = classPathElement.getManifestAttributes();
-                    if (manifest != null) {
-                        definedPackages.put(pkgName, definePackage(pkgName, manifest.getSpecificationTitle(),
-                                manifest.getSpecificationVersion(),
-                                manifest.getSpecificationVendor(),
-                                manifest.getImplementationTitle(),
-                                manifest.getImplementationVersion(),
-                                manifest.getImplementationVendor(), null));
-                        return;
-                    }
-
-                    // this could certainly be improved to use the actual manifest
-                    definedPackages.put(pkgName, definePackage(pkgName, null, null, null, null, null, null, null));
-                }
+    @VisibleForTesting
+    void definePackage(String name, ClassPathElement classPathElement) {
+        var pkgName = getPackageNameFromClassName(name);
+        if (pkgName == null) {
+            return;
+        }
+        if (getDefinedPackage(pkgName) != null) {
+            return;
+        }
+        try {
+            var manifest = classPathElement.getManifestAttributes();
+            if (manifest != null) {
+                definePackage(pkgName, manifest.getSpecificationTitle(),
+                        manifest.getSpecificationVersion(),
+                        manifest.getSpecificationVendor(),
+                        manifest.getImplementationTitle(),
+                        manifest.getImplementationVersion(),
+                        manifest.getImplementationVendor(), null);
+            } else {
+                definePackage(pkgName, null, null, null, null, null, null, null);
             }
+        } catch (IllegalArgumentException e) {
+            // retry, thrown by definePackage(), if a package for the same name is already defines by this class loader.
+            if (getDefinedPackage(pkgName) != null) {
+                return;
+            }
+            throw e;
         }
     }
 

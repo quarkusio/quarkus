@@ -8,7 +8,6 @@ import jakarta.inject.Inject;
 import jakarta.persistence.metamodel.EntityType;
 import jakarta.persistence.metamodel.Metamodel;
 
-import org.hibernate.metamodel.model.domain.JpaMetamodel;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -36,16 +35,8 @@ public class MultiplePersistenceUnitsCdiMetamodelTest {
     Metamodel usersMetamodel;
 
     @Inject
-    @PersistenceUnit("users")
-    JpaMetamodel usersJpaMetamodel;
-
-    @Inject
     @PersistenceUnit("inventory")
     Metamodel inventoryMetamodel;
-
-    @Inject
-    @PersistenceUnit("inventory")
-    org.hibernate.Metamodel hibernateInventoryMetamodel;
 
     @Test
     public void defaultMetamodel() {
@@ -69,30 +60,10 @@ public class MultiplePersistenceUnitsCdiMetamodelTest {
     }
 
     @Test
-    public void usersJpaMetamodel() {
-        assertNotNull(usersJpaMetamodel);
-
-        EntityType<User> entityType = usersJpaMetamodel.entity(User.class);
-        assertNotNull(entityType);
-
-        assertEquals(User.class.getSimpleName(), entityType.getName());
-    }
-
-    @Test
     public void inventoryMetamodel() {
         assertNotNull(inventoryMetamodel);
 
         EntityType<Plane> entityType = inventoryMetamodel.entity(Plane.class);
-        assertNotNull(entityType);
-
-        assertEquals(Plane.class.getSimpleName(), entityType.getName());
-    }
-
-    @Test
-    public void hibernateInventoryMetamodel() {
-        assertNotNull(hibernateInventoryMetamodel);
-
-        EntityType<Plane> entityType = hibernateInventoryMetamodel.entity(Plane.class);
         assertNotNull(entityType);
 
         assertEquals(Plane.class.getSimpleName(), entityType.getName());
@@ -106,11 +77,4 @@ public class MultiplePersistenceUnitsCdiMetamodelTest {
                 .hasMessageContaining("Not an entity");
     }
 
-    @Test
-    public void testUserInHibernateInventoryMetamodel() {
-        assertThatThrownBy(() -> {
-            hibernateInventoryMetamodel.entity(User.class);
-        }).isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Not an entity");
-    }
 }

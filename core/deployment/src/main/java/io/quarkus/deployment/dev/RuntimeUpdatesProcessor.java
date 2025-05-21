@@ -849,10 +849,18 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
                             .collect(Collectors.toSet());
 
                     for (Path classFilePath : classFilePaths) {
-                        final Path sourceFilePath = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
-                                module, cuf, timestampSet);
-
+                        Path sourceFilePath = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
+                                module, cuf, timestampSet, false);
                         if (sourceFilePath != null) {
+                            if (!sourceFilePath.toFile().exists()) {
+                                // We need to refresh this in case the source file has changed
+                                // This can happen if you rename a kotlin file, the same class will now be provided by a new file
+                                var updated = retrieveSourceFilePathForClassFile(classFilePath, moduleChangedSourceFiles,
+                                        module, cuf, timestampSet, true);
+                                if (updated != null) {
+                                    sourceFilePath = updated;
+                                }
+                            }
                             if (!sourceFilePath.toFile().exists()) {
                                 // Source file has been deleted. Delete class and restart
                                 cleanUpClassFile(classFilePath, timestampSet);
@@ -888,9 +896,9 @@ public class RuntimeUpdatesProcessor implements HotReplacementContext, Closeable
 
     private Path retrieveSourceFilePathForClassFile(Path classFilePath, List<Path> moduleChangedSourceFiles,
             DevModeContext.ModuleInfo module, Function<DevModeContext.ModuleInfo, DevModeContext.CompilationUnit> cuf,
-            TimestampSet timestampSet) {
+            TimestampSet timestampSet, boolean forceRefresh) {
         Path sourceFilePath = timestampSet.classFilePathToSourceFilePath.get(classFilePath);
-        if (sourceFilePath == null || moduleChangedSourceFiles.contains(sourceFilePath)) {
+        if (sourceFilePath == null || moduleChangedSourceFiles.contains(sourceFilePath) || forceRefresh) {
             sourceFilePath = compiler.findSourcePath(classFilePath, cuf.apply(module).getSourcePaths(),
                     cuf.apply(module).getClassesPath());
         }

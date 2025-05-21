@@ -68,6 +68,8 @@ public class ComparableDevServicesConfig {
 
         // This could be expensive, so we might wish to shove everything into a map, reflectively, and just compare that
         // The externals won't change if we do that, so we can do it later if we want to
+        // We can assume config mapping is immutable
+        // We need to compare across classloaders, so we cannot use equals()
 
         if (config == null || otherConfig == null) {
             // If they're both null, they're equal

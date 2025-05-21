@@ -47,7 +47,7 @@
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.12.0</smallrye-common.version>
-        <smallrye-config.version>3.12.4</smallrye-config.version>
+        <smallrye-config.version>3.13.0</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.10</smallrye-open-api.version>
@@ -4119,18 +4119,11 @@
                 <version>${project.version}</version>
             </dependency>
             <dependency>
-                <!-- NOTE: this dependency is here to cause relocations to work; DO NOT MODIFY -->
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-config</artifactId>
-                <!-- This is intentionally hard-coded -->
-                <version>1.5.0</version>
-            </dependency>
-            <dependency>
-                <!-- NOTE: this dependency is here to cause relocations to work; DO NOT MODIFY -->
-                <groupId>io.smallrye</groupId>
-                <artifactId>smallrye-config-common</artifactId>
-                <!-- This is intentionally hard-coded -->
-                <version>1.5.0</version>
+                <groupId>io.smallrye.config</groupId>
+                <artifactId>smallrye-config-bom</artifactId>
+                <version>${smallrye-config.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
                 <groupId>io.smallrye.config</groupId>
@@ -4138,49 +4131,10 @@
                 <version>${smallrye-config.version}</version>
                 <exclusions>
                     <exclusion>
-                        <groupId>org.osgi</groupId>
-                        <artifactId>org.osgi.annotation.versioning</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.ow2.asm</groupId>
                         <artifactId>asm</artifactId>
                     </exclusion>
                 </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-common</artifactId>
-                <version>${smallrye-config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-core</artifactId>
-                <version>${smallrye-config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-validator</artifactId>
-                <version>${smallrye-config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-source-file-system</artifactId>
-                <version>${smallrye-config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-source-yaml</artifactId>
-                <version>${smallrye-config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-source-keystore</artifactId>
-                <version>${smallrye-config.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.config</groupId>
-                <artifactId>smallrye-config-crypto</artifactId>
-                <version>${smallrye-config.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.smallrye</groupId>

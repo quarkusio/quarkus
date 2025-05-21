@@ -36,19 +36,19 @@ public abstract class WebSocketConnectionBase implements Connection {
 
     protected final TrafficLogger trafficLogger;
 
-    private final UserData data;
+    private final UserData userData;
 
     private final SendingInterceptor sendingInterceptor;
 
     WebSocketConnectionBase(Map<String, String> pathParams, Codecs codecs, HandshakeRequest handshakeRequest,
-            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
+            TrafficLogger trafficLogger, UserData userData, SendingInterceptor sendingInterceptor) {
         this.identifier = UUID.randomUUID().toString();
         this.pathParams = pathParams;
         this.codecs = codecs;
         this.handshakeRequest = handshakeRequest;
         this.creationTime = Instant.now();
         this.trafficLogger = trafficLogger;
-        this.data = new UserDataImpl();
+        this.userData = userData;
         this.sendingInterceptor = sendingInterceptor;
     }
 
@@ -172,7 +172,7 @@ public abstract class WebSocketConnectionBase implements Connection {
 
     @Override
     public UserData userData() {
-        return data;
+        return userData;
     }
 
 }

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import jakarta.inject.Inject;
 
@@ -26,6 +27,8 @@ import io.quarkus.websockets.next.OnClose;
 import io.quarkus.websockets.next.OnOpen;
 import io.quarkus.websockets.next.OnTextMessage;
 import io.quarkus.websockets.next.PathParam;
+import io.quarkus.websockets.next.UserData;
+import io.quarkus.websockets.next.UserData.TypedKey;
 import io.quarkus.websockets.next.WebSocket;
 import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.vertx.core.Context;
@@ -63,6 +66,8 @@ public class BasicConnectorTest {
         assertThrows(NullPointerException.class, () -> connector.onPong(null));
         assertThrows(NullPointerException.class, () -> connector.onError(null));
 
+        CountDownLatch openLatch = new CountDownLatch(1);
+        AtomicReference<UserData> userData = new AtomicReference<>();
         CountDownLatch messageLatch = new CountDownLatch(2);
         List<String> messages = new CopyOnWriteArrayList<>();
         CountDownLatch closedLatch = new CountDownLatch(1);
@@ -70,6 +75,14 @@ public class BasicConnectorTest {
                 .baseUri(uri)
                 .path("/{name}")
                 .pathParam("name", "Lu")
+                .userData(TypedKey.forBoolean("boolean"), true)
+                .userData(TypedKey.forInt("int"), Integer.MAX_VALUE)
+                .userData(TypedKey.forLong("long"), Long.MAX_VALUE)
+                .userData(TypedKey.forString("string"), "Lu")
+                .onOpen(c -> {
+                    userData.set(c.userData());
+                    openLatch.countDown();
+                })
                 .onTextMessage((c, m) -> {
                     assertTrue(Context.isOnWorkerThread());
                     String name = c.pathParam("name");
@@ -79,7 +92,18 @@ public class BasicConnectorTest {
                 .onClose((c, s) -> closedLatch.countDown())
                 .connectAndAwait();
         assertEquals("Lu", connection1.pathParam("name"));
+        assertTrue(connection1.userData().get(TypedKey.forBoolean("boolean")));
+        assertEquals(Integer.MAX_VALUE, connection1.userData().get(TypedKey.forInt("int")));
+        assertEquals(Long.MAX_VALUE, connection1.userData().get(TypedKey.forLong("long")));
+        assertEquals("Lu", connection1.userData().get(TypedKey.forString("string")));
         connection1.sendTextAndAwait("Hi!");
+
+        assertTrue(openLatch.await(5, TimeUnit.SECONDS));
+        assertNotNull(userData.get());
+        assertTrue(userData.get().get(TypedKey.forBoolean("boolean")));
+        assertEquals(Integer.MAX_VALUE, userData.get().get(TypedKey.forInt("int")));
+        assertEquals(Long.MAX_VALUE, userData.get().get(TypedKey.forLong("long")));
+        assertEquals("Lu", userData.get().get(TypedKey.forString("string")));
 
         assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
         // Note that ordering is not guaranteed

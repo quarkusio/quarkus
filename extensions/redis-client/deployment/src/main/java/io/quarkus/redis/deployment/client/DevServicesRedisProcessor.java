@@ -1,6 +1,5 @@
 package io.quarkus.redis.deployment.client;
 
-import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
@@ -12,12 +11,16 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
+import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
+
+import com.github.dockerjava.api.model.Container;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
@@ -39,6 +42,7 @@ import io.quarkus.deployment.logging.LoggingSetupBuildItem;
 import io.quarkus.devservices.common.ComposeLocator;
 import io.quarkus.devservices.common.ConfigureUtil;
 import io.quarkus.devservices.common.ContainerLocator;
+import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesTracker;
 import io.quarkus.redis.deployment.client.RedisBuildTimeConfig.DevServiceConfiguration;
 import io.quarkus.redis.runtime.client.config.RedisConfig;
 import io.quarkus.runtime.LaunchMode;
@@ -60,8 +64,27 @@ public class DevServicesRedisProcessor {
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
 
-    private static final ContainerLocator redisContainerLocator = locateContainerWithLabels(REDIS_EXPOSED_PORT,
-            DEV_SERVICE_LABEL);
+    /**
+     * Label which indicates that this dev service was started by this processor. It should not be discovered for re-use;
+     * instead
+     * reuse should be managed by the tracker, so that config updates apply.
+     * We add a UUID to the end so that we don't filter out dev services from other processes.
+     */
+    private static final String MANAGED_DEV_SERVICE_LABEL = "quarkus-dev-service-redis-uuid";
+
+    public static final BiPredicate<Container, String> SELECTOR = (container, expectedLabel) -> Stream
+            .concat(Stream.of(QUARKUS_DEV_SERVICE), Stream.of(DEV_SERVICE_LABEL))
+            .map(l -> container.getLabels().get(l))
+            .anyMatch(expectedLabel::equals);
+    //    public static final BiPredicate<Container, String> IS_NOT_CREATED_BY_US_SELECTOR2 = (container, expectedLabel) -> container.getLabels().get(MANAGED_DEV_SERVICE_LABEL))
+    //            .noneMatch(expectedLabel::equals);
+    public static final BiPredicate<Container, String> IS_NOT_CREATED_BY_US_SELECTOR = (container,
+            expectedLabel) -> !RunningDevServicesTracker.APPLICATION_UUID
+                    .equals(container.getLabels().get(MANAGED_DEV_SERVICE_LABEL));
+
+    private static final ContainerLocator redisContainerLocator = new ContainerLocator(
+            SELECTOR.and(IS_NOT_CREATED_BY_US_SELECTOR),
+            REDIS_EXPOSED_PORT);
 
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
@@ -174,8 +197,8 @@ public class DevServicesRedisProcessor {
             }
             config.put(IMAGE_NAME_KEY, dockerImageName.asCanonicalNameString());
 
-            Map dynamicConfig = new HashMap();
-            Supplier hoster = () -> REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
+            Map<String, Supplier<String>> dynamicConfig = new HashMap();
+            Supplier<String> hoster = () -> REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
             dynamicConfig.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, hoster);
 
             RunnableDevService answer = new RunnableDevService(
@@ -236,6 +259,7 @@ public class DevServicesRedisProcessor {
 
             if (serviceName != null) {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
+                withLabel(MANAGED_DEV_SERVICE_LABEL, RunningDevServicesTracker.APPLICATION_UUID);
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
             }
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");

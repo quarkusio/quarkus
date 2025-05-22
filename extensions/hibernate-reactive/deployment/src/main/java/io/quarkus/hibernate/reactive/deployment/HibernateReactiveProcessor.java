@@ -152,37 +152,43 @@ public final class HibernateReactiveProcessor {
                         "Cannot use persistence.xml with Hibernate Reactive in Quarkus. Must use application.properties instead.");
             }
         }
+        HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
 
-        // we only support the default pool for now
+        String datasourceNameFromConf = persistenceUnitConfig.datasource().orElse(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+
         DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
                 .get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
 
+        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
+                .get(datasourceNameFromConf);
+
+        Optional<String> datasourceName = Optional.of(datasourceNameFromConf);
         Optional<String> explicitDialect = hibernateOrmConfig.defaultPersistenceUnit().dialect().dialect();
         Optional<String> explicitDbMinVersion = defaultDataSourceBuildTimeConfig.dbVersion();
         Optional<String> dbKindOptional = DefaultDataSourceDbKindBuildItem.resolve(
-                defaultDataSourceBuildTimeConfig.dbKind(),
+                dataSourceBuildTimeConfig.dbKind(),
                 defaultDataSourceDbKindBuildItems,
                 defaultDataSourceBuildTimeConfig.devservices().enabled()
                         .orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources()),
                 curateOutcomeBuildItem);
+        Optional<String> dbVersion = dataSourceBuildTimeConfig.dbVersion();
 
         if (dbKindOptional.isEmpty()) {
             throw new ConfigurationException(
-                    "The default datasource must be configured for Hibernate Reactive. Refer to https://quarkus.io/guides/datasource for guidance.",
+                    "The datasource must be configured for Hibernate Reactive. Refer to https://quarkus.io/guides/datasource for guidance.",
                     Set.of("quarkus.datasource.db-kind", "quarkus.datasource.username",
                             "quarkus.datasource.password"));
         }
 
         // We only support Hibernate Reactive with a reactive data source, otherwise we don't configure the PU
         DataSourcesReactiveBuildTimeConfig.DataSourceReactiveOuterNamedBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
-                .dataSources().get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+                .dataSources().get(datasourceNameFromConf);
 
         if (dataSourceReactiveBuildTimeConfig == null || !dataSourceReactiveBuildTimeConfig.reactive().enabled()) {
-            LOG.warn("Hibernate Reactive is disabled because the default datasource is not reactive");
+            LOG.warn("Hibernate Reactive is disabled because the datasource is not reactive");
             return;
         }
 
-        HibernateOrmConfigPersistenceUnit persistenceUnitConfig = hibernateOrmConfig.defaultPersistenceUnit();
         QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
                 hibernateOrmConfig, index, persistenceUnitConfig, jpaModel,
                 dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
@@ -201,8 +207,10 @@ public final class HibernateReactiveProcessor {
         // - we don't support starting Hibernate Reactive from a persistence.xml
         // - we don't support Hibernate Envers with Hibernate Reactive
         persistenceUnitDescriptors.produce(new PersistenceUnitDescriptorBuildItem(reactivePU,
-                new RecordedConfig(Optional.of(DataSourceUtil.DEFAULT_DATASOURCE_NAME),
-                        dbKindOptional, Optional.empty(),
+                new RecordedConfig(
+                        datasourceName,
+                        dbKindOptional,
+                        dbVersion,
                         persistenceUnitConfig.dialect().dialect(),
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),

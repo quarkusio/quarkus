@@ -162,10 +162,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        return Uni.createFrom().item(build(identity));
-
-        // Do 'return context.runBlocking(build(identity));'
-        // if a blocking call is required to customize the identity
+        return Uni.createFrom().item(build(identity)); <1>
     }
 
     private Supplier<SecurityIdentity> build(SecurityIdentity identity) {
@@ -182,6 +179,7 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
     }
 }
 ----
+<1> Augment the security identity. See the <<security-augmentation-request-context>> section for an example of how to augment the identity in a blocking mode.
 
 Here is another example showing how to use the client certificate available in the current xref:security-authentication-mechanisms.adoc#mutual-tls[mutual TLS (mTLS) authentication] request to add more roles:
 
@@ -238,6 +236,9 @@ public class RolesAugmentor implements SecurityIdentityAugmentor {
 If more than one custom `SecurityIdentityAugmentor` is registered then they will be considered equal candidates and invoked in random order.
 You can enforce the order by implementing a default `SecurityIdentityAugmentor#priority` method. Augmentors with higher priorities will be invoked first.
 ====
+
+[[security-augmentation-request-context]]
+=== Activate Request Context
 
 By default, the request context is not activated when augmenting the security identity, this means that if you want to use for example Hibernate
 that mandates a request context, you will have a `jakarta.enterprise.context.ContextNotActiveException`.

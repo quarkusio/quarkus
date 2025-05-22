@@ -4,6 +4,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.head;
 import static com.github.tomakehurst.wiremock.client.WireMock.not;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -37,6 +38,10 @@ public class WiremockTestResource {
                 wireMockConfig()
                         .port(port));
         server.start();
+
+        server.stubFor(
+                head(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))
+                        .willReturn(aResponse().withStatus(200)));
 
         server.stubFor(
                 get(urlEqualTo("/auth/realms/quarkus2/.well-known/openid-configuration"))

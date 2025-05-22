@@ -30,11 +30,10 @@
     </scm>
     <properties>
         <angus-activation.version>1.0.0</angus-activation.version>
-        <expressly.version>5.0.0</expressly.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jandex.version>3.3.0</jandex.version>
+        <jandex.version>3.3.1</jandex.version>
         <jmh.version>1.37</jmh.version>
 
         <!-- Dependency versions -->
@@ -43,7 +42,7 @@
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
         <junit5.version>5.12.2</junit5.version>
         <maven-core.version>3.9.9</maven-core.version><!-- Keep in sync with sisu.version -->
-        <sisu.version>0.9.0.M3</sisu.version><!-- Keep in sync with maven-core.version -->
+        <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>
         <maven-resolver.version>1.9.22</maven-resolver.version>
         <maven-shared-utils.version>3.4.2</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
@@ -71,8 +70,8 @@
         <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
         <plexus-utils.version>3.5.1</plexus-utils.version>
         <smallrye-common.version>2.12.0</smallrye-common.version>
-        <smallrye-beanbag.version>1.5.2</smallrye-beanbag.version>
-        <gradle-tooling.version>8.13</gradle-tooling.version>
+        <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
+        <gradle-tooling.version>8.14</gradle-tooling.version>
         <quarkus-fs-util.version>1.0.0</quarkus-fs-util.version>
         <org-crac.version>0.1.3</org-crac.version>
     </properties>

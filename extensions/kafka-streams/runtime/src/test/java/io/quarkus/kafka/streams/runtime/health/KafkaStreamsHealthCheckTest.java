@@ -4,30 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.apache.kafka.streams.KafkaStreams;
 import org.eclipse.microprofile.health.HealthCheckResponse;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import io.quarkus.kafka.streams.runtime.KafkaStreamsTopologyManager;
-
+@ExtendWith(MockitoExtension.class)
 public class KafkaStreamsHealthCheckTest {
 
     @InjectMocks
-    KafkaStreamsStateHealthCheck healthCheck = new KafkaStreamsStateHealthCheck();
-
-    @Mock
-    private KafkaStreamsTopologyManager manager;
+    KafkaStreamsStateHealthCheck healthCheck;
 
     @Mock
     private KafkaStreams streams;
-
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-    }
 
     @Test
     public void shouldBeUpIfStateRunning() {

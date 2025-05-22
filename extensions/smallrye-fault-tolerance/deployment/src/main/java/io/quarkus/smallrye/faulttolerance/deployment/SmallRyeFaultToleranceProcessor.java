@@ -315,6 +315,8 @@ public class SmallRyeFaultToleranceProcessor {
                     if (ftMethod.isLegitimate()) {
                         ftMethods.add(ftMethod);
 
+                        reflectiveMethod.produce(new ReflectiveMethodBuildItem("fault tolerance method", method));
+
                         if (annotationStore.hasAnnotation(method, DotNames.ASYNCHRONOUS)
                                 && annotationStore.hasAnnotation(method, DotNames.ASYNCHRONOUS_NON_BLOCKING)) {
                             exceptions.add(new DefinitionException(

@@ -45,17 +45,17 @@
         <version.jta>2.0.1</version.jta>
         <!-- main versions -->
         <version.gizmo>1.9.0</version.gizmo>
-        <version.jandex>3.3.0</version.jandex>
+        <version.jandex>3.3.1</version.jandex>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
-        <version.mutiny>2.8.0</version.mutiny>
+        <version.mutiny>2.9.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <version.smallrye-common>2.12.0</version.smallrye-common>
         <!-- test versions -->
         <version.assertj>3.27.3</version.assertj>
         <version.junit5>5.12.2</version.junit5>
-        <version.kotlin>2.1.20</version.kotlin>
+        <version.kotlin>2.1.21</version.kotlin>
         <version.kotlin-coroutines>1.10.2</version.kotlin-coroutines>
-        <version.mockito>5.17.0</version.mockito>
+        <version.mockito>5.18.0</version.mockito>
         <!-- TCK versions -->
         <version.arquillian>1.7.0.Final</version.arquillian>
         <version.atinject-tck>2.0.1</version.atinject-tck>
@@ -146,8 +146,10 @@
 
             <dependency>
                 <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny</artifactId>
+                <artifactId>mutiny-bom</artifactId>
                 <version>${version.mutiny}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
             <!-- JUnit 5 dependencies, imported as a BOM -->

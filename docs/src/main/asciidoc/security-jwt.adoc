@@ -876,12 +876,16 @@ You can disable automatic key generation by setting at least one of the followin
 
 * `mp.jwt.verify.publickey.location`
 * `mp.jwt.verify.publickey`
+* `mp.jwt.decrypt.key.location`
+* `smallrye.jwt.encrypt.key.location`
 * `smallrye.jwt.sign.key.location`
 * `smallrye.jwt.sign.key`
 
 [NOTE]
 ====
-Additionally, if you do not specify the issuer information (using the `mp.jwt.verify.issuer` property), the {extension-name} extension will set a default issuer as `https://quarkus.io/issuer`.
+In *dev* mode, if you do not explicitly configure the issuer using the `mp.jwt.verify.issuer` property, the {extension-name} extension will set a default issuer of `https://quarkus.io/issuer`.
+
+If you prefer to configure the issuer programmatically, set `mp.jwt.verify.issuer` to `NONE` to prevent the default value from being applied.
 ====
 
 [[integration-testing-wiremock]]

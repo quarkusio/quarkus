@@ -36,6 +36,11 @@ public class TestNativeConfig implements NativeConfig {
     }
 
     @Override
+    public Optional<List<String>> additionalBuildArgsAppend() {
+        return Optional.empty();
+    }
+
+    @Override
     public boolean enableHttpUrlHandler() {
         return false;
     }

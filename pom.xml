@@ -69,24 +69,27 @@
         <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <jacoco.version>0.8.13</jacoco.version>
-        <kubernetes-client.version>7.2.0</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <rest-assured.version>5.5.1</rest-assured.version>
-        <hibernate-orm.version>6.6.13.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <kubernetes-client.version>7.3.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
+        <rest-assured.version>5.5.2</rest-assured.version>
+        <hibernate-orm.version>6.6.15.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-commons-annotations.version>7.0.3.Final</hibernate-commons-annotations.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>2.4.7.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
-        <hibernate-validator.version>8.0.2.Final</hibernate-validator.version>
+        <hibernate-reactive.version>2.4.8.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
+        <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>7.2.3.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if com.google.auth should not be updated too -->
+        <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
+                                            <!-- com.google.auth -->
+                                            <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
         <protoc.version>3.25.5</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
         <protobuf-kotlin.version>4.29.3</protobuf-kotlin.version>
         <proto-google-common-protos.version>2.56.0</proto-google-common-protos.version>
+        <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
 
         <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
         <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>

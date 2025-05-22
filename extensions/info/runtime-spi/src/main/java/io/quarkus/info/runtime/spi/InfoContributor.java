@@ -14,6 +14,13 @@ public interface InfoContributor {
     String name();
 
     /**
+     * The display name of the contributor in the DevUI card will fall back to {@code name()} if not set
+     */
+    default String displayName() {
+        return name();
+    }
+
+    /**
      * Properties to add under {@code name}
      */
     Map<String, Object> data();

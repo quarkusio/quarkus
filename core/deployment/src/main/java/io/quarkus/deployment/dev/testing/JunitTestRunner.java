@@ -158,7 +158,6 @@ public class JunitTestRunner {
             LogCapturingOutputFilter logHandler = new LogCapturingOutputFilter(testApplication, true, true,
                     TestSupport.instance()
                             .get()::isDisplayTestOutput);
-            // TODO do we want to do this setting of the TCCL? I think it just makes problems?
             Thread.currentThread().setContextClassLoader(tcl);
 
             Set<UniqueId> allDiscoveredIds = new HashSet<>();
@@ -570,21 +569,23 @@ public class JunitTestRunner {
         //for now this is out of scope, we are just going to do annotation based discovery
         //we will need to fix this sooner rather than later though
 
+        if (moduleInfo.getTest().isEmpty()) {
+            return DiscoveryResult.EMPTY;
+        }
+
         //we also only run tests from the current module, which we can also revisit later
         Indexer indexer = new Indexer();
-        moduleInfo.getTest().ifPresent(test -> {
-            try (Stream<Path> files = Files.walk(Paths.get(test.getClassesPath()))) {
-                files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
-                    try (InputStream in = Files.newInputStream(s)) {
-                        indexer.index(in);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        try (Stream<Path> files = Files.walk(Paths.get(moduleInfo.getTest().get().getClassesPath()))) {
+            files.filter(s -> s.getFileName().toString().endsWith(".class")).forEach(s -> {
+                try (InputStream in = Files.newInputStream(s)) {
+                    indexer.index(in);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         Index index = indexer.complete();
         //we now have all the classes by name
@@ -617,18 +618,16 @@ public class JunitTestRunner {
         // Most logic in the JUnitRunner counts main tests as quarkus tests, so do a (mildly irritating) special pass to get the ones which are strictly @QuarkusTest
 
         Set<String> quarkusTestClassesForFacadeClassLoader = new HashSet<>();
-        for (var a : Arrays.asList(QUARKUS_TEST)) {
-            for (AnnotationInstance i : index.getAnnotations(a)) {
-                DotName name = i.target()
-                        .asClass()
-                        .name();
-                quarkusTestClassesForFacadeClassLoader.add(name.toString());
-                for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
-                    if (!integrationTestClasses.contains(clazz.name()
-                            .toString())) {
-                        quarkusTestClassesForFacadeClassLoader.add(clazz.name()
-                                .toString());
-                    }
+        for (AnnotationInstance i : index.getAnnotations(QUARKUS_TEST)) {
+            DotName name = i.target()
+                    .asClass()
+                    .name();
+            quarkusTestClassesForFacadeClassLoader.add(name.toString());
+            for (ClassInfo clazz : index.getAllKnownSubclasses(name)) {
+                if (!integrationTestClasses.contains(clazz.name()
+                        .toString())) {
+                    quarkusTestClassesForFacadeClassLoader.add(clazz.name()
+                            .toString());
                 }
             }
         }
@@ -681,10 +680,16 @@ public class JunitTestRunner {
             }
             var enclosing = enclosingClasses.get(testClass);
             if (enclosing != null) {
-                if (integrationTestClasses.contains(enclosing.toString())) {
+                String enclosingString = enclosing.toString();
+                if (quarkusTestClassesForFacadeClassLoader.contains(enclosingString)) {
+                    quarkusTestClassesForFacadeClassLoader.add(name);
+                }
+
+                // No else here, this is an 'also do'
+                if (integrationTestClasses.contains(enclosingString)) {
                     integrationTestClasses.add(name);
                     continue;
-                } else if (quarkusTestClasses.contains(enclosing.toString())) {
+                } else if (quarkusTestClasses.contains(enclosingString)) {
                     quarkusTestClasses.add(name);
                     continue;
                 }
@@ -694,6 +699,20 @@ public class JunitTestRunner {
                 continue;
             }
             unitTestClasses.add(name);
+        }
+
+        // if we didn't find any test classes, let's return early
+        // Make sure you also update the logic for the non-empty case above if you adjust this part
+        if (testType == TestType.ALL) {
+            if (unitTestClasses.isEmpty() && quarkusTestClasses.isEmpty()) {
+                return DiscoveryResult.EMPTY;
+            }
+        } else if (testType == TestType.UNIT) {
+            if (unitTestClasses.isEmpty()) {
+                return DiscoveryResult.EMPTY;
+            }
+        } else if (quarkusTestClasses.isEmpty()) {
+            return DiscoveryResult.EMPTY;
         }
 
         List<Class<?>> itClasses = new ArrayList<>();
@@ -745,8 +764,6 @@ public class JunitTestRunner {
                 log.warnf(
                         "Failed to load test class %s (possibly as it was added after the test run started), it will not be executed this run.",
                         i);
-            } finally {
-                // TODO should we do this?  Thread.currentThread().setContextClassLoader(old);
             }
         }
         itClasses.sort(Comparator.comparing(new Function<Class<?>, String>() {
@@ -808,6 +825,7 @@ public class JunitTestRunner {
             }
         }
 
+        // Make sure you also update the logic for the empty case above if you adjust this part
         if (testType == TestType.ALL) {
             //run unit style tests first
             //before the quarkus tests have started
@@ -1269,6 +1287,8 @@ public class JunitTestRunner {
     }
 
     static class DiscoveryResult implements AutoCloseable {
+
+        private final static DiscoveryResult EMPTY = new DiscoveryResult(null, List.of());
 
         final QuarkusClassLoader classLoader;
         final List<Class<?>> testClasses;

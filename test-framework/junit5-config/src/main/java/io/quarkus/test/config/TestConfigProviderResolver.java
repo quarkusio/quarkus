@@ -7,7 +7,7 @@ import java.util.function.Function;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 
-import io.quarkus.deployment.dev.testing.TestConfig;
+import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.SmallRyeConfig;
@@ -53,10 +53,13 @@ public class TestConfigProviderResolver extends SmallRyeConfigProviderResolver {
             SmallRyeConfig config = configs.computeIfAbsent(mode, new Function<LaunchMode, SmallRyeConfig>() {
                 @Override
                 public SmallRyeConfig apply(final LaunchMode launchMode) {
-                    return ConfigUtils.configBuilder(false, true, mode)
-                            .withProfile(mode.getDefaultProfile())
-                            .withMapping(TestConfig.class, "quarkus.test")
+                    LaunchMode current = LaunchMode.current();
+                    LaunchMode.set(launchMode);
+                    SmallRyeConfig config = ConfigUtils.configBuilder(false, true, mode)
+                            .withCustomizers(new TestConfigCustomizer(mode))
                             .build();
+                    LaunchMode.set(current);
+                    return config;
                 }
             });
             resolver.registerConfig(config, classLoader);

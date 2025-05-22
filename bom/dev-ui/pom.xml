@@ -13,7 +13,7 @@
     <description>Dependency management for dev-ui. Importable by third party extension developers.</description>
 
     <properties>
-        <vaadin.version>24.7.5</vaadin.version>
+        <vaadin.version>24.7.6</vaadin.version>
         <lit.version>3.2.1</lit.version>
         <lit-element.version>4.1.1</lit-element.version>
         <lit-html.version>3.2.1</lit-html.version>
@@ -32,6 +32,7 @@
         <path-to-regexp.version>2.4.0</path-to-regexp.version>
         <codeblock.version>1.1.1</codeblock.version>
         <qomponent.version>1.0.4</qomponent.version>
+        <ldrs.version>1.1.7</ldrs.version>
         <directory-tree.version>1.0.3</directory-tree.version>
         <hpcc-js-wasm.version>2.15.3</hpcc-js-wasm.version>
         <yargs.version>17.7.2</yargs.version>
@@ -328,6 +329,14 @@
                 <scope>runtime</scope>
             </dependency>
             
+            <!-- Loading indicators -->
+            <dependency>
+                <groupId>org.mvnpm</groupId>
+                <artifactId>ldrs</artifactId>
+                <version>${ldrs.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
             <!-- Polyfill for importmaps -->
             <dependency>
                 <groupId>org.mvnpm</groupId>

@@ -39,9 +39,9 @@ import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.dev.config.CurrentConfig;
 import io.quarkus.dev.spi.DevModeType;
-import io.quarkus.devui.runtime.config.ConfigDescription;
 import io.quarkus.vertx.http.deployment.HttpRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
+import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 import io.quarkus.vertx.http.runtime.devmode.ConfigDescriptionsManager;
 
 public class ConsoleProcessor {

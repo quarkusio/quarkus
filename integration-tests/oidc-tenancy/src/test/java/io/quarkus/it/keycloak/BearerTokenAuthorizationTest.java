@@ -92,7 +92,13 @@ public class BearerTokenAuthorizationTest {
             assertNull(getStateCookieSavedPath(webClient, "tenant-web-app"));
 
             webClient.getCookieManager().clearCookies();
+
+            checkHealth();
         }
+    }
+
+    private static void checkHealth() {
+        RestAssured.when().get("http://localhost:8081/q/health/ready").then().statusCode(404);
     }
 
     @Test

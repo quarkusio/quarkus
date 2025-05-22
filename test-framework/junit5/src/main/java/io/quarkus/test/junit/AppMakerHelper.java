@@ -92,10 +92,15 @@ public class AppMakerHelper {
         return profile == null ? null : new ClassCoercingTestProfile(profile.getConstructor().newInstance());
     }
 
-    static Runnable setExtraProperties(Class<?> profileClass, QuarkusTestProfile profileInstance) {
+    /**
+     * Reads properties from a profile, sets them as system properties, and returns a Runnable which can be invoked to remove
+     * them back off of
+     * system properties.
+     */
+    static Runnable setExtraPropertiesRestorably(Class<?> profileClass, QuarkusTestProfile profileInstance) {
         final Map<String, String> additional = new HashMap<>();
-        // TODO we make this twice, also in abstractjvmextension can we streamline that?
-        // TODO We can't get rid of the one here because config needs to be set before augmentation, but maybe we can get rid of it on the test side?
+        // We apply the profile config twice, once before augmentation, and once before app start
+        // That's a bit awkward, but both augmentation and app start need to have the right config for their profile
         additional.putAll(profileInstance.getConfigOverrides());
         if (!profileInstance.getEnabledAlternatives().isEmpty()) {
             additional.put("quarkus.arc.selected-alternatives", profileInstance.getEnabledAlternatives()
@@ -124,7 +129,9 @@ public class AppMakerHelper {
         //we just use system properties for now
         //it's a lot simpler
         // TODO this is really ugly, set proper config on the app
-        // Sadly, I don't think #42715 helps, because it kicks in after this code
+        // TODO investigate whether we can use the config from https://github.com/quarkusio/quarkus/pull/42715 to avoid system properties
+        // ... but be aware that this is called twice, and on the first pass through, the classloader might be an all-purpose runtime classloader, and would not be the actual test classloader
+        // Setting config on the wrong classloader is worse than useless, so we'd need solid test coverage
         return RestorableSystemProperties.setProperties(additional)::close;
     }
 
@@ -233,29 +240,25 @@ public class AppMakerHelper {
     // should have been freshly created
     // TODO maybe don't even accept one? is that comment right?
     public static StartupAction getStartupAction(Class<?> testClass, CuratedApplication curatedApplication, Class profile)
-            throws AppModelResolverException, BootstrapException, IOException,
-            InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
+            throws InvocationTargetException, NoSuchMethodException, InstantiationException, IllegalAccessException {
 
-        PrepareResult prepareResult = prepare(testClass,
-                curatedApplication,
-                profile);
+        PrepareResult prepareResult = prepare(testClass, curatedApplication, profile);
 
+        // Before doing the augmentation, apply any extra config from the profile
         final Runnable configCleanup = prepareResult.profileInstance() == null ? null
-                : setExtraProperties(profile, prepareResult.profileInstance());
+                : setExtraPropertiesRestorably(profile, prepareResult.profileInstance());
 
         try {
-
             // To check changes here run integration-tests/elytron-resteasy-reactive and SharedProfileTestCase in integration-tests/main
-
             return prepareResult.augmentAction().createInitialRuntimeApplication();
-        } catch (Throwable e) {
+        } catch (Exception e) {
             // Errors at this point just get reported as org.junit.platform.commons.JUnitException: TestEngine with ID 'junit-jupiter' failed to discover tests
-            // Give a little help to debuggers
-            // TODO how best to handle?
+            // Even though a stack trace isn't ideal handling, we want to make sure people have something to try and debug if problems happen
             e.printStackTrace();
             throw e;
 
         } finally {
+            // We may by doing augmentations for other profiles now, so unset the config
             if (configCleanup != null) {
                 configCleanup.run();
             }

@@ -1,5 +1,6 @@
 package io.quarkus.hibernate.reactive.config.datasource;
 
+import static io.quarkus.datasource.common.runtime.DatabaseKind.POSTGRESQL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Assertions;
@@ -21,13 +22,11 @@ public class EntitiesInDefaultPUWithExplicitDatasourceConfigActiveFalseTest {
             .overrideConfigKey("quarkus.datasource.\"ds-1\".active", "false")
             // We need at least one build-time property for the datasource,
             // otherwise it's considered unconfigured at build time...
-            .overrideConfigKey("quarkus.datasource.\"ds-1\".db-kind", "h2")
+            .overrideConfigKey("quarkus.datasource.\"ds-1\".db-kind", POSTGRESQL)
             .assertException(t -> assertThat(t)
                     .isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
-                            // Hibernate Reactive doesn't support explicitly setting the datasource (yet),
-                            // so it will just notice the default datasource is not configured!
-                            "The default datasource must be configured for Hibernate Reactive",
+                            "Datasource 'ds-1' was deactivated through configuration properties. To activate the datasource, set configuration property 'quarkus.datasource.\"ds-1\".active' to 'true' and configure datasource 'ds-1'",
                             "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test

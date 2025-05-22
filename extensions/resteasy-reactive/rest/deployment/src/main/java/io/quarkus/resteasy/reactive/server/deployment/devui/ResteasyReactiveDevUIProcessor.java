@@ -1,16 +1,16 @@
 package io.quarkus.resteasy.reactive.server.deployment.devui;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
-import io.quarkus.resteasy.reactive.server.runtime.devui.ResteasyReactiveJsonRPCService;
+import io.quarkus.resteasy.reactive.server.runtime.dev.ui.ResteasyReactiveJsonRPCService;
 
 public class ResteasyReactiveDevUIProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void createPages(BuildProducer<CardPageBuildItem> cardPageProducer) {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
@@ -46,7 +46,7 @@ public class ResteasyReactiveDevUIProcessor {
         cardPageProducer.produce(cardPageBuildItem);
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     public void createJsonRPCService(BuildProducer<JsonRPCProvidersBuildItem> jsonRPCServiceProducer) {
         jsonRPCServiceProducer.produce(new JsonRPCProvidersBuildItem(ResteasyReactiveJsonRPCService.class));
     }

@@ -158,12 +158,6 @@ public interface TestConfig {
     boolean flatClassPath();
 
     /**
-     * The profile to use when testing the native image
-     */
-    @WithDefault("prod")
-    String nativeImageProfile();
-
-    /**
      * The profile to use when testing using {@code @QuarkusIntegrationTest}
      */
     @WithDefault("prod")

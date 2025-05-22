@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +27,7 @@ import io.quarkus.devtools.codestarts.CodestartStructureException;
 import io.quarkus.devtools.codestarts.CodestartType;
 import io.quarkus.devtools.codestarts.DataKey;
 import io.quarkus.devtools.codestarts.core.GenericCodestartCatalog;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.extensions.Extensions;
 import io.quarkus.maven.dependency.ArtifactCoords;
 import io.quarkus.platform.catalog.processor.ExtensionProcessor;
@@ -86,22 +86,23 @@ public final class QuarkusCodestartCatalog extends GenericCodestartCatalog<Quark
         this.extensionsMapping = extensionsMapping;
     }
 
-    public static QuarkusCodestartCatalog fromBaseCodestartsResources(Map<String, Extension> extensionsMapping)
+    public static QuarkusCodestartCatalog fromBaseCodestartsResources(MessageWriter log,
+            Map<String, Extension> extensionsMapping)
             throws IOException {
-        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(),
+        final Map<String, Codestart> codestarts = loadCodestartsFromResources(getCodestartResourceLoaders(log),
                 QUARKUS_CODESTARTS_DIR);
         return new QuarkusCodestartCatalog(codestarts.values(), extensionsMapping);
     }
 
-    public static QuarkusCodestartCatalog fromBaseCodestartsResources()
+    public static QuarkusCodestartCatalog fromBaseCodestartsResources(MessageWriter log)
             throws IOException {
-        return fromBaseCodestartsResources(Collections.emptyMap());
+        return fromBaseCodestartsResources(log, Map.of());
     }
 
     public static QuarkusCodestartCatalog fromExtensionsCatalogAndDirectories(
-            ExtensionCatalog catalog, Collection<Path> directories)
+            MessageWriter log, ExtensionCatalog catalog, Collection<Path> directories)
             throws IOException {
-        final List<ResourceLoader> loaders = getCodestartResourceLoaders(catalog);
+        final List<ResourceLoader> loaders = getCodestartResourceLoaders(log, catalog);
         final Map<String, Codestart> codestarts = loadCodestartsFromResources(loaders,
                 QUARKUS_CODESTARTS_DIR);
         for (Path directory : directories) {

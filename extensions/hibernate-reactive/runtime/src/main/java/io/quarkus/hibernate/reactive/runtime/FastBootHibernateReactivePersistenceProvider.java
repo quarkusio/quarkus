@@ -31,7 +31,6 @@ import io.quarkus.arc.Arc;
 import io.quarkus.arc.ClientProxy;
 import io.quarkus.arc.InjectableInstance;
 import io.quarkus.arc.InstanceHandle;
-import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.hibernate.orm.runtime.BuildTimeSettings;
 import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
@@ -50,6 +49,7 @@ import io.quarkus.hibernate.reactive.runtime.boot.FastBootReactiveEntityManagerF
 import io.quarkus.hibernate.reactive.runtime.boot.registry.PreconfiguredReactiveServiceRegistryBuilder;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusReactiveConnectionPoolInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.VertxInstanceInitiator;
+import io.quarkus.reactive.datasource.runtime.ReactiveDataSourceUtil;
 import io.vertx.core.Vertx;
 import io.vertx.sqlclient.Pool;
 
@@ -189,18 +189,22 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                         persistenceUnitName,
                         puConfig.unsupportedProperties().keySet());
             }
+            Set<String> overriddenProperties = new HashSet<>();
             for (Map.Entry<String, String> entry : puConfig.unsupportedProperties().entrySet()) {
                 var key = entry.getKey();
-                if (runtimeSettingsBuilder.get(key) != null) {
-                    log.warnf("Persistence-unit [%s] sets property '%s' to a custom value through '%s',"
-                            + " but Quarkus already set that property independently."
-                            + " The custom value will be ignored.",
-                            persistenceUnitName, key,
-                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnit.getConfigurationName(),
-                                    "unsupported-properties.\"" + key + "\""));
-                    continue;
+                var value = runtimeSettingsBuilder.get(key);
+                if (value != null && !(value instanceof String stringValue && stringValue.isBlank())) {
+                    overriddenProperties.add(key);
                 }
                 runtimeSettingsBuilder.put(entry.getKey(), entry.getValue());
+            }
+            if (!overriddenProperties.isEmpty()) {
+                log.warnf("Persistence-unit [%s] sets unsupported properties that override Quarkus' own settings."
+                        + " These properties may break assumptions in Quarkus code and cause malfunctions."
+                        + " If this override is absolutely necessary, make sure to file a feature request or bug report so that a solution can be implemented in Quarkus."
+                        + " Unsupported properties that override Quarkus' own settings: %s",
+                        persistenceUnitName,
+                        overriddenProperties);
             }
 
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
@@ -224,12 +228,16 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
         return null;
     }
 
-    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName, RecordedState rs,
+    private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName,
+            RecordedState recordedState,
             RuntimeSettings runtimeSettings, HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         PreconfiguredReactiveServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredReactiveServiceRegistryBuilder(
-                persistenceUnitName, rs, puConfig);
+                persistenceUnitName, recordedState, puConfig);
 
-        registerVertxAndPool(persistenceUnitName, runtimeSettings, serviceRegistryBuilder);
+        Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
+        if (dataSourceName.isPresent()) {
+            registerVertxAndPool(persistenceUnitName, runtimeSettings, serviceRegistryBuilder, dataSourceName.get());
+        }
 
         runtimeSettings.getSettings().forEach((key, value) -> {
             serviceRegistryBuilder.applySetting(key, value);
@@ -248,7 +256,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             }
         }
 
-        for (ProvidedService<?> providedService : rs.getProvidedServices()) {
+        for (ProvidedService<?> providedService : recordedState.getProvidedServices()) {
             if (!runtimeInitiatedServiceClasses.contains(providedService.getServiceRole())) {
                 serviceRegistryBuilder.addService(providedService);
             }
@@ -288,17 +296,15 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     private void registerVertxAndPool(String persistenceUnitName,
             RuntimeSettings runtimeSettings,
-            PreconfiguredReactiveServiceRegistryBuilder serviceRegistry) {
+            PreconfiguredReactiveServiceRegistryBuilder serviceRegistry, String datasourceName) {
         if (runtimeSettings.isConfigured(AvailableSettings.URL)) {
             // the pool has been defined in the persistence unit, we can bail out
             return;
         }
 
-        // for now, we only support one pool but this will change
-        String datasourceName = DataSourceUtil.DEFAULT_DATASOURCE_NAME;
         Pool pool;
         try {
-            InjectableInstance<Pool> poolHandle = Arc.container().select(Pool.class);
+            InjectableInstance<Pool> poolHandle = ReactiveDataSourceUtil.dataSourceInstance(datasourceName);
             if (!poolHandle.isResolvable()) {
                 throw new IllegalStateException("No pool has been defined for persistence unit " + persistenceUnitName);
             }

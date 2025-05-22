@@ -53,6 +53,14 @@ public final class ClassNames {
     public static final DotName ENTITY_MANAGER = createConstant("jakarta.persistence.EntityManager");
     public static final DotName SESSION = createConstant("org.hibernate.Session");
     public static final DotName STATELESS_SESSION = createConstant("org.hibernate.StatelessSession");
+    public static final DotName CRITERIA_BUILDER = createConstant("jakarta.persistence.criteria.CriteriaBuilder");
+    public static final DotName HIBERNATE_CRITERIA_BUILDER = createConstant(
+            "org.hibernate.query.criteria.HibernateCriteriaBuilder");
+    public static final DotName METAMODEL = createConstant("jakarta.persistence.metamodel.Metamodel");
+    public static final DotName SCHEMA_MANAGER = createConstant("org.hibernate.relational.SchemaManager");
+    public static final DotName CACHE = createConstant("jakarta.persistence.Cache");
+    public static final DotName HIBERNATE_CACHE = createConstant("org.hibernate.Cache");
+    public static final DotName PERSISTENCE_UNIT_UTIL = createConstant("jakarta.persistence.PersistenceUnitUtil");
 
     public static final DotName INTERCEPTOR = createConstant("org.hibernate.Interceptor");
     public static final DotName STATEMENT_INSPECTOR = createConstant("org.hibernate.resource.jdbc.spi.StatementInspector");

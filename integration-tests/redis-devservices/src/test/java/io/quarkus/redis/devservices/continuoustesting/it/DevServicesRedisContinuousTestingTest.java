@@ -63,19 +63,22 @@ public class DevServicesRedisContinuousTestingTest {
         // We could check the container goes away, but we'd have to check slowly, because ryuk can be slow
     }
 
+    // This tests behaviour in dev mode proper (rather than continuous testing)
     @Test
     public void testDevModeServiceConfigRefresh() {
         List<Container> started = getRedisContainers();
+        // Interacting with the app will force a refresh
         ping();
 
         assertFalse(started.isEmpty());
         Container container = started.get(0);
         assertTrue(Arrays.stream(container.getPorts()).noneMatch(p -> p.getPublicPort() == 6377),
-                "Expected random port 6377, but got: " + Arrays.toString(container.getPorts()));
+                "Expected random port, but got: " + Arrays.toString(container.getPorts()));
 
         test.modifyResourceFile("application.properties",
-                s -> ContinuousTestingTestUtils.appProperties("quarkus.redis.devservices.port=6377"));
+                s -> ContinuousTestingTestUtils.appProperties(FIXED_PORT_PROPERTIES));
 
+        // Force another refresh
         ping();
         List<Container> newContainers = getRedisContainersExcludingExisting(started);
         assertEquals(1, newContainers.size()); // this can be wrong

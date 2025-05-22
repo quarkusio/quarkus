@@ -120,6 +120,9 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         @WithName("version-check.enabled")
         @ConfigDocDefault("`true` if the dialect was set automatically by Quarkus, `false` if it was set explicitly")
         Optional<Boolean> versionCheckEnabled();
+
+        @WithDefault("false")
+        boolean startOffline();
     }
 
     @ConfigGroup

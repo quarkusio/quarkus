@@ -1,5 +1,7 @@
 package io.quarkus.hibernate.reactive.runtime;
 
+import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -12,8 +14,6 @@ import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.integration.HibernateOrmIntegrationRuntimeDescriptor;
 import io.quarkus.runtime.annotations.Recorder;
-
-import static io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil.DEFAULT_PERSISTENCE_UNIT_NAME;
 
 @Recorder
 public class HibernateReactiveRecorder {

@@ -287,28 +287,17 @@ public class ApplicationLifecycleManager {
     }
 
     private static void registerSignalHandlers(final BiConsumer<Integer, Throwable> exitCodeHandler) {
-        final SignalHandler exitHandler = new SignalHandler() {
-            @Override
-            public void handle(Signal signal) {
-                Logger applicationLogger = Logger.getLogger(Application.class);
-                applicationLogger.debugf("Received signed %s, shutting down", signal.getNumber());
-                exitCodeHandler.accept(signal.getNumber() + 0x80, null);
-            }
-        };
         final SignalHandler diagnosticsHandler = new SignalHandler() {
             @Override
             public void handle(Signal signal) {
                 DiagnosticPrinter.printDiagnostics(System.out);
             }
         };
-        handleSignal("INT", exitHandler);
-        handleSignal("TERM", exitHandler);
         // the HUP and QUIT signals are not defined for the Windows OpenJDK implementation:
         // https://hg.openjdk.java.net/jdk8u/jdk8u-dev/hotspot/file/7d5c800dae75/src/os/windows/vm/jvm_windows.cpp
         if (IS_WINDOWS) {
             handleSignal("BREAK", diagnosticsHandler);
         } else {
-            handleSignal("HUP", exitHandler);
             handleSignal("QUIT", diagnosticsHandler);
         }
     }

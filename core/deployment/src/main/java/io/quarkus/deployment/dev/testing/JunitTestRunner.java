@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
@@ -644,7 +645,9 @@ public class JunitTestRunner {
         }
 
         Set<DotName> allTestAnnotations = collectTestAnnotations(index);
-        Set<DotName> allTestClasses = new HashSet<>();
+        // Order matters here for nested tests
+        // We assume we have evaluated the parent of a class before evaluating it
+        Set<DotName> allTestClasses = new TreeSet<>();
         Map<DotName, DotName> enclosingClasses = new HashMap<>();
         for (DotName annotation : allTestAnnotations) {
             for (AnnotationInstance instance : index.getAnnotations(annotation)) {
@@ -680,7 +683,7 @@ public class JunitTestRunner {
             }
             var enclosing = enclosingClasses.get(testClass);
             if (enclosing != null) {
-                String enclosingString = enclosing.toString();
+                final String enclosingString = enclosing.toString();
                 if (quarkusTestClassesForFacadeClassLoader.contains(enclosingString)) {
                     quarkusTestClassesForFacadeClassLoader.add(name);
                 }

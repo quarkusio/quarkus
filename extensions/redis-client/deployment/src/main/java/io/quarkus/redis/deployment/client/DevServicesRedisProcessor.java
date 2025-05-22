@@ -1,5 +1,7 @@
 package io.quarkus.redis.deployment.client;
 
+import static io.quarkus.devservices.common.ContainerLocator.MANAGED_DEV_SERVICE_LABEL;
+import static io.quarkus.devservices.common.ContainerLocator.locateContainerWithLabels;
 import static io.quarkus.devservices.common.Labels.QUARKUS_DEV_SERVICE;
 import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
 
@@ -11,16 +13,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalInt;
-import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.jboss.logging.Logger;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.utility.DockerImageName;
-
-import com.github.dockerjava.api.model.Container;
 
 import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
@@ -64,27 +62,8 @@ public class DevServicesRedisProcessor {
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
 
-    /**
-     * Label which indicates that this dev service was started by this processor. It should not be discovered for re-use;
-     * instead
-     * reuse should be managed by the tracker, so that config updates apply.
-     * We add a UUID to the end so that we don't filter out dev services from other processes.
-     */
-    private static final String MANAGED_DEV_SERVICE_LABEL = "quarkus-dev-service-redis-uuid";
-
-    public static final BiPredicate<Container, String> SELECTOR = (container, expectedLabel) -> Stream
-            .concat(Stream.of(QUARKUS_DEV_SERVICE), Stream.of(DEV_SERVICE_LABEL))
-            .map(l -> container.getLabels().get(l))
-            .anyMatch(expectedLabel::equals);
-    //    public static final BiPredicate<Container, String> IS_NOT_CREATED_BY_US_SELECTOR2 = (container, expectedLabel) -> container.getLabels().get(MANAGED_DEV_SERVICE_LABEL))
-    //            .noneMatch(expectedLabel::equals);
-    public static final BiPredicate<Container, String> IS_NOT_CREATED_BY_US_SELECTOR = (container,
-            expectedLabel) -> !RunningDevServicesTracker.APPLICATION_UUID
-                    .equals(container.getLabels().get(MANAGED_DEV_SERVICE_LABEL));
-
-    private static final ContainerLocator redisContainerLocator = new ContainerLocator(
-            SELECTOR.and(IS_NOT_CREATED_BY_US_SELECTOR),
-            REDIS_EXPOSED_PORT);
+    private static final ContainerLocator redisContainerLocator = locateContainerWithLabels(REDIS_EXPOSED_PORT,
+            DEV_SERVICE_LABEL);
 
     private static final String QUARKUS = "quarkus.";
     private static final String DOT = ".";
@@ -191,7 +170,7 @@ public class DevServicesRedisProcessor {
                     : null;
 
             // TODO ideally the container properties would get put into it in a centralised way, but the RunnableDevService object doesn't get passed detailed information about the container
-            Map config = new HashMap();
+            Map<String, String> config = new HashMap();
             if (fixedExposedPort.isPresent()) {
                 config.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisHost);
             }

@@ -463,7 +463,11 @@ public class OidcIdentityProvider implements IdentityProvider<TokenAuthenticatio
                     String errorMessage = "Token and UserInfo do not have matching `sub` claims";
                     return Uni.createFrom().failure(new AuthenticationCompletionException(errorMessage));
                 }
-
+                final String principalClaim = resolvedContext.oidcConfig().token().principalClaim().orElse(null);
+                if (principalClaim != null && !tokenJson.containsKey(principalClaim) && userInfo != null
+                        && userInfo.contains(principalClaim)) {
+                    tokenJson.put(principalClaim, userInfo.getString(principalClaim));
+                }
                 JsonObject rolesJson = getRolesJson(requestData, resolvedContext, tokenCred, tokenJson,
                         userInfo);
                 SecurityIdentity securityIdentity = validateAndCreateIdentity(requestData, tokenCred,

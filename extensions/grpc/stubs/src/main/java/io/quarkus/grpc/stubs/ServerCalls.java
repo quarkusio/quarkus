@@ -35,12 +35,12 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
-            uni.subscribe().with(
+            handleSubscription(uni.subscribe().with(
                     item -> {
                         response.onNext(item);
                         onCompleted(response);
                     },
-                    failure -> onError(response, failure));
+                    failure -> onError(response, failure)), response);
         } catch (Throwable t) {
             onError(response, t);
         }
@@ -82,12 +82,12 @@ public class ServerCalls {
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
-            uni.subscribe().with(
+            handleSubscription(uni.subscribe().with(
                     item -> {
                         response.onNext(item);
                         onCompleted(response);
                     },
-                    failure -> onError(response, failure));
+                    failure -> onError(response, failure)), response);
             return pump;
         } catch (Throwable throwable) {
             onError(response, throwable);

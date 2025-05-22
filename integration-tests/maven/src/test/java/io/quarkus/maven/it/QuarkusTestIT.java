@@ -76,6 +76,7 @@ public class QuarkusTestIT extends RunAndCheckMojoTestBase {
     }
 
     @DisabledOnOs(OS.WINDOWS) // Tracked by https://github.com/quarkusio/quarkus/issues/47913
+    @Disabled("See https://github.com/quarkusio/quarkus/issues/48004")
     @Test
     public void testNestedQuarkusTestMixedWithNormalTestsContinuousTesting()
             throws MavenInvocationException, FileNotFoundException {

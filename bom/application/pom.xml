@@ -162,8 +162,8 @@
         <flyway.version>11.9.1</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
-        <liquibase.version>4.29.1</liquibase.version>
-        <liquibase-mongodb.version>4.29.1</liquibase-mongodb.version>
+        <liquibase.version>4.32.0</liquibase.version>
+        <liquibase-mongodb.version>4.32.0</liquibase-mongodb.version>
         <snakeyaml.version>2.4</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
         <mongo-client.version>5.5.1</mongo-client.version>
@@ -189,6 +189,7 @@
         <google-cloud-functions.version>1.1.4</google-cloud-functions.version>
         <commons-compress.version>1.27.1</commons-compress.version> <!-- Please check with Java Operator SDK / Fabric8 team before updating -->
         <commons-text.version>1.13.1</commons-text.version>
+        <commons-collections4.version>4.5.0</commons-collections4.version>
         <gson.version>2.13.1</gson.version>
         <log4j2-jboss-logmanager.version>2.0.1.Final</log4j2-jboss-logmanager.version>
         <log4j2-api.version>2.24.3</log4j2-api.version>
@@ -3844,6 +3845,11 @@
                 <groupId>commons-codec</groupId>
                 <artifactId>commons-codec</artifactId>
                 <version>${commons-codec.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>${commons-collections4.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.github.ben-manes.caffeine</groupId>

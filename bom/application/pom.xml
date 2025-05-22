@@ -98,7 +98,7 @@
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
         <narayana.version>7.2.2.Final</narayana.version>
         <narayana-lra.version>1.0.0.Final</narayana-lra.version>
-        <agroal.version>2.7</agroal.version>
+        <agroal.version>2.7.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.18.1</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>

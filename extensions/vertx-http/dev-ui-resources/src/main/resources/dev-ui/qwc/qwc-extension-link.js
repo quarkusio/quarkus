@@ -44,7 +44,6 @@ export class QwcExtensionLink extends QwcHotReloadElement {
             flex-direction: row;
             justify-content: flex-start;
             align-items: center;
-            color: var(--lumo-contrast-80pct);
         }
     `;
 
@@ -52,6 +51,8 @@ export class QwcExtensionLink extends QwcHotReloadElement {
         namespace: {type: String},
         extensionName: {type: String},
         iconName: {type: String},
+        colorName: {type: String},
+        tooltipContent: {type: String},
         displayName: {type: String},
         staticLabel: {type: String},
         dynamicLabel: {type: String},
@@ -190,8 +191,8 @@ export class QwcExtensionLink extends QwcHotReloadElement {
     renderLink(linkRef, routerIgnore, target){
         if(linkRef){
             return html`
-                <a class="extensionLink" href="${linkRef}" ?router-ignore=${routerIgnore} target="${target}">
-                    <span class="iconAndName">
+                <a class="extensionLink" href="${linkRef}" ?router-ignore=${routerIgnore} target="${target}" title="${this.tooltipContent}">
+                    <span class="iconAndName" style="color:${this.colorName};">
                         <vaadin-icon class="icon" icon="${this.iconName}"></vaadin-icon>
                         ${this.displayName}
                     </span>

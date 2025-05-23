@@ -13,10 +13,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.maven.model.Model;
@@ -161,11 +159,10 @@ public class MojoTestBase {
     public static void assertThatOutputWorksCorrectly(String logs) {
         assertThat(logs.isEmpty()).isFalse();
         String infoLogLevel = "INFO";
-        assertThat(logs.contains(infoLogLevel)).isTrue();
-        Predicate<String> datePattern = Pattern.compile("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}").asPredicate();
-        assertThat(datePattern.test(logs)).isTrue();
-        assertThat(logs.contains("cdi, resteasy, smallrye-context-propagation, vertx, websockets")).isTrue();
-        assertThat(logs.contains("JBoss Threads version")).isFalse();
+        assertThat(logs).contains(infoLogLevel);
+        assertThat(logs).containsPattern("\\d{4}-\\d{2}-\\d{2}\\s\\d{2}:\\d{2}:\\d{2},\\d{3}");
+        assertThat(logs).contains("cdi, rest, smallrye-context-propagation, vertx, websockets");
+        assertThat(logs).doesNotContain("JBoss Threads version");
     }
 
     public static Model loadPom(File directory) {

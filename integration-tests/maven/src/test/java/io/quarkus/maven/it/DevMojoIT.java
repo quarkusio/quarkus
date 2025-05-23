@@ -1276,7 +1276,7 @@ public class DevMojoIT extends LaunchMojoTestBase {
 
     @Test
     public void testThatApplicationRecoversStartupIssue() throws MavenInvocationException, IOException {
-        testDir = initProject("projects/classic", "projects/project-classic-run-startup-issue");
+        testDir = initProject("projects/classic-resteasy", "projects/project-classic-recover-startup-issue");
 
         // Edit the JAX-RS resource to be package private
         File source = new File(testDir, "src/main/java/org/acme/HelloResource.java");

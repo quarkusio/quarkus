@@ -25,7 +25,7 @@ final class ApplicationNameAndVersionTestUtil {
         try {
             URL url = new URL("http://localhost:8080" + prefix + "/app/hello/nameAndVersion");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            // the default Accept header used by HttpURLConnection is not compatible with RESTEasy negotiation as it uses q=.2
+            // the default Accept header used by HttpURLConnection is not compatible with our REST negotiation as it uses q=.2
             connection.setRequestProperty("Accept", "text/html, *; q=0.2, */*; q=0.2");
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 failApplicationPropertiesSetCorrectly();

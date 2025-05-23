@@ -29,7 +29,7 @@
   <dependencies>
     <dependency>
       <groupId>io.quarkus</groupId>
-      <artifactId>quarkus-resteasy</artifactId>
+      <artifactId>quarkus-rest</artifactId>
     </dependency>
     <!-- dependency on smallrye-common-classloader is to test
     a multi-release jar dependency while creating uber-jar -->

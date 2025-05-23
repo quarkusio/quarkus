@@ -235,7 +235,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource.java");
-        properties.put("extensions", "resteasy");
+        properties.put("extensions", "rest");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -276,7 +276,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "resteasy,smallrye-metrics,missing");
+        properties.put("extensions", "rest,smallrye-openapi,missing");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isOne();
@@ -292,7 +292,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "resteasy,smallrye-metrics");
+        properties.put("extensions", "rest,smallrye-openapi");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -306,7 +306,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         check(new File(testDir, "src/main/java/org/acme/MyResource.java"), "package org.acme;");
 
         assertThat(FileUtils.readFileToString(new File(testDir, "pom.xml"), "UTF-8"))
-                .contains("quarkus-resteasy", "quarkus-smallrye-metrics").doesNotContain("missing");
+                .contains("quarkus-rest", "quarkus-smallrye-openapi").doesNotContain("missing");
 
         Model model = loadPom(testDir);
         assertThat(model.getDependencyManagement().getDependencies().stream()
@@ -317,12 +317,12 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-rest")
                         && d.getVersion() == null))
                 .isTrue();
 
         assertThat(model.getDependencies().stream()
-                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-metrics")
+                .anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-smallrye-openapi")
                         && d.getVersion() == null))
                 .isTrue();
     }
@@ -337,7 +337,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "kotlin,resteasy,jackson");
+        properties.put("extensions", "kotlin,rest,jackson");
         properties.put("buildTool", "gradle");
         InvocationResult result = setup(properties);
 
@@ -368,7 +368,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
         properties.put("className", "org.acme.MyResource");
-        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
+        properties.put("extensions", "rest,commons-io:commons-io:2.5");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -390,7 +390,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
                 .isTrue();
 
         assertThat(
-                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-resteasy")
+                model.getDependencies().stream().anyMatch(d -> d.getArtifactId().equalsIgnoreCase("quarkus-rest")
                         && d.getVersion() == null))
                 .isTrue();
 
@@ -406,7 +406,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("projectArtifactId", "acme,fail");
-        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
+        properties.put("extensions", "rest,commons-io:commons-io:2.5");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isNotZero();
@@ -420,7 +420,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("projectGroupId", "acme,fail");
-        properties.put("extensions", "resteasy,commons-io:commons-io:2.5");
+        properties.put("extensions", "rest,commons-io:commons-io:2.5");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isNotZero();
@@ -543,7 +543,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
 
         Properties properties = new Properties();
         properties.put("className", "MyGreatResource");
-        properties.put("extensions", "resteasy");
+        properties.put("extensions", "rest");
         InvocationResult result = setup(properties);
 
         assertThat(result.getExitCode()).isZero();
@@ -576,7 +576,7 @@ public class CreateProjectMojoIT extends QuarkusPlatformAwareMojoTestBase {
         Properties properties = new Properties();
         properties.put("projectGroupId", "org.acme");
         properties.put("projectArtifactId", "acme");
-        properties.put("extensions", "resteasy");
+        properties.put("extensions", "rest");
         properties.put("className", "org.acme.HelloResource");
         InvocationResult result = setup(properties);
 

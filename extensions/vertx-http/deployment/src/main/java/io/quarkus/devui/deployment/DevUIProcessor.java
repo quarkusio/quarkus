@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Scanner;
 import java.util.stream.Collectors;
 
@@ -33,6 +34,8 @@ import org.yaml.snakeyaml.Yaml;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.assistant.deployment.spi.AssistantBuildItem;
+import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -408,16 +411,23 @@ public class DevUIProcessor {
     void createJsonRpcRouter(DevUIRecorder recorder,
             BeanContainerBuildItem beanContainer,
             JsonRPCRuntimeMethodsBuildItem jsonRPCMethodsBuildItem,
-            DeploymentMethodBuildItem deploymentMethodBuildItem) {
+            DeploymentMethodBuildItem deploymentMethodBuildItem,
+            Optional<AssistantBuildItem> assistantBuildItem) {
 
         if (jsonRPCMethodsBuildItem != null) {
             Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap = jsonRPCMethodsBuildItem
                     .getExtensionMethodsMap();
 
+            Optional<Assistant> assistant = Optional.empty();
+            if (assistantBuildItem.isPresent()) {
+                DevConsoleManager.setGlobal(DevConsoleManager.DEV_MANAGER_GLOBALS_ASSISTANT,
+                        assistantBuildItem.get().getAssistant());
+                assistant = Optional.of(assistantBuildItem.get().getAssistant());
+            }
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
             recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods(),
-                    deploymentMethodBuildItem.getSubscriptions(), deploymentMethodBuildItem.getRecordedValues());
+                    deploymentMethodBuildItem.getSubscriptions(), deploymentMethodBuildItem.getRecordedValues(), assistant);
         }
     }
 
@@ -485,7 +495,8 @@ public class DevUIProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ExtensionsBuildItem> extensionsProducer,
             BuildProducer<WebJarBuildItem> webJarBuildProducer,
-            BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer) {
+            BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer,
+            Optional<AssistantBuildItem> assistantBuildItem) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             // produce extension build item as cascade of build steps rely on it
@@ -581,7 +592,9 @@ public class DevUIProcessor {
                             Map<String, Object> buildTimeData = cardPageBuildItem.getBuildTimeData();
                             for (PageBuilder pageBuilder : cardPageBuilders) {
                                 Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
-                                extension.addCardPage(page);
+                                if (!page.isAssistantPage() || assistantBuildItem.isPresent()) {
+                                    extension.addCardPage(page);
+                                }
                             }
 
                             // See if there is a custom card component

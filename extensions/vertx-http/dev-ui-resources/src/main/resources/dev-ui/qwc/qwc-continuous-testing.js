@@ -289,7 +289,7 @@ export class QwcContinuousTesting extends QwcHotReloadElement {
 
     _renderPlayButton(){
         if(!this._busy && !this._testsEnabled){
-            return html`<vaadin-button theme="tertiary" @click=${this._start}>
+            return html`<vaadin-button theme="tertiary" id="start-continuous-testing-btn" @click=${this._start}>
                         <vaadin-icon icon="font-awesome-solid:play"></vaadin-icon>
                         Start
                     </vaadin-button>`;

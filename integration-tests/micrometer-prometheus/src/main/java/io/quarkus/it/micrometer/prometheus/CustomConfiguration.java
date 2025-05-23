@@ -15,9 +15,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.core.instrument.distribution.DistributionStatisticConfig;
-import io.micrometer.prometheus.PrometheusConfig;
-import io.micrometer.prometheus.PrometheusMeterRegistry;
-import io.prometheus.client.CollectorRegistry;
+import io.micrometer.prometheusmetrics.PrometheusConfig;
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import io.quarkus.micrometer.runtime.MeterFilterConstraint;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizer;
 import io.quarkus.micrometer.runtime.MeterRegistryCustomizerConstraint;
@@ -103,7 +103,7 @@ public class CustomConfiguration {
      */
     @Produces
     @Singleton
-    public PrometheusMeterRegistry registry(CollectorRegistry collectorRegistry, Clock clock) {
+    public PrometheusMeterRegistry registry(PrometheusRegistry collectorRegistry, Clock clock) {
         return new PrometheusMeterRegistry(PrometheusConfig.DEFAULT, collectorRegistry, clock);
     }
 

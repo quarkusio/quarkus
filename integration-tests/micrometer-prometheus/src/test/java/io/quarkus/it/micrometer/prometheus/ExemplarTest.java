@@ -25,7 +25,7 @@ public class ExemplarTest {
 
         String metricMatch = "http_server_requests_seconds_count{dummy=\"value\",env=\"test\"," +
                 "env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\"," +
-                "registry=\"prometheus\",status=\"200\",uri=\"/example/prime/{number}\"} 2.0 # {span_id=\"";
+                "registry=\"prometheus\",status=\"200\",uri=\"/example/prime/{number}\"} 2 # {span_id=\"";
 
         await().atMost(5, SECONDS).untilAsserted(() -> {
             String body = get("/q/metrics").then().extract().asString();

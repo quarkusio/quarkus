@@ -104,22 +104,20 @@ public class HibernateOrmDevJsonRpcService {
         }
 
         return sf.fromSession(session -> {
+            Transaction transaction = session.beginTransaction();
             try {
                 Query<Object> query = session.createQuery(hql, null);
                 if (isMutation(((SqmQuery) query).getSqmStatement())) {
                     // DML query, execute update within transaction and return custom message with affected rows
-                    Transaction transaction = session.beginTransaction();
-                    try {
-                        int updateCount = query.executeUpdate();
-                        transaction.commit();
-
-                        String message = "Query executed correctly. Rows affected: " + updateCount;
-                        return new JsonRpcMessage<>(new DataSet(null, -1, message, null), MessageType.Response);
-                    } catch (Exception e) {
-                        // an error happened in executeUpdate() or during commit
-                        transaction.rollback();
-                        throw e;
-                    }
+                    int updateCount = query.executeUpdate();
+                    transaction.commit();
+                    return new JsonRpcMessage<>(
+                            new DataSet(
+                                    null,
+                                    -1,
+                                    "Query executed correctly. Rows affected: " + updateCount,
+                                    null),
+                            MessageType.Response);
                 } else {
                     // selection query, execute count query and return paged results
 
@@ -139,10 +137,13 @@ public class HibernateOrmDevJsonRpcService {
                         String result = writeValueAsString(new DataSet(results, resultCount, null, null));
                         JsonRpcMessage<Object> message = new JsonRpcMessage<>(result, MessageType.Response);
                         message.setAlreadySerialized(true);
+                        transaction.commit();
                         return message;
                     }
                 }
             } catch (Exception ex) {
+                // an error happened, rollback the transaction
+                transaction.rollback();
                 return new JsonRpcMessage<>(new DataSet(null, -1, null, ex.getMessage()), MessageType.Response);
             }
         });

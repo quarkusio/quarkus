@@ -330,6 +330,7 @@
                 <module>smallrye-graphql-client</module>
                 <module>smallrye-graphql-client-keycloak</module>
                 <module>smallrye-stork-registration</module>
+                <module>smallrye-stork-consul-registration-quickstart</module>
                 <module>jpa-without-entity</module>
                 <module>quartz</module>
                 <module>redis-client</module>

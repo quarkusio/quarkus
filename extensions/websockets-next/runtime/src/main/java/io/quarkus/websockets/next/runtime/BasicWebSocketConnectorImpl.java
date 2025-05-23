@@ -186,7 +186,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
                     codecs,
                     pathParams,
                     serverEndpointUri,
-                    headers, trafficLogger, null);
+                    headers, trafficLogger, userData, null);
             if (trafficLogger != null) {
                 trafficLogger.connectionOpened(connection);
             }

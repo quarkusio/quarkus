@@ -1,5 +1,6 @@
 package io.quarkus.websockets.next.runtime;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -11,6 +12,10 @@ final class UserDataImpl implements UserData {
 
     UserDataImpl() {
         this.data = new ConcurrentHashMap<>();
+    }
+
+    UserDataImpl(Map<String, Object> data) {
+        this.data = new ConcurrentHashMap<>(data);
     }
 
     @SuppressWarnings("unchecked")

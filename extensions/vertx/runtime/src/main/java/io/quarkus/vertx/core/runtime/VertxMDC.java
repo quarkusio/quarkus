@@ -314,7 +314,7 @@ public enum VertxMDC implements MDCProvider {
         }
 
         ConcurrentMap<Object, Object> lcd = Objects.requireNonNull((ContextInternal) ctx).localContextData();
-        return (ConcurrentMap<String, Object>) lcd.computeIfAbsent(VertxMDC.class.getName(),
+        return (ConcurrentMap<String, Object>) lcd.computeIfAbsent(VertxMDC.class.getName() + ctx.hashCode(),
                 k -> new ConcurrentHashMap<String, Object>());
     }
 }

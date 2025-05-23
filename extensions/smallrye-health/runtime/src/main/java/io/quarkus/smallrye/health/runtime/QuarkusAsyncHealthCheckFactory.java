@@ -50,6 +50,7 @@ public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {
     @Override
     public Uni<HealthCheckResponse> callAsync(AsyncHealthCheck asyncHealthCheck) {
         Uni<HealthCheckResponse> healthCheckResponseUni = super.callAsync(asyncHealthCheck);
-        return healthCheckResponseUni.runSubscriptionOn(MutinyHelper.executor(vertx));
+        return healthCheckResponseUni.runSubscriptionOn(MutinyHelper.executor(
+                VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext())));
     }
 }

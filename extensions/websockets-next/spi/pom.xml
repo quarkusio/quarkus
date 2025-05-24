@@ -12,6 +12,13 @@
     <artifactId>quarkus-websockets-next-spi</artifactId>
     <name>Quarkus - WebSockets Next - SPI</name>
 
+    <dependencies>
+        <dependency>
+            <groupId>io.quarkus.security</groupId>
+            <artifactId>quarkus-security</artifactId>
+        </dependency>
+    </dependencies>
+
     <build>
         <plugins>
             <plugin>

@@ -99,6 +99,7 @@ import io.quarkus.oidc.runtime.OidcTenantDefaultIdConfigBuilder;
 import io.quarkus.oidc.runtime.OidcTokenCredentialProducer;
 import io.quarkus.oidc.runtime.OidcUtils;
 import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.quarkus.oidc.runtime.WebSocketIdentityUpdateProvider;
 import io.quarkus.oidc.runtime.health.OidcTenantHealthCheck;
 import io.quarkus.oidc.runtime.providers.AzureAccessTokenCustomizer;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -479,6 +480,14 @@ public class OidcBuildStep {
             Capabilities capabilities) {
         if (config.healthEnabled() && capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
             healthBuildItems.produce(new HealthBuildItem(OidcTenantHealthCheck.class.getName(), true));
+        }
+    }
+
+    @BuildStep
+    void supportIdentityUpdateForWebSocketConnections(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer) {
+        if (capabilities.isPresent(Capability.WEBSOCKETS_NEXT)) {
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.unremovableOf(WebSocketIdentityUpdateProvider.class));
         }
     }
 

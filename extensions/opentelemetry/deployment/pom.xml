@@ -131,11 +131,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-jdbc</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jdbc-h2-deployment</artifactId>
             <scope>test</scope>

@@ -37,7 +37,8 @@ public final class PersistenceUnitsHolder {
             Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies preGeneratedProxies) {
         final List<QuarkusPersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
-        final Map<String, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner, additionalIntegrators,
+        final Map<RecordedStateKey, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner,
+                additionalIntegrators,
                 preGeneratedProxies);
 
         persistenceUnits = new PersistenceUnits(units, metadata);
@@ -48,11 +49,11 @@ public final class PersistenceUnitsHolder {
         return persistenceUnits.units;
     }
 
-    public static RecordedState popRecordedState(String persistenceUnitName) {
+    public static RecordedState popRecordedState(String persistenceUnitName, boolean isReactive) {
         checkJPAInitialization();
-        Object key = persistenceUnitName;
+        RecordedStateKey key = new RecordedStateKey(persistenceUnitName, isReactive);
         if (persistenceUnitName == null) {
-            key = NO_NAME_TOKEN;
+            key = new RecordedStateKey(NO_NAME_TOKEN, isReactive);
         }
         return persistenceUnits.recordedStates.remove(key);
     }
@@ -63,15 +64,20 @@ public final class PersistenceUnitsHolder {
                 .collect(Collectors.toList());
     }
 
-    private static Map<String, RecordedState> constructMetadataAdvance(
+    record RecordedStateKey(String name, boolean isReactive) {
+    }
+
+    private static Map<RecordedStateKey, RecordedState> constructMetadataAdvance(
             final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators,
             PreGeneratedProxies proxyClassDefinitions) {
-        Map<String, RecordedState> recordedStates = new HashMap<>();
+        Map<RecordedStateKey, RecordedState> recordedStates = new HashMap<>();
 
         for (QuarkusPersistenceUnitDefinition unit : parsedPersistenceXmlDescriptors) {
             RecordedState m = createMetadata(unit, scanner, additionalIntegrators, proxyClassDefinitions);
-            Object previous = recordedStates.put(unitName(unit), m);
+            String name = unitName(unit);
+            RecordedStateKey key = new RecordedStateKey(name, unit.isReactive());
+            Object previous = recordedStates.put(key, m);
             if (previous != null) {
                 throw new IllegalStateException("Duplicate persistence unit name: " + unit.getName());
             }
@@ -105,10 +111,10 @@ public final class PersistenceUnitsHolder {
 
         private final List<QuarkusPersistenceUnitDescriptor> units;
 
-        private final Map<String, RecordedState> recordedStates;
+        private final Map<RecordedStateKey, RecordedState> recordedStates;
 
         public PersistenceUnits(final List<QuarkusPersistenceUnitDescriptor> units,
-                final Map<String, RecordedState> recordedStates) {
+                final Map<RecordedStateKey, RecordedState> recordedStates) {
             this.units = units;
             this.recordedStates = recordedStates;
         }

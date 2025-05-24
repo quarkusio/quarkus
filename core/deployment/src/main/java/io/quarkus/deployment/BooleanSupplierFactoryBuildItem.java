@@ -21,6 +21,27 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.annotations.ConfigPhase;
 import io.quarkus.runtime.annotations.ConfigRoot;
 
+/**
+ * A build item responsible for instantiating {@link BooleanSupplier} implementations at build time
+ * based on their constructor and field dependencies.
+ * <p>
+ * This class allows conditional configuration and behavior based on the current {@link LaunchMode},
+ * {@link DevModeType}, and build-time configuration roots.
+ * </p>
+ *
+ * <p>
+ * Each BooleanSupplier class must define exactly one constructor. Supported constructor or field parameters include:
+ * <ul>
+ * <li>{@link LaunchMode}</li>
+ * <li>{@link DevModeType}</li>
+ * <li>Classes annotated with {@link ConfigRoot} where the {@link ConfigPhase} is available at build time</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Constructor and non-static, non-final fields of the supplier class can be injected with these supported types.
+ * </p>
+ */
 public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
 
     private final BuildTimeConfigurationReader.ReadResult readResult;
@@ -120,6 +141,13 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
         }
     };
 
+    /**
+     * Constructs a new {@code BooleanSupplierFactoryBuildItem}.
+     *
+     * @param readResult the configuration read result used to resolve build-time config root objects
+     * @param launchMode the current launch mode (e.g., NORMAL, TEST, DEV)
+     * @param devModeType the type of dev mode (e.g., LOCAL, REMOTE), if applicable
+     */
     BooleanSupplierFactoryBuildItem(BuildTimeConfigurationReader.ReadResult readResult, LaunchMode launchMode,
             DevModeType devModeType) {
         this.readResult = readResult;
@@ -127,6 +155,14 @@ public final class BooleanSupplierFactoryBuildItem extends SimpleBuildItem {
         this.devModeType = devModeType;
     }
 
+    /**
+     * Returns a configured instance of the specified {@link BooleanSupplier} type.
+     *
+     * @param type the class type of the {@code BooleanSupplier} to instantiate
+     * @param <T> the supplier type
+     * @return a fully constructed and injected instance of the given supplier type
+     * @throws RuntimeException if the supplier class does not meet the requirements or instantiation fails
+     */
     @SuppressWarnings("unchecked")
     public <T extends BooleanSupplier> T get(Class<T> type) {
         return (T) suppliers.get(type);

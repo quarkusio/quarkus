@@ -10,6 +10,18 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.deployment.ApplicationArchive;
 
+/**
+ * A build item that holds information about the application's archives.
+ * <p>
+ * This includes the root application archive (usually the main artifact)
+ * and any additional application archives (typically dependencies that
+ * contain relevant metadata or classes for the application).
+ * </p>
+ * <p>
+ * This class is immutable and used during build steps to provide access
+ * to all application-level archives being processed.
+ * </p>
+ */
 //temp class
 public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
 
@@ -17,6 +29,13 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
     private final Collection<ApplicationArchive> applicationArchives;
     private final Set<ApplicationArchive> allArchives;
 
+    /**
+     * Creates a new {@code ApplicationArchivesBuildItem} instance.
+     *
+     * @param root the root application archive, typically the main deployment artifact.
+     * @param applicationArchives the additional application archives (e.g., dependencies).
+     *        Must not be {@code null}.
+     */
     public ApplicationArchivesBuildItem(ApplicationArchive root, Collection<ApplicationArchive> applicationArchives) {
         this.root = root;
         this.applicationArchives = applicationArchives;
@@ -61,6 +80,17 @@ public final class ApplicationArchivesBuildItem extends SimpleBuildItem {
         return containingArchive(DotName.createSimple(className));
     }
 
+    /**
+     * Returns the application archive that contains the specified class.
+     *
+     * <p>
+     * This method searches for the class in the root archive first. If not found,
+     * it then searches through the additional application archives.
+     * </p>
+     *
+     * @param className the {@link DotName} representing the fully qualified name of the class to search for
+     * @return the {@link ApplicationArchive} that contains the specified class, or {@code null} if not found in any archive
+     */
     public ApplicationArchive containingArchive(DotName className) {
         if (root.getIndex().getClassByName(className) != null) {
             return root;

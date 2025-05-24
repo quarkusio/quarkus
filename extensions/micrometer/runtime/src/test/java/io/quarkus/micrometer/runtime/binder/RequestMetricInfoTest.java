@@ -33,8 +33,20 @@ public class RequestMetricInfoTest {
     }
 
     @Test
+    public void testParsePathSingleSlash() {
+        String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/");
+        Assertions.assertEquals("/", path);
+    }
+
+    @Test
     public void testParsePathDoubleSlash() {
         String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "//");
+        Assertions.assertEquals("/", path);
+    }
+
+    @Test
+    public void testParsePathMultipleSlash() {
+        String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, "/////");
         Assertions.assertEquals("/", path);
     }
 
@@ -45,10 +57,30 @@ public class RequestMetricInfoTest {
     }
 
     @Test
+    public void testParseNullPath() {
+        String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS, null);
+        Assertions.assertEquals("/", path);
+    }
+
+    @Test
     public void testParsePathNoLeadingSlash() {
         String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS,
                 "path/with/no/leading/slash");
         Assertions.assertEquals("/path/with/no/leading/slash", path);
+    }
+
+    @Test
+    public void testParsePathNoEndSlash() {
+        String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS,
+                "/path/with/no/end/slash/");
+        Assertions.assertEquals("/path/with/no/end/slash", path);
+    }
+
+    @Test
+    public void testParsePathNoEndDoubleSlash() {
+        String path = requestMetric.getNormalizedUriPath(NO_MATCH_PATTERNS, NO_IGNORE_PATTERNS,
+                "/path/with/no/end/double/slash///////");
+        Assertions.assertEquals("/path/with/no/end/double/slash", path);
     }
 
     @Test

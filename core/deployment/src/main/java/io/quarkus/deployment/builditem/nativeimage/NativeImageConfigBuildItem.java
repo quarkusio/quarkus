@@ -10,6 +10,22 @@ import java.util.Set;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * A build item used to aggregate configuration settings for the GraalVM native image build.
+ * <p>
+ * This is a {@code MultiBuildItem}, meaning multiple instances can be produced by different extensions
+ * during the build process.
+ * It collects information such as:
+ * <ul>
+ * <li>Classes to be initialized at runtime ({@link #runtimeInitializedClasses})</li>
+ * <li>Classes to be re-initialized at runtime ({@link #runtimeReinitializedClasses})</li>
+ * <li>Resource bundles to include ({@link #resourceBundles})</li>
+ * <li>Dynamic proxy definitions ({@link #proxyDefinitions})</li>
+ * <li>System properties to be set within the native image ({@link #nativeImageSystemProperties})</li>
+ * </ul>
+ * The final native image configuration is assembled by combining all produced instances of this build item.
+ * Use the {@link #builder()} method to construct instances.
+ */
 public final class NativeImageConfigBuildItem extends MultiBuildItem {
 
     private final Set<String> runtimeInitializedClasses;

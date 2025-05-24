@@ -87,6 +87,10 @@ class SpringCloudConfigClientGatewayTest {
         when(config.trustCerts()).thenReturn(false);
         when(config.headers()).thenReturn(new HashMap<>());
         when(config.ordinal()).thenReturn(450);
+        SpringCloudConfigClientConfig.DiscoveryConfig discoveryConfig = Mockito
+                .mock(SpringCloudConfigClientConfig.DiscoveryConfig.class);
+        when(config.discovery()).thenReturn(discoveryConfig);
+        when(discoveryConfig.enabled()).thenReturn(false);
         return config;
     }
 }

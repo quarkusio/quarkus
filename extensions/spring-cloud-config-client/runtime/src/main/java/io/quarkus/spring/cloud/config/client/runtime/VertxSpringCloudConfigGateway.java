@@ -11,7 +11,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 
+import io.quarkus.spring.cloud.config.client.runtime.eureka.DiscoveryService;
+import io.quarkus.spring.cloud.config.client.runtime.eureka.EurekaClient;
+import io.quarkus.spring.cloud.config.client.runtime.eureka.RandomEurekaInstanceSelector;
+import io.quarkus.spring.cloud.config.client.runtime.eureka.EurekaResponseMapper;
+import io.quarkus.spring.cloud.config.client.runtime.util.UrlUtility;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -44,18 +50,22 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private final SpringCloudConfigClientConfig config;
     private final Vertx vertx;
     private final WebClient webClient;
-    private final URI baseURI;
+    private final Function<SpringCloudConfigClientConfig, URI> baseUriSupplier;
+    private final DiscoveryService discoveryService;
 
     public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig config) {
         this.config = config;
-        try {
-            this.baseURI = determineBaseUri(config);
-        } catch (URISyntaxException e) {
-            throw new IllegalArgumentException("Value: '" + config.url()
-                    + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
-        }
         this.vertx = createVertxInstance();
         this.webClient = createHttpClient(vertx, config);
+        this.baseUriSupplier = determineBaseUri(config.discovery().enabled());
+        this.discoveryService = new DiscoveryService(
+                new EurekaClient(
+                        webClient,
+                        config.discovery().registryFetchIntervalSeconds(),
+                        new EurekaResponseMapper(),
+                        new RandomEurekaInstanceSelector()
+                )
+        );
     }
 
     private Vertx createVertxInstance() {
@@ -156,37 +166,67 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         return inputStream.readAllBytes();
     }
 
-    private URI determineBaseUri(SpringCloudConfigClientConfig springCloudConfigClientConfig) throws URISyntaxException {
-        String url = springCloudConfigClientConfig.url();
+    private Function<SpringCloudConfigClientConfig, URI> determineBaseUri(boolean discoveryEnabled) {
+        log.debug("Determining base URI for Spring Cloud Config Server");
+        if (discoveryEnabled) {
+            log.debug("Using 'discovery' mode to determine base URI");
+            return getDiscoverUriSupplier();
+        } else {
+            return getUriSupplier();
+        }
+    }
+
+    private Function<SpringCloudConfigClientConfig, URI> getUriSupplier() {
+        return springCloudConfigClientConfig -> {
+            log.debug("Attempting to obtain configuration from the Spring Cloud Config Server at " + config.url());
+            String url = springCloudConfigClientConfig.url();
+            try {
+                validate(url);
+                return UrlUtility.toURI(url);
+            } catch (URISyntaxException e) {
+                throw new IllegalArgumentException("Value: '" + springCloudConfigClientConfig.url()
+                        + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
+            }
+        };
+    }
+
+    private void validate(String url) {
         if (null == url || url.isEmpty()) {
             throw new IllegalArgumentException(
                     "The 'quarkus.spring-cloud-config.url' property cannot be empty");
         }
-        if (url.endsWith("/")) {
-            return new URI(url.substring(0, url.length() - 1));
-        }
-        return new URI(url);
     }
 
-    private String finalURI(String applicationName, String profile) {
+    private Function<SpringCloudConfigClientConfig, URI> getDiscoverUriSupplier() {
+        return springCloudConfigClientConfig -> {
+            String discoveredUrl = discoveryService.discover(springCloudConfigClientConfig);
+            try {
+                return UrlUtility.toURI(discoveredUrl);
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+        };
+    }
+
+    private ConfigServerUrl toConfigServerUrl(String applicationName, String profile) {
+        URI baseURI = baseUriSupplier.apply(config);
         String path = baseURI.getPath();
-        List<String> finalPathSegments = new ArrayList<String>();
+        List<String> finalPathSegments = new ArrayList<>();
         finalPathSegments.add(path);
         finalPathSegments.add(applicationName);
         finalPathSegments.add(profile);
         if (config.label().isPresent()) {
             finalPathSegments.add(config.label().get());
         }
-        return String.join("/", finalPathSegments);
+        return new ConfigServerUrl(baseURI, UrlUtility.getPort(baseURI), baseURI.getHost(), String.join("/", finalPathSegments));
     }
 
     @Override
     public Uni<Response> exchange(String applicationName, String profile) {
-        final String requestURI = finalURI(applicationName, profile);
-        String finalURI = getFinalURI(applicationName, profile);
+        final ConfigServerUrl requestURI = toConfigServerUrl(applicationName, profile);
         HttpRequest<Buffer> request = webClient
-                .get(getPort(baseURI), baseURI.getHost(), requestURI)
-                .ssl(isHttps(baseURI))
+                .get(requestURI.port(), requestURI.host(), requestURI.completeURLString())
+                .ssl(UrlUtility.isHttps(requestURI.baseURI()))
                 .putHeader("Accept", "application/json");
         if (config.usernameAndPasswordSet()) {
             request.basicAuthentication(config.username().get(), config.password().get());
@@ -194,16 +234,16 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
         for (Map.Entry<String, String> entry : config.headers().entrySet()) {
             request.putHeader(entry.getKey(), entry.getValue());
         }
-        log.debug("Attempting to read configuration from '" + finalURI + "'.");
+        log.debug("Attempting to read configuration from '" + requestURI.completeURLString() + "'.");
         return request.send().map(r -> {
             log.debug("Received HTTP response code '" + r.statusCode() + "'");
             if (r.statusCode() != 200) {
                 throw new RuntimeException("Got unexpected HTTP response code " + r.statusCode()
-                        + " from " + finalURI);
+                        + " from " + requestURI.completeURLString());
             } else {
                 String bodyAsString = r.bodyAsString();
                 if (bodyAsString.isEmpty()) {
-                    throw new RuntimeException("Got empty HTTP response body " + finalURI);
+                    throw new RuntimeException("Got empty HTTP response body " + requestURI.completeURLString());
                 }
                 try {
                     log.debug("Attempting to deserialize response");
@@ -213,22 +253,6 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
                 }
             }
         });
-    }
-
-    private boolean isHttps(URI uri) {
-        return uri.getScheme().contains("https");
-    }
-
-    private int getPort(URI uri) {
-        return uri.getPort() != -1 ? uri.getPort() : (isHttps(uri) ? 443 : 80);
-    }
-
-    private String getFinalURI(String applicationName, String profile) {
-        String finalURI = baseURI.toString() + "/" + applicationName + "/" + profile;
-        if (config.label().isPresent()) {
-            finalURI += "/" + config.label().get();
-        }
-        return finalURI;
     }
 
     @Override

@@ -22,6 +22,7 @@ public class Action<T, R> {
     private final Display display; // Response display for the UI
     private final DisplayType displayType; // Response display type
     private final Function<Path, Path> pathConverter; // Convert the input path to something else. By default it will just stay the same
+    private final boolean assistant; // If this action is an assistant action
 
     protected Action(
             String label,
@@ -30,7 +31,8 @@ public class Action<T, R> {
             Optional<Pattern> filter,
             Display display,
             DisplayType displayType,
-            Function<Path, Path> pathConverter) {
+            Function<Path, Path> pathConverter,
+            boolean assistant) {
 
         this.label = label;
         this.namespace = namespace;
@@ -39,6 +41,7 @@ public class Action<T, R> {
         this.display = display;
         this.displayType = displayType;
         this.pathConverter = pathConverter;
+        this.assistant = assistant;
     }
 
     public String getId() {
@@ -83,6 +86,10 @@ public class Action<T, R> {
         return this.pathConverter;
     }
 
+    public boolean isAssistant() {
+        return this.assistant;
+    }
+
     @Override
     public String toString() {
         return "Action {\n\tid=" + getId()
@@ -91,6 +98,7 @@ public class Action<T, R> {
                 + ", \n\tfilter=" + filter
                 + ", \n\tdisplay=" + display
                 + ", \n\tdisplayType=" + displayType
+                + ", \n\tassistant=" + assistant
                 + "\n}";
     }
 

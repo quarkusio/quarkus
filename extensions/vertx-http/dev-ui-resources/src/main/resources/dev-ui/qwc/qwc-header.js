@@ -9,6 +9,7 @@ import '@vaadin/tabs';
 import '@vaadin/confirm-dialog';
 import '@vaadin/popover';
 import '@vaadin/vertical-layout';
+import 'qui-assistant-warning';
 import { popoverRenderer } from '@vaadin/popover/lit.js';
 import 'qwc/qwc-extension-link.js';
 import './qwc-theme-switch.js';
@@ -102,6 +103,7 @@ export class QwcHeader extends observeState(LitElement) {
     static properties = {
         _title: {state: true},
         _subTitle: {state: true},
+        _showWarning: {state: true},
         _rightSideNav: {state: true},
         _dialogOpened: {state: true},
     };
@@ -111,6 +113,7 @@ export class QwcHeader extends observeState(LitElement) {
         this._dialogOpened = false;
         this._title = "Extensions";
         this._subTitle = null;
+        this._showWarning = false;
         this._rightSideNav = "";
         
         window.addEventListener('vaadin-router-location-changed', (event) => {
@@ -180,9 +183,15 @@ export class QwcHeader extends observeState(LitElement) {
     _renderTitle(){
         let dot = "\u00B7";
         if(this._subTitle){
-            return html`<span class="title">${this._title}</span><span class="subtitle">${dot} ${this._subTitle}</span>`;
+            return html`<span class="title">${this._title}</span><span class="subtitle">${dot} ${this._subTitle} ${this._renderWarning()}</span>`;
         }else{
             return html`<span class="title">${this._title}</span>`;
+        }
+    }
+
+    _renderWarning(){
+        if(this._showWarning){
+            return html`<qui-assistant-warning></qui-assistant-warning>`;
         }
     }
 
@@ -223,9 +232,16 @@ export class QwcHeader extends observeState(LitElement) {
 
     _updateHeader(event){
         let currentPage = this.routerController.getCurrentPage();
+        
         this._selectedPageIsMax = !currentPage.includeInMenu; // TODO: introduce new property called isMaxView ?
         this._title = this.routerController.getCurrentTitle();
         this._subTitle = this.routerController.getCurrentSubTitle();
+        if(currentPage.assistantPage) {
+            this._showWarning = true;
+        }else{
+            this._showWarning = false;
+        }
+        
         var subMenu = this.routerController.getCurrentSubMenu();
         if(subMenu){
             this._rightSideNav = html`<vaadin-tabs selected="${subMenu.index}">
@@ -268,6 +284,8 @@ export class QwcHeader extends observeState(LitElement) {
             namespace="${link.page.namespace}"
             extensionName="${link.page.extensionId}"
             iconName="${link.page.icon}"
+            tooltipContent="${link.page.tooltip}"
+            colorName="${link.page.color}"
             displayName="${link.page.title}"
             staticLabel="${link.page.staticLabel}"
             dynamicLabel="${link.page.dynamicLabel}"

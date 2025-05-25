@@ -605,7 +605,26 @@
             </dependency>
 
             <!-- Quarkus libraries -->
-
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-assistant</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-assistant-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-assistant-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-assistant-deployment-spi</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-caffeine</artifactId>
@@ -1917,6 +1936,7 @@
                 <artifactId>quarkus-smallrye-graphql</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-graphql-deployment</artifactId>

@@ -21,6 +21,7 @@ import { themeState } from 'theme-state';
 import { notifier } from 'notifier';
 import './qwc-workspace-binary.js';
 import 'qui-ide-link';
+import 'qui-assistant-warning';
 
 /**
  * This component shows the workspace
@@ -73,6 +74,21 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             width: 100%;
             height: 100vh;
             border: none;
+        }
+    
+        .assistant {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding-top: 8px;
+            padding-right: 16px;
+            z-index:9;
+        }
+    
+        .actionResult {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
         }
     `;
     
@@ -262,24 +278,36 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     
     _renderActionResult(){
         if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "raw"){
-            return html`${this._actionResult.content}`;
+            return html`<div class="actionResult">${this._actionResult.content}${this._renderAssistantWarning()}</div>`;
         }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "code"){
             // TODO: We can not assume the mode is the same as the input
             // Maybe return name|content ?
-            return html`<qui-code-block id="code" class='codeBlock'
-                                    mode='${this._getMode(this._actionResult?.name ?? this._actionResult?.path)}' 
-                                    theme='${themeState.theme.name}'
-                                    .content='${this._actionResult.content}'
-                                    showLineNumbers>
-                                </qui-code-block>`;
+            return html`<div class="actionResult">
+                            ${this._renderAssistantWarning()}    
+                            <qui-code-block id="code" class='codeBlock'
+                                mode='${this._getMode(this._actionResult?.name ?? this._actionResult?.path)}' 
+                                theme='${themeState.theme.name}'
+                                .content='${this._actionResult.content}'
+                                showLineNumbers>
+                            </qui-code-block>
+                        </div>`;
         }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "markdown"){
             const htmlContent = this.md.render(this._actionResult.content);
-            return html`${unsafeHTML(htmlContent)}`; 
+            return html`<div class="actionResult">
+                            ${this._renderAssistantWarning()}
+                            ${unsafeHTML(htmlContent)}
+                        </div>`; 
         }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "html"){
-            return html`${unsafeHTML(this._actionResult.content)}`; 
+            return html`<div class="actionResult">
+                            ${this._renderAssistantWarning()}
+                            ${unsafeHTML(this._actionResult.content)}
+                        </div>`; 
         }else if(this._actionResult && this._actionResult.content && this._actionResult.displayType === "image"){
             let imgurl = `data:image/png;base64,${this._actionResult.content}`;
-            return html`<img src="${imgurl}" alt="${this._actionResult?.name ?? this._actionResult?.path}" style="max-width: 100%;"/>`;
+            return html`<div class="actionResult">
+                            ${this._renderAssistantWarning()}
+                            <img src="${imgurl}" alt="${this._actionResult?.name ?? this._actionResult?.path}" style="max-width: 100%;"/>
+                        </div>`;
         }
     }
     
@@ -327,7 +355,20 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                         value='${this._selectedWorkspaceItem.content}'
                         showLineNumbers
                         editable>
-                    </qui-code-block>`;
+                    </qui-code-block>
+                    ${this._renderAssistantWarningInline()}`;
+    }
+
+    _renderAssistantWarningInline(){
+        if(this._selectedWorkspaceItem.isAssistant){
+            return html`<qui-assistant-warning class="assistant"></qui-assistant-warning>`;
+        }
+    }
+
+    _renderAssistantWarning(){
+        if(this._actionResult.isAssistant){
+             return html`<qui-assistant-warning></qui-assistant-warning>`;
+        }   
     }
     
     _renderConfirmDialog(){
@@ -396,11 +437,13 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
                 this._selectedWorkspaceItem.type = e.detail.value.displayType;
                 this._selectedWorkspaceItem.path = jsonRpcResponse.result.path;
                 this._selectedWorkspaceItem.isDirty = true;
+                this._selectedWorkspaceItem.isAssistant = jsonRpcResponse.result?.isAssistant ?? false;
             }else if(e.detail.value.display !== "nothing"){
                 this._actionResult = jsonRpcResponse.result.result;
                 this._actionResult.name = this._actionResult.path;
                 this._actionResult.path = jsonRpcResponse.result.path;
                 this._actionResult.display = e.detail.value.display;
+                this._actionResult.isAssistant = jsonRpcResponse.result?.isAssistant ?? false;
                 this._actionResult.displayType = e.detail.value.displayType;
             }
             this._showActionProgress = false;

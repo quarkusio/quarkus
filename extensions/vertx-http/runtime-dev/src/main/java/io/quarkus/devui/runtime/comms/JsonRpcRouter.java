@@ -9,11 +9,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Flow;
 
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
@@ -48,6 +50,8 @@ public class JsonRpcRouter {
 
     private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
     private JsonRpcCodec codec;
+
+    private Optional<Assistant> assistant;
 
     /**
      * This gets called on build to build into of the classes we are going to call in runtime
@@ -96,6 +100,15 @@ public class JsonRpcRouter {
     public void setRecordedValues(Map<String, RuntimeValue> recordedValues) {
         this.recordedValues.clear();
         this.recordedValues.putAll(recordedValues);
+    }
+
+    public void setAssistant(Optional<Assistant> assistant) {
+        this.assistant = assistant;
+    }
+
+    @Produces
+    public Optional<Assistant> getAssistant() {
+        return this.assistant;
     }
 
     public void initializeCodec(JsonMapper jsonMapper) {
@@ -271,7 +284,8 @@ public class JsonRpcRouter {
         if (this.recordedValues.containsKey(jsonRpcMethodName)) {
             returnedObject = this.recordedValues.get(jsonRpcMethodName).getValue();
         } else {
-            returnedObject = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
+            returnedObject = DevConsoleManager.invoke(jsonRpcMethodName,
+                    getArgsAsMap(jsonRpcRequest));
         }
         if (returnedObject != null) {
             // Support for Mutiny is diffcult because we are between the runtime and deployment classpath.
@@ -320,7 +334,20 @@ public class JsonRpcRouter {
             } catch (Exception e) {
                 return Uni.createFrom().failure(e);
             }
+        } else if (info.isReturningCompletionStage()) {
+            try {
+                Uni<?> uni = Uni.createFrom()
+                        .completionStage(Unchecked.supplier(() -> (CompletionStage<?>) info.method.invoke(target, args)));
+                if (info.isExplicitlyBlocking()) {
+                    return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());
+                } else {
+                    return uni;
+                }
+            } catch (Exception e) {
+                return Uni.createFrom().failure(e);
+            }
         } else {
+
             Uni<?> uni = Uni.createFrom().item(Unchecked.supplier(() -> info.method.invoke(target, args)));
             if (!info.isExplicitlyNonBlocking()) {
                 return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());

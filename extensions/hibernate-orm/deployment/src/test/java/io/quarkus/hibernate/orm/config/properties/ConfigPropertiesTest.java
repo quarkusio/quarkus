@@ -3,10 +3,13 @@ package io.quarkus.hibernate.orm.config.properties;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.inject.Inject;
+import jakarta.persistence.Persistence;
 import jakarta.transaction.Transactional;
 
 import org.hibernate.FlushMode;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.AvailableSettings;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;
@@ -16,6 +19,8 @@ import io.quarkus.hibernate.orm.PersistenceUnit;
 import io.quarkus.hibernate.orm.config.properties.defaultpu.MyEntityForDefaultPU;
 import io.quarkus.hibernate.orm.config.properties.overridespu.MyEntityForOverridesPU;
 import io.quarkus.test.QuarkusUnitTest;
+
+import java.util.List;
 
 /**
  * Tests that configuration properties set in Quarkus are translated to the right key and value in Hibernate ORM.
@@ -46,6 +51,20 @@ public class ConfigPropertiesTest {
     public void propertiesAffectingSession() {
         assertThat(sessionForDefaultPU.getHibernateFlushMode()).isEqualTo(FlushMode.AUTO);
         assertThat(sessionForOverridesPU.getHibernateFlushMode()).isEqualTo(FlushMode.ALWAYS);
+    }
+
+    @Test
+    @Transactional
+    public void extraPhysicalTableTypes() {
+        Object extraPhysicalTableTypes = sessionForDefaultPU.getProperties().get(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES);
+
+        assertThat(extraPhysicalTableTypes).isNotNull();
+        assertThat(extraPhysicalTableTypes).isInstanceOf(List.class);
+
+        @SuppressWarnings("unchecked")
+        List<String> tableTypes = (List<String>) extraPhysicalTableTypes;
+
+        assertThat(tableTypes).containsExactly("MATERIALIZED VIEW", "FOREIGN TABLE");
     }
 
 }

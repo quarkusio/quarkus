@@ -323,7 +323,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             Builder runtimeSettingsBuilder) {
 
         // Pass extraPhysicalTableTypes configuration
-        List<String> extraPhysicalTableTypes = persistenceUnitConfig.extraPhysicalTableTypes();
+        List<String> extraPhysicalTableTypes = persistenceUnitConfig.schemaManagement().extraPhysicalTableTypes();
         if (extraPhysicalTableTypes != null && !extraPhysicalTableTypes.isEmpty()) {
             String extraTableTypesStr = String.join(",", extraPhysicalTableTypes);
             runtimeSettingsBuilder.put(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES, extraTableTypesStr);

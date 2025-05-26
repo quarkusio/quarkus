@@ -19,4 +19,9 @@
         <artifactId>quarkus-project-develocity-extension</artifactId>
         <version>1.0.7</version>
     </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension</artifactId>
+        <version>0.6.1</version>
+    </extension>
 </extensions>

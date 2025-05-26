@@ -17,8 +17,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.bson.types.ObjectId;
-import org.jboss.shrinkwrap.api.ShrinkWrap;
-import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;

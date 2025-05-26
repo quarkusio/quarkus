@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.simple;
 
 import static io.restassured.RestAssured.*;
-import static io.restassured.RestAssured.when;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 

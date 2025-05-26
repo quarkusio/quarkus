@@ -24,4 +24,9 @@
         <artifactId>extension</artifactId>
         <version>0.4.4</version>
     </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension</artifactId>
+        <version>0.6.1</version>
+    </extension>
 </extensions>

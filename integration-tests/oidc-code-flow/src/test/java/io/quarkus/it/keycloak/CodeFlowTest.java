@@ -14,7 +14,9 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -1691,7 +1693,19 @@ public class CodeFlowTest {
     }
 
     private Cookie getSessionCookie(WebClient webClient, String tenantId) {
-        return webClient.getCookieManager().getCookie("q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId));
+        String cookieName = "q_session" + (tenantId == null ? "_Default_test" : "_" + tenantId);
+        List<Cookie> sessionCookies = new ArrayList<>();
+        for (Cookie c : webClient.getCookieManager().getCookies()) {
+            if (c.getName().equals(cookieName)) {
+                sessionCookies.add(c);
+            }
+        }
+        if (sessionCookies.isEmpty()) {
+            return null;
+        } else {
+            assertEquals(1, sessionCookies.size());
+            return sessionCookies.get(0);
+        }
     }
 
     private Cookie getSessionAtCookie(WebClient webClient, String tenantId) {

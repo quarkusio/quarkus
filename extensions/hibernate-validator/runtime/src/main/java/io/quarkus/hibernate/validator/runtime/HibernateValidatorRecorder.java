@@ -6,14 +6,19 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
+import jakarta.enterprise.inject.Instance;
+import jakarta.enterprise.inject.literal.NamedLiteral;
+import jakarta.enterprise.util.TypeLiteral;
 import jakarta.validation.ClockProvider;
 import jakarta.validation.ConstraintValidatorFactory;
 import jakarta.validation.MessageInterpolator;
 import jakarta.validation.ParameterNameProvider;
 import jakarta.validation.TraversableResolver;
 import jakarta.validation.Validation;
+import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 import jakarta.validation.valueextraction.ValueExtractor;
 
@@ -28,17 +33,39 @@ import org.hibernate.validator.spi.scripting.ScriptEvaluatorFactory;
 
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.InstanceHandle;
+import io.quarkus.arc.SyntheticCreationalContext;
 import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
 import io.quarkus.hibernate.validator.ValidatorFactoryCustomizer;
 import io.quarkus.hibernate.validator.runtime.clockprovider.RuntimeReinitializedDefaultClockProvider;
 import io.quarkus.hibernate.validator.runtime.jaxrs.ResteasyConfigSupport;
+import io.quarkus.hibernate.validator.runtime.locale.LocaleResolversWrapper;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
 public class HibernateValidatorRecorder {
+
+    private static final TypeLiteral<Instance<LocaleResolversWrapper>> INSTANCE_LOCAL_RESOLVER_WRAPPER_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<ConstraintValidatorFactory>> INSTANCE_CONSTRAINT_VALIDATOR_FACTORY_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<MessageInterpolator>> INSTANCE_MESSAGE_INTERPOLATOR_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<TraversableResolver>> INSTANCE_TRAVERSABLE_RESOLVER_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<ParameterNameProvider>> INSTANCE_PARAMETER_NAME_PROVIDER_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<ClockProvider>> INSTANCE_CLOCK_PROVIDER_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<ScriptEvaluatorFactory>> INSTANCE_SCRIPT_EVALUATOR_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<GetterPropertySelectionStrategy>> INSTANCE_GETTER_PROPERTY_SELECTION_STRATEGY_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<PropertyNodeNameProvider>> INSTANCE_PROPERTY_NODE_NAME_PROVIDER_TYPE_LITERAL = new TypeLiteral<>() {
+    };
+    private static final TypeLiteral<Instance<ValidatorFactoryCustomizer>> INSTANCE_VALIDATOR_FACTORY_CUSTOMER_TYPE_LITERAL = new TypeLiteral<>() {
+    };
 
     public void shutdownConfigValidator(ShutdownContext shutdownContext) {
         shutdownContext.addShutdownTask(new Runnable() {
@@ -53,15 +80,15 @@ public class HibernateValidatorRecorder {
         });
     }
 
-    public BeanContainerListener initializeValidatorFactory(Set<Class<?>> classesToBeValidated,
+    public Function<SyntheticCreationalContext<HibernateValidatorFactory>, HibernateValidatorFactory> hibernateValidatorFactory(
+            Set<Class<?>> classesToBeValidated,
             Set<String> detectedBuiltinConstraints, Set<Class<?>> valueExtractorClasses,
             boolean hasXmlConfiguration, boolean jpaInClasspath,
-            ShutdownContext shutdownContext, LocalesBuildTimeConfig localesBuildTimeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig,
             HibernateValidatorBuildTimeConfig hibernateValidatorBuildTimeConfig) {
-        BeanContainerListener beanContainerListener = new BeanContainerListener() {
-
+        return new Function<>() {
             @Override
-            public void created(BeanContainer container) {
+            public HibernateValidatorFactory apply(SyntheticCreationalContext<HibernateValidatorFactory> context) {
                 PredefinedScopeHibernateValidatorConfiguration configuration = Validation
                         .byProvider(PredefinedScopeHibernateValidator.class)
                         .configure();
@@ -70,10 +97,10 @@ public class HibernateValidatorRecorder {
                     configuration.ignoreXmlConfiguration();
                 }
 
-                LocaleResolver localeResolver = null;
-                InstanceHandle<LocaleResolver> configuredLocaleResolver = Arc.container()
-                        .instance("locale-resolver-wrapper");
-                if (configuredLocaleResolver.isAvailable()) {
+                LocaleResolver localeResolver;
+                Instance<LocaleResolversWrapper> configuredLocaleResolver = context.getInjectedReference(
+                        INSTANCE_LOCAL_RESOLVER_WRAPPER_TYPE_LITERAL, NamedLiteral.of("locale-resolver-wrapper"));
+                if (configuredLocaleResolver.isResolvable()) {
                     localeResolver = configuredLocaleResolver.get();
                     configuration.localeResolver(localeResolver);
                 }
@@ -94,23 +121,23 @@ public class HibernateValidatorRecorder {
                             hibernateValidatorBuildTimeConfig.expressionLanguage().constraintExpressionFeatureLevel().get());
                 }
 
-                InstanceHandle<ConstraintValidatorFactory> configuredConstraintValidatorFactory = Arc.container()
-                        .instance(ConstraintValidatorFactory.class);
-                if (configuredConstraintValidatorFactory.isAvailable()) {
+                Instance<ConstraintValidatorFactory> configuredConstraintValidatorFactory = context
+                        .getInjectedReference(INSTANCE_CONSTRAINT_VALIDATOR_FACTORY_TYPE_LITERAL);
+                if (configuredConstraintValidatorFactory.isResolvable()) {
                     configuration.constraintValidatorFactory(configuredConstraintValidatorFactory.get());
                 } else {
                     configuration.constraintValidatorFactory(new ArcConstraintValidatorFactoryImpl());
                 }
 
-                InstanceHandle<MessageInterpolator> configuredMessageInterpolator = Arc.container()
-                        .instance(MessageInterpolator.class);
-                if (configuredMessageInterpolator.isAvailable()) {
+                Instance<MessageInterpolator> configuredMessageInterpolator = context
+                        .getInjectedReference(INSTANCE_MESSAGE_INTERPOLATOR_TYPE_LITERAL);
+                if (configuredMessageInterpolator.isResolvable()) {
                     configuration.messageInterpolator(configuredMessageInterpolator.get());
                 }
 
-                InstanceHandle<TraversableResolver> configuredTraversableResolver = Arc.container()
-                        .instance(TraversableResolver.class);
-                if (configuredTraversableResolver.isAvailable()) {
+                Instance<TraversableResolver> configuredTraversableResolver = context
+                        .getInjectedReference(INSTANCE_TRAVERSABLE_RESOLVER_TYPE_LITERAL);
+                if (configuredTraversableResolver.isResolvable()) {
                     configuration.traversableResolver(configuredTraversableResolver.get());
                 } else {
                     // we still define the one we want to use so that we do not rely on runtime automatic detection
@@ -121,14 +148,15 @@ public class HibernateValidatorRecorder {
                     }
                 }
 
-                InstanceHandle<ParameterNameProvider> configuredParameterNameProvider = Arc.container()
-                        .instance(ParameterNameProvider.class);
-                if (configuredParameterNameProvider.isAvailable()) {
+                Instance<ParameterNameProvider> configuredParameterNameProvider = context
+                        .getInjectedReference(INSTANCE_PARAMETER_NAME_PROVIDER_TYPE_LITERAL);
+                if (configuredParameterNameProvider.isResolvable()) {
                     configuration.parameterNameProvider(configuredParameterNameProvider.get());
                 }
 
-                InstanceHandle<ClockProvider> configuredClockProvider = Arc.container().instance(ClockProvider.class);
-                if (configuredClockProvider.isAvailable()) {
+                Instance<ClockProvider> configuredClockProvider = context
+                        .getInjectedReference(INSTANCE_CLOCK_PROVIDER_TYPE_LITERAL);
+                if (configuredClockProvider.isResolvable()) {
                     configuration.clockProvider(configuredClockProvider.get());
                 } else {
                     // If user didn't provide a custom clock provider we want to set our own.
@@ -147,21 +175,21 @@ public class HibernateValidatorRecorder {
                 configuration.allowMultipleCascadedValidationOnReturnValues(
                         hibernateValidatorBuildTimeConfig.methodValidation().allowMultipleCascadedValidationOnReturnValues());
 
-                InstanceHandle<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = Arc.container()
-                        .instance(ScriptEvaluatorFactory.class);
-                if (configuredScriptEvaluatorFactory.isAvailable()) {
+                Instance<ScriptEvaluatorFactory> configuredScriptEvaluatorFactory = context
+                        .getInjectedReference(INSTANCE_SCRIPT_EVALUATOR_TYPE_LITERAL);
+                if (configuredScriptEvaluatorFactory.isResolvable()) {
                     configuration.scriptEvaluatorFactory(configuredScriptEvaluatorFactory.get());
                 }
 
-                InstanceHandle<GetterPropertySelectionStrategy> configuredGetterPropertySelectionStrategy = Arc.container()
-                        .instance(GetterPropertySelectionStrategy.class);
-                if (configuredGetterPropertySelectionStrategy.isAvailable()) {
+                Instance<GetterPropertySelectionStrategy> configuredGetterPropertySelectionStrategy = context
+                        .getInjectedReference(INSTANCE_GETTER_PROPERTY_SELECTION_STRATEGY_TYPE_LITERAL);
+                if (configuredGetterPropertySelectionStrategy.isResolvable()) {
                     configuration.getterPropertySelectionStrategy(configuredGetterPropertySelectionStrategy.get());
                 }
 
-                InstanceHandle<PropertyNodeNameProvider> configuredPropertyNodeNameProvider = Arc.container()
-                        .instance(PropertyNodeNameProvider.class);
-                if (configuredPropertyNodeNameProvider.isAvailable()) {
+                Instance<PropertyNodeNameProvider> configuredPropertyNodeNameProvider = context
+                        .getInjectedReference(INSTANCE_PROPERTY_NODE_NAME_PROVIDER_TYPE_LITERAL);
+                if (configuredPropertyNodeNameProvider.isResolvable()) {
                     configuration.propertyNodeNameProvider(configuredPropertyNodeNameProvider.get());
                 }
 
@@ -178,25 +206,15 @@ public class HibernateValidatorRecorder {
                     configuration.addValueExtractor(valueExtractor);
                 }
 
-                List<InstanceHandle<ValidatorFactoryCustomizer>> validatorFactoryCustomizers = Arc.container()
-                        .listAll(ValidatorFactoryCustomizer.class);
-                for (InstanceHandle<ValidatorFactoryCustomizer> validatorFactoryInstanceHandle : validatorFactoryCustomizers) {
-                    if (validatorFactoryInstanceHandle.isAvailable()) {
-                        final ValidatorFactoryCustomizer validatorFactoryCustomizer = validatorFactoryInstanceHandle.get();
-                        validatorFactoryCustomizer.customize(configuration);
-                    }
+                Instance<ValidatorFactoryCustomizer> validatorFactoryCustomizers = context
+                        .getInjectedReference(INSTANCE_VALIDATOR_FACTORY_CUSTOMER_TYPE_LITERAL);
+                for (ValidatorFactoryCustomizer validatorFactoryCustomizer : validatorFactoryCustomizers) {
+                    validatorFactoryCustomizer.customize(configuration);
                 }
 
                 ValidatorFactory validatorFactory = configuration.buildValidatorFactory();
-                ValidatorHolder.initialize(validatorFactory.unwrap(HibernateValidatorFactory.class));
 
-                // Close the ValidatorFactory on shutdown
-                shutdownContext.addShutdownTask(new Runnable() {
-                    @Override
-                    public void run() {
-                        validatorFactory.close();
-                    }
-                });
+                return validatorFactory.unwrap(HibernateValidatorFactory.class);
             }
 
             /**
@@ -215,8 +233,18 @@ public class HibernateValidatorRecorder {
                 }
             }
         };
+    }
 
-        return beanContainerListener;
+    public Function<SyntheticCreationalContext<Validator>, Validator> hibernateValidator(String hibernateValidatorFactoryName) {
+        return new Function<>() {
+            @Override
+            public Validator apply(SyntheticCreationalContext<Validator> context) {
+                HibernateValidatorFactory hibernateValidatorFactory = context
+                        .getInjectedReference(HibernateValidatorFactory.class, NamedLiteral.of(hibernateValidatorFactoryName));
+
+                return hibernateValidatorFactory.getValidator();
+            }
+        };
     }
 
     // Ideally we'd retrieve all instances of a set of bean types
@@ -256,5 +284,11 @@ public class HibernateValidatorRecorder {
                 return new ResteasyConfigSupport(jsonDefault);
             }
         };
+    }
+
+    // this is done in order to ensure that HibernateValidatorFactory is fully initialized at static init
+    // so completely in heap and ready to go when a native image is built
+    public void hibernateValidatorFactoryInit(BeanContainer beanContainer) {
+        HibernateValidatorFactory hibernateValidatorFactory = beanContainer.beanInstance(HibernateValidatorFactory.class);
     }
 }

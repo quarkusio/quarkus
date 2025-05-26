@@ -1,4 +1,5 @@
 import { LitElement, html, css} from 'lit';
+import { html as staticHtml, unsafeStatic } from 'lit/static-html.js';
 import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
 import { RouterController } from 'router-controller';
@@ -29,12 +30,8 @@ export class QwcMenu extends observeState(LitElement) {
             }
             
             .menuSizeControl {
-                align-self: flex-end;
                 cursor: pointer;
                 color: var(--lumo-contrast-10pct);
-                height: 60px;
-                width: 30px;
-                padding-top:30px;
             }
             
             .menuSizeControl:hover {
@@ -67,6 +64,7 @@ export class QwcMenu extends observeState(LitElement) {
                 color: var(--lumo-contrast-90pct);
                 height:30px;
                 text-decoration: none;
+                justify-content: space-between;
             }
             
             .item:hover{
@@ -80,13 +78,23 @@ export class QwcMenu extends observeState(LitElement) {
                 background-color: var(--lumo-primary-color-10pct);
             }
 
+            .itemref{
+                color: var(--lumo-contrast-90pct);
+                text-decoration: none;
+            }
+
             .hidden {
                 display:none;
             }
 
+            .bottom {
+                display: flex;
+                flex-direction: row;
+                align-items: center;
+            }
+
             .quarkusVersion {
-                padding-bottom: 10px;
-                padding-left: 15px;
+                padding-left: 5px;
                 width: 100%;
             }
     
@@ -156,11 +164,9 @@ export class QwcMenu extends observeState(LitElement) {
                     ${this._dynamicMenuNamespaces.map((page) =>
                         html`${this._renderCustomItem(page, -1)}`
                     )}
-                    ${this._renderIcon("chevron-left", "smaller")}
-                    ${this._renderIcon("chevron-right", "larger")}
                 </div>
 
-                ${this._renderVersion()}
+                ${this._renderBottom()}
             </div>`;
     }
 
@@ -200,7 +206,15 @@ export class QwcMenu extends observeState(LitElement) {
         this.storageControl.set('customPageLinks', JSON.stringify(menu));
     }
 
-    _renderVersion(){
+    _renderBottom(){
+        return html`<div class="bottom">
+                        ${this._renderVersion()}
+                        ${this._renderIcon("chevron-left", "smaller")}
+                        ${this._renderIcon("chevron-right", "larger")}
+                    </div>`;
+    }
+    
+    _renderVersion(){    
         if(this._show){
             return html`<div class="quarkusVersion">
                             <span @click="${this._quarkus}">Quarkus ${devuiState.applicationInfo.quarkusVersion}</span>
@@ -260,15 +274,23 @@ export class QwcMenu extends observeState(LitElement) {
                 }
             }
             
-            let pageRef = this.routerController.getPageUrlFor(page);
-            
             let classnames = this._getClassNamesForMenuItem(page, index);
-            return html`
-                <a class="${classnames}" href="${pageRef}">
-                    <vaadin-icon icon="${page.icon}"></vaadin-icon>
-                    <span class="item-text" data-page="${page.componentName}">${displayName}</span>
-                </a>
-                `;
+            return html`<div class="${classnames}" @click=${() => this.routerController.go(page)}>
+                    <div>
+                        <vaadin-icon icon="${page.icon}"></vaadin-icon>
+                        <span class="item-text" data-page="${page.componentName}">${displayName}</span>
+                    </div>
+                    ${this._renderMenuAction(page, classnames)}
+                </div>`;
+        }
+    }
+
+    _renderMenuAction(page, classnames){
+        if(page.menuActionComponent && this._show && classnames.includes("selected")){
+            import(`./${page.menuActionComponent}.js`);
+            
+            const tagName = unsafeStatic(page.menuActionComponent);
+            return staticHtml`<${tagName}></${tagName}>`;
         }
     }
 
@@ -312,7 +334,7 @@ export class QwcMenu extends observeState(LitElement) {
     _renderIcon(icon, action){
         if(action == "smaller" && this._show){
             return html`
-                <vaadin-icon class="menuSizeControl" icon="font-awesome-solid:${icon}" @click="${this._changeMenuSize}" data-action="${action}" style="position: absolute;top: 45%;"></vaadin-icon>
+                <vaadin-icon class="menuSizeControl" icon="font-awesome-solid:${icon}" @click="${this._changeMenuSize}" data-action="${action}"></vaadin-icon>
             `;
         }else if(action == "larger" && !this._show){
             return html`

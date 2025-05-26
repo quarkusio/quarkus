@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
@@ -33,10 +33,10 @@ import io.quarkus.devui.spi.page.Page;
  */
 public class ExtensionsProcessor {
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createExtensionsPages(ExtensionsBuildItem extensionsBuildItem) {
 
-        InternalPageBuildItem extensionsPages = new InternalPageBuildItem("Extensions", 10);
+        InternalPageBuildItem extensionsPages = new InternalPageBuildItem("Extensions", 10, "qwc-extensions-menu-action");
 
         // Extensions
         Map<ExtensionGroup, List<Extension>> response = Map.of(
@@ -55,7 +55,7 @@ public class ExtensionsProcessor {
         return extensionsPages;
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             LaunchModeBuildItem launchModeBuildItem) {
 

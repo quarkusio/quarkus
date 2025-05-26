@@ -30,7 +30,6 @@
     </scm>
     <properties>
         <angus-activation.version>1.0.0</angus-activation.version>
-        <expressly.version>5.0.0</expressly.version>
         <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
         <javax.inject.version>1</javax.inject.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -38,10 +37,10 @@
         <maven.compiler.target>11</maven.compiler.target>
         <maven.compiler.release>11</maven.compiler.release>
         <maven-core.version>3.9.9</maven-core.version>
-        <jackson-bom.version>2.18.3</jackson-bom.version>
-        <smallrye-beanbag.version>1.5.2</smallrye-beanbag.version>
+        <jackson-bom.version>2.19.0</jackson-bom.version>
+        <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
         <junit5.version>5.12.2</junit5.version>
-        <mockito.version>5.17.0</mockito.version>
+        <mockito.version>5.18.0</mockito.version>
     </properties>
     <build>
         <testResources>

@@ -407,22 +407,6 @@ final class Target_io_netty_channel_nio_NioEventLoop {
     }
 }
 
-@TargetClass(className = "io.netty.buffer.AbstractReferenceCountedByteBuf")
-final class Target_io_netty_buffer_AbstractReferenceCountedByteBuf {
-
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FieldOffset, name = "refCnt")
-    private static long REFCNT_FIELD_OFFSET;
-}
-
-@TargetClass(className = "io.netty.util.AbstractReferenceCounted")
-final class Target_io_netty_util_AbstractReferenceCounted {
-
-    @Alias
-    @RecomputeFieldValue(kind = RecomputeFieldValue.Kind.FieldOffset, name = "refCnt")
-    private static long REFCNT_FIELD_OFFSET;
-}
-
 // This class is runtime-initialized by NettyProcessor
 final class Holder_io_netty_util_concurrent_ScheduledFutureTask {
     static final long START_TIME = System.nanoTime();

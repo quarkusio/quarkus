@@ -8,7 +8,6 @@ import 'qwc/qwc-extension-link.js';
 import 'qwc/qwc-extension-add.js';
 import { StorageController } from 'storage-controller';
 import '@vaadin/dialog';
-import '@qomponent/qui-badge';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import { notifier } from 'notifier';
 import { connectionState } from 'connection-state';
@@ -75,11 +74,6 @@ export class QwcExtensions extends observeState(LitElement) {
             width: 2em;
             height: 2em;
         }
-        .filter {
-            display: flex;
-            gap: 3px;
-            align-items: center;
-        }
        `;
 
     static properties = {
@@ -95,13 +89,13 @@ export class QwcExtensions extends observeState(LitElement) {
         this._favourites = this._getStoredFavourites();
         this._addDialogOpened = false;
         this._installedExtensions = [];
-        this._filteritems = ["Favorites","Active","Inactive"];
-        this._selectedFilters = this._getStoredFilters();
+        this._selectedFilters = ["Favorites","Active","Inactive"];
         this._addExtensionsEnabled = false;
     }
 
     connectedCallback() {
         super.connectedCallback();
+        window.addEventListener('extensions-filters-changed', this._onFiltersChanged);
         this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
             if (jsonRpcResponse.result) {
                 this._installedExtensions = jsonRpcResponse.result;
@@ -112,32 +106,15 @@ export class QwcExtensions extends observeState(LitElement) {
         });
     }
 
+    disconnectedCallback() {
+        window.removeEventListener('extensions-filters-changed', this._onFiltersChanged);
+        super.disconnectedCallback();
+    }
+
     render() {
         return html`
-            ${this._renderFilters()}
             ${this._renderGrid()}
             ${this._renderAddDialog()}`;
-    }
-
-    _renderFilters(){
-        return html`
-            <div class="filter">
-                <vaadin-icon icon="font-awesome-solid:filter" style="height: 10px;" title="Filter"></vaadin-icon>
-                ${this._filteritems.map(filter => this._renderFilter(filter))}
-            </div>
-        `;
-    }
-
-    _renderFilter(filter){
-        if (this._selectedFilters.includes(filter)) {
-            return html`<qui-badge level="success" clickable tiny @click=${this._filterToggle} data-filter="${filter}"><span>${filter}</span></qui-badge>`;
-        }else{
-            return html`<qui-badge level="contrast" clickable tiny @click=${this._filterToggle} data-filter="${filter}"><span>${filter}</span></qui-badge>`;
-        }
-    }
-
-    _renderSpace(){
-        return html`<div class="space"></div>`;
     }
 
     _renderGrid(){
@@ -279,23 +256,10 @@ export class QwcExtensions extends observeState(LitElement) {
         }
     }
 
-    _getStoredFilters(){
-        let selectedFilters = this.storageController.get('selectedFilters');
-        if(selectedFilters){
-            return JSON.parse(selectedFilters);
-        }else{
-            return this._filteritems;
-        }
-    }
-
     _setStoredFavourites(favourites){
         this.storageController.set('favourites', JSON.stringify(favourites));
     }
 
-    _setStoredFilters(selectedFilters){
-        this.storageController.set('selectedFilters', JSON.stringify(selectedFilters));
-    }
-    
     _renderCardContent(extension){
         if(extension.card){
             return this._renderCustomCardContent(extension);
@@ -412,23 +376,8 @@ export class QwcExtensions extends observeState(LitElement) {
         this._addDialogOpened = true;
     }
 
-    _filterToggle(event){
-        const badge = event.currentTarget;
-        const currentLevel = badge.getAttribute('level');
-        const filter = badge.dataset.filter; 
-        
-        const newLevel = currentLevel === 'success' ? 'contrast' : 'success';
-        badge.setAttribute('level', newLevel);
-        
-        // Update the selected filters
-        if (newLevel === 'success') {
-            this._selectedFilters = [...this._selectedFilters, filter];
-        } else {
-            this._selectedFilters = this._selectedFilters.filter(item => item !== filter);
-        }
-        
-        this._setStoredFilters(this._selectedFilters);
+    _onFiltersChanged = (event) => {
+        this._selectedFilters = event.detail.filters;
     }
-
 }
 customElements.define('qwc-extensions', QwcExtensions);

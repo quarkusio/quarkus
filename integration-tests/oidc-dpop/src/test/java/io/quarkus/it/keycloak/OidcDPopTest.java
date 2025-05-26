@@ -10,6 +10,9 @@ import org.htmlunit.html.HtmlPage;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.restassured.RestAssured;
+import io.restassured.response.Response;
+import io.vertx.core.json.JsonObject;
 
 @QuarkusTest
 public class OidcDPopTest {
@@ -32,7 +35,21 @@ public class OidcDPopTest {
                     textPage.getContent());
 
             webClient.getCookieManager().clearCookies();
+
+            checkHealth();
         }
+    }
+
+    private static void checkHealth() {
+        Response healthReadyResponse = RestAssured.when().get("http://localhost:8081/q/health/ready");
+        JsonObject jsonHealth = new JsonObject(healthReadyResponse.asString());
+        JsonObject oidcCheck = jsonHealth.getJsonArray("checks").getJsonObject(0);
+        assertEquals("UP", oidcCheck.getString("status"));
+        assertEquals("OIDC Provider Health Check", oidcCheck.getString("name"));
+
+        JsonObject data = oidcCheck.getJsonObject("data");
+        assertEquals("Disabled", data.getString("Default Tenant"));
+        assertEquals("OK", data.getString("DPoP Tenant"));
     }
 
     @Test

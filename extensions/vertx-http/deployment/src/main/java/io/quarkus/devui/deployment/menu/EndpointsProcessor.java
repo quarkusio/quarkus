@@ -4,7 +4,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.Capability;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
@@ -19,7 +19,7 @@ public class EndpointsProcessor {
     private static final String NAMESPACE = "devui-endpoints";
     public static final String DEV_UI = "dev-ui";
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createEndpointsPage(Capabilities capabilities,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
@@ -55,7 +55,7 @@ public class EndpointsProcessor {
         return endpointsPage;
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem createJsonRPCService() {
         return new JsonRPCProvidersBuildItem(NAMESPACE, ResourceNotFoundData.class);
     }

@@ -454,7 +454,7 @@ quarkus.openshift.init-task-defaults.wait-for-container.image=my/wait-for-image:
 === Oracle: Multiple schemas in Dev Services
 
 When having multiple schemas in Oracle, you can use the `quarkus.flyway.schemas` property to specify the schemas that Flyway should manage.
-However, because this is executed in the DB as the `quarkus` user, you need to either give DBA privileges to the user that is executing the migration (`quarkus`) or perform the necessary DDLs before the Dev Service starts. This is done with the `quarkus.datasource.devservices.init-script-path` configuration.
+However, because this is executed in the DB as the `quarkus` user, you need to either give DBA privileges to the user that is executing the migration (`quarkus`) or perform the necessary DDLs before the Dev Service starts. This is done with the `quarkus.datasource.devservices.init-privileged-script-path` configuration.
 
 ==== Giving DBA privileges to the user
 
@@ -470,5 +470,5 @@ GRANT DBA TO quarkus;
 
 [source,properties]
 ----
-quarkus.datasource.devservices.init-script-path=001-devservice-init.sql
+quarkus.datasource.devservices.init-privileged-script-path=001-devservice-init.sql
 ----

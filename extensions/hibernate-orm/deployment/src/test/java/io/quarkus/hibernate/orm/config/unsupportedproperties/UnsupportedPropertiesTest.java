@@ -51,16 +51,21 @@ public class UnsupportedPropertiesTest {
             // This is just to test a property set at build time
             .overrideConfigKey("quarkus.hibernate-orm.unsupported-properties.\"hibernate.some.unknown.key.static-and-runtime\"",
                     "some-value-1")
-            // This is just to test a property set at runtime, which which would not be available during the build
+            // This is just to test a property set at runtime, which would not be available during the build
             // (or even during static init with native applications).
             .overrideRuntimeConfigKey(
                     "quarkus.hibernate-orm.unsupported-properties.\"hibernate.some.unknown.key.runtime-only\"",
                     "some-value-2")
-            // This should be ignored with a warning
+            // This overrides a property set by Quarkus, and thus should trigger an additional warning
             .overrideConfigKey(
                     "quarkus.hibernate-orm.unsupported-properties.\"" + AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION
                             + "\"",
-                    "drop-and-create")
+                    // Deliberately using the Hibernate-native name instead of the JPA one that Quarkus uses
+                    // This allows us to check the override did happen
+                    "create-drop")
+            .overrideConfigKey(
+                    "quarkus.hibernate-orm.unsupported-properties.\"" + AvailableSettings.ORDER_UPDATES + "\"",
+                    "false")
             // Expect warnings on startup
             .setLogRecordPredicate(record -> FastBootHibernatePersistenceProvider.class.getName().equals(record.getLoggerName())
                     && record.getLevel().intValue() >= Level.WARNING.intValue())
@@ -75,17 +80,18 @@ public class UnsupportedPropertiesTest {
                                 "Consider using a supported configuration property",
                                 "make sure to file a feature request so that a supported configuration property can be added to Quarkus")
                         .contains(AvailableSettings.ORDER_INSERTS, AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
+                                AvailableSettings.ORDER_UPDATES,
                                 "hibernate.some.unknown.key.static-and-runtime", "hibernate.some.unknown.key.runtime-only")
                         // We should not log property values, that could be a security breach for some properties.
                         .doesNotContain("some-value"));
                 assertion.element(1).satisfies(record -> assertThat(LOG_FORMATTER.formatMessage(record))
                         .contains(
-                                "Persistence-unit [<default>] sets property '"
-                                        + AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION
-                                        + "' to a custom value through 'quarkus.hibernate-orm.unsupported-properties.\""
-                                        + AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION + "\"'",
-                                "Quarkus already set that property independently",
-                                "The custom value will be ignored"));
+                                "Persistence-unit [<default>] sets unsupported properties that override Quarkus' own settings",
+                                "These properties may break assumptions in Quarkus code and cause malfunctions",
+                                "make sure to file a feature request or bug report so that a solution can be implemented in Quarkus")
+                        .contains(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION, AvailableSettings.ORDER_UPDATES)
+                        .doesNotContain(AvailableSettings.ORDER_INSERTS, "hibernate.some.unknown.key.static-and-runtime",
+                                "hibernate.some.unknown.key.runtime-only"));
             });
 
     @Inject
@@ -106,7 +112,9 @@ public class UnsupportedPropertiesTest {
     @Test
     public void testPropertiesPropagatedToRuntimeInit() {
         assertThat(emf.getProperties())
-                .contains(entry("hibernate.order_inserts", "true"),
+                .contains(entry(AvailableSettings.ORDER_INSERTS, "true"),
+                        entry(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION, "create-drop"),
+                        entry(AvailableSettings.ORDER_UPDATES, "false"),
                         // Also test a property that Quarkus cannot possibly know about
                         entry("hibernate.some.unknown.key.static-and-runtime", "some-value-1"),
                         entry("hibernate.some.unknown.key.runtime-only", "some-value-2"));

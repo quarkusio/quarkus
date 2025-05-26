@@ -347,16 +347,62 @@ public class LocalProject {
         return resolveRelativeToBaseDir(path, null);
     }
 
-    Path resolveRelativeToBaseDir(String path, String defaultPath) {
-        return dir.resolve(path == null ? defaultPath : stripProjectBasedirPrefix(path, PROJECT_BASEDIR));
+    Path resolveRelativeToBaseDir(String pathStr, String defaultPath) {
+        if (pathStr == null) {
+            return dir.resolve(defaultPath);
+        }
+        var path = resolveProjectPropertyPathOrNull(pathStr);
+        return path == null ? dir.resolve(pathStr) : path;
     }
 
-    private Path resolveRelativeToBuildDir(String path, String defaultPath) {
-        return getOutputDir().resolve(path == null ? defaultPath : stripProjectBasedirPrefix(path, PROJECT_BUILD_DIR));
+    private Path resolveRelativeToBuildDir(String pathStr, String defaultPath) {
+        if (pathStr == null) {
+            return getOutputDir().resolve(defaultPath);
+        }
+        var path = resolveProjectPropertyPathOrNull(pathStr);
+        return path == null ? getOutputDir().resolve(pathStr) : path;
     }
 
-    static String stripProjectBasedirPrefix(String path, String expr) {
-        return path.startsWith(expr) ? path.substring(expr.length() + 1) : path;
+    private Path resolveRelativeToDir(Path baseDir, String pathStr) {
+        if (pathStr == null) {
+            return baseDir;
+        }
+        var path = resolveProjectPropertyPathOrNull(pathStr);
+        return path == null ? baseDir.resolve(pathStr) : path;
+    }
+
+    Path resolveProjectPropertyPathOrNull(String pathStr) {
+        final int propertyStart = getProjectPropertySuffixIndex(pathStr);
+        if (propertyStart >= 0) {
+            String relativePath = getRelativePath(pathStr, propertyStart, "basedir}");
+            if (relativePath != null) {
+                return relativePath.isEmpty() ? dir : dir.resolve(relativePath);
+            }
+            relativePath = getRelativePath(pathStr, propertyStart, "build.directory}");
+            if (relativePath != null) {
+                return relativePath.isEmpty() ? getOutputDir() : getOutputDir().resolve(relativePath);
+            }
+            relativePath = getRelativePath(pathStr, propertyStart, "build.outputDirectory}");
+            if (relativePath != null) {
+                return relativePath.isEmpty() ? getClassesDir() : getClassesDir().resolve(relativePath);
+            }
+        }
+        return null;
+    }
+
+    private static String getRelativePath(String pathStr, int elementStart, String pathElement) {
+        if (!pathStr.regionMatches(elementStart, pathElement, 0, pathElement.length())) {
+            return null;
+        }
+        return pathStr.length() == elementStart + pathElement.length() ? ""
+                : pathStr.substring(elementStart + pathElement.length() + 1);
+    }
+
+    private static int getProjectPropertySuffixIndex(String pathStr) {
+        final String projectProdPrefix = "${project.";
+        // we are not using startWith here because, apparently, there could be preceding '/' characters, although it doesn't seem to make sense
+        final int propertyStart = pathStr.indexOf(projectProdPrefix);
+        return propertyStart < 0 ? propertyStart : propertyStart + projectProdPrefix.length();
     }
 
     private static String configuredBuildDir(LocalProject project, Function<Build, String> f) {
@@ -368,11 +414,6 @@ public class LocalProject {
             }
             if (project.rawModel.getBuild() != null) {
                 dir = f.apply(project.rawModel.getBuild());
-                // in case the "raw" model is passed in from the reactor by the QuarkusBootstrapProvider,
-                // the Build will contain an effective config, so we need to take the relative path
-                if (dir != null) {
-                    // TODO
-                }
             }
         }
         return dir;
@@ -483,7 +524,7 @@ public class LocalProject {
                         final List<String> list = new ArrayList<>(elements.length);
                         for (Xpp3Dom element : elements) {
                             for (String s : element.getValue().split(",")) {
-                                list.add(stripProjectBasedirPrefix(s, PROJECT_BASEDIR));
+                                list.add(resolveRelativeToBaseDir(s).toString());
                             }
                         }
                         moduleBuilder.setAdditionalTestClasspathElements(list);
@@ -573,8 +614,9 @@ public class LocalProject {
     }
 
     private Collection<SourceDir> collectMainResources(PathFilter filter) {
-        final List<Resource> resources = rawModel.getBuild() == null ? List.of()
-                : rawModel.getBuild().getResources();
+        final Model model = effectiveModel == null ? rawModel : effectiveModel;
+        final List<Resource> resources = model.getBuild() == null ? List.of()
+                : model.getBuild().getResources();
         final Path classesDir = getClassesDir();
         final Path generatedSourcesDir = getGeneratedSourcesDir();
         if (resources.isEmpty()) {
@@ -590,11 +632,10 @@ public class LocalProject {
                     new DefaultSourceDir(
                             new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), SRC_MAIN_RESOURCES)),
                             new DirectoryPathTree((r.getTargetPath() == null ? classesDir
-                                    : classesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
+                                    : resolveRelativeToDir(classesDir, r.getTargetPath())),
                                     filter),
                             new DirectoryPathTree((r.getTargetPath() == null ? generatedSourcesDir
-                                    : generatedSourcesDir.resolve(
-                                            stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_GENERATED_SOURCES_DIR))),
+                                    : resolveRelativeToDir(generatedSourcesDir, r.getTargetPath())),
                                     filter),
                             Map.of()));
         }
@@ -602,10 +643,10 @@ public class LocalProject {
     }
 
     private Collection<SourceDir> collectTestResources(PathFilter filter) {
-        final List<Resource> resources = rawModel.getBuild() == null ? List.of()
-                : rawModel.getBuild().getTestResources();
+        final Model model = effectiveModel == null ? rawModel : effectiveModel;
+        final List<Resource> resources = model.getBuild() == null ? List.of()
+                : model.getBuild().getTestResources();
         final Path testClassesDir = getTestClassesDir();
-        final Path generatedSourcesDir = getGeneratedSourcesDir();
         if (resources.isEmpty()) {
             return List.of(new DefaultSourceDir(
                     new DirectoryPathTree(resolveRelativeToBaseDir(null, SRC_TEST_RESOURCES)),
@@ -620,7 +661,7 @@ public class LocalProject {
                     new DefaultSourceDir(
                             new DirectoryPathTree(resolveRelativeToBaseDir(r.getDirectory(), SRC_TEST_RESOURCES)),
                             new DirectoryPathTree((r.getTargetPath() == null ? testClassesDir
-                                    : testClassesDir.resolve(stripProjectBasedirPrefix(r.getTargetPath(), PROJECT_OUTPUT_DIR))),
+                                    : resolveRelativeToDir(testClassesDir, r.getTargetPath())),
                                     filter),
                             // FIXME: do tests have generated sources?
                             null,

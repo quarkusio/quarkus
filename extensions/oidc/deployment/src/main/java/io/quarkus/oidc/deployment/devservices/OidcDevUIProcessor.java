@@ -7,7 +7,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.deployment.Capabilities;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.Consume;
@@ -20,8 +20,8 @@ import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.deployment.OidcBuildTimeConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig;
 import io.quarkus.oidc.runtime.OidcTenantConfig.Provider;
-import io.quarkus.oidc.runtime.devui.OidcDevJsonRpcService;
-import io.quarkus.oidc.runtime.devui.OidcDevUiRecorder;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevJsonRpcService;
+import io.quarkus.oidc.runtime.dev.ui.OidcDevUiRecorder;
 import io.quarkus.oidc.runtime.providers.KnownOidcProviders;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.quarkus.vertx.core.deployment.CoreVertxBuildItem;
@@ -44,7 +44,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
     OidcBuildTimeConfig oidcConfig;
 
     @Record(ExecutionTime.RUNTIME_INIT)
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Consume(CoreVertxBuildItem.class) // metadata discovery requires Vertx instance
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void prepareOidcDevConsole(Capabilities capabilities,
@@ -95,7 +95,7 @@ public class OidcDevUIProcessor extends AbstractDevUIProcessor {
         }
     }
 
-    @BuildStep
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     JsonRPCProvidersBuildItem produceOidcDevJsonRpcService() {
         return new JsonRPCProvidersBuildItem(OidcDevJsonRpcService.class);
     }

@@ -90,8 +90,9 @@ public class OracleDevServicesProcessor {
 
                     containerConfig.getAdditionalJdbcUrlProperties().forEach(container::withUrlParam);
                     containerConfig.getCommand().ifPresent(container::setCommand);
-                    if (containerConfig.getInitScriptPath().isPresent()) {
-                        for (String initScript : containerConfig.getInitScriptPath().get()) {
+                    containerConfig.getInitScriptPath().ifPresent(container::withInitScripts);
+                    if (containerConfig.getInitPrivilegedScriptPath().isPresent()) {
+                        for (String initScript : containerConfig.getInitPrivilegedScriptPath().get()) {
                             container.withCopyFileToContainer(MountableFile.forClasspathResource(initScript),
                                     "/container-entrypoint-startdb.d/" + initScript);
                         }

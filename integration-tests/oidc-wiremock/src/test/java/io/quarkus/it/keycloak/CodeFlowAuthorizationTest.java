@@ -219,7 +219,7 @@ public class CodeFlowAuthorizationTest {
                 form.getInputByValue("login").click();
                 fail("ID token decryption is disabled");
             } catch (FailingHttpStatusCodeException ex) {
-                assertEquals(500, ex.getResponse().getStatusCode());
+                assertEquals(401, ex.getResponse().getStatusCode());
             }
 
             webClient.getCookieManager().clearCookies();

@@ -22,5 +22,6 @@
         <module>dev-ui-spi</module>
         <module>dev-ui-resources</module>
         <module>dev-ui-tests</module>
+        <module>runtime-dev</module>
     </modules>
 </project>

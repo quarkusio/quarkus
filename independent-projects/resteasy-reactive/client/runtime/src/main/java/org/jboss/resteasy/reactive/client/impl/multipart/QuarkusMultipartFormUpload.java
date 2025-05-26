@@ -47,7 +47,8 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
         this.context = context;
         this.pending = new InboundBuffer<>(context)
                 .handler(this::handleChunk)
-                .drainHandler(v -> run()).pause();
+                .drainHandler(v -> run())
+                .pause();
         this.request = new DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1,
                 io.netty.handler.codec.http.HttpMethod.POST,

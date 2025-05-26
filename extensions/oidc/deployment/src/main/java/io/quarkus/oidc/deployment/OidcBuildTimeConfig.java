@@ -5,6 +5,7 @@ import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigRoot;
 import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
+import io.smallrye.config.WithName;
 
 /**
  * Build time configuration for OIDC.
@@ -31,4 +32,12 @@ public interface OidcBuildTimeConfig {
      */
     @WithDefault("true")
     boolean defaultTokenCacheEnabled();
+
+    /**
+     * Whether the OIDC extension should automatically register a health check for OIDC tenants
+     * when a Health Check capability is present.
+     */
+    @WithName("health.enabled")
+    @WithDefault("false")
+    boolean healthEnabled();
 }

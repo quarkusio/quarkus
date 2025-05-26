@@ -223,6 +223,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: co.elastic.clients:elasticsearch-java
         update-types: ["version-update:semver-major"]
+      # Expressly, as an EL implementation is tightly coupled with the Jakarta Validation and Hibernate Validator versions in use
+      # Hence we update major/minor Expressly versions manually.
+      - dependency-name: org.glassfish.expressly:expressly
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     rebase-strategy: disabled
   - package-ecosystem: gradle
     directory: "/devtools/gradle"

@@ -6,6 +6,7 @@ import '@vaadin/text-field';
 import '@vaadin/text-area';
 import '@vaadin/form-layout';
 import '@vaadin/progress-bar';
+import '@vaadin/tooltip';
 import '@vaadin/checkbox';
 import '@vaadin/grid';
 import 'qui-alert';
@@ -22,15 +23,13 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     static styles = css`
         .button {
             cursor: pointer;
-        }
-        .clearIcon {
-            color: var(--lumo-warning-text-color);
         }`;
 
     static properties = {
         _ds: {state: true},
         _selectedDs: {state: true},
-        _createDialogOpened: {state: true}
+        _createDialogOpened: {state: true},
+        _cleanDisabled: {state: true}
     }
     
     constructor() { 
@@ -38,6 +37,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
         this._ds = null;
         this._selectedDs = null;
         this._createDialogOpened = false;
+        this._cleanDisabled = true;
     }    
     
     connectedCallback() {
@@ -47,7 +47,11 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
 
     hotReload(){
         this.jsonRpc.getDatasources().then(jsonRpcResponse => {
-          this._ds = jsonRpcResponse.result;
+            this._ds = jsonRpcResponse.result;
+        });
+        
+        this.jsonRpc.isCleanDisabled().then(jsonRpcResponse => {
+            this._cleanDisabled = jsonRpcResponse.result;
         });
     }
 
@@ -81,13 +85,18 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
 
     _renderMigrationButtons(ds) {
         if(ds.hasMigrations){
-            return html`
-                <vaadin-button theme="small" @click=${() => this._clean(ds)} class="button">
-                    <vaadin-icon class="clearIcon" icon="font-awesome-solid:broom"></vaadin-icon> Clean
-                </vaadin-button>
+            let colorvar = this._cleanDisabled ? '--lumo-disabled-text-color' : '--lumo-warning-text-color';
+            return html`<div id=${ds.name} style="display: inline-block;">
+                <vaadin-button theme="small" @click=${() => this._clean(ds)} class="button" ?disabled=${this._cleanDisabled}>
+                    <vaadin-icon style="color: var(${colorvar});" icon="font-awesome-solid:broom"></vaadin-icon> Clean
+                </vaadin-button></div>
                 <vaadin-button theme="small" @click=${() => this._migrate(ds)} class="button">
                     <vaadin-icon icon="font-awesome-solid:arrow-right-arrow-left"></vaadin-icon> Migrate
-                </vaadin-button>`;
+                </vaadin-button>
+                ${this._cleanDisabled
+                    ? html`<vaadin-tooltip for="${ds.name}" text="Flyway clean has been disabled via quarkus.flyway.clean-disabled=true"></vaadin-tooltip>`
+                    : null}
+                `;
         }
     }
     
@@ -146,6 +155,7 @@ export class QwcFlywayDatasources extends QwcHotReloadElement {
     _migrate(ds) {
         this.jsonRpc.migrate({ds: ds.name}).then(jsonRpcResponse => {
             this._showResultNotification(jsonRpcResponse.result);
+            this.hotReload();
         });
     }
 

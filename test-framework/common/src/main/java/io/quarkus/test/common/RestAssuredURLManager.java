@@ -8,6 +8,7 @@ import org.eclipse.microprofile.config.ConfigProvider;
 import io.restassured.RestAssured;
 import io.restassured.config.HttpClientConfig;
 import io.restassured.config.RestAssuredConfig;
+import io.restassured.specification.RequestSpecification;
 
 /**
  * Utility class that sets the rest assured port to the default test port and meaningful timeouts.
@@ -26,6 +27,7 @@ public class RestAssuredURLManager {
     private static String oldBaseURI;
     private static String oldBasePath;
     private static Object oldRestAssuredConfig; // we can't declare the type here as that would prevent this class for being loaded if RestAssured is not present
+    private static Object oldRequestSpecification;
 
     private static final boolean REST_ASSURED_PRESENT;
 
@@ -113,14 +115,17 @@ public class RestAssuredURLManager {
             RestAssured.basePath = bp.toString();
         }
 
+        oldRestAssuredConfig = RestAssured.config();
+
         Duration timeout = ConfigProvider.getConfig()
                 .getOptionalValue("quarkus.http.test-timeout", Duration.class).orElse(Duration.ofSeconds(30));
         configureTimeouts(timeout);
+
+        oldRequestSpecification = RestAssured.requestSpecification;
+        RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
     private static void configureTimeouts(Duration d) {
-        oldRestAssuredConfig = RestAssured.config();
-
         RestAssured.config = RestAssured.config().httpClient(new HttpClientConfig()
                 .setParam("http.conn-manager.timeout", d.toMillis()) // this needs to be long
                 .setParam("http.connection.timeout", (int) d.toMillis()) // this needs to be int
@@ -136,5 +141,6 @@ public class RestAssuredURLManager {
         RestAssured.baseURI = oldBaseURI;
         RestAssured.basePath = oldBasePath;
         RestAssured.config = (RestAssuredConfig) oldRestAssuredConfig;
+        RestAssured.requestSpecification = (RequestSpecification) oldRequestSpecification;
     }
 }

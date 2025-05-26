@@ -1,5 +1,7 @@
 package io.quarkus.devui.tests;
 
+import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
+
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -8,13 +10,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.quarkus.test.config.TestConfigProviderResolver;
 
 public abstract class DevUIBuildTimeDataTest {
 
@@ -26,9 +31,9 @@ public abstract class DevUIBuildTimeDataTest {
     private final JsonFactory factory = mapper.getFactory();
 
     public DevUIBuildTimeDataTest(String namespace) {
-        String testUrl = ConfigProvider.getConfig().getValue("test.url", String.class);
-        String nonApplicationRoot = ConfigProvider.getConfig()
-                .getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
+        Config config = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT);
+        String testUrl = config.getValue("test.url", String.class);
+        String nonApplicationRoot = config.getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
         if (!nonApplicationRoot.startsWith("/")) {
             nonApplicationRoot = "/" + nonApplicationRoot;
         }

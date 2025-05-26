@@ -113,7 +113,7 @@ public class CreateJBangMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to resolve Quarkus extension catalog", e);
         }
 
-        final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder()
+        final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder(log)
                 .catalog(catalog)
                 .artifactResolver(mvn)
                 .build();

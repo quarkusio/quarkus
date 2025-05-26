@@ -1,6 +1,6 @@
 package io.quarkus.test.junit.classloading;
 
-import io.quarkus.deployment.dev.testing.TestConfig;
+import io.quarkus.deployment.dev.testing.TestConfigCustomizer;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 import io.smallrye.config.SmallRyeConfig;
@@ -17,9 +17,8 @@ public class QuarkusTestConfigProviderResolver extends SmallRyeConfigProviderRes
         try {
             Thread.currentThread().setContextClassLoader(classLoader);
             SmallRyeConfig config = ConfigUtils.configBuilder(false, true, LaunchMode.TEST)
-                    .withProfile(LaunchMode.TEST.getDefaultProfile())
-                    .withMapping(TestConfig.class, "quarkus.test")
                     .forClassLoader(classLoader)
+                    .withCustomizers(new TestConfigCustomizer(LaunchMode.TEST))
                     .build();
 
             // See comments on AbstractJVMTestExtension#evaluateExecutionCondition for why this is the system classloader

@@ -38,7 +38,6 @@ import io.quarkus.bootstrap.app.CuratedApplication;
 import io.quarkus.bootstrap.app.StartupAction;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.bootstrap.resolver.AppModelResolverException;
-import io.quarkus.logging.Log;
 import io.quarkus.test.junit.AppMakerHelper;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 import io.quarkus.test.junit.QuarkusTestExtension;
@@ -53,7 +52,7 @@ import io.quarkus.test.junit.TestResourceUtil;
  * We need to load all our test classes in one go, during the discovery phase, before we start the applications.
  * We may need several applications and therefore, several classloaders, depending on what profiles are set.
  * To solve that, we prepare the applications, to get classloaders, and file them here.
- *
+ * <p>
  * Final, since some code does instanceof checks using the class name.
  */
 public final class FacadeClassLoader extends ClassLoader implements Closeable {
@@ -70,7 +69,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
     private static final Map<String, CuratedApplication> curatedApplications = new HashMap<>();
 
     // JUnit discovery is single threaded, so no need for concurrency on this map
-    private final Map<String, StartupAction> runtimeClassLoaders = new HashMap<>();
+    private final Map<String, QuarkusClassLoader> runtimeClassLoaders = new HashMap<>();
     private static final String NO_PROFILE = "no-profile";
 
     /*
@@ -225,7 +224,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        Log.debugf("Facade classloader loading %s", name);
+        log.debugf("Facade classloader loading %s", name);
 
         if (peekingClassLoader == null) {
             throw new RuntimeException("Attempted to load classes with a closed classloader: " + this);
@@ -430,7 +429,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             // With -Dnative loading the KeycloakRealmResourceManager gives a class not found exception for junit's TestRule
             // java.lang.RuntimeException: java.lang.NoClassDefFoundError: org/junit/rules/TestRule
             // TODO it would be nice to diagnose why that's happening
-            Log.warn("Could not discover field annotations: " + e);
+            log.warn("Could not discover field annotations: " + e);
             return false;
         }
 
@@ -440,8 +439,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         String profileKey = getProfileKey(profile);
 
         try {
-            StartupAction startupAction;
             String key;
+            QuarkusClassLoader classLoader;
 
             // We cannot directly access TestResourceUtil as long as we're in the core module, but the app classloaders can.
             // But, chicken-and-egg, we may not have an app classloader yet. However, if we don't, we won't need to worry about restarts, but this instance clearly cannot need a restart
@@ -451,8 +450,8 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
             // If we make a classloader with a null profile, we get the problem of starting dev services multiple times, which is very bad (if temporary) - once that issue is fixed, could reconsider
             if (keyMakerClassLoader == null) {
                 // Making a classloader uses the profile key to look up a curated application
-                startupAction = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
-                keyMakerClassLoader = startupAction.getClassLoader();
+                classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
+                keyMakerClassLoader = classLoader;
 
                 // We cannot use the startup action one because it's a base runtime classloader and so will not have the right access to application classes (they're in its banned list)
                 final String resourceKey = requiredTestClass != null ? getResourceKey(requiredTestClass, profile) : null;
@@ -464,18 +463,15 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
 
                 // The resource key might be null, and that's ok
                 key = profileKey + resourceKey;
-                startupAction = runtimeClassLoaders.get(key);
-                if (startupAction == null) {
+                classLoader = runtimeClassLoaders.get(key);
+                if (classLoader == null) {
                     // Making a classloader uses the profile key to look up a curated application
-                    startupAction = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
+                    classLoader = getOrCreateRuntimeClassLoader(profileKey, requiredTestClass, profile);
                 }
-
             }
 
-            // If we didn't have a classloader and didn't get a resource key
-            runtimeClassLoaders.put(key, startupAction);
-
-            return startupAction.getClassLoader();
+            runtimeClassLoaders.put(key, classLoader);
+            return classLoader;
         } catch (RuntimeException e) {
             // Exceptions here get swallowed by the JUnit framework and we don't get any debug information unless we print it ourself
             e.printStackTrace();
@@ -544,13 +540,27 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         return curatedApplication.getOrCreateBaseRuntimeClassLoader();
     }
 
-    private StartupAction getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
+    private QuarkusClassLoader getOrCreateRuntimeClassLoader(String key, Class<?> requiredTestClass, Class<?> profile)
             throws ClassNotFoundException, NoSuchMethodException, InvocationTargetException, InstantiationException,
             IllegalAccessException, AppModelResolverException, BootstrapException, IOException {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         CuratedApplication curatedApplication = getOrCreateCuratedApplication(key, requiredTestClass);
-        StartupAction startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
-                curatedApplication, profile);
 
+        // Before interacting with the profiles, set the TCCL to one which is not the FacadeClassloader
+        // This could also go in AppMakerHelper.setExtraProperties, but then it affects more code paths
+        StartupAction startupAction;
+        try {
+            if (profile != null) {
+                Thread.currentThread().setContextClassLoader(profile.getClassLoader());
+            }
+            startupAction = AppMakerHelper.getStartupAction(requiredTestClass,
+                    curatedApplication, profile);
+
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
+        }
+
+        // If the try block fails, this would be null, but there's no catch, so we'd never get to this code
         QuarkusClassLoader loader = startupAction.getClassLoader();
 
         Class<?> configProviderResolverClass = loader.loadClass(ConfigProviderResolver.class.getName());
@@ -562,7 +572,7 @@ public final class FacadeClassLoader extends ClassLoader implements Closeable {
         configProviderResolverClass.getDeclaredMethod("setInstance", configProviderResolverClass)
                 .invoke(null, testConfigProviderResolver);
 
-        return startupAction;
+        return loader;
 
     }
 

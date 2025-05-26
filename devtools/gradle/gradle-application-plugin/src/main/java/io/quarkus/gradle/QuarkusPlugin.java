@@ -681,8 +681,8 @@ public class QuarkusPlugin implements Plugin<Project> {
     protected void visitProjectDependencies(Project project, Project dep, Set<String> visited) {
         final Configuration compileConfig = dep.getConfigurations().findByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME);
         if (compileConfig != null) {
-            final Configuration compilePlusRuntimeConfig = dep.getConfigurations().detachedConfiguration()
-                    .extendsFrom(compileConfig);
+            final Configuration compilePlusRuntimeConfig = dep.getConfigurations().maybeCreate("compilePlusRuntime");
+            compilePlusRuntimeConfig.extendsFrom(compileConfig);
             final Configuration runtimeOnlyConfig = dep.getConfigurations()
                     .findByName(JavaPlugin.RUNTIME_ONLY_CONFIGURATION_NAME);
             if (runtimeOnlyConfig != null) {
@@ -693,7 +693,7 @@ public class QuarkusPlugin implements Plugin<Project> {
                         Project depProject = null;
 
                         if (d instanceof ProjectDependency) {
-                            depProject = ((ProjectDependency) d).getDependencyProject();
+                            depProject = dep.project(((ProjectDependency) d).getPath());
                         } else if (d instanceof ExternalModuleDependency) {
                             depProject = ToolingUtils.findIncludedProject(project, (ExternalModuleDependency) d);
                         }

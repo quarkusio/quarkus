@@ -15,7 +15,7 @@ import java.util.TreeSet;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.bootstrap.model.ApplicationModel;
-import io.quarkus.deployment.IsDevelopment;
+import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.pkg.builditem.CurateOutcomeBuildItem;
@@ -31,7 +31,7 @@ public class DependenciesProcessor {
 
     private static final String NAMESPACE = "devui-dependencies";
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createAppDeps(BuildProducer<InternalPageBuildItem> menuProducer,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
@@ -59,7 +59,7 @@ public class DependenciesProcessor {
         }
     }
 
-    @BuildStep(onlyIf = IsDevelopment.class)
+    @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
         if (isEnabled()) {

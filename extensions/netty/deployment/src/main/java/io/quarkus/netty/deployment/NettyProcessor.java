@@ -246,7 +246,11 @@ class NettyProcessor {
                 // - io.netty.tryUnsafe
                 // - org.jboss.netty.tryUnsafe
                 // - io.netty.tryReflectionSetAccessible
-                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0");
+                .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0")
+                // Runtime initialize classes to allow netty to use the field offset for testing if unsafe is available or not
+                // See https://github.com/quarkusio/quarkus/issues/47903#issuecomment-2890924970
+                .addRuntimeReinitializedClass("io.netty.util.AbstractReferenceCounted")
+                .addRuntimeReinitializedClass("io.netty.buffer.AbstractReferenceCountedByteBuf");
 
         if (QuarkusClassLoader.isClassPresentAtRuntime("io.netty.buffer.UnpooledByteBufAllocator")) {
             // Runtime initialize due to the use of the io.netty.util.internal.PlatformDependent class

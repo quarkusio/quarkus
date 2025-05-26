@@ -55,6 +55,7 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
     PrepareResult prepareResult;
     LinkedBlockingDeque<Runnable> shutdownTasks;
+    protected ClassLoader originalCl;
 
     /**
      * The result from an {@link Launch} test
@@ -110,7 +111,8 @@ public class QuarkusMainTestExtension extends AbstractJvmQuarkusTestExtension
 
         var result = AppMakerHelper.prepare(requiredTestClass, curatedApplication, profile);
         if (result.profileInstance() != null) {
-            shutdownTasks.add(AppMakerHelper.setExtraProperties(profile, result.profileInstance()));
+            Runnable configCleaner = AppMakerHelper.setExtraPropertiesRestorably(profile, result.profileInstance());
+            shutdownTasks.add(configCleaner);
         }
         return result;
     }

@@ -19,6 +19,7 @@ import org.eclipse.aether.artifact.Artifact;
 
 import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 import io.quarkus.bootstrap.util.DependencyUtils;
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.registry.catalog.Extension;
 import io.quarkus.registry.catalog.ExtensionCatalog;
@@ -33,6 +34,7 @@ public final class CodestartResourceLoadersBuilder {
     private MavenArtifactResolver artifactResolver;
     private String baseCodestartsArtifactCoords = BASE_CODESTARTS_ARTIFACT_COORDS;
     private Collection<String> extraCodestartsArtifactCoords = new ArrayList<>();
+    private MessageWriter log;
 
     private static String retrieveBaseCodestartsArtifactCoords() {
         final String artifact = PropertiesUtil.getProperty(BASE_CODESTARTS_ARTIFACT_PROPERTY);
@@ -52,19 +54,20 @@ public final class CodestartResourceLoadersBuilder {
         }
     }
 
-    private CodestartResourceLoadersBuilder() {
+    private CodestartResourceLoadersBuilder(MessageWriter log) {
+        this.log = log;
     }
 
-    public static CodestartResourceLoadersBuilder codestartLoadersBuilder() {
-        return new CodestartResourceLoadersBuilder();
+    public static CodestartResourceLoadersBuilder codestartLoadersBuilder(MessageWriter log) {
+        return new CodestartResourceLoadersBuilder(log);
     }
 
-    public static List<ResourceLoader> getCodestartResourceLoaders() {
-        return codestartLoadersBuilder().build();
+    public static List<ResourceLoader> getCodestartResourceLoaders(MessageWriter log) {
+        return codestartLoadersBuilder(log).build();
     }
 
-    public static List<ResourceLoader> getCodestartResourceLoaders(ExtensionCatalog catalog) {
-        return codestartLoadersBuilder().catalog(catalog).build();
+    public static List<ResourceLoader> getCodestartResourceLoaders(MessageWriter log, ExtensionCatalog catalog) {
+        return codestartLoadersBuilder(log).catalog(catalog).build();
     }
 
     public CodestartResourceLoadersBuilder catalog(ExtensionCatalog catalog) {
@@ -94,13 +97,14 @@ public final class CodestartResourceLoadersBuilder {
 
     public List<ResourceLoader> build() {
         return getCodestartResourceLoaders(baseCodestartsArtifactCoords, extraCodestartsArtifactCoords, catalog,
-                artifactResolver == null ? QuarkusProjectHelper.artifactResolver() : artifactResolver);
+                artifactResolver == null ? QuarkusProjectHelper.artifactResolver() : artifactResolver, log);
     }
 
     private static List<ResourceLoader> getCodestartResourceLoaders(String baseCodestartsArtifactCoords,
             Collection<String> extraCodestartsArtifactCoords,
             ExtensionCatalog catalog,
-            MavenArtifactResolver mvn) {
+            MavenArtifactResolver mavenArtifactResolver,
+            MessageWriter log) {
 
         final Map<String, Artifact> codestartsArtifacts = new LinkedHashMap<>();
 
@@ -146,10 +150,11 @@ public final class CodestartResourceLoadersBuilder {
         final List<ResourceLoader> codestartResourceLoaders = new ArrayList<>(codestartsArtifacts.size());
         for (Artifact a : codestartsArtifacts.values()) {
             try {
-                final File artifactFile = mvn.resolve(a).getArtifact().getFile();
+                final File artifactFile = mavenArtifactResolver.resolve(a).getArtifact().getFile();
                 codestartResourceLoaders.add(resolveFileResourceLoader(artifactFile));
             } catch (Exception e) {
-                throw new RuntimeException("Failed to resolve codestart artifact " + a, e);
+                log.warn("Unable to resolve codestart artifact for %s: %s", a, e.getMessage());
+                continue;
             }
         }
         return codestartResourceLoaders;

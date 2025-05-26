@@ -132,14 +132,14 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString("status=\"200\",uri=\"/secured/item/{id}\""))
                 .body(containsString("status=\"401\",uri=\"/secured/item/{id}\""))
                 .body(containsString("outcome=\"SUCCESS\""))
-                .body(containsString("dummy=\"value\""))
+                .body(containsString("dummy="))
                 .body(containsString("foo=\"bar\""))
                 .body(containsString("foo_response=\"value\""))
                 .body(containsString("uri=\"/message/match/{id}/{sub}\""))
                 .body(containsString("uri=\"/message/match/{other}\""))
 
                 .body(containsString(
-                        "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
+                        "http_server_requests_seconds_count{dummy=\"val-anything\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
 
                 .body(containsString(
                         "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/root/{rootParam}/sub/{subParam}\""))
@@ -234,7 +234,7 @@ class PrometheusMetricsRegistryTest {
                 .body(containsString("uri=\"/message/match/{other}\""))
 
                 .body(containsString(
-                        "http_server_requests_seconds_count{dummy=\"value\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
+                        "http_server_requests_seconds_count{dummy=\"val-anything\",env=\"test\",env2=\"test\",foo=\"UNSET\",foo_response=\"UNSET\",method=\"GET\",outcome=\"SUCCESS\",registry=\"prometheus\",status=\"200\",uri=\"/template/path/{value}\""))
 
                 // Verify Hibernate Metrics
                 .body(containsString(

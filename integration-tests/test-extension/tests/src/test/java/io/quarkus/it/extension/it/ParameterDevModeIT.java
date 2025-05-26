@@ -12,6 +12,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 import io.quarkus.maven.it.RunAndCheckMojoTestBase;
 import io.quarkus.maven.it.continuoustesting.ContinuousTestingMavenTestUtils;
+import io.quarkus.test.config.QuarkusClassOrderer;
 
 @DisabledIfSystemProperty(named = "quarkus.test.native", matches = "true")
 public class ParameterDevModeIT extends RunAndCheckMojoTestBase {
@@ -46,6 +47,16 @@ public class ParameterDevModeIT extends RunAndCheckMojoTestBase {
         // so we need to check the pass count explicitly
         Assertions.assertEquals(0, results.getTestsFailed());
         Assertions.assertEquals(1, results.getTestsPassed());
+
+        // Also check stdout out for errors of the form
+        // 2025-05-12 15:58:46,729 WARNING [org.jun.jup.eng.con.InstantiatingConfigurationParameterConverter] (Test runner thread) Failed to load default class orderer class 'io.quarkus.test.config.QuarkusClassOrderer' set via the 'junit.jupiter.testclass.order.default' configuration parameter. Falling back to default behavior.: java.lang.ClassNotFoundException: io.quarkus.test.config.QuarkusClassOrderer
+        //	at java.base/jdk.internal.loader.BuiltinClassLoader.loadClass(BuiltinClassLoader.java:641)
+        //	at java.base/jdk.internal.loader.ClassLoaders$AppClassLoader.loadClass(ClassLoaders.java:188)
+        //	at java.base/java.lang.ClassLoader.loadClass(ClassLoader.java:526)
+        // These are hard to test directly for but are not wanted
+        String logs = running.log();
+        assertThat(logs).doesNotContainIgnoringCase("java.lang.ClassNotFoundException")
+                .doesNotContainIgnoringCase(QuarkusClassOrderer.class.getName());
     }
 
 }

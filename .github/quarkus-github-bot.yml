@@ -15,6 +15,7 @@ workflows:
           - "**/*.adoc"
 workflowRunAnalysis:
   workflows: ["Quarkus CI", "Quarkus Documentation CI"]
+  ignoredFlakyTests: ["org.acme.FlakyHelloResourceTest", "org.acme.FlakyHelloResourceWithSomeProfileTest", "org.acme.FlakyHelloResourceWithAnotherProfileTest"]
 projectsClassic:
   rules:
     - labels: [area/documentation]

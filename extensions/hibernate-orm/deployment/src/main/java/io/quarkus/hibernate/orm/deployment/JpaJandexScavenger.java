@@ -429,24 +429,13 @@ public final class JpaJandexScavenger {
 
         for (AnnotationInstance annotation : jpaAnnotations) {
             AnnotationTarget target = annotation.target();
-            ClassInfo beanType;
-            switch (target.kind()) {
-                case CLASS:
-                    beanType = target.asClass();
-                    break;
-                case FIELD:
-                    beanType = target.asField().declaringClass();
-                    break;
-                case METHOD:
-                    beanType = target.asMethod().declaringClass();
-                    break;
-                case METHOD_PARAMETER:
-                case TYPE:
-                case RECORD_COMPONENT:
-                default:
-                    throw new IllegalArgumentException(
-                            "Annotation " + dotName + " was not expected on a target of kind " + target.kind());
-            }
+            ClassInfo beanType = switch (target.kind()) {
+                case CLASS -> target.asClass();
+                case FIELD -> target.asField().declaringClass();
+                case METHOD -> target.asMethod().declaringClass();
+                default -> throw new IllegalArgumentException(
+                        "Annotation " + dotName + " was not expected on a target of kind " + target.kind());
+            };
             DotName beanTypeDotName = beanType.name();
             collector.potentialCdiBeanTypes.add(beanTypeDotName);
         }

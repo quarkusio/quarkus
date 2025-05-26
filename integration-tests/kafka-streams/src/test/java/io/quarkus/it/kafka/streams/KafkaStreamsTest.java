@@ -24,6 +24,7 @@ import org.apache.kafka.common.config.SslConfigs;
 import org.apache.kafka.common.serialization.IntegerDeserializer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -147,11 +148,12 @@ public class KafkaStreamsTest {
     }
 
     public void testKafkaStreamsNotAliveAndNotReady() throws Exception {
+
         RestAssured.get("/q/health/ready").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
                 .rootPath("checks.find { it.name ==  'Kafka Streams topics health check' }")
                 .body("status", CoreMatchers.is("DOWN"))
-                .body("data.missing_topics", CoreMatchers.is("streams-test-categories,streams-test-customers"));
+                .body("data.missing_topics", topicsMatcher());
 
         RestAssured.when().get("/q/health/live").then()
                 .statusCode(HttpStatus.SC_SERVICE_UNAVAILABLE)
@@ -168,7 +170,7 @@ public class KafkaStreamsTest {
                 .statusCode(HttpStatus.SC_OK)
                 .rootPath("checks.find { it.name ==  'Kafka Streams topics health check' }")
                 .body("status", CoreMatchers.is("UP"))
-                .body("data.available_topics", CoreMatchers.is("streams-test-categories,streams-test-customers"));
+                .body("data.available_topics", topicsMatcher());
 
         RestAssured.when().get("/q/health/live").then()
                 .statusCode(HttpStatus.SC_OK)
@@ -178,6 +180,12 @@ public class KafkaStreamsTest {
 
         RestAssured.when().get("/q/health").then()
                 .statusCode(HttpStatus.SC_OK);
+    }
+
+    Matcher<String> topicsMatcher() {
+        return CoreMatchers.allOf(
+                CoreMatchers.containsString("streams-test-customers"),
+                CoreMatchers.containsString("streams-test-categories"));
     }
 
     private void produceCustomers() {

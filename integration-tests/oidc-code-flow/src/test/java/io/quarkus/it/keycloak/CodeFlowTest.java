@@ -42,6 +42,7 @@ import io.quarkus.test.common.QuarkusTestResource;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.keycloak.client.KeycloakTestClient;
 import io.restassured.RestAssured;
+import io.restassured.response.Response;
 import io.smallrye.jwt.build.Jwt;
 import io.smallrye.jwt.util.KeyUtils;
 import io.vertx.core.json.JsonObject;
@@ -140,7 +141,22 @@ public class CodeFlowTest {
                     .then().statusCode(401);
 
             webClient.getCookieManager().clearCookies();
+
+            checkHealth();
         }
+    }
+
+    private static void checkHealth() {
+        Response healthReadyResponse = RestAssured.when().get("http://localhost:8081/q/health/ready");
+        JsonObject jsonHealth = new JsonObject(healthReadyResponse.asString());
+        JsonObject oidcCheck = jsonHealth.getJsonArray("checks").getJsonObject(0);
+        assertEquals("UP", oidcCheck.getString("status"));
+        assertEquals("OIDC Provider Health Check", oidcCheck.getString("name"));
+
+        JsonObject data = oidcCheck.getJsonObject("data");
+        assertEquals("OK", data.getString("tenant-nonce"));
+        assertEquals("OK", data.getString("Quarkus Keycloak"));
+
     }
 
     @Test

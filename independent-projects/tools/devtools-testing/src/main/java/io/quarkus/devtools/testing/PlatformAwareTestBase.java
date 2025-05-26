@@ -7,6 +7,7 @@ import java.util.Properties;
 
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
 import io.quarkus.platform.descriptor.loader.json.ResourceLoader;
 import io.quarkus.platform.tools.ToolsUtils;
@@ -21,7 +22,7 @@ public class PlatformAwareTestBase {
     private Properties quarkusProps;
 
     protected List<ResourceLoader> getCodestartsResourceLoaders() {
-        return getCodestartResourceLoaders(getExtensionsCatalog());
+        return getCodestartResourceLoaders(MessageWriter.info(), getExtensionsCatalog());
     }
 
     protected ExtensionCatalog getExtensionsCatalog() {

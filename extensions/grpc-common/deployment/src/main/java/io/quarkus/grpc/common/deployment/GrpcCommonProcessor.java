@@ -29,7 +29,7 @@ public class GrpcCommonProcessor {
 
         // We also need to include enums.
         Collection<ClassInfo> enums = combinedIndex.getIndex()
-                .getAllKnownSubclasses(GrpcDotNames.PROTOCOL_MESSAGE_ENUM);
+                .getAllKnownImplementations(GrpcDotNames.PROTOCOL_MESSAGE_ENUM);
         for (ClassInfo en : enums) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(en.name().toString()).methods()
                     .fields().build());

@@ -16,7 +16,7 @@ include::_attributes.adoc[]
 :mutiny: https://smallrye.io/smallrye-mutiny/latest/
 :eclipse-vertx: https://vertx.io/
 :camel-smallrye-reactive-messaging: https://camel.apache.org/camel-quarkus/3.8.x/reference/extensions/smallrye-reactive-messaging.html
-:nats-jetstream: https://docs.quarkiverse.io/quarkus-reactive-messsaging-nats-jetstream/dev/index.html
+:nats-jetstream: https://docs.quarkiverse.io/quarkus-reactive-messaging-nats-jetstream/dev/index.html
 :solace-quarkus: https://solacelabs.github.io/solace-quarkus/
 :http-websocket-connector: https://quarkus.io/extensions/io.quarkiverse.reactivemessaging.http/quarkus-reactive-messaging-http/
 

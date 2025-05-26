@@ -532,6 +532,8 @@ export class QwcAgroalDatasource extends QwcHotReloadElement {
                 }else {
                     return this._renderTextCell(value, colType);
                 }
+            }else {
+                return this._renderTextCell(value, "String");
             }
         }
     }

@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -16,9 +17,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.logging.Logger;
 
 import io.netty.handler.codec.http.HttpHeaderNames;
+import io.quarkus.runtime.configuration.MemorySize;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
@@ -71,6 +74,11 @@ public class MockEventServer implements Closeable {
         vertx = Vertx.vertx(new VertxOptions().setMaxWorkerExecuteTime(60).setMaxWorkerExecuteTimeUnit(TimeUnit.MINUTES));
         HttpServerOptions options = new HttpServerOptions();
         options.setPort(port == 0 ? -1 : port);
+        Optional<MemorySize> maybeMaxHeadersSize = ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.http.limits.max-header-size", MemorySize.class);
+        if (maybeMaxHeadersSize.isPresent()) {
+            options.setMaxHeaderSize(maybeMaxHeadersSize.get().asBigInteger().intValueExact());
+        }
         httpServer = vertx.createHttpServer(options);
         router = Router.router(vertx);
         setupRoutes();

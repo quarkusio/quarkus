@@ -800,7 +800,8 @@ public class NativeImageBuildStep {
                      * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
                      * debug info for debugging and monitoring tools. This parameter may break compatibility with Truffle.
                      * Affected users should explicitly pass {@code -H:-TrackNodeSourcePosition} through
-                     * {@code quarkus.native.additional-build-args} to override it.
+                     * {@code quarkus.native.additional-build-args} or {@code quarkus.native.additional-build-args-append}
+                     * to override it.
                      *
                      * See https://github.com/quarkusio/quarkus/issues/30772 for more details.
                      */
@@ -849,8 +850,9 @@ public class NativeImageBuildStep {
 
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
-                 * quarkus.native.additional-build-args. So if you need a parameter to be overridable through
-                 * quarkus.native.additional-build-args please make sure to add it before this call.
+                 * quarkus.native.additional-build-args or quarkus.native.additional-build-args-append. So if you need
+                 * a parameter to be overridable through quarkus.native.additional-build-args or
+                 * quarkus.native.additional-build-args-append please make sure to add it before this call.
                  */
                 handleAdditionalProperties(nativeImageArgs);
 
@@ -1061,8 +1063,13 @@ public class NativeImageBuildStep {
             }
 
             private void handleAdditionalProperties(List<String> command) {
-                if (nativeConfig.additionalBuildArgs().isPresent()) {
-                    List<String> strings = nativeConfig.additionalBuildArgs().get();
+                Optional<List<String>>[] additionalBuildArgs = new Optional[] { nativeConfig.additionalBuildArgs(),
+                        nativeConfig.additionalBuildArgsAppend() };
+                for (Optional<List<String>> args : additionalBuildArgs) {
+                    if (args.isEmpty()) {
+                        continue;
+                    }
+                    List<String> strings = args.get();
                     for (String buildArg : strings) {
                         String trimmedBuildArg = buildArg.trim();
                         if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {

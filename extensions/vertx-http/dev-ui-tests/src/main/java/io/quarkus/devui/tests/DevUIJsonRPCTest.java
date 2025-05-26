@@ -1,5 +1,7 @@
 package io.quarkus.devui.tests;
 
+import static io.quarkus.runtime.LaunchMode.DEVELOPMENT;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Map;
@@ -7,7 +9,7 @@ import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.microprofile.config.ConfigProvider;
+import org.eclipse.microprofile.config.spi.ConfigProviderResolver;
 import org.jboss.logging.Logger;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -19,6 +21,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import io.quarkus.test.config.TestConfigProviderResolver;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClient;
@@ -40,13 +43,14 @@ public class DevUIJsonRPCTest {
     private final String testUrl;
 
     public DevUIJsonRPCTest(String namespace) {
-        this(namespace, ConfigProvider.getConfig().getValue("test.url", String.class));
+        this(namespace, ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT)
+                .getValue("test.url", String.class));
     }
 
     public DevUIJsonRPCTest(String namespace, String testUrl) {
         this.namespace = namespace;
         this.testUrl = testUrl;
-        String nonApplicationRoot = ConfigProvider.getConfig()
+        String nonApplicationRoot = ((TestConfigProviderResolver) ConfigProviderResolver.instance()).getConfig(DEVELOPMENT)
                 .getOptionalValue("quarkus.http.non-application-root-path", String.class).orElse("q");
         if (!nonApplicationRoot.startsWith("/")) {
             nonApplicationRoot = "/" + nonApplicationRoot;

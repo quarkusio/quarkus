@@ -189,18 +189,22 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                         persistenceUnitName,
                         puConfig.unsupportedProperties().keySet());
             }
+            Set<String> overriddenProperties = new HashSet<>();
             for (Map.Entry<String, String> entry : puConfig.unsupportedProperties().entrySet()) {
                 var key = entry.getKey();
-                if (runtimeSettingsBuilder.get(key) != null) {
-                    log.warnf("Persistence-unit [%s] sets property '%s' to a custom value through '%s',"
-                            + " but Quarkus already set that property independently."
-                            + " The custom value will be ignored.",
-                            persistenceUnitName, key,
-                            HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnit.getConfigurationName(),
-                                    "unsupported-properties.\"" + key + "\""));
-                    continue;
+                var value = runtimeSettingsBuilder.get(key);
+                if (value != null && !(value instanceof String stringValue && stringValue.isBlank())) {
+                    overriddenProperties.add(key);
                 }
                 runtimeSettingsBuilder.put(entry.getKey(), entry.getValue());
+            }
+            if (!overriddenProperties.isEmpty()) {
+                log.warnf("Persistence-unit [%s] sets unsupported properties that override Quarkus' own settings."
+                        + " These properties may break assumptions in Quarkus code and cause malfunctions."
+                        + " If this override is absolutely necessary, make sure to file a feature request or bug report so that a solution can be implemented in Quarkus."
+                        + " Unsupported properties that override Quarkus' own settings: %s",
+                        persistenceUnitName,
+                        overriddenProperties);
             }
 
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();

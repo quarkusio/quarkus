@@ -51,6 +51,7 @@ import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 import org.jboss.resteasy.reactive.server.SimpleResourceInfo;
 import org.jboss.resteasy.reactive.server.core.multipart.FormData;
 import org.jboss.resteasy.reactive.server.core.serialization.EntityWriter;
+import org.jboss.resteasy.reactive.server.handlers.RestInitialHandler;
 import org.jboss.resteasy.reactive.server.injection.ResteasyReactiveInjectionContext;
 import org.jboss.resteasy.reactive.server.jaxrs.AsyncResponseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.ContainerRequestContextImpl;
@@ -62,6 +63,7 @@ import org.jboss.resteasy.reactive.server.jaxrs.ResourceContextImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseEventSinkImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.SseImpl;
 import org.jboss.resteasy.reactive.server.jaxrs.UriInfoImpl;
+import org.jboss.resteasy.reactive.server.mapping.RequestMapper;
 import org.jboss.resteasy.reactive.server.mapping.RuntimeResource;
 import org.jboss.resteasy.reactive.server.mapping.URITemplate;
 import org.jboss.resteasy.reactive.server.multipart.FormValue;
@@ -156,6 +158,8 @@ public abstract class ResteasyReactiveRequestContext
     private FormData formData;
     private boolean producesChecked;
 
+    private RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch;
+
     public ResteasyReactiveRequestContext(Deployment deployment,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
         super(handlerChain, abortHandlerChain, requestContext);
@@ -201,6 +205,44 @@ public abstract class ResteasyReactiveRequestContext
                     (PreviousResource) getProperty(PreviousResource.PROPERTY_KEY)));
         }
         this.target = target;
+    }
+
+    public void setupInitialMatchAndRestart(RequestMapper.RequestMatch<RestInitialHandler.InitialMatch> initialMatch) {
+        this.initialMatch = initialMatch;
+
+        restart(initialMatch.value.handlers);
+        setMaxPathParams(initialMatch.value.maxPathParams);
+        setRemaining(initialMatch.remaining);
+        for (int i = 0; i < initialMatch.pathParamValues.length; ++i) {
+            String pathParamValue = initialMatch.pathParamValues[i];
+            if (pathParamValue == null) {
+                break;
+            }
+            setPathParamValue(i, initialMatch.pathParamValues[i]);
+        }
+    }
+
+    /**
+     * Restarts handler chain processing if another initial match is found.
+     *
+     * @return true if a restart occurred
+     */
+    public boolean restartWithNextInitialMatch() {
+        initialMatch = new RequestMapper<>(deployment.getClassMappers()).continueMatching(getPathWithoutPrefix(), initialMatch);
+        if (initialMatch == null) {
+            return false;
+        }
+        restart(initialMatch.value.handlers);
+        setMaxPathParams(initialMatch.value.maxPathParams);
+        setRemaining(initialMatch.remaining);
+        for (int i = 0; i < initialMatch.pathParamValues.length; ++i) {
+            String pathParamValue = initialMatch.pathParamValues[i];
+            if (pathParamValue == null) {
+                break;
+            }
+            setPathParamValue(i, initialMatch.pathParamValues[i]);
+        }
+        return true;
     }
 
     /**
@@ -462,12 +504,13 @@ public abstract class ResteasyReactiveRequestContext
 
     public String getAbsoluteURI() {
         // if we never changed the path we can use the vert.x URI
-        if (path == null)
+        if (path == null) {
             return serverRequest().getRequestAbsoluteUri();
+        }
         // Note: we could store our cache as normalised, but I'm not sure if the vertx one is normalised
         if (absoluteUri == null) {
             try {
-                absoluteUri = new URI(scheme, authority, path, null, null).toASCIIString();
+                absoluteUri = new URI(getScheme(), getAuthority(), path, null, null).toASCIIString();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -476,14 +519,16 @@ public abstract class ResteasyReactiveRequestContext
     }
 
     public String getScheme() {
-        if (scheme == null)
+        if (scheme == null) {
             return serverRequest().getRequestScheme();
+        }
         return scheme;
     }
 
     public String getAuthority() {
-        if (authority == null)
+        if (authority == null) {
             return serverRequest().getRequestHost();
+        }
         return authority;
     }
 
@@ -1012,7 +1057,7 @@ public abstract class ResteasyReactiveRequestContext
                         select.destroy(instance);
                     }
                 });
-                return (T) instance;
+                return instance;
             }
         }
         throw new IllegalStateException("Unsupported bean param type: " + type);

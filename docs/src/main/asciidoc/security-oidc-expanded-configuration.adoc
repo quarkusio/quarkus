@@ -1067,6 +1067,20 @@ You can observe an https://quarkus.io/guides/security-openid-connect-multitenanc
 
 You can register xref:security-openid-connect-multitenancy.adoc#tenant-config-resolver[TenantConfigResolver] and build the configuration dynamically, using `OicTenantConfig` builder API, using the request properties such as request path and headers for additional hints or retrieve the matching configuration from the external sources.
 
+.OIDC Health Check
+[options="header"]
+|====
+|Property name |Default |Description
+
+|quarkus.oidc.health.enabled |false|If the OIDC Health Readiness Check must be registered.
+|====
+
+This build-time property can be used to register an `OIDC Provider Health Readiness Check` when the `quarkus-smallrye-health` dependency is included. When the health check is registered, it uses HTTP HEAD to ping the well-known OIDC provider configuration endpoint for every configured OIDC tenant.
+
+Individual OIDC tenant statuses are `OK`, `Not Ready`, `Disabled`, `Unknown` and `Error`.
+
+The OIDC Health check status is `UP` if at least one of the OIDC tenants has an `OK` status and `DOWN` otherwise.
+
 [[typical-property-combinations]]
 == Typical property combinations
 

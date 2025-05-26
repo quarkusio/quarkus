@@ -32,8 +32,8 @@ public class ProducerWithFinalInterceptedClassTest {
     @Test
     public void test() {
         MyNonbean nonbean = Arc.container().instance(MyNonbean.class).get();
-        assertEquals("intercepted: hello1", nonbean.hello1());
-        assertEquals("hello2", nonbean.hello2());
+        assertEquals("intercepted: hello1_foobar", nonbean.hello1());
+        assertEquals("hello2_foobar", nonbean.hello2());
     }
 
     @Retention(RetentionPolicy.RUNTIME)
@@ -53,13 +53,23 @@ public class ProducerWithFinalInterceptedClassTest {
     }
 
     static final class MyNonbean {
+        private final String value;
+
+        MyNonbean() {
+            this(null);
+        }
+
+        MyNonbean(String value) {
+            this.value = value;
+        }
+
         @MyBinding
         String hello1() {
-            return "hello1";
+            return "hello1_" + value;
         }
 
         String hello2() {
-            return "hello2";
+            return "hello2_" + value;
         }
     }
 
@@ -68,7 +78,7 @@ public class ProducerWithFinalInterceptedClassTest {
         @Produces
         @Unremovable
         MyNonbean produce(InterceptionProxy<MyNonbean> proxy) {
-            return proxy.create(new MyNonbean());
+            return proxy.create(new MyNonbean("foobar"));
         }
     }
 }

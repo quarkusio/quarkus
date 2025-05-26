@@ -32,10 +32,10 @@ public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {
     @Override
     public Uni<HealthCheckResponse> callSync(HealthCheck healthCheck) {
         Uni<HealthCheckResponse> healthCheckResponseUni = super.callSync(healthCheck);
+        Context duplicatedContext = VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext());
         return healthCheckResponseUni.runSubscriptionOn(new Executor() {
             @Override
             public void execute(Runnable command) {
-                Context duplicatedContext = VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext());
                 duplicatedContext.executeBlocking(new Callable<Void>() {
                     @Override
                     public Void call() throws Exception {

@@ -864,6 +864,46 @@ link in the Flyway pane. Hit the `Create Initial Migration` button and the follo
 WARNING: This button is simply a convenience to quickly get you started with Flyway, it is up to you to determine how you want to
 manage your database schemas in production. In particular the `migrate-at-start` setting may not be right for all environments.
 
+[[offline]]
+== Offline startup
+
+By default, Hibernate attempts to connect to the database at startup to fetch metadata. This is useful, for example, to validate the schema or create some temporary tables, making the startup process smoother and more user-friendly.
+
+However, in certain environments, such as when running a Quarkus application in a container within a Kubernetes
+cluster, this connection might not be possible. For example, if the application runs in one pod and the database
+in another, the database may not be reachable at startup time.
+To address this, Quarkus provides an _offline startup_ mode, which allows Hibernate to skip connecting to the database
+during application startup.
+
+When using offline startup, it's important to ensure that the database schema has already been created correctly before
+the application starts.
+
+You can rely on xref:flyway.adoc[Flyway], xref:liquibase.adoc[Liquibase] or custom setups to create/migrate your database schema,
+though obviously at a time where the database _is_ accessible --
+Flyway's `migrate-at-start` option in particular will just fail at application startup
+if the database is not reachable.
+
+To enable offline startup, set the following configuration property:
+
+[source,properties]
+.application.properties
+----
+quarkus.hibernate-orm.database.start-offline=true
+----
+
+
+You can also fine-tune dialect behavior for specific databases using additional properties, such as:
+
+[source,properties]
+.application.properties
+----
+quarkus.hibernate-orm."offline".dialect.mariadb.bytes-per-character=1
+quarkus.hibernate-orm."offline".dialect.mariadb.no-backslash-escapes=true
+----
+
+Refer to the <<hibernate-configuration-properties,Hibernate ORM configuration properties>> section for more details on the available properties.
+
+
 [[caching]]
 == Caching
 

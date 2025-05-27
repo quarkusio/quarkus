@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -97,7 +98,7 @@ public final class DatabaseKind {
     private DatabaseKind() {
     }
 
-    private enum SupportedDatabaseKind {
+    public enum SupportedDatabaseKind {
         DB2(DatabaseKind.DB2),
         DERBY(DatabaseKind.DERBY),
         H2(DatabaseKind.H2),
@@ -110,16 +111,30 @@ public final class DatabaseKind {
         private final String mainName;
         private final Set<String> aliases;
 
-        private SupportedDatabaseKind(String mainName) {
+        SupportedDatabaseKind(String mainName) {
             this.mainName = mainName;
             this.aliases = Collections.singleton(mainName);
         }
 
-        private SupportedDatabaseKind(String mainName, String... aliases) {
+        SupportedDatabaseKind(String mainName, String... aliases) {
             this.mainName = mainName;
             this.aliases = new HashSet<>();
             this.aliases.add(mainName);
             this.aliases.addAll(Arrays.asList(aliases));
+        }
+
+        public String getMainName() {
+            return mainName;
+        }
+
+        public static Optional<SupportedDatabaseKind> from(String name) {
+            String normalizedName = normalize(name);
+            for (SupportedDatabaseKind kind : values()) {
+                if (kind.getMainName().equals(normalizedName)) {
+                    return Optional.of(kind);
+                }
+            }
+            return Optional.empty();
         }
     }
 }

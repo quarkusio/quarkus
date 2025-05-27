@@ -120,6 +120,16 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         @WithName("version-check.enabled")
         @ConfigDocDefault("`true` if the dialect was set automatically by Quarkus, `false` if it was set explicitly")
         Optional<Boolean> versionCheckEnabled();
+
+        /**
+         * This value will avoid connecting to a database to fetch JDBC metadata.
+         * Useful if you're not sure whether the DB will be online before the Quarkus application
+         * (i.e. inside a Kubernetes deployment)
+         *
+         * @return
+         */
+        @WithDefault("false")
+        boolean startOffline();
     }
 
     @ConfigGroup

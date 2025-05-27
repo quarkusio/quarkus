@@ -38,7 +38,7 @@
         <version.resources.plugin>3.3.1</version.resources.plugin>
         <!-- Do not update for now as it is causing test issues in integration-tests/devmode
         java.lang.NoClassDefFoundError: com/salesforce/jprotoc/Generator -->
-        <version.shade.plugin>3.2.1</version.shade.plugin>
+        <version.shade.plugin>3.6.0</version.shade.plugin>
         <version.source.plugin>3.3.1</version.source.plugin>
         <version.surefire.plugin>3.5.3</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>

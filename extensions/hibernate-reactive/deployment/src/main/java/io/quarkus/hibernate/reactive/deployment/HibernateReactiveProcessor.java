@@ -32,6 +32,7 @@ import io.quarkus.agroal.spi.JdbcDataSourceBuildItem;
 import io.quarkus.arc.deployment.RecorderBeanInitializedBuildItem;
 import io.quarkus.arc.deployment.UnremovableBeanBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
+import io.quarkus.datasource.common.runtime.DatabaseKind;
 import io.quarkus.datasource.deployment.spi.DefaultDataSourceDbKindBuildItem;
 import io.quarkus.deployment.Capabilities;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -232,7 +233,7 @@ public final class HibernateReactiveProcessor {
                             "quarkus.datasource.password"));
         }
 
-        QuarkusPersistenceUnitDescriptor reactivePU = generateReactivePersistenceUnit(
+        QuarkusPersistenceUnitDescriptorWithSupportedDBKind reactivePUWithDBKind = generateReactivePersistenceUnit(
                 hibernateOrmConfig, persistenceUnitName, index, persistenceUnitConfig, jpaModel,
                 dbKindOptional, explicitDialect, explicitDbMinVersion, applicationArchivesBuildItem,
                 launchMode.getLaunchMode(),
@@ -248,6 +249,8 @@ public final class HibernateReactiveProcessor {
         JsonFormatterCustomizationCheck jsonFormatterCustomizationCheck = jsonFormatterCustomizationCheck(capabilities,
                 jsonMapper);
 
+        QuarkusPersistenceUnitDescriptor reactivePU = reactivePUWithDBKind.descriptor();
+
         //Some constant arguments to the following method:
         // - this is Reactive
         // - we don't support starting Hibernate Reactive from a persistence.xml
@@ -256,6 +259,7 @@ public final class HibernateReactiveProcessor {
                 new RecordedConfig(
                         datasourceName,
                         dbKindOptional,
+                        reactivePUWithDBKind.supportedDatabaseKind.map(DatabaseKind.SupportedDatabaseKind::getMainName),
                         dbVersion,
                         persistenceUnitConfig.dialect().dialect(),
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
@@ -315,6 +319,10 @@ public final class HibernateReactiveProcessor {
         logCategories.produce(new LogCategoryBuildItem(ReactiveIntegrator.class.getName(), Level.WARNING));
     }
 
+    record QuarkusPersistenceUnitDescriptorWithSupportedDBKind(QuarkusPersistenceUnitDescriptor descriptor,
+            Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind) {
+    }
+
     /**
      * This is mostly copied from
      * io.quarkus.hibernate.orm.deployment.HibernateOrmProcessor#handleHibernateORMWithNoPersistenceXml
@@ -332,7 +340,7 @@ public final class HibernateReactiveProcessor {
     //  tend not to be added here.
     //  See https://github.com/quarkusio/quarkus/issues/28629.
     //see producePersistenceUnitDescriptorFromConfig in ORM
-    private static QuarkusPersistenceUnitDescriptor generateReactivePersistenceUnit(
+    private static QuarkusPersistenceUnitDescriptorWithSupportedDBKind generateReactivePersistenceUnit(
             HibernateOrmConfig hibernateOrmConfig,
             String persistenceUnitName,
             CombinedIndexBuildItem index,
@@ -368,11 +376,14 @@ public final class HibernateReactiveProcessor {
 
         Set<String> storageEngineCollector = new HashSet<>();
 
-        setDialectAndStorageEngine(
+        HibernateOrmConfigPersistenceUnit.HibernateOrmConfigPersistenceUnitDialect dialectConfig = persistenceUnitConfig
+                .dialect();
+        Optional<DatabaseKind.SupportedDatabaseKind> supportedDatabaseKind = setDialectAndStorageEngine(
                 persistenceUnitName,
                 dbKindOptional,
                 explicitDialect,
                 explicitDbMinVersion,
+                dialectConfig,
                 dbKindDialectBuildItems,
                 persistenceUnitConfig.dialect().storageEngine(),
                 systemProperties,
@@ -383,6 +394,6 @@ public final class HibernateReactiveProcessor {
         configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
-        return descriptor;
+        return new QuarkusPersistenceUnitDescriptorWithSupportedDBKind(descriptor, supportedDatabaseKind);
     }
 }

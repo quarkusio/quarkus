@@ -154,7 +154,7 @@
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 
         <!-- Quarkus Analytics -->
-        <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
+        <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
         <!-- If PTS is enabled at the global level  -->

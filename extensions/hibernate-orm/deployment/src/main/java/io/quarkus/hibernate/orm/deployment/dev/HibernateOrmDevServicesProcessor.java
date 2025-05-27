@@ -1,6 +1,7 @@
 package io.quarkus.hibernate.orm.deployment.dev;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -55,10 +56,21 @@ public class HibernateOrmDevServicesProcessor {
                                 // Only force DB generation if the datasource is configured through dev services
                                 if (propertyKeysIndicatingDataSourceConfigured.stream()
                                         .anyMatch(devServicesConfig::containsKey)) {
-                                    String forcedValue = "drop-and-create";
-                                    LOG.infof("Setting %s=%s to initialize Dev Services managed database",
-                                            schemaManagementStrategyPropertyKey, forcedValue);
-                                    return Map.of(schemaManagementStrategyPropertyKey, forcedValue);
+                                    String offlineStartKey = HibernateOrmRuntimeConfig.puPropertyKey(entry.getKey(),
+                                            "database.start-offline");
+                                    Optional<Boolean> offlineStart = ConfigUtils
+                                            .getFirstOptionalValue(Collections.singletonList(offlineStartKey), Boolean.class);
+
+                                    String forcedValue;
+                                    if (offlineStart.isEmpty() || !offlineStart.get()) {
+                                        forcedValue = "drop-and-create";
+                                        LOG.infof("Setting %s=%s to initialize Dev Services managed database",
+                                                schemaManagementStrategyPropertyKey, forcedValue);
+                                        return Map.of(schemaManagementStrategyPropertyKey, forcedValue);
+                                    } else {
+                                        return Map.of();
+                                    }
+
                                 } else {
                                     return Map.of();
                                 }

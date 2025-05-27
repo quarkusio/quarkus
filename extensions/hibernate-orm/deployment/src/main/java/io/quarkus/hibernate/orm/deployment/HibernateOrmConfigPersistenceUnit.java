@@ -304,12 +304,41 @@ public interface HibernateOrmConfigPersistenceUnit {
          *
          * E.g. `MyISAM` or `InnoDB` for MySQL.
          *
+         * @deprecated Use {@code mysql.}{@linkplain MySQLDialectConfig#storageEngine storage-engine}
+         *             or {@code mariadb.}{@linkplain MySQLDialectConfig#storageEngine storage-engine} instead
+         *
          * @asciidoclet
          */
-        Optional<@WithConverter(TrimmedStringConverter.class) String> storageEngine();
+        @WithConverter(TrimmedStringConverter.class)
+        @Deprecated
+        Optional<String> storageEngine();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for MariaDB
+         */
+        MySQLDialectConfig mariadb();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for MySQL
+         */
+        MySQLDialectConfig mysql();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for Oracle
+         */
+        OracleDialectConfig oracle();
+
+        /**
+         * Configuration specific to Hibernate's Dialect for Microsoft SQLServer
+         */
+        SqlServerDialectConfig mssql();
 
         default boolean isAnyPropertySet() {
-            return dialect().isPresent() || storageEngine().isPresent();
+            return dialect().isPresent() || storageEngine().isPresent()
+                    || mysql().isAnyPropertySet()
+                    || oracle().isAnyPropertySet()
+                    || mssql().isAnyPropertySet()
+                    || mariadb().isAnyPropertySet();
         }
     }
 

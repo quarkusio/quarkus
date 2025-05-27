@@ -145,7 +145,7 @@
         <strimzi-test-container.version>0.109.1</strimzi-test-container.version>
         <!-- Scala is used by Kafka so we need to choose a compatible version -->
         <scala.version>2.13.16</scala.version>
-        <aws-lambda-java.version>1.2.3</aws-lambda-java.version>
+        <aws-lambda-java.version>1.3.0</aws-lambda-java.version>
         <aws-lambda-java-events.version>3.15.0</aws-lambda-java-events.version>
         <aws-xray.version>2.18.2</aws-xray.version>
         <cloudevents-api.version>3.0.0</cloudevents-api.version>

@@ -78,7 +78,7 @@ class PersonEntityResource {
     @Path("/rename")
     fun rename(
         @QueryParam("previousName") previousName: String,
-        @QueryParam("newName") newName: String
+        @QueryParam("newName") newName: String,
     ): Response {
         PersonEntity.update("lastname", newName).where("lastname", previousName)
         return Response.ok().build()

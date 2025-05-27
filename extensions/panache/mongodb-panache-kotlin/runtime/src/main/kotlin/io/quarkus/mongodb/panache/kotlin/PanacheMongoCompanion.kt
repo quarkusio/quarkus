@@ -667,7 +667,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
     @GenerateBridge
     fun update(
         update: String,
-        vararg params: Any?
+        vararg params: Any?,
     ): io.quarkus.mongodb.panache.common.PanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 
@@ -686,7 +686,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
     @GenerateBridge
     fun update(
         update: String,
-        params: Map<String, Any?>
+        params: Map<String, Any?>,
     ): io.quarkus.mongodb.panache.common.PanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 
@@ -705,7 +705,7 @@ interface PanacheMongoCompanionBase<Entity : PanacheMongoEntityBase, Id : Any> {
     @GenerateBridge
     fun update(
         update: String,
-        params: Parameters
+        params: Parameters,
     ): io.quarkus.mongodb.panache.common.PanacheUpdate =
         throw INSTANCE.implementationInjectionMissing()
 

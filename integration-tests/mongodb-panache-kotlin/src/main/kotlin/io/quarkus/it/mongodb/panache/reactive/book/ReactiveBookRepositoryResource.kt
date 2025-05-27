@@ -37,7 +37,7 @@ class ReactiveBookRepositoryResource {
         LOGGER.infov(
             "Using BookRepository[database={0}, collection={1}]",
             databaseName,
-            collectionName
+            collectionName,
         )
     }
 
@@ -101,7 +101,7 @@ class ReactiveBookRepositoryResource {
         @QueryParam("author") author: String?,
         @QueryParam("title") title: String?,
         @QueryParam("dateFrom") dateFrom: String?,
-        @QueryParam("dateTo") dateTo: String?
+        @QueryParam("dateTo") dateTo: String?,
     ): Uni<Book?> {
         return if (author != null) {
             reactiveBookRepository
@@ -112,7 +112,7 @@ class ReactiveBookRepositoryResource {
                 .find(
                     "{'creationDate': {\$gte: ?1}, 'creationDate': {\$lte: ?2}}",
                     LocalDate.parse(dateFrom),
-                    LocalDate.parse(dateTo)
+                    LocalDate.parse(dateTo),
                 )
                 .firstResult()
         }
@@ -124,13 +124,13 @@ class ReactiveBookRepositoryResource {
         @QueryParam("author") author: String?,
         @QueryParam("title") title: String?,
         @QueryParam("dateFrom") dateFrom: String?,
-        @QueryParam("dateTo") dateTo: String?
+        @QueryParam("dateTo") dateTo: String?,
     ): Uni<Book?> {
         return if (author != null) {
             reactiveBookRepository
                 .find(
                     "{'author': :author,'bookTitle': :title}",
-                    Parameters.with("author", author).and("title", title)
+                    Parameters.with("author", author).and("title", title),
                 )
                 .firstResult()
         } else
@@ -138,7 +138,7 @@ class ReactiveBookRepositoryResource {
                 .find(
                     "{'creationDate': {\$gte: :dateFrom}, 'creationDate': {\$lte: :dateTo}}",
                     Parameters.with("dateFrom", LocalDate.parse(dateFrom))
-                        .and("dateTo", LocalDate.parse(dateTo))
+                        .and("dateTo", LocalDate.parse(dateTo)),
                 )
                 .firstResult()
     }

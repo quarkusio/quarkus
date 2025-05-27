@@ -6,6 +6,7 @@ import java.net.URLEncoder;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 
+import io.quarkus.websockets.next.UserData.TypedKey;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
 
@@ -93,6 +94,18 @@ public interface WebSocketConnector<CLIENT> {
      * @return self
      */
     WebSocketConnector<CLIENT> addSubprotocol(String value);
+
+    /**
+     * Add a value to the connection user data.
+     *
+     * @param key
+     * @param value
+     * @param <VALUE>
+     * @return self
+     * @see UserData#put(TypedKey, Object)
+     * @see WebSocketClientConnection#userData()
+     */
+    <VALUE> WebSocketConnector<CLIENT> userData(TypedKey<VALUE> key, VALUE value);
 
     /**
      *

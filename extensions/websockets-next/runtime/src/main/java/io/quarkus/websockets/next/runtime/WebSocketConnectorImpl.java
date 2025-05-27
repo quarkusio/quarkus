@@ -138,7 +138,7 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
             WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientEndpoint.clientId, ws,
                     codecs,
                     pathParams,
-                    serverEndpointUri, headers, trafficLogger, sendingInterceptor);
+                    serverEndpointUri, headers, trafficLogger, userData, sendingInterceptor);
             if (trafficLogger != null) {
                 trafficLogger.connectionOpened(connection);
             }

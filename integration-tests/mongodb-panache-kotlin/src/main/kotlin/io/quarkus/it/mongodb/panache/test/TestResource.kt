@@ -67,18 +67,18 @@ class TestResource {
             5,
             TestImperativeEntity.list(
                     "category = :category",
-                    Parameters.with("category", "category1")
+                    Parameters.with("category", "category1"),
                 )
-                .size
+                .size,
         )
         Assertions.assertEquals(5, TestImperativeEntity.list("{'category' : ?1}", "category0").size)
         Assertions.assertEquals(
             5,
             TestImperativeEntity.list(
                     "{'category' : :category}",
-                    Parameters.with("category", "category1")
+                    Parameters.with("category", "category1"),
                 )
-                .size
+                .size,
         )
         val listQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(5, TestImperativeEntity.list(listQuery).size)
@@ -86,7 +86,7 @@ class TestResource {
         Assertions.assertEquals(
             0,
             TestImperativeEntity.list("category = :category", Parameters.with("category", null))
-                .size
+                .size,
         )
 
         // find with options
@@ -96,7 +96,7 @@ class TestResource {
                 .withBatchSize(2)
                 .withReadPreference(ReadPreference.nearest())
                 .list()
-                .size
+                .size,
         )
 
         // regex
@@ -104,11 +104,11 @@ class TestResource {
         entityWithUpperCase.persist()
         Assertions.assertEquals(
             1,
-            TestImperativeEntity.list("category like ?1", "upperCase.*").size
+            TestImperativeEntity.list("category like ?1", "upperCase.*").size,
         )
         Assertions.assertEquals(
             1,
-            TestImperativeEntity.list("category like ?1", "/uppercase.*/i").size
+            TestImperativeEntity.list("category like ?1", "/uppercase.*/i").size,
         )
         entityWithUpperCase.delete()
 
@@ -158,16 +158,16 @@ class TestResource {
             5,
             TestImperativeEntity.count(
                 "category = :category",
-                Parameters.with("category", "category1")
-            )
+                Parameters.with("category", "category1"),
+            ),
         )
         Assertions.assertEquals(5, TestImperativeEntity.count("{'category' : ?1}", "category0"))
         Assertions.assertEquals(
             5,
             TestImperativeEntity.count(
                 "{'category' : :category}",
-                Parameters.with("category", "category1")
-            )
+                Parameters.with("category", "category1"),
+            ),
         )
         val countQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(5, TestImperativeEntity.count(countQuery))
@@ -196,14 +196,14 @@ class TestResource {
         updated =
             TestImperativeEntity.update(
                     "category = :category",
-                    Parameters.with("category", "newCategory")
+                    Parameters.with("category", "newCategory"),
                 )
                 .where("category = :category", Parameters.with("category", "newCategory2"))
         Assertions.assertEquals(5, updated)
         updated =
             TestImperativeEntity.update(
                     "{'category' : :category}",
-                    Parameters.with("category", "newCategory2")
+                    Parameters.with("category", "newCategory2"),
                 )
                 .where("{'category' : :category}", Parameters.with("category", "newCategory"))
         Assertions.assertEquals(5, updated)
@@ -225,11 +225,11 @@ class TestResource {
         TestImperativeEntity.persist(entities.stream())
         TestImperativeEntity.delete(
             "category = :category",
-            Parameters.with("category", "category0")
+            Parameters.with("category", "category0"),
         )
         TestImperativeEntity.delete(
             "{'category' : :category}",
-            Parameters.with("category", "category1")
+            Parameters.with("category", "category1"),
         )
         Assertions.assertEquals(0, TestImperativeEntity.count())
         TestImperativeEntity.persistOrUpdate(entities.stream())
@@ -281,17 +281,17 @@ class TestResource {
             5,
             testImperativeRepository
                 .list("category = :category", Parameters.with("category", "category1"))
-                .size
+                .size,
         )
         Assertions.assertEquals(
             5,
-            testImperativeRepository.list("{'category' : ?1}", "category0").size
+            testImperativeRepository.list("{'category' : ?1}", "category0").size,
         )
         Assertions.assertEquals(
             5,
             testImperativeRepository
                 .list("{'category' : :category}", Parameters.with("category", "category1"))
-                .size
+                .size,
         )
         val listQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(5, testImperativeRepository.list(listQuery).size)
@@ -300,7 +300,7 @@ class TestResource {
             0,
             testImperativeRepository
                 .list("category = :category", Parameters.with("category", null))
-                .size
+                .size,
         )
 
         // find with options
@@ -311,7 +311,7 @@ class TestResource {
                 .withBatchSize(2)
                 .withReadPreference(ReadPreference.nearest())
                 .list()
-                .size
+                .size,
         )
 
         // regex
@@ -319,11 +319,11 @@ class TestResource {
         testImperativeRepository.persist(entityWithUpperCase)
         Assertions.assertEquals(
             1,
-            testImperativeRepository.list("category like ?1", "upperCase.*").size
+            testImperativeRepository.list("category like ?1", "upperCase.*").size,
         )
         Assertions.assertEquals(
             1,
-            testImperativeRepository.list("category like ?1", "/uppercase.*/i").size
+            testImperativeRepository.list("category like ?1", "/uppercase.*/i").size,
         )
         testImperativeRepository.delete(entityWithUpperCase)
 
@@ -377,16 +377,16 @@ class TestResource {
             5,
             testImperativeRepository.count(
                 "category = :category",
-                Parameters.with("category", "category1")
-            )
+                Parameters.with("category", "category1"),
+            ),
         )
         Assertions.assertEquals(5, testImperativeRepository.count("{'category' : ?1}", "category0"))
         Assertions.assertEquals(
             5,
             testImperativeRepository.count(
                 "{'category' : :category}",
-                Parameters.with("category", "category1")
-            )
+                Parameters.with("category", "category1"),
+            ),
         )
         val countQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(5, testImperativeRepository.count(countQuery))
@@ -445,11 +445,11 @@ class TestResource {
         testImperativeRepository.persist(entities.stream())
         testImperativeRepository.delete(
             "category = :category",
-            Parameters.with("category", "category0")
+            Parameters.with("category", "category0"),
         )
         testImperativeRepository.delete(
             "{'category' : :category}",
-            Parameters.with("category", "category1")
+            Parameters.with("category", "category1"),
         )
         Assertions.assertEquals(0, testImperativeRepository.count())
         testImperativeRepository.persistOrUpdate(entities.stream())
@@ -573,48 +573,48 @@ class TestResource {
         // query
         Assertions.assertEquals(
             5,
-            TestReactiveEntity.list("category", "category0").await().indefinitely().size
+            TestReactiveEntity.list("category", "category0").await().indefinitely().size,
         )
         Assertions.assertEquals(
             5,
-            TestReactiveEntity.list("category = ?1", "category0").await().indefinitely().size
+            TestReactiveEntity.list("category = ?1", "category0").await().indefinitely().size,
         )
         Assertions.assertEquals(
             5,
             TestReactiveEntity.list(
                     "category = :category",
-                    Parameters.with("category", "category1")
+                    Parameters.with("category", "category1"),
                 )
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         Assertions.assertEquals(
             5,
-            TestReactiveEntity.list("{'category' : ?1}", "category0").await().indefinitely().size
+            TestReactiveEntity.list("{'category' : ?1}", "category0").await().indefinitely().size,
         )
         Assertions.assertEquals(
             5,
             TestReactiveEntity.list(
                     "{'category' : :category}",
-                    Parameters.with("category", "category1")
+                    Parameters.with("category", "category1"),
                 )
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         val listQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(5, TestReactiveEntity.list(listQuery).await().indefinitely().size)
         Assertions.assertEquals(
             0,
-            TestReactiveEntity.list("category", null).await().indefinitely().size
+            TestReactiveEntity.list("category", null).await().indefinitely().size,
         )
         Assertions.assertEquals(
             0,
             TestReactiveEntity.list("category = :category", Parameters.with("category", null))
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
 
         // find with options
@@ -626,7 +626,7 @@ class TestResource {
                 .list()
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
 
         // regex
@@ -634,14 +634,14 @@ class TestResource {
         entityWithUpperCase.persist<TestReactiveEntity>().await().indefinitely()
         Assertions.assertEquals(
             1,
-            TestReactiveEntity.list("category like ?1", "upperCase.*").await().indefinitely().size
+            TestReactiveEntity.list("category like ?1", "upperCase.*").await().indefinitely().size,
         )
         Assertions.assertEquals(
             1,
             TestReactiveEntity.list("category like ?1", "/uppercase.*/i")
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         entityWithUpperCase.delete().await().indefinitely()
 
@@ -692,33 +692,33 @@ class TestResource {
         // count
         Assertions.assertEquals(
             5,
-            TestReactiveEntity.count("category", "category0").await().indefinitely()
+            TestReactiveEntity.count("category", "category0").await().indefinitely(),
         )
         Assertions.assertEquals(
             5,
-            TestReactiveEntity.count("category = ?1", "category0").await().indefinitely()
+            TestReactiveEntity.count("category = ?1", "category0").await().indefinitely(),
         )
         Assertions.assertEquals(
             5,
             TestReactiveEntity.count(
                     "category = :category",
-                    Parameters.with("category", "category1")
+                    Parameters.with("category", "category1"),
                 )
                 .await()
-                .indefinitely()
+                .indefinitely(),
         )
         Assertions.assertEquals(
             5,
-            TestReactiveEntity.count("{'category' : ?1}", "category0").await().indefinitely()
+            TestReactiveEntity.count("{'category' : ?1}", "category0").await().indefinitely(),
         )
         Assertions.assertEquals(
             5,
             TestReactiveEntity.count(
                     "{'category' : :category}",
-                    Parameters.with("category", "category1")
+                    Parameters.with("category", "category1"),
                 )
                 .await()
-                .indefinitely()
+                .indefinitely(),
         )
         val countQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(5, TestReactiveEntity.count(countQuery).await().indefinitely())
@@ -754,7 +754,7 @@ class TestResource {
         updated =
             TestReactiveEntity.update(
                     "category = :category",
-                    Parameters.with("category", "newCategory")
+                    Parameters.with("category", "newCategory"),
                 )
                 .where("category = :category", Parameters.with("category", "newCategory2"))
                 .await()
@@ -763,7 +763,7 @@ class TestResource {
         updated =
             TestReactiveEntity.update(
                     "{'category' : :category}",
-                    Parameters.with("category", "newCategory2")
+                    Parameters.with("category", "newCategory2"),
                 )
                 .where("{'category' : :category}", Parameters.with("category", "newCategory"))
                 .await()
@@ -771,7 +771,7 @@ class TestResource {
         Assertions.assertEquals(5, updated)
         Assertions.assertEquals(
             5,
-            TestReactiveEntity.count("category = ?1", "newCategory2").await().indefinitely()
+            TestReactiveEntity.count("category = ?1", "newCategory2").await().indefinitely(),
         )
         updated = TestReactiveEntity.update("newField", "newValue").all().await().indefinitely()
         Assertions.assertEquals(10, updated)
@@ -795,7 +795,7 @@ class TestResource {
             .indefinitely()
         TestReactiveEntity.delete(
                 "{'category' : :category}",
-                Parameters.with("category", "category1")
+                Parameters.with("category", "category1"),
             )
             .await()
             .indefinitely()
@@ -845,11 +845,11 @@ class TestResource {
         // query
         Assertions.assertEquals(
             5,
-            testReactiveRepository.list("category", "category0").await().indefinitely().size
+            testReactiveRepository.list("category", "category0").await().indefinitely().size,
         )
         Assertions.assertEquals(
             5,
-            testReactiveRepository.list("category = ?1", "category0").await().indefinitely().size
+            testReactiveRepository.list("category = ?1", "category0").await().indefinitely().size,
         )
         Assertions.assertEquals(
             5,
@@ -857,7 +857,7 @@ class TestResource {
                 .list("category = :category", Parameters.with("category", "category1"))
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         Assertions.assertEquals(
             5,
@@ -865,7 +865,7 @@ class TestResource {
                 .list("{'category' : ?1}", "category0")
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         Assertions.assertEquals(
             5,
@@ -873,16 +873,16 @@ class TestResource {
                 .list("{'category' : :category}", Parameters.with("category", "category1"))
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         val listQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(
             5,
-            testReactiveRepository.list(listQuery).await().indefinitely().size
+            testReactiveRepository.list(listQuery).await().indefinitely().size,
         )
         Assertions.assertEquals(
             0,
-            testReactiveRepository.list("category", null).await().indefinitely().size
+            testReactiveRepository.list("category", null).await().indefinitely().size,
         )
         Assertions.assertEquals(
             0,
@@ -890,7 +890,7 @@ class TestResource {
                 .list("category = :category", Parameters.with("category", null))
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
 
         // find with options
@@ -903,7 +903,7 @@ class TestResource {
                 .list()
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
 
         // regex
@@ -915,7 +915,7 @@ class TestResource {
                 .list("category like ?1", "upperCase.*")
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         Assertions.assertEquals(
             1,
@@ -923,7 +923,7 @@ class TestResource {
                 .list("category like ?1", "/uppercase.*/i")
                 .await()
                 .indefinitely()
-                .size
+                .size,
         )
         testReactiveRepository.delete(entityWithUpperCase).await().indefinitely()
 
@@ -975,29 +975,29 @@ class TestResource {
         // count
         Assertions.assertEquals(
             5,
-            testReactiveRepository.count("category", "category0").await().indefinitely()
+            testReactiveRepository.count("category", "category0").await().indefinitely(),
         )
         Assertions.assertEquals(
             5,
-            testReactiveRepository.count("category = ?1", "category0").await().indefinitely()
+            testReactiveRepository.count("category = ?1", "category0").await().indefinitely(),
         )
         Assertions.assertEquals(
             5,
             testReactiveRepository
                 .count("category = :category", Parameters.with("category", "category1"))
                 .await()
-                .indefinitely()
+                .indefinitely(),
         )
         Assertions.assertEquals(
             5,
-            testReactiveRepository.count("{'category' : ?1}", "category0").await().indefinitely()
+            testReactiveRepository.count("{'category' : ?1}", "category0").await().indefinitely(),
         )
         Assertions.assertEquals(
             5,
             testReactiveRepository
                 .count("{'category' : :category}", Parameters.with("category", "category1"))
                 .await()
-                .indefinitely()
+                .indefinitely(),
         )
         val countQuery: Document = Document().append("category", "category1")
         Assertions.assertEquals(5, testReactiveRepository.count(countQuery).await().indefinitely())
@@ -1049,7 +1049,7 @@ class TestResource {
         Assertions.assertEquals(5, updated)
         Assertions.assertEquals(
             5,
-            testReactiveRepository.count("category = ?1", "newCategory2").await().indefinitely()
+            testReactiveRepository.count("category = ?1", "newCategory2").await().indefinitely(),
         )
         updated = testReactiveRepository.update("newField", "newValue").all().await().indefinitely()
         Assertions.assertEquals(10, updated)
@@ -1065,7 +1065,7 @@ class TestResource {
         Assertions.assertEquals(5, updated)
         Assertions.assertEquals(
             5,
-            testReactiveRepository.count("cpt = ?1", 2).await().indefinitely()
+            testReactiveRepository.count("cpt = ?1", 2).await().indefinitely(),
         )
 
         // delete

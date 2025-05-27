@@ -3,6 +3,7 @@ package io.quarkus.it.mongodb.panache.book
 class BookDetail {
     var summary: String? = null
         private set
+
     var rating = 0
         private set
 

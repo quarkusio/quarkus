@@ -22,7 +22,7 @@ class AppSuppliedProvider : MessageBodyReader<Shared>, MessageBodyWriter<Shared>
         p0: Class<*>?,
         type: Type?,
         p2: Array<out Annotation>?,
-        p3: MediaType?
+        p3: MediaType?,
     ): Boolean {
         return Shared::class.java == type
     }
@@ -33,7 +33,7 @@ class AppSuppliedProvider : MessageBodyReader<Shared>, MessageBodyWriter<Shared>
         p2: Array<out Annotation>?,
         p3: MediaType?,
         p4: MultivaluedMap<String, String>?,
-        p5: InputStream?
+        p5: InputStream?,
     ): Shared {
         return Shared("app")
     }
@@ -42,7 +42,7 @@ class AppSuppliedProvider : MessageBodyReader<Shared>, MessageBodyWriter<Shared>
         p0: Class<*>?,
         type: Type?,
         p2: Array<out Annotation>?,
-        p3: MediaType?
+        p3: MediaType?,
     ): Boolean {
         return Shared::class.java == type
     }
@@ -54,7 +54,7 @@ class AppSuppliedProvider : MessageBodyReader<Shared>, MessageBodyWriter<Shared>
         p3: Array<out Annotation>?,
         p4: MediaType?,
         p5: MultivaluedMap<String, Any>?,
-        entityStream: OutputStream?
+        entityStream: OutputStream?,
     ) {
         entityStream?.write(
             String.format("{\"message\": \"app+%s\"}", shared!!.message)

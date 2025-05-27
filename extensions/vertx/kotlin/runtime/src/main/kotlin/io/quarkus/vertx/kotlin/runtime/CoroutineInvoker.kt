@@ -14,7 +14,7 @@ object CoroutineInvoker {
     fun <T> inNewCoroutine(
         instance: T,
         arguments: Array<Any?>,
-        invoker: Invoker<T, Unit>
+        invoker: Invoker<T, Unit>,
     ): CompletionStage<Void?> {
         val coroutineScope = Arc.container().instance(ApplicationCoroutineScope::class.java).get()
         val dispatcher: CoroutineDispatcher =

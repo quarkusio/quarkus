@@ -87,7 +87,7 @@ class TestAnalogs {
     private fun compare(
         javaClass: AnalogVisitor,
         kotlinClass: AnalogVisitor,
-        allowList: List<String> = listOf()
+        allowList: List<String> = listOf(),
     ) {
         val javaMethods = javaClass.methods
         val kotlinMethods = kotlinClass.methods
@@ -127,12 +127,13 @@ class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
         )
 
     val methods = mutableListOf<Method>()
+
     override fun visitMethod(
         access: Int,
         name: String,
         descriptor: String,
         signature: String?,
-        exceptions: Array<out String>?
+        exceptions: Array<out String>?,
     ): MethodVisitor? {
         if (
             name != "<clinit>" &&
@@ -145,7 +146,7 @@ class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
                     access,
                     name,
                     erase(Type.getReturnType(descriptor)),
-                    erase(Type.getArgumentTypes(descriptor))
+                    erase(Type.getArgumentTypes(descriptor)),
                 )
             methods += method
         }

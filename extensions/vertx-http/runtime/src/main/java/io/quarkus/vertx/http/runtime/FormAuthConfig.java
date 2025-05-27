@@ -12,9 +12,4 @@ public interface FormAuthConfig {
     @WithDefault("false")
     boolean enabled();
 
-    /**
-     * The post location.
-     */
-    @WithDefault("/j_security_check")
-    String postLocation();
 }

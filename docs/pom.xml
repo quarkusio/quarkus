@@ -22,7 +22,7 @@
         <graal-community.image-tag-for-documentation>jdk-21</graal-community.image-tag-for-documentation>
         <mandrel.image-tag-for-documentation>jdk-21</mandrel.image-tag-for-documentation>
 
-        <assembly-maven-plugin.version>3.5.0</assembly-maven-plugin.version>
+        <assembly-maven-plugin.version>3.7.1</assembly-maven-plugin.version>
         <asciidoctor-maven-plugin.version>2.2.5</asciidoctor-maven-plugin.version>
         <asciidoctorj-pdf.version>1.5.0-beta.8</asciidoctorj-pdf.version>
         <asciidoctor.fail-if>WARN</asciidoctor.fail-if>

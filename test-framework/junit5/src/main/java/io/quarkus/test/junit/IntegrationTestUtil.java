@@ -175,6 +175,7 @@ public final class IntegrationTestUtil {
 
     static ArtifactLauncher.InitContext.DevServicesLaunchResult handleDevServices(ExtensionContext context,
             boolean isDockerAppLaunch) throws Exception {
+        System.setProperty("java.util.logging.manager", "org.jboss.logmanager.LogManager");
         Class<?> requiredTestClass = context.getRequiredTestClass();
         Path testClassLocation = getTestClassesLocation(requiredTestClass);
         final Path appClassLocation = getAppClassLocationForTestLocation(testClassLocation);

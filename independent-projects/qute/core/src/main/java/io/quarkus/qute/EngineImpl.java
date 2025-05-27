@@ -39,6 +39,7 @@ class EngineImpl implements Engine {
     final boolean removeStandaloneLines;
     private final long timeout;
     private final boolean useAsyncTimeout;
+    final Character expressionCommand;
 
     EngineImpl(EngineBuilder builder) {
         this.sectionHelperFactories = Map.copyOf(builder.sectionHelperFactories);
@@ -55,6 +56,7 @@ class EngineImpl implements Engine {
         this.initializers = ImmutableList.copyOf(builder.initializers);
         this.timeout = builder.timeout;
         this.useAsyncTimeout = builder.useAsyncTimeout;
+        this.expressionCommand = builder.expressionCommand;
     }
 
     @Override

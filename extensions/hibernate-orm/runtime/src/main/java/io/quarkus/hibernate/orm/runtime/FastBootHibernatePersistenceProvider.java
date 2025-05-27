@@ -19,9 +19,11 @@ import org.hibernate.boot.registry.StandardServiceInitiator;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.internal.StandardServiceRegistryImpl;
 import org.hibernate.cfg.AvailableSettings;
+import org.hibernate.cfg.JdbcSettings;
 import org.hibernate.jpa.HibernateHints;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.service.Service;
 import org.hibernate.service.internal.ProvidedService;
 import org.jboss.logging.Logger;
@@ -252,8 +254,13 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
-        // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-        runtimeSettingsBuilder.put(AvailableSettings.ALLOW_METADATA_ON_BOOT, "true");
+        boolean startsOffline = persistenceUnitConfig.database().startOffline();
+
+        // Allow detection of driver/database capabilities on runtime init if required
+        // (was disabled during static init)
+        runtimeSettingsBuilder.put(JdbcSettings.ALLOW_METADATA_ON_BOOT, !startsOffline);
+        runtimeSettingsBuilder.put(GlobalTemporaryTableStrategy.CREATE_ID_TABLES, !startsOffline);
+
         // Remove database version information, if any;
         // it was necessary during static init to force creation of a dialect,
         // but now the dialect is there, and we'll reuse it.
@@ -454,10 +461,16 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
-        // Database
+
+        String generationStrategy = persistenceUnitConfig.schemaManagement().strategy();
+        if (!"none".equals(generationStrategy) && persistenceUnitConfig.database().startOffline()) {
+            throw new PersistenceException(
+                    "Schema management strategy `quarkus.hibernate-orm.schema-management.strategy` can only be set to `none` when using offline mode `quarkus.hibernate-orm.database.start-offline=true`");
+        }
+
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database().generation().generation()
-                        .orElse(persistenceUnitConfig.schemaManagement().strategy()));
+                        .orElse(generationStrategy));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
                 String.valueOf(persistenceUnitConfig.database().generation().createSchemas()

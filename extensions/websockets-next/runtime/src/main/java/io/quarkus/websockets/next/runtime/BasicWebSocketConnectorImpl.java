@@ -164,18 +164,22 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             context.dispatch(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
-                    client.setPlain(c);
-                    c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
-                        @Override
-                        public void handle(AsyncResult<WebSocket> r) {
-                            if (r.succeeded()) {
-                                e.complete(r.result());
-                            } else {
-                                e.fail(r.cause());
+                    try {
+                        WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
+                        client.setPlain(c);
+                        c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
+                            @Override
+                            public void handle(AsyncResult<WebSocket> r) {
+                                if (r.succeeded()) {
+                                    e.complete(r.result());
+                                } else {
+                                    e.fail(r.cause());
+                                }
                             }
-                        }
-                    });
+                        });
+                    } catch (RuntimeException re) {
+                        e.fail(re);
+                    }
                 }
             });
         });

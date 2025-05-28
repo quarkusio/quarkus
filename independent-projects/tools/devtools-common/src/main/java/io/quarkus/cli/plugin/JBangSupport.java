@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -105,17 +106,18 @@ public class JBangSupport {
 
     public List<String> execute(String... args) {
         try {
-            List<String> command = new ArrayList<>();
+            List<String> command = new ArrayList<>(args.length + 1);
             command.add(getExecutable().getAbsolutePath());
-            for (String arg : args) {
-                command.add(arg);
-            }
+            command.addAll(Arrays.asList(args));
             List<String> lines = new ArrayList<>();
             try {
                 Process process = new ProcessBuilder()
                         .directory(workingDirectory.toFile())
+                        .redirectError(ProcessBuilder.Redirect.DISCARD)
                         .command(command)
                         .start();
+                // make sure the process does not block waiting for input
+                process.getOutputStream().close();
 
                 try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
                         BufferedReader reader = new BufferedReader(isr)) {

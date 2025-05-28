@@ -23,6 +23,7 @@ import org.hibernate.cfg.JdbcSettings;
 import org.hibernate.jpa.HibernateHints;
 import org.hibernate.jpa.boot.spi.EntityManagerFactoryBuilder;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableStrategy;
 import org.hibernate.service.Service;
 import org.hibernate.service.internal.ProvidedService;
 import org.jboss.logging.Logger;
@@ -238,10 +239,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
             }
         }
 
+        boolean startsOffline = persistenceUnitConfig.database().startOffline();
+
         // Allow detection of driver/database capabilities on runtime init if required
         // (was disabled during static init)
-        runtimeSettingsBuilder.put(JdbcSettings.ALLOW_METADATA_ON_BOOT,
-                String.valueOf(!persistenceUnitConfig.database().startOffline()));
+        runtimeSettingsBuilder.put(JdbcSettings.ALLOW_METADATA_ON_BOOT, !startsOffline);
+        runtimeSettingsBuilder.put(GlobalTemporaryTableStrategy.CREATE_ID_TABLES, !startsOffline);
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."
@@ -419,10 +422,16 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
 
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
-        // Database
+
+        String generationStrategy = persistenceUnitConfig.schemaManagement().strategy();
+        if (!"none".equals(generationStrategy) && persistenceUnitConfig.database().startOffline()) {
+            throw new PersistenceException(
+                    "Version check `quarkus.hibernate-orm.schema-management.strategy` cannot be any different than `none` when using offline mode `quarkus.hibernate-orm.database.start-offline=true`");
+        }
+
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database().generation().generation()
-                        .orElse(persistenceUnitConfig.schemaManagement().strategy()));
+                        .orElse(generationStrategy));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
                 String.valueOf(persistenceUnitConfig.database().generation().createSchemas()

@@ -85,7 +85,7 @@ public class Tokens {
             return false;
         }
         final long nowSecs = System.currentTimeMillis() / 1000;
-        final boolean expired = nowSecs > expiresAt;
+        final boolean expired = nowSecs >= expiresAt;
 
         if (expired) {
             if (accessToken) {

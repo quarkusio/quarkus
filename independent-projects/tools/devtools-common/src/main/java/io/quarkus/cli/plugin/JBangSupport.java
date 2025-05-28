@@ -92,7 +92,7 @@ public class JBangSupport {
     }
 
     public File getExecutable() {
-        return getOptionalExecutable().orElseThrow(() -> new IllegalStateException("Unable to find and install jbang!"));
+        return getOptionalExecutable().orElseThrow(() -> new IllegalStateException("Unable to find and install JBang"));
     }
 
     public Path getWorkingDirectory() {
@@ -158,7 +158,7 @@ public class JBangSupport {
     public boolean promptForInstallation() {
         // We don't want to prompt users for input when running tests.
         if (interactiveMode
-                && Prompt.yesOrNo(true, "JBang is needed to list / run jbang plugins, would you like to install it now ?")) {
+                && Prompt.yesOrNo(true, "JBang is needed to list/run JBang plugins, would you like to install it now?")) {
             return true;
         }
         return false;
@@ -180,7 +180,7 @@ public class JBangSupport {
             return true;
         }
         if (!isInstallable()) {
-            output.warn("JBang is not installable!");
+            output.warn("JBang is not installable");
             return false;
         }
         if (promptForInstallation()) {
@@ -188,7 +188,7 @@ public class JBangSupport {
                 installJBang();
                 return true;
             } catch (Exception e) {
-                output.warn("Failed to install jbang!");
+                output.warn("Failed to install JBang");
                 return false;
             }
         } else {
@@ -203,7 +203,7 @@ public class JBangSupport {
             dir = dir.map(Path::getParent);
         }
         return dir.map(d -> d.resolve(".jbang"))
-                .orElseThrow(() -> new IllegalStateException("Failed to determinte .jbang directory!"));
+                .orElseThrow(() -> new IllegalStateException("Failed to determine .jbang directory"));
     }
 
     private void installJBang() {
@@ -212,13 +212,13 @@ public class JBangSupport {
             Path downloadDir = Files.createTempDirectory("jbang-download-");
 
             if (!downloadDir.toFile().exists() && !downloadDir.toFile().mkdirs()) {
-                throw new IOException("Failed to create jbang download directory: " + downloadDir.toAbsolutePath().toString());
+                throw new IOException("Failed to create JBang download directory: " + downloadDir.toAbsolutePath().toString());
             }
 
             Path downloadFile = downloadDir.resolve("jbang.zip");
             Path installDir = getInstallationDir();
             if (!installDir.toFile().exists() && !installDir.toFile().mkdirs()) {
-                throw new IOException("Failed to create jbang install directory: " + installDir.toAbsolutePath().toString());
+                throw new IOException("Failed to create JBang install directory: " + installDir.toAbsolutePath().toString());
             }
             HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
             HttpRequest request = HttpRequest.newBuilder()

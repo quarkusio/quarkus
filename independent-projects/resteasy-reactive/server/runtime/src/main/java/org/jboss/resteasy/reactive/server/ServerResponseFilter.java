@@ -38,7 +38,7 @@ import jakarta.ws.rs.core.UriInfo;
  * }
  * </pre>
  *
- * Methods annotated with {@code ServerRequestFilter} can declare any of the following parameters (in any order)
+ * Methods annotated with {@code ServerResponseFilter} can declare any of the following parameters (in any order)
  * <ul>
  * <li>{@link ContainerRequestContext}
  * <li>{@link ContainerResponseContext}

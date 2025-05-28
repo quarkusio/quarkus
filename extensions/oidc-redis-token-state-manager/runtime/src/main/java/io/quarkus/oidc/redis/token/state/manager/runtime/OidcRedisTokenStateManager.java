@@ -81,15 +81,16 @@ final class OidcRedisTokenStateManager implements TokenStateManager {
         return Instant.now().plusSeconds(event.<Long> get(SESSION_MAX_AGE_PARAM));
     }
 
-    record AuthorizationCodeTokensRecord(String idToken, String accessToken, String refreshToken, Long accessTokenExpiresIn) {
+    record AuthorizationCodeTokensRecord(String idToken, String accessToken, String refreshToken, Long accessTokenExpiresIn,
+            String accessTokenScope) {
 
         private static AuthorizationCodeTokensRecord of(AuthorizationCodeTokens tokens) {
             return new AuthorizationCodeTokensRecord(tokens.getIdToken(), tokens.getAccessToken(), tokens.getRefreshToken(),
-                    tokens.getAccessTokenExpiresIn());
+                    tokens.getAccessTokenExpiresIn(), tokens.getAccessTokenScope());
         }
 
         private AuthorizationCodeTokens toTokens() {
-            return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, accessTokenExpiresIn);
+            return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, accessTokenExpiresIn, accessTokenScope);
         }
     }
 }

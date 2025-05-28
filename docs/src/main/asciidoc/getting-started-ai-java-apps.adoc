@@ -18,11 +18,11 @@ The document header ends at the first blank line. Do not remove the blank line b
 Create a simple RESTful Java AI application that asks a large language model (LLM, or genAI) to write a short poem based on a topic provided by the user. The service responds to GET requests made to the `http://localhost:8080/poems/{my-topic}/{my-lines}` URL. The user enters the topic and length of the desired poem; for example `http://localhost:8080/poems/purple/5`, to generate a poem such as:
 
 ----
-In velvet skies, the stars do dance,
-A million whispers, a cosmic romance.
-They weave tales of old, in shimmering light,
-Guiding lost souls through the velvet night.
-In their glow, the universe finds its chance.
+In twilight's embrace, a royal hue,
+Lavender whispers in the morning dew.
+Amethyst dreams weave through the night,
+A canvas of wonder, both bold and bright.
+Nature's soft secret, a majestic view.
 ----
 
 You will create a Java class and a Java interface. The class represents a resource which defines the application's endpoint and calls the AI model by using the interface to implement an AI service. The AI service uses the parameter values passed in through the endpoint to compose a prompt, a natural language text request, and sends it to the AI.

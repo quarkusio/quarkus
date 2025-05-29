@@ -4,12 +4,12 @@ import java.util.Optional;
 
 import jakarta.enterprise.inject.Produces;
 
-import io.prometheus.client.exemplars.ExemplarSampler;
+import io.prometheus.metrics.tracer.common.SpanContext;
 
 public class EmptyExemplarSamplerProvider {
 
     @Produces
-    public Optional<ExemplarSampler> exemplarSampler() {
+    public Optional<SpanContext> exemplarSampler() {
         return Optional.empty();
     }
 }

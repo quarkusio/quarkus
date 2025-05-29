@@ -1398,6 +1398,49 @@ class MyEndpoint {
 <1> `CoolService#isCool()` returns `Boolean` that is associated with the current connection.
 <2> The `TypedKey.forBoolean("isCool")` is the key used to obtain the data stored when the connection was created.
 
+===== Specify in connector
+
+In some scenarios you may wish to associate user data with a connection to be created by a <<client-connectors,connector>>. In this case, you can set values on the connector instance prior to obtaining the connection. This is particularly useful if you need to do something when the connection is opened and the necessary context cannot be otherwise inferred.
+
+.Connector
+[source, java]
+----
+@Singleton
+public class MyBean {
+
+    @Inject
+    MyService service;
+
+    @Inject
+    Instance<WebSocketConnector<MyEndpoint>> connectorInstance;
+
+    public void openAndSendMessage(String internalId, String message) {
+        var externalId = service.getExternalId(internalId);
+        var connection = connectorInstance.get()
+            .pathParam("externalId", externalId)
+            .userData(TypedKey.forString("internalId"), internalId)
+            .connectAndAwait();
+        connection.sendTextAndAwait(message);
+    }
+}
+----
+
+.Endpoint
+[source,java]
+----
+@WebSocketClient(path = "/endpoint/{externalId}")
+class MyEndpoint {
+
+    @Inject
+    MyService service;
+
+    @OnOpen
+    void open(WebSocketClientConnection connection) {
+        var internalId = connection.userData().get(TypedKey.forString("internalId"));
+        service.doSomething(internalId);
+    }
+}
+----
 
 [[client-cdi-events]]
 ==== CDI events
@@ -1422,15 +1465,40 @@ class MyBean {
 
 === Configuring SSL/TLS
 
-To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]:
+To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]. This is typically done via configuration:
 
 [source, properties]
 ----
 quarkus.tls.my-ws-client.trust-store.p12.path=server-truststore.p12
 quarkus.tls.my-ws-client.trust-store.p12.password=secret
-
-quarkus.websockets-next.client.tls-configuration-name=my-ws-client # Reference the named configuration
 ----
+
+With a _named_ TLS configuration established, you can then configure the client to use it:
+
+[source, properties]
+----
+quarkus.websockets-next.client.tls-configuration-name=my-ws-client
+----
+
+Alternatively, you can supply the configuration name using the <<client-connectors,connector>>:
+
+[source, java]
+----
+@Singleton
+public class MyBean {
+
+    @Inject
+    WebSocketConnector<MyEndpoint> connector;
+
+    public void connect() {
+        connector
+            .tlsConfigurationName("my-ws-client")
+            .connectAndAwait();
+    }
+}
+----
+
+A name supplied to the connector will override any statically configured name. This can be useful for establishing a default configuration which can be overridden at runtime as necessary.
 
 WARNING: When using the WebSocket client, using a _named_ configuration is required to avoid conflicts with other TLS configurations.
 The client will not use the default TLS configuration.

@@ -45,7 +45,7 @@ class TestAnalogs {
         compare(map(JavaPanacheMongoRepository::class), map(PanacheMongoRepository::class))
         compare(
             map(ReactiveJavaPanacheMongoRepository::class),
-            map(ReactivePanacheMongoRepository::class)
+            map(ReactivePanacheMongoRepository::class),
         )
     }
 
@@ -54,12 +54,12 @@ class TestAnalogs {
         compare(
             map(JavaPanacheMongoRepositoryBase::class),
             map(PanacheMongoRepositoryBase::class),
-            listOf("findByIdOptional")
+            listOf("findByIdOptional"),
         )
         compare(
             map(ReactiveJavaPanacheMongoRepositoryBase::class),
             map(ReactivePanacheMongoRepositoryBase::class),
-            listOf("findByIdOptional")
+            listOf("findByIdOptional"),
         )
     }
 
@@ -68,12 +68,12 @@ class TestAnalogs {
         compare(
             JavaPanacheMongoEntity::class,
             PanacheMongoEntity::class,
-            PanacheMongoCompanion::class
+            PanacheMongoCompanion::class,
         )
         compare(
             ReactiveJavaPanacheMongoEntity::class,
             PanacheMongoEntity::class,
-            PanacheMongoCompanion::class
+            PanacheMongoCompanion::class,
         )
     }
 
@@ -83,12 +83,12 @@ class TestAnalogs {
         compare(
             JavaPanacheMongoEntityBase::class,
             PanacheMongoEntityBase::class,
-            PanacheMongoCompanionBase::class
+            PanacheMongoCompanionBase::class,
         )
         compare(
             ReactiveJavaPanacheMongoEntityBase::class,
             ReactivePanacheMongoEntityBase::class,
-            ReactivePanacheMongoCompanionBase::class
+            ReactivePanacheMongoCompanionBase::class,
         )
     }
 
@@ -140,7 +140,7 @@ class TestAnalogs {
     private fun compare(
         javaClass: AnalogVisitor,
         kotlinClass: AnalogVisitor,
-        allowList: List<String> = listOf()
+        allowList: List<String> = listOf(),
     ) {
         val javaMethods = javaClass.methods
         val kotlinMethods = kotlinClass.methods
@@ -175,16 +175,17 @@ class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
             getType(PanacheMongoEntityBase::class.java).descriptor to
                 getType(Object::class.java).descriptor,
             getType(ReactivePanacheMongoEntityBase::class.java).descriptor to
-                getType(Object::class.java).descriptor
+                getType(Object::class.java).descriptor,
         )
 
     val methods = mutableListOf<Method>()
+
     override fun visitMethod(
         access: Int,
         name: String,
         descriptor: String,
         signature: String?,
-        exceptions: Array<out String>?
+        exceptions: Array<out String>?,
     ): MethodVisitor? {
         if (
             name != "<clinit>" &&
@@ -196,7 +197,7 @@ class AnalogVisitor : ClassVisitor(Gizmo.ASM_API_VERSION) {
                     access,
                     name,
                     erase(getReturnType(descriptor)),
-                    erase(getArgumentTypes(descriptor))
+                    erase(getArgumentTypes(descriptor)),
                 )
             methods += method
         }

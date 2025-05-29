@@ -9,7 +9,7 @@ class KotlinJpaOperations : AbstractJpaOperations<PanacheQueryImpl<*>>() {
         hqlQuery: String,
         originalQuery: String?,
         orderBy: String?,
-        paramsArrayOrMap: Any?
+        paramsArrayOrMap: Any?,
     ) = PanacheQueryImpl<Any>(session, hqlQuery, originalQuery, orderBy, paramsArrayOrMap)
 
     override fun list(query: PanacheQueryImpl<*>) = query.list()

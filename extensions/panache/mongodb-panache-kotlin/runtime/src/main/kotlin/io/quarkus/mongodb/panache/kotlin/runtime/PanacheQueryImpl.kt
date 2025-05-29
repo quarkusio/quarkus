@@ -17,7 +17,7 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
         collection: MongoCollection<out Entity>?,
         session: ClientSession?,
         mongoQuery: Bson?,
-        sort: Bson?
+        sort: Bson?,
     ) {
         delegate = CommonPanacheQueryImpl(collection, session, mongoQuery, sort)
     }

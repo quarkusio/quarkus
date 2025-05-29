@@ -7,11 +7,12 @@ class ResponseData<T>(
 ) {
     companion object {
         fun success() = ResponseData<Unit>()
+
         fun failure(msg: String) = ResponseData<Unit>(code = STATUS_CODE.ERROR.code, msg = msg)
     }
 }
 
 enum class STATUS_CODE(val code: Int) {
     SUCCESS(200),
-    ERROR(500)
+    ERROR(500),
 }

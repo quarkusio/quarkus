@@ -11,6 +11,7 @@ class Address : PanacheEntity, Comparable<Address> {
     var street: String? = null
 
     constructor() {}
+
     constructor(street: String) {
         this.street = street
     }

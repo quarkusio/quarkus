@@ -13,12 +13,14 @@ open class AccessorEntity : GenericEntity<Int>() {
             getBCalls++
             return field
         }
+
     var s: Short = 0
     var i: Int = 0
         set(value) {
             setICalls++
             field = value
         }
+
     var l: Long
         get() {
             throw UnsupportedOperationException("just checking")
@@ -26,6 +28,7 @@ open class AccessorEntity : GenericEntity<Int>() {
         set(value) {
             throw UnsupportedOperationException("just checking")
         }
+
     var f = 0f
     var d = 0.0
 

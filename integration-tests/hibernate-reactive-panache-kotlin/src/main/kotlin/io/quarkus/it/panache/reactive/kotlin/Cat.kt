@@ -11,7 +11,7 @@ class Cat
 constructor(
     var name: String? = null,
     @ManyToOne var owner: CatOwner? = null,
-    var weight: Double? = null
+    var weight: Double? = null,
 ) : PanacheEntity() {
     companion object : PanacheCompanion<Cat>
 

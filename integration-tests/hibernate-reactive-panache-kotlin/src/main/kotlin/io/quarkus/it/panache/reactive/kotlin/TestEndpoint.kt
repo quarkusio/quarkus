@@ -650,7 +650,7 @@ class TestEndpoint {
                 assertEquals(ownerName, cat?.ownerName)
                 Cat.find(
                         "select c.name, c.owner.name as ownerName from Cat c where c.name = :name",
-                        with("name", catName)
+                        with("name", catName),
                     )
                     .project(CatProjectionBean::class.java)
                     .singleResult()
@@ -670,7 +670,7 @@ class TestEndpoint {
                 // The spaces at the beginning are intentional
                 Cat.find(
                         "   SELECT c.name, cast(null as string), SUM(c.weight) from Cat c where name = :name group by name  ",
-                        with("name", catName)
+                        with("name", catName),
                     )
                     .project(CatProjectionBean::class.java)
             }
@@ -688,7 +688,7 @@ class TestEndpoint {
                 Cat.find(
                         "   SELECT   disTINct  c.name, cast(null as string), SUM(c.weight) from Cat c where " +
                             "name = :name group by name  ",
-                        with("name", catName)
+                        with("name", catName),
                     )
                     .project(CatProjectionBean::class.java)
             }
@@ -878,7 +878,7 @@ class TestEndpoint {
                             personDao.list(
                                 "#Person.getByName",
                                 Sort.by("name"),
-                                with("name", "stef")
+                                with("name", "stef"),
                             )
                         }
                     }
@@ -952,7 +952,7 @@ class TestEndpoint {
                                 assertEquals(1, persons.size)
                                 Person.update(
                                     "#Person.updateNameById",
-                                    with("name", "stef2").and("id", persons[0].id).map()
+                                    with("name", "stef2").and("id", persons[0].id).map(),
                                 )
                             }
                             .flatMap { count ->
@@ -963,7 +963,7 @@ class TestEndpoint {
                                 assertEquals(1, persons.size)
                                 Person.update(
                                     "#Person.updateNameById",
-                                    with("name", "stef3").and("id", persons[0].id)
+                                    with("name", "stef3").and("id", persons[0].id),
                                 )
                             }
                             .flatMap { count ->
@@ -975,7 +975,7 @@ class TestEndpoint {
                                 Person.update(
                                     "#Person.updateNameById.ordinal",
                                     "stef",
-                                    persons[0].id!!
+                                    persons[0].id!!,
                                 )
                             }
                             .flatMap { count ->
@@ -1007,7 +1007,7 @@ class TestEndpoint {
                                     assertEquals(1, persons.size)
                                     Person.delete(
                                         "#Person.deleteById",
-                                        with("id", personToDelete.id).map()
+                                        with("id", personToDelete.id).map(),
                                     )
                                 }
                                 .flatMap { count ->
@@ -1028,7 +1028,7 @@ class TestEndpoint {
                                     assertEquals(1, persons.size)
                                     Person.delete(
                                         "#Person.deleteById",
-                                        with("id", personToDelete.id)
+                                        with("id", personToDelete.id),
                                     )
                                 }
                                 .flatMap { count ->
@@ -1526,14 +1526,14 @@ class TestEndpoint {
             .flatMap {
                 Person.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                    "stefp1"
+                    "stefp1",
                 )
             }
             .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1552,7 +1552,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1569,7 +1569,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 Person.update(
                     "set name = 'stefNEW' where name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1651,14 +1651,14 @@ class TestEndpoint {
             .flatMap {
                 personDao.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                    "stefp1"
+                    "stefp1",
                 )
             }
             .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "update from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1673,14 +1673,14 @@ class TestEndpoint {
             .flatMap {
                 personDao.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = ?1",
-                    "stefp1"
+                    "stefp1",
                 )
             }
             .flatMap { updateByIndexParameter ->
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "from Person2 p set p.name = 'stefNEW' where p.name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1697,7 +1697,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "set name = 'stefNEW' where name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1714,7 +1714,7 @@ class TestEndpoint {
                 assertEquals(1, updateByIndexParameter, "More than one Person updated")
                 personDao.update(
                     "name = 'stefNEW' where name = :pName",
-                    with("pName", "stefp2").map()
+                    with("pName", "stefp2").map(),
                 )
             }
             .flatMap { updateByNamedParameter ->
@@ -1744,6 +1744,6 @@ class TestEndpoint {
     enum class PersistTest {
         Iterable,
         Variadic,
-        Stream
+        Stream,
     }
 }

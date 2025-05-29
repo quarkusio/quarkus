@@ -16,7 +16,7 @@ class ClientKotlinMessageBodyWriter(private val json: Json) : MessageBodyWriter<
         type: Class<*>,
         genericType: Type,
         annotations: Array<out Annotation>?,
-        mediaType: MediaType?
+        mediaType: MediaType?,
     ) = true
 
     override fun writeTo(
@@ -26,7 +26,7 @@ class ClientKotlinMessageBodyWriter(private val json: Json) : MessageBodyWriter<
         annotations: Array<out Annotation>?,
         mediaType: MediaType,
         httpHeaders: MultivaluedMap<String, Any>,
-        entityStream: OutputStream
+        entityStream: OutputStream,
     ) {
         json.encodeToStream(serializer(genericType), t, entityStream)
     }

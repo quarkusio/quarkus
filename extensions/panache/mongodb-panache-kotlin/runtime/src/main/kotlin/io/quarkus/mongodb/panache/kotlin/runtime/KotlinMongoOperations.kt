@@ -31,7 +31,7 @@ class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() 
         collection: MongoCollection<*>,
         session: ClientSession?,
         query: Bson?,
-        sortDoc: Bson?
+        sortDoc: Bson?,
     ) = PanacheQueryImpl(collection, session, query, sortDoc)
 
     /**
@@ -45,7 +45,7 @@ class KotlinMongoOperations : MongoOperations<PanacheQuery<*>, PanacheUpdate>() 
     override fun createUpdate(
         collection: MongoCollection<*>,
         entityClass: Class<*>,
-        docUpdate: Bson
+        docUpdate: Bson,
     ) = PanacheUpdateImpl(this, entityClass, docUpdate, collection)
 
     /**

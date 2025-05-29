@@ -495,9 +495,15 @@ public interface LogRuntimeConfig {
         /**
          * Indicates whether to log asynchronously
          */
-        @WithParentName
         @WithDefault("false")
         boolean enable();
+
+        /**
+         * Indicates whether to log asynchronously
+         */
+        @WithParentName
+        @Deprecated(forRemoval = true, since = "3.24")
+        Optional<Boolean> legacyEnable();
 
         /**
          * The queue length to use before flushing writing

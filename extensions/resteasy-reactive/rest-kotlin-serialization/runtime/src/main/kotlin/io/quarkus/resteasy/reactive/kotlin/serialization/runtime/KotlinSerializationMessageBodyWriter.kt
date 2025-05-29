@@ -25,7 +25,7 @@ class KotlinSerializationMessageBodyWriter(private val json: Json) :
         annotations: Array<Annotation>,
         mediaType: MediaType,
         httpHeaders: MultivaluedMap<String, Any>,
-        entityStream: OutputStream
+        entityStream: OutputStream,
     ) {
         JsonMessageBodyWriterUtil.setContentTypeIfNecessary(httpHeaders)
         if (o is String) { // YUK: done in order to avoid adding extra quotes...
@@ -52,7 +52,9 @@ class KotlinSerializationMessageBodyWriter(private val json: Json) :
     private class NoopCloseAndFlushOutputStream(private val delegate: OutputStream) :
         OutputStream() {
         override fun flush() {}
+
         override fun close() {}
+
         override fun write(b: Int) {
             delegate.write(b)
         }

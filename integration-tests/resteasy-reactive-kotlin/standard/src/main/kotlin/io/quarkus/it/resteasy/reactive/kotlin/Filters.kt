@@ -37,7 +37,7 @@ class Filters {
     suspend fun addResponseHeader(
         context: ContainerResponseContext,
         simpleResourceInfo: SimpleResourceInfo,
-        resourceInfo: ResourceInfo
+        resourceInfo: ResourceInfo,
     ) {
         delay(100)
         context.headers.add("method", simpleResourceInfo.methodName)

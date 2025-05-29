@@ -83,7 +83,7 @@ what you would expect to see. Don't forget to indicate your Quarkus, Java, Maven
 Sometimes a bug has been fixed in the `main` branch of Quarkus and you want to confirm it is fixed for your own
 application. There are two simple options for testing the `main` branch:
 
-* either use the snapshots we publish daily on <https://s01.oss.sonatype.org/content/repositories/snapshots>
+* either use the snapshots we publish daily on <https://central.sonatype.com/repository/maven-snapshots>
 * or build Quarkus locally
 
 The following is a quick summary aimed at allowing you to quickly test `main`. If you are interested in learning more details, refer to
@@ -93,7 +93,7 @@ the [Build section](#build) and the [Usage section](#usage).
 
 Snapshots are published daily with version `999-SNAPSHOT`, so you will have to wait for a snapshot containing the commits you are interested in.
 
-Then just add <https://s01.oss.sonatype.org/content/repositories/snapshots> as a Maven repository **and** a plugin
+Then just add <https://central.sonatype.com/repository/maven-snapshots> as a Maven repository **and** a plugin
 repository in your `settings xml` (which should be placed in the `.m2` directory within your home directory):
 
 ```xml
@@ -107,7 +107,7 @@ repository in your `settings xml` (which should be placed in the `.m2` directory
             <repositories>
                 <repository>
                     <id>quarkus-snapshots-repository</id>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -119,7 +119,7 @@ repository in your `settings xml` (which should be placed in the `.m2` directory
             <pluginRepositories>
                 <pluginRepository>
                     <id>quarkus-snapshots-plugin-repository</id>
-                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+                    <url>https://central.sonatype.com/repository/maven-snapshots/</url>
                     <releases>
                         <enabled>false</enabled>
                     </releases>
@@ -136,7 +136,7 @@ repository in your `settings xml` (which should be placed in the `.m2` directory
 </settings>
 ```
 
-You can check the last publication date here: <https://s01.oss.sonatype.org/content/repositories/snapshots/io/quarkus/>.
+You can check the last publication date here: <https://central.sonatype.com/service/rest/repository/browse/maven-snapshots/io/quarkus/quarkus-core/999-SNAPSHOT/>.
 
 ### Building main
 

@@ -24,6 +24,7 @@ interface CountriesClient {
     @Path("/notFoundCountries")
     @Produces(MediaType.APPLICATION_JSON)
     fun notFoundCountries(): List<Country>
+
     companion object {
         @JvmStatic
         @ClientExceptionMapper

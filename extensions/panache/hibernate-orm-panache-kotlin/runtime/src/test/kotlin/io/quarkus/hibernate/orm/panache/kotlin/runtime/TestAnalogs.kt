@@ -36,7 +36,7 @@ class TestAnalogs {
         compare(
             map(JavaPanacheRepository::class),
             map(PanacheRepository::class),
-            listOf("findByIdOptional")
+            listOf("findByIdOptional"),
         )
     }
 
@@ -71,7 +71,7 @@ class TestAnalogs {
         assertTrue(kotlinMethods.isEmpty(), "Old methods not removed: \n${kotlinMethods.byLine()}")
         assertTrue(
             companionMethods.isEmpty(),
-            "Old methods not removed: \n${companionMethods.byLine()}"
+            "Old methods not removed: \n${companionMethods.byLine()}",
         )
     }
 
@@ -87,7 +87,7 @@ class TestAnalogs {
     private fun compare(
         javaClass: AnalogVisitor,
         kotlinClass: AnalogVisitor,
-        allowList: List<String> = listOf()
+        allowList: List<String> = listOf(),
     ) {
         val javaMethods = javaClass.methods
         val kotlinMethods = kotlinClass.methods
@@ -125,12 +125,13 @@ private fun <E> List<E>.byLine(): String {
 
 class AnalogVisitor(val erasedType: ByteCodeType? = null) : ClassVisitor(Gizmo.ASM_API_VERSION) {
     val methods = mutableListOf<Method>()
+
     override fun visitMethod(
         access: Int,
         name: String,
         descriptor: String,
         signature: String?,
-        exceptions: Array<out String>?
+        exceptions: Array<out String>?,
     ): MethodVisitor? {
         if (name != "<init>") {
             val type = descriptor.substringAfterLast(")").trim()

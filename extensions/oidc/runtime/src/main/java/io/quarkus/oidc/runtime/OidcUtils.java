@@ -916,4 +916,8 @@ public final class OidcUtils {
         }
         return token;
     }
+
+    public static boolean isDPoPScheme(String authorizationScheme) {
+        return OidcConstants.DPOP_SCHEME.equalsIgnoreCase(authorizationScheme);
+    }
 }

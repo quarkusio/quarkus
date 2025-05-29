@@ -326,10 +326,17 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     private static void injectRuntimeConfiguration(HibernateOrmRuntimeConfigPersistenceUnit persistenceUnitConfig,
             Builder runtimeSettingsBuilder) {
+
+        String generationStrategy = persistenceUnitConfig.schemaManagement().strategy();
+        if (!"none".equals(generationStrategy) && persistenceUnitConfig.database().startOffline()) {
+            throw new PersistenceException(
+                    "Version check `quarkus.hibernate-orm.schema-management.strategy` cannot be any different than `none` when using offline mode `quarkus.hibernate-orm.database.start-offline=true`");
+        }
+
         // Database
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DATABASE_ACTION,
                 persistenceUnitConfig.database().generation().generation()
-                        .orElse(persistenceUnitConfig.schemaManagement().strategy()));
+                        .orElse(generationStrategy));
 
         runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_CREATE_SCHEMAS,
                 String.valueOf(persistenceUnitConfig.database().generation().createSchemas()

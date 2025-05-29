@@ -2,6 +2,7 @@ package io.quarkus.vertx.http.runtime.attribute;
 
 import io.quarkus.vertx.http.runtime.filters.OriginalRequestContext;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpVersion;
 import io.vertx.ext.web.RoutingContext;
 
 /**
@@ -38,32 +39,24 @@ public class RequestLineAttribute implements ExchangeAttribute {
             httpMethod = exchange.request().method();
             uri = exchange.request().uri();
         }
-        StringBuilder sb = new StringBuilder()
-                .append(httpMethod)
-                .append(' ')
-                .append(uri);
-        sb.append(' ');
-        String httpVersion = "-";
-        switch (exchange.request().version()) {
-            case HTTP_1_0:
-                httpVersion = "HTTP/1.0";
-                break;
-            case HTTP_1_1:
-                httpVersion = "HTTP/1.1";
-                break;
-            case HTTP_2:
-                httpVersion = "HTTP/2";
-                break;
-            default:
+
+        return httpMethod + " " + uri + " " + getHttpVersionStr(exchange.request().version());
+    }
+
+    private static String getHttpVersionStr(HttpVersion version) {
+        // best effort to try and infer the HTTP version from
+        // any "unknown" enum value
+        return switch (version) {
+            case HTTP_1_0 -> "HTTP/1.0";
+            case HTTP_1_1 -> "HTTP/1.1";
+            case HTTP_2 -> "HTTP/2";
+            default ->
                 // best effort to try and infer the HTTP version from
                 // any "unknown" enum value
-                httpVersion = exchange.request().version().name()
-                        .replace("HTTP_", "HTTP/")
-                        .replace("_", ".");
-                break;
-        }
-        sb.append(httpVersion);
-        return sb.toString();
+                    version.name()
+                            .replace("HTTP_", "HTTP/")
+                            .replace("_", ".");
+        };
     }
 
     @Override

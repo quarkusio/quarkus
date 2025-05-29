@@ -15,7 +15,7 @@ include::_attributes.adoc[]
 The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
-Create a simple RESTful Java AI application that asks an AI model to write a poem based on a topic provided by the user at an endpoint. The service responds to GET requests made to the `http://localhost:8080/poems/{topic}/{lines}` URL. The user enters the topic and length of the desired poem; for example `http://localhost:8080/poems/purple/5`, to generate a poem such as:
+Create a simple RESTful Java application that asks an AI model to write a poem based on a topic provided by the user at an endpoint. The service responds to GET requests made to the `http://localhost:8080/poems/{topic}/{lines}` URL. The user enters the topic and length of the desired poem; for example `http://localhost:8080/poems/purple/5`, to generate a poem such as:
 
 ----
 In twilight's embrace, a royal hue,
@@ -44,8 +44,9 @@ include::{includes}/extension-status.adoc[]
 .Prerequisites 
 
 :prerequisites-time: 15 minutes 
-include::{includes}/prerequisites.adoc[] 
 :prerequisites-no-graalvm:
+include::{includes}/prerequisites.adoc[] 
+
 
 For the simple application in this guide, we can use a demo key for OpenAI.
 
@@ -106,7 +107,7 @@ It generates the following items in `./getting-started-ai-java-apps`:
 * example `Dockerfile` files for both `native` and `jvm` modes in `src/main/docker`
 * the `application.properties` configuration file
 
-Start the application in dev mode by running the following command:
+Start the application in dev mode by running the following commands:
 
 Quarkus CLI:
 [source,text]
@@ -201,7 +202,7 @@ public class Poems {
     }
 }
 ----
-<1> Implements the AiPoemService interface as aiPoemService.
+<1> Implements the `AiPoemService` interface as `aiPoemService`.
 <2> Defines the RESTful endpoint that takes the user's input as endpoint parameters, `{topic}` and `{lines}`.
 <3> Declares the `showMeAPoem()` method which takes two arguments, `userTopic` and `userLines` (because there is more than one argument, you must explicitly annotate each parameter).
 When a GET request is made to the `/poems/{topic}/{lines}` endpoint, the values of the `{topic}` and `{lines}` parameters are passed as the `writeAPoem()` method's `userTopic` and `userLines` arguments.

@@ -21,6 +21,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
+import io.smallrye.mutiny.tuples.Tuple2;
 
 public class JPAConfig {
 
@@ -83,6 +84,15 @@ public class JPAConfig {
                         : new RuntimeException(e.getCause());
             }
         }
+    }
+
+    public List<Tuple2<String, EntityManagerFactory>> getEntityManagerFactories() {
+        List<Tuple2<String, EntityManagerFactory>> allEntityManagerFactories = new ArrayList<>();
+        for (LazyPersistenceUnit pu : persistenceUnits.values()) {
+            allEntityManagerFactories.add(Tuple2.of(pu.name, getEntityManagerFactory(pu.name, pu.isReactive)));
+        }
+
+        return allEntityManagerFactories;
     }
 
     public EntityManagerFactory getEntityManagerFactory(String unitName, boolean reactive) {

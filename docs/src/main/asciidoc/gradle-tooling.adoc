@@ -584,7 +584,7 @@ Run the native tests using:
 ./gradlew testNative
 ----
 
-This task depends on `quarkusBuild`, so it will generate the native image before running the tests.
+This task depends on `quarkusBuild`, so it will generate the native image before running the native tests.
 
 [NOTE]
 ====
@@ -628,7 +628,7 @@ Those tests can be placed in a `src/integrationTest/java` directory and executed
 ./gradlew quarkusIntTest
 ----
 
-This task depends on both `test` and `quarkusBuild` tasks. The final artifact will be produced before running tests.
+This task depends on `quarkusBuild`, so it will generate the artifact before running the integration tests.
 
 == Using fast-jar
 

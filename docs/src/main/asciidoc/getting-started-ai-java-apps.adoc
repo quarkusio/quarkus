@@ -3,7 +3,6 @@ This document is maintained in the main Quarkus repository
 and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
-
 [id="getting-started-ai-java-apps"]
 = Creating your first AI Java application using LangChain4j
 include::_attributes.adoc[]
@@ -11,11 +10,12 @@ include::_attributes.adoc[]
 :diataxis-type: tutorial
 :categories: getting-started, ai
 :extension-status: experimental
+:topics: getting-started, ai
 ////
 The document header ends at the first blank line. Do not remove the blank line between the header and the abstract summary.
 ////
 
-Create a simple RESTful Java AI application that asks an AI model to write a short poem based on a topic provided by the user. The service responds to GET requests made to the `http://localhost:8080/poems/{topic}/{lines}` URL. The user enters the topic and length of the desired poem; for example `http://localhost:8080/poems/purple/5`, to generate a poem such as:
+Create a simple RESTful Java AI application that asks an AI model to write a poem based on a topic provided by the user at an endpoint. The service responds to GET requests made to the `http://localhost:8080/poems/{topic}/{lines}` URL. The user enters the topic and length of the desired poem; for example `http://localhost:8080/poems/purple/5`, to generate a poem such as:
 
 ----
 In twilight's embrace, a royal hue,
@@ -41,10 +41,11 @@ Much of the work needed to compose the prompt and to connect to the LLM in order
 include::{includes}/extension-status.adoc[]
 
 
-== Prerequisites
+.Prerequisites 
 
+:prerequisites-time: 15 minutes 
+include::{includes}/prerequisites.adoc[] 
 :prerequisites-no-graalvm:
-include::{includes}/prerequisites.adoc[]
 
 For the simple application in this guide, we can use a demo key for OpenAI.
 

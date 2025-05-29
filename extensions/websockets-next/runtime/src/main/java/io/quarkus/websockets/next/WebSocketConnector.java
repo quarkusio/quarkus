@@ -6,6 +6,7 @@ import java.net.URLEncoder;
 import jakarta.enterprise.inject.Default;
 import jakarta.enterprise.inject.Instance;
 
+import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.websockets.next.UserData.TypedKey;
 import io.smallrye.common.annotation.CheckReturnValue;
 import io.smallrye.mutiny.Uni;
@@ -61,6 +62,15 @@ public interface WebSocketConnector<CLIENT> {
     default WebSocketConnector<CLIENT> baseUri(String baseUri) {
         return baseUri(URI.create(baseUri));
     }
+
+    /**
+     * Set the name of the {@link TlsConfiguration}.
+     *
+     * @param tlsConfigurationName
+     * @return self
+     * @see io.quarkus.tls.TlsConfigurationRegistry#get(String)
+     */
+    WebSocketConnector<CLIENT> tlsConfigurationName(String tlsConfigurationName);
 
     /**
      * Set the path param.

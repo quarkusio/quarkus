@@ -1465,15 +1465,40 @@ class MyBean {
 
 === Configuring SSL/TLS
 
-To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]:
+To establish a TLS connection, you need to configure a _named_ configuration using the xref:./tls-registry-reference.adoc[TLS registry]. This is typically done via configuration:
 
 [source, properties]
 ----
 quarkus.tls.my-ws-client.trust-store.p12.path=server-truststore.p12
 quarkus.tls.my-ws-client.trust-store.p12.password=secret
-
-quarkus.websockets-next.client.tls-configuration-name=my-ws-client # Reference the named configuration
 ----
+
+With a _named_ TLS configuration established, you can then configure the client to use it:
+
+[source, properties]
+----
+quarkus.websockets-next.client.tls-configuration-name=my-ws-client
+----
+
+Alternatively, you can supply the configuration name using the <<client-connectors,connector>>:
+
+[source, java]
+----
+@Singleton
+public class MyBean {
+
+    @Inject
+    WebSocketConnector<MyEndpoint> connector;
+
+    public void connect() {
+        connector
+            .tlsConfigurationName("my-ws-client")
+            .connectAndAwait();
+    }
+}
+----
+
+A name supplied to the connector will override any statically configured name. This can be useful for establishing a default configuration which can be overridden at runtime as necessary.
 
 WARNING: When using the WebSocket client, using a _named_ configuration is required to avoid conflicts with other TLS configurations.
 The client will not use the default TLS configuration.

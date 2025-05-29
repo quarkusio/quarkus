@@ -111,24 +111,28 @@ public class WebSocketConnectorImpl<CLIENT> extends WebSocketConnectorBase<WebSo
             context.dispatch(new Handler<Void>() {
                 @Override
                 public void handle(Void event) {
-                    WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
-                    client.setPlain(c);
-                    if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
-                        telemetrySupport.connectionOpened();
-                    }
-                    c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
-                        @Override
-                        public void handle(AsyncResult<WebSocket> r) {
-                            if (r.succeeded()) {
-                                e.complete(r.result());
-                            } else {
-                                if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
-                                    telemetrySupport.connectionOpeningFailed(r.cause());
-                                }
-                                e.fail(r.cause());
-                            }
+                    try {
+                        WebSocketClient c = vertx.createWebSocketClient(populateClientOptions());
+                        client.setPlain(c);
+                        if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
+                            telemetrySupport.connectionOpened();
                         }
-                    });
+                        c.connect(connectOptions, new Handler<AsyncResult<WebSocket>>() {
+                            @Override
+                            public void handle(AsyncResult<WebSocket> r) {
+                                if (r.succeeded()) {
+                                    e.complete(r.result());
+                                } else {
+                                    if (telemetrySupport != null && telemetrySupport.interceptConnection()) {
+                                        telemetrySupport.connectionOpeningFailed(r.cause());
+                                    }
+                                    e.fail(r.cause());
+                                }
+                            }
+                        });
+                    } catch (RuntimeException re) {
+                        e.fail(re);
+                    }
                 }
             });
         });

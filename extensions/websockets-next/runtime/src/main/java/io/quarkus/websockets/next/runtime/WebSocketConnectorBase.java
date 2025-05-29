@@ -44,6 +44,8 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
 
     protected final Map<String, Object> userData;
 
+    protected String tlsConfigurationName;
+
     // injected dependencies
 
     protected final Vertx vertx;
@@ -74,6 +76,11 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
 
     public THIS baseUri(URI baseUri) {
         this.baseUri = Objects.requireNonNull(baseUri);
+        return self();
+    }
+
+    public THIS tlsConfigurationName(String tlsConfigurationName) {
+        this.tlsConfigurationName = Objects.requireNonNull(tlsConfigurationName);
         return self();
     }
 
@@ -167,7 +174,11 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         }
 
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
-                config.tlsConfigurationName());
+                Optional.ofNullable(tlsConfigurationName));
+        if (maybeTlsConfiguration.isEmpty()) {
+            maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
+                    config.tlsConfigurationName());
+        }
         if (maybeTlsConfiguration.isPresent()) {
             TlsConfigUtils.configure(clientOptions, maybeTlsConfiguration.get());
         }

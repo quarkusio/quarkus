@@ -204,12 +204,17 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
         when(config.ordinal()).thenReturn(450);
         SpringCloudConfigClientConfig.DiscoveryConfig discoveryConfig = Mockito
                 .mock(SpringCloudConfigClientConfig.DiscoveryConfig.class);
-        when(config.discovery()).thenReturn(discoveryConfig);
+
+        SpringCloudConfigClientConfig.DiscoveryConfig.EurekaConfig eurekaConfig = Mockito
+                .mock(SpringCloudConfigClientConfig.DiscoveryConfig.EurekaConfig.class);
+
+        when(config.discovery()).thenReturn(Optional.of(discoveryConfig));
         when(discoveryConfig.enabled()).thenReturn(true);
-        when(discoveryConfig.serviceId()).thenReturn("config-server-id");
-        when(discoveryConfig.eurekaServiceUrl())
+        when(discoveryConfig.serviceId()).thenReturn(Optional.of("config-server-id"));
+        when(discoveryConfig.eurekaConfig()).thenReturn(Optional.of(eurekaConfig));
+        when(eurekaConfig.serviceUrl())
                 .thenReturn(Map.of("defaultZone", "http://localhost:" + MOCK_EUREKA_SERVER_PORT + "/eureka/"));
-        when(discoveryConfig.registryFetchIntervalSeconds()).thenReturn(Duration.ofSeconds(30));
+        when(eurekaConfig.registryFetchIntervalSeconds()).thenReturn(Duration.ofSeconds(30));
 
         final SpringCloudConfigClientConfigSourceFactory factory = new SpringCloudConfigClientConfigSourceFactory();
 
@@ -279,10 +284,15 @@ class SpringCloudConfigClientConfigSourceFactoryTest {
         when(config.ordinal()).thenReturn(ordinal);
         SpringCloudConfigClientConfig.DiscoveryConfig discoveryConfig = Mockito
                 .mock(SpringCloudConfigClientConfig.DiscoveryConfig.class);
-        when(config.discovery()).thenReturn(discoveryConfig);
+
+        SpringCloudConfigClientConfig.DiscoveryConfig.EurekaConfig eurekaConfig = Mockito
+                .mock(SpringCloudConfigClientConfig.DiscoveryConfig.EurekaConfig.class);
+
+        when(config.discovery()).thenReturn(Optional.of(discoveryConfig));
         when(discoveryConfig.enabled()).thenReturn(isDiscoveryEnabled);
-        when(discoveryConfig.serviceId()).thenReturn("config-server-id");
-        when(discoveryConfig.eurekaServiceUrl()).thenReturn(Map.of("defaultZone", "http://localhost:8761/eureka/"));
+        when(discoveryConfig.serviceId()).thenReturn(Optional.of("config-server-id"));
+        when(discoveryConfig.eurekaConfig()).thenReturn(Optional.of(eurekaConfig));
+        when(eurekaConfig.serviceUrl()).thenReturn(Map.of("defaultZone", "http://localhost:8761/eureka/"));
 
         return config;
     }

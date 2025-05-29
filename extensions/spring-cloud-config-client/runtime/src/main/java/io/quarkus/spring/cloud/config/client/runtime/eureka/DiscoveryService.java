@@ -20,16 +20,15 @@ public class DiscoveryService {
     }
 
     public String discover(SpringCloudConfigClientConfig config) {
-        String serviceId = config.discovery().serviceId();
+        SpringCloudConfigClientConfig.DiscoveryConfig discoveryConfig = config.discovery().get();
+        validate(discoveryConfig);
 
-        if (config.discovery().eurekaServiceUrl().isEmpty()) {
-            throw new IllegalArgumentException("No service URLs have been configured for service '" + serviceId + "'");
-        }
+        String serviceId = discoveryConfig.serviceId().get();
+        SpringCloudConfigClientConfig.DiscoveryConfig.EurekaConfig eurekaConfig = discoveryConfig.eurekaConfig().get();
+        String defaultServiceUrl = eurekaConfig.serviceUrl().get(DEFAULT_ZONE);
 
-        String defaultServiceUrl = config.discovery().eurekaServiceUrl().get(DEFAULT_ZONE);
-
-        Map<String, String> serviceUrlMap = config.discovery()
-                .eurekaServiceUrl()
+        Map<String, String> serviceUrlMap = eurekaConfig
+                .serviceUrl()
                 .entrySet()
                 .stream().filter(entry -> !DEFAULT_ZONE.equals(entry.getKey()))
                 .collect(toMap(Map.Entry::getKey, Map.Entry::getValue));
@@ -51,6 +50,21 @@ public class DiscoveryService {
         }
 
         throw new RuntimeException("Unable to discover Spring Cloud Config Server URL for service '" + serviceId + "'");
+    }
+
+    private void validate(SpringCloudConfigClientConfig.DiscoveryConfig discoveryConfig) {
+        if (discoveryConfig == null) {
+            throw new IllegalArgumentException("No discovery configuration has been provided");
+        }
+        if(discoveryConfig.eurekaConfig() == null) {
+            throw new IllegalArgumentException("No Eureka configuration has been provided");
+        }
+        if (discoveryConfig.eurekaConfig().get().serviceUrl().isEmpty()) {
+            throw new IllegalArgumentException("No service URLs have been configured for service");
+        }
+        if (discoveryConfig.serviceId() == null) {
+            throw new IllegalArgumentException("No service ID has been configured for service");
+        }
     }
 
     private String getHomeUrl(String defaultServiceUrl, String serviceId) {

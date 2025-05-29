@@ -132,7 +132,7 @@ public interface SpringCloudConfigClientConfig {
     /**
      * Configuration for Config Server discovery.
      */
-    DiscoveryConfig discovery();
+    Optional<DiscoveryConfig> discovery();
 
     interface DiscoveryConfig {
         /**
@@ -144,18 +144,25 @@ public interface SpringCloudConfigClientConfig {
         /**
          * The service ID to use when discovering the Spring Cloud Config Server
          */
-        String serviceId();
+        Optional<String> serviceId();
 
         /**
-         * The service URL to use to specify Eureka server
+         * Eureka server configuration
          */
-        Map<String, String> eurekaServiceUrl();
+        Optional<EurekaConfig> eurekaConfig();
 
-        /**
-         * Indicates how often(in seconds) to fetch the registry information from the eureka server.
-         */
-        @WithDefault("30S")
-        Duration registryFetchIntervalSeconds();
+        interface EurekaConfig {
+            /**
+             * The service URL to use to specify Eureka server
+             */
+            Map<String, String> serviceUrl();
+
+            /**
+             * Indicates how often(in seconds) to fetch the registry information from the eureka server.
+             */
+            @WithDefault("30S")
+            Duration registryFetchIntervalSeconds();
+        }
     }
 
     /** */

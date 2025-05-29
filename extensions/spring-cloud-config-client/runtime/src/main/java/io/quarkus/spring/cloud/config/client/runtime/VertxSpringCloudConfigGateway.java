@@ -4,14 +4,13 @@ import static io.vertx.core.spi.resolver.ResolverProvider.DISABLE_DNS_RESOLVER_P
 
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Function;
 
 import io.quarkus.spring.cloud.config.client.runtime.eureka.DiscoveryService;
 import io.quarkus.spring.cloud.config.client.runtime.eureka.EurekaClient;
@@ -50,21 +49,41 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private final SpringCloudConfigClientConfig config;
     private final Vertx vertx;
     private final WebClient webClient;
-    private final Function<SpringCloudConfigClientConfig, URI> baseUriSupplier;
-    private final DiscoveryService discoveryService;
+    private final ConfigServerBaseUrlProvider configServerBaseUrlProvider;
 
     public VertxSpringCloudConfigGateway(SpringCloudConfigClientConfig config) {
         this.config = config;
         this.vertx = createVertxInstance();
         this.webClient = createHttpClient(vertx, config);
-        this.baseUriSupplier = determineBaseUri(config.discovery().enabled());
-        this.discoveryService = new DiscoveryService(
-                new EurekaClient(
-                        webClient,
-                        config.discovery().registryFetchIntervalSeconds(),
-                        new EurekaResponseMapper(),
-                        new RandomEurekaInstanceSelector()
-                )
+        this.configServerBaseUrlProvider = createConfigServerProvider(config);
+    }
+
+    private ConfigServerBaseUrlProvider createConfigServerProvider(SpringCloudConfigClientConfig config) {
+        if (!config.discovery().isPresent() || (!config.discovery().get().enabled())) {
+            return new DirectConfigServerBaseUrlProvider(config);
+        }
+        DiscoveryService discoveryService = createDiscoveryService(config.discovery().get());
+        return new DiscoveryConfigServerBaseUrlProvider(discoveryService, config);
+    }
+
+    private DiscoveryService createDiscoveryService(SpringCloudConfigClientConfig.DiscoveryConfig config) {
+        EurekaClient eurekaClient = createEurekaClient(config.eurekaConfig().get());
+        return new DiscoveryService(eurekaClient);
+    }
+
+    private EurekaClient createEurekaClient(SpringCloudConfigClientConfig.DiscoveryConfig.EurekaConfig config) {
+        if(config == null) {
+            throw new IllegalArgumentException("Eureka configuration is required");
+        }
+        Duration fetchInterval = config.registryFetchIntervalSeconds();
+        EurekaResponseMapper responseMapper = new EurekaResponseMapper();
+        RandomEurekaInstanceSelector instanceSelector = new RandomEurekaInstanceSelector();
+        
+        return new EurekaClient(
+                webClient,
+                fetchInterval,
+                responseMapper,
+                instanceSelector
         );
     }
 
@@ -165,51 +184,9 @@ public class VertxSpringCloudConfigGateway implements SpringCloudConfigClientGat
     private static byte[] allBytes(InputStream inputStream) throws Exception {
         return inputStream.readAllBytes();
     }
-
-    private Function<SpringCloudConfigClientConfig, URI> determineBaseUri(boolean discoveryEnabled) {
-        log.debug("Determining base URI for Spring Cloud Config Server");
-        if (discoveryEnabled) {
-            log.debug("Using 'discovery' mode to determine base URI");
-            return getDiscoverUriSupplier();
-        } else {
-            return getUriSupplier();
-        }
-    }
-
-    private Function<SpringCloudConfigClientConfig, URI> getUriSupplier() {
-        return springCloudConfigClientConfig -> {
-            log.debug("Attempting to obtain configuration from the Spring Cloud Config Server at " + config.url());
-            String url = springCloudConfigClientConfig.url();
-            try {
-                validate(url);
-                return UrlUtility.toURI(url);
-            } catch (URISyntaxException e) {
-                throw new IllegalArgumentException("Value: '" + springCloudConfigClientConfig.url()
-                        + "' of property 'quarkus.spring-cloud-config.url' is invalid", e);
-            }
-        };
-    }
-
-    private void validate(String url) {
-        if (null == url || url.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "The 'quarkus.spring-cloud-config.url' property cannot be empty");
-        }
-    }
-
-    private Function<SpringCloudConfigClientConfig, URI> getDiscoverUriSupplier() {
-        return springCloudConfigClientConfig -> {
-            String discoveredUrl = discoveryService.discover(springCloudConfigClientConfig);
-            try {
-                return UrlUtility.toURI(discoveredUrl);
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
-        };
-    }
-
+    
     private ConfigServerUrl toConfigServerUrl(String applicationName, String profile) {
-        URI baseURI = baseUriSupplier.apply(config);
+        URI baseURI = configServerBaseUrlProvider.get();
         String path = baseURI.getPath();
         List<String> finalPathSegments = new ArrayList<>();
         finalPathSegments.add(path);

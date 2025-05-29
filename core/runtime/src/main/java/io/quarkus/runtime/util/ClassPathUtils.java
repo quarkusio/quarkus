@@ -16,6 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import io.quarkus.fs.util.ZipUtils;
+import org.jspecify.annotations.Nullable;
 
 public class ClassPathUtils {
 
@@ -29,7 +30,8 @@ public class ClassPathUtils {
      * @param path file system path
      * @return Java classpath resource name
      */
-    public static String toResourceName(Path path) {
+    @Nullable
+    public static String toResourceName(@Nullable Path path) {
         if (path == null) {
             return null;
         }

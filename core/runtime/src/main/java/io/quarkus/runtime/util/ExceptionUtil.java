@@ -1,5 +1,7 @@
 package io.quarkus.runtime.util;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -17,7 +19,8 @@ public class ExceptionUtil {
      * @param exception
      * @return
      */
-    public static String generateStackTrace(final Throwable exception) {
+    @Nullable
+    public static String generateStackTrace(final @Nullable Throwable exception) {
         if (exception == null) {
             return null;
         }
@@ -35,9 +38,10 @@ public class ExceptionUtil {
      * usage of this method is necessary.
      *
      * @param exception The exception
-     * @return
+     * @return root cause or null
      */
-    public static String rootCauseFirstStackTrace(final Throwable exception) {
+    @Nullable
+    public static String rootCauseFirstStackTrace(final @Nullable Throwable exception) {
         if (exception == null) {
             return null;
         }
@@ -76,6 +80,7 @@ public class ExceptionUtil {
         return generateStackTrace(modifiedRoot).replace("Caused by:", "Resulted in:");
     }
 
+    @Nullable
     public static Throwable getRootCause(Throwable exception) {
         final List<Throwable> chain = new ArrayList<>();
         Throwable curr = exception;

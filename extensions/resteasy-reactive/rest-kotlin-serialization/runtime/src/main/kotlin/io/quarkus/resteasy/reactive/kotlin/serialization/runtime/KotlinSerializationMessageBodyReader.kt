@@ -20,14 +20,14 @@ class KotlinSerializationMessageBodyReader(private val json: Json) :
         type: Class<*>,
         genericType: Type,
         annotations: Array<Annotation>?,
-        mediaType: MediaType
+        mediaType: MediaType,
     ) = isReadable(mediaType, type)
 
     override fun isReadable(
         type: Class<*>,
         genericType: Type,
         lazyMethod: ResteasyReactiveResourceInfo,
-        mediaType: MediaType
+        mediaType: MediaType,
     ) = isReadable(mediaType, type)
 
     override fun readFrom(
@@ -36,7 +36,7 @@ class KotlinSerializationMessageBodyReader(private val json: Json) :
         annotations: Array<out Annotation>,
         mediaType: MediaType,
         httpHeaders: MultivaluedMap<String, String>,
-        entityStream: InputStream
+        entityStream: InputStream,
     ): Any? {
         return doReadFrom(type, entityStream)
     }
@@ -45,7 +45,7 @@ class KotlinSerializationMessageBodyReader(private val json: Json) :
         type: Class<Any>,
         genericType: Type,
         mediaType: MediaType,
-        context: ServerRequestContext
+        context: ServerRequestContext,
     ): Any? {
         return doReadFrom(type, context.inputStream)
     }

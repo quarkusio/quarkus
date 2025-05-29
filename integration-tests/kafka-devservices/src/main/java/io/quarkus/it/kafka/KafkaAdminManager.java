@@ -43,8 +43,8 @@ public class KafkaAdminManager {
     public int partitions(String topic) {
         TopicDescription topicDescription;
         try {
-            Map<String, TopicDescription> partitions = admin.describeTopics(Collections.singletonList(topic)).all()
-                    .get(2000, TimeUnit.MILLISECONDS);
+            Map<String, TopicDescription> partitions = admin.describeTopics(Collections.singletonList(topic))
+                    .allTopicNames().get(2000, TimeUnit.MILLISECONDS);
             topicDescription = partitions.get(topic);
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);

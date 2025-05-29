@@ -29,29 +29,29 @@ import org.hibernate.annotations.ParamDef
     NamedQuery(name = "Person.countAll", query = "select count(*) from Person2"),
     NamedQuery(
         name = "Person.countByName",
-        query = "select count(*) from Person2 where name = :name"
+        query = "select count(*) from Person2 where name = :name",
     ),
     NamedQuery(
         name = "Person.countByName.ordinal",
-        query = "select count(*) from Person2 where name = ?1"
+        query = "select count(*) from Person2 where name = ?1",
     ),
     NamedQuery(name = "Person.updateAllNames", query = "Update Person2 p set p.name = :name"),
     NamedQuery(
         name = "Person.updateNameById",
-        query = "Update Person2 p set p.name = :name where p.id = :id"
+        query = "Update Person2 p set p.name = :name where p.id = :id",
     ),
     NamedQuery(
         name = "Person.updateNameById.ordinal",
-        query = "Update Person2 p set p.name = ?1 where p.id = ?2"
+        query = "Update Person2 p set p.name = ?1 where p.id = ?2",
     ),
     NamedQuery(name = "Person.deleteAll", query = "delete from Person2"),
     NamedQuery(name = "Person.deleteById", query = "delete from Person2 p where p.id = :id"),
-    NamedQuery(name = "Person.deleteById.ordinal", query = "delete from Person2 p where p.id = ?1")
+    NamedQuery(name = "Person.deleteById.ordinal", query = "delete from Person2 p where p.id = ?1"),
 )
 @FilterDef(
     name = "Person.hasName",
     defaultCondition = "name = :name",
-    parameters = [ParamDef(name = "name", type = String::class)]
+    parameters = [ParamDef(name = "name", type = String::class)],
 )
 @Filter(name = "Person.isAlive")
 @Filter(name = "Person.hasName")
@@ -78,7 +78,7 @@ class Person : PanacheEntity() {
             l: Long,
             f: Float,
             d: Double,
-            c: Char
+            c: Char,
         ) = 0
     }
 

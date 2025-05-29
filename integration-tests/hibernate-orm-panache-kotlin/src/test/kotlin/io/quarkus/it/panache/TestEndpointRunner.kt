@@ -46,7 +46,7 @@ class TestEndpointRunner {
             // (which is different from the ordinal order)
             "ENUM('DECEASED', 'LIVING')",
             schema["PERSON2"]?.get("STATUS"),
-            schema.toString()
+            schema.toString(),
         )
 
         endpoint.testModelDao()

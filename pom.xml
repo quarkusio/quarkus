@@ -70,8 +70,8 @@
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
         <jacoco.version>0.8.13</jacoco.version>
         <kubernetes-client.version>7.3.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <rest-assured.version>5.5.2</rest-assured.version>
-        <hibernate-orm.version>6.6.15.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
+        <rest-assured.version>5.5.5</rest-assured.version>
+        <hibernate-orm.version>6.6.16.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
@@ -150,17 +150,6 @@
             </snapshots>
         </repository>
     </repositories>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-release</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <build>
         <pluginManagement>

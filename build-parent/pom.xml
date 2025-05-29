@@ -96,7 +96,7 @@
         <junit4.version>4.13.2</junit4.version>
 
         <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.2.0</keycloak.server.version>
+        <keycloak.server.version>26.2.4</keycloak.server.version>
         <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
         <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
         <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
@@ -154,7 +154,7 @@
         <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 
         <!-- Quarkus Analytics -->
-        <properties-maven-plugin.version>1.1.0</properties-maven-plugin.version>
+        <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
         <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
         <!-- If PTS is enabled at the global level  -->
@@ -610,7 +610,7 @@
                         <dependency>
                             <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
-                            <version>4.0.26</version>
+                            <version>4.0.27</version>
                         </dependency>
                     </dependencies>
                 </plugin>
@@ -676,6 +676,11 @@
                     <groupId>io.smallrye.certs</groupId>
                     <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
                     <version>${smallrye-certificate-generator.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>com.diffplug.spotless</groupId>
+                    <artifactId>spotless-maven-plugin</artifactId>
+                    <version>2.44.4</version>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -779,7 +784,6 @@
                     <plugin>
                         <groupId>com.diffplug.spotless</groupId>
                         <artifactId>spotless-maven-plugin</artifactId>
-                        <version>2.35.0</version>
                         <executions>
                             <execution>
                                 <id>format-kotlin</id>

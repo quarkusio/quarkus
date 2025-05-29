@@ -17,30 +17,31 @@
 
     <properties>
         <!-- Plugin versions (please keep in alphabetical order) -->
-        <version.archetype.plugin>3.3.0</version.archetype.plugin>
+        <version.archetype.plugin>3.4.0</version.archetype.plugin>
         <version.buildhelper.plugin>3.6.0</version.buildhelper.plugin>
-        <version.buildnumber.plugin>3.0.0</version.buildnumber.plugin>
-        <version.clean.plugin>3.2.0</version.clean.plugin>
+        <version.buildnumber.plugin>3.2.1</version.buildnumber.plugin>
+        <version.clean.plugin>3.4.1</version.clean.plugin>
         <version.compiler.plugin>3.14.0</version.compiler.plugin>
-        <version.deploy.plugin>3.1.1</version.deploy.plugin>
-        <version.plugin.plugin>3.11.0</version.plugin.plugin>
-        <version.dependency.plugin>3.6.1</version.dependency.plugin>
-        <version.enforcer.plugin>3.3.0</version.enforcer.plugin>
-        <version.exec.plugin>3.5.0</version.exec.plugin>
+        <version.dependency.plugin>3.8.1</version.dependency.plugin>
+        <version.deploy.plugin>3.1.4</version.deploy.plugin>
+        <version.enforcer.plugin>3.5.0</version.enforcer.plugin>
+        <version.exec.plugin>3.5.1</version.exec.plugin>
         <version.formatter.plugin>2.26.0</version.formatter.plugin>
-        <version.gpg.plugin>3.0.1</version.gpg.plugin>
+        <version.gpg.plugin>3.2.7</version.gpg.plugin>
         <version.impsort.plugin>1.12.0</version.impsort.plugin>
-        <version.install.plugin>3.1.1</version.install.plugin>
-        <version.javadoc.plugin>3.5.0</version.javadoc.plugin>
-        <version.jar.plugin>3.3.0</version.jar.plugin>
-        <version.nexus-staging.plugin>1.6.13</version.nexus-staging.plugin>
-        <version.release.plugin>3.0.0</version.release.plugin>
+        <version.install.plugin>3.1.4</version.install.plugin>
+        <version.javadoc.plugin>3.11.2</version.javadoc.plugin>
+        <version.jar.plugin>3.4.2</version.jar.plugin>
+        <version.plugin.plugin>3.15.1</version.plugin.plugin>
+        <version.release.plugin>3.1.1</version.release.plugin>
         <version.resources.plugin>3.3.1</version.resources.plugin>
+        <!-- Do not update for now as it is causing test issues in integration-tests/devmode
+        java.lang.NoClassDefFoundError: com/salesforce/jprotoc/Generator -->
         <version.shade.plugin>3.2.1</version.shade.plugin>
-        <version.source.plugin>3.2.1</version.source.plugin>
-        <version.surefire.plugin>3.5.2</version.surefire.plugin>
+        <version.source.plugin>3.3.1</version.source.plugin>
+        <version.surefire.plugin>3.5.3</version.surefire.plugin>
         <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
-        <version.versions.plugin>2.15.0</version.versions.plugin>
+        <version.versions.plugin>2.18.0</version.versions.plugin>
         <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
 
         <!-- Code format -->
@@ -112,14 +113,16 @@
     </scm>
 
     <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
-        </snapshotRepository>
         <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>quarkus-publish</id>
+            <name>Quarkus Releases</name>
+            <url>https://repo.maven.apache.org/maven2</url>
         </repository>
+        <snapshotRepository>
+            <id>quarkus-publish</id>
+            <name>Quarkus Snapshots</name>
+            <url>https://central.sonatype.com/repository/maven-snapshots</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <build>
@@ -421,11 +424,6 @@
                     <version>${version.yaml-properties.plugin}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>${version.nexus-staging.plugin}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>${version.exec.plugin}</version>
@@ -578,18 +576,6 @@
                             </execution>
                         </executions>
                     </plugin>
-                    <plugin>
-                        <groupId>org.sonatype.plugins</groupId>
-                        <artifactId>nexus-staging-maven-plugin</artifactId>
-                        <extensions>true</extensions>
-                        <configuration>
-                            <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
-                            <serverId>ossrh</serverId>
-                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
-                            <keepStagingRepositoryOnCloseRuleFailure>true</keepStagingRepositoryOnCloseRuleFailure>
-                            <stagingProgressTimeoutMinutes>60</stagingProgressTimeoutMinutes>
-                        </configuration>
-                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -621,11 +607,9 @@
                             <groupId>org.apache.maven.plugins</groupId>
                             <artifactId>maven-gpg-plugin</artifactId>
                             <configuration>
-                                <!-- Prevent gpg from using pinentry programs -->
-                                <gpgArguments>
-                                    <arg>--pinentry-mode</arg>
-                                    <arg>loopback</arg>
-                                </gpgArguments>
+                                <bestPractices>true</bestPractices>
+                                <useAgent>false</useAgent>
+                                <signer>bc</signer>
                             </configuration>
                         </plugin>
                     </plugins>

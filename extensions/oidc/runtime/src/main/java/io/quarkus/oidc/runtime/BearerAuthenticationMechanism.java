@@ -60,7 +60,7 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
     }
 
     private static void setDPopProof(RoutingContext context, OidcTenantConfig oidcTenantConfig, String token) {
-        if (OidcConstants.DPOP_SCHEME.equals(oidcTenantConfig.token().authorizationScheme())) {
+        if (OidcUtils.isDPoPScheme(oidcTenantConfig.token().authorizationScheme())) {
 
             List<String> proofs = context.request().headers().getAll(OidcConstants.DPOP_SCHEME);
             if (proofs == null || proofs.isEmpty()) {

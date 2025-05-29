@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
+import io.quarkus.websockets.next.UserData.TypedKey;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
 import io.vertx.core.Vertx;
@@ -40,6 +41,10 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     protected String path;
 
     protected Set<String> pathParamNames;
+
+    protected final Map<String, Object> userData;
+
+    protected String tlsConfigurationName;
 
     // injected dependencies
 
@@ -66,10 +71,16 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         this.tlsConfigurationRegistry = tlsConfigurationRegistry;
         this.path = "";
         this.pathParamNames = Set.of();
+        this.userData = new HashMap<>();
     }
 
     public THIS baseUri(URI baseUri) {
         this.baseUri = Objects.requireNonNull(baseUri);
+        return self();
+    }
+
+    public THIS tlsConfigurationName(String tlsConfigurationName) {
+        this.tlsConfigurationName = Objects.requireNonNull(tlsConfigurationName);
         return self();
     }
 
@@ -98,6 +109,11 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
 
     public THIS addSubprotocol(String value) {
         subprotocols.add(Objects.requireNonNull(value));
+        return self();
+    }
+
+    public <VALUE> THIS userData(TypedKey<VALUE> key, VALUE value) {
+        userData.put(key.value(), value);
         return self();
     }
 
@@ -158,7 +174,11 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         }
 
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
-                config.tlsConfigurationName());
+                Optional.ofNullable(tlsConfigurationName));
+        if (maybeTlsConfiguration.isEmpty()) {
+            maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
+                    config.tlsConfigurationName());
+        }
         if (maybeTlsConfiguration.isPresent()) {
             TlsConfigUtils.configure(clientOptions, maybeTlsConfiguration.get());
         }

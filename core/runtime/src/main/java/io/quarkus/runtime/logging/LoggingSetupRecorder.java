@@ -613,7 +613,8 @@ public class LoggingSetupRecorder {
         consoleHandler.setErrorManager(defaultErrorManager);
         applyFilter(includeFilters, defaultErrorManager, cleanupFilter, config.filter(), namedFilters, consoleHandler);
 
-        Handler handler = config.async().enable() ? createAsyncHandler(config.async(), config.level(), consoleHandler)
+        Handler handler = config.async().legacyEnable().orElse(config.async().enable())
+                ? createAsyncHandler(config.async(), config.level(), consoleHandler)
                 : consoleHandler;
 
         if (color && launchMode.isDevOrTest() && !config.async().enable()) {
@@ -708,7 +709,7 @@ public class LoggingSetupRecorder {
             handler.getErrorManager().error("Multiple file formatters were activated", null, ErrorManager.GENERIC_FAILURE);
         }
 
-        if (config.async().enable()) {
+        if (config.async().legacyEnable().orElse(config.async().enable())) {
             return createAsyncHandler(config.async(), config.level(), handler);
         }
         return handler;
@@ -790,7 +791,7 @@ public class LoggingSetupRecorder {
                         ErrorManager.GENERIC_FAILURE);
             }
 
-            if (config.async().enable()) {
+            if (config.async().legacyEnable().orElse(config.async().enable())) {
                 return createAsyncHandler(config.async(), config.level(), handler);
             }
             return handler;
@@ -837,7 +838,7 @@ public class LoggingSetupRecorder {
                         ErrorManager.GENERIC_FAILURE);
             }
 
-            if (config.async().enable()) {
+            if (config.async().legacyEnable().orElse(config.async().enable())) {
                 return createAsyncHandler(config.async(), config.level(), handler);
             }
             return handler;

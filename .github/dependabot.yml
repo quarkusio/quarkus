@@ -82,11 +82,11 @@ updates:
       - dependency-name: com.thoughtworks.xstream:xstream
       - dependency-name: org.jacoco:*
       # Maven plugins
+      - dependency-name: org.apache.maven.plugins:*
+      - dependency-name: org.codehaus.mojo:*
       - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
-      - dependency-name: org.apache.maven.plugins:maven-invoker-plugin
-      - dependency-name: org.codehaus.mojo:build-helper-maven-plugin
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*

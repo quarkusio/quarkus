@@ -16,7 +16,7 @@ class PanacheQueryImpl<Entity : Any> : PanacheQuery<Entity> {
         query: String?,
         originalQuery: String?,
         orderBy: String?,
-        paramsArrayOrMap: Any?
+        paramsArrayOrMap: Any?,
     ) {
         delegate = CommonPanacheQueryImpl(em, query, originalQuery, orderBy, paramsArrayOrMap)
     }

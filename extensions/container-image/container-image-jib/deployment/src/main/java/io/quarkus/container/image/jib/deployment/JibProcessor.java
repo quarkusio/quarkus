@@ -806,6 +806,7 @@ public class JibProcessor {
                     .setEnvironment(createEnvironmentVariables(jibConfig))
                     .setLabels(allLabels(jibConfig, containerImageConfig, containerImageLabels));
 
+            includeSharedObjects(jibContainerBuilder, nativeImageBuildItem, workDirInContainer);
             mayInheritEntrypoint(jibContainerBuilder, entrypoint, jibConfig.nativeArguments().orElse(null));
 
             if (jibConfig.useCurrentTimestamp()) {
@@ -818,6 +819,26 @@ public class JibProcessor {
             return jibContainerBuilder;
         } catch (InvalidImageReferenceException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    private void includeSharedObjects(JibContainerBuilder jibContainerBuilder, NativeImageBuildItem nativeImageBuildItem,
+            AbsoluteUnixPath workDirInContainer) {
+        Path buildDir = nativeImageBuildItem.getPath().getParent();
+        try (Stream<Path> paths = Files.list(buildDir)) {
+            List<Path> sharedObjectFiles = paths.filter(Files::isRegularFile).filter(p -> !Files.isDirectory(p))
+                    .filter(p -> p.getFileName().toString().endsWith(".so")).toList();
+            if (!sharedObjectFiles.isEmpty()) {
+                FileEntriesLayer.Builder fileEntriesLayerBuilder = FileEntriesLayer.builder();
+                sharedObjectFiles.forEach(sharedObjectFile -> {
+                    fileEntriesLayerBuilder.addEntry(sharedObjectFile,
+                            workDirInContainer.resolve(sharedObjectFile.getFileName().toString()),
+                            FilePermissions.fromOctalString("775"));
+                });
+                jibContainerBuilder.addFileEntriesLayer(fileEntriesLayerBuilder.setName("shared objects").build());
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

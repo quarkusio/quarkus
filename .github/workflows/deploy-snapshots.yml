@@ -2,7 +2,7 @@ name: Quarkus Deploy Snapshots
 
 on:
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '0 0 * * *'
   workflow_dispatch:
 
 env:
@@ -46,12 +46,12 @@ jobs:
       - name: Build and Deploy
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
-          SERVER_USERNAME: ${{ secrets.SERVER_USERNAME }}
-          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
         run: |
-          ./mvnw -e -B --settings .github/mvn-settings.xml \
+          ./mvnw -e -B --settings .github/release-settings.xml \
+            -Dnjord.autoPublish \
             -DskipTests -DskipITs -Dno-format -Dinvoker.skip=true \
-            -DretryFailedDeploymentCount=10 \
             -Dno-test-modules \
             -Ddevelocity.cache.local.enabled=false \
             -Ddevelocity.cache.remote.enabled=false \

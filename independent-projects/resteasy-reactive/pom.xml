@@ -58,7 +58,7 @@
         <mutiny.version>2.9.0</mutiny.version>
         <smallrye-common.version>2.12.0</smallrye-common.version>
         <vertx.version>4.5.14</vertx.version>
-        <rest-assured.version>5.5.2</rest-assured.version>
+        <rest-assured.version>5.5.5</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.19.0</jackson-bom.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
@@ -525,17 +525,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

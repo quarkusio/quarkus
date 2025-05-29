@@ -4,6 +4,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import javax.net.ssl.SSLSession;
+
 import org.jboss.logging.Logger;
 
 import io.quarkus.vertx.utils.NoBoundChecksBuffer;
@@ -135,6 +137,11 @@ public abstract class WebSocketConnectionBase implements Connection {
     @Override
     public boolean isSecure() {
         return webSocket().isSsl();
+    }
+
+    @Override
+    public SSLSession sslSession() {
+        return webSocket().sslSession();
     }
 
     @Override

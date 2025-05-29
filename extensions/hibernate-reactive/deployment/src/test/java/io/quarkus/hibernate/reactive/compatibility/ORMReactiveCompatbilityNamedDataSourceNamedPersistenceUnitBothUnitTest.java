@@ -3,7 +3,6 @@ package io.quarkus.hibernate.reactive.compatibility;
 import java.util.List;
 
 import jakarta.inject.Inject;
-import jakarta.inject.Named;
 
 import org.hibernate.SessionFactory;
 import org.hibernate.reactive.mutiny.Mutiny;
@@ -38,8 +37,7 @@ public class ORMReactiveCompatbilityNamedDataSourceNamedPersistenceUnitBothUnitT
             .overrideConfigKey("quarkus.datasource.\"named-datasource\".password", USERNAME_PWD)
             .overrideConfigKey("quarkus.log.category.\"io.quarkus.hibernate\".level", "DEBUG");
 
-    @Inject
-    @Named("named-pu")
+    @PersistenceUnit("named-pu")
     Mutiny.SessionFactory namedMutinySessionFactory;
 
     @Test

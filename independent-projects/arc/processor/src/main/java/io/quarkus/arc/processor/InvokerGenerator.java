@@ -791,13 +791,14 @@ public class InvokerGenerator extends AbstractGenerator {
             this.invoker = invoker;
         }
 
+        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
         CandidateMethod resolve() {
             if (matching.size() == 1) {
                 return matching.get(0);
             }
 
             if (matching.isEmpty()) {
-                String expectedType = this.expectedType.name().toString();
+                String expectedType = this.expectedType.toString();
                 String expectation = "";
                 if (transformer.isInputTransformer()) {
                     expectation = "\n"

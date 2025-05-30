@@ -8,8 +8,6 @@ import '@vaadin/tooltip';
 import '@qomponent/qui-code-block';
 import '@qomponent/qui-directory-tree';
 import '@qomponent/qui-badge';
-import '@vaadin/tabs';
-import '@vaadin/tabsheet';
 import '@vaadin/dialog';
 import '@vaadin/confirm-dialog';
 import '@vaadin/progress-bar';
@@ -43,6 +41,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             display: flex;
             width: 100%;
             height: 100%;
+            flex-direction: column;
         }
     
         .split vaadin-split-layout {
@@ -74,6 +73,48 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             height: 100vh;
             border: none;
         }
+    
+        .sourcehalf {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+            overflow:hidden !important;
+        }
+    
+        .mainMenuBar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--lumo-contrast-20pct);
+        }
+    
+        .mainMenuBarButtons {
+            display: flex; 
+            align-items: center; 
+            width: 100%;
+        }
+
+        .mainMenuBarTitle {
+            font-size: large;
+            color: var(--lumo-contrast-50pct);
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .mainMenuBarActions {
+            display: flex; 
+            align-items: center; 
+            gap: 0.5rem;
+            width: 100%;
+            justify-content: end;
+            padding-right: 10px;
+        }
+
+        .sourcehalfcontent {
+            overflow: scroll;
+        }
+
     `;
     
     static properties = {
@@ -85,7 +126,8 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         _changeToWorkspaceItem: {state: true},
         _actionResult: {state: true},
         _showActionProgress: {state: true},
-        _confirmDialogOpened: {state: true}
+        _confirmDialogOpened: {state: true},
+        _isMaximized: {state: true}
     };
 
     constructor() { 
@@ -98,6 +140,7 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         this._clearSelectedWorkspaceItem();
         this._clearActionResult();
         this._confirmDialogOpened = false;
+        this._isMaximized = false;
     }
 
     connectedCallback() {
@@ -157,9 +200,10 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     render() { 
         if (this._workspaceItems) {
             return html`<div class="split">
+                            ${this._renderMainMenuBar()}
                             <vaadin-split-layout>
-                                <master-content style="width: 25%;">${this._renderWorkspaceTree()}</master-content>
-                                <detail-content style="width: 75%;">${this._renderSelectedSource()}</detail-content>
+                                <master-content style="width: ${this._isMaximized ? '0%' : '25%'};">${this._renderWorkspaceTree()}</master-content>
+                                <detail-content style="width: ${this._isMaximized ? '100%' : '75%'};">${this._renderSelectedSource()}</detail-content>
                             </vaadin-split-layout>
                         </div>
                         ${this._renderResultDialog()}
@@ -182,37 +226,47 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             
             return html`<vaadin-split-layout>
                             <master-content style="width: 50%;">
-                                <vaadin-tabsheet>
-
-                                    <vaadin-button title="Save" slot="prefix" theme="icon" aria-label="Save" @click="${this._saveSelectedWorkspaceItem}">
-                                      <vaadin-icon icon="font-awesome-solid:floppy-disk"></vaadin-icon>
-                                    </vaadin-button>
-                                    <vaadin-button title="Copy" slot="prefix" theme="icon" aria-label="Copy" @click="${this._copySelectedWorkspaceItem}">
-                                      <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
-                                    </vaadin-button>
-                                    
-            
-                                    ${this._renderActions()}
-
-                                    <qui-ide-link slot="suffix" title="Open in IDE" style="cursor: pointer;"
-                                        fileName="${this._selectedWorkspaceItem.path}"
-                                        lineNumber="0"
-                                        noCheck>
-                                        <vaadin-icon icon="font-awesome-solid:up-right-from-square"></vaadin-icon>      
-                                    </qui-ide-link>
-
-                                    <vaadin-tabs slot="tabs">
-                                      <vaadin-tab id="${this._selectedWorkspaceItem.path}" title="${this._selectedWorkspaceItem.path}">${this._selectedWorkspaceItem.name.split('/').pop()}</vaadin-tab>
-                                    </vaadin-tabs>
-
-                                    <div tab="${this._selectedWorkspaceItem.path}">
-                                        ${this._renderContent()}
-                                    </div>
-                                </vaadin-tabsheet>
+                                <div class="mainPart">
+                                    ${this._renderMainContent()}
+                                </div>
                             </master-content>
                             ${this._renderResultSplitView()}
-                        </vaadin-split-layout>`;
+                        </vaadin-split-layout>
+                    `;
         }
+    }
+    
+    _renderMainMenuBar(){
+        const isHidden = !this._selectedWorkspaceItem.name;
+        
+        return html`
+            <div class="mainMenuBar" style="${isHidden ? 'visibility: hidden;' : ''}">
+                <div class="mainMenuBarButtons">
+                    <vaadin-button title="Save" theme="icon tertiary" aria-label="Save" @click="${this._saveSelectedWorkspaceItem}">
+                        <vaadin-icon icon="font-awesome-solid:floppy-disk"></vaadin-icon>
+                    </vaadin-button>
+                    <vaadin-button title="Copy" theme="icon tertiary" aria-label="Copy" @click="${this._copySelectedWorkspaceItem}">
+                        <vaadin-icon icon="font-awesome-solid:copy"></vaadin-icon>
+                    </vaadin-button>
+                </div>
+
+                <div class="mainMenuBarTitle" @dblclick="${this._toggleSplit}">
+                    ${this._selectedWorkspaceItem?.name?.split('/').pop()}
+                </div>
+
+                <div class="mainMenuBarActions">
+                    ${this._renderActions()}
+                    <qui-ide-link title="Open in IDE"
+                        style="cursor: pointer;"
+                        fileName="${this._selectedWorkspaceItem?.path}"
+                        lineNumber="0"
+                        noCheck>
+                        <vaadin-icon icon="font-awesome-solid:up-right-from-square"></vaadin-icon>
+                    </qui-ide-link>
+                </div>
+            </div>
+        `;
+        
     }
     
     _renderResultSplitView(){
@@ -286,16 +340,16 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
     _renderActions(){
         if(this._filteredActions){
             if(this._showActionProgress){
-                return html`<vaadin-progress-bar slot="suffix" indeterminate></vaadin-progress-bar>`;
+                return html`<vaadin-progress-bar indeterminate></vaadin-progress-bar>`;
             }else{
-                return html`<div class="actions" slot="suffix">
-                            <vaadin-menu-bar .items="${this._filteredActions}" theme="dropdown-indicators" @item-selected="${(e) => this._actionSelected(e)}"></vaadin-menu-bar>
+                return html`<div class="actions">
+                            <vaadin-menu-bar .items="${this._filteredActions}" theme="dropdown-indicators tertiary" @item-selected="${(e) => this._actionSelected(e)}"></vaadin-menu-bar>
                         </div>`;
             }
         }
     }
     
-    _renderContent(){
+    _renderMainContent(){
         if(this._selectedWorkspaceItem.isBinary){
             return this._renderBinaryContent();
         }else{
@@ -352,6 +406,10 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
         >
           There are unsaved changes. Do you want to discard or save them?
         </vaadin-confirm-dialog>`;
+    }
+    
+    _toggleSplit() {
+        this._isMaximized = !this._isMaximized;
     }
     
     _confirmOpenedChanged(e) {

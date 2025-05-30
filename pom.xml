@@ -87,7 +87,7 @@
         <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
         <protoc.version>3.25.5</protoc.version>
         <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <protobuf-kotlin.version>4.29.3</protobuf-kotlin.version>
+        <protobuf-kotlin.version>${protoc.version}</protobuf-kotlin.version>
         <proto-google-common-protos.version>2.56.0</proto-google-common-protos.version>
         <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
 

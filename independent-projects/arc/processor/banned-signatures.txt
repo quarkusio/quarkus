@@ -1,0 +1,8 @@
+@defaultMessage Don't use Maven classes. They won't be available when using Gradle.
+org.apache.maven.**
+org.codehaus.plexus.**
+
+@defaultMessage Never use Type#toString() as it's almost always the wrong thing to do. Usually org.jboss.jandex.DotName#toString() is what is needed
+org.jboss.jandex.Type#toString()
+
+org.apache.commons.io.** @ Don't use commons-io dependency

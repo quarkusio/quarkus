@@ -56,7 +56,10 @@ public class ConfigPropertiesTest {
     @Test
     @Transactional
     public void extraPhysicalTableTypes() {
-        Object extraPhysicalTableTypes = sessionForDefaultPU.getProperties().get(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES);
+        overrideConfigKey("quarkus.hibernate-orm.\"overridesPU\".database.extra-physical-table-types",
+                "MATERIALIZED VIEW,FOREIGN TABLE");
+
+        Object extraPhysicalTableTypes = sessionForOverridesPU.getProperties().get(AvailableSettings.EXTRA_PHYSICAL_TABLE_TYPES);
 
         assertThat(extraPhysicalTableTypes).isNotNull();
         assertThat(extraPhysicalTableTypes).isInstanceOf(List.class);

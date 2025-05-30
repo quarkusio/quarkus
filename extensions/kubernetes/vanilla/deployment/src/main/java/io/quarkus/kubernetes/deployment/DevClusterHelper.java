@@ -16,6 +16,7 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -111,16 +112,19 @@ public class DevClusterHelper {
         image.ifPresent(
                 i -> result.add(new DecoratorBuildItem(clusterKind, new ApplyContainerImageDecorator(name, i.getImage()))));
 
-        Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES))
-                .forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
-                        new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
-                                .withName(EnvConverter.convertName(e.getName()))
-                                .withValue(e.getValue())
-                                .withSecret(e.getSecret())
-                                .withConfigmap(e.getConfigMap())
-                                .withField(e.getField())
-                                .withPrefix(e.getPrefix())
-                                .build()))));
+        var stream = Stream.concat(config.convertToBuildItems().stream(), Targetable.filteredByTarget(envs, KUBERNETES));
+        if (config.idempotent()) {
+            stream = stream.sorted(Comparator.comparing(e -> EnvConverter.convertName(e.getName())));
+        }
+        stream.forEach(e -> result.add(new DecoratorBuildItem(clusterKind,
+                new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
+                        .withName(EnvConverter.convertName(e.getName()))
+                        .withValue(e.getValue())
+                        .withSecret(e.getSecret())
+                        .withConfigmap(e.getConfigMap())
+                        .withField(e.getField())
+                        .withPrefix(e.getPrefix())
+                        .build()))));
 
         result.add(new DecoratorBuildItem(clusterKind, new ApplyImagePullPolicyDecorator(name, "IfNotPresent")));
 

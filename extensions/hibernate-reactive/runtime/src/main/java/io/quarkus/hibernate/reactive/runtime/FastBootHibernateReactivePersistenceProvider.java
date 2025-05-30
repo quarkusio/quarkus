@@ -36,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.FastBootHibernatePersistenceProvider;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfigPersistenceUnit;
 import io.quarkus.hibernate.orm.runtime.IntegrationSettings;
+import io.quarkus.hibernate.orm.runtime.JPAConfig;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitsHolder;
 import io.quarkus.hibernate.orm.runtime.RuntimeSettings;
@@ -79,6 +80,17 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
 
     @Override
     public EntityManagerFactory createEntityManagerFactory(String emName, Map properties) {
+
+        boolean isReactive = (boolean) properties.get(JPAConfig.IS_REACTIVE_KEY);
+        if (!isReactive) {
+            log.debug(
+                    "FastBootHibernateReactivePersistenceProvider called on a non reactive initialization thread, skipping this provider");
+            return null;
+        }
+
+        // There's a check to not have any init properties later
+        properties = null;
+
         if (properties == null)
             properties = new HashMap<Object, Object>();
         // These are pre-parsed during image generation:
@@ -151,7 +163,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 continue;
             }
 
-            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName);
+            RecordedState recordedState = PersistenceUnitsHolder.popRecordedState(persistenceUnitName, true);
 
             final PrevalidatedQuarkusMetadata metadata = recordedState.getMetadata();
             final BuildTimeSettings buildTimeSettings = recordedState.getBuildTimeSettings();
@@ -159,7 +171,7 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings.Builder runtimeSettingsBuilder = new RuntimeSettings.Builder(buildTimeSettings,
                     integrationSettings);
 
-            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getConfigurationName());
+            var puConfig = hibernateOrmRuntimeConfig.persistenceUnits().get(persistenceUnit.getName());
             if (puConfig.active().isPresent() && !puConfig.active().get()) {
                 throw new IllegalStateException(
                         "Attempting to boot a deactivated Hibernate Reactive persistence unit");

@@ -117,7 +117,7 @@ public class ObserverGenerator extends AbstractGenerator {
             if (observer.getId() != null) {
                 sigBuilder.append(observer.getId());
             }
-            sigBuilder.append(observer.getObservedType().toString()).append(observer.getQualifiers().toString())
+            sigBuilder.append(observer.getObservedType().name().toString()).append(observer.getQualifiers().toString())
                     .append(observer.isAsync()).append(observer.getPriority()).append(observer.getTransactionPhase());
         } else {
             sigBuilder.append(observer.getObserverMethod().name())

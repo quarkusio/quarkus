@@ -109,6 +109,6 @@ abstract class TypeImpl<JandexType extends org.jboss.jandex.Type> extends Annota
 
     @Override
     public String toString() {
-        return jandexType.toString();
+        return jandexType.name().toString();
     }
 }

@@ -1,6 +1,5 @@
 package io.quarkus.it.opentelemetry;
 
-import static io.restassured.RestAssured.get;
 import static io.restassured.RestAssured.given;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

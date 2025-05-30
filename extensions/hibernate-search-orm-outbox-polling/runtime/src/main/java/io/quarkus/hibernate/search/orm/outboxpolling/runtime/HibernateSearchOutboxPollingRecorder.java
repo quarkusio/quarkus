@@ -1,7 +1,5 @@
 package io.quarkus.hibernate.search.orm.outboxpolling.runtime;
 
-import static io.quarkus.hibernate.search.orm.outboxpolling.runtime.HibernateSearchOutboxPollingConfigUtil.addCoordinationConfig;
-
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.function.BiConsumer;

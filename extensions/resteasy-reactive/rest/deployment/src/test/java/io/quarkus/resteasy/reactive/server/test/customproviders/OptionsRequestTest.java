@@ -1,7 +1,6 @@
 package io.quarkus.resteasy.reactive.server.test.customproviders;
 
 import static io.restassured.RestAssured.when;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;

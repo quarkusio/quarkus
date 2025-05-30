@@ -7,42 +7,42 @@ import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
 import jakarta.inject.Inject
+import java.net.URI
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import java.net.URI
 
 class KotlinWebSocketTest {
     companion object {
         @RegisterExtension
-        val test = QuarkusUnitTest()
-            .withApplicationRoot { jar ->
-                jar.addClasses(Echo::class.java, EchoSuspend::class.java, EchoUni::class.java,
-                    BinaryEcho::class.java, BinaryEchoSuspend::class.java, BinaryEchoUni::class.java,
-                    Message::class.java, WSClient::class.java)
+        val test =
+            QuarkusUnitTest().withApplicationRoot { jar ->
+                jar.addClasses(
+                    Echo::class.java,
+                    EchoSuspend::class.java,
+                    EchoUni::class.java,
+                    BinaryEcho::class.java,
+                    BinaryEchoSuspend::class.java,
+                    BinaryEchoUni::class.java,
+                    Message::class.java,
+                    WSClient::class.java,
+                )
             }
     }
 
-    @Inject
-    lateinit var vertx: Vertx
+    @Inject lateinit var vertx: Vertx
 
-    @TestHTTPResource("echo")
-    lateinit var echo: URI
+    @TestHTTPResource("echo") lateinit var echo: URI
 
-    @TestHTTPResource("echo-suspend")
-    lateinit var echoSuspend: URI
+    @TestHTTPResource("echo-suspend") lateinit var echoSuspend: URI
 
-    @TestHTTPResource("echo-uni")
-    lateinit var echoUni: URI
+    @TestHTTPResource("echo-uni") lateinit var echoUni: URI
 
-    @TestHTTPResource("binary-echo")
-    lateinit var binaryEcho: URI
+    @TestHTTPResource("binary-echo") lateinit var binaryEcho: URI
 
-    @TestHTTPResource("binary-echo-suspend")
-    lateinit var binaryEchoSuspend: URI
+    @TestHTTPResource("binary-echo-suspend") lateinit var binaryEchoSuspend: URI
 
-    @TestHTTPResource("binary-echo-uni")
-    lateinit var binaryEchoUni: URI
+    @TestHTTPResource("binary-echo-uni") lateinit var binaryEchoUni: URI
 
     @Test
     fun testEcho() {

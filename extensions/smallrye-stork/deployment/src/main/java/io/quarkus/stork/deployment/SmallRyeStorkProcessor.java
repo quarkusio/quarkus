@@ -17,6 +17,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem;
@@ -24,6 +25,7 @@ import io.quarkus.stork.SmallRyeStorkRecorder;
 import io.quarkus.stork.SmallRyeStorkRegistrationRecorder;
 import io.quarkus.stork.StorkConfigProvider;
 import io.quarkus.stork.StorkConfiguration;
+import io.quarkus.stork.StorkRegistrarConfigRecorder;
 import io.quarkus.vertx.deployment.VertxBuildItem;
 import io.smallrye.stork.spi.LoadBalancerProvider;
 import io.smallrye.stork.spi.ServiceDiscoveryProvider;
@@ -98,16 +100,20 @@ public class SmallRyeStorkProcessor {
     void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown, VertxBuildItem vertx,
             StorkConfiguration configuration) {
         storkRecorder.initialize(shutdown, vertx.getVertx(), configuration);
+        if (QuarkusClassLoader.isClassPresentAtRuntime(SERVICE_REGISTRAR_PROVIDER)) {
+            storkRecorder.deregisterServiceInstance(shutdown, configuration);
+        }
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void checkStorkConsulRegistrar(BuildProducer<StorkRegistrationBuildItem> registration,
-            SmallRyeStorkRegistrationRecorder registrationRecorder, StorkConfiguration configuration) {
+                                   BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
+                                   StorkRegistrarConfigRecorder initializerRecorder, StorkConfiguration configuration) {
         if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
-            registrationRecorder.prepareConfiguration(configuration, CONSUL_SERVICE_REGISTRAR_TYPE);
+            initializerRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE);
         } else if (QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)) {
-            registrationRecorder.prepareConfiguration(configuration, EUREKA_SERVICE_REGISTRAR_TYPE);
+            initializerRecorder.setupServiceRegistrarConfig(configuration, EUREKA_SERVICE_REGISTRAR_TYPE);
         }
         registration.produce(new StorkRegistrationBuildItem());
 

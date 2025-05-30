@@ -52,7 +52,7 @@
         <version.smallrye-common>2.12.0</version.smallrye-common>
         <!-- test versions -->
         <version.assertj>3.27.3</version.assertj>
-        <version.junit5>5.12.2</version.junit5>
+        <version.junit5>5.13.0</version.junit5>
         <version.kotlin>2.1.21</version.kotlin>
         <version.kotlin-coroutines>1.10.2</version.kotlin-coroutines>
         <version.mockito>5.18.0</version.mockito>

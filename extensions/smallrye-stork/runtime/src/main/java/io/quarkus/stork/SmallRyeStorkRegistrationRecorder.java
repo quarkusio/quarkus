@@ -14,11 +14,6 @@ import io.smallrye.stork.api.config.ServiceConfig;
 @Recorder
 public class SmallRyeStorkRegistrationRecorder {
 
-    public StorkConfiguration prepareConfiguration(StorkConfiguration configuration, String serviceRegistrarType) {
-        return StorkConfigUtil.buildDefaultRegistrationConfig(configuration, serviceRegistrarType);
-
-    }
-
     public void registerServiceInstance(StorkConfiguration configuration) {
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
         Config quarkusConfig = ConfigProvider.getConfig();

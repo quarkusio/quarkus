@@ -1,6 +1,7 @@
 package io.quarkus.stork;
 
 import java.util.Map;
+import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithParentName;
@@ -13,7 +14,7 @@ public interface StorkServiceRegistrarConfiguration {
      * A ServiceRegistrarProvider for the type has to be available
      *
      */
-    String type();
+    Optional<String> type();
 
     /**
      * Service Registrar parameters.

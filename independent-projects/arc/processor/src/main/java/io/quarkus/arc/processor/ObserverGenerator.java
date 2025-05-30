@@ -94,6 +94,7 @@ public class ObserverGenerator extends AbstractGenerator {
      *
      * @param observer
      */
+    @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
     void precomputeGeneratedName(ObserverInfo observer) {
         // The name of the generated class differs:
         // "org.acme.Foo_Observer_fooMethod_hash" for normal observer where hash represents the signature of the observer method
@@ -117,7 +118,7 @@ public class ObserverGenerator extends AbstractGenerator {
             if (observer.getId() != null) {
                 sigBuilder.append(observer.getId());
             }
-            sigBuilder.append(observer.getObservedType().name().toString()).append(observer.getQualifiers().toString())
+            sigBuilder.append(observer.getObservedType().toString()).append(observer.getQualifiers().toString())
                     .append(observer.isAsync()).append(observer.getPriority()).append(observer.getTransactionPhase());
         } else {
             sigBuilder.append(observer.getObserverMethod().name())

@@ -76,6 +76,9 @@
                                 <signaturesFile>./banned-signatures.txt</signaturesFile>
                             </signaturesFiles>
                             <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+                            <suppressAnnotations>
+                                <annotation>**.SuppressForbidden</annotation>
+                            </suppressAnnotations>
                         </configuration>
                         <phase>compile</phase>
                         <goals>

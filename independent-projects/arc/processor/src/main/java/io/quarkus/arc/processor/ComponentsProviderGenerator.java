@@ -551,6 +551,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         }
 
         @Override
+        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
         void addComponentInternal(BeanInfo removedBean) {
 
             ResultHandle removedBeansHandle = addMethod.getMethodParam(0);
@@ -567,7 +568,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
                 catchBlock.invokeStaticInterfaceMethod(
                         MethodDescriptors.COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE,
-                        catchBlock.load(type.name().toString()), catchBlock.getCaughtException());
+                        catchBlock.load(type.toString()), catchBlock.getCaughtException());
                 AssignableResultHandle typeHandle = tryBlock.createVariable(Object.class);
                 try {
                     Types.getTypeHandle(typeHandle, tryBlock, type, tccl, typeCache);
@@ -654,13 +655,15 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
         }
 
         @Override
+        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
         public ResultHandle get(org.jboss.jandex.Type type, BytecodeCreator bytecode) {
-            return bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_GET, mapHandle, bytecode.load(type.name().toString()));
+            return bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_GET, mapHandle, bytecode.load(type.toString()));
         }
 
         @Override
+        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
         public void put(org.jboss.jandex.Type type, ResultHandle value, BytecodeCreator bytecode) {
-            bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, mapHandle, bytecode.load(type.name().toString()), value);
+            bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, mapHandle, bytecode.load(type.toString()), value);
         }
 
     }

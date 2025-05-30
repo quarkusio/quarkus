@@ -174,7 +174,7 @@ public class ClientProxyGenerator extends AbstractGenerator {
 
             // Exceptions
             for (Type exception : method.exceptions()) {
-                forward.addException(exception.toString());
+                forward.addException(exception.name().toString());
             }
             // Method params
             ResultHandle[] params = new ResultHandle[method.parametersCount()];

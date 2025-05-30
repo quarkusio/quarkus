@@ -567,7 +567,7 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
                 CatchBlockCreator catchBlock = tryBlock.addCatch(Throwable.class);
                 catchBlock.invokeStaticInterfaceMethod(
                         MethodDescriptors.COMPONENTS_PROVIDER_UNABLE_TO_LOAD_REMOVED_BEAN_TYPE,
-                        catchBlock.load(type.toString()), catchBlock.getCaughtException());
+                        catchBlock.load(type.name().toString()), catchBlock.getCaughtException());
                 AssignableResultHandle typeHandle = tryBlock.createVariable(Object.class);
                 try {
                     Types.getTypeHandle(typeHandle, tryBlock, type, tccl, typeCache);
@@ -655,12 +655,12 @@ public class ComponentsProviderGenerator extends AbstractGenerator {
 
         @Override
         public ResultHandle get(org.jboss.jandex.Type type, BytecodeCreator bytecode) {
-            return bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_GET, mapHandle, bytecode.load(type.toString()));
+            return bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_GET, mapHandle, bytecode.load(type.name().toString()));
         }
 
         @Override
         public void put(org.jboss.jandex.Type type, ResultHandle value, BytecodeCreator bytecode) {
-            bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, mapHandle, bytecode.load(type.toString()), value);
+            bytecode.invokeInterfaceMethod(MethodDescriptors.MAP_PUT, mapHandle, bytecode.load(type.name().toString()), value);
         }
 
     }

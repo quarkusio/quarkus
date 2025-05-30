@@ -797,7 +797,7 @@ public class InvokerGenerator extends AbstractGenerator {
             }
 
             if (matching.isEmpty()) {
-                String expectedType = this.expectedType.toString();
+                String expectedType = this.expectedType.name().toString();
                 String expectation = "";
                 if (transformer.isInputTransformer()) {
                     expectation = "\n"

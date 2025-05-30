@@ -163,6 +163,10 @@ export class RouterController {
         Router.go({pathname: pageRef});
     }
 
+    navigate(pageRef){
+        Router.go(pageRef);
+    }
+
     getFirstPageUrl(){
         for (let entry of RouterController.pageMap) {
             let value = entry[1];

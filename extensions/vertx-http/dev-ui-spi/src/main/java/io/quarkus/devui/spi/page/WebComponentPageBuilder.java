@@ -6,6 +6,10 @@ public class WebComponentPageBuilder extends PageBuilder<WebComponentPageBuilder
         super();
     }
 
+    protected WebComponentPageBuilder(String icon, String color, String tooltip) {
+        super(icon, color, tooltip, true);
+    }
+
     public WebComponentPageBuilder componentName(String componentName) {
         if (componentName == null || componentName.isEmpty()) {
             throw new RuntimeException("Invalid component [" + componentName + "]");

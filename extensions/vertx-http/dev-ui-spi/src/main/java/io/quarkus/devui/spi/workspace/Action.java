@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -18,6 +19,7 @@ public class Action<T, R> {
     private final String label; // This is the label in the dropdown
     private final String namespace; // The namespace of the extension
     private final Function<T, R> function; // The function to call when the user select it
+    private final BiFunction<Object, T, R> assistantFunction; // The assistant function to call when the user select it
     private final Optional<Pattern> filter; // Filter to only apply on certain files
     private final Display display; // Response display for the UI
     private final DisplayType displayType; // Response display type
@@ -27,6 +29,7 @@ public class Action<T, R> {
             String label,
             String namespace,
             Function<T, R> function,
+            BiFunction<Object, T, R> assistantFunction,
             Optional<Pattern> filter,
             Display display,
             DisplayType displayType,
@@ -35,6 +38,7 @@ public class Action<T, R> {
         this.label = label;
         this.namespace = namespace;
         this.function = function;
+        this.assistantFunction = assistantFunction;
         this.filter = filter;
         this.display = display;
         this.displayType = displayType;
@@ -67,6 +71,10 @@ public class Action<T, R> {
         return this.function;
     }
 
+    public BiFunction<Object, T, R> getAssistantFunction() {
+        return this.assistantFunction;
+    }
+
     public Optional<Pattern> getFilter() {
         return this.filter;
     }
@@ -81,6 +89,10 @@ public class Action<T, R> {
 
     public Function<Path, Path> getPathConverter() {
         return this.pathConverter;
+    }
+
+    public boolean isAssistant() {
+        return this.assistantFunction != null;
     }
 
     @Override

@@ -56,6 +56,7 @@ public class DevUIRecorder {
         if (recordedValues != null && !recordedValues.isEmpty()) {
             jsonRpcRouter.setRecordedValues(recordedValues);
         }
+
         jsonRpcRouter.initializeCodec(createJsonMapper());
     }
 

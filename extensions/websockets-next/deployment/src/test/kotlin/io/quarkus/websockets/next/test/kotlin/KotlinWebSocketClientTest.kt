@@ -9,29 +9,27 @@ import io.quarkus.websockets.next.WebSocket
 import io.quarkus.websockets.next.WebSocketClient
 import io.quarkus.websockets.next.WebSocketConnector
 import jakarta.inject.Inject
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
 import java.net.URI
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 class KotlinWebSocketClientTest {
     companion object {
         @RegisterExtension
-        val test = QuarkusUnitTest()
-            .withApplicationRoot { jar ->
+        val test =
+            QuarkusUnitTest().withApplicationRoot { jar ->
                 jar.addClasses(ServerEndpoint::class.java, ClientEndpoint::class.java)
             }
     }
 
-    @Inject
-    lateinit var connector: WebSocketConnector<ClientEndpoint>
+    @Inject lateinit var connector: WebSocketConnector<ClientEndpoint>
 
-    @TestHTTPResource("/")
-    lateinit var uri: URI
+    @TestHTTPResource("/") lateinit var uri: URI
 
     @Test
     fun test() {

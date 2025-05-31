@@ -19,10 +19,6 @@ public final class MsSQLReflections {
         //We register it for the sake of people not using Agroal.
         final String driverName = "com.microsoft.sqlserver.jdbc.SQLServerDriver";
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(driverName).build());
-
-        // https://github.com/quarkusio/quarkus/pull/48082#issuecomment-2912550391
-        String className = "com.microsoft.sqlserver.jdbc.ConfigurableRetryLogic";
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(className).build());
     }
 
 }

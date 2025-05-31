@@ -1,10 +1,10 @@
 package io.quarkus.redis.datasource;
 
+import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.OverflowType.WRAP;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.offset;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.signed;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.typeWidthBasedOffset;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.unsigned;
-import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.OverflowType.WRAP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

@@ -8,29 +8,27 @@ import io.quarkus.websockets.next.test.utils.WSClient
 import io.vertx.core.Vertx
 import jakarta.enterprise.context.SessionScoped
 import jakarta.inject.Inject
+import java.net.URI
+import java.util.UUID
 import kotlinx.coroutines.delay
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import java.net.URI
-import java.util.UUID
 
 class KotlinWebSocketSessionContextTest {
     companion object {
         @RegisterExtension
-        val test = QuarkusUnitTest()
-            .withApplicationRoot { jar ->
+        val test =
+            QuarkusUnitTest().withApplicationRoot { jar ->
                 jar.addClasses(MyData::class.java, Endpoint::class.java, WSClient::class.java)
             }
     }
 
-    @Inject
-    lateinit var vertx: Vertx
+    @Inject lateinit var vertx: Vertx
 
-    @TestHTTPResource("endpoint")
-    lateinit var endpoint: URI
+    @TestHTTPResource("endpoint") lateinit var endpoint: URI
 
     @Test
     fun testEcho() {
@@ -71,8 +69,7 @@ class KotlinWebSocketSessionContextTest {
 
     @WebSocket(path = "/endpoint")
     class Endpoint {
-        @Inject
-        lateinit var data: MyData
+        @Inject lateinit var data: MyData
 
         @OnTextMessage
         suspend fun echo(message: String): String {

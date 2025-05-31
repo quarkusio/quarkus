@@ -406,10 +406,6 @@ in `quarkus-parent` (root `pom.xml`).
 
 When contributing to Quarkus, it is recommended to respect the following rules.
 
-> **Note:** The `impsort-maven-plugin` uses the `.cache` directory on each module to speed up the build.
-> Because we have configured the plugin to store in a versioned directory, you may notice over time that the `.cache` directory grows in size. You can safely delete the `.cache` directory in each module to reclaim the space.
-> Running `./mvnw clean -Dclean-cache` automatically deletes that directory for you.
-
 **Contributing to an extension**
 
 When you contribute to an extension, after having applied your changes, run:

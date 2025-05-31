@@ -560,7 +560,7 @@ Edit `src/main/resources/application.properties` and inject the following config
 [source,properties]
 ----
 quarkus.hibernate-search-standalone.mapping.structure=document <1>
-quarkus.hibernate-search-standalone.elasticsearch.version=8 <2>
+quarkus.hibernate-search-standalone.elasticsearch.version=9 <2>
 quarkus.hibernate-search-standalone.indexing.plan.synchronization.strategy=sync <3>
 
 %prod.quarkus.hibernate-search-standalone.elasticsearch.hosts=localhost:9200 <4>
@@ -738,7 +738,7 @@ as shown below.
 
 [source,properties]
 ----
-quarkus.hibernate-search-standalone.elasticsearch.version=opensearch:2.16
+quarkus.hibernate-search-standalone.elasticsearch.version=opensearch:3.0
 ----
 
 All other configuration options and APIs are exactly the same as with Elasticsearch.

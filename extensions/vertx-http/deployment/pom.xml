@@ -53,7 +53,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-security-spi</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-assistant-deployment-spi</artifactId>
+        </dependency>
         <!-- Dev UI -->
         <dependency>
             <groupId>io.quarkus</groupId>

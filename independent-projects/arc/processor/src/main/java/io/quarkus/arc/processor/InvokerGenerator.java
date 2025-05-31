@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import io.quarkus.deployment.SuppressForbidden;
 import jakarta.enterprise.context.spi.Contextual;
 import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.enterprise.invoke.Invoker;
@@ -791,7 +792,7 @@ public class InvokerGenerator extends AbstractGenerator {
             this.invoker = invoker;
         }
 
-        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
+        @SuppressForbidden("Using Type.toString() to build an informative message")
         CandidateMethod resolve() {
             if (matching.size() == 1) {
                 return matching.get(0);

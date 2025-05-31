@@ -714,7 +714,7 @@ public class SubclassGenerator extends AbstractGenerator {
             MethodCreator forward = delegateSubclass.getMethodCreator(methodDescriptor);
             // Exceptions
             for (Type exception : method.exceptions()) {
-                forward.addException(exception.toString());
+                forward.addException(exception.name().toString());
             }
 
             ResultHandle ret = null;

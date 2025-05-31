@@ -158,6 +158,10 @@
             <scope>test</scope>
             <type>pom</type>
         </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-spring-core-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

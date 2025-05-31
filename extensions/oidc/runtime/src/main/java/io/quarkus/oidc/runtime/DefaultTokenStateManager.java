@@ -1,5 +1,7 @@
 package io.quarkus.oidc.runtime;
 
+import java.nio.charset.StandardCharsets;
+
 import jakarta.enterprise.context.ApplicationScoped;
 
 import org.jboss.logging.Logger;
@@ -8,6 +10,7 @@ import io.quarkus.oidc.AuthorizationCodeTokens;
 import io.quarkus.oidc.OidcRequestContext;
 import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.TokenStateManager;
+import io.quarkus.oidc.common.runtime.OidcCommonUtils;
 import io.quarkus.oidc.runtime.OidcTenantConfig.TokenStateManager.Strategy;
 import io.quarkus.security.AuthenticationFailedException;
 import io.smallrye.jwt.algorithm.KeyEncryptionAlgorithm;
@@ -41,12 +44,17 @@ public class DefaultTokenStateManager implements TokenStateManager {
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append(tokens.getAccessTokenExpiresIn() != null ? tokens.getAccessTokenExpiresIn() : "")
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(tokens.getAccessTokenScope() != null ? encodeScopes(oidcConfig, tokens.getAccessTokenScope())
+                                : "")
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append(tokens.getRefreshToken());
             } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
                 // But sometimes the access token is not required.
                 // For example, when the Quarkus endpoint does not need to use it to access another service.
-                // Skip access token and access token expiry, add refresh token
+                // Skip access token, access token expiry, access token scope, add refresh token
                 sb.append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append("")
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append("")
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
                         .append("")
@@ -71,7 +79,9 @@ public class DefaultTokenStateManager implements TokenStateManager {
                 // Add access token and its expires_in property
                 sb.append(tokens.getAccessToken())
                         .append(CodeAuthenticationMechanism.COOKIE_DELIM)
-                        .append(tokens.getAccessTokenExpiresIn() != null ? tokens.getAccessTokenExpiresIn() : "");
+                        .append(tokens.getAccessTokenExpiresIn() != null ? tokens.getAccessTokenExpiresIn() : "")
+                        .append(CodeAuthenticationMechanism.COOKIE_DELIM)
+                        .append(tokens.getAccessTokenScope() != null ? tokens.getAccessTokenScope() : "");
 
                 // Encrypt access token and create a `q_session_at` cookie.
                 CodeAuthenticationMechanism.createCookie(routingContext,
@@ -111,6 +121,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
         String idToken = null;
         String accessToken = null;
         Long accessTokenExpiresIn = null;
+        String accessTokenScope = null;
         String refreshToken = null;
 
         if (!oidcConfig.tokenStateManager().splitTokens()) {
@@ -122,15 +133,14 @@ public class DefaultTokenStateManager implements TokenStateManager {
 
             try {
                 idToken = tokens[0];
-                accessToken = null;
-                refreshToken = null;
 
                 if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
                     accessToken = tokens[1];
                     accessTokenExpiresIn = tokens[2].isEmpty() ? null : parseAccessTokenExpiresIn(tokens[2]);
-                    refreshToken = tokens[3];
+                    accessTokenScope = tokens[3].isEmpty() ? null : tokens[3];
+                    refreshToken = tokens[4];
                 } else if (oidcConfig.tokenStateManager().strategy() == Strategy.ID_REFRESH_TOKENS) {
-                    refreshToken = tokens[3];
+                    refreshToken = tokens[4];
                 }
             } catch (ArrayIndexOutOfBoundsException ex) {
                 final String error = "Session cookie is malformed";
@@ -142,8 +152,6 @@ public class DefaultTokenStateManager implements TokenStateManager {
         } else {
             // Decrypt ID token from the q_session cookie
             idToken = decryptToken(tokenState, routingContext, oidcConfig);
-            accessToken = null;
-            refreshToken = null;
 
             if (oidcConfig.tokenStateManager().strategy() == Strategy.KEEP_ALL_TOKENS) {
                 Cookie atCookie = getAccessTokenCookie(routingContext, oidcConfig);
@@ -155,6 +163,10 @@ public class DefaultTokenStateManager implements TokenStateManager {
                     try {
                         accessTokenExpiresIn = accessTokenData[1].isEmpty() ? null
                                 : parseAccessTokenExpiresIn(accessTokenData[1]);
+                        if (accessTokenData.length == 3) {
+                            accessTokenScope = accessTokenData[2].isEmpty() ? null
+                                    : decodeScopes(oidcConfig, accessTokenData[2]);
+                        }
                     } catch (ArrayIndexOutOfBoundsException ex) {
                         final String error = "Session cookie is malformed";
                         LOG.debug(ex);
@@ -176,7 +188,8 @@ public class DefaultTokenStateManager implements TokenStateManager {
                 }
             }
         }
-        return Uni.createFrom().item(new AuthorizationCodeTokens(idToken, accessToken, refreshToken, accessTokenExpiresIn));
+        return Uni.createFrom()
+                .item(new AuthorizationCodeTokens(idToken, accessToken, refreshToken, accessTokenExpiresIn, accessTokenScope));
     }
 
     @Override
@@ -222,7 +235,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
         return OidcUtils.SESSION_RT_COOKIE_NAME + cookieSuffix;
     }
 
-    private String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
+    private static String encryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
         if (oidcConfig.tokenStateManager().encryptionRequired()) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
@@ -236,7 +249,7 @@ public class DefaultTokenStateManager implements TokenStateManager {
         return token;
     }
 
-    private String decryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
+    private static String decryptToken(String token, RoutingContext context, OidcTenantConfig oidcConfig) {
         if (oidcConfig.tokenStateManager().encryptionRequired()) {
             TenantConfigContext configContext = context.get(TenantConfigContext.class.getName());
             try {
@@ -248,5 +261,19 @@ public class DefaultTokenStateManager implements TokenStateManager {
             }
         }
         return token;
+    }
+
+    private static String encodeScopes(OidcTenantConfig oidcConfig, String accessTokenScope) {
+        if (oidcConfig.tokenStateManager().encryptionRequired()) {
+            return accessTokenScope;
+        }
+        return OidcCommonUtils.base64UrlEncode(accessTokenScope.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static String decodeScopes(OidcTenantConfig oidcConfig, String accessTokenScope) {
+        if (oidcConfig.tokenStateManager().encryptionRequired()) {
+            return accessTokenScope;
+        }
+        return OidcCommonUtils.base64UrlDecode(accessTokenScope);
     }
 }

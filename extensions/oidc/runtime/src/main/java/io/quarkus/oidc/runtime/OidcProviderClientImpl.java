@@ -364,8 +364,9 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
             tokenExpiresIn = tokenExpiresInObj instanceof Number ? ((Number) tokenExpiresInObj).longValue()
                     : Long.parseLong(tokenExpiresInObj.toString());
         }
+        final String accessTokenScope = json.getString(OidcConstants.TOKEN_SCOPE);
 
-        return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, tokenExpiresIn);
+        return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, tokenExpiresIn, accessTokenScope);
     }
 
     private UserInfoResponse getUserInfo(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp) {

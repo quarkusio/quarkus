@@ -528,6 +528,9 @@ public class CodeFlowAuthorizationTest {
 
             assertEquals("alice:alice", textPage.getContent());
 
+            textPage = webClient.getPage("http://localhost:8081/code-flow-token-introspection");
+            assertEquals("alice:alice", textPage.getContent());
+
             // Refresh
             // The internal ID token lifespan is 5 mins
             // Configured refresh token skew is 298 secs = 5 mins - 2 secs
@@ -770,6 +773,7 @@ public class CodeFlowAuthorizationTest {
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \"alice\","
+                                        + "  \"scope\": \"laptop phone\","
                                         + "\"expires_in\": 299}")));
     }
 
@@ -786,6 +790,7 @@ public class CodeFlowAuthorizationTest {
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \"alice\","
+                                        + "  \"scope\": \"email\","
                                         + "  \"refresh_token\": \"refresh5678\""
                                         + "}")));
 
@@ -795,7 +800,8 @@ public class CodeFlowAuthorizationTest {
                         .willReturn(WireMock.aResponse()
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
-                                        "  \"access_token\": \"admin\""
+                                        "  \"access_token\": \"admin\","
+                                        + "  \"scope\": \"email\""
                                         + "}")));
     }
 

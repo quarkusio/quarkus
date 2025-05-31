@@ -31,6 +31,7 @@ public class OidcDbTokenStateManager implements TokenStateManager {
     private static final String ID_TOKEN_COLUMN = "id_token";
     private static final String ACCESS_TOKEN_COLUMN = "access_token";
     private static final String ACCESS_TOKEN_EXPIRES_IN_COLUMN = "access_token_expires_in";
+    private static final String ACCESS_TOKEN_SCOPE_COLUMN = "access_token_scope";
     private static final String REFRESH_TOKEN_COLUMN = "refresh_token";
 
     private final String insertStatement;
@@ -61,6 +62,7 @@ public class OidcDbTokenStateManager implements TokenStateManager {
                                         .execute(
                                                 Tuple.of(tokens.getIdToken(), tokens.getAccessToken(),
                                                         tokens.getRefreshToken(), tokens.getAccessTokenExpiresIn(),
+                                                        tokens.getAccessTokenScope(),
                                                         expiresIn(event), id)))
                                 .toCompletionStage())
                 .onFailure().transform(new Function<Throwable, Throwable>() {
@@ -110,7 +112,8 @@ public class OidcDbTokenStateManager implements TokenStateManager {
                                                 firstRow.getString(ID_TOKEN_COLUMN),
                                                 firstRow.getString(ACCESS_TOKEN_COLUMN),
                                                 firstRow.getString(REFRESH_TOKEN_COLUMN),
-                                                firstRow.getLong(ACCESS_TOKEN_EXPIRES_IN_COLUMN)));
+                                                firstRow.getLong(ACCESS_TOKEN_EXPIRES_IN_COLUMN),
+                                                firstRow.getString(ACCESS_TOKEN_SCOPE_COLUMN)));
                             }
                         }
                         return Uni.createFrom().failure(new AuthenticationCompletionException(FAILED_TO_ACQUIRE_TOKEN));

@@ -7,11 +7,11 @@ import jakarta.ws.rs.Path;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.oidc.TokenIntrospection;
-import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 import io.quarkus.security.identity.SecurityIdentity;
 
 @Path("/code-flow-token-introspection")
-@Authenticated
+@PermissionsAllowed("email")
 public class CodeFlowTokenIntrospectionResource {
 
     @Inject

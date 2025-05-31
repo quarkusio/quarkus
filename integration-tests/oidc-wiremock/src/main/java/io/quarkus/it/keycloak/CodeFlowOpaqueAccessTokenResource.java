@@ -8,9 +8,9 @@ import org.eclipse.microprofile.jwt.JsonWebToken;
 
 import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.Authenticated;
+import io.quarkus.security.PermissionsAllowed;
 
 @Path("/code-flow-opaque-access-token")
-@Authenticated
 public class CodeFlowOpaqueAccessTokenResource {
 
     @Inject
@@ -20,12 +20,14 @@ public class CodeFlowOpaqueAccessTokenResource {
     AccessTokenCredential accessTokenCredential;
 
     @GET
+    @PermissionsAllowed("phone")
     public String getAccessTokenCredential() {
         return accessTokenCredential.getToken();
     }
 
     @GET
     @Path("/jwt-access-token")
+    @Authenticated
     public String getJwtAccessToken() {
         return jwtAccessToken.getRawToken();
     }

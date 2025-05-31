@@ -2,6 +2,7 @@ package io.quarkus.devui.spi.workspace;
 
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 
@@ -10,6 +11,7 @@ public class ActionBuilder<T, R> {
     private String label = null;
     private String namespace = null;
     private Function<T, R> function;
+    private BiFunction<Object, T, R> assistantFunction;
     private Optional<Pattern> filter = Optional.empty();
     private Display display = Display.dialog;
     private DisplayType displayType = DisplayType.code;
@@ -36,6 +38,11 @@ public class ActionBuilder<T, R> {
         return this;
     }
 
+    public ActionBuilder assistantFunction(BiFunction<Object, T, R> assistantFunction) {
+        this.assistantFunction = assistantFunction;
+        return this;
+    }
+
     public ActionBuilder filter(Pattern filter) {
         this.filter = Optional.of(filter);
         return this;
@@ -57,10 +64,10 @@ public class ActionBuilder<T, R> {
     }
 
     public Action build() {
-        if (this.label == null || this.function == null) {
+        if (this.label == null || (this.function == null && this.assistantFunction == null)) {
             throw new RuntimeException(
-                    "Not enough information to build the action. Set at least label and function");
+                    "Not enough information to build the action. Set at least label and function/assistantFunction");
         }
-        return new Action(label, namespace, function, filter, display, displayType, pathConverter);
+        return new Action(label, namespace, function, assistantFunction, filter, display, displayType, pathConverter);
     }
 }

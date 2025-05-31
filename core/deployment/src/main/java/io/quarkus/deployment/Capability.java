@@ -13,6 +13,11 @@ public interface Capability {
     String AGROAL = QUARKUS_PREFIX + ".agroal";
 
     /**
+     * An assistant implementation
+     */
+    String ASSISTANT = QUARKUS_PREFIX + ".assistant";
+
+    /**
      * JSR 365 compatible contexts and dependency injection
      */
     String CDI = QUARKUS_PREFIX + ".cdi";

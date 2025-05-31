@@ -5684,11 +5684,11 @@
                 <groupId>co.elastic.clients</groupId>
                 <artifactId>elasticsearch-java</artifactId>
                 <version>${elasticsearch-opensource-components.version}</version>
-                <!-- exclude log4j2 to get its version from log4j2-jboss-logmanager -->
+                <!-- exclude commons-logging to get its version from commons-logging-jboss-logmanager -->
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-core</artifactId>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

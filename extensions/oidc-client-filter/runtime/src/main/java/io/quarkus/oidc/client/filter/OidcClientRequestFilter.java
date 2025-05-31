@@ -19,6 +19,7 @@ public class OidcClientRequestFilter extends AbstractOidcClientRequestFilter {
     @Inject
     OidcClientFilterConfig oidcClientFilterConfig;
 
+    @Override
     protected Optional<String> clientId() {
         return oidcClientFilterConfig.clientName();
     }

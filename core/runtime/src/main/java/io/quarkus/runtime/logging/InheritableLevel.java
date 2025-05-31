@@ -48,10 +48,12 @@ public abstract class InheritableLevel {
             this.level = level;
         }
 
+        @Override
         public boolean isInherited() {
             return false;
         }
 
+        @Override
         public Level getLevel() {
             return level;
         }
@@ -60,6 +62,7 @@ public abstract class InheritableLevel {
             return level.toString();
         }
 
+        @Override
         public boolean equals(final InheritableLevel other) {
             return other instanceof ActualLevel && level.equals(((ActualLevel) other).level);
         }
@@ -75,10 +78,12 @@ public abstract class InheritableLevel {
         private Inherited() {
         }
 
+        @Override
         public boolean isInherited() {
             return true;
         }
 
+        @Override
         public Level getLevel() {
             throw new NoSuchElementException();
         }
@@ -87,6 +92,7 @@ public abstract class InheritableLevel {
             return "inherited";
         }
 
+        @Override
         public boolean equals(final InheritableLevel other) {
             return other instanceof Inherited;
         }

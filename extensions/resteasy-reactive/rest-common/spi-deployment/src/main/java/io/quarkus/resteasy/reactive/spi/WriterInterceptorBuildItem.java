@@ -12,6 +12,8 @@ public final class WriterInterceptorBuildItem extends AbstractInterceptorBuildIt
             super(className);
         }
 
+        @Override
+        @Override
         public WriterInterceptorBuildItem build() {
             return new WriterInterceptorBuildItem(this);
         }

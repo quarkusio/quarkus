@@ -16,5 +16,6 @@ import org.hibernate.validator.BaseHibernateValidatorConfiguration;
 @Deprecated(forRemoval = true)
 public interface HibernateValidatorFactoryCustomizer extends ValidatorFactoryCustomizer {
 
+    @Override
     void customize(BaseHibernateValidatorConfiguration<?> configuration);
 }

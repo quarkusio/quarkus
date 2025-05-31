@@ -65,6 +65,7 @@ public class RuntimeLaunchClassLoader extends ClassLoader {
         return className.substring(0, index);
     }
 
+    @Override
     protected Class<?> findClass(String moduleName, String name) {
         try {
             return findClass(name);
@@ -73,6 +74,7 @@ public class RuntimeLaunchClassLoader extends ClassLoader {
         }
     }
 
+    @Override
     protected URL findResource(String moduleName, String name) throws IOException {
         return findResource(name);
     }

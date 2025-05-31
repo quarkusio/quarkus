@@ -12,6 +12,8 @@ import java.util.concurrent.TimeUnit;
  */
 public abstract class ForwardingScheduledExecutorService extends ForwardingExecutorService implements ScheduledExecutorService {
 
+    @Override
+    @Override
     protected abstract ScheduledExecutorService delegate();
 
     @Override

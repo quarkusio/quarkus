@@ -51,6 +51,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         errorHeaders.putSingle("Content-Type", "application/json");
     }
 
+    @Override
     public AwsProxyResponse handleRequest(AwsProxyRequest request, Context context) {
         InetSocketAddress clientAddress = null;
         if (request.getRequestContext() != null && request.getRequestContext().getIdentity() != null) {

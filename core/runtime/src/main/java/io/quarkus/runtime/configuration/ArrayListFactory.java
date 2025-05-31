@@ -12,6 +12,7 @@ public final class ArrayListFactory<T> implements IntFunction<ArrayList<T>> {
     private ArrayListFactory() {
     }
 
+    @Override
     public ArrayList<T> apply(final int value) {
         return new ArrayList<>(value);
     }

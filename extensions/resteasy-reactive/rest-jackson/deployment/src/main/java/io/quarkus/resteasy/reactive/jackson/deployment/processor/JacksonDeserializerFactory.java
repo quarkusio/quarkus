@@ -206,6 +206,8 @@ public class JacksonDeserializerFactory extends JacksonCodeGenerator {
         return "$quarkusjacksondeserializer";
     }
 
+    @Override
+    @Override
     protected String[] getInterfacesNames(ClassInfo classInfo) {
         return classInfo.typeParameters().isEmpty() ? new String[0] : new String[] { ContextualDeserializer.class.getName() };
     }

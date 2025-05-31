@@ -142,6 +142,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 .transform(resp -> getJsonWebKeySet(requestProps, resp));
     }
 
+    @Override
+    @Override
     public Uni<UserInfo> getUserInfo(final String accessToken) {
 
         final OidcRequestContextProperties requestProps = getRequestProps(null, null);
@@ -209,6 +211,8 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 .onItem().transform(resp -> getUserInfo(requestProps, resp));
     }
 
+    @Override
+    @Override
     public Uni<TokenIntrospection> introspectAccessToken(final String token) {
         final MultiMap introspectionParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
         introspectionParams.add(OidcConstants.INTROSPECTION_TOKEN, token);
@@ -247,10 +251,14 @@ public class OidcProviderClientImpl implements OidcProviderClient, Closeable {
                 .transform(resp -> getAuthorizationCodeTokens(requestProps, resp));
     }
 
+    @Override
+    @Override
     public Uni<Boolean> revokeAccessToken(String accessToken) {
         return revokeToken(accessToken, OidcConstants.ACCESS_TOKEN_VALUE);
     }
 
+    @Override
+    @Override
     public Uni<Boolean> revokeRefreshToken(String refreshToken) {
         return revokeToken(refreshToken, OidcConstants.REFRESH_TOKEN_VALUE);
     }

@@ -56,6 +56,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
     // multiple headers
     private static final Set<String> COMMA_HEADERS = Set.of("access-control-request-headers");
 
+    @Override
     public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent request, Context context) {
         InetSocketAddress clientAddress = null;
         if (request.getRequestContext() != null && request.getRequestContext().getHttp() != null) {

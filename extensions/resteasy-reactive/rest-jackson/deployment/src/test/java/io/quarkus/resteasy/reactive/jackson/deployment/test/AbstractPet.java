@@ -5,6 +5,8 @@ public abstract class AbstractPet implements SecuredPersonInterface {
     private String publicName;
     private Veterinarian veterinarian;
 
+    @Override
+    @Override
     public String getPublicName() {
         return publicName;
     }

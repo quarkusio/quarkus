@@ -470,7 +470,7 @@ quarkus.datasource."pg".jdbc.url=jdbc:postgresql:///your_database
 
 quarkus.datasource."oracle".db-kind=oracle
 quarkus.datasource."oracle".active=false
-quarkus.datasource."oracle".jdbc.url=jdbc:oracle:///your_database
+quarkus.datasource."oracle".jdbc.url=jdbc:oracle:thin:@localhost:1521/your_database
 ----
 
 Setting `quarkus.datasource."pg".active=true` xref:config-reference.adoc#configuration-sources[at runtime] makes only the PostgreSQL datasource available.

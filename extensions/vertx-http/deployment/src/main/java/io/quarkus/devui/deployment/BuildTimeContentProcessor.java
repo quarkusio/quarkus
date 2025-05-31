@@ -47,6 +47,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.mvnpm.importmap.Aggregator;
 import io.mvnpm.importmap.Location;
 import io.mvnpm.importmap.model.Imports;
+import io.quarkus.assistant.deployment.spi.AssistantBuildItem;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Version;
 import io.quarkus.deployment.IsLocalDevelopment;
@@ -113,6 +114,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("qwc-extension-link", contextRoot + "qwc/qwc-extension-link.js");
         // Quarkus UI
         internalImportMapBuildItem.add("qui-ide-link", contextRoot + "qui/qui-ide-link.js");
+        internalImportMapBuildItem.add("qui-assistant-warning", contextRoot + "qui/qui-assistant-warning.js");
+        internalImportMapBuildItem.add("qui-assistant-button", contextRoot + "qui/qui-assistant-button.js");
 
         // Echarts
         internalImportMapBuildItem.add("echarts/", contextRoot + "echarts/");
@@ -218,8 +221,10 @@ public class BuildTimeContentProcessor {
                 String fullName = extensionPathName + "." + bta.getMethodName();
                 if (bta.hasRuntimeValue()) {
                     recordedValues.put(fullName, bta.getRuntimeValue());
-                } else {
+                } else if (bta.hasAction()) {
                     DevConsoleManager.register(fullName, bta.getAction());
+                } else if (bta.hasAssistantAction()) {
+                    DevConsoleManager.register(fullName, bta.getAssistantAction());
                 }
                 methodNames.add(fullName);
             }
@@ -227,8 +232,10 @@ public class BuildTimeContentProcessor {
                 String fullName = extensionPathName + "." + bts.getMethodName();
                 if (bts.hasRuntimeValue()) {
                     recordedValues.put(fullName, bts.getRuntimeValue());
-                } else {
+                } else if (bts.hasAction()) {
                     DevConsoleManager.register(fullName, bts.getAction());
+                } else if (bts.hasAssistantAction()) {
+                    DevConsoleManager.register(fullName, bts.getAssistantAction());
                 }
                 subscriptionNames.add(fullName);
             }
@@ -443,6 +450,7 @@ public class BuildTimeContentProcessor {
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             LaunchModeBuildItem launchModeBuildItem,
             Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
+            Optional<AssistantBuildItem> assistantBuildItem,
             DevUIConfig devUIConfig) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
@@ -450,7 +458,8 @@ public class BuildTimeContentProcessor {
         addThemeBuildTimeData(internalBuildTimeData, devUIConfig, themeVarsProducer);
         addMenuSectionBuildTimeData(internalBuildTimeData, internalPages, extensionsBuildItem);
         addFooterTabBuildTimeData(internalBuildTimeData, extensionsBuildItem, devUIConfig);
-        addVersionInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem);
+        addApplicationInfoBuildTimeData(internalBuildTimeData, curateOutcomeBuildItem, nonApplicationRootPathBuildItem,
+                assistantBuildItem);
         addIdeBuildTimeData(internalBuildTimeData, effectiveIdeBuildItem, launchModeBuildItem);
         buildTimeConstProducer.produce(internalBuildTimeData);
     }
@@ -558,9 +567,10 @@ public class BuildTimeContentProcessor {
         internalBuildTimeData.addBuildTimeData("loggerLevels", LEVELS);
     }
 
-    private void addVersionInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
+    private void addApplicationInfoBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
             CurateOutcomeBuildItem curateOutcomeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            Optional<AssistantBuildItem> assistantBuildItem) {
 
         Map<String, String> applicationInfo = new HashMap<>();
 
@@ -578,6 +588,10 @@ public class BuildTimeContentProcessor {
         applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         applicationInfo.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
+        // Add assistant info
+        if (assistantBuildItem.isPresent()) {
+            applicationInfo.put("assistantAvailable", "true");
+        }
         internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
     }
 

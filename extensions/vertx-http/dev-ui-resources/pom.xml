@@ -167,5 +167,12 @@
             <artifactId>es-module-shims</artifactId>
             <scope>runtime</scope>
         </dependency>
+        
+        <!-- To render dot files -->
+        <dependency>
+            <groupId>org.mvnpm.at.qomponent</groupId>
+            <artifactId>qui-dot</artifactId>
+            <scope>runtime</scope>
+        </dependency>
     </dependencies>
 </project>

@@ -15,7 +15,6 @@ class NoConfigTest {
     companion object {
         @RegisterExtension
         @JvmField
-        val config =
-            QuarkusUnitTest().setArchiveProducer { ShrinkWrap.create(JavaArchive::class.java) }
+        val config = QuarkusUnitTest().setArchiveProducer { ShrinkWrap.create(JavaArchive::class.java) }
     }
 }

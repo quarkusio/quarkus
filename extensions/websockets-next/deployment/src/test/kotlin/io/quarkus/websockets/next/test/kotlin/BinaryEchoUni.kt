@@ -5,6 +5,7 @@ import io.quarkus.websockets.next.OnClose
 import io.quarkus.websockets.next.WebSocket
 import io.smallrye.mutiny.Uni
 import io.vertx.core.buffer.Buffer
+import kotlinx.coroutines.delay
 
 @WebSocket(path = "/binary-echo-uni")
 class BinaryEchoUni {
@@ -12,6 +13,7 @@ class BinaryEchoUni {
     fun process(msg: Buffer): Uni<Buffer> {
         return Uni.createFrom().item(msg)
     }
+
 
     @OnClose
     fun close(): Uni<Void> {

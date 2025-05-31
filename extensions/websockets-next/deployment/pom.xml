@@ -196,7 +196,8 @@
             <properties>
                 <maven.compiler.target>21</maven.compiler.target>
                 <maven.compiler.source>21</maven.compiler.source>
-                <maven.compiler.release>21</maven.compiler.release>
+                <!-- javaparser 3.25.10 used by impsort-maven-plugin does not define the "language level" for 21 -->
+                <!--maven.compiler.release>21</maven.compiler.release-->
             </properties>
             <build>
                 <plugins>

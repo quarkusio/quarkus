@@ -6,7 +6,6 @@ import jakarta.persistence.Entity
 
 @Entity
 class SecondEntity : PanacheEntity() {
-    companion object : PanacheCompanion<SecondEntity>
-
+    companion object: PanacheCompanion<SecondEntity>
     var name: String? = null
 }

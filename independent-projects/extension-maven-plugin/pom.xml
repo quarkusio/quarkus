@@ -455,17 +455,31 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.diffplug.spotless</groupId>
-                        <artifactId>spotless-maven-plugin</artifactId>
+                        <groupId>net.revelc.code.formatter</groupId>
+                        <artifactId>formatter-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>spotless-apply</id>
-                                <phase>verify</phase>
+                                <phase>process-sources</phase>
                                 <goals>
-                                     <goal>apply</goal>
+                                    <goal>format</goal>
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>net.revelc.code</groupId>
+                        <artifactId>impsort-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sort-imports</id>
+                                <goals>
+                                    <goal>sort</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                            <removeUnused>true</removeUnused>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>
@@ -481,11 +495,26 @@
             <build>
                 <plugins>
                     <plugin>
-                        <groupId>com.diffplug.spotless</groupId>
-                        <artifactId>spotless-maven-plugin</artifactId>
+                        <groupId>net.revelc.code.formatter</groupId>
+                        <artifactId>formatter-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <phase>verify</phase>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>validate</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>net.revelc.code</groupId>
+                        <artifactId>impsort-maven-plugin</artifactId>
+                        <configuration>
+                            <removeUnused>true</removeUnused>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>check-imports</id>
                                 <goals>
                                     <goal>check</goal>
                                 </goals>

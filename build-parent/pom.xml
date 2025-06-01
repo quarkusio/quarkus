@@ -678,6 +678,27 @@
                     <version>${smallrye-certificate-generator.version}</version>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <version>3.26.0</version>
+                    <configuration>
+                        <analysisCache>true</analysisCache>
+                        <analysisCacheLocation>.pmd/.cache</analysisCacheLocation>
+                        <printFailingErrors>true</printFailingErrors>
+                        <rulesets>
+                            <ruleset>.pmd/ruleset.xml</ruleset>
+                        </rulesets>
+                    </configuration>
+                    <executions>
+                        <execution>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                            <phase>verify</phase>
+                        </execution>
+                    </executions>
+                </plugin>
+                <plugin>
                     <groupId>com.diffplug.spotless</groupId>
                     <artifactId>spotless-maven-plugin</artifactId>
                     <version>2.44.4</version>

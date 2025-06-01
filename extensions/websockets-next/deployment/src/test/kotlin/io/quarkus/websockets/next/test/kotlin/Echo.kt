@@ -11,5 +11,7 @@ class Echo {
         return msg
     }
 
-    @OnClose fun close() {}
+    @OnClose
+    fun close() {
+    }
 }

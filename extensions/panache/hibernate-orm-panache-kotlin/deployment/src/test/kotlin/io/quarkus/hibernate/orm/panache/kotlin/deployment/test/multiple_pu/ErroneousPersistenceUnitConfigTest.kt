@@ -18,20 +18,12 @@ class ErroneousPersistenceUnitConfigTest {
     companion object {
         @RegisterExtension
         @JvmField
-        var runner =
-            QuarkusUnitTest()
+        var runner = QuarkusUnitTest()
                 .setExpectedException(IllegalStateException::class.java)
                 .setArchiveProducer {
                     ShrinkWrap.create(JavaArchive::class.java)
-                        .addClasses(
-                            FirstEntity::class.java,
-                            SecondEntity::class.java,
-                            PanacheTestResource::class.java,
-                        )
-                        .addAsResource(
-                            "application-erroneous-multiple-persistence-units.properties",
-                            "application.properties",
-                        )
+                            .addClasses(FirstEntity::class.java, SecondEntity::class.java, PanacheTestResource::class.java)
+                            .addAsResource("application-erroneous-multiple-persistence-units.properties", "application.properties")
                 }
     }
 }

@@ -177,7 +177,6 @@
                         <artifactId>spotless-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>spotless-apply</id>
                                 <phase>verify</phase>
                                 <goals>
                                      <goal>apply</goal>

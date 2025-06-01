@@ -589,7 +589,6 @@
                         <artifactId>spotless-maven-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>spotless-apply</id>
                                 <phase>verify</phase>
                                 <goals>
                                      <goal>apply</goal>
@@ -615,6 +614,19 @@
                         <artifactId>spotless-maven-plugin</artifactId>
                         <executions>
                             <execution>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-pmd-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>pmd-check</id>
                                 <phase>verify</phase>
                                 <goals>
                                     <goal>check</goal>

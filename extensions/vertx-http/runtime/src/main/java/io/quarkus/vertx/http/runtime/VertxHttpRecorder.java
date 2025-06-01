@@ -563,7 +563,7 @@ public class VertxHttpRecorder {
             var mr = managementRouter.getValue();
             boolean hasManagementRoutes = !mr.getRoutes().isEmpty();
 
-            addHotReplacementHandlerIfNeeded(mr);
+            // We do not add the hotreload handler on the management interface
 
             mr.route().last().failureHandler(
                     new QuarkusErrorHandler(launchMode.isDevOrTest(), decorateStacktrace(launchMode, logBuildTimeConfig),

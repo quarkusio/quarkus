@@ -248,7 +248,7 @@
                             <execution>
                                 <id>sort-imports</id>
                                 <goals>
-                                    <goal>sort</goal>
+                                     <goal>sort</goal>
                                 </goals>
                             </execution>
                         </executions>

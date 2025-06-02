@@ -119,6 +119,13 @@ public interface SmallRyeOpenApiConfig {
     boolean autoAddSecurity();
 
     /**
+     * This will automatically add the OpenAPI specification document endpoint to the schema.
+     * It also adds "openapi" to the list of tags and specify an "operationId"
+     */
+    @WithDefault("false")
+    boolean autoAddOpenApiEndpoint();
+
+    /**
      * Required when using `apiKey` security. The location of the API key. Valid values are "query", "header" or "cookie".
      */
     Optional<String> apiKeyParameterIn();

@@ -110,7 +110,7 @@ abstract class TypeImpl<JandexType extends org.jboss.jandex.Type> extends Annota
     }
 
     @Override
-    @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
+    @SuppressForbidden("Using Type.toString() to build an informative message")
     public String toString() {
         return jandexType.toString();
     }

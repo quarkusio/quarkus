@@ -791,7 +791,7 @@ public class InvokerGenerator extends AbstractGenerator {
             this.invoker = invoker;
         }
 
-        @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
+        @SuppressForbidden("Using Type.toString() to build an informative message")
         CandidateMethod resolve() {
             if (matching.size() == 1) {
                 return matching.get(0);

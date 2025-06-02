@@ -19,7 +19,7 @@ import java.util.function.Supplier;
  */
 public class RunningDevServicesTracker {
 
-    // A useful uniqueness marker which will persist across profiles and application restarts.
+    // A useful uniqueness marker which will persist across profiles and application restarts, since this class lives in the system classloader. The value will be the same between dev and test mode.
     public static final String APPLICATION_UUID = randomUUID().toString();
 
     private static volatile Set<Supplier<Map>> configTracker = null;

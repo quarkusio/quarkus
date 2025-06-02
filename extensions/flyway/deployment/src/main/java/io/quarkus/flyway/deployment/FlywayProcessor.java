@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.AbstractCollection;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -43,6 +44,7 @@ import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeanBuildItem;
 import io.quarkus.arc.deployment.SyntheticBeansRuntimeInitBuildItem;
 import io.quarkus.arc.processor.DotNames;
+import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.deployment.annotations.BuildProducer;
@@ -57,6 +59,7 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
 import io.quarkus.deployment.builditem.InitTaskBuildItem;
 import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
+import io.quarkus.deployment.builditem.RemovedResourceBuildItem;
 import io.quarkus.deployment.builditem.ServiceStartBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.NativeImageResourceBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
@@ -69,6 +72,7 @@ import io.quarkus.flyway.runtime.FlywayContainerProducer;
 import io.quarkus.flyway.runtime.FlywayDataSourceBuildTimeConfig;
 import io.quarkus.flyway.runtime.FlywayRecorder;
 import io.quarkus.flyway.runtime.FlywayRuntimeConfig;
+import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.runtime.util.ClassPathUtils;
 
 @BuildSteps(onlyIf = FlywayEnabled.class)
@@ -83,6 +87,22 @@ class FlywayProcessor {
     private static final DotName JAVA_MIGRATION = DotName.createSimple(JavaMigration.class.getName());
 
     private static final Logger LOGGER = Logger.getLogger(FlywayProcessor.class);
+
+    @BuildStep
+    void preventScannerRegistration(BuildProducer<RemovedResourceBuildItem> producer) {
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("software.amazon.awssdk.services.s3.S3Client")) {
+            producer.produce(new RemovedResourceBuildItem(ArtifactKey.fromString("org.flywaydb:flyway-core"),
+                    Collections.singleton("org.flywaydb.core.internal.resource.s3.AwsS3Resource.class")));
+        }
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("org.jboss.vfs.VFS")) {
+            producer.produce(new RemovedResourceBuildItem(ArtifactKey.fromString("org.flywaydb:flyway-core"), Collections
+                    .singleton("org.flywaydb.core.internal.scanner.classpath.jboss.JBossVFSv3ClassPathLocationScanner.class")));
+        }
+        if (!QuarkusClassLoader.isClassPresentAtRuntime("org.osgi.framework.Bundle")) {
+            producer.produce(new RemovedResourceBuildItem(ArtifactKey.fromString("org.flywaydb:flyway-core"),
+                    Collections.singleton("org.flywaydb.core.internal.scanner.classpath.OsgiClassPathLocationScanner.class")));
+        }
+    }
 
     @BuildStep
     void reflection(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,

@@ -2,6 +2,9 @@ package io.quarkus.devservices.crossclassloader.runtime;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
@@ -13,13 +16,14 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 public class ComparableDevServicesConfigTest {
 
     String configName = "prefix";
+    UUID uuid = UUID.randomUUID();
 
     @Test
     public void identicalWrappersShouldBeEqual() {
         DevServiceOwner owner = new DevServiceOwner("someextension", LaunchMode.TEST.name(), configName);
         DummyDevServicesConfig globalConfig = new DummyDevServicesConfig("b", 3);
         DummyExtensionConfig config = new DummyExtensionConfig("a", 1);
-        ComparableDevServicesConfig wrapped = new ComparableDevServicesConfig(owner, globalConfig, config);
+        ComparableDevServicesConfig wrapped = new ComparableDevServicesConfig(uuid, owner, globalConfig, config);
         assertEquals(wrapped, wrapped);
     }
 
@@ -28,8 +32,8 @@ public class ComparableDevServicesConfigTest {
         DevServiceOwner owner = new DevServiceOwner("someextension", LaunchMode.TEST.name(), configName);
         DummyDevServicesConfig globalConfig = new DummyDevServicesConfig("b", 3);
         DummyExtensionConfig config = new DummyExtensionConfig("a", 1);
-        assertEquals(new ComparableDevServicesConfig(owner, globalConfig, config),
-                new ComparableDevServicesConfig(owner, globalConfig, config));
+        assertEquals(new ComparableDevServicesConfig(uuid, owner, globalConfig, config),
+                new ComparableDevServicesConfig(uuid, owner, globalConfig, config));
     }
 
     @Test
@@ -39,8 +43,8 @@ public class ComparableDevServicesConfigTest {
         DummyExtensionConfig config1 = new DummyExtensionConfig("a", 1);
         DummyDevServicesConfig globalConfig2 = new DummyDevServicesConfig("b", 3);
         DummyExtensionConfig config2 = new DummyExtensionConfig("a", 1);
-        assertEquals(new ComparableDevServicesConfig(owner, globalConfig1, config1),
-                new ComparableDevServicesConfig(owner, globalConfig2, config2));
+        assertEquals(new ComparableDevServicesConfig(uuid, owner, globalConfig1, config1),
+                new ComparableDevServicesConfig(uuid, owner, globalConfig2, config2));
     }
 
     @Test
@@ -48,40 +52,48 @@ public class ComparableDevServicesConfigTest {
         DevServiceOwner owner = new DevServiceOwner("someextension", LaunchMode.TEST.name(), configName);
         DummyDevServicesConfig globalConfig = new DummyDevServicesConfig("b", 3);
         DummyExtensionConfig config = new DummyExtensionConfig("a", 1);
-        assertEquals(new ComparableDevServicesConfig(owner, globalConfig, config).hashCode(),
-                new ComparableDevServicesConfig(owner, globalConfig, config).hashCode());
+        assertEquals(new ComparableDevServicesConfig(uuid, owner, globalConfig, config).hashCode(),
+                new ComparableDevServicesConfig(uuid, owner, globalConfig, config).hashCode());
     }
 
     @Test
     public void wrappersWrappingDifferentOwnerExtensionsShouldNotBeEqual() {
         DevServiceOwner owner1 = new DevServiceOwner("someextension", LaunchMode.TEST.name(), configName);
         DevServiceOwner owner2 = new DevServiceOwner("anotherextension", LaunchMode.TEST.name(), configName);
-        assertNotEquals(new ComparableDevServicesConfig(owner1, null, null),
-                new ComparableDevServicesConfig(owner2, null, null));
+        assertNotEquals(new ComparableDevServicesConfig(uuid, owner1, null, null),
+                new ComparableDevServicesConfig(uuid, owner2, null, null));
     }
 
     @Test
     public void wrappersWrappingDifferentOwnerLaunchModesShouldNotBeEqual() {
         DevServiceOwner owner1 = new DevServiceOwner("someextension", LaunchMode.TEST.name(), configName);
         DevServiceOwner owner2 = new DevServiceOwner("someextension", LaunchMode.DEVELOPMENT.name(), configName);
-        assertNotEquals(new ComparableDevServicesConfig(owner1, null, null),
-                new ComparableDevServicesConfig(owner2, null, null));
+        assertNotEquals(new ComparableDevServicesConfig(uuid, owner1, null, null),
+                new ComparableDevServicesConfig(uuid, owner2, null, null));
     }
 
     @Test
     public void wrappersWrappingDifferentIdentifyingConfigShouldNotBeEqual() {
         DummyExtensionConfig config1 = new DummyExtensionConfig("a", 1);
         DummyExtensionConfig config2 = new DummyExtensionConfig("a", 2);
-        assertNotEquals(new ComparableDevServicesConfig(null, null, config1),
-                new ComparableDevServicesConfig(null, null, config2));
+        assertNotEquals(new ComparableDevServicesConfig(uuid, null, null, config1),
+                new ComparableDevServicesConfig(uuid, null, null, config2));
     }
 
     @Test
     public void wrappersWrappingDifferentIdentifyingConfigHaveDifferentHashCodes() {
         DummyExtensionConfig config1 = new DummyExtensionConfig("a", 1);
         DummyExtensionConfig config2 = new DummyExtensionConfig("a", 2);
-        assertNotEquals(new ComparableDevServicesConfig(null, null, config1).hashCode(),
-                new ComparableDevServicesConfig(null, null, config2).hashCode());
+        assertNotEquals(new ComparableDevServicesConfig(uuid, null, null, config1).hashCode(),
+                new ComparableDevServicesConfig(uuid, null, null, config2).hashCode());
+    }
+
+    @Test
+    public void nullUuidIsHandled() {
+        DummyExtensionConfig config = new DummyExtensionConfig("a", 1);
+        assertNotNull(new ComparableDevServicesConfig(null, null, null, config).hashCode());
+        assertEquals(new ComparableDevServicesConfig(null, null, null, config).hashCode(),
+                new ComparableDevServicesConfig(null, null, null, config).hashCode());
     }
 
     @ConfigGroup

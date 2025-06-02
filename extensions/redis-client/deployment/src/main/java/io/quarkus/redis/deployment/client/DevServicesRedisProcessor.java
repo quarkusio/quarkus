@@ -24,6 +24,7 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
+import io.quarkus.deployment.builditem.ApplicationInstanceIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunnableDevService;
@@ -56,6 +57,7 @@ public class DevServicesRedisProcessor {
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
 
+    private static boolean ugh = false;
     /**
      * Label to add to shared Dev Service for Redis running in containers.
      * This allows other applications to discover the running service and use it instead of starting a new instance.
@@ -75,6 +77,7 @@ public class DevServicesRedisProcessor {
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             RedisBuildTimeConfig config,
             DevServicesTrackerBuildItem tracker,
+            ApplicationInstanceIdBuildItem applicationIdBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
@@ -97,7 +100,7 @@ public class DevServicesRedisProcessor {
                 boolean useSharedNetwork = DevServicesSharedNetworkBuildItem.isSharedNetworkRequired(devServicesConfig,
                         devServicesSharedNetworkBuildItem);
 
-                // We always get a RunnableDevServices object back, but multiple of these objects might map to the same underlying container
+                // We always get a RunnableDevServices object back, but multiple of these objects might map to the same underlying container, *if* the container locator finds services
                 RunningDevService devService = createContainer(dockerStatusBuildItem, composeProjectBuildItem,
                         connectionName,
                         entry.getValue().devservices(),
@@ -276,6 +279,11 @@ public class DevServicesRedisProcessor {
 
         public void close() {
             super.close();
+        }
+
+        @Override
+        public String getConnectionInfo() {
+            return getHost() + ":" + getPort();
         }
     }
 }

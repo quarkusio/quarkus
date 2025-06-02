@@ -149,7 +149,7 @@ public class ConfigInstantiatorTestCase {
     }
 
     @ConfigRoot(name = "named")
-    public static class WithNameConfig {
+    private static class WithNameConfig {
 
         @ConfigItem
         public String value;

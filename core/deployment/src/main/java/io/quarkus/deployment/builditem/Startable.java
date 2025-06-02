@@ -4,4 +4,6 @@ import java.io.Closeable;
 
 public interface Startable extends Closeable {
     void start();
+
+    String getConnectionInfo();
 }

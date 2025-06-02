@@ -5,6 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.ConfigMapping;
@@ -12,21 +13,24 @@ import io.smallrye.config.ConfigMapping;
 public class ComparableDevServicesConfig {
 
     public static final int PRIME_NUMBER = 31;
+    private static final int UNDEFINED = -1;
     private final DevServiceOwner owner;
     private final Object globalConfig;
     private final Object identifyingConfig;
+    private final UUID applicationInstanceId;
+    private int hashCode = UNDEFINED;
 
     /**
      * @param globalConfig should be a io.quarkus.deployment.dev.devservices.DevServicesConfig, but is not that type to avoid
      *        the dependency on the devservices module
      * @param identifyingConfig a config object specific to the extension's dev services configuration
      */
-    public ComparableDevServicesConfig(DevServiceOwner owner, Object globalConfig, Object identifyingConfig) {
+    public ComparableDevServicesConfig(UUID applicationInstanceId, DevServiceOwner owner, Object globalConfig,
+            Object identifyingConfig) {
         this.owner = owner;
+        this.applicationInstanceId = applicationInstanceId;
         this.globalConfig = globalConfig;
         this.identifyingConfig = identifyingConfig;
-
-        // TODO validate types, cache interfaces
     }
 
     public DevServiceOwner getDevServicesOwner() {
@@ -41,6 +45,11 @@ public class ComparableDevServicesConfig {
 
         // Instanceof checks are safe because this package always loads parent-first
         if (!(other instanceof ComparableDevServicesConfig otherObj)) {
+            return false;
+        }
+
+        Object otherUUID = otherObj.applicationInstanceId;
+        if (!Objects.equals(applicationInstanceId, otherUUID)) {
             return false;
         }
 
@@ -92,34 +101,22 @@ public class ComparableDevServicesConfig {
 
                     if (containsAnnotation(iface, ConfigMapping.class) || containsAnnotation(iface, ConfigGroup.class)) {
                         // For each method in the interface
+                        // In the future, if we wanted some methods to be ignored, we could use a marker annotation in the config object
                         for (Method method : iface.getMethods()) {
 
                             int modifiers = method.getModifiers();
-                            if (java.lang.reflect.Modifier.isStatic(modifiers) ||
-                                    java.lang.reflect.Modifier.isTransient(modifiers)) {
-                                continue; // Skip static and transient methods
-                            }
+                            if (isInvokableMethod(method, modifiers)) {
+                                Method otherMethod = clazz == otherClazz ? method : otherClazz.getMethod(method.getName());
+                                otherMethod.setAccessible(true);
 
-                            if (java.lang.reflect.Modifier.isPrivate(modifiers)) {
-                                continue; // Skip private methods, which wouldn't be exposed as config
-                            }
+                                Object thisValue = method.invoke(config);
+                                Object otherValue = otherMethod.invoke(otherConfig);
 
-                            if (method.getParameterCount() > 0) {
-                                continue; // Skip methods which take an argument
-                            }
+                                // Assume the objects in the config use types from the parent classloader, or we just declare them non-equal if they're not in the same classloader
 
-                            method.setAccessible(true);
-
-                            Method otherMethod = clazz == otherClazz ? method : otherClazz.getMethod(method.getName());
-                            otherMethod.setAccessible(true);
-
-                            Object thisValue = method.invoke(config);
-                            Object otherValue = otherMethod.invoke(otherConfig);
-
-                            // Assume the objects in the config use types from the parent classloader, or we just declare them non-equal if they're not in the same classloader
-
-                            if (!Objects.deepEquals(thisValue, otherValue)) {
-                                return false;
+                                if (!Objects.deepEquals(thisValue, otherValue)) {
+                                    return false;
+                                }
                             }
                         }
                     }
@@ -140,10 +137,6 @@ public class ComparableDevServicesConfig {
 
     /**
      * We can't just use clazz.isAnnotationPresent(), because the annotation itself is likely to be proxied
-     *
-     * @param iface
-     * @param configAnnotation
-     * @return
      */
     private static boolean containsAnnotation(Class<?> iface, Class<? extends Annotation> configAnnotation) {
         return Arrays.stream(iface.getAnnotations())
@@ -152,7 +145,16 @@ public class ComparableDevServicesConfig {
 
     @Override
     public int hashCode() {
+        // Cache hashcodes, since the reflection will be expensive and config values should not change
+        if (hashCode == UNDEFINED) {
+            hashCode = calculateHashCode();
+        }
+        return hashCode;
+    }
+
+    private int calculateHashCode() {
         int result = owner != null ? owner.hashCode() : 0;
+        result = applicationInstanceId != null ? result + PRIME_NUMBER * applicationInstanceId.hashCode() : result;
         result = PRIME_NUMBER * result + reflectiveHashCode(identifyingConfig);
         result = PRIME_NUMBER * result + reflectiveHashCode(globalConfig);
 
@@ -160,7 +162,6 @@ public class ComparableDevServicesConfig {
     }
 
     private static int reflectiveHashCode(Object config) {
-        // It might be wise to cache this, since the reflection will be expensive and config values should not change
         if (config == null) {
             return 0;
         }
@@ -173,29 +174,18 @@ public class ComparableDevServicesConfig {
                 for (Class<?> iface : clazz.getInterfaces()) {
                     // Check if the interface is a config one
 
-                    if (containsAnnotation(iface, ConfigMapping.class) || containsAnnotation(iface, ConfigGroup.class)) {
+                    if (isConfigInterface(iface)) {
                         // For each method in the interface
                         for (Method method : iface.getMethods()) {
 
                             final int modifiers = method.getModifiers();
-                            if (java.lang.reflect.Modifier.isStatic(modifiers) ||
-                                    java.lang.reflect.Modifier.isTransient(modifiers)) {
-                                continue; // Skip static and transient methods
-                            }
+                            if (isInvokableMethod(method, modifiers)) {
+                                // Skip static and transient methods
 
-                            if (java.lang.reflect.Modifier.isPrivate(modifiers)) {
-                                continue; // Skip private methods, which wouldn't be exposed as config
-                            }
-
-                            if (method.getParameterCount() > 0) {
-                                continue; // Skip methods which take an argument
-                            }
-
-                            method.setAccessible(true);
-
-                            Object thisValue = method.invoke(config);
-                            if (thisValue != null) {
-                                result = 31 * result + thisValue.hashCode();
+                                Object thisValue = method.invoke(config);
+                                if (thisValue != null) {
+                                    result = PRIME_NUMBER * result + thisValue.hashCode();
+                                }
                             }
                         }
                     }
@@ -212,9 +202,32 @@ public class ComparableDevServicesConfig {
         }
     }
 
+    private static boolean isInvokableMethod(Method method, int modifiers) {
+        if (java.lang.reflect.Modifier.isStatic(modifiers) ||
+                java.lang.reflect.Modifier.isTransient(modifiers)) {
+            return false;
+        }
+
+        if (java.lang.reflect.Modifier.isPrivate(modifiers)) {
+            return false;
+        }
+
+        if (method.getParameterCount() > 0) {
+            return false;
+        }
+
+        method.setAccessible(true);
+        return true;
+    }
+
+    private static boolean isConfigInterface(Class<?> iface) {
+        return containsAnnotation(iface, ConfigMapping.class) || containsAnnotation(iface, ConfigGroup.class);
+    }
+
     @Override
     public String toString() {
-        return "ComparableDevServicesConfig[" + owner + "-" + globalConfig + "-" + identifyingConfig + "]";
+        return "ComparableDevServicesConfig[" + owner + "-" + applicationInstanceId + "-" + globalConfig + "-"
+                + identifyingConfig + "]";
     }
 
 }

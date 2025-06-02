@@ -4,7 +4,7 @@ and pull requests should be submitted there:
 https://github.com/quarkusio/quarkus/tree/main/docs/src/main/asciidoc
 ////
 = Redis Extension Reference Guide
-:extension-status: preview
+:extension-status: stable
 include::_attributes.adoc[]
 :numbered:
 :sectnums:

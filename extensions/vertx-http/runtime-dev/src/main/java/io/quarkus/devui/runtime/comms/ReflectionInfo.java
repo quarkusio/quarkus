@@ -2,6 +2,8 @@ package io.quarkus.devui.runtime.comms;
 
 import java.lang.reflect.Method;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
@@ -46,5 +48,10 @@ public class ReflectionInfo {
 
     public boolean isReturningUni() {
         return method.getReturnType().getName().equals(Uni.class.getName());
+    }
+
+    public boolean isReturningCompletionStage() {
+        return method.getReturnType().getName().equals(CompletionStage.class.getName()) ||
+                method.getReturnType().getName().equals(CompletableFuture.class.getName());
     }
 }

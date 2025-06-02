@@ -20,12 +20,14 @@ import java.util.concurrent.CompletionStage;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.pkg.builditem.BuildSystemTargetBuildItem;
+import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
@@ -123,7 +125,7 @@ public class WorkspaceProcessor {
                 .display(Display.split)
                 .displayType(DisplayType.markdown)
                 .namespace(NAMESPACE)
-                .filter(Patterns.README_MD);
+                .filter(Patterns.ANY_MD);
 
         workspaceActionProducer.produce(new WorkspaceActionBuildItem(actionBuilder));
     }
@@ -151,7 +153,7 @@ public class WorkspaceProcessor {
             buildItemActions.addAction("getWorkspaceActions", (t) -> {
                 return actionMap.values().stream()
                         .map(action -> new WorkspaceAction(action.getId(), action.getLabel(), action.getFilter(),
-                                action.getDisplay(), action.getDisplayType()))
+                                action.getDisplay(), action.getDisplayType(), action.isAssistant()))
                         .sorted(Comparator.comparing(WorkspaceAction::label))
                         .collect(Collectors.toList());
             });
@@ -162,11 +164,20 @@ public class WorkspaceProcessor {
                     Path path = Path.of(URI.create(t.get("path")));
                     Action actionToExecute = actionMap.get(actionId);
                     Path convertedPath = (Path) actionToExecute.getPathConverter().apply(path);
-                    Object result = actionToExecute.getFunction().apply(t);
-                    if (result instanceof CompletionStage<?> stage) {
-                        return stage.thenApply(res -> new WorkspaceActionResult(convertedPath, res));
+
+                    Object result;
+                    if (actionToExecute.isAssistant()) {
+                        Assistant assistant = DevConsoleManager.getGlobal(DevConsoleManager.DEV_MANAGER_GLOBALS_ASSISTANT);
+                        result = actionToExecute.getAssistantFunction().apply(assistant, t);
                     } else {
-                        return new WorkspaceActionResult(convertedPath, result);
+                        result = actionToExecute.getFunction().apply(t);
+                    }
+
+                    if (result != null && result instanceof CompletionStage<?> stage) {
+                        return stage
+                                .thenApply(res -> new WorkspaceActionResult(convertedPath, res, actionToExecute.isAssistant()));
+                    } else {
+                        return new WorkspaceActionResult(convertedPath, result, actionToExecute.isAssistant());
                     }
                 }
                 return null;
@@ -290,10 +301,10 @@ public class WorkspaceProcessor {
     }
 
     static record WorkspaceAction(String id, String label, Optional<Pattern> pattern, Display display,
-            DisplayType displayType) {
+            DisplayType displayType, boolean isAssistanceAction) {
     }
 
-    static record WorkspaceActionResult(Path path, Object result) {
+    static record WorkspaceActionResult(Path path, Object result, boolean isAssistant) {
     }
 
     private static final String NAMESPACE = "devui-workspace";

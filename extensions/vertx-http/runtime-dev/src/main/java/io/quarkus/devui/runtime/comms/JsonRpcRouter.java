@@ -271,7 +271,8 @@ public class JsonRpcRouter {
         if (this.recordedValues.containsKey(jsonRpcMethodName)) {
             returnedObject = this.recordedValues.get(jsonRpcMethodName).getValue();
         } else {
-            returnedObject = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
+            returnedObject = DevConsoleManager.invoke(jsonRpcMethodName,
+                    getArgsAsMap(jsonRpcRequest));
         }
         if (returnedObject != null) {
             // Support for Mutiny is diffcult because we are between the runtime and deployment classpath.
@@ -320,7 +321,20 @@ public class JsonRpcRouter {
             } catch (Exception e) {
                 return Uni.createFrom().failure(e);
             }
+        } else if (info.isReturningCompletionStage()) {
+            try {
+                Uni<?> uni = Uni.createFrom()
+                        .completionStage(Unchecked.supplier(() -> (CompletionStage<?>) info.method.invoke(target, args)));
+                if (info.isExplicitlyBlocking()) {
+                    return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());
+                } else {
+                    return uni;
+                }
+            } catch (Exception e) {
+                return Uni.createFrom().failure(e);
+            }
         } else {
+
             Uni<?> uni = Uni.createFrom().item(Unchecked.supplier(() -> info.method.invoke(target, args)));
             if (!info.isExplicitlyNonBlocking()) {
                 return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());

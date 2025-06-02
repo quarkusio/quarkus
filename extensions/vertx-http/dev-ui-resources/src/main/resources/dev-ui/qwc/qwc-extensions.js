@@ -301,6 +301,8 @@ export class QwcExtensions extends observeState(LitElement) {
                                 namespace="${extension.namespace}"
                                 extensionName="${extension.name}"
                                 iconName="${page.icon}"
+                                tooltipContent="${page.tooltip}"
+                                colorName="${page.color}"
                                 displayName="${page.title}"
                                 staticLabel="${page.staticLabel}"
                                 dynamicLabel="${page.dynamicLabel}"

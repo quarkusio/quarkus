@@ -11,10 +11,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.eclipse.microprofile.context.ManagedExecutor;
+import org.eclipse.microprofile.context.ThreadContext;
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.impl.protocol.Codec27;
 import org.infinispan.commons.util.NullValue;
-import org.infinispan.commons.util.concurrent.CompletionStages;
 import org.reactivestreams.FlowAdapters;
 
 import io.quarkus.arc.Arc;
@@ -36,6 +37,8 @@ import io.vertx.core.impl.ContextInternal;
  */
 public class InfinispanCacheImpl extends AbstractCache implements Cache {
 
+    private final ThreadContext threadContext;
+    private final ManagedExecutor managedExecutor;
     private final RemoteCache remoteCache;
     private final InfinispanCacheInfo cacheInfo;
     private final Map<Object, CompletableFuture> computationResults = new ConcurrentHashMap<>();
@@ -47,6 +50,8 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
         this.remoteCache = remoteCache;
         this.lifespan = cacheInfo.lifespan.map(l -> l.toMillis()).orElse(-1L);
         this.maxIdle = cacheInfo.maxIdle.map(m -> m.toMillis()).orElse(-1L);
+        this.threadContext = Arc.container().select(ThreadContext.class).get();
+        this.managedExecutor = Arc.container().select(ManagedExecutor.class).get();
     }
 
     public InfinispanCacheImpl(InfinispanCacheInfo cacheInfo,
@@ -81,16 +86,11 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
 
     @Override
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
-        return Uni.createFrom()
-                .completionStage(() -> CompletionStages.handleAndCompose(remoteCache.getAsync(key), (v1, ex1) -> {
-                    if (ex1 != null) {
-                        return CompletableFuture.failedFuture(ex1);
-                    }
-
+        CompletableFuture<V> infinispanGet = threadContext.withContextCapture(remoteCache.getAsync(key))
+                .thenApplyAsync(v1 -> {
                     if (v1 != null) {
                         return CompletableFuture.completedFuture(decodeNull(v1));
                     }
-
                     CompletableFuture<V> resultAsync = new CompletableFuture<>();
                     CompletableFuture<V> computedValue = computationResults.putIfAbsent(key, resultAsync);
                     if (computedValue != null) {
@@ -111,18 +111,15 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                                 computationResults.remove(key);
                             });
                     return resultAsync;
-                }));
+                }, managedExecutor).thenCompose(f -> f);
+
+        return Uni.createFrom().completionStage(infinispanGet);
     }
 
     @Override
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
         Context context = Vertx.currentContext();
-
-        return Uni.createFrom().completionStage(CompletionStages.handleAndCompose(remoteCache.getAsync(key), (v1, ex1) -> {
-            if (ex1 != null) {
-                return CompletableFuture.failedFuture(ex1);
-            }
-
+        CompletableFuture<V> infinispanGet = threadContext.withContextCapture(remoteCache.getAsync(key)).thenApplyAsync(v1 -> {
             if (v1 != null) {
                 return CompletableFuture.completedFuture(decodeNull(v1));
             }
@@ -152,7 +149,9 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                         }
                     });
             return resultAsync;
-        })).emitOn(new Executor() {
+        }, managedExecutor).thenCompose(f -> f);
+
+        return Uni.createFrom().completionStage(infinispanGet).emitOn(new Executor() {
             // We need make sure we go back to the original context when the cache value is computed.
             // Otherwise, we would always emit on the context having computed the value, which could
             // break the duplicated context isolation.

@@ -3,6 +3,7 @@ package io.quarkus.devui.spi.buildtime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.devui.spi.AbstractDevUIBuildItem;
@@ -24,12 +25,17 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
         super(customIdentifier);
     }
 
-    public void addAction(BuildTimeAction buildTimeAction) {
+    private void addAction(BuildTimeAction buildTimeAction) {
         this.actions.add(buildTimeAction);
     }
 
     public <T> void addAction(String methodName,
             Function<Map<String, String>, T> action) {
+        this.addAction(new BuildTimeAction(methodName, action));
+    }
+
+    public <T> void addAssistantAction(String methodName,
+            BiFunction<Object, Map<String, String>, T> action) {
         this.addAction(new BuildTimeAction(methodName, action));
     }
 

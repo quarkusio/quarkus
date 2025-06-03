@@ -1,6 +1,7 @@
 package io.quarkus.devui.spi.buildtime;
 
 import java.util.Map;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import io.quarkus.runtime.RuntimeValue;
@@ -13,6 +14,7 @@ public class BuildTimeAction {
 
     private final String methodName;
     private final Function<Map<String, String>, ?> action;
+    private final BiFunction<Object, Map<String, String>, ?> assistantAction;
     private final RuntimeValue runtimeValue;
 
     protected <T> BuildTimeAction(String methodName,
@@ -20,6 +22,16 @@ public class BuildTimeAction {
 
         this.methodName = methodName;
         this.action = action;
+        this.assistantAction = null;
+        this.runtimeValue = null;
+    }
+
+    protected <T> BuildTimeAction(String methodName,
+            BiFunction<Object, Map<String, String>, T> assistantAction) {
+
+        this.methodName = methodName;
+        this.action = null;
+        this.assistantAction = assistantAction;
         this.runtimeValue = null;
     }
 
@@ -28,6 +40,7 @@ public class BuildTimeAction {
 
         this.methodName = methodName;
         this.action = null;
+        this.assistantAction = null;
         this.runtimeValue = runtimeValue;
     }
 
@@ -37,6 +50,18 @@ public class BuildTimeAction {
 
     public Function<Map<String, String>, ?> getAction() {
         return action;
+    }
+
+    public boolean hasAction() {
+        return this.action != null;
+    }
+
+    public BiFunction<Object, Map<String, String>, ?> getAssistantAction() {
+        return assistantAction;
+    }
+
+    public boolean hasAssistantAction() {
+        return this.assistantAction != null;
     }
 
     public RuntimeValue getRuntimeValue() {

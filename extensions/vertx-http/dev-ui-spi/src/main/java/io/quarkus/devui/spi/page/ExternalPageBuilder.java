@@ -1,8 +1,10 @@
 package io.quarkus.devui.spi.page;
 
-import io.quarkus.logging.Log;
+import org.jboss.logging.Logger;
 
 public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
+    private static final Logger log = Logger.getLogger(ExternalPageBuilder.class);
+
     private static final String QWC_EXTERNAL_PAGE_JS = "qwc-external-page.js";
     private static final String EXTERNAL_URL = "externalUrl";
     private static final String DYNAMIC_URL = "dynamicUrlMethodName";
@@ -66,7 +68,7 @@ public class ExternalPageBuilder extends PageBuilder<ExternalPageBuilder> {
             throw new RuntimeException("Invalid mimeType, can not be empty");
         }
         if (super.metadata.containsKey(MIME_TYPE)) {
-            Log.warn("MimeType already set to " + super.metadata.get(MIME_TYPE) + ", overriding with new value");
+            log.warn("MimeType already set to " + super.metadata.get(MIME_TYPE) + ", overriding with new value");
         }
         super.metadata.put(MIME_TYPE, mimeType);
         return this;

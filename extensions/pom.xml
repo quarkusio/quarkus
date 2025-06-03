@@ -225,7 +225,7 @@
 
         <!-- JMS -->
         <module>jms-spi</module>
-
+        <module>assistant</module>
     </modules>
 
     <build>

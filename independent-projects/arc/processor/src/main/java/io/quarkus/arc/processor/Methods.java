@@ -337,15 +337,27 @@ final class Methods {
         final List<DotName> params;
         final DotName returnType;
         final MethodInfo method; // this is intentionally ignored for equals/hashCode
+        private final int hashCode;
 
         public MethodKey(MethodInfo method) {
             this.method = Objects.requireNonNull(method, "Method must not be null");
             this.name = method.name();
             this.returnType = method.returnType().name();
-            this.params = new ArrayList<>();
-            for (Type i : method.parameterTypes()) {
-                params.add(i.name());
-            }
+            this.params = switch (method.parametersCount()) {
+                case 0 -> List.of();
+                case 1 -> List.of(method.parameterTypes().get(0).name());
+                case 2 -> List.of(method.parameterTypes().get(0).name(), method.parameterTypes().get(1).name());
+                default -> {
+                    List<DotName> ret = new ArrayList<>(method.parametersCount());
+                    for (Type parameterType : method.parameterTypes()) {
+                        ret.add(parameterType.name());
+                    }
+                    yield ret;
+                }
+            };
+
+            // the Map can be resized several times so it's worth caching the hashCode
+            this.hashCode = buildHashCode(this.name, this.params, this.returnType);
         }
 
         @Override
@@ -362,7 +374,14 @@ final class Methods {
 
         @Override
         public int hashCode() {
-            return Objects.hash(name, params, returnType);
+            return hashCode;
+        }
+
+        private static int buildHashCode(String name, List<DotName> params, DotName returnType) {
+            int result = Objects.hashCode(name);
+            result = 31 * result + Objects.hashCode(params);
+            result = 31 * result + Objects.hashCode(returnType);
+            return result;
         }
     }
 

@@ -53,7 +53,7 @@ This is the most common way to output metrics from Micrometer and the default wa
 .pom.xml
 ----
 <dependency>
-    <groupId>io.quarkiverse.micrometer.registry</groupId>
+    <groupId>io.quarkus</groupId>
     <artifactId>quarkus-micrometer-registry-prometheus</artifactId>
 </dependency>
 ----
@@ -61,7 +61,7 @@ This is the most common way to output metrics from Micrometer and the default wa
 [source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
 .build.gradle
 ----
-implementation("io.quarkiverse.micrometer.registry:quarkus-micrometer-registry-prometheus")
+implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
 ----
 
 ==== Using the Micrometer OTLP registry

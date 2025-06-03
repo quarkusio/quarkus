@@ -1,18 +1,20 @@
 package io.quarkus.virtual.graphql;
 
+import java.util.concurrent.CompletionStage;
+
+import jakarta.inject.Inject;
+
+import org.eclipse.microprofile.graphql.GraphQLApi;
+import org.eclipse.microprofile.graphql.Query;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
+
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.Blocking;
 import io.smallrye.common.annotation.NonBlocking;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
-import jakarta.inject.Inject;
-import org.eclipse.microprofile.graphql.GraphQLApi;
-import org.eclipse.microprofile.graphql.Query;
-import org.hamcrest.Matchers;
-import org.junit.jupiter.api.Test;
-
-import java.util.concurrent.CompletionStage;
 
 /**
  * Testing the thread used.

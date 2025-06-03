@@ -1,13 +1,9 @@
 package io.quarkus.virtual.graphql;
 
-import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit5.virtual.ShouldNotPin;
-import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
-import io.quarkus.virtual.threads.VirtualThreads;
-import io.restassured.RestAssured;
-import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.vertx.core.Vertx;
+import java.util.concurrent.ExecutorService;
+
 import jakarta.inject.Inject;
+
 import org.eclipse.microprofile.graphql.GraphQLApi;
 import org.eclipse.microprofile.graphql.Mutation;
 import org.eclipse.microprofile.graphql.Query;
@@ -15,7 +11,13 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.util.concurrent.ExecutorService;
+import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit5.virtual.ShouldNotPin;
+import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
+import io.quarkus.virtual.threads.VirtualThreads;
+import io.restassured.RestAssured;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import io.vertx.core.Vertx;
 
 @QuarkusTest
 @VirtualThreadUnit

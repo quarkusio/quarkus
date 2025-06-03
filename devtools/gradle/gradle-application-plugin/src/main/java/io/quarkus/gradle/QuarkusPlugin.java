@@ -5,7 +5,6 @@ import static io.quarkus.gradle.tasks.QuarkusGradleUtils.getSourceSet;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -182,7 +181,6 @@ public class QuarkusPlugin implements Plugin<Project> {
                     .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT)));
         });
 
-        Provider<DefaultProjectDescriptor> projectDescriptor = ProjectDescriptorBuilder.buildForApp(project);
         ApplicationDeploymentClasspathBuilder normalClasspath = new ApplicationDeploymentClasspathBuilder(project,
                 LaunchMode.NORMAL);
         ApplicationDeploymentClasspathBuilder testClasspath = new ApplicationDeploymentClasspathBuilder(project,
@@ -190,6 +188,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         ApplicationDeploymentClasspathBuilder devClasspath = new ApplicationDeploymentClasspathBuilder(project,
                 LaunchMode.DEVELOPMENT);
 
+        Provider<DefaultProjectDescriptor> projectDescriptor = ProjectDescriptorBuilder.buildForApp(project);
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateTestAppModelTask = tasks.register(
                 "quarkusGenerateTestAppModel",
                 QuarkusApplicationModelTask.class, task -> {
@@ -204,8 +203,7 @@ public class QuarkusPlugin implements Plugin<Project> {
 
         TaskProvider<QuarkusApplicationModelTask> quarkusGenerateAppModelTask = tasks.register("quarkusGenerateAppModel",
                 QuarkusApplicationModelTask.class, task -> {
-                    configureApplicationModelTask(project, task, projectDescriptor
-                            .map(d -> d.withSourceSetView(Collections.singleton(SourceSet.MAIN_SOURCE_SET_NAME))),
+                    configureApplicationModelTask(project, task, projectDescriptor,
                             normalClasspath, LaunchMode.NORMAL,
                             "quarkus/application-model/quarkus-app-model.dat");
                 });
@@ -237,8 +235,7 @@ public class QuarkusPlugin implements Plugin<Project> {
         TaskProvider<QuarkusApplicationModelTask> quarkusBuildAppModelTask = tasks.register("quarkusBuildAppModel",
                 QuarkusApplicationModelTask.class, task -> {
                     task.dependsOn(tasks.named(JavaPlugin.CLASSES_TASK_NAME));
-                    configureApplicationModelTask(project, task, projectDescriptor
-                            .map(d -> d.withSourceSetView(Collections.singleton(SourceSet.MAIN_SOURCE_SET_NAME))),
+                    configureApplicationModelTask(project, task, projectDescriptor,
                             normalClasspath, LaunchMode.NORMAL,
                             "quarkus/application-model/quarkus-app-model-build.dat");
                 });
@@ -519,9 +516,9 @@ public class QuarkusPlugin implements Plugin<Project> {
         task.getOriginalClasspath().setFrom(classpath.getOriginalRuntimeClasspathAsInput());
         task.getAppClasspath().configureFrom(classpath.getRuntimeConfigurationWithoutResolvingDeployment());
         task.getPlatformConfiguration().configureFrom(classpath.getPlatformConfiguration());
+        task.getPlatformInfo().configureFrom(classpath.getPlatformPropertiesConfiguration());
         task.getDeploymentClasspath().configureFrom(classpath.getDeploymentConfiguration());
         task.getDeploymentResolvedWorkaround().from(classpath.getDeploymentConfiguration().getIncoming().getFiles());
-        task.getPlatformImports().set(classpath.getPlatformImportsWithoutResolvingPlatform());
         task.getApplicationModel().set(project.getLayout().getBuildDirectory().file(quarkusModelFile));
     }
 

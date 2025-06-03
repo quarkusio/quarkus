@@ -1,27 +1,22 @@
 package io.quarkus.gradle.workspace.descriptors;
 
-import java.io.File;
-import java.util.Set;
+import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 
 public interface ProjectDescriptor {
 
-    public enum TaskType {
-        COMPILE,
-        RESOURCES
-    }
+    /**
+     * Project workspace module
+     *
+     * @return workspace module
+     */
+    WorkspaceModule.Mutable getWorkspaceModule();
 
-    public File getProjectDir();
-
-    public File getBuildDir();
-
-    public File getBuildFile();
-
-    public Set<String> getTasksForSourceSet(String sourceName);
-
-    public String getTaskSource(String task);
-
-    public String getTaskDestinationDir(String task);
-
-    public TaskType getTaskType(String task);
-
+    /**
+     * Workspace module for a specific module ID (in a multi module project)
+     *
+     * @param moduleId module ID
+     * @return workspace module for a given module ID or null, if the requested module info is not available
+     */
+    WorkspaceModule.Mutable getWorkspaceModuleOrNull(WorkspaceModuleId moduleId);
 }

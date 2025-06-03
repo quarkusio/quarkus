@@ -51,6 +51,9 @@
                     <capabilities>
                         <provides>io.quarkus.smallrye.health</provides>
                     </capabilities>
+                    <conditionalDevDependencies>
+                        <artifact>${project.groupId}:${project.artifactId}-dev:${project.version}</artifact>
+                    </conditionalDevDependencies>
                 </configuration>
             </plugin>
             <plugin>

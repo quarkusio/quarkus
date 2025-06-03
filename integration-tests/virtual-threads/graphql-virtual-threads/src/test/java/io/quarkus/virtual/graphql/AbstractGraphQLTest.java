@@ -1,13 +1,6 @@
 package io.quarkus.virtual.graphql;
 
-import io.restassured.RestAssured;
-import io.restassured.parsing.Parser;
-import io.vertx.core.Context;
-import io.vertx.core.Vertx;
-import jakarta.json.JsonObject;
-import jakarta.json.JsonObjectBuilder;
-import jakarta.json.JsonReader;
-import org.hamcrest.CoreMatchers;
+import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -15,7 +8,16 @@ import java.io.StringWriter;
 import java.util.Map;
 import java.util.Properties;
 
-import static io.quarkus.jsonp.JsonProviderHolder.jsonProvider;
+import jakarta.json.JsonObject;
+import jakarta.json.JsonObjectBuilder;
+import jakarta.json.JsonReader;
+
+import org.hamcrest.CoreMatchers;
+
+import io.restassured.RestAssured;
+import io.restassured.parsing.Parser;
+import io.vertx.core.Context;
+import io.vertx.core.Vertx;
 
 /**
  * Some shared methods

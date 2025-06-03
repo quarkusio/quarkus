@@ -24,11 +24,6 @@ import io.vertx.core.Vertx;
 @ShouldNotPin
 class RunOnVirtualThreadTest extends AbstractGraphQLTest {
 
-    //todo how to make sure vt executor is not removed?
-    @Inject
-    @VirtualThreads
-    ExecutorService vt;
-
     @Test
     public void testAnnotatedBlockingObject() {
 
@@ -51,7 +46,6 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
                 .assertThat()
                 .statusCode(200)
                 .and()
-                .log().body().and()
                 .body("data.annotatedRunOnVirtualThreadObject.name", Matchers.startsWith("quarkus-virtual-thread"))
                 .and()
                 .body("data.annotatedRunOnVirtualThreadObject.vertxContextClassName",
@@ -80,7 +74,6 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
                 .assertThat()
                 .statusCode(200)
                 .and()
-                .log().body().and()
                 .body("data.annotatedRunOnVirtualThreadMutationObject.name", Matchers.startsWith("quarkus-virtual-thread"))
                 .and()
                 .body("data.annotatedRunOnVirtualThreadMutationObject.vertxContextClassName",
@@ -110,7 +103,6 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
                 .assertThat()
                 .statusCode(200)
                 .and()
-                .log().body().and()
                 .body("data.pinThread.name", Matchers.startsWith("quarkus-virtual-thread"))
                 .and()
                 .body("data.pinThread.vertxContextClassName",
@@ -119,6 +111,10 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
 
     @GraphQLApi
     public static class RunOnVirtualThreadObjectTestThreadResource {
+        //todo how to make sure vt executor is not removed?
+        @Inject
+        @VirtualThreads
+        ExecutorService vt;
 
         @Inject
         Vertx vertx;

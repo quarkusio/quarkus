@@ -350,9 +350,11 @@ public final class OidcUtils {
         builder.setPrincipal(jwtPrincipal);
         var vertxContext = getRoutingContextAttribute(request);
         setRoutingContextAttribute(builder, vertxContext);
-        OidcUtils.setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
-        setSecurityIdentityRoles(builder, config, rolesJson);
-        setSecurityIdentityPermissions(builder, config, rolesJson);
+        setOidcProviderClientAttribute(builder, resolvedContext.getOidcProviderClient());
+        if (rolesJson != null) {
+            setSecurityIdentityRoles(builder, config, rolesJson);
+            setSecurityIdentityPermissions(builder, config, rolesJson);
+        }
         setSecurityIdentityUserInfo(builder, userInfo);
         setSecurityIdentityIntrospection(builder, introspectionResult);
         setSecurityIdentityConfigMetadata(builder, resolvedContext);
@@ -361,8 +363,24 @@ public final class OidcUtils {
         TokenVerificationResult codeFlowAccessTokenResult = (TokenVerificationResult) requestData.get(CODE_ACCESS_TOKEN_RESULT);
         if (codeFlowAccessTokenResult != null) {
             builder.addAttribute(CODE_ACCESS_TOKEN_RESULT, codeFlowAccessTokenResult);
+            if (Roles.Source.accesstoken == config.roles().source().orElse(null)) {
+                setIntrospectionScopes(builder, codeFlowAccessTokenResult.introspectionResult);
+                if (codeTokens != null && codeTokens.getAccessTokenScope() != null) {
+                    builder.addPermissionsAsString(new HashSet<>(Arrays.asList(codeTokens.getAccessTokenScope().split(" "))));
+                }
+            }
         }
         return builder.build();
+    }
+
+    static void setIntrospectionScopes(QuarkusSecurityIdentity.Builder builder, TokenIntrospection introspectionResult) {
+        if (introspectionResult != null) {
+            Set<String> scopes = introspectionResult.getScopes();
+            if (scopes != null) {
+                builder.addRoles(scopes);
+                addTokenScopesAsPermissions(builder, scopes);
+            }
+        }
     }
 
     static void setSecurityIdentityPermissions(QuarkusSecurityIdentity.Builder builder, OidcTenantConfig config,
@@ -371,7 +389,7 @@ public final class OidcUtils {
     }
 
     static void addTokenScopesAsPermissions(Builder builder, Collection<String> scopes) {
-        if (!scopes.isEmpty()) {
+        if (scopes != null && !scopes.isEmpty()) {
             builder.addPermissionsAsString(new HashSet<>(scopes));
         }
     }

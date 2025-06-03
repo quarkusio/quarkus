@@ -12,13 +12,19 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 public class StringUtils {
+
     private static final String CONCAT_DELIMITER = "; ";
 
+    private static final ObjectMapper OBJECT_MAPPER;
+
+    static {
+        OBJECT_MAPPER = (new ObjectMapper()).findAndRegisterModules();
+        OBJECT_MAPPER.registerModule(new JavaTimeModule());
+        OBJECT_MAPPER.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE);
+    }
+
     public static ObjectMapper getObjectMapper() {
-        final ObjectMapper mapper = (new ObjectMapper()).findAndRegisterModules();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.setPropertyNamingStrategy(PropertyNamingStrategies.LOWER_CAMEL_CASE);
-        return mapper;
+        return OBJECT_MAPPER;
     }
 
     /**

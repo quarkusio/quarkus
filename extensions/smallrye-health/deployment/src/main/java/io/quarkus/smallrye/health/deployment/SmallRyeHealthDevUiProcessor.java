@@ -5,9 +5,11 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Record;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.health.runtime.SmallRyeHealthRecorder;
+import io.quarkus.smallrye.health.runtime.dev.ui.HealthJsonRPCService;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
 
@@ -28,19 +30,23 @@ public class SmallRyeHealthDevUiProcessor {
         String path = nonApplicationRootPathBuildItem.resolveManagementPath(config.rootPath(),
                 managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
 
-        pageBuildItem.addPage(Page.externalPageBuilder("Health")
+        pageBuildItem.addPage(Page.webComponentPageBuilder()
+                .title("Health")
+                .icon("font-awesome-solid:stethoscope")
+                .componentLink("qwc-smallrye-health-ui.js")
+                .dynamicLabelJsonRPCMethodName("getStatus")
+                .streamingLabelJsonRPCMethodName("streamStatus"));
+
+        pageBuildItem.addPage(Page.externalPageBuilder("Raw")
                 .icon("font-awesome-solid:heart-circle-bolt")
                 .url(path, path)
                 .isJsonContent());
 
-        String uipath = nonApplicationRootPathBuildItem.resolveManagementPath(config.ui().rootPath(),
-                managementBuildTimeConfig, launchModeBuildItem, config.managementEnabled());
-        pageBuildItem.addPage(Page.externalPageBuilder("Health UI")
-                .icon("font-awesome-solid:stethoscope")
-                .url(uipath, uipath)
-                .isHtmlContent());
-
         return pageBuildItem;
     }
 
+    @BuildStep
+    JsonRPCProvidersBuildItem createJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(HealthJsonRPCService.class);
+    }
 }

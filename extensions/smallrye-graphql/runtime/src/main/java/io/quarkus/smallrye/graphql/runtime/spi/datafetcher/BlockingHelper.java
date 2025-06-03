@@ -1,14 +1,14 @@
 package io.quarkus.smallrye.graphql.runtime.spi.datafetcher;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+
 import io.quarkus.arc.Arc;
 import io.quarkus.virtual.threads.VirtualThreads;
 import io.smallrye.graphql.schema.model.Execute;
 import io.smallrye.graphql.schema.model.Operation;
 import io.vertx.core.Context;
 import io.vertx.core.Promise;
-
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
 
 public final class BlockingHelper {
 

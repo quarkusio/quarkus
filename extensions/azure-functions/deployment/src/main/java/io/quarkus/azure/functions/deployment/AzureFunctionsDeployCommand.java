@@ -18,7 +18,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jboss.logging.Logger;
-import org.jetbrains.annotations.NotNull;
 
 import com.azure.core.http.policy.HttpLogDetailLevel;
 import com.azure.core.management.AzureEnvironment;
@@ -30,12 +29,10 @@ import com.microsoft.azure.toolkit.lib.appservice.config.FunctionAppConfig;
 import com.microsoft.azure.toolkit.lib.appservice.function.AzureFunctions;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionApp;
 import com.microsoft.azure.toolkit.lib.appservice.function.FunctionAppBase;
-import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
 import com.microsoft.azure.toolkit.lib.appservice.task.CreateOrUpdateFunctionAppTask;
 import com.microsoft.azure.toolkit.lib.appservice.task.DeployFunctionAppTask;
-import com.microsoft.azure.toolkit.lib.appservice.utils.AppServiceConfigUtils;
 import com.microsoft.azure.toolkit.lib.auth.Account;
 import com.microsoft.azure.toolkit.lib.auth.AuthConfiguration;
 import com.microsoft.azure.toolkit.lib.auth.AuthType;
@@ -43,7 +40,6 @@ import com.microsoft.azure.toolkit.lib.auth.AzureAccount;
 import com.microsoft.azure.toolkit.lib.auth.AzureCloud;
 import com.microsoft.azure.toolkit.lib.auth.AzureEnvironmentUtils;
 import com.microsoft.azure.toolkit.lib.common.bundle.AzureString;
-import com.microsoft.azure.toolkit.lib.common.logging.Log;
 import com.microsoft.azure.toolkit.lib.common.messager.AzureMessager;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessage;
 import com.microsoft.azure.toolkit.lib.common.messager.IAzureMessager;
@@ -52,7 +48,6 @@ import com.microsoft.azure.toolkit.lib.common.model.Subscription;
 import com.microsoft.azure.toolkit.lib.common.operation.Operation;
 import com.microsoft.azure.toolkit.lib.common.operation.OperationBase;
 import com.microsoft.azure.toolkit.lib.common.operation.OperationThreadContext;
-import com.microsoft.azure.toolkit.lib.common.task.AzureTaskManager;
 import com.microsoft.azure.toolkit.lib.common.utils.TextUtils;
 
 import io.quarkus.builder.BuildException;
@@ -62,6 +57,7 @@ import io.quarkus.deployment.cmd.DeployCommandActionBuildItem;
 import io.quarkus.deployment.cmd.DeployCommandDeclarationBuildItem;
 import io.quarkus.deployment.cmd.DeployConfig;
 import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
+import io.quarkus.logging.Log;
 
 public class AzureFunctionsDeployCommand {
     private static final Logger log = Logger.getLogger(AzureFunctionsDeployCommand.class);
@@ -110,8 +106,6 @@ public class AzureFunctionsDeployCommand {
         setCurrentOperation();
         AzureMessager.setDefaultMessager(new QuarkusAzureMessager());
         Azure.az().config().setLogLevel(HttpLogDetailLevel.NONE.name());
-        QuarkusActionManager.register();
-        AzureTaskManager.register(new QuarkusAzureTaskManager());
         initAzureAppServiceClient(config);
 
         final FunctionAppBase<?, ?, ?> target = createOrUpdateResource(
@@ -131,7 +125,11 @@ public class AzureFunctionsDeployCommand {
             Method push = OperationThreadContext.class.getDeclaredMethod("pushOperation", Operation.class);
             push.setAccessible(true);
             OperationBase dummy = new OperationBase() {
-                @NotNull
+                @Override
+                public Object getSource() {
+                    return null;
+                }
+
                 @Override
                 public String getId() {
                     return "Quarkus";
@@ -142,13 +140,11 @@ public class AzureFunctionsDeployCommand {
                     throw new RuntimeException("Not Implmented");
                 }
 
-                @NotNull
                 @Override
                 public String getType() {
                     return "Quarkus";
                 }
 
-                @org.jetbrains.annotations.Nullable
                 @Override
                 public AzureString getDescription() {
                     return AzureString.fromString("Quarkus");
@@ -206,8 +202,7 @@ public class AzureFunctionsDeployCommand {
             throw new BuildException(INVALID_OS);
         }
         // java version
-        if (StringUtils.isNotEmpty(config.runtime().javaVersion())
-                && JavaVersion.fromString(config.runtime().javaVersion()).isExpandedValue()) {
+        if (StringUtils.isNotEmpty(config.runtime().javaVersion())) {
             log.warn(format(EXPANDABLE_JAVA_VERSION_WARNING, config.runtime().javaVersion()));
         }
         // pricing tier
@@ -349,7 +344,7 @@ public class AzureFunctionsDeployCommand {
     }
 
     private AppServiceConfig buildDefaultConfig(String subscriptionId, String resourceGroup, String appName) {
-        return AppServiceConfigUtils.buildDefaultFunctionConfig(subscriptionId, resourceGroup, appName, JavaVersion.JAVA_11);
+        return AppServiceConfig.buildDefaultFunctionConfig(resourceGroup, appName);
     }
 
     private void deployArtifact(Path functionStagingDir, final FunctionAppBase<?, ?, ?> target) {

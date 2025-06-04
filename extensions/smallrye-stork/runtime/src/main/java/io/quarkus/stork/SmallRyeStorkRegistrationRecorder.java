@@ -7,6 +7,7 @@ import java.util.Map;
 import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
+import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
 import io.smallrye.stork.Stork;
 import io.smallrye.stork.api.config.ServiceConfig;
@@ -30,6 +31,24 @@ public class SmallRyeStorkRegistrationRecorder {
             }
             Stork.getInstance().getService(serviceName).getServiceRegistrar().registerServiceInstance(serviceName, host,
                     port).await().indefinitely();
+        }
+    }
+
+    public void deregisterServiceInstance(ShutdownContext shutdown, StorkConfiguration configuration) {
+        shutdown.addLastShutdownTask(new Runnable() {
+            @Override
+            public void run() {
+                deregisterServiceInstance(configuration);
+            }
+        });
+    }
+
+    private void deregisterServiceInstance(StorkConfiguration configuration) {
+        List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
+        for (ServiceConfig serviceConfig : serviceConfigs) {
+            String serviceName = serviceConfig.serviceName();
+            Stork.getInstance().getService(serviceName).getServiceRegistrar().deregisterServiceInstance(serviceName).await()
+                    .indefinitely();
         }
     }
 }

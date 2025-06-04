@@ -240,20 +240,22 @@ public class ToolsUtils {
         Map<String, Object> projectData = (Map<String, Object>) map.getOrDefault("codestart-data", Map.of());
 
         // fix the dockerfile entries for Platform < 3.23.1
-        projectData = projectData.entrySet().stream()
-                .collect(Collectors.toMap(
-                        e -> {
-                            if (!e.getKey().startsWith("dockerfile.")) {
-                                return e.getKey();
-                            }
-                            String key = e.getKey();
-                            if ("dockerfile.native-micro".equals(key)) {
-                                key += ".from";
-                            }
+        if (!projectData.containsKey("tooling-dockerfiles.dockerfile.jvm.from-template")) {
+            projectData = projectData.entrySet().stream()
+                    .collect(Collectors.toMap(
+                            e -> {
+                                if (!e.getKey().startsWith("dockerfile.")) {
+                                    return e.getKey();
+                                }
+                                String key = e.getKey();
+                                if ("dockerfile.native-micro".equals(key)) {
+                                    key += ".from";
+                                }
 
-                            return "tooling-dockerfiles." + key;
-                        },
-                        Entry::getValue));
+                                return "tooling-dockerfiles." + key;
+                            },
+                            Entry::getValue, (v1, v2) -> v1));
+        }
 
         return projectData;
     }

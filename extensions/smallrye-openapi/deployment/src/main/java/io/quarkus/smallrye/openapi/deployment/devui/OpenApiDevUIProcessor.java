@@ -3,9 +3,11 @@ package io.quarkus.smallrye.openapi.deployment.devui;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.LaunchModeBuildItem;
+import io.quarkus.devui.spi.JsonRPCProvidersBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.devui.spi.page.Page;
 import io.quarkus.smallrye.openapi.common.deployment.SmallRyeOpenApiConfig;
+import io.quarkus.smallrye.openapi.runtime.dev.OpenApiJsonRpcService;
 import io.quarkus.swaggerui.deployment.SwaggerUiConfig;
 import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConfig;
@@ -43,7 +45,16 @@ public class OpenApiDevUIProcessor {
                 .isJsonContent()
                 .icon("font-awesome-solid:file-code"));
 
+        cardPageBuildItem.addPage(Page.assistantPageBuilder()
+                .title("Generate clients")
+                .componentLink("qwc-openapi-generate-client.js"));
+
         return cardPageBuildItem;
+    }
+
+    @BuildStep
+    JsonRPCProvidersBuildItem createJsonRPCService() {
+        return new JsonRPCProvidersBuildItem(OpenApiJsonRpcService.class);
     }
 
 }

@@ -33,6 +33,7 @@ export class QwcExtensions extends observeState(LitElement) {
             gap: 20px;
             padding-left: 5px;
             padding-right: 10px;
+            padding-bottom: 10px;
         }
         
         .description {

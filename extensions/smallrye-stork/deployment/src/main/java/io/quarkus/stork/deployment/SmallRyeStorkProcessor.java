@@ -100,20 +100,17 @@ public class SmallRyeStorkProcessor {
     void initializeStork(SmallRyeStorkRecorder storkRecorder, ShutdownContextBuildItem shutdown, VertxBuildItem vertx,
             StorkConfiguration configuration) {
         storkRecorder.initialize(shutdown, vertx.getVertx(), configuration);
-        if (QuarkusClassLoader.isClassPresentAtRuntime(SERVICE_REGISTRAR_PROVIDER)) {
-            storkRecorder.deregisterServiceInstance(shutdown, configuration);
-        }
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void checkStorkConsulRegistrar(BuildProducer<StorkRegistrationBuildItem> registration,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
-            StorkRegistrarConfigRecorder initializerRecorder, StorkConfiguration configuration) {
+            StorkRegistrarConfigRecorder registrarConfigRecorder, StorkConfiguration configuration) {
         if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
-            initializerRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE);
+            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE);
         } else if (QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)) {
-            initializerRecorder.setupServiceRegistrarConfig(configuration, EUREKA_SERVICE_REGISTRAR_TYPE);
+            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, EUREKA_SERVICE_REGISTRAR_TYPE);
         }
         registration.produce(new StorkRegistrationBuildItem());
 
@@ -121,10 +118,11 @@ public class SmallRyeStorkProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void registerServiceInstance(StorkInitializedBuildItem storkInitializedBuildItem,
+    void registerServiceInstance(StorkInitializedBuildItem storkInitializedBuildItem, ShutdownContextBuildItem shutdown,
             SmallRyeStorkRegistrationRecorder registrationRecorder, StorkConfiguration configuration) {
         if (QuarkusClassLoader.isClassPresentAtRuntime(SERVICE_REGISTRAR_PROVIDER)) {
             registrationRecorder.registerServiceInstance(configuration);
+            registrationRecorder.deregisterServiceInstance(shutdown, configuration);
         }
     }
 

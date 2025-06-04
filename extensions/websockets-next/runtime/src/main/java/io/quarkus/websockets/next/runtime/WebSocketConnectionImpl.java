@@ -8,6 +8,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -32,9 +33,12 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
 
     private final BroadcastSender defaultBroadcast;
 
+    private final SecuritySupport securitySupport;
+
     WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
             ConnectionManager connectionManager, Codecs codecs, RoutingContext ctx,
-            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
+            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor,
+            Function<WebSocketConnectionImpl, SecuritySupport> securitySupportCreator) {
         super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger,
                 new UserDataImpl(), sendingInterceptor);
         this.generatedEndpointClass = generatedEndpointClass;
@@ -42,6 +46,11 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
         this.webSocket = Objects.requireNonNull(webSocket);
         this.connectionManager = Objects.requireNonNull(connectionManager);
         this.defaultBroadcast = new BroadcastImpl(null);
+        this.securitySupport = securitySupportCreator.apply(this);
+    }
+
+    SecuritySupport securitySupport() {
+        return securitySupport;
     }
 
     @Override

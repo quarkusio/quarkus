@@ -17,8 +17,8 @@ public class ConfigLauncherSession implements LauncherSessionListener {
     @Override
     public void launcherSessionOpened(final LauncherSession session) {
         // Ideally the classloader would be correct when this is launched,
-        // but for gradle, test class loading happens faierly shortly after this is called,
-        // before the formal loading phase. To make that work, the TCCL has to be
+        // but for gradle, test class loading happens fairly shortly after this is called,
+        // before the formal loading phase. To make that work, the TCCL may have been
         // set to the FCL by the time this is called, even though we want config to live on the app classloader
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(this.getClass().getClassLoader());

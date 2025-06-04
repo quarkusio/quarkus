@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-rest-client-jsonb</artifactId>
+    <name>Quarkus - Relocations - quarkus-rest-client-jsonb</name>
 
     <distributionManagement>
         <relocation>

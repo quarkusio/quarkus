@@ -108,8 +108,8 @@ public class SmallRyeStorkProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void checkStorkConsulRegistrar(BuildProducer<StorkRegistrationBuildItem> registration,
-                                   BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
-                                   StorkRegistrarConfigRecorder initializerRecorder, StorkConfiguration configuration) {
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
+            StorkRegistrarConfigRecorder initializerRecorder, StorkConfiguration configuration) {
         if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
             initializerRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE);
         } else if (QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)) {

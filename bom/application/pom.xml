@@ -150,7 +150,7 @@
         <aws-xray.version>2.18.2</aws-xray.version>
         <cloudevents-api.version>3.0.0</cloudevents-api.version>
         <azure-functions-java-library.version>3.1.0</azure-functions-java-library.version>
-        <azure-functions-java-spi.version>1.0.0</azure-functions-java-spi.version>
+        <azure-functions-java-spi.version>1.1.0</azure-functions-java-spi.version>
         <kotlin.version>2.1.21</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
         <kotlin-serialization.version>1.8.1</kotlin-serialization.version>

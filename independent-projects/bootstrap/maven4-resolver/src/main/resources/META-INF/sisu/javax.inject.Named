@@ -1,0 +1,13 @@
+org.apache.maven.repository.internal.DefaultArtifactDescriptorReader
+org.apache.maven.repository.internal.DefaultModelCacheFactory
+org.apache.maven.repository.internal.DefaultModelVersionParser
+org.apache.maven.repository.internal.DefaultVersionRangeResolver
+org.apache.maven.repository.internal.DefaultVersionResolver
+org.apache.maven.repository.internal.DefaultVersionSchemeProvider
+org.apache.maven.repository.internal.PluginsMetadataGeneratorFactory
+org.apache.maven.repository.internal.SnapshotMetadataGeneratorFactory
+org.apache.maven.repository.internal.VersionsMetadataGeneratorFactory
+org.apache.maven.repository.internal.relocation.DistributionManagementArtifactRelocationSource
+org.apache.maven.repository.internal.relocation.UserPropertiesArtifactRelocationSource
+org.apache.maven.repository.internal.type.DefaultTypeProvider
+io.quarkus.bootstrap.resolver.maven.BootstrapArtifactTransformer

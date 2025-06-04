@@ -89,6 +89,7 @@ public class BeanDeployment {
     private final List<DecoratorInfo> decorators;
 
     private final List<ObserverInfo> observers;
+    private Set<MethodInfo> observerAndProducerMethods;
 
     private final Set<InvokerInfo> invokers;
 
@@ -316,6 +317,8 @@ public class BeanDeployment {
     void init(Consumer<BytecodeTransformer> bytecodeTransformerConsumer,
             List<Predicate<BeanInfo>> additionalUnusedBeanExclusions) {
         long start = System.nanoTime();
+
+        initObserverAndProducerMethods(observers, beans);
 
         // Collect dependency resolution errors
         List<Throwable> errors = new ArrayList<>();
@@ -789,6 +792,15 @@ public class BeanDeployment {
     }
 
     Set<MethodInfo> getObserverAndProducerMethods() {
+        if (observerAndProducerMethods == null) {
+            throw new IllegalStateException(
+                    "getObserverAndProducerMethods() has been called but observerAndProducerMethods has not been initialized yet");
+        }
+
+        return observerAndProducerMethods;
+    }
+
+    private void initObserverAndProducerMethods(List<ObserverInfo> observers, List<BeanInfo> beans) {
         Set<MethodInfo> ret = new HashSet<>();
         for (ObserverInfo observer : observers) {
             if (!observer.isSynthetic()) {
@@ -800,7 +812,8 @@ public class BeanDeployment {
                 ret.add(bean.getTarget().get().asMethod());
             }
         }
-        return ret;
+
+        observerAndProducerMethods = Collections.unmodifiableSet(ret);
     }
 
     private boolean isRuntimeAnnotationType(ClassInfo annotationType) {

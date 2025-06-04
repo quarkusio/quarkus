@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-resteasy-reactive-jaxb-common</artifactId>
+    <name>Quarkus - Relocations - quarkus-resteasy-reactive-jaxb-common</name>
 
     <distributionManagement>
         <relocation>

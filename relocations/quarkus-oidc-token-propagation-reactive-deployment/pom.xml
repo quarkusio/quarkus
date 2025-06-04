@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-oidc-token-propagation-reactive-deployment</artifactId>
+    <name>Quarkus - Relocations - quarkus-oidc-token-propagation-reactive-deployment</name>
 
     <distributionManagement>
         <relocation>

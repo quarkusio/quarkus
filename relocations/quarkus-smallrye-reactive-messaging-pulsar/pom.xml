@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-smallrye-reactive-messaging-pulsar</artifactId>
+    <name>Quarkus - Relocations - quarkus-smallrye-reactive-messaging-pulsar</name>
 
     <distributionManagement>
         <relocation>

@@ -47,7 +47,7 @@
         <version.gizmo>1.9.0</version.gizmo>
         <version.jandex>3.3.1</version.jandex>
         <version.jboss-logging>3.6.1.Final</version.jboss-logging>
-        <version.mutiny>2.8.0</version.mutiny>
+        <version.mutiny>2.9.0</version.mutiny>
         <version.bridger>1.6.Final</version.bridger>
         <version.smallrye-common>2.12.0</version.smallrye-common>
         <!-- test versions -->
@@ -265,17 +265,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

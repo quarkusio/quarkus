@@ -208,27 +208,27 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
 
         public Arguments skip(String... keys) {
             Set<String> keySet = Set.of(keys);
-            return doFilter(e -> !keySet.contains(e.getKey()));
+            return filter(e -> !keySet.contains(e.getKey()));
         }
 
         public Arguments skipIdenticalKeyValue() {
-            return doFilter(e -> !e.getKey().equals(e.getValue()));
+            return filter(e -> !e.getKey().equals(e.getValue()));
         }
 
         /**
          * Skip the first argument if it does not define a name.
          */
         public Arguments skipIt() {
-            return doFilter(e -> !e.getKey().equals(itKey));
+            return filter(e -> !e.getKey().equals(itKey));
         }
 
         public Arguments filter(String... keys) {
             Set<String> keySet = Set.of(keys);
-            return doFilter(e -> keySet.contains(e.getKey()));
+            return filter(e -> keySet.contains(e.getKey()));
         }
 
         public Arguments filterIdenticalKeyValue() {
-            return doFilter(e -> e.getKey().equals(e.getValue()));
+            return filter(e -> e.getKey().equals(e.getValue()));
         }
 
         // foo="1" bar="true" readonly="readonly"
@@ -247,7 +247,7 @@ public class UserTagSectionHelper extends IncludeSectionHelper implements Sectio
             return new RawString(builder.toString());
         }
 
-        private Arguments doFilter(Predicate<Entry<String, Object>> predicate) {
+        public Arguments filter(Predicate<Entry<String, Object>> predicate) {
             List<Entry<String, Object>> newArgs = new ArrayList<>(args.size());
             for (Entry<String, Object> e : args) {
                 if (predicate.test(e)) {

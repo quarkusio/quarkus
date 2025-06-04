@@ -797,7 +797,7 @@ dependencies {
 In JVM mode, any version of `io.confluent:kafka-avro-serializer` can be used.
 In native mode, Quarkus supports the following versions: `6.2.x`, `7.0.x`, `7.1.x`, `7.2.x`, `7.3.x`.
 
-For version `7.4.x` and `7.5.x`, due to an issue with the Confluent Schema Serializer, you need to add another dependency:
+For versions `7.4.x` and later, due to an issue with the Confluent Schema Serializer, you need to add another dependency:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml

@@ -217,7 +217,7 @@ Login credentials are the same for most databases, except when the database requ
 |`quarkus` for the default datasource or name of the datasource
 
 |Microsoft SQL Server
-|`SA`
+|`sa`
 |`Quarkus123`
 |
 

@@ -146,10 +146,10 @@
     "project": {
       "default-codestart": "rest",
       "codestart-data": {
-        "dockerfile.jvm.from-template": "registry.access.redhat.com/ubi9/openjdk-{java.version}:1.21",
-        "dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-${recommended-java-version}:1.21",
-        "dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
-        "dockerfile.native-micro": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
+        "tooling-dockerfiles.dockerfile.jvm.from-template": "registry.access.redhat.com/ubi9/openjdk-{java.version}:1.21",
+        "tooling-dockerfiles.dockerfile.jvm.from": "registry.access.redhat.com/ubi9/openjdk-${recommended-java-version}:1.21",
+        "tooling-dockerfiles.dockerfile.native.from": "registry.access.redhat.com/ubi9/ubi-minimal:9.5",
+        "tooling-dockerfiles.dockerfile.native-micro.from": "quay.io/quarkus/ubi9-quarkus-micro-image:2.0"
       },
       "properties": {
         "doc-root": "https://quarkus.io",

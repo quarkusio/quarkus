@@ -2,7 +2,7 @@
     <extension>
         <groupId>com.gradle</groupId>
         <artifactId>develocity-maven-extension</artifactId>
-        <version>2.0</version>
+        <version>2.0.1</version>
     </extension>
     <extension>
         <groupId>com.gradle</groupId>
@@ -17,11 +17,16 @@
     <extension>
         <groupId>io.quarkus.develocity</groupId>
         <artifactId>quarkus-project-develocity-extension</artifactId>
-        <version>1.2.0</version>
+        <version>1.2.2</version>
     </extension>
     <extension>
         <groupId>eu.maveniverse.maven.nisse</groupId>
         <artifactId>extension</artifactId>
-        <version>0.4.2</version>
+        <version>0.4.4</version>
+    </extension>
+    <extension>
+        <groupId>eu.maveniverse.maven.njord</groupId>
+        <artifactId>extension</artifactId>
+        <version>0.7.0</version>
     </extension>
 </extensions>

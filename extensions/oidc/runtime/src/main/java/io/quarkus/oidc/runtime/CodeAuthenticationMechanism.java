@@ -1263,7 +1263,6 @@ public class CodeAuthenticationMechanism extends AbstractOidcAuthenticationMecha
         if (sessionCookie) {
             cookie.setSameSite(CookieSameSite.valueOf(oidcConfig.authentication().cookieSameSite().name()));
         }
-        context.response().addCookie(cookie);
         return cookie;
     }
 

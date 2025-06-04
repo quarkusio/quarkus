@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+    <pluginGroups>
+        <pluginGroup>eu.maveniverse.maven.plugins</pluginGroup>
+    </pluginGroups>
+
+    <servers>
+        <server>
+            <id>quarkus-publish</id>
+            <username>${env.SONATYPE_USERNAME}</username>
+            <password>${env.SONATYPE_PASSWORD}</password>
+            <configuration>
+                <njord.publisher>sonatype-cp</njord.publisher>
+                <njord.releaseUrl>njord:template:release-sca</njord.releaseUrl>
+                <njord.snapshotUrl>njord:template:snapshot-sca</njord.snapshotUrl>
+            </configuration>
+        </server>
+    </servers>
+
+    <!-- Enable Google mirror to avoid hammering Maven Central -->
+    <profiles>
+        <profile>
+            <id>google-mirror</id>
+            <repositories>
+                <repository>
+                    <id>google-maven-central</id>
+                    <name>GCS Maven Central mirror EU</name>
+                    <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </repository>
+            </repositories>
+            <pluginRepositories>
+                <pluginRepository>
+                    <id>google-maven-central</id>
+                    <name>GCS Maven Central mirror EU</name>
+                    <url>https://maven-central.storage-download.googleapis.com/maven2/</url>
+                    <releases>
+                        <enabled>true</enabled>
+                    </releases>
+                    <snapshots>
+                        <enabled>false</enabled>
+                    </snapshots>
+                </pluginRepository>
+            </pluginRepositories>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>google-mirror</activeProfile>
+    </activeProfiles>
+</settings>

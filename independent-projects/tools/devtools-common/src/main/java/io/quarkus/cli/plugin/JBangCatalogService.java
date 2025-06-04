@@ -128,7 +128,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
         try {
             lines.addAll(jbang.execute("alias", "list", "--verbose", remoteCatalog));
         } catch (Exception e) {
-            this.output.debug("Failed to list aliases from remote catalog: " + remoteCatalog + ". Ignorning.");
+            this.output.debug("Failed to list aliases from remote catalog: " + remoteCatalog + ". Ignoring.");
         }
 
         return readAliases(lines);
@@ -141,7 +141,7 @@ public class JBangCatalogService extends CatalogService<JBangCatalog> {
                 localCatalogs.add(catalog.substring(0, catalog.indexOf(" ")));
             }
         } catch (Exception e) {
-            this.output.debug("Failed to list jbang catalogs. Ignoring.");
+            this.output.debug("Failed to list JBang catalogs. Ignoring.");
         }
 
         //If there are locally installed catalogs, then go through every single one of them

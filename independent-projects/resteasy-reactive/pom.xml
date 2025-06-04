@@ -56,10 +56,10 @@
         <gizmo.version>1.9.0</gizmo.version>
         <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-        <mutiny.version>2.8.0</mutiny.version>
+        <mutiny.version>2.9.0</mutiny.version>
         <smallrye-common.version>2.12.0</smallrye-common.version>
         <vertx.version>4.5.14</vertx.version>
-        <rest-assured.version>5.5.1</rest-assured.version>
+        <rest-assured.version>5.5.5</rest-assured.version>
         <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
         <jackson-bom.version>2.18.3</jackson-bom.version>
         <smallrye-stork.version>2.7.3</smallrye-stork.version>
@@ -67,7 +67,7 @@
         <yasson.version>3.0.4</yasson.version>
         <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
         <awaitility.version>4.3.0</awaitility.version>
-        <smallrye-mutiny-vertx-core.version>3.18.1</smallrye-mutiny-vertx-core.version>
+        <smallrye-mutiny-vertx-core.version>3.19.0</smallrye-mutiny-vertx-core.version>
         <reactive-streams.version>1.0.4</reactive-streams.version>
         <mockito.version>5.17.0</mockito.version>
         <wiremock.version>3.13.0</wiremock.version>
@@ -523,17 +523,6 @@
             </plugins>
         </pluginManagement>
     </build>
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>sonatype-nexus-snapshots</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>sonatype-nexus-releases</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
 
     <profiles>
         <profile>

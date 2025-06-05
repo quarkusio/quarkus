@@ -515,13 +515,16 @@ HibernateCriteriaBuilder hibernateCriteriaBuilder;
 Metamodel metamodel;
 
 @Inject
-Cache cache;
+jakarta.persistence.Cache cache;
 
 @Inject
 org.hibernate.Cache cache;
 
 @Inject
 jakarta.persistence.PersistenceUnitUtil persistenceUnitUtil;
+
+@Inject
+jakarta.persistence.SchemaManager schemaManager;
 
 @Inject
 org.hibernate.relational.SchemaManager schemaManager;

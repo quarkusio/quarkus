@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import io.quarkus.websockets.next.HandshakeRequest;
 import io.quarkus.websockets.next.WebSocketClientConnection;
@@ -19,13 +20,17 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
 
     private final WebSocket webSocket;
 
+    private final Consumer<WebSocketClientConnection> cleanup;
+
     WebSocketClientConnectionImpl(String clientId, WebSocket webSocket, Codecs codecs,
             Map<String, String> pathParams, URI serverEndpointUri, Map<String, List<String>> headers,
-            TrafficLogger trafficLogger, Map<String, Object> userData, SendingInterceptor sendingInterceptor) {
+            TrafficLogger trafficLogger, Map<String, Object> userData, SendingInterceptor sendingInterceptor,
+            Consumer<WebSocketClientConnection> cleanup) {
         super(Map.copyOf(pathParams), codecs, new ClientHandshakeRequestImpl(serverEndpointUri, headers), trafficLogger,
                 new UserDataImpl(userData), sendingInterceptor);
         this.clientId = clientId;
         this.webSocket = Objects.requireNonNull(webSocket);
+        this.cleanup = cleanup;
     }
 
     @Override
@@ -46,6 +51,12 @@ class WebSocketClientConnectionImpl extends WebSocketConnectionBase implements W
     @Override
     public int hashCode() {
         return Objects.hash(identifier);
+    }
+
+    protected void cleanup() {
+        if (cleanup != null) {
+            cleanup.accept(this);
+        }
     }
 
     @Override

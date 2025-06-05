@@ -12,8 +12,6 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 
-import org.hibernate.Hibernate;
-
 import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.narayana.jta.runtime.TransactionConfiguration;
 import io.quarkus.runtime.StartupEvent;
@@ -81,13 +79,10 @@ public class ProxyTestEndpoint {
     }
 
     /**
-     * tests for the proxies in an inheritance hierarchy
+     * tests for the @Proxy annotation in an inheritance hierarchy
      *
      * We need to do our own proxy generation at build time, so this tests that the logic matches what hibernate expects
      */
-    // TODO: this previously was about the @Proxy annotation, removed in Hibernate ORM 7.0.
-    //   We should check whether the test still makes sense...
-    //   See also https://hibernate.zulipchat.com/#narrow/stream/132094-hibernate-orm-dev/topic/HHH-18194/near/467597335
     @GET
     @Path("inheritance")
     @Transactional
@@ -96,17 +91,27 @@ public class ProxyTestEndpoint {
         expectEquals("Stuart", owner.getName());
         expectEquals("Generic pet noises", owner.getPet().makeNoise());
 
+        // Concrete proxies extend the actual class of the target entity
+        expectTrue(owner.getPet() instanceof Pet);
+        expectFalse(owner.getPet() instanceof DogProxy);
+
         owner = entityManager.find(PetOwner.class, 2);
         expectEquals("Sanne", owner.getName());
         expectEquals("Meow", owner.getPet().makeNoise());
 
+        // Concrete proxies extend the actual class of the target entity
+        expectTrue(owner.getPet() instanceof Pet);
+        expectFalse(owner.getPet() instanceof DogProxy);
+
         owner = entityManager.find(PetOwner.class, 3);
         expectEquals("Emmanuel", owner.getName());
         expectEquals("Woof", owner.getPet().makeNoise());
-        var unproxied = Hibernate.unproxy(owner.getPet());
-        expectTrue(unproxied instanceof Dog);
-        expectEquals("Woof", ((Dog) unproxied).bark());
-        expectEquals("Rubber Bone", ((Dog) unproxied).getFavoriteToy());
+        expectEquals("Woof", ((DogProxy) owner.getPet()).bark());
+        expectEquals("Rubber Bone", ((DogProxy) owner.getPet()).getFavoriteToy());
+
+        // Concrete proxies extend the actual class of the target entity
+        expectTrue(owner.getPet() instanceof Pet);
+        expectTrue(owner.getPet() instanceof DogProxy);
 
         return "OK";
     }

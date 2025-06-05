@@ -5,7 +5,7 @@ import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("DOG")
-public class Dog extends Pet {
+public class Dog extends Pet implements DogProxy {
 
     private String favoriteToy;
 
@@ -14,6 +14,7 @@ public class Dog extends Pet {
         return bark();
     }
 
+    @Override
     public String bark() {
         return "Woof";
     }

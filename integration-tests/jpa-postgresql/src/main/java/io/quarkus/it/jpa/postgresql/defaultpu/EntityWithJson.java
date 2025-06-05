@@ -1,7 +1,10 @@
 package io.quarkus.it.jpa.postgresql.defaultpu;
 
 import java.time.LocalDate;
+import java.util.Set;
 
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -22,11 +25,20 @@ public class EntityWithJson {
     @JdbcTypeCode(SqlTypes.JSON)
     ToBeSerializedWithDateTime json;
 
+    @Embedded
+    SomeEmbeddable someEmbeddable;
+
+    @ElementCollection
+    Set<SomeEmbeddable> collection;
+
     public EntityWithJson() {
     }
 
-    public EntityWithJson(ToBeSerializedWithDateTime data) {
+    public EntityWithJson(ToBeSerializedWithDateTime data,
+            SomeEmbeddable someEmbeddable) {
         this.json = data;
+        this.someEmbeddable = someEmbeddable;
+        this.collection = Set.of(someEmbeddable);
     }
 
     @Override

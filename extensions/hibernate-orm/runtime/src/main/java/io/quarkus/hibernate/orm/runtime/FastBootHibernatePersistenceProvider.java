@@ -205,7 +205,8 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
                     standardServiceRegistry /* Mostly ignored! (yet needs to match) */,
                     runtimeSettings,
                     validatorFactory, cdiBeanManager, recordedState.getMultiTenancyStrategy(),
-                    true);
+                    true,
+                    recordedState.getBuildTimeSettings().getSource().getBuiltinFormatMapperBehaviour());
         }
 
         log.debug("Found no matching persistence units");

@@ -53,6 +53,12 @@ public interface DevUIConfig {
     Cors cors();
 
     /**
+     * Enable/Disable the ability to add and remove extensions from Dev UI
+     */
+    @WithDefault("true")
+    boolean allowExtensionManagement();
+
+    /**
      * Fine tune the theme
      */
     Optional<Theme> theme();

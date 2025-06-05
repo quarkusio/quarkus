@@ -14,7 +14,7 @@ public class PetOwner {
 
     String name;
 
-    Pet pet;
+    PetProxy pet;
 
     public String getName() {
         return name;
@@ -33,13 +33,13 @@ public class PetOwner {
         this.id = id;
     }
 
-    @OneToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToOne(optional = false, cascade = CascadeType.ALL, fetch = FetchType.LAZY, targetEntity = Pet.class)
     @JoinColumn(nullable = false)
-    public Pet getPet() {
+    public PetProxy getPet() {
         return pet;
     }
 
-    public void setPet(Pet pet) {
+    public void setPet(PetProxy pet) {
         this.pet = pet;
     }
 }

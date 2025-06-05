@@ -53,6 +53,7 @@ import io.quarkus.bootstrap.workspace.DefaultSourceDir;
 import io.quarkus.bootstrap.workspace.DefaultWorkspaceModule;
 import io.quarkus.bootstrap.workspace.SourceDir;
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
+import io.quarkus.bootstrap.workspace.WorkspaceModuleId;
 import io.quarkus.fs.util.ZipUtils;
 import io.quarkus.gradle.dependency.ApplicationDeploymentClasspathBuilder;
 import io.quarkus.maven.dependency.ArtifactCoords;
@@ -355,50 +356,31 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
             PathCollection paths = null;
             if (workspaceDiscovery && a.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier compId) {
                 Project projectDep = project.getRootProject().findProject(compId.getProjectPath());
-                SourceSetContainer sourceSets = projectDep == null ? null
-                        : projectDep.getExtensions().findByType(SourceSetContainer.class);
 
                 final String classifier = a.getClassifier();
                 if (classifier == null || classifier.isEmpty()) {
                     final IncludedBuild includedBuild = ToolingUtils.includedBuild(project.getRootProject(),
                             compId.getBuild().getName());
                     if (includedBuild != null) {
-                        final PathList.Builder pathBuilder = PathList.builder();
-
                         if (includedBuild instanceof IncludedBuildInternal ib) {
                             projectDep = ToolingUtils.includedBuildProject(ib, compId.getProjectPath());
                         }
                         if (projectDep != null) {
-                            projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
-                                    pathBuilder, SourceSet.MAIN_SOURCE_SET_NAME, false);
-                            addSubstitutedProject(pathBuilder, projectDep.getProjectDir());
+                            initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
                         } else {
+                            final PathList.Builder pathBuilder = PathList.builder();
                             addSubstitutedProject(pathBuilder, includedBuild.getProjectDir());
+                            paths = pathBuilder.build();
                         }
-                        paths = pathBuilder.build();
-                    } else if (sourceSets != null) {
-                        final PathList.Builder pathBuilder = PathList.builder();
-                        projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
-                                pathBuilder, SourceSet.MAIN_SOURCE_SET_NAME, false);
-                        paths = pathBuilder.build();
+                    } else {
+                        initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
                     }
-                } else if (sourceSets != null) {
-                    if (SourceSet.TEST_SOURCE_SET_NAME.equals(classifier)) {
-                        final PathList.Builder pathBuilder = PathList.builder();
-                        projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
-                                pathBuilder, SourceSet.TEST_SOURCE_SET_NAME, true);
-                        paths = pathBuilder.build();
-                    } else if ("test-fixtures".equals(classifier)) {
-                        final PathList.Builder pathBuilder = PathList.builder();
-                        projectModule = initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder,
-                                pathBuilder, "testFixtures", true);
-                        paths = pathBuilder.build();
-                    }
+                } else {
+                    initProjectModuleAndBuildPaths(projectDep, a, modelBuilder, depBuilder);
                 }
             }
 
-            depBuilder.setResolvedPaths(paths == null ? PathList.of(a.getFile().toPath()) : paths)
-                    .setWorkspaceModule(projectModule);
+            depBuilder.setResolvedPaths(paths == null ? PathList.of(a.getFile().toPath()) : paths);
             if (processQuarkusDependency(depBuilder, modelBuilder)) {
                 if (isFlagOn(flags, COLLECT_TOP_EXTENSION_RUNTIME_NODES)) {
                     depBuilder.setFlags(DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT);
@@ -410,6 +392,9 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
                 depBuilder.clearFlag(DependencyFlags.RELOADABLE);
             }
             modelBuilder.addDependency(depBuilder);
+            if (projectModule == null && depBuilder.getWorkspaceModule() != null) {
+                projectModule = depBuilder.getWorkspaceModule().mutable();
+            }
 
             if (artifactFiles != null) {
                 artifactFiles.add(a.getFile());
@@ -429,30 +414,23 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
         return resolvedClassifier == null ? ArtifactCoords.DEFAULT_CLASSIFIER : resolvedClassifier;
     }
 
-    private WorkspaceModule.Mutable initProjectModuleAndBuildPaths(final Project project,
-            ResolvedArtifact resolvedArtifact, ApplicationModelBuilder appModel, final ResolvedDependencyBuilder appDep,
-            PathList.Builder buildPaths, String sourceName, boolean test) {
+    private void initProjectModuleAndBuildPaths(final Project project,
+            ResolvedArtifact resolvedArtifact, ApplicationModelBuilder appModel, final ResolvedDependencyBuilder appDep) {
 
         appDep.setWorkspaceModule().setReloadable();
 
-        final WorkspaceModule.Mutable projectModule = appModel.getOrCreateProjectModule(
-                new GAV(resolvedArtifact.getModuleVersion().getId().getGroup(), resolvedArtifact.getName(),
-                        resolvedArtifact.getModuleVersion().getId().getVersion()),
-                project.getProjectDir(),
-                project.getBuildDir())
-                .setBuildFile(project.getBuildFile().toPath());
+        if (appDep.getWorkspaceModule() == null) {
+            final WorkspaceModule.Mutable projectModule = appModel.getOrCreateProjectModule(
+                    WorkspaceModuleId.of(resolvedArtifact.getModuleVersion().getId().getGroup(), resolvedArtifact.getName(),
+                            resolvedArtifact.getModuleVersion().getId().getVersion()),
+                    project.getProjectDir(),
+                    project.getLayout().getBuildDirectory().get().getAsFile())
+                    .setBuildFile(project.getBuildFile().toPath());
+            ProjectDescriptorBuilder.initSourceDirs(project, projectModule);
+            appDep.setWorkspaceModule(projectModule);
+        }
 
-        final String classifier = toNonNullClassifier(resolvedArtifact.getClassifier());
-        SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
-        initProjectModule(project, projectModule, sourceSets.findByName(sourceName), classifier);
-
-        collectDestinationDirs(projectModule.getSources(classifier).getSourceDirs(), buildPaths);
-        collectDestinationDirs(projectModule.getSources(classifier).getResourceDirs(), buildPaths);
-
-        appModel.addReloadableWorkspaceModule(
-                ArtifactKey.of(resolvedArtifact.getModuleVersion().getId().getGroup(), resolvedArtifact.getName(), classifier,
-                        ArtifactCoords.TYPE_JAR));
-        return projectModule;
+        appModel.addReloadableWorkspaceModule(appDep.getKey());
     }
 
     private boolean processQuarkusDependency(ResolvedDependencyBuilder artifactBuilder, ApplicationModelBuilder modelBuilder) {

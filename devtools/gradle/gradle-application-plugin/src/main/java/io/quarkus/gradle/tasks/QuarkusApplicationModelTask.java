@@ -148,7 +148,8 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                 .setPlatformImports(getPlatformInfo().resolvePlatformImports())
                 .addReloadableWorkspaceModule(appArtifact.getKey());
 
-        collectDependencies(getAppClasspath(), modelBuilder, projectDescriptor.getWorkspaceModule(), projectDescriptor);
+        collectDependencies(getAppClasspath(), modelBuilder, projectDescriptor.getWorkspaceModule(), projectDescriptor,
+                getLaunchMode().get() == LaunchMode.TEST);
         collectExtensionDependencies(getDeploymentClasspath(), modelBuilder);
         DefaultApplicationModel model = modelBuilder.build();
         ToolingUtils.serializeAppModel(model, getApplicationModel().get().getAsFile().toPath());
@@ -190,18 +191,19 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
     }
 
     private static void collectDependencies(QuarkusResolvedClasspath classpath, ApplicationModelBuilder modelBuilder,
-            WorkspaceModule.Mutable wsModule, ProjectDescriptor projectDescriptor) {
+            WorkspaceModule.Mutable wsModule, ProjectDescriptor projectDescriptor, boolean testMode) {
         final Map<ComponentIdentifier, List<QuarkusResolvedArtifact>> artifacts = classpath
                 .resolvedArtifactsByComponentIdentifier();
 
         Set<File> alreadyCollectedFiles = new HashSet<>(artifacts.size());
+        Set<? extends DependencyResult> classpathDependencies = classpath.getRoot().get().getDependencies();
         final Set<ModuleVersionIdentifier> processedModules = new HashSet<>();
-        classpath.getRoot().get().getDependencies().forEach(d -> {
+        classpathDependencies.forEach(d -> {
             if (d instanceof ResolvedDependencyResult resolved) {
                 final byte flags = (byte) (COLLECT_TOP_EXTENSION_RUNTIME_NODES | COLLECT_DIRECT_DEPS
                         | COLLECT_RELOADABLE_MODULES);
                 collectDependencies(resolved, modelBuilder, artifacts, wsModule, alreadyCollectedFiles,
-                        processedModules, flags, projectDescriptor);
+                        processedModules, flags, projectDescriptor, classpathDependencies, testMode);
             }
         });
         Set<File> fileDependencies = new HashSet<>(classpath.getAllResolvedFiles().getFiles());
@@ -254,7 +256,9 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             Set<File> collectedArtifactFiles,
             Set<ModuleVersionIdentifier> processedModules,
             byte flags,
-            ProjectDescriptor projectDescriptor) {
+            ProjectDescriptor projectDescriptor,
+            Set<? extends DependencyResult> classpathDependencies,
+            boolean testMode) {
         final ModuleVersionIdentifier moduleId = getModuleVersion(resolvedDependency);
         if (!processedModules.add(moduleId)) {
             return;
@@ -270,11 +274,14 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     collectDependencies(result, modelBuilder, resolvedArtifacts,
                             projectModule,
                             collectedArtifactFiles,
-                            processedModules, finalFlags, projectDescriptor);
+                            processedModules, finalFlags, projectDescriptor, classpathDependencies, testMode);
                 }
             });
             return;
         }
+
+        boolean shouldProcessOnlyFixtureArtifacts = shouldProcessOnlyFixtureArtifacts(artifacts, moduleId,
+                classpathDependencies, testMode);
 
         byte newFlags = flags;
         for (QuarkusResolvedArtifact artifact : artifacts) {
@@ -321,7 +328,9 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
                     newFlags = clearFlag(newFlags, COLLECT_RELOADABLE_MODULES);
                 }
             }
-            modelBuilder.addDependency(depBuilder);
+            if (!shouldProcessOnlyFixtureArtifacts || classifier.equals("test-fixtures")) {
+                modelBuilder.addDependency(depBuilder);
+            }
         }
 
         flags = newFlags;
@@ -329,9 +338,31 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
             if (dependency instanceof ResolvedDependencyResult result) {
                 collectDependencies(result, modelBuilder, resolvedArtifacts, projectModule,
                         collectedArtifactFiles,
-                        processedModules, flags, projectDescriptor);
+                        processedModules, flags, projectDescriptor, classpathDependencies, testMode);
             }
         }
+    }
+
+    //    Issue https://github.com/quarkusio/quarkus/issues/48051 highlights a problem where the ApplicationModelTask for the test
+    //    model includes implementation code from the main source set. This occurs because resolvableDependencies.getArtifacts() for
+    //    the test configuration carries an implicit dependency on the project itself.
+    //    To avoid including main implementation artifacts, we need to:
+    //       - Inspect the resolved artifacts and check for those with the test-fixtures classifier.
+    //       - Verify whether the resolved component includes the main implementation dependency.
+    private static boolean shouldProcessOnlyFixtureArtifacts(List<QuarkusResolvedArtifact> artifacts,
+            ModuleVersionIdentifier moduleVersionIdentifier, Set<? extends DependencyResult> classpathDependencies,
+            boolean testMode) {
+        return testMode
+                && artifacts.stream()
+                        .map(artifact -> resolveClassifier(moduleVersionIdentifier, artifact.file))
+                        .anyMatch("test-fixtures"::equals)
+                && classpathDependencies.stream()
+                        .filter(dependency -> {
+                            ModuleVersionIdentifier selectedVersion = ((ResolvedDependencyResult) dependency).getSelected()
+                                    .getModuleVersion();
+                            return Objects.equals(selectedVersion, moduleVersionIdentifier);
+                        })
+                        .count() == 1;
     }
 
     private static ModuleVersionIdentifier getModuleVersion(ResolvedDependencyResult resolvedDependency) {

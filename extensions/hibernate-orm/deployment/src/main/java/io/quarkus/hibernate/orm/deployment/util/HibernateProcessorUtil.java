@@ -39,6 +39,7 @@ import io.quarkus.hibernate.orm.deployment.JpaModelBuildItem;
 import io.quarkus.hibernate.orm.deployment.spi.DatabaseKindDialectBuildItem;
 import io.quarkus.hibernate.orm.runtime.HibernateOrmRuntimeConfig;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
+import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigurationException;
@@ -58,7 +59,10 @@ public final class HibernateProcessorUtil {
         return !jpaModel.getEntityClassNames().isEmpty();
     }
 
-    public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities) {
+    public static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
+        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
+            return Optional.empty();
+        }
         if (capabilities.isPresent(Capability.JACKSON)) {
             return Optional.of(FormatMapperKind.JACKSON);
         } else if (capabilities.isPresent(Capability.JSONB)) {
@@ -68,7 +72,10 @@ public final class HibernateProcessorUtil {
         }
     }
 
-    public static Optional<FormatMapperKind> xmlMapperKind(Capabilities capabilities) {
+    public static Optional<FormatMapperKind> xmlMapperKind(Capabilities capabilities, BuiltinFormatMapperBehaviour behaviour) {
+        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
+            return Optional.empty();
+        }
         return capabilities.isPresent(Capability.JAXB)
                 ? Optional.of(FormatMapperKind.JAXB)
                 : Optional.empty();

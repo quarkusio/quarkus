@@ -160,9 +160,20 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     .unwrap(SmallRyeConfig.class)
                     .getConfigMapping(TestConfig.class);
         } catch (Exception | ServiceConfigurationError e) {
-            // Tracked by https://github.com/quarkusio/quarkus/issues/46048
-            Log.error("Could not read configuration while evaluating whether to run " + context.getRequiredTestClass()
-                    + ". This usually happens when re-running a test that has already failed, for example if surefire.rerunFailingTestsCount is set. To work around this limitation, either adjust the test so that it passes, or isolate the test into a project whose tests all use the same combination of @TestProfile and resources.");
+            boolean isEclipse = System.getProperty("sun.java.command") != null
+                    && System.getProperty("sun.java.command").contains("JUnit5TestLoader");
+            if (isEclipse) {
+                // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257
+                Log.error(
+                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the Eclipse IDE. To work around the problem, edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
+                                + context.getRequiredTestClass().getName()
+                                + "]` in the program arguments. Running the whole package, or running individual test methods, will also work without any extra configuration.");
+            } else {
+                Log.error("Internal error: Could not read configuration while evaluating whether to run "
+                        + context.getRequiredTestClass()
+                        + ". Please let the Quarkus team know what you were doing when this error happened.");
+
+            }
             Log.debug("Underlying exception: " + e);
             Log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
             Log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());

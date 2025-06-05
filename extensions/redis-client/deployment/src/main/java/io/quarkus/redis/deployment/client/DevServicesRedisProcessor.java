@@ -63,6 +63,7 @@ public class DevServicesRedisProcessor {
      * This allows other applications to discover the running service and use it instead of starting a new instance.
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-redis";
+    private static final String LAUNCH_MODE_LABEL = "quarkus-launch-mode";
 
     private static final ContainerLocator redisContainerLocator = locateContainerWithLabels(REDIS_EXPOSED_PORT,
             DEV_SERVICE_LABEL);
@@ -165,7 +166,7 @@ public class DevServicesRedisProcessor {
             QuarkusPortRedisContainer redisContainer = new QuarkusPortRedisContainer(dockerImageName, fixedExposedPort,
                     serviceName,
                     defaultNetworkId,
-                    useSharedNetwork);
+                    useSharedNetwork, launchMode);
             timeout.ifPresent(redisContainer::withStartupTimeout);
             redisContainer.withEnv(devServicesConfig.containerEnv());
             String redisHost = fixedExposedPort.isPresent()
@@ -234,7 +235,7 @@ public class DevServicesRedisProcessor {
         private final String hostName;
 
         public QuarkusPortRedisContainer(DockerImageName dockerImageName, OptionalInt fixedExposedPort, String serviceName,
-                String defaultNetworkId, boolean useSharedNetwork) {
+                String defaultNetworkId, boolean useSharedNetwork, LaunchMode launchMode) {
             super(dockerImageName);
             this.fixedExposedPort = fixedExposedPort;
             this.useSharedNetwork = useSharedNetwork;
@@ -243,6 +244,7 @@ public class DevServicesRedisProcessor {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
                 withLabel(MANAGED_DEV_SERVICE_LABEL, RunningDevServicesTracker.APPLICATION_UUID);
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
+                withLabel(LAUNCH_MODE_LABEL, launchMode.toString());
             }
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");
         }

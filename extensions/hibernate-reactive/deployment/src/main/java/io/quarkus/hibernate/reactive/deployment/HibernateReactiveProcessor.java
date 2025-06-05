@@ -214,6 +214,7 @@ public final class HibernateReactiveProcessor {
                         persistenceUnitConfig.dialect().dialect(),
                         io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy.NONE,
                         hibernateOrmConfig.database().ormCompatibilityVersion(),
+                        hibernateOrmConfig.mapping().format().global(),
                         persistenceUnitConfig.unsupportedProperties()),
                 null,
                 jpaModel.getXmlMappings(reactivePU.getName()),

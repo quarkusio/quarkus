@@ -6,6 +6,7 @@ import java.util.TreeMap;
 
 import io.quarkus.hibernate.orm.runtime.PersistenceUnitUtil;
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
+import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.runtime.annotations.ConfigDocMapKey;
 import io.quarkus.runtime.annotations.ConfigDocSection;
 import io.quarkus.runtime.annotations.ConfigGroup;
@@ -52,6 +53,10 @@ public interface HibernateOrmConfig {
      */
     @ConfigDocSection
     HibernateOrmConfigDatabase database();
+
+    @Deprecated(since = "3.24", forRemoval = true)
+    @ConfigDocSection
+    HibernateOrmConfigXmlJsonMapping mapping();
 
     /**
      * Configuration for persistence units.
@@ -209,5 +214,25 @@ public interface HibernateOrmConfig {
          */
         @WithDefault("false")
         boolean allowHql();
+    }
+
+    @Deprecated(since = "3.24", forRemoval = true)
+    @ConfigGroup
+    interface HibernateOrmConfigXmlJsonMapping {
+
+        HibernateOrmConfigXmlJsonMappingFormat format();
+
+        @Deprecated(since = "3.24", forRemoval = true)
+        @ConfigGroup
+        interface HibernateOrmConfigXmlJsonMappingFormat {
+            /**
+             * How the default JSON/XML format mappers are configured.
+             *
+             * @deprecated Only available to mitigate migration from the Quarkus preconfigured current mappers
+             */
+            @Deprecated(since = "3.24", forRemoval = true)
+            @WithDefault("warn")
+            BuiltinFormatMapperBehaviour global();
+        }
     }
 }

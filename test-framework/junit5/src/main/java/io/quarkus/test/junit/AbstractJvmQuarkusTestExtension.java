@@ -162,8 +162,16 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
         } catch (Exception | ServiceConfigurationError e) {
             boolean isEclipse = System.getProperty("sun.java.command") != null
                     && System.getProperty("sun.java.command").contains("JUnit5TestLoader");
-            if (isEclipse) {
-                // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257
+
+            // VS Code has the exact same java command and runner as Eclipse, but needs its own message
+            boolean isVSCode = isEclipse && System.getProperty("java.class.path").contains("vscode");
+
+            if (isVSCode) {
+                // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
+                Log.error(
+                        "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
+            } else if (isEclipse) {
+                // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257; fixed in Eclipse 4.37
                 Log.error(
                         "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the Eclipse IDE. To work around the problem, edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
                                 + context.getRequiredTestClass().getName()
@@ -177,8 +185,14 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             Log.debug("Underlying exception: " + e);
             Log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
             Log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());
-            throw new IllegalStateException("Non-viable test classloader, " + Thread.currentThread().getContextClassLoader()
-                    + ". Is this a re-run of a failing test?");
+            String message = isVSCode
+                    ? "Could not execute test class because it was loaded with the wrong classloader by the VS Code test runner. Try running test methods individually instead."
+                    : isEclipse
+                            ? "Could not execute test class because it was loaded with the wrong classloader by the Eclipse test runner. Try running test methods individually, or edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"
+                                    + context.getRequiredTestClass().getName()
+                                    + "]` in the program arguments. "
+                            : "Internal error: Test class was loaded with an unexpected classloader or the thread context classloader was incorrect.";
+            throw new IllegalStateException(message, e);
         } finally {
             if (!isFlatClasspath) {
                 Thread.currentThread().setContextClassLoader(original);

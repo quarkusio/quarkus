@@ -127,6 +127,7 @@ import io.quarkus.hibernate.orm.runtime.boot.xml.JAXBElementSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.QNameSubstitution;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
+import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.hibernate.orm.runtime.customized.FormatMapperKind;
 import io.quarkus.hibernate.orm.runtime.dev.HibernateOrmDevIntegrator;
 import io.quarkus.hibernate.orm.runtime.graal.RegisterServicesForReflectionFeature;
@@ -329,8 +330,9 @@ public final class HibernateOrmProcessor {
                     .filter(i -> i.isDefault())
                     .findFirst();
             collectDialectConfigForPersistenceXml(puName, xmlDescriptor);
-            Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
-            Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+            Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities,
+                    hibernateOrmConfig.mapping().format().global());
+            Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
             jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
                     .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
             xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
@@ -346,7 +348,8 @@ public final class HibernateOrmProcessor {
                                     getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
-                                    hibernateOrmConfig.database().ormCompatibilityVersion(), Collections.emptyMap()),
+                                    hibernateOrmConfig.database().ormCompatibilityVersion(),
+                                    hibernateOrmConfig.mapping().format().global(), Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             true, isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
@@ -1134,8 +1137,8 @@ public final class HibernateOrmProcessor {
         descriptor.getProperties().setProperty(AvailableSettings.IGNORE_EXPLICIT_DISCRIMINATOR_COLUMNS_FOR_JOINED_SUBCLASS,
                 String.valueOf(persistenceUnitConfig.discriminator().ignoreExplicitForJoined()));
 
-        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
-        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
         jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
         xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
@@ -1149,6 +1152,7 @@ public final class HibernateOrmProcessor {
                                 persistenceUnitConfig.dialect().dialect(),
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
+                                hibernateOrmConfig.mapping().format().global(),
                                 persistenceUnitConfig.unsupportedProperties()),
                         persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
                         xmlMappings,
@@ -1702,7 +1706,11 @@ public final class HibernateOrmProcessor {
         return false;
     }
 
-    private static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities) {
+    private static Optional<FormatMapperKind> jsonMapperKind(Capabilities capabilities,
+            BuiltinFormatMapperBehaviour behaviour) {
+        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
+            return Optional.empty();
+        }
         if (capabilities.isPresent(Capability.JACKSON)) {
             return Optional.of(FormatMapperKind.JACKSON);
         }
@@ -1712,7 +1720,11 @@ public final class HibernateOrmProcessor {
         return Optional.empty();
     }
 
-    private static Optional<FormatMapperKind> xmlMapperKind(Capabilities capabilities) {
+    private static Optional<FormatMapperKind> xmlMapperKind(Capabilities capabilities,
+            BuiltinFormatMapperBehaviour behaviour) {
+        if (BuiltinFormatMapperBehaviour.IGNORE.equals(behaviour)) {
+            return Optional.empty();
+        }
         if (capabilities.isPresent(Capability.JAXB)) {
             return Optional.of(FormatMapperKind.JAXB);
         }

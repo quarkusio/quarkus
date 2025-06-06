@@ -262,8 +262,8 @@ public class ServerSerialisers extends Serialisers {
     public static void runWriterInterceptors(ResteasyReactiveRequestContext context, Object entity, MessageBodyWriter writer,
             Response response, WriterInterceptor[] writerInterceptor, ServerSerialisers serialisers) throws IOException {
         WriterInterceptorContextImpl wc = new WriterInterceptorContextImpl(context, writerInterceptor, writer,
-                context.getAllAnnotations(), entity.getClass(), context.getGenericReturnType(), entity, response.getMediaType(),
-                response.getHeaders(), serialisers);
+                context.getAllAnnotations(), entity.getClass(), context.getGenericReturnType(), entity,
+                context.getResponseContentType().getMediaType(), response.getHeaders(), serialisers);
         wc.proceed();
     }
 

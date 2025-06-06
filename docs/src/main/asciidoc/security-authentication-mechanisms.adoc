@@ -217,6 +217,66 @@ The following properties can be used to configure form-based authentication:
 
 include::{generated-dir}/config/quarkus-vertx-http_quarkus.http.auth.adoc[opts=optional, leveloffset=+1]
 
+[[two-factor-auth]]
+==== Two-factor authentication
+
+The form-based authentication mechanism supports two-factor authentication (2FA) with a one-time authentication token second-factor option.
+
+.Enable two-factor authentication
+[source,properties]
+----
+quarkus.http.auth.form.authentication-token.enabled=true
+quarkus.http.auth.form.authentication-token.request-redirect-path=/authentication-token-form <1>
+----
+<1> Once the one-time authentication token has been generated, redirect to a page with an authentication token form.
+
+When user submit a username and password to the `/j_security_check` POST location, they will get relocated to the `/authentication-token-form` page.
+The `/authentication-token-form` page should allow users to submit the one-time authentication token sent to them.
+
+.Example form for authentication with a one-time authentication token
+[source,html]
+----
+<form action="/j_security_check" method="post"> <1>
+    <label>Authentication token</label>
+    <input type="password" placeholder="Authentication token" name="j_token" required>
+    <button type="submit">Login</button>
+</form>
+----
+<1> Send the one-time authentication token to the POST location.
+
+Once Quarkus has generated the one-time authentication token, you need to deliver the token to a user by declaring a CDI bean that implements the `io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender` interface.
+
+.Example one-time authentication token sender
+[source,java]
+----
+package org.acme.security;
+
+import io.quarkus.mailer.reactive.ReactiveMailer;
+import io.quarkus.security.credential.PasswordCredential;
+import io.quarkus.security.identity.SecurityIdentity;
+import io.quarkus.vertx.http.security.token.OneTimeAuthenticationTokenSender;
+import io.smallrye.mutiny.Uni;
+import jakarta.inject.ApplicationScoped;
+
+@ApplicationScoped
+public final class AuthorizationCodeMailer implements OneTimeAuthorizationCodeSender {
+
+    @Inject
+    ReactiveMailer reactiveMailer;
+
+    @Override
+    public Uni<Void> send(SecurityIdentity securityIdentity, PasswordCredential tokenCredential) {
+        // send the one-time authentication token to the user represented by the security identity
+        String authenticationToken = new String(tokenCredential.getPassword());
+        var mail = Mail.withText("to@acme.org", "Your authentication token", authenticationToken).setFrom("from@acme.org");
+        return reactiveMailer.send(mail); <1>
+    }
+
+}
+----
+<1> Use the Quarkus Mailer extension to send the email with the authentication token.
+See the xref:mailer-reference.adoc[Quarkus Mailer Reference documentation] for more information about the mailer.
+
 [[mutual-tls]]
 === Mutual TLS authentication
 

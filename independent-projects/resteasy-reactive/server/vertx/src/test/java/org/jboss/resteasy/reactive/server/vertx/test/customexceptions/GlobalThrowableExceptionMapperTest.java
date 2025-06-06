@@ -1,7 +1,6 @@
 package org.jboss.resteasy.reactive.server.vertx.test.customexceptions;
 
 import static org.jboss.resteasy.reactive.server.vertx.test.ExceptionUtil.*;
-import static org.jboss.resteasy.reactive.server.vertx.test.ExceptionUtil.removeStackTrace;
 
 import java.util.function.Supplier;
 

@@ -28,6 +28,13 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
         .cardcontents {
             display: flex;
             flex-direction: column;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            padding-left: 2px;
+            padding-right: 2px;
+        }
+        .key {
+            font-weight: bold;
         }
         .entry {
             display: flex;
@@ -117,8 +124,7 @@ export class QwcSmallryeHealthUi extends QwcHotReloadElement {
                             <div class="cardcontents">
                                 ${Object.entries(check.data).map(([key, value]) => html`
                                     <div class="entry">
-                                        <span>${key}</span> 
-                                        <span>${value.string}</span>
+                                        <span class="key">${key}: </span><span>${value.string}</span>
                                     </div>
                                 `)}
                             </div>

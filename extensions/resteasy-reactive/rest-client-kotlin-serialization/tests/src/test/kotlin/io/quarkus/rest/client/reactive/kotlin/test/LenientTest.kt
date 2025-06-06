@@ -1,24 +1,21 @@
 package io.quarkus.rest.client.reactive.kotlin.test
 
 import io.quarkus.test.QuarkusUnitTest
+import jakarta.inject.Inject
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import jakarta.inject.Inject
 
 class LenientTest {
     companion object {
         @RegisterExtension
-        val config = QuarkusUnitTest()
-            .withConfigurationResource("lenient.properties")
+        val config = QuarkusUnitTest().withConfigurationResource("lenient.properties")
     }
 
-    @Inject
-    lateinit var json: Json
+    @Inject lateinit var json: Json
 
     @Test
     fun testLenient() {
@@ -26,6 +23,5 @@ class LenientTest {
             .isEqualTo(TestObject("json"))
     }
 
-    @Serializable
-    private data class TestObject(var name: String)
+    @Serializable private data class TestObject(var name: String)
 }

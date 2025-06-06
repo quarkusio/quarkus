@@ -13,14 +13,10 @@ import org.junit.jupiter.api.extension.RegisterExtension
 class DefaultPersistenceUnitConfigTest {
     @Test
     fun panacheOperations() {
-        /**
-         * First entity operations
-         */
+        /** First entity operations */
         RestAssured.`when`()["/persistence-unit/first/name-1"].then().body(Matchers.`is`("name-1"))
         RestAssured.`when`()["/persistence-unit/first/name-2"].then().body(Matchers.`is`("name-2"))
-        /**
-         * second entity operations
-         */
+        /** second entity operations */
         RestAssured.`when`()["/persistence-unit/second/name-1"].then().body(Matchers.`is`("name-1"))
         RestAssured.`when`()["/persistence-unit/second/name-2"].then().body(Matchers.`is`("name-2"))
     }
@@ -28,11 +24,15 @@ class DefaultPersistenceUnitConfigTest {
     companion object {
         @RegisterExtension
         @JvmField
-        var runner = QuarkusUnitTest()
-                .setArchiveProducer {
-                    ShrinkWrap.create(JavaArchive::class.java)
-                            .addClasses(FirstEntity::class.java, SecondEntity::class.java, PanacheTestResource::class.java)
-                            .addAsResource("application-test.properties", "application.properties")
-                }
+        var runner =
+            QuarkusUnitTest().setArchiveProducer {
+                ShrinkWrap.create(JavaArchive::class.java)
+                    .addClasses(
+                        FirstEntity::class.java,
+                        SecondEntity::class.java,
+                        PanacheTestResource::class.java,
+                    )
+                    .addAsResource("application-test.properties", "application.properties")
+            }
     }
 }

@@ -193,6 +193,9 @@ public final class HibernateProcessorUtil {
         desc.getProperties().setProperty(AvailableSettings.IN_CLAUSE_PARAMETER_PADDING,
                 String.valueOf(config.query().inClauseParameterPadding()));
 
+        desc.getProperties().setProperty(AvailableSettings.FAIL_ON_PAGINATION_OVER_COLLECTION_FETCH,
+                String.valueOf(config.query().failOnPaginationOverCollectionFetch()));
+
         // Disable sequence validations: they are reportedly slow, and people already get the same validation from normal schema validation
         desc.getProperties().put(AvailableSettings.SEQUENCE_INCREMENT_SIZE_MISMATCH_STRATEGY,
                 SequenceMismatchStrategy.NONE);

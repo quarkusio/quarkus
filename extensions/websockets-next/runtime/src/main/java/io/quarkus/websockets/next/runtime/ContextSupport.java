@@ -9,6 +9,7 @@ import io.quarkus.arc.ManagedContext;
 import io.quarkus.vertx.core.runtime.context.VertxContextSafetyToggle;
 import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.Context;
+import io.vertx.core.impl.ContextInternal;
 
 /**
  * Per-endpoint CDI context support.
@@ -81,7 +82,12 @@ public class ContextSupport {
     }
 
     static Context createNewDuplicatedContext(Context context, WebSocketConnectionBase connection) {
-        Context duplicated = VertxContext.createNewDuplicatedContext(context);
+        Context duplicated;
+        if (VertxContext.isDuplicatedContext(context)) {
+            duplicated = ((ContextInternal) VertxContext.getRootContext(context)).duplicate();
+        } else {
+            duplicated = VertxContext.createNewDuplicatedContext(context);
+        }
         VertxContextSafetyToggle.setContextSafe(duplicated, true);
         // We need to store the connection in the duplicated context
         // It's used to initialize the synthetic bean later on

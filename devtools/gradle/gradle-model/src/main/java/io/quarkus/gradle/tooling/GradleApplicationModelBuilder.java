@@ -62,7 +62,6 @@ import io.quarkus.maven.dependency.ArtifactKey;
 import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.maven.dependency.GACT;
 import io.quarkus.maven.dependency.GACTV;
-import io.quarkus.maven.dependency.GAV;
 import io.quarkus.maven.dependency.ResolvedDependencyBuilder;
 import io.quarkus.paths.PathCollection;
 import io.quarkus.paths.PathList;
@@ -169,7 +168,8 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
 
         final SourceSetContainer sourceSets = project.getExtensions().getByType(SourceSetContainer.class);
         final WorkspaceModule.Mutable mainModule = WorkspaceModule.builder()
-                .setModuleId(new GAV(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()))
+                .setModuleId(
+                        WorkspaceModuleId.of(appArtifact.getGroupId(), appArtifact.getArtifactId(), appArtifact.getVersion()))
                 .setModuleDir(project.getProjectDir().toPath())
                 .setBuildDir(project.getBuildDir().toPath())
                 .setBuildFile(project.getBuildFile().toPath());
@@ -701,6 +701,6 @@ public class GradleApplicationModelBuilder implements ParameterizedToolingModelB
     }
 
     private static ArtifactKey toAppDependenciesKey(String groupId, String artifactId, String classifier) {
-        return new GACT(groupId, artifactId, classifier, ArtifactCoords.TYPE_JAR);
+        return ArtifactKey.of(groupId, artifactId, classifier, ArtifactCoords.TYPE_JAR);
     }
 }

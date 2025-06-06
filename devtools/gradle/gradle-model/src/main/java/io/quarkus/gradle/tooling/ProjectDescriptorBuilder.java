@@ -1,7 +1,9 @@
 package io.quarkus.gradle.tooling;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.gradle.api.Project;
@@ -11,7 +13,9 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.SourceSetContainer;
 import org.gradle.api.tasks.SourceSetOutput;
 import org.gradle.api.tasks.bundling.Jar;
+import org.gradle.api.tasks.testing.Test;
 
+import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.DefaultArtifactSources;
 import io.quarkus.bootstrap.workspace.LazySourceDir;
 import io.quarkus.bootstrap.workspace.SourceDir;
@@ -28,8 +32,8 @@ public class ProjectDescriptorBuilder {
 
     public static void initSourceDirs(Project project, WorkspaceModule.Mutable result) {
         final SourceSetContainer srcSets = project.getExtensions().getByType(SourceSetContainer.class);
-        // Here we are checking JARs will be produced, which directories they will use as the source of content
-        // and figure out which source directories are processed to produce the content of the JARs.
+        // Here we are iterating through the JARs that will be produced, collecting directories that will be used as sources
+        // of their content. Then we are figuring out which source directories would be processed to produce the content of the JARs.
         // It has to be configureEach instead of forEach, apparently to avoid concurrent collection modification in some cases.
         project.getTasks().withType(Jar.class).configureEach(jarTask -> {
             final String classifier = jarTask.getArchiveClassifier().get();
@@ -38,7 +42,7 @@ public class ProjectDescriptorBuilder {
             final List<File> resourcesOutputDirs = new ArrayList<>(2);
             collectSourceSetOutput(((DefaultCopySpec) jarTask.getRootSpec()), classesDirs, resourcesOutputDirs);
 
-            final List<SourceDir> sourceDirs = new ArrayList<>(2);
+            final List<SourceDir> sourceDirs = new ArrayList<>();
             final List<SourceDir> resourceDirs = new ArrayList<>(2);
             for (SourceSet srcSet : srcSets) {
                 for (var classesDir : srcSet.getOutput().getClassesDirs().getFiles()) {
@@ -49,10 +53,10 @@ public class ProjectDescriptorBuilder {
                     }
                 }
 
-                final File resourcesOutputDir = srcSet.getOutput().getResourcesDir();
-                if (resourcesOutputDirs.contains(resourcesOutputDir)) {
+                if (resourcesOutputDirs.contains(srcSet.getOutput().getResourcesDir())) {
+                    var resourcesTarget = srcSet.getOutput().getResourcesDir().toPath();
                     for (var dir : srcSet.getResources().getSrcDirs()) {
-                        resourceDirs.add(new LazySourceDir(dir.toPath(), resourcesOutputDir.toPath()));
+                        resourceDirs.add(new LazySourceDir(dir.toPath(), resourcesTarget));
                     }
                 }
             }
@@ -61,6 +65,60 @@ public class ProjectDescriptorBuilder {
                 result.addArtifactSources(new DefaultArtifactSources(classifier, sourceDirs, resourceDirs));
             }
         });
+
+        // This is for the test sources and resources since, by default, they won't be put in JARs
+        project.getTasks().withType(Test.class).configureEach(testTask -> {
+            for (SourceSet srcSet : srcSets) {
+                String classifier = null;
+                List<SourceDir> testSourcesDirs = Collections.emptyList();
+                List<SourceDir> testResourcesDirs = Collections.emptyList();
+                for (var classesDir : srcSet.getOutput().getClassesDirs().getFiles()) {
+                    if (testTask.getTestClassesDirs().contains(classesDir)) {
+                        if (classifier == null) {
+                            classifier = sourceSetNameToClassifier(srcSet.getName());
+                            if (result.hasSources(classifier)) {
+                                // this source set should already be present in the module
+                                break;
+                            }
+                        }
+                        for (var srcDir : srcSet.getAllJava().getSrcDirs()) {
+                            if (testSourcesDirs.isEmpty()) {
+                                testSourcesDirs = new ArrayList<>(6);
+                            }
+                            testSourcesDirs.add(new LazySourceDir(srcDir.toPath(), classesDir.toPath())); // TODO findGeneratedSourceDir(destDir, sourceSet));
+                        }
+                    }
+                }
+                if (classifier != null && !testSourcesDirs.isEmpty()) {
+                    if (srcSet.getOutput().getResourcesDir() != null) {
+                        final Path resourcesOutputDir = srcSet.getOutput().getResourcesDir().toPath();
+                        for (var dir : srcSet.getResources().getSrcDirs()) {
+                            if (testResourcesDirs.isEmpty()) {
+                                testResourcesDirs = new ArrayList<>(2);
+                            }
+                            testResourcesDirs.add(new LazySourceDir(dir.toPath(), resourcesOutputDir));
+                        }
+                    }
+                    result.addArtifactSources(new DefaultArtifactSources(classifier, testSourcesDirs, testResourcesDirs));
+                }
+            }
+        });
+    }
+
+    private static String sourceSetNameToClassifier(String sourceSetName) {
+        if (SourceSet.TEST_SOURCE_SET_NAME.equals(sourceSetName)) {
+            return ArtifactSources.TEST;
+        }
+        var sb = new StringBuilder(sourceSetName.length() + 2);
+        for (int i = 0; i < sourceSetName.length(); ++i) {
+            char original = sourceSetName.charAt(i);
+            char lowerCase = Character.toLowerCase(original);
+            if (original != lowerCase) {
+                sb.append('-');
+            }
+            sb.append(lowerCase);
+        }
+        return sb.toString();
     }
 
     private static void collectSourceSetOutput(DefaultCopySpec spec, List<File> classesDir, List<File> resourcesDir) {

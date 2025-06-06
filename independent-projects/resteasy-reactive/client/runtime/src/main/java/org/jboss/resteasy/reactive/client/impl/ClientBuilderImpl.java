@@ -82,6 +82,7 @@ public class ClientBuilderImpl extends ClientBuilder {
     private String userAgent = RestClientRequestContext.DEFAULT_USER_AGENT_VALUE;
 
     private Boolean enableCompression;
+    private Class proxyClass;
 
     public ClientBuilderImpl() {
         configuration = new ConfigurationImpl(RuntimeType.CLIENT);
@@ -288,6 +289,9 @@ public class ClientBuilderImpl extends ClientBuilder {
         clientLogger.setBodySize(loggingBodySize);
 
         options.setMaxChunkSize(maxChunkSize);
+        if (proxyClass != null) {
+            options.setMetricsName("TODO" + proxyClass.getName());
+        }
         return new ClientImpl(options,
                 new ConfigurationImpl(configuration),
                 CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
@@ -479,6 +483,11 @@ public class ClientBuilderImpl extends ClientBuilder {
 
     public ClientBuilderImpl nonProxyHosts(String nonProxyHosts) {
         this.nonProxyHosts = nonProxyHosts;
+        return this;
+    }
+
+    public ClientBuilderImpl proxyClass(Class proxyClass) {
+        this.proxyClass = proxyClass;
         return this;
     }
 }

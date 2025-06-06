@@ -2,6 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import java.security.Key;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.crypto.SecretKey;
@@ -41,6 +42,8 @@ public sealed interface TenantConfigContext permits TenantConfigContextImpl, Laz
     Key getTokenDecryptionKey();
 
     List<OidcRedirectFilter> getOidcRedirectFilters(Redirect.Location loc);
+
+    Map<Redirect.Location, List<OidcRedirectFilter>> getLocationToRedirectFilters();
 
     /**
      * Only static tenants that are not {@link #ready()} can and need to be initialized.

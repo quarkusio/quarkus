@@ -49,6 +49,8 @@ import io.mvnpm.importmap.Location;
 import io.mvnpm.importmap.model.Imports;
 import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.builder.Version;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -210,7 +212,10 @@ public class BuildTimeContentProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     DeploymentMethodBuildItem mapDeploymentMethods(
             List<BuildTimeActionBuildItem> buildTimeActions,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            Capabilities capabilities) {
+
+        final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
         List<String> methodNames = new ArrayList<>();
         List<String> subscriptionNames = new ArrayList<>();
@@ -221,23 +226,27 @@ public class BuildTimeContentProcessor {
                 String fullName = extensionPathName + "." + bta.getMethodName();
                 if (bta.hasRuntimeValue()) {
                     recordedValues.put(fullName, bta.getRuntimeValue());
+                    methodNames.add(fullName);
                 } else if (bta.hasAction()) {
                     DevConsoleManager.register(fullName, bta.getAction());
-                } else if (bta.hasAssistantAction()) {
+                    methodNames.add(fullName);
+                } else if (bta.hasAssistantAction() && assistantIsAvailable) {
                     DevConsoleManager.register(fullName, bta.getAssistantAction());
+                    methodNames.add(fullName);
                 }
-                methodNames.add(fullName);
             }
             for (BuildTimeAction bts : actions.getSubscriptions()) {
                 String fullName = extensionPathName + "." + bts.getMethodName();
                 if (bts.hasRuntimeValue()) {
                     recordedValues.put(fullName, bts.getRuntimeValue());
+                    subscriptionNames.add(fullName);
                 } else if (bts.hasAction()) {
                     DevConsoleManager.register(fullName, bts.getAction());
-                } else if (bts.hasAssistantAction()) {
+                    subscriptionNames.add(fullName);
+                } else if (bts.hasAssistantAction() && assistantIsAvailable) {
                     DevConsoleManager.register(fullName, bts.getAssistantAction());
+                    subscriptionNames.add(fullName);
                 }
-                subscriptionNames.add(fullName);
             }
         }
 

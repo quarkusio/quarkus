@@ -33,6 +33,8 @@ import org.yaml.snakeyaml.Yaml;
 import io.quarkus.arc.deployment.AdditionalBeanBuildItem;
 import io.quarkus.arc.deployment.BeanContainerBuildItem;
 import io.quarkus.arc.processor.BuiltinScope;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsLocalDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -121,6 +123,7 @@ public class DevUIProcessor {
     private static final String CAPABILITIES = "capabilities";
     private static final String PROVIDES = "provides";
     private static final String UNLISTED = "unlisted";
+    private static final String HIDE = "hide-in-dev-ui";
     private static final String CODESTART = "codestart";
     private static final String LANGUAGES = "languages";
 
@@ -485,7 +488,8 @@ public class DevUIProcessor {
             CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ExtensionsBuildItem> extensionsProducer,
             BuildProducer<WebJarBuildItem> webJarBuildProducer,
-            BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer) {
+            BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer,
+            Capabilities capabilities) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             // produce extension build item as cascade of build steps rely on it
@@ -500,6 +504,8 @@ public class DevUIProcessor {
                 .root(DEVUI + SLASH).build());
 
         devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI));
+
+        final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
         // Now go through all extensions and check them for active components
         Map<String, CardPageBuildItem> cardPagesMap = getCardPagesMap(curateOutcomeBuildItem, cardPageBuildItems);
@@ -527,114 +533,126 @@ public class DevUIProcessor {
                     final Map<String, Object> extensionMap = yaml.load(extensionYaml);
 
                     if (extensionMap.containsKey(NAME)) {
-                        String namespace = getExtensionNamespace(extensionMap);
-                        extension.setNamespace(namespace);
-                        extension.setName((String) extensionMap.get(NAME));
-                        extension.setDescription((String) extensionMap.getOrDefault(DESCRIPTION, null));
-                        String artifactId = (String) extensionMap.getOrDefault(ARTIFACT, null);
-                        extension.setArtifact(artifactId);
 
                         Map<String, Object> metaData = (Map<String, Object>) extensionMap.getOrDefault(METADATA, null);
-                        extension.setKeywords((List<String>) metaData.getOrDefault(KEYWORDS, null));
-                        extension.setShortName((String) metaData.getOrDefault(SHORT_NAME, null));
+                        boolean isHidden = Boolean.valueOf(String.valueOf(metaData.getOrDefault(HIDE, false)));
+                        if (metaData != null && !isHidden) {
 
-                        if (metaData.containsKey(GUIDE)) {
-                            String guide = (String) metaData.get(GUIDE);
-                            try {
-                                extension.setGuide(new URL(guide));
-                            } catch (MalformedURLException mue) {
-                                log.warn("Could not set Guide URL [" + guide + "] for exception [" + namespace + "]");
-                            }
-                        }
+                            String namespace = getExtensionNamespace(extensionMap);
+                            extension.setNamespace(namespace);
+                            extension.setName((String) extensionMap.get(NAME));
+                            extension.setDescription((String) extensionMap.getOrDefault(DESCRIPTION, null));
+                            String artifactId = (String) extensionMap.getOrDefault(ARTIFACT, null);
+                            extension.setArtifact(artifactId);
 
-                        extension.setCategories((List<String>) metaData.getOrDefault(CATEGORIES, null));
-                        extension.setStatus(collectionToString(metaData, STATUS));
-                        extension.setBuiltWith((String) metaData.getOrDefault(BUILT_WITH, null));
-                        extension.setConfigFilter((List<String>) metaData.getOrDefault(CONFIG, null));
-                        extension.setExtensionDependencies((List<String>) metaData.getOrDefault(EXTENSION_DEPENDENCIES, null));
-                        extension.setUnlisted(String.valueOf(metaData.getOrDefault(UNLISTED, false)));
+                            extension.setKeywords((List<String>) metaData.getOrDefault(KEYWORDS, null));
+                            extension.setShortName((String) metaData.getOrDefault(SHORT_NAME, null));
 
-                        if (metaData.containsKey(CAPABILITIES)) {
-                            Map<String, Object> capabilities = (Map<String, Object>) metaData.get(CAPABILITIES);
-                            extension.setProvidesCapabilities((List<String>) capabilities.getOrDefault(PROVIDES, null));
-                        }
-
-                        if (metaData.containsKey(CODESTART)) {
-                            Map<String, Object> codestartMap = (Map<String, Object>) metaData.get(CODESTART);
-                            if (codestartMap != null) {
-                                Codestart codestart = new Codestart();
-                                codestart.setName((String) codestartMap.getOrDefault(NAME, null));
-                                codestart.setLanguages(listOrString(codestartMap, LANGUAGES));
-                                codestart.setArtifact((String) codestartMap.getOrDefault(ARTIFACT, null));
-                                extension.setCodestart(codestart);
-                            }
-                        }
-
-                        if (!cardPagesMap.containsKey(namespace)) { // Inactive
-                            inactiveExtensions.add(extension);
-                        } else { // Active
-                            CardPageBuildItem cardPageBuildItem = cardPagesMap.get(namespace);
-
-                            // Add all card links
-                            List<PageBuilder> cardPageBuilders = cardPageBuildItem.getPages();
-
-                            Map<String, Object> buildTimeData = cardPageBuildItem.getBuildTimeData();
-                            for (PageBuilder pageBuilder : cardPageBuilders) {
-                                Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
-                                extension.addCardPage(page);
+                            if (metaData.containsKey(GUIDE)) {
+                                String guide = (String) metaData.get(GUIDE);
+                                try {
+                                    extension.setGuide(new URL(guide));
+                                } catch (MalformedURLException mue) {
+                                    log.warn("Could not set Guide URL [" + guide + "] for exception [" + namespace + "]");
+                                }
                             }
 
-                            // See if there is a custom card component
-                            cardPageBuildItem.getOptionalCard().ifPresent((card) -> {
-                                card.setNamespace(extension.getNamespace());
-                                extension.setCard(card);
-                            });
+                            extension.setCategories((List<String>) metaData.getOrDefault(CATEGORIES, null));
+                            extension.setStatus(collectionToString(metaData, STATUS));
+                            extension.setBuiltWith((String) metaData.getOrDefault(BUILT_WITH, null));
+                            extension.setConfigFilter((List<String>) metaData.getOrDefault(CONFIG, null));
+                            extension.setExtensionDependencies(
+                                    (List<String>) metaData.getOrDefault(EXTENSION_DEPENDENCIES, null));
+                            extension.setUnlisted(String.valueOf(metaData.getOrDefault(UNLISTED, false)));
 
-                            // Also make sure the static resources for that static resource is available
-                            produceResources(artifactId, webJarBuildProducer,
-                                    devUIWebJarProducer);
-                            activeExtensions.add(extension);
-                        }
-
-                        // Menus on the sections menu
-                        if (menuPagesMap.containsKey(namespace)) {
-                            MenuPageBuildItem menuPageBuildItem = menuPagesMap.get(namespace);
-                            List<PageBuilder> menuPageBuilders = menuPageBuildItem.getPages();
-
-                            Map<String, Object> buildTimeData = menuPageBuildItem.getBuildTimeData();
-                            for (PageBuilder pageBuilder : menuPageBuilders) {
-                                Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
-                                extension.addMenuPage(page);
+                            if (metaData.containsKey(CAPABILITIES)) {
+                                Map<String, Object> cap = (Map<String, Object>) metaData.get(CAPABILITIES);
+                                extension.setProvidesCapabilities((List<String>) cap.getOrDefault(PROVIDES, null));
                             }
-                            // Also make sure the static resources for that static resource is available
-                            produceResources(artifactId, webJarBuildProducer,
-                                    devUIWebJarProducer);
-                            sectionMenuExtensions.add(extension);
-                        }
 
-                        // Tabs in the footer
-                        if (footerPagesMap.containsKey(namespace)) {
+                            if (metaData.containsKey(CODESTART)) {
+                                Map<String, Object> codestartMap = (Map<String, Object>) metaData.get(CODESTART);
+                                if (codestartMap != null) {
+                                    Codestart codestart = new Codestart();
+                                    codestart.setName((String) codestartMap.getOrDefault(NAME, null));
+                                    codestart.setLanguages(listOrString(codestartMap, LANGUAGES));
+                                    codestart.setArtifact((String) codestartMap.getOrDefault(ARTIFACT, null));
+                                    extension.setCodestart(codestart);
+                                }
+                            }
 
-                            List<FooterPageBuildItem> fbis = footerPagesMap.get(namespace);
-                            for (FooterPageBuildItem footerPageBuildItem : fbis) {
-                                List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
+                            if (!cardPagesMap.containsKey(namespace)) { // Inactive
+                                inactiveExtensions.add(extension);
+                            } else { // Active
+                                CardPageBuildItem cardPageBuildItem = cardPagesMap.get(namespace);
 
-                                Map<String, Object> buildTimeData = footerPageBuildItem.getBuildTimeData();
-                                for (PageBuilder pageBuilder : footerPageBuilders) {
+                                // Add all card links
+                                List<PageBuilder> cardPageBuilders = cardPageBuildItem.getPages();
+
+                                Map<String, Object> buildTimeData = cardPageBuildItem.getBuildTimeData();
+                                for (PageBuilder pageBuilder : cardPageBuilders) {
                                     Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
-                                    extension.addFooterPage(page);
+                                    if (!page.isAssistantPage() || assistantIsAvailable) {
+                                        extension.addCardPage(page);
+                                    }
+                                }
+
+                                // See if there is a custom card component
+                                cardPageBuildItem.getOptionalCard().ifPresent((card) -> {
+                                    card.setNamespace(extension.getNamespace());
+                                    extension.setCard(card);
+                                });
+
+                                // Also make sure the static resources for that static resource is available
+                                produceResources(artifactId, webJarBuildProducer,
+                                        devUIWebJarProducer);
+                                activeExtensions.add(extension);
+                            }
+
+                            // Menus on the sections menu
+                            if (menuPagesMap.containsKey(namespace)) {
+                                MenuPageBuildItem menuPageBuildItem = menuPagesMap.get(namespace);
+                                List<PageBuilder> menuPageBuilders = menuPageBuildItem.getPages();
+
+                                Map<String, Object> buildTimeData = menuPageBuildItem.getBuildTimeData();
+                                for (PageBuilder pageBuilder : menuPageBuilders) {
+                                    Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                    if (!page.isAssistantPage() || assistantIsAvailable) {
+                                        extension.addMenuPage(page);
+                                    }
                                 }
                                 // Also make sure the static resources for that static resource is available
                                 produceResources(artifactId, webJarBuildProducer,
                                         devUIWebJarProducer);
-                                footerTabExtensions.add(extension);
+                                sectionMenuExtensions.add(extension);
                             }
+
+                            // Tabs in the footer
+                            if (footerPagesMap.containsKey(namespace)) {
+
+                                List<FooterPageBuildItem> fbis = footerPagesMap.get(namespace);
+                                for (FooterPageBuildItem footerPageBuildItem : fbis) {
+                                    List<PageBuilder> footerPageBuilders = footerPageBuildItem.getPages();
+
+                                    Map<String, Object> buildTimeData = footerPageBuildItem.getBuildTimeData();
+                                    for (PageBuilder pageBuilder : footerPageBuilders) {
+                                        Page page = buildFinalPage(pageBuilder, extension, buildTimeData);
+                                        if (!page.isAssistantPage() || assistantIsAvailable) {
+                                            extension.addFooterPage(page);
+                                        }
+                                    }
+                                    // Also make sure the static resources for that static resource is available
+                                    produceResources(artifactId, webJarBuildProducer,
+                                            devUIWebJarProducer);
+                                    footerTabExtensions.add(extension);
+                                }
+                            }
+
                         }
 
+                        Collections.sort(activeExtensions, sortingComparator);
+                        Collections.sort(inactiveExtensions, sortingComparator);
                     }
-
-                    Collections.sort(activeExtensions, sortingComparator);
-                    Collections.sort(inactiveExtensions, sortingComparator);
                 } catch (IOException | RuntimeException e) {
                     // don't abort, just log, to prevent a single extension from breaking entire dev ui
                     log.error("Failed to process extension descriptor " + p.toUri(), e);

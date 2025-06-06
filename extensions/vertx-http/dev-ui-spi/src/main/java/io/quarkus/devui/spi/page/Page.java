@@ -213,7 +213,7 @@ public class Page {
      * You can use build time data if you made it available
      */
     public static WebComponentPageBuilder assistantPageBuilder() {
-        return new WebComponentPageBuilder("font-awesome-solid:brain", "var(--lumo-warning-color)",
+        return new WebComponentPageBuilder("font-awesome-solid:brain", "var(--quarkus-assistant)",
                 "This uses the Quarkus Assistant feature");
     }
 

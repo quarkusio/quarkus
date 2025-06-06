@@ -9,11 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Flow;
 
 import jakarta.enterprise.event.Observes;
+import jakarta.enterprise.inject.Produces;
 import jakarta.inject.Inject;
 
 import org.jboss.logging.Logger;
 
 import io.quarkus.arc.Arc;
+import io.quarkus.arc.DefaultBean;
+import io.quarkus.assistant.runtime.dev.Assistant;
 import io.quarkus.dev.console.DevConsoleManager;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcCodec;
 import io.quarkus.devui.runtime.jsonrpc.JsonRpcMethod;
@@ -48,6 +51,12 @@ public class JsonRpcRouter {
 
     private static final List<ServerWebSocket> SESSIONS = Collections.synchronizedList(new ArrayList<>());
     private JsonRpcCodec codec;
+
+    @Produces
+    @DefaultBean
+    public Optional<Assistant> defaultAssistant() {
+        return Optional.empty();
+    }
 
     /**
      * This gets called on build to build into of the classes we are going to call in runtime

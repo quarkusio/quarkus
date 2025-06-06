@@ -1,0 +1,4 @@
+name: Assistant
+description: Assistance for Quarkus
+metadata:
+  hide-in-dev-ui: true

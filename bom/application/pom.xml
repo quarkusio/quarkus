@@ -154,7 +154,7 @@
         <kotlin.version>2.1.21</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
         <kotlin-serialization.version>1.8.1</kotlin-serialization.version>
-        <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
+        <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
         <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>

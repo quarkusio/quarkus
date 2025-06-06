@@ -2519,6 +2519,8 @@ include::kafka-dev-ui.adoc[leveloffset=+1]
 
 == Kubernetes Service Bindings
 
+WARNING: Service Binding support has been deprecated
+
 Quarkus Kafka extension supports
 xref:deploying-to-kubernetes.adoc[Service Binding Specification for Kubernetes].
 You can enable this by adding the `quarkus-kubernetes-service-binding` extension to your application.

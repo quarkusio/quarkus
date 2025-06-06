@@ -21,6 +21,7 @@ import io.quarkus.devtools.commands.data.QuarkusCommandException;
 import io.quarkus.devtools.commands.data.QuarkusCommandOutcome;
 import io.quarkus.devtools.project.QuarkusProject;
 import io.quarkus.devtools.project.QuarkusProjectHelper;
+import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.ExtensionsBuildItem;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
 import io.quarkus.devui.deployment.extension.Extension;
@@ -34,7 +35,7 @@ import io.quarkus.devui.spi.page.Page;
 public class ExtensionsProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    InternalPageBuildItem createExtensionsPages(ExtensionsBuildItem extensionsBuildItem) {
+    InternalPageBuildItem createExtensionsPages(ExtensionsBuildItem extensionsBuildItem, DevUIConfig config) {
 
         InternalPageBuildItem extensionsPages = new InternalPageBuildItem("Extensions", 10, "qwc-extensions-menu-action");
 
@@ -52,15 +53,18 @@ public class ExtensionsProcessor {
                 .icon("font-awesome-solid:puzzle-piece")
                 .componentLink("qwc-extensions.js"));
 
+        extensionsPages.addBuildTimeData("allowExtensionManagement", config.allowExtensionManagement());
+
         return extensionsPages;
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
-            LaunchModeBuildItem launchModeBuildItem) {
+            LaunchModeBuildItem launchModeBuildItem, DevUIConfig config) {
 
         if (launchModeBuildItem.getDevModeType().isPresent()
-                && launchModeBuildItem.getDevModeType().get().equals(DevModeType.LOCAL)) {
+                && launchModeBuildItem.getDevModeType().get().equals(DevModeType.LOCAL)
+                && config.allowExtensionManagement()) {
 
             BuildTimeActionBuildItem buildTimeActions = new BuildTimeActionBuildItem(NAMESPACE);
             getCategories(buildTimeActions);

@@ -3,6 +3,7 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { RouterController } from 'router-controller';
 import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
+import { allowExtensionManagement } from 'devui-data';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
 import 'qwc/qwc-extension-add.js';
@@ -96,14 +97,16 @@ export class QwcExtensions extends observeState(LitElement) {
     connectedCallback() {
         super.connectedCallback();
         window.addEventListener('extensions-filters-changed', this._onFiltersChanged);
-        this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
-            if (jsonRpcResponse.result) {
-                this._installedExtensions = jsonRpcResponse.result;
-                this._addExtensionsEnabled = true;
-            }
-        }).catch(e => {
-            notifier.showErrorMessage("Could not list namespaces "+ e?.error?.message);
-        });
+        if (allowExtensionManagement) {
+            this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
+                if (jsonRpcResponse.result) {
+                    this._installedExtensions = jsonRpcResponse.result;
+                    this._addExtensionsEnabled = true;
+                }
+            }).catch(e => {
+                notifier.showErrorMessage("Could not list namespaces "+ e?.error?.message);
+            });
+        }
     }
 
     disconnectedCallback() {

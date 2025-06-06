@@ -12,6 +12,7 @@ public final class HashSetFactory<T> implements IntFunction<HashSet<T>> {
     private HashSetFactory() {
     }
 
+    @Override
     public HashSet<T> apply(final int value) {
         return new HashSet<>(getInitialCapacityFromExpectedSize(value));
     }

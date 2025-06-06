@@ -73,6 +73,7 @@ public final class ContainerRequestFilterBuildItem extends AbstractInterceptorBu
             return this;
         }
 
+        @Override
         public ContainerRequestFilterBuildItem build() {
             return new ContainerRequestFilterBuildItem(this);
         }

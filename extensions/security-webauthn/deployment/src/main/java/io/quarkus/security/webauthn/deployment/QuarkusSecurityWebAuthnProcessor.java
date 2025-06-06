@@ -121,6 +121,7 @@ class QuarkusSecurityWebAuthnProcessor {
     public static class IsEnabled implements BooleanSupplier {
         WebAuthnBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled();
         }

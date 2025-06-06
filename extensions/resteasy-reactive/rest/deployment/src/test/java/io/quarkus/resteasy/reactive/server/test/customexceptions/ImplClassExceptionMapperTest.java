@@ -69,6 +69,8 @@ public class ImplClassExceptionMapperTest {
             return Response.status(416).build();
         }
 
+        @Override
+        @Override
         public String throwsException() {
             throw removeStackTrace(new RuntimeException());
         }
@@ -84,6 +86,8 @@ public class ImplClassExceptionMapperTest {
 
     public static class GlobalCustomResourceImpl implements GlobalCustomResource {
 
+        @Override
+        @Override
         public String throwsException() {
             throw removeStackTrace(new RuntimeException());
         }

@@ -83,10 +83,12 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         exchange.addResponseCommitListener(this);
     }
 
+    @Override
     protected boolean isRequestScopeManagementRequired() {
         return asyncContext != null;
     }
 
+    @Override
     protected void beginAsyncProcessing() {
         asyncContext = request.startAsync();
     }
@@ -129,6 +131,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         }
     }
 
+    @Override
     protected void handleRequestScopeActivation() {
         super.handleRequestScopeActivation();
         QuarkusHttpUser user = (QuarkusHttpUser) context.user();
@@ -149,6 +152,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         return Arc.container().beanManager().getEvent().select(SecurityIdentity.class);
     }
 
+    @Override
     protected SecurityContext createSecurityContext() {
         return new ResteasyReactiveSecurityContext(context);
     }

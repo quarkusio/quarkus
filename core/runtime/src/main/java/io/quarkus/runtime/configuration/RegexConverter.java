@@ -23,6 +23,7 @@ public class RegexConverter implements Converter<Pattern>, Serializable {
     public RegexConverter() {
     }
 
+    @Override
     public Pattern convert(final String value) {
         return value.isEmpty() ? null : Pattern.compile(value);
     }

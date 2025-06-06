@@ -30,6 +30,8 @@ public class BlockingTaskRunner<T> implements OidcRequestContext<T> {
         this.blockingExecutor = blockingExecutor;
     }
 
+    @Override
+    @Override
     public Uni<T> runBlocking(Supplier<T> function) {
         return blockingExecutor.executeBlocking(function);
     }

@@ -43,6 +43,7 @@ public class MemorySizeConverter implements Converter<MemorySize>, Serializable 
      * @param value - value to convert.
      * @return {@link MemorySize} - a memory size represented by the given value
      */
+    @Override
     public MemorySize convert(String value) {
         value = value.trim();
         if (value.isEmpty()) {

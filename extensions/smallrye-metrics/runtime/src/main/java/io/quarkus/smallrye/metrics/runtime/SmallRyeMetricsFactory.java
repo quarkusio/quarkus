@@ -19,6 +19,7 @@ import io.quarkus.runtime.metrics.MetricsFactory;
 import io.smallrye.metrics.MetricRegistries;
 
 public class SmallRyeMetricsFactory implements MetricsFactory {
+    @Override
     public boolean metricsSystemSupported(String name) {
         return MetricsFactory.MP_METRICS.equals(name);
     }
@@ -50,6 +51,7 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
                     .withName(name);
         }
 
+        @Override
         public MetricBuilder unit(String unit) {
             builder.withUnit(unit);
             return this;

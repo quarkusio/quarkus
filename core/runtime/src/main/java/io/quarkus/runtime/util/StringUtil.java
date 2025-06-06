@@ -29,10 +29,12 @@ public final class StringUtil {
         return new Iterator<String>() {
             int idx;
 
+            @Override
             public boolean hasNext() {
                 return idx < str.length();
             }
 
+            @Override
             public String next() {
                 if (idx == str.length())
                     throw new NoSuchElementException();
@@ -101,10 +103,12 @@ public final class StringUtil {
 
     public static Iterator<String> lowerCase(Iterator<String> orig) {
         return new Iterator<String>() {
+            @Override
             public boolean hasNext() {
                 return orig.hasNext();
             }
 
+            @Override
             public String next() {
                 return orig.next().toLowerCase(Locale.ROOT);
             }
@@ -145,10 +149,12 @@ public final class StringUtil {
         return new Iterator<String>() {
             boolean first = true;
 
+            @Override
             public boolean hasNext() {
                 return orig.hasNext();
             }
 
+            @Override
             public String next() {
                 final String next = orig.next();
                 if (first) {
@@ -165,6 +171,7 @@ public final class StringUtil {
         return new Iterator<String>() {
             String next = null;
 
+            @Override
             public boolean hasNext() {
                 if (next == null) {
                     if (!orig.hasNext())
@@ -178,6 +185,7 @@ public final class StringUtil {
                 return true;
             }
 
+            @Override
             public String next() {
                 if (!hasNext())
                     throw new NoSuchElementException();

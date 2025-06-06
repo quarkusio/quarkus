@@ -132,6 +132,7 @@ public abstract class Application implements Closeable {
 
     protected abstract void doStart(String[] args);
 
+    @Override
     public final void close() {
         try {
             stop();

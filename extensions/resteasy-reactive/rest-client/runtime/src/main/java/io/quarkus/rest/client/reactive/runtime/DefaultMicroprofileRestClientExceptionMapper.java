@@ -9,6 +9,7 @@ import org.jboss.resteasy.reactive.client.impl.ClientResponseImpl;
 @SuppressWarnings("rawtypes")
 public class DefaultMicroprofileRestClientExceptionMapper implements ResponseExceptionMapper {
 
+    @Override
     public Throwable toThrowable(Response response) {
         try {
             response.bufferEntity();
@@ -29,6 +30,7 @@ public class DefaultMicroprofileRestClientExceptionMapper implements ResponseExc
         return exception;
     }
 
+    @Override
     public int getPriority() {
         return Integer.MAX_VALUE;
     }

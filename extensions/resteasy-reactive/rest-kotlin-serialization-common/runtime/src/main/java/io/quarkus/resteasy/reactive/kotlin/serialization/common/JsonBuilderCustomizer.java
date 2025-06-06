@@ -23,6 +23,7 @@ public interface JsonBuilderCustomizer extends Comparable<JsonBuilderCustomizer>
         return DEFAULT_PRIORITY;
     }
 
+    @Override
     default int compareTo(JsonBuilderCustomizer o) {
         return Integer.compare(o.priority(), priority());
     }

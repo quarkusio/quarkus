@@ -35,11 +35,13 @@ public class EnumerationUtil {
             boolean valueReady;
             T nextElement;
 
+            @Override
             public void accept(T t) {
                 this.valueReady = true;
                 this.nextElement = t;
             }
 
+            @Override
             public boolean hasMoreElements() {
                 if (!this.valueReady) {
                     spliterator.tryAdvance(this);
@@ -48,6 +50,7 @@ public class EnumerationUtil {
                 return this.valueReady;
             }
 
+            @Override
             public T nextElement() {
                 if (!this.valueReady && !this.hasMoreElements()) {
                     throw new NoSuchElementException();

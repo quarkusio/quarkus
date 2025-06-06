@@ -1,4 +1,4 @@
-package io.quarkus.gradle.workspace.descriptors;
+package io.quarkus.gradle.tooling;
 
 import io.quarkus.bootstrap.workspace.WorkspaceModule;
 import io.quarkus.bootstrap.workspace.WorkspaceModuleId;

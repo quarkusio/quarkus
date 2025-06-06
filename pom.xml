@@ -78,7 +78,7 @@
         <hibernate-models.version>1.0.0</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>3.0.0.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
-        <hibernate-search.version>8.0.0.CR1</hibernate-search.version>
+        <hibernate-search.version>8.0.0.Final</hibernate-search.version>
 
         <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
         <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->

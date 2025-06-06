@@ -1695,8 +1695,8 @@ section of the Hibernate Validator guide for more details.
 == Static metamodel and Jakarta Data
 
 Both static metamodel and Jakarta Data capabilities of Hibernate ORM are available in Quarkus
-through the `hibernate-jpamodelgen` annotation processor. Since it is an annotation processor,
-you must configure the annotation processor in your build tool:
+through the `hibernate-processor` annotation processor. Since it is an annotation processor,
+you must configure it accordingly in your build tool:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml
@@ -1707,11 +1707,14 @@ you must configure the annotation processor in your build tool:
         <annotationProcessorPaths>
             <path>
                 <groupId>org.hibernate.orm</groupId>
-                <artifactId>hibernate-jpamodelgen</artifactId>
+                <artifactId>hibernate-processor</artifactId>
                 <!-- Note, no artifact version is required, it's managed by Quarkus.  -->
             </path>
             <!-- other processors that may be required by your app -->
         </annotationProcessorPaths>
+        <annotationProcessors>
+            <annotationProcessor>org.hibernate.processor.HibernateProcessor</annotationProcessor>
+        </annotationProcessors>
         <!-- Other compiler plugin configuration options -->
     </configuration>
 </plugin>
@@ -1721,9 +1724,9 @@ you must configure the annotation processor in your build tool:
 .build.gradle
 ----
 // Enforce the version management of your annotation processor dependencies,
-// so that there's no need to define an explicit version of the hibernate-jpamodelgen
+// so that there's no need to define an explicit version of the hibernate-processor
 annotationProcessor enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
-annotationProcessor 'org.hibernate.orm:hibernate-jpamodelgen'
+annotationProcessor 'org.hibernate.orm:hibernate-processor'
 ----
 
 === Static metamodel
@@ -1760,7 +1763,7 @@ For a more detailed overview of static metamodel, please refer to the link:{jaka
 
 === Jakarta Data
 
-Jakarta Data requires, besides having the `hibernate-jpamodelgen` annotation processor in place, one extra dependency to be added:
+Jakarta Data requires, besides having the `hibernate-processor` annotation processor in place, one extra dependency to be added:
 
 [source,xml,role="primary asciidoc-tabs-target-sync-cli asciidoc-tabs-target-sync-maven"]
 .pom.xml

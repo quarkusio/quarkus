@@ -65,7 +65,7 @@
 		  <annotationProcessorPaths>
 		    <path>
               <groupId>org.hibernate.orm</groupId>
-              <artifactId>hibernate-jpamodelgen</artifactId>
+              <artifactId>hibernate-processor</artifactId>
 		    </path>
 		    <path>
               <groupId>com.querydsl</groupId>
@@ -76,7 +76,7 @@
 		  </annotationProcessorPaths>
 		  <!-- Only include the Hibernate one -->
 		  <annotationProcessors>
-			  <annotationProcessor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</annotationProcessor>
+			  <annotationProcessor>org.hibernate.processor.HibernateProcessor</annotationProcessor>
 		  </annotationProcessors>
 		</configuration>
       </plugin>

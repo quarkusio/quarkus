@@ -3,6 +3,7 @@ package io.quarkus.runtime.configuration;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.fail;
 import static io.quarkus.runtime.ConfigConfig.BuildTimeMismatchAtRuntime.warn;
+import static io.quarkus.runtime.ShutdownContext.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -109,6 +110,6 @@ public class ConfigRecorder {
             throw new RuntimeException(
                     "Internal errror: shutdownContext is null. This probably happened because Quarkus failed to start properly in an earlier step, or because tests were run on a Quarkus instance that had already been shut down.");
         }
-        shutdownContext.addLastShutdownTask(QuarkusConfigFactory::releaseTCCLConfig);
+        shutdownContext.addShutdownTask(Priority.core(), QuarkusConfigFactory::releaseTCCLConfig);
     }
 }

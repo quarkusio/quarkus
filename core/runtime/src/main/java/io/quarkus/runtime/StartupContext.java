@@ -21,27 +21,17 @@ public class StartupContext implements Closeable {
     private final Map<String, Object> values = new HashMap<>();
 
     private final PriorityBlockingQueue<ShutdownTask> shutdownTasks = new PriorityBlockingQueue<>();
-    private final PriorityBlockingQueue<ShutdownTask> lastShutdownTasks = new PriorityBlockingQueue<>();
     private String[] commandLineArgs;
     private String currentBuildStepName;
 
     public StartupContext() {
         ShutdownContext shutdownContext = new ShutdownContext() {
             @Override
-            public void addShutdownTask(int priority, Runnable runnable) {
-                if (runnable != null) {
-                    shutdownTasks.offer(new ShutdownTask(priority, runnable));
+            public void addShutdownTask(Priority priority, Runnable runnable) {
+                if (runnable != null && priority != null) {
+                    shutdownTasks.offer(new ShutdownTask(priority.value(), runnable));
                 } else {
-                    throw new IllegalArgumentException("Extension passed an invalid shutdown handler");
-                }
-            }
-
-            @Override
-            public void addLastShutdownTask(int priority, Runnable runnable) {
-                if (runnable != null) {
-                    lastShutdownTasks.offer(new ShutdownTask(priority, runnable));
-                } else {
-                    throw new IllegalArgumentException("Extension passed an invalid last shutdown handler");
+                    throw new IllegalArgumentException("Extension passed an invalid shutdown priority/handler");
                 }
             }
         };
@@ -68,7 +58,6 @@ public class StartupContext implements Closeable {
     @Override
     public void close() {
         runAllAndClear(shutdownTasks);
-        runAllAndClear(lastShutdownTasks);
         values.clear();
     }
 

@@ -13,6 +13,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ShutdownContext.Priority;
 import io.quarkus.runtime.annotations.Recorder;
 
 @Recorder
@@ -36,7 +37,7 @@ public class VirtualThreadsRecorder {
         config = c;
         if (config.enabled()) {
             if (launchMode == LaunchMode.DEVELOPMENT) {
-                shutdownContext.addLastShutdownTask(new Runnable() {
+                shutdownContext.addShutdownTask(Priority.core(), new Runnable() {
                     @Override
                     public void run() {
                         ExecutorService service = current;
@@ -47,7 +48,7 @@ public class VirtualThreadsRecorder {
                     }
                 });
             } else {
-                shutdownContext.addLastShutdownTask(new Runnable() {
+                shutdownContext.addShutdownTask(Priority.core(), new Runnable() {
                     @Override
                     public void run() {
                         ExecutorService service = current;

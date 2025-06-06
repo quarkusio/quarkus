@@ -100,13 +100,12 @@ public class HibernateOrmRecorder {
     public Supplier<JPAConfig> jpaConfigSupplier(HibernateOrmRuntimeConfig config, ShutdownContext shutdownContext) {
         return () -> {
             JPAConfig jpaConfig = new JPAConfig(config);
-            shutdownContext.addShutdownTask(
-                    ShutdownContext.DEFAULT_PRIORITY + 1, new Runnable() {
-                        @Override
-                        public void run() {
-                            jpaConfig.shutdown();
-                        }
-                    });
+            shutdownContext.addShutdownTask(ShutdownContext.Priority.extensionPreCdi(-1), new Runnable() {
+                @Override
+                public void run() {
+                    jpaConfig.shutdown();
+                }
+            });
             return jpaConfig;
         };
     }

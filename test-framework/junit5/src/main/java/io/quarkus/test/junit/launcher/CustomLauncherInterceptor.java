@@ -67,6 +67,10 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
 
     @Override
     public void launcherDiscoveryStarted(LauncherDiscoveryRequest request) {
+        // If anything comes through this method for which there are non-null classloaders on the selectors, that will bypass our classloading
+        // To check that case, the code would be something like this. We could detect and warn early, and possibly even filter that test out, but that's not necessarily a better UX than failing later
+        // request.getSelectorsByType(ClassSelector.class).stream().map(ClassSelector::getClassLoader) ... and then check for non-emptiness on that field
+
         // Do not do any classloading dance for prod mode tests;
         if (!isProductionModeTests()) {
             initializeFacadeClassLoader();

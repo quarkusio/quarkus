@@ -16,20 +16,16 @@ interface PanacheEntityBase {
     @JsonbTransient @JsonIgnore fun isPersistent(): Boolean = INSTANCE.isPersistent(this)
 
     /** Persist this entity in the database. This will set its ID field if not already set. */
+    @Suppress("UNCHECKED_CAST")
     @CheckReturnValue
-    fun <T : PanacheEntityBase> persist(): Uni<T> {
-        return INSTANCE.persist(this).map { this as T }
-    }
+    fun <T : PanacheEntityBase> persist(): Uni<T> = INSTANCE.persist(this).map { this as T }
 
     /**
      * Flushes all pending changes to the database.
      *
      * @return
      */
-    @CheckReturnValue
-    fun flush(): Uni<Void> {
-        return INSTANCE.flush()
-    }
+    @CheckReturnValue fun flush(): Uni<Void> = INSTANCE.flush()
 
     /**
      * Persist this entity in the database, if not already persisted. This will set your ID field if
@@ -41,14 +37,9 @@ interface PanacheEntityBase {
      */
     @Suppress("UNCHECKED_CAST")
     @CheckReturnValue
-    fun <T : PanacheEntityBase> persistAndFlush(): Uni<T> {
-        return INSTANCE.persist(this).flatMap { INSTANCE.flush() }.map { this as T }
-    }
+    fun <T : PanacheEntityBase> persistAndFlush(): Uni<T> =
+        INSTANCE.persist(this).flatMap { INSTANCE.flush() }.map { this as T }
 
-    /**
-     * Delete this entity from the database if it is already persisted.
-     *
-     * @see [deleteAll]
-     */
-    fun delete(): Uni<Void> = INSTANCE.delete(this)
+    /** Delete this entity from the database if it is already persisted. */
+    @CheckReturnValue fun delete(): Uni<Void> = INSTANCE.delete(this)
 }

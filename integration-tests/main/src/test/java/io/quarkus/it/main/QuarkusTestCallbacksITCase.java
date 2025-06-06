@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.opentest4j.TestAbortedException;
 
+import io.quarkus.test.common.TestStatus;
 import io.quarkus.test.junit.QuarkusIntegrationTestExtension;
 
 /**
@@ -58,7 +60,10 @@ public class QuarkusTestCallbacksITCase {
     @Test
     @Order(4)
     public void testCallbackContextIsNotFailed() {
-        assertFalse(TestContextCheckerBeforeEachCallback.CONTEXT.getTestStatus().isTestFailed());
+        TestStatus testStatus = TestContextCheckerBeforeEachCallback.CONTEXT.getTestStatus();
+        // Ignore The test should not be marked as failed, unless it was aborted.
+        assertFalse(testStatus.isTestFailed() && !(testStatus.getTestErrorCause() instanceof TestAbortedException),
+                testStatus.getTestErrorCause().toString());
         // To force the exception in the before each handler.
         throwsCustomException = true;
     }

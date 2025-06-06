@@ -941,7 +941,32 @@ The browser must use the `vertx-eventbus` JavaScript library to consume the mess
 
 </script>
 </html>
+
 ----
+=== Serve static resources not defined at startup
+To serve static resources, add a specific Vert.x Web route to serve the files from given directory.
+Use `@ConfigProperty` properties to make the paths configurable.
+----
+package org.acme.vertx;
+
+import io.quarkus.runtime.StartupEvent;
+import io.vertx.core.http.HttpMethod;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.StaticHandler;
+import jakarta.enterprise.event.Observes;
+
+public class MyStaticResources {
+
+    void installRoute(@Observes StartupEvent startupEvent, Router router) {
+        router.route()
+                .method(HttpMethod.GET).method(HttpMethod.HEAD)
+                .path("/static/*") // <1>
+                .handler(StaticHandler.create("static/")); // <2>
+    }
+}
+----
+<1> Serve resources from the `static/` directory on the `static/` path. Example `static/image.png` will be served on `http://<host>:<port>/static/image.png`
+<2> Static handler that serve files from an absolute path, but that's not recommended as it could cause security issues.
 
 [[native-transport]]
 == Use native transports

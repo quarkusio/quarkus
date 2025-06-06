@@ -8,6 +8,10 @@ import org.jboss.jandex.Type;
 
 import io.quarkus.builder.item.MultiBuildItem;
 
+/**
+ * Generates a ConfigClass for a BuildItem.
+ *
+ */
 public final class ConfigClassBuildItem extends MultiBuildItem {
     private final Class<?> configClass;
     /**
@@ -37,6 +41,7 @@ public final class ConfigClassBuildItem extends MultiBuildItem {
         this.kind = kind;
         this.name = DotName.createSimple(configClass.getName());
     }
+
 
     public Class<?> getConfigClass() {
         return configClass;

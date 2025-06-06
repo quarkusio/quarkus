@@ -3035,11 +3035,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with {@code staticTenantMapping} values.
-     * You want to use this constructor when you have configured static tenant in the application.properties
-     * and your dynamic tenant only differ in a couple of the configuration properties.
+     * Creates {@link OidcTenantConfigBuilder} builder from the existing {@link io.quarkus.oidc.runtime.OidcTenantConfig}
      *
-     * @param mapping OidcTenantConfig created by the SmallRye Config; must not be null
+     * @param mapping existing io.quarkus.oidc.runtime.OidcTenantConfig
      */
     public static OidcTenantConfigBuilder builder(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         return new OidcTenantConfigBuilder(mapping);
@@ -3049,7 +3047,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      * Creates {@link OidcTenantConfig} from the {@code mapping}. This method is more efficient than
      * the {@link #builder()} method if you don't need to modify the {@code mapping}.
      *
-     * @param mapping tenant config as returned from the SmallRye Config; must not be null
+     * @param mapping existing io.quarkus.oidc.runtime.OidcTenantConfig
      * @return OidcTenantConfig
      */
     public static OidcTenantConfig of(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
@@ -3057,7 +3055,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided base URL.
      *
      * @param authServerUrl {@link #authServerUrl()}
      * @return OidcTenantConfigBuilder builder
@@ -3067,7 +3065,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided client
+     * registration path.
      *
      * @param registrationPath {@link #registrationPath()}
      * @return OidcTenantConfigBuilder builder
@@ -3077,7 +3076,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided token path.
      *
      * @param tokenPath {@link #tokenPath()}
      * @return OidcTenantConfigBuilder builder

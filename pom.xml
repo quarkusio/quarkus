@@ -75,7 +75,7 @@
         <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
         <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
         <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-models.version>1.0.0.CR3</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
+        <hibernate-models.version>1.0.0</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
         <hibernate-reactive.version>3.0.0.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
         <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
         <hibernate-search.version>8.0.0.CR1</hibernate-search.version>

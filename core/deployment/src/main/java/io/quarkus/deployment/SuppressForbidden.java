@@ -6,11 +6,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to suppress forbidden-apis errors inside for the element it's added to.
+ * Used to suppress forbidden-apis errors inside the element it's added to.
  */
 @Retention(RetentionPolicy.CLASS)
 @Target({ ElementType.CONSTRUCTOR, ElementType.FIELD, ElementType.METHOD, ElementType.TYPE })
 public @interface SuppressForbidden {
 
-    String reason();
+    String reason() default "";
+
+    String value() default "";
 }

@@ -72,6 +72,7 @@
                                 </bundledSignatures>
                                 <signaturesFiles>
                                     <signaturesFile>./banned-signatures.txt</signaturesFile>
+                                    <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
                                 </signaturesFiles>
                                 <failOnMissingClasses>false</failOnMissingClasses>
                                 <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>

@@ -106,7 +106,7 @@ public class ExecutionModelAnnotationsProcessor {
         });
     }
 
-    @SuppressForbidden(reason = "Using Type.toString() to build an informative message")
+    @SuppressForbidden("Using Type.toString() to build an informative message")
     private String methodToString(MethodInfo method) {
         StringBuilder result = new StringBuilder();
         result.append(method.declaringClass().name()).append('.').append(method.name());

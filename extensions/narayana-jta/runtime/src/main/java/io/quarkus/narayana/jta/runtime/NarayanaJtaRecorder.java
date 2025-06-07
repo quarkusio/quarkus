@@ -1,5 +1,7 @@
 package io.quarkus.narayana.jta.runtime;
 
+import static io.quarkus.runtime.ShutdownContext.*;
+
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -220,7 +222,7 @@ public class NarayanaJtaRecorder {
                 }
             }
         });
-        context.addLastShutdownTask(() -> {
+        context.addShutdownTask(Priority.core(), () -> {
             TransactionReaper.terminate(false);
         });
     }

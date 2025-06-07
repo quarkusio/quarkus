@@ -27,6 +27,7 @@ import io.quarkus.runtime.ApplicationLifecycleManager;
 import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.ShutdownContext;
+import io.quarkus.runtime.ShutdownContext.Priority;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.annotations.Recorder;
@@ -50,7 +51,7 @@ public class ArcRecorder {
         builder.setCurrentContextFactory(currentContextFactory != null ? currentContextFactory.getValue() : null);
         builder.setStrictCompatibility(strictCompatibility);
         ArcContainer container = Arc.initialize(builder.build());
-        shutdown.addShutdownTask(new Runnable() {
+        shutdown.addShutdownTask(Priority.cdiShutdown(), new Runnable() {
             @Override
             public void run() {
                 Arc.shutdown();
@@ -113,7 +114,7 @@ public class ArcRecorder {
 
         fireLifecycleEvent(container, new StartupEvent(), mockBeanClasses);
 
-        context.addShutdownTask(new Runnable() {
+        context.addShutdownTask(Priority.applicationShutdownEvent(), new Runnable() {
             @Override
             public void run() {
                 fireLifecycleEvent(container, new ShutdownEvent(ApplicationLifecycleManager.shutdownReason), mockBeanClasses);

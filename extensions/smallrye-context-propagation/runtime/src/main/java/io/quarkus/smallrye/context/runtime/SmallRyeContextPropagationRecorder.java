@@ -1,5 +1,7 @@
 package io.quarkus.smallrye.context.runtime;
 
+import static io.quarkus.runtime.ShutdownContext.*;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -156,7 +158,7 @@ public class SmallRyeContextPropagationRecorder {
 
         contextManagerProvider.registerContextManager(contextManager, Thread.currentThread().getContextClassLoader());
         //needs to be late, as running threads can re-create an implicit one
-        shutdownContext.addLastShutdownTask(new Runnable() {
+        shutdownContext.addShutdownTask(Priority.core(), new Runnable() {
             @Override
             public void run() {
                 contextManagerProvider.releaseContextManager(contextManager);

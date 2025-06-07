@@ -160,16 +160,22 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
                     .unwrap(SmallRyeConfig.class)
                     .getConfigMapping(TestConfig.class);
         } catch (Exception | ServiceConfigurationError e) {
-            boolean isEclipse = System.getProperty("sun.java.command") != null
-                    && System.getProperty("sun.java.command").contains("JUnit5TestLoader");
+            String javaCommand = System.getProperty("sun.java.command");
+            boolean isEclipse = javaCommand != null
+                    && javaCommand.contains("JUnit5TestLoader");
 
             // VS Code has the exact same java command and runner as Eclipse, but needs its own message
-            boolean isVSCode = isEclipse && System.getProperty("java.class.path").contains("vscode");
+            boolean isVSCode = isEclipse && (System.getProperty("java.class.path").contains("vscode"));
+            boolean isMaybeVSCode = isEclipse && (javaCommand.contains("testNames") && javaCommand.contains("testNameFile"));
 
             if (isVSCode) {
                 // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
                 Log.error(
                         "Could not read configuration while evaluating whether to run a test. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
+            } else if (isMaybeVSCode) {
+                // Will need https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257 and a reconsume by VSCode
+                Log.error(
+                        "Could not read configuration while evaluating whether to run a test. It looks like you're probably running tests with VS Code. This is a known issue when running tests in the VS Code IDE. To work around the problem, run individual test methods.");
             } else if (isEclipse) {
                 // Tracked by https://github.com/eclipse-jdt/eclipse.jdt.ui/issues/2257; fixed in Eclipse 4.37
                 Log.error(
@@ -185,7 +191,7 @@ public class AbstractJvmQuarkusTestExtension extends AbstractQuarkusTestWithCont
             Log.debug("Underlying exception: " + e);
             Log.debug("Thread Context Classloader: " + Thread.currentThread().getContextClassLoader());
             Log.debug("The class of the class we use for mapping is " + TestConfig.class.getClassLoader());
-            String message = isVSCode
+            String message = isVSCode || isMaybeVSCode
                     ? "Could not execute test class because it was loaded with the wrong classloader by the VS Code test runner. Try running test methods individually instead."
                     : isEclipse
                             ? "Could not execute test class because it was loaded with the wrong classloader by the Eclipse test runner. Try running test methods individually, or edit the run configuration and add `-uniqueId [engine:junit-jupiter]/[class:"

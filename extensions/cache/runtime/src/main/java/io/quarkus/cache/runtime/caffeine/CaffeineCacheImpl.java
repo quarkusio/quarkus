@@ -24,6 +24,7 @@ import io.quarkus.cache.CacheException;
 import io.quarkus.cache.CaffeineCache;
 import io.quarkus.cache.runtime.AbstractCache;
 import io.quarkus.cache.runtime.NullValueConverter;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -140,9 +141,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
                             } else {
                                 // We are on a context.
                                 // We cannot continue on the current context as we may share a duplicated context.
-                                // We need a new one. Note that duplicate() does not duplicate the duplicated context,
-                                // but the root context.
-                                ((ContextInternal) ctx).duplicate()
+                                // We need a new one.
+                                ((ContextInternal) VertxContext.getRootContext(ctx)).duplicate()
                                         .runOnContext(new Handler<Void>() {
                                             @Override
                                             public void handle(Void ignored) {

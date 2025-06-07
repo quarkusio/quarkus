@@ -13,8 +13,8 @@ import io.smallrye.health.AsyncHealthCheckFactory;
 import io.smallrye.health.api.AsyncHealthCheck;
 import io.smallrye.mutiny.Uni;
 import io.smallrye.mutiny.vertx.MutinyHelper;
-import io.vertx.core.Context;
 import io.vertx.core.Vertx;
+import io.vertx.core.impl.ContextInternal;
 
 /**
  * Quarkus specific health check factory that runs blocking and reactive
@@ -32,7 +32,13 @@ public class QuarkusAsyncHealthCheckFactory extends AsyncHealthCheckFactory {
     @Override
     public Uni<HealthCheckResponse> callSync(HealthCheck healthCheck) {
         Uni<HealthCheckResponse> healthCheckResponseUni = super.callSync(healthCheck);
-        Context duplicatedContext = VertxContext.createNewDuplicatedContext(vertx.getOrCreateContext());
+        var ctx = vertx.getOrCreateContext();
+        if (VertxContext.isOnDuplicatedContext()) {
+            ctx = ((ContextInternal) VertxContext.getRootContext(ctx)).duplicate();
+        } else {
+            ctx = ((ContextInternal) ctx).duplicate();
+        }
+        var duplicatedContext = ctx;
         return healthCheckResponseUni.runSubscriptionOn(new Executor() {
             @Override
             public void execute(Runnable command) {

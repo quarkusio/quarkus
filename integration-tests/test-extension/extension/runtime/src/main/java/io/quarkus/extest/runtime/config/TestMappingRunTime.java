@@ -34,6 +34,12 @@ public interface TestMappingRunTime {
 
     String recordSecret();
 
+    /**
+     * A expression value
+     */
+    @WithDefault("${quarkus.mapping.rt.expression.value}")
+    Optional<String> expression();
+
     interface Group {
         /**
          * A Group value.

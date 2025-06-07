@@ -486,6 +486,19 @@ public interface HibernateOrmConfigPersistenceUnit {
         @WithDefault("true")
         boolean inClauseParameterPadding();
 
+        /**
+         * When limits cannot be applied on the database side,
+         * trigger an exception instead of attempting badly-performing in-memory result set limits.
+         *
+         * When pagination is used in combination with a fetch join applied to a collection or many-valued association,
+         * the limit must be applied in-memory instead of on the database.
+         * This should be avoided as it typically has terrible performance characteristics.
+         *
+         * @asciidoclet
+         */
+        @WithDefault("false")
+        boolean failOnPaginationOverCollectionFetch();
+
         default boolean isAnyPropertySet() {
             return queryPlanCacheMaxSize() != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE
                     || defaultNullOrdering() != NullOrdering.NONE

@@ -435,6 +435,7 @@ subjects:
 Replace `<applicationName>` and `<namespace>` with your values.
 Have a look at https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/[Configure Service Accounts for Pods] to get further information.
 
+[[openshift-client]]
 == OpenShift Client
 
 If the targeted Kubernetes cluster is an OpenShift cluster, it is possible to access it through
@@ -511,6 +512,126 @@ To use this feature, you have to add a dependency on `quarkus-test-kubernetes-cl
 .build.gradle
 ----
 testImplementation("io.quarkus:quarkus-test-kubernetes-client")
+----
+
+[[optimizing-native-image]]
+== Optimizing the Native Image
+
+The Kubernetes and OpenShift client extensions aim to provide a great *developer experience* while enabling the client to work in *native mode*.
+When building a native image, the Kubernetes Client extension will register all the accessible Kubernetes model classes for reflection.
+Unfortunately, this can lead to large native image sizes and longer build times.
+
+Once you've completed your application implementation, if you want to distribute and deploy your application as a *native image*, you should consider reducing its size by following these guidelines.
+
+=== Use the Kubernetes Client extension
+
+The <<openshift-client, OpenShift Client>> provides domain-specific language (DSL) accessors to common OpenShift resources.
+In addition, the extension supplies the necessary project configuration to bring in the OpenShift model type modules.
+
+In JVM mode, this works great because, as a developer, you don't need to worry about the configuration.
+However, in native mode, by depending on the OpenShift extension you're bringing in many resources that your application might not need unnecessarily increasing its size.
+
+In this context, it's better to depend only on what you need, by adding a dependency to the Kubernetes Client extension and only the minimum OpenShift model dependencies:
+
+[source,xml,role="primary asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.fabric8</groupId>
+    <artifactId>openshift-model</artifactId>
+</dependency>
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("io.quarkus:quarkus-kubernetes-client")
+implementation("io.fabric8:openshift-model")
+----
+
+The OpenShift-specific DSL accessors won't be available since you'll now have a Bean of type `KubernetesClient` instead of `OpenShiftClient`.
+However, the Fabric8 Kubernetes Client provides generic entry-points to perform operations on any resource:
+
+[source%nowrap,java]
+----
+// List OpenShift Routes in any namespace
+kubernetesClient
+    .resources(io.fabric8.openshift.api.model.Route.class)
+    .inAnyNamespace().list();
+// Delete an OpenShift Route
+kubernetesClient
+    .resources(io.fabric8.openshift.api.model.Route.class)
+    .inNamespace("default").withName("the-route").delete();
+// Create or replace a new OpenShift Route
+kubernetesClient
+    .resource(new RouteBuilder()/* ... */.build())
+    .inNamespace("default").createOr(NonDeletingOperation::update);
+----
+
+=== Depend only on the modules you need
+
+The Kubernetes Client extension has transitive dependencies to all of the vanilla Kubernetes API model types.
+This is very convenient in JVM mode, since you don't need to worry about configuring the project.
+
+However, in native mode, this implies registering for reflection model types that you very likely won't use in your application.
+You can mitigate this by providing a more granular project configuration and depending only on those models you are sure the application uses.
+
+[source,xml,role="primary asciidoc-tabs-target-sync-maven"]
+.pom.xml
+----
+<dependency>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-kubernetes-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.fabric8</groupId>
+    <artifactId>kubernetes-client-api</artifactId>
+    <!-- Exclude all transitive dependencies -->
+    <exclusions>
+        <exclusion>
+            <groupId>io.fabric8</groupId>
+            <artifactId>*</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<!-- Include only those that make sense for your application -->
+<dependency>
+    <groupId>io.fabric8</groupId>
+    <artifactId>kubernetes-client</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.fabric8</groupId>
+    <artifactId>kubernetes-model-core</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.fabric8</groupId>
+    <artifactId>kubernetes-model-admissionregistration</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.fabric8</groupId>
+    <artifactId>kubernetes-model-apps</artifactId>
+</dependency>
+<!-- ... -->
+----
+
+[source,gradle,role="secondary asciidoc-tabs-target-sync-gradle"]
+.build.gradle
+----
+implementation("quarkus-kubernetes-client")
+implementation("io.fabric8:kubernetes-client-api") {
+    // Exclude all transitive dependencies
+    exclude group: "io.fabric8"
+}
+// Include only those that make sense for your application
+implementation("io.fabric8:kubernetes-client")
+implementation("io.fabric8:kubernetes-model-core")
+implementation("io.fabric8:kubernetes-model-admissionregistration")
+implementation("io.fabric8:kubernetes-model-apps")
+// ...
 ----
 
 == Configuration Reference

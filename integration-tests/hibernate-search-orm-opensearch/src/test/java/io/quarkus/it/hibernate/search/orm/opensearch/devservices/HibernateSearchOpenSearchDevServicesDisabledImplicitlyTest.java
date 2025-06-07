@@ -36,7 +36,7 @@ public class HibernateSearchOpenSearchDevServicesDisabledImplicitlyTest {
                     // But here it doesn't matter as we won't send a request to OpenSearch anyway,
                     // so we're free to put anything.
                     // Just make sure to set something consistent with what we have in application.properties.
-                    "quarkus.hibernate-search-orm.elasticsearch.version", "opensearch:2.16");
+                    "quarkus.hibernate-search-orm.elasticsearch.version", "opensearch:3.0");
         }
 
         @Override

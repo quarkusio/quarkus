@@ -122,6 +122,9 @@ A `Mutiny.SessionFactory` will be created based on the Quarkus `datasource` conf
 
 The dialect will be selected based on the Reactive SQL client - unless you set one explicitly.
 
+NOTE: For more information on dialect selection and database versions,
+see xref:hibernate-orm.adoc#hibernate-dialect[the corresponding section of the Hibernate ORM guide].
+
 You can then happily inject your `Mutiny.SessionFactory`:
 
 [source,java]

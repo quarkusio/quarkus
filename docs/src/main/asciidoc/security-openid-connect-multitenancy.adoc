@@ -735,6 +735,97 @@ You can populate it by using any settings supported by the `quarkus-oidc` extens
 
 If the dynamic tenant resolver returns `null`, a <<static-tenant-resolution>> is attempted next.
 
+==== Update resolved dynamic tenant configuration
+
+It may be necessary to update the already resolved tenant configuration.
+For example, a client secret may have to be updated following a client secret update in the registered OIDC application.
+
+To update the configuration, use `OidcTenantConfigBuilder` to create a new instance of `OidcTenantConfig` and modify it as required before returning it:
+
+[source,java]
+----
+package org.acme;
+
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+
+import io.quarkus.oidc.OidcRequestContext;
+import io.quarkus.oidc.OidcTenantConfig;
+import io.quarkus.oidc.TenantConfigResolver;
+import io.quarkus.oidc.runtime.TenantConfigBean;
+import io.smallrye.mutiny.Uni;
+import io.vertx.ext.web.RoutingContext;
+
+@ApplicationScoped
+public class CustomTenantConfigResolver implements TenantConfigResolver {
+
+    @Inject
+    TenantConfigBean tenantConfigBean;
+
+    @Override
+    public Uni<OidcTenantConfig> resolve(RoutingContext context, OidcRequestContext<OidcTenantConfig> requestContext) {
+
+        // Check request path or request context `tenant-id` property to determine the tenant id.
+
+        var currentTenantConfig = tenantConfigBean.getDynamicTenant("some-dynamic-tenant-id").getOidcTenantConfig(); <1>
+        if (currentTenantConfig != null
+            && "name".equals(currentTenantConfig.token().principalClaim().get())) { <2>
+            // This is an original configuration, update it now:
+            OidcTenantConfig updatedConfig = OidcTenantConfig.builder(currentTenantConfig) <3>
+                                .token().principalClaim("email").end()
+                                .build();
+
+            return Uni.createFrom().item(updatedConfig);
+        }
+        // create an initial configuration for the tenant
+        OidcTenantConfig config = OidcTenantConfig.builder() <4>
+                                .token().principalClaim("name").end()
+                                // set other properties
+                                .build();
+        return Uni.createFrom().item(config);
+    }
+}
+----
+<1> Use `io.quarkus.oidc.runtime.TenantConfigBean` to get the already resolved tenant configuration. Alternatively, you can use the tenant `OidcTenantConfig` cached in your resolver.
+<2> You may want to check if this configuration has already been updated, to avoid multiple redundant updates, for example, due to multliple redirects.
+<3> Use the resolved configuration to create a builder and update it as required.
+<4> Create an initial configuration if no configuration already exists.
+
+This is all you have to do update the already resolved dynamic tenantr configuration, without having to reconnect to the provider.
+
+If reconnecting is necessary, for example, the `UserInfo` endpoint address may have changed for the tenant to rediscover it,
+then simply set a `RoutingContext` `replace-tenant-configuration-context` property to `true`:
+
+[source,java]
+----
+@Override
+public Uni<OidcTenantConfig> resolve(RoutingContext context, OidcRequestContext<OidcTenantConfig> requestContext) {
+    OidcTenantConfig updatedConfig = OidcTenantConfig.builder(currentTenantConfig)
+                                    .token().principalClaim("email").end()
+                                    .build();
+    context.put("replace-tenant-configuration-context", "true"); <1>
+
+    return Uni.createFrom().item(updatedConfig);
+}
+----
+<1> Replace the resolved tenant configuration and re-connect to the provider
+
+Finally, if you decide to update the resoved configuration while the existing OIDC session is still active, you may to have the session cookie removed and the user re-authenticated to align with the latest tenant configuration requirements. Set a `RoutingContext` `remove-session-cookie` property to `true` if it is necessary:
+
+[source,java]
+----
+@Override
+public Uni<OidcTenantConfig> resolve(RoutingContext context, OidcRequestContext<OidcTenantConfig> requestContext) {
+    OidcTenantConfig updatedConfig = OidcTenantConfig.builder(currentTenantConfig)
+                                    .token().principalClaim("email").end()
+                                    .build();
+    context.put("remove-session-cookie", "true"); <1>
+
+    return Uni.createFrom().item(updatedConfig);
+}
+----
+<1> Update the tenant configuration, remove the session cookie and triger the user re-authentication. If possible, prefer to get the user log-out first, instead of triggering the re-authentication at the tenant resolution time.
+
 [[static-tenant-resolution]]
 === Static tenant configuration resolution
 
@@ -812,9 +903,9 @@ quarkus.oidc.b.tenant-paths=/*/hello <3>
 TIP: Path-matching mechanism works exactly same as in the xref:security-authorize-web-endpoints-reference.adoc#authorization-using-configuration[Authorization using configuration].
 
 [[default-tenant-resolver]]
-==== Use last request path segment as tenant id
+==== Use request path segments to find tenant id
 
-The default resolution for a tenant identifier is convention based, whereby the authentication request must include the tenant identifier in the last segment of the request path.
+The default resolution for a tenant identifier is convention based, whereby the authentication request must include the tenant identifier in one of the path segments of the request path.
 
 The following `application.properties` example shows how you can configure two tenants named `google` and `github`:
 
@@ -845,6 +936,7 @@ quarkus.http.auth.permission.login.policy=authenticated
 ----
 
 If the endpoint is running on `http://localhost:8080`, you can also provide UI options for users to log in to either `http://localhost:8080/google` or `http://localhost:8080/github`, without having to add specific `/google` or `/github` JAX-RS resource paths.
+
 Tenant identifiers are also recorded in the session cookie names after the authentication is completed.
 Therefore, authenticated users can access the secured application area without requiring either the `google` or `github` path values to be included in the secured URL.
 

@@ -6,11 +6,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
 
-import org.hibernate.annotations.Proxy;
+import org.hibernate.annotations.ConcreteProxy;
 
 @Inheritance()
 @DiscriminatorColumn
-@Proxy(proxyClass = PetProxy.class)
+@ConcreteProxy
 @DiscriminatorValue("PET")
 @Entity
 public class Pet implements PetProxy {

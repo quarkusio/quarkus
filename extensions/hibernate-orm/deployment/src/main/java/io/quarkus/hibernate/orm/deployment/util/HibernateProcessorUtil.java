@@ -22,7 +22,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.loader.BatchFetchStyle;
 import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -174,7 +173,6 @@ public final class HibernateProcessorUtil {
         int batchSize = firstPresent(config.fetch().batchSize(), config.batchFetchSize()).orElse(defaultBatchSize(reactive));
         if (batchSize > 0) {
             desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE, Integer.toString(batchSize));
-            desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
         }
 
         // Fetch

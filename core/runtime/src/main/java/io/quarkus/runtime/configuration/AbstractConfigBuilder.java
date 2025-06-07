@@ -84,7 +84,7 @@ public abstract class AbstractConfigBuilder implements SmallRyeConfigBuilderCust
 
     protected static void withMappingInstance(SmallRyeConfigBuilder builder, ConfigClass mapping) {
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
-        builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType()));
+        builder.getMappingsBuilder().mappingInstance(mapping, config.getConfigMapping(mapping.getType(), mapping.getPrefix()));
     }
 
     protected static void withBuilder(SmallRyeConfigBuilder builder, ConfigBuilder configBuilder) {

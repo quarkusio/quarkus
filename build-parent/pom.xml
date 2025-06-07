@@ -121,7 +121,7 @@
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
         <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
-        <build-helper-plugin.version>3.6.0</build-helper-plugin.version>
+        <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
         <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->

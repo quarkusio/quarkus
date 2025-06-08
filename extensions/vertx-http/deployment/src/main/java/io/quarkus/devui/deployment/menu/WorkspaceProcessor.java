@@ -21,6 +21,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import io.quarkus.assistant.runtime.dev.Assistant;
+import io.quarkus.deployment.Capabilities;
+import io.quarkus.deployment.Capability;
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -133,7 +135,10 @@ public class WorkspaceProcessor {
     @BuildStep
     void createBuildTimeActions(Optional<WorkspaceBuildItem> workspaceBuildItem,
             List<WorkspaceActionBuildItem> workspaceActionBuildItems,
-            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer) {
+            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+            Capabilities capabilities) {
+
+        final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
         if (workspaceBuildItem.isPresent()) {
 
@@ -152,6 +157,7 @@ public class WorkspaceProcessor {
 
             buildItemActions.addAction("getWorkspaceActions", (t) -> {
                 return actionMap.values().stream()
+                        .filter(action -> assistantIsAvailable || !action.isAssistant())
                         .map(action -> new WorkspaceAction(action.getId(), action.getLabel(), action.getFilter(),
                                 action.getDisplay(), action.getDisplayType(), action.isAssistant()))
                         .sorted(Comparator.comparing(WorkspaceAction::label))

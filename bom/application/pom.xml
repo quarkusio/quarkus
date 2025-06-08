@@ -1922,6 +1922,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-openapi-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-openapi-deployment</artifactId>
                 <version>${project.version}</version>
                 <exclusions>

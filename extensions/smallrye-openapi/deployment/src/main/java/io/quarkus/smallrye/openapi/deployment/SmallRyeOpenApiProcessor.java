@@ -995,7 +995,7 @@ public class SmallRyeOpenApiProcessor {
             }
         });
 
-        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(toOpenApiDocument(finalOpenAPI)));
+        openApiDocumentProducer.produce(new OpenApiDocumentBuildItem(toOpenApiDocument(finalOpenAPI), finalOpenAPI));
     }
 
     /**

@@ -313,8 +313,6 @@ public final class HibernateReactiveProcessor {
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles,
             List<DatabaseKindDialectBuildItem> dbKindDialectBuildItems) {
-        //we have no persistence.xml so we will create a default one
-        String persistenceUnitConfigName = DEFAULT_PERSISTENCE_UNIT_NAME;
 
         Map<String, Set<String>> modelClassesAndPackagesPerPersistencesUnits = HibernateOrmProcessor
                 .getModelClassesAndPackagesPerPersistenceUnits(hibernateOrmConfig, jpaModel, index.getIndex(),
@@ -337,7 +335,7 @@ public final class HibernateReactiveProcessor {
         Set<String> storageEngineCollector = new HashSet<>();
 
         setDialectAndStorageEngine(
-                persistenceUnitConfigName,
+                persistenceUnitName,
                 dbKindOptional,
                 explicitDialect,
                 explicitDbMinVersion,
@@ -348,7 +346,7 @@ public final class HibernateReactiveProcessor {
                 storageEngineCollector);
 
         configureProperties(descriptor, persistenceUnitConfig, hibernateOrmConfig, true);
-        configureSqlLoadScript(persistenceUnitConfigName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
+        configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
         return descriptor;

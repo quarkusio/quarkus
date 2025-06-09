@@ -20,7 +20,6 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.stream.Collectors;
 
 import jakarta.persistence.PersistenceUnitTransactionType;
 
@@ -142,7 +141,8 @@ public final class HibernateReactiveProcessor {
         DataSourceBuildTimeConfig defaultDataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
                 .get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
 
-        for (Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig.namedPersistenceUnits()
+        for (Map.Entry<String, HibernateOrmConfigPersistenceUnit> persistenceUnitEntry : hibernateOrmConfig
+                .namedPersistenceUnits()
                 .entrySet()) {
             String namedPersistenceUnitName = persistenceUnitEntry.getKey();
 
@@ -327,7 +327,7 @@ public final class HibernateReactiveProcessor {
             LOG.warnf("Could not find any entities affected to the Hibernate Reactive persistence unit.");
         }
 
-        QuarkusPersistenceUnitDescriptor desc = new QuarkusPersistenceUnitDescriptor(
+        QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
                 persistenceUnitName,
                 PersistenceUnitTransactionType.RESOURCE_LOCAL,
                 new ArrayList<>(modelClassesAndPackages),

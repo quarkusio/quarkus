@@ -1,7 +1,6 @@
 package io.quarkus.hibernate.orm.deployment;
 
 import static io.quarkus.hibernate.orm.deployment.util.HibernateProcessorUtil.hasEntities;
-import static org.apache.commons.lang3.BooleanUtils.isFalse;
 
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;

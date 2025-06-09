@@ -13,7 +13,7 @@
     <name>Quarkus - TCK - MicroProfile OpenTelemetry</name>
 
     <properties>
-        <microprofile-opentelemetry-tck.version>2.0.1</microprofile-opentelemetry-tck.version>
+        <microprofile-opentelemetry-tck.version>2.1</microprofile-opentelemetry-tck.version>
     </properties>
 
     <build>

@@ -43,7 +43,7 @@
         <surefire.plugin.version>3.5.2</surefire.plugin.version>
         <jandex.version>3.3.1</jandex.version>
 
-        <junit5.version>5.13.0</junit5.version>
+        <junit5.version>5.13.1</junit5.version>
         <junit.testkit.version>1.10.3</junit.testkit.version>
         <assertj.version>3.27.3</assertj.version>
     </properties>

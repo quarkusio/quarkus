@@ -41,6 +41,7 @@ import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.file.FileCollection;
 import org.gradle.api.file.ProjectLayout;
 import org.gradle.api.file.RegularFileProperty;
+import org.gradle.api.provider.ListProperty;
 import org.gradle.api.provider.Property;
 import org.gradle.api.tasks.CacheableTask;
 import org.gradle.api.tasks.CompileClasspath;
@@ -472,6 +473,9 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         @Internal
         public abstract Property<ArtifactCollection> getResolvedArtifactCollection();
 
+        @Input
+        public abstract ListProperty<String> getArtifactNames();
+
         /**
          * TODO: Remove me
          */
@@ -501,7 +505,12 @@ public abstract class QuarkusApplicationModelTask extends DefaultTask {
         public void configureFrom(Configuration configuration) {
             ResolvableDependencies resolvableDependencies = configuration.getIncoming();
             getRoot().set(resolvableDependencies.getResolutionResult().getRootComponent());
-            getResolvedArtifactCollection().set(resolvableDependencies.getArtifacts());
+            ArtifactCollection artifactCollection = resolvableDependencies.getArtifacts();
+            getResolvedArtifactCollection().set(artifactCollection);
+            List<String> artifactNames = artifactCollection.getArtifactFiles().getFiles().stream()
+                    .map(File::getName)
+                    .collect(Collectors.toList());
+            getArtifactNames().set(artifactNames);
             // TODO: Remove me, since we don't apply workspace plugin anymore, so there are no project descriptors
             getProjectDescriptors().setFrom(configuration.getIncoming().artifactView(viewConfiguration -> {
                 // Project descriptors make sense only for projects

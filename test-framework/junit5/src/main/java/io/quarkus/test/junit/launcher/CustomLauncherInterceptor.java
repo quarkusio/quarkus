@@ -12,6 +12,7 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
     private static FacadeClassLoader facadeLoader = null;
     // Also use a static variable to store a 'first' starting state that we can reset to
     private static ClassLoader origCl = null;
+    private static boolean discoveryStarted = false;
 
     public CustomLauncherInterceptor() {
     }
@@ -25,10 +26,18 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
     public void launcherSessionOpened(LauncherSession session) {
         /*
          * For gradle, test class loading happens fairly shortly after this is called,
-         * before the formal discovery phase. So we need to intercept the TCCL
-         * Do not do any classloading dance for prod mode tests;
+         * before the formal discovery phase. So we need to intercept the TCCL.
+         *
+         * However, the Eclipse runner calls this twice, and the second invocation happens after discovery,
+         * which means there is no one to unset the TCCL. That breaks integration tests, so we
+         * need to add an ugly guard to not adjust the TCCL the second time round in that scenario.
+         * We do not do any classloading dance for prod mode tests.
          */
-        if (!isProductionModeTests()) {
+        boolean isEclipse = System.getProperty("sun.java.command") != null
+                && System.getProperty("sun.java.command").contains("JUnit5TestLoader");
+        boolean shouldSkipSettingTCCL = isEclipse && discoveryStarted;
+
+        if (!isProductionModeTests() && !shouldSkipSettingTCCL) {
             actuallyIntercept();
         }
 
@@ -67,6 +76,7 @@ public class CustomLauncherInterceptor implements LauncherDiscoveryListener, Lau
 
     @Override
     public void launcherDiscoveryStarted(LauncherDiscoveryRequest request) {
+        discoveryStarted = true;
         // If anything comes through this method for which there are non-null classloaders on the selectors, that will bypass our classloading
         // To check that case, the code would be something like this. We could detect and warn early, and possibly even filter that test out, but that's not necessarily a better UX than failing later
         // request.getSelectorsByType(ClassSelector.class).stream().map(ClassSelector::getClassLoader) ... and then check for non-emptiness on that field

@@ -242,10 +242,11 @@ public class DevServicesRedisProcessor {
 
             if (serviceName != null) {
                 withLabel(DEV_SERVICE_LABEL, serviceName);
-                withLabel(MANAGED_DEV_SERVICE_LABEL, RunningDevServicesTracker.APPLICATION_UUID);
                 withLabel(QUARKUS_DEV_SERVICE, serviceName);
-                withLabel(LAUNCH_MODE_LABEL, launchMode.toString());
             }
+            withLabel(MANAGED_DEV_SERVICE_LABEL, RunningDevServicesTracker.APPLICATION_UUID);
+            withLabel(LAUNCH_MODE_LABEL, launchMode.toString());
+
             this.hostName = ConfigureUtil.configureNetwork(this, defaultNetworkId, useSharedNetwork, "redis");
         }
 

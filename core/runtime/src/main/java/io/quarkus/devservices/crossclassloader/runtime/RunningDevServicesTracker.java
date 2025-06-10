@@ -3,7 +3,6 @@ package io.quarkus.devservices.crossclassloader.runtime;
 import static java.util.UUID.randomUUID;
 
 import java.io.Closeable;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -22,7 +21,7 @@ public class RunningDevServicesTracker {
     // A useful uniqueness marker which will persist across profiles and application restarts, since this class lives in the system classloader. The value will be the same between dev and test mode.
     public static final String APPLICATION_UUID = randomUUID().toString();
 
-    private static volatile Set<Supplier<Map>> configTracker = null;
+    private static volatile Map<String, Set<Supplier<Map>>> configTracker = null;
 
     // A dev service owner is a combination of an extension (feature) and the app type (dev or test) which identifies which dev services
     // an extension processor can safely close.
@@ -32,7 +31,7 @@ public class RunningDevServicesTracker {
     public RunningDevServicesTracker() {
         //This needs to work across classloaders, and the QuarkusClassLoader will load us parent first
         if (configTracker == null) {
-            configTracker = ConcurrentHashMap.newKeySet();
+            configTracker = new ConcurrentHashMap<>();
         }
         if (servicesIndexedByOwner == null) {
             servicesIndexedByOwner = new ConcurrentHashMap<>();
@@ -43,8 +42,8 @@ public class RunningDevServicesTracker {
     }
 
     // This gets called an awful lot. Should we cache it? If we did, we'd need to deal with cache invalidation, so maybe not.
-    public Set<Supplier<Map>> getConfigForAllRunningServices() {
-        return Collections.unmodifiableSet(configTracker);
+    public Set<Supplier<Map>> getConfigForAllRunningServices(String launchMode) {
+        return configTracker.get(launchMode);
     }
 
     public Set<Closeable> getRunningServices(ComparableDevServicesConfig identifyingConfig) {
@@ -79,7 +78,7 @@ public class RunningDevServicesTracker {
             }
         }
 
-        configTracker.add((Supplier<Map>) service);
+        addToConfig(key.getDevServicesOwner().launchMode(), (Supplier<Map>) service);
     }
 
     // The service passed in here might be from a different classloader
@@ -101,6 +100,20 @@ public class RunningDevServicesTracker {
             }
         }
 
-        configTracker.remove(service);
+        removeFromConfig(owner.launchMode(), (Supplier<Map>) service);
+    }
+
+    void addToConfig(String launchMode, Supplier<Map> configSupplier) {
+        configTracker.computeIfAbsent(launchMode, k -> new HashSet<>()).add(configSupplier);
+    }
+
+    void removeFromConfig(String launchMode, Supplier<Map> configSupplier) {
+        Set<Supplier<Map>> configs = configTracker.get(launchMode);
+        if (configs != null) {
+            configs.remove(configSupplier);
+            if (configs.isEmpty()) {
+                configTracker.remove(launchMode);
+            }
+        }
     }
 }

@@ -8,18 +8,25 @@ import java.util.function.Supplier;
 import org.eclipse.microprofile.config.spi.ConfigSource;
 
 import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesTracker;
+import io.quarkus.runtime.LaunchMode;
 
 // This should live in the devservices/runtime module, but that module doesn't exist, and adding it is a breaking change
 public class DevServicesConfigSource implements ConfigSource {
 
     RunningDevServicesTracker tracker = new RunningDevServicesTracker();
 
+    private final LaunchMode launchMode;
+
+    public DevServicesConfigSource(LaunchMode launchMode) {
+        this.launchMode = launchMode;
+    }
+
     @Override
     public Set<String> getPropertyNames() {
         // We could make this more efficient by not invoking the supplier on the other end, but it would need a more complex interface
         Set<String> names = new HashSet<>();
 
-        for (Supplier<Map> o : tracker.getConfigForAllRunningServices()) {
+        for (Supplier<Map> o : tracker.getConfigForAllRunningServices(launchMode.name())) {
             Map config = o.get();
             names.addAll(config.keySet());
         }
@@ -28,7 +35,7 @@ public class DevServicesConfigSource implements ConfigSource {
 
     @Override
     public String getValue(String propertyName) {
-        for (Supplier<Map> o : tracker.getConfigForAllRunningServices()) {
+        for (Supplier<Map> o : tracker.getConfigForAllRunningServices(launchMode.name())) {
             Map config = o.get();
             String answer = (String) config.get(propertyName);
             if (answer != null) {

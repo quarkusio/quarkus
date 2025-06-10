@@ -50,7 +50,7 @@
         <smallrye-config.version>3.13.1</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.0.10</smallrye-open-api.version>
+        <smallrye-open-api.version>4.0.11</smallrye-open-api.version>
         <smallrye-graphql.version>2.13.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.9.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.2</smallrye-jwt.version>

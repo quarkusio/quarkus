@@ -7,7 +7,6 @@ import java.util.Set;
 import jakarta.persistence.EntityManagerFactory;
 
 import org.hibernate.engine.spi.SessionFactoryImplementor;
-import org.hibernate.persister.entity.AbstractEntityPersister;
 
 public final class SchemaUtil {
 
@@ -16,9 +15,9 @@ public final class SchemaUtil {
 
     public static Set<String> getColumnNames(EntityManagerFactory entityManagerFactory, Class<?> entityType) {
         Set<String> result = new HashSet<>();
-        AbstractEntityPersister persister = (AbstractEntityPersister) entityManagerFactory
-                .unwrap(SessionFactoryImplementor.class)
-                .getMetamodel().entityPersister(entityType);
+        var persister = entityManagerFactory.unwrap(SessionFactoryImplementor.class)
+                .getMappingMetamodel()
+                .getEntityDescriptor(entityType);
         if (persister == null) {
             return result;
         }

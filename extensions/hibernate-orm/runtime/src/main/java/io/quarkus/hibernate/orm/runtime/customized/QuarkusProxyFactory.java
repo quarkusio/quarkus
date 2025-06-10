@@ -93,7 +93,9 @@ public final class QuarkusProxyFactory implements ProxyFactory {
             ((ProxyConfiguration) proxy).$$_hibernate_set_interceptor(interceptor);
             return proxy;
         } catch (Throwable t) {
-            String logMessage = LOG.bytecodeEnhancementFailed(entityName);
+            String logMessage = "Bytecode enhancement failed for class '" + entityName
+                    + "' (it might be due to the Java module system preventing Hibernate ORM from defining an enhanced class in the same package"
+                    + " - in this case, the class should be opened and exported to Hibernate ORM)";
             LOG.error(logMessage, t);
             throw new HibernateException(logMessage, t);
         }

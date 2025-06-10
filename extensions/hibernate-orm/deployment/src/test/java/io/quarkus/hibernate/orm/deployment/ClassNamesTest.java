@@ -75,6 +75,15 @@ public class ClassNamesTest {
     }
 
     @Test
+    public void testNoMissingOptimizerClass() {
+        Set<DotName> generatorImplementors = findConcreteNamedImplementors(hibernateIndex,
+                "org.hibernate.id.enhanced.Optimizer");
+
+        assertThat(ClassNames.OPTIMIZERS)
+                .containsExactlyInAnyOrderElementsOf(generatorImplementors);
+    }
+
+    @Test
     public void testNoMissingJpaAnnotation() {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
         jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("jakarta.persistence.metamodel."));
@@ -149,7 +158,7 @@ public class ClassNamesTest {
             List<Type> typeParams = JandexUtil.resolveTypeParameters(basicJavaTypeImplInfo.name(), basicJavaTypeName,
                     hibernateAndJdkIndex);
             Type jdbcJavaType = typeParams.get(0);
-            if (jdbcJavaType.kind() == Type.Kind.CLASS) {
+            if (jdbcJavaType.kind() == Type.Kind.CLASS || jdbcJavaType.kind() == Type.Kind.PARAMETERIZED_TYPE) {
                 jdbcJavaTypeNames.add(jdbcJavaType.name());
             }
         }

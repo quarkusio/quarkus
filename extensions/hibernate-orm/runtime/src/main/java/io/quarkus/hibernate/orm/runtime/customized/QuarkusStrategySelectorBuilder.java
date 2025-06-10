@@ -9,9 +9,10 @@ import org.hibernate.boot.model.relational.ColumnOrderingStrategyStandard;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.selector.StrategyRegistration;
 import org.hibernate.boot.registry.selector.StrategyRegistrationProvider;
-import org.hibernate.boot.registry.selector.internal.DefaultDialectSelector;
+import org.hibernate.boot.registry.selector.internal.AggregatedDialectSelector;
 import org.hibernate.boot.registry.selector.internal.DefaultJtaPlatformSelector;
 import org.hibernate.boot.registry.selector.internal.StrategySelectorImpl;
+import org.hibernate.boot.registry.selector.spi.DialectSelector;
 import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.cache.internal.DefaultCacheKeysFactory;
 import org.hibernate.cache.internal.SimpleCacheKeysFactory;
@@ -22,10 +23,15 @@ import org.hibernate.id.enhanced.ImplicitDatabaseObjectNamingStrategy;
 import org.hibernate.id.enhanced.LegacyNamingStrategy;
 import org.hibernate.id.enhanced.SingleNamingStrategy;
 import org.hibernate.id.enhanced.StandardNamingStrategy;
+import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.cte.CteMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.GlobalTemporaryTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.LocalTemporaryTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.internal.temptable.PersistentTableMutationStrategy;
+import org.hibernate.query.sqm.mutation.spi.SqmMultiTableInsertStrategy;
 import org.hibernate.query.sqm.mutation.spi.SqmMultiTableMutationStrategy;
 import org.hibernate.resource.transaction.backend.jdbc.internal.JdbcResourceLocalTransactionCoordinatorBuilderImpl;
 import org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorBuilderImpl;
@@ -59,9 +65,10 @@ public final class QuarkusStrategySelectorBuilder {
         // build the baseline...
         strategySelector.registerStrategyLazily(
                 Dialect.class,
-                new DefaultDialectSelector());
+                new AggregatedDialectSelector(classLoaderService.loadJavaServices(DialectSelector.class)));
         strategySelector.registerStrategyLazily(JtaPlatform.class, new DefaultJtaPlatformSelector());
         addTransactionCoordinatorBuilders(strategySelector);
+        addSqmMultiTableInsertStrategies(strategySelector);
         addSqmMultiTableMutationStrategies(strategySelector);
         addImplicitNamingStrategies(strategySelector);
         addColumnOrderingStrategies(strategySelector);
@@ -80,9 +87,23 @@ public final class QuarkusStrategySelectorBuilder {
         return strategySelector;
     }
 
-    @SuppressWarnings("unchecked")
-    private static <T> void applyFromStrategyRegistration(
-            StrategySelectorImpl strategySelector,
+    /**
+     * Builds the selector for runtime use.
+     *
+     * @param classLoaderService The class loading service used to (attempt to) resolve any un-registered
+     *        strategy implementations.
+     *
+     * @return The selector.
+     */
+    public static StrategySelector buildRuntimeSelector(ClassLoaderService classLoaderService) {
+        final StrategySelectorImpl strategySelector = new StrategySelectorImpl(classLoaderService);
+
+        addImplicitNamingStrategies(strategySelector);
+
+        return strategySelector;
+    }
+
+    private static <T> void applyFromStrategyRegistration(StrategySelectorImpl strategySelector,
             StrategyRegistration<T> strategyRegistration) {
         for (String name : strategyRegistration.getSelectorNames()) {
             strategySelector.registerStrategyImplementor(
@@ -101,6 +122,25 @@ public final class QuarkusStrategySelectorBuilder {
                 TransactionCoordinatorBuilder.class,
                 JtaTransactionCoordinatorBuilderImpl.SHORT_NAME,
                 JtaTransactionCoordinatorBuilderImpl.class);
+    }
+
+    private static void addSqmMultiTableInsertStrategies(StrategySelectorImpl strategySelector) {
+        strategySelector.registerStrategyImplementor(
+                SqmMultiTableInsertStrategy.class,
+                CteInsertStrategy.SHORT_NAME,
+                CteInsertStrategy.class);
+        strategySelector.registerStrategyImplementor(
+                SqmMultiTableInsertStrategy.class,
+                GlobalTemporaryTableInsertStrategy.SHORT_NAME,
+                GlobalTemporaryTableInsertStrategy.class);
+        strategySelector.registerStrategyImplementor(
+                SqmMultiTableInsertStrategy.class,
+                LocalTemporaryTableInsertStrategy.SHORT_NAME,
+                LocalTemporaryTableInsertStrategy.class);
+        strategySelector.registerStrategyImplementor(
+                SqmMultiTableInsertStrategy.class,
+                PersistentTableInsertStrategy.SHORT_NAME,
+                PersistentTableInsertStrategy.class);
     }
 
     private static void addSqmMultiTableMutationStrategies(StrategySelectorImpl strategySelector) {
@@ -192,5 +232,4 @@ public final class QuarkusStrategySelectorBuilder {
                 JaxbXmlFormatMapper.SHORT_NAME,
                 JaxbXmlFormatMapper.class);
     }
-
 }

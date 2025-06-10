@@ -90,28 +90,27 @@ public class ProxyTestEndpoint {
         PetOwner owner = entityManager.find(PetOwner.class, 1);
         expectEquals("Stuart", owner.getName());
         expectEquals("Generic pet noises", owner.getPet().makeNoise());
-        expectFalse(owner.getPet() instanceof Pet);
-        expectTrue(owner.getPet() instanceof DogProxy); //even though it is not a dog it still should implement the interface
+
+        // Concrete proxies extend the actual class of the target entity
+        expectTrue(owner.getPet() instanceof Pet);
+        expectFalse(owner.getPet() instanceof DogProxy);
 
         owner = entityManager.find(PetOwner.class, 2);
         expectEquals("Sanne", owner.getName());
         expectEquals("Meow", owner.getPet().makeNoise());
 
-        DogProxy dogProxy = (DogProxy) owner.getPet();
-        try {
-            dogProxy.bark();
-            throw new RuntimeException("Should have failed as not a dog");
-        } catch (ClassCastException e) {
-
-        }
-        expectFalse(owner.getPet() instanceof Pet);
+        // Concrete proxies extend the actual class of the target entity
+        expectTrue(owner.getPet() instanceof Pet);
+        expectFalse(owner.getPet() instanceof DogProxy);
 
         owner = entityManager.find(PetOwner.class, 3);
         expectEquals("Emmanuel", owner.getName());
         expectEquals("Woof", owner.getPet().makeNoise());
         expectEquals("Woof", ((DogProxy) owner.getPet()).bark());
         expectEquals("Rubber Bone", ((DogProxy) owner.getPet()).getFavoriteToy());
-        expectFalse(owner.getPet() instanceof Pet);
+
+        // Concrete proxies extend the actual class of the target entity
+        expectTrue(owner.getPet() instanceof Pet);
         expectTrue(owner.getPet() instanceof DogProxy);
 
         return "OK";

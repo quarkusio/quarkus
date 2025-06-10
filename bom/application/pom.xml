@@ -95,12 +95,12 @@
         <commons-codec.version>1.18.0</commons-codec.version>
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
-             hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
+             hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.2.2.Final</narayana.version>
         <narayana-lra.version>1.0.1.Final</narayana-lra.version>
         <agroal.version>2.7.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.18.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.0.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -1282,6 +1282,16 @@
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-orm-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-orm-derby</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-orm-derby-deployment</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -5474,13 +5484,6 @@
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
-                <exclusions>
-                    <!-- We don't want Jandex at runtime -->
-                    <exclusion>
-                        <groupId>io.smallrye</groupId>
-                        <artifactId>jandex</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
@@ -5490,6 +5493,11 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-envers</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-processor</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
@@ -5506,9 +5514,9 @@
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate.common</groupId>
-                <artifactId>hibernate-commons-annotations</artifactId>
-                <version>${hibernate-commons-annotations.version}</version>
+                <groupId>org.hibernate.models</groupId>
+                <artifactId>hibernate-models</artifactId>
+                <version>${hibernate-models.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
@@ -5545,6 +5553,10 @@
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.hibernate.models</groupId>
+                        <artifactId>hibernate-models-jandex</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -5568,6 +5580,10 @@
                     <exclusion>
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.hibernate.models</groupId>
+                        <artifactId>hibernate-models-jandex</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -5678,11 +5694,11 @@
                 <groupId>co.elastic.clients</groupId>
                 <artifactId>elasticsearch-java</artifactId>
                 <version>${elasticsearch-opensource-components.version}</version>
-                <!-- exclude log4j2 to get its version from log4j2-jboss-logmanager -->
+                <!-- exclude commons-logging to get its version from commons-logging-jboss-logmanager -->
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-core</artifactId>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

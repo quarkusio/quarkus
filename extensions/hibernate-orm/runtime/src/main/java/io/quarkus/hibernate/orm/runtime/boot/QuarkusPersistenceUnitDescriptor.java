@@ -29,7 +29,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final Properties properties;
     private final boolean reactive;
 
-    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
+    public QuarkusPersistenceUnitDescriptor(String name,
             PersistenceUnitTransactionType persistenceUnitTransactionType,
             List<String> managedClassNames,
             Properties properties, boolean reactive) {

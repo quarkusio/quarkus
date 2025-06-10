@@ -41,8 +41,12 @@ public class RunningDevServicesTracker {
         }
     }
 
-    // This gets called an awful lot. Should we cache it? If we did, we'd need to deal with cache invalidation, so maybe not.
+    /**
+     *
+     * @return may return null
+     */
     public Set<Supplier<Map>> getConfigForAllRunningServices(String launchMode) {
+        // This gets called an awful lot. Should we cache it? If we did, we'd need to deal with cache invalidation, so maybe not.
         return configTracker.get(launchMode);
     }
 

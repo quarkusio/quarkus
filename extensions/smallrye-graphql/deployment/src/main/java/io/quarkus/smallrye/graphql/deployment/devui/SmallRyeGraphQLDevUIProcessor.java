@@ -17,6 +17,13 @@ public class SmallRyeGraphQLDevUIProcessor {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
+        cardPageBuildItem.addLibraryVersion("io.smallrye", "smallrye-graphql-cdi", "SmallRye GraphQL",
+                "https://smallrye.io/smallrye-graphql");
+        cardPageBuildItem.addLibraryVersion("com.graphql-java", "graphql-java", "GraphQL Java",
+                "https://www.graphql-java.com/");
+
+        cardPageBuildItem.setLogo("logo_dark.svg", "logo_light.svg");
+
         // Generated GraphQL Schema
         String schemaPath = "/" + graphQLConfig.rootPath() + "/schema.graphql";
         PageBuilder schemaPage = Page.externalPageBuilder("GraphQL Schema")

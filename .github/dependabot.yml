@@ -75,6 +75,7 @@ updates:
       - dependency-name: org.hamcrest:hamcrest
       - dependency-name: org.junit:junit-bom
       - dependency-name: org.junit.jupiter:*
+      - dependency-name: org.junit.platform:*
       - dependency-name: org.assertj:assertj-core
       - dependency-name: org.testcontainers:*
       - dependency-name: org.mockito:*

@@ -48,6 +48,10 @@ public abstract class AbstractPageBuildItem extends AbstractDevUIBuildItem {
         return this.pageBuilders;
     }
 
+    public boolean hasPages() {
+        return !pageBuilders.isEmpty();
+    }
+
     public void addBuildTimeData(String fieldName, Object fieldData) {
         this.buildTimeData.put(fieldName, fieldData);
     }

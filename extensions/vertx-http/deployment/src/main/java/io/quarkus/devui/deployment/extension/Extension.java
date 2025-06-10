@@ -2,9 +2,11 @@ package io.quarkus.devui.deployment.extension;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import io.quarkus.devui.spi.page.Card;
+import io.quarkus.devui.spi.page.LibraryLink;
 import io.quarkus.devui.spi.page.Page;
 
 public class Extension {
@@ -27,6 +29,9 @@ public class Extension {
     private final List<Page> menuPages = new ArrayList<>();
     private final List<Page> footerPages = new ArrayList<>();
     private Card card = null; // Custom card
+    private List<LibraryLink> libraryLinks = null;
+    private String darkLogo = null;
+    private String lightLogo = null;
 
     public Extension() {
 
@@ -58,6 +63,29 @@ public class Extension {
 
     public String getShortName() {
         return shortName;
+    }
+
+    public List<LibraryLink> getLibraryLinks() {
+        return libraryLinks;
+    }
+
+    public void addLibraryLink(LibraryLink libraryLink) {
+        if (this.libraryLinks == null)
+            this.libraryLinks = new LinkedList<>();
+        this.libraryLinks.add(libraryLink);
+    }
+
+    public String getDarkLogo() {
+        return this.darkLogo;
+    }
+
+    public String getLightLogo() {
+        return this.lightLogo;
+    }
+
+    public void setLogo(String darkLogo, String lightLogo) {
+        this.darkLogo = darkLogo;
+        this.lightLogo = lightLogo;
     }
 
     public void setShortName(String shortName) {
@@ -208,4 +236,5 @@ public class Extension {
                 + ", builtWith=" + builtWith + ", providesCapabilities=" + providesCapabilities + ", extensionDependencies="
                 + extensionDependencies + ", codestart=" + codestart + '}';
     }
+
 }

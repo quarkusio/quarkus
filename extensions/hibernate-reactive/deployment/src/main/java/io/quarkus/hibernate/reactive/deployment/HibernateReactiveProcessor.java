@@ -157,8 +157,7 @@ public final class HibernateReactiveProcessor {
                     unremovableBeans, defaultDataSourceBuildTimeConfig, dbKindDialectBuildItems);
         }
 
-        boolean enableDefaultPersistenceUnit = (defaultDataSourceBuildTimeConfig.dbVersion() != null
-                && hibernateOrmConfig.namedPersistenceUnits().isEmpty())
+        boolean enableDefaultPersistenceUnit = hibernateOrmConfig.namedPersistenceUnits().isEmpty()
                 || hibernateOrmConfig.defaultPersistenceUnit().isAnyPropertySet();
 
         if (!enableDefaultPersistenceUnit) {

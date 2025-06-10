@@ -26,20 +26,26 @@ public class DevServicesConfigSource implements ConfigSource {
         // We could make this more efficient by not invoking the supplier on the other end, but it would need a more complex interface
         Set<String> names = new HashSet<>();
 
-        for (Supplier<Map> o : tracker.getConfigForAllRunningServices(launchMode.name())) {
-            Map config = o.get();
-            names.addAll(config.keySet());
+        Set<Supplier<Map>> allConfig = tracker.getConfigForAllRunningServices(launchMode.name());
+        if (allConfig != null) {
+            for (Supplier<Map> o : allConfig) {
+                Map config = o.get();
+                names.addAll(config.keySet());
+            }
         }
         return names;
     }
 
     @Override
     public String getValue(String propertyName) {
-        for (Supplier<Map> o : tracker.getConfigForAllRunningServices(launchMode.name())) {
-            Map config = o.get();
-            String answer = (String) config.get(propertyName);
-            if (answer != null) {
-                return answer;
+        Set<Supplier<Map>> allConfig = tracker.getConfigForAllRunningServices(launchMode.name());
+        if (allConfig != null) {
+            for (Supplier<Map> o : allConfig) {
+                Map config = o.get();
+                String answer = (String) config.get(propertyName);
+                if (answer != null) {
+                    return answer;
+                }
             }
         }
         return null;

@@ -81,6 +81,22 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         tokenDecryptionKey = providerIsNoNull(provider) ? createTokenDecryptionKey(provider) : null;
     }
 
+    TenantConfigContextImpl(TenantConfigContext tenantConfigContext, OidcTenantConfig oidcConfig) {
+        this.oidcConfig = oidcConfig;
+        this.ready = tenantConfigContext.ready();
+        this.provider = tenantConfigContext.provider();
+        this.sessionCookieEncryptionKey = tenantConfigContext.getSessionCookieEncryptionKey();
+        this.stateCookieEncryptionKey = tenantConfigContext.getStateCookieEncryptionKey();
+        this.internalIdTokenSigningKey = tenantConfigContext.getInternalIdTokenSigningKey();
+        this.redirectFilters = tenantConfigContext.getLocationToRedirectFilters();
+        this.tokenDecryptionKey = tenantConfigContext.getTokenDecryptionKey();
+    }
+
+    @Override
+    public Map<Redirect.Location, List<OidcRedirectFilter>> getLocationToRedirectFilters() {
+        return redirectFilters;
+    }
+
     private static boolean providerIsNoNull(OidcProvider provider) {
         return provider != null && provider.client != null;
     }

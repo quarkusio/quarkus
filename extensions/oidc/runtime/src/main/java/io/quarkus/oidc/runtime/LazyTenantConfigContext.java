@@ -2,6 +2,7 @@ package io.quarkus.oidc.runtime;
 
 import java.security.Key;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Supplier;
 
 import javax.crypto.SecretKey;
@@ -89,5 +90,10 @@ final class LazyTenantConfigContext implements TenantConfigContext {
     @Override
     public List<OidcRedirectFilter> getOidcRedirectFilters(Redirect.Location loc) {
         return delegate.getOidcRedirectFilters(loc);
+    }
+
+    @Override
+    public Map<Redirect.Location, List<OidcRedirectFilter>> getLocationToRedirectFilters() {
+        return delegate.getLocationToRedirectFilters();
     }
 }

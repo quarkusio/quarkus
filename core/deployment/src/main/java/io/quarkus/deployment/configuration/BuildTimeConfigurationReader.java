@@ -683,16 +683,16 @@ public final class BuildTimeConfigurationReader {
                 if (buildTimeNames.contains(name)) {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
-                    if (value.getRawValue() != null) {
-                        allBuildTimeValues.put(value.getNameProfiled(), value.noProblems().withValue(value.getRawValue()));
+                    if (value.getValue() != null) {
+                        allBuildTimeValues.put(value.getNameProfiled(), value);
                     }
                 }
                 if (buildTimeRunTimeNames.contains(name)) {
                     unknownBuildProperties.remove(property);
                     ConfigValue value = config.getConfigValue(property);
-                    if (value.getRawValue() != null) {
-                        allBuildTimeValues.put(value.getNameProfiled(), value.noProblems().withValue(value.getRawValue()));
-                        buildTimeRunTimeValues.put(value.getNameProfiled(), value.noProblems().withValue(value.getRawValue()));
+                    if (value.getValue() != null) {
+                        allBuildTimeValues.put(value.getNameProfiled(), value);
+                        buildTimeRunTimeValues.put(value.getNameProfiled(), value);
                     }
                 }
                 if (runTimeNames.contains(name)) {

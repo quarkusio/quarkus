@@ -24,6 +24,7 @@ public class WebDependencyLocatorDevUIProcessor {
         }
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+        cardPageBuildItem.setLogo("javascript_logo.svg", "javascript_logo.svg");
         if (!webDependencyLibraries.isEmpty()) {
             // Web Dependency Libraries
             cardPageBuildItem.addBuildTimeData("webDependencyLibraries", webDependencyLibraries);

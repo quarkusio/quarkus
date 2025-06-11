@@ -29,6 +29,10 @@ public class OpenApiDevUIProcessor {
 
         CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
 
+        cardPageBuildItem.addLibraryVersion("io.smallrye", "smallrye-open-api-jaxrs", "SmallRye OpenAPI",
+                "https://github.com/smallrye/smallrye-open-api");
+        cardPageBuildItem.setLogo("openapi_logo.png", "openapi_logo.png");
+
         cardPageBuildItem.addPage(Page.externalPageBuilder("Swagger UI")
                 .url(uiPath + "/index.html?embed=true", uiPath)
                 .isHtmlContent()

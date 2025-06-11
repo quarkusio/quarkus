@@ -65,6 +65,10 @@ public class Extension {
         return shortName;
     }
 
+    public boolean hasLibraryLinks() {
+        return libraryLinks != null && !libraryLinks.isEmpty();
+    }
+
     public List<LibraryLink> getLibraryLinks() {
         return libraryLinks;
     }

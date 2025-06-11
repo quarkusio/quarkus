@@ -70,6 +70,9 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
                     keycloakRealms,
                     configProps.get().isContainerRestarted(),
                     httpConfig, false, null);
+
+            cardPageBuildItem.setLogo("keycloak_logo.svg", "keycloak_logo.svg");
+
             // use same card page so that both pages appear on the same card
             var keycloakAdminPageItem = new KeycloakAdminPageBuildItem(cardPageBuildItem);
             keycloakAdminPageProducer.produce(keycloakAdminPageItem);

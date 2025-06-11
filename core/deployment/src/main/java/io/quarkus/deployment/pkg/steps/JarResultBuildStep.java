@@ -88,7 +88,7 @@ import io.quarkus.paths.PathVisit;
 import io.quarkus.paths.PathVisitor;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 /**
  * This build step builds both the thin jars and uber jars.
@@ -1637,7 +1637,7 @@ public class JarResultBuildStep {
                     String fileName = jarToDecompile.getFileName().toString().substring(0, dotIndex);
                     ProcessBuilder processBuilder = new ProcessBuilder(
                             Arrays.asList(
-                                    JavaBinFinder.findBin(),
+                                    ProcessUtil.pathOfJava().toString(),
                                     "-jar",
                                     decompilerJar.toAbsolutePath().toString(),
                                     "-rsy=0", // synthetic methods

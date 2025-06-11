@@ -39,7 +39,6 @@ import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
-import io.quarkus.utilities.JavaBinFinder;
 import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
 
@@ -553,7 +552,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private static void writePluginExeCmd(Path pluginPath, BufferedWriter writer) throws IOException {
-        writer.write("\"" + JavaBinFinder.findBin() + "\" -cp \"" +
+        writer.write("\"" + io.smallrye.common.process.ProcessUtil.pathOfJava().toString() + "\" -cp \"" +
                 pluginPath.toAbsolutePath() + "\" " + quarkusProtocPluginMain);
         writer.newLine();
     }

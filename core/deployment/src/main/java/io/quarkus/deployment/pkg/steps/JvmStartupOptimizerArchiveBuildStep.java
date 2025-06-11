@@ -32,7 +32,7 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 import io.quarkus.deployment.steps.MainClassBuildStep;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.runtime.LaunchMode;
-import io.quarkus.utilities.JavaBinFinder;
+import io.smallrye.common.process.ProcessUtil;
 
 public class JvmStartupOptimizerArchiveBuildStep {
 
@@ -72,7 +72,7 @@ public class JvmStartupOptimizerArchiveBuildStep {
         String javaBinPath = null;
         if (containerImage == null) {
             javaBinPath = System.getProperty("java.home") + File.separator + "bin" + File.separator
-                    + JavaBinFinder.simpleBinaryName();
+                    + ProcessUtil.nameOfJava();
             if (!new File(javaBinPath).canExecute()) {
                 log.warnf(
                         "In order to create AppCDS the JDK used to build the Quarkus application must contain an executable named '%s' in its 'bin' directory.",

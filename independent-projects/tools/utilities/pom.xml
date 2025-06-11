@@ -22,5 +22,9 @@
             <groupId>io.smallrye.common</groupId>
             <artifactId>smallrye-common-cpu</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-process</artifactId>
+        </dependency>
     </dependencies>
 </project>

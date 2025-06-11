@@ -20,13 +20,13 @@ jobs:
     steps:
       - name: Setup Build Scan link capture
         id: setup
-        uses: gradle/develocity-actions/setup-maven@v1.3
+        uses: gradle/develocity-actions/setup-maven@v1.4
         with:
           add-pr-comment: false
           add-job-summary: true
       - name: Publish Maven Build Scans
         id: publish
-        uses: gradle/develocity-actions/maven-publish-build-scan@v1.3
+        uses: gradle/develocity-actions/maven-publish-build-scan@v1.4
         with:
           develocity-url: 'https://ge.quarkus.io'
           develocity-access-key: ${{ secrets.GRADLE_ENTERPRISE_ACCESS_KEY }}

@@ -16,7 +16,7 @@
     <properties>
         <angus-activation.version>2.0.2</angus-activation.version>
         <angus-mail.version>2.0.3</angus-mail.version> <!-- keep in sync with angus-activation (mail depends on activation) -->
-        <bouncycastle.version>1.80</bouncycastle.version>
+        <bouncycastle.version>1.81</bouncycastle.version>
         <bouncycastle.fips.version>1.0.2.5</bouncycastle.fips.version>
         <bouncycastle.tls.fips.version>1.0.19</bouncycastle.tls.fips.version>
         <cyclonedx.version>9.0.5</cyclonedx.version>
@@ -47,7 +47,7 @@
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.12.0</smallrye-common.version>
-        <smallrye-config.version>3.13.0</smallrye-config.version>
+        <smallrye-config.version>3.13.1</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
         <smallrye-open-api.version>4.0.10</smallrye-open-api.version>
@@ -97,7 +97,7 @@
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
              hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
         <narayana.version>7.2.2.Final</narayana.version>
-        <narayana-lra.version>1.0.0.Final</narayana-lra.version>
+        <narayana-lra.version>1.0.1.Final</narayana-lra.version>
         <agroal.version>2.7.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
         <elasticsearch-opensource-components.version>8.18.2</elasticsearch-opensource-components.version>
@@ -166,11 +166,11 @@
         <liquibase-mongodb.version>4.29.1</liquibase-mongodb.version>
         <snakeyaml.version>2.4</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>5.5.0</mongo-client.version>
+        <mongo-client.version>5.5.1</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.26.4</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.1</hibernate-quarkus-local-cache.version>
-        <flapdoodle.mongo.version>4.20.0</flapdoodle.mongo.version>
+        <flapdoodle.mongo.version>4.20.1</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.4</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>

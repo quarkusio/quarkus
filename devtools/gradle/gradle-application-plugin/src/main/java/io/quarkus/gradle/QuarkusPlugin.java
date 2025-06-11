@@ -70,13 +70,13 @@ import io.quarkus.gradle.tasks.QuarkusTest;
 import io.quarkus.gradle.tasks.QuarkusTestConfig;
 import io.quarkus.gradle.tasks.QuarkusUpdate;
 import io.quarkus.gradle.tasks.services.ForcedPropertieBuildService;
+import io.quarkus.gradle.tooling.DefaultProjectDescriptor;
 import io.quarkus.gradle.tooling.GradleApplicationModelBuilder;
+import io.quarkus.gradle.tooling.ProjectDescriptorBuilder;
 import io.quarkus.gradle.tooling.ToolingUtils;
 import io.quarkus.gradle.tooling.dependency.DependencyUtils;
 import io.quarkus.gradle.tooling.dependency.ExtensionDependency;
 import io.quarkus.gradle.tooling.dependency.ProjectExtensionDependency;
-import io.quarkus.gradle.workspace.descriptors.DefaultProjectDescriptor;
-import io.quarkus.gradle.workspace.descriptors.ProjectDescriptorBuilder;
 import io.quarkus.runtime.LaunchMode;
 
 public class QuarkusPlugin implements Plugin<Project> {

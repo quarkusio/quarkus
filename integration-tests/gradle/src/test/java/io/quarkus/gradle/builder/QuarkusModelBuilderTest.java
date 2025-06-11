@@ -181,7 +181,7 @@ class QuarkusModelBuilderTest {
             assertThat(sourceTree.getRoots()).hasSize(1);
             assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/test/resources"));
         } else {
-            assertThat(projectModule.getTestSources()).isNull();
+            assertThat(projectModule.getTestSources().isOutputAvailable()).isFalse();
         }
     }
 

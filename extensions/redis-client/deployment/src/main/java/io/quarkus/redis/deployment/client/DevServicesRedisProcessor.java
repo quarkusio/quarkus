@@ -24,7 +24,6 @@ import io.quarkus.deployment.Feature;
 import io.quarkus.deployment.IsNormal;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.annotations.BuildSteps;
-import io.quarkus.deployment.builditem.ApplicationInstanceIdBuildItem;
 import io.quarkus.deployment.builditem.DevServicesComposeProjectBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem.RunnableDevService;
@@ -57,7 +56,6 @@ public class DevServicesRedisProcessor {
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
 
-    private static boolean ugh = false;
     /**
      * Label to add to shared Dev Service for Redis running in containers.
      * This allows other applications to discover the running service and use it instead of starting a new instance.
@@ -78,7 +76,6 @@ public class DevServicesRedisProcessor {
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             RedisBuildTimeConfig config,
             DevServicesTrackerBuildItem tracker,
-            ApplicationInstanceIdBuildItem applicationIdBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
@@ -186,7 +183,6 @@ public class DevServicesRedisProcessor {
 
             RunnableDevService answer = new RunnableDevService(
                     Feature.REDIS_CLIENT.getName(), launchMode, name,
-                    redisContainer.getContainerId(),
                     redisContainer, config, dynamicConfig, globalConfig, devServicesConfig, tracker);
 
             return answer;

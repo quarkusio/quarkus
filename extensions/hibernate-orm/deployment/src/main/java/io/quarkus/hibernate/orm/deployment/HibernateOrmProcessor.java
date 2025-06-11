@@ -271,8 +271,8 @@ public final class HibernateOrmProcessor {
             if (urls.isEmpty()) {
                 return;
             }
-            for (var desc : parser.parse(urls).values()) {
-                persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
+            for (var descriptor : parser.parse(urls).values()) {
+                persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(descriptor));
             }
         }
     }

@@ -71,10 +71,63 @@ public class DevServicesRedisContinuousTestingTest {
 
     // This tests behaviour in dev mode proper (rather than continuous testing)
     @Test
-    public void testDevModeServiceUpdatesContainersOnConfigChange() {
+    public void testDevModeCoexistingWithContinuousTestingServiceUpdatesContainersOnConfigChange() {
+        // Interacting with the app will force a refresh
+        // Note that driving continuous testing concurrently can sometimes cause 500s caused by containers not yet being available on slow machines
+        ContinuousTestingTestUtils continuousTestingTestUtils = new ContinuousTestingTestUtils();
+        ContinuousTestingTestUtils.TestStatus result = continuousTestingTestUtils.waitForNextCompletion();
+        assertEquals(result.getTotalTestsPassed(), 1);
+        assertEquals(result.getTotalTestsFailed(), 0);
+        ping();
+
         List<Container> started = getRedisContainers();
+        assertFalse(started.isEmpty());
+        Container container = started.get(0);
+        assertTrue(Arrays.stream(container.getPorts()).noneMatch(p -> p.getPublicPort() == 6377),
+                "Expected random port, but got: " + Arrays.toString(container.getPorts()));
+
+        int newPort = 6388;
+        int testPort = newPort + 1;
+        // Continuous tests and dev mode should *not* share containers, even if the port is fixed
+        // Specify that the fixed port is for dev mode, or one launch will fail with port conflicts
+        test.modifyResourceFile("application.properties",
+                s -> ContinuousTestingTestUtils.appProperties("%dev.quarkus.redis.devservices.port=" + newPort
+                        + "\n%test.quarkus.redis.devservices.port=" + testPort));
+        test.modifyTestSourceFile(PlainQuarkusTest.class, s -> s.replaceAll("redisClient", "updatedRedisClient"));
+
+        // Force another refresh
+        result = continuousTestingTestUtils.waitForNextCompletion();
+        assertEquals(result.getTotalTestsPassed(), 1);
+        assertEquals(result.getTotalTestsFailed(), 0);
+        ping();
+
+        List<Container> newContainers = getRedisContainersExcludingExisting(started);
+
+        // We expect 2 new containers, since test was also refreshed
+        assertEquals(2, newContainers.size(),
+                "New containers: "
+                        + prettyPrintContainerList(newContainers)
+                        + "\n Old containers: " + prettyPrintContainerList(started) + "\n All containers: "
+                        + prettyPrintContainerList(getAllContainers())); // this can be wrong
+        // We need to inspect the dev-mode container; we don't have a non-brittle way of distinguishing them, so just look in them all
+        boolean hasRightPort = newContainers.stream()
+                .anyMatch(newContainer -> hasPublicPort(newContainer, newPort));
+        assertTrue(hasRightPort,
+                "Expected port " + newPort + ", but got: "
+                        + newContainers.stream().map(c -> Arrays.toString(c.getPorts())).collect(Collectors.joining(", ")));
+        boolean hasRightTestPort = newContainers.stream()
+                .anyMatch(newContainer -> hasPublicPort(newContainer, testPort));
+        assertTrue(hasRightTestPort,
+                "Expected port " + testPort + ", but got: "
+                        + newContainers.stream().map(c -> Arrays.toString(c.getPorts())).collect(Collectors.joining(", ")));
+
+    }
+
+    @Test
+    public void testDevModeServiceUpdatesContainersOnConfigChange() {
         // Interacting with the app will force a refresh
         ping();
+        List<Container> started = getRedisContainers();
 
         assertFalse(started.isEmpty());
         Container container = started.get(0);
@@ -82,8 +135,6 @@ public class DevServicesRedisContinuousTestingTest {
                 "Expected random port, but got: " + Arrays.toString(container.getPorts()));
 
         int newPort = 6388;
-        // Continuous tests and dev mode should *not* share containers, even if the port is fixed
-        // Specify that the fixed port is for dev mode
         test.modifyResourceFile("application.properties",
                 s -> ContinuousTestingTestUtils.appProperties("quarkus.redis.devservices.port=" + newPort));
 
@@ -91,6 +142,7 @@ public class DevServicesRedisContinuousTestingTest {
         ping();
         List<Container> newContainers = getRedisContainersExcludingExisting(started);
 
+        // We expect 1 new containers, since test was not refreshed
         assertEquals(1, newContainers.size(),
                 "New containers: "
                         + prettyPrintContainerList(newContainers)
@@ -106,8 +158,8 @@ public class DevServicesRedisContinuousTestingTest {
 
     @Test
     public void testDevModeServiceDoesNotRestartContainersOnCodeChange() {
-        List<Container> started = getRedisContainers();
         ping();
+        List<Container> started = getRedisContainers();
 
         assertFalse(started.isEmpty());
         Container container = started.get(0);

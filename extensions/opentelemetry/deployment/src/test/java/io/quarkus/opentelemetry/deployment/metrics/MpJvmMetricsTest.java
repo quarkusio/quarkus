@@ -1,10 +1,6 @@
 package io.quarkus.opentelemetry.deployment.metrics;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import java.io.IOException;
-
-import jakarta.inject.Inject;
 
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
@@ -13,13 +9,15 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.opentelemetry.sdk.metrics.data.MetricData;
 import io.opentelemetry.sdk.metrics.data.MetricDataType;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporter;
 import io.quarkus.opentelemetry.deployment.common.exporter.InMemoryMetricExporterProvider;
 import io.quarkus.test.QuarkusUnitTest;
 
-public class JvmMetricsServiceTest {
+/**
+ * Mandatory Microprofile 2.0 JVM metrics
+ */
+public class MpJvmMetricsTest extends BaseJvmMetricsTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .setArchiveProducer(
@@ -34,9 +32,6 @@ public class JvmMetricsServiceTest {
                                             "quarkus.otel.metrics.exporter=in-memory\n" +
                                             "quarkus.otel.metric.export.interval=300ms\n"),
                                     "application.properties"));
-
-    @Inject
-    protected InMemoryMetricExporter metricExporter;
 
     // No need to reset between tests. Data is test independent. Will also run faster.
 
@@ -116,48 +111,5 @@ public class JvmMetricsServiceTest {
     void testThreadCountMetric() throws IOException {
         assertMetric("jvm.thread.count", "Number of executing platform threads.", "{thread}",
                 MetricDataType.LONG_SUM);
-    }
-
-    private void assertMetric(final String metricName,
-            final String metricDescription, final String metricUnit,
-            final MetricDataType metricType) {
-
-        metricExporter.assertCountAtLeast(metricName, null, 1);
-        MetricData metric = metricExporter.getFinishedMetricItems(metricName, null).get(0);
-
-        assertThat(metric).isNotNull();
-        assertThat(metric.getName()).isEqualTo(metricName);
-        assertThat(metric.getDescription()).isEqualTo(metricDescription);
-        assertThat(metric.getType()).isEqualTo(metricType);
-        assertThat(metric.getUnit()).isEqualTo(metricUnit);
-
-        // only one of them will be present per test
-        metric.getDoubleSumData().getPoints().stream()
-                .forEach(point -> {
-                    assertThat(point.getValue())
-                            .withFailMessage("Double" + point.getValue() + " was not an expected result")
-                            .isGreaterThan(0);
-                });
-
-        metric.getLongSumData().getPoints().stream()
-                .forEach(point -> {
-                    assertThat(point.getValue())
-                            .withFailMessage("Long" + point.getValue() + " was not an expected result")
-                            .isGreaterThanOrEqualTo(0);
-                });
-
-        metric.getDoubleGaugeData().getPoints().stream()
-                .forEach(point -> {
-                    assertThat(point.getValue())
-                            .withFailMessage("Double" + point.getValue() + " was not an expected result")
-                            .isGreaterThanOrEqualTo(0);
-                });
-
-        metric.getHistogramData().getPoints().stream()
-                .forEach(point -> {
-                    assertThat(point.hasMin()).isTrue();
-                    assertThat(point.hasMax()).isTrue();
-                    assertThat(point.getCounts().size()).isGreaterThan(0);
-                });
     }
 }

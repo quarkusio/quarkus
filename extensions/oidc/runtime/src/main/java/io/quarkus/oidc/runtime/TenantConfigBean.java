@@ -64,6 +64,17 @@ public final class TenantConfigBean {
         return dynamicTenantsConfig.get(tenantId);
     }
 
+    /**
+     * Remove dynamic tenant
+     *
+     * @param tenantId dynamic tenant id
+     * @return the removed dynamic tenant
+     */
+    @Deprecated(forRemoval = true)
+    public TenantConfigContext removeDynamicTenant(String tenantId) {
+        return dynamicTenantsConfig.remove(tenantId);
+    }
+
     public static class Destroyer implements BeanDestroyer<TenantConfigBean> {
 
         @Override

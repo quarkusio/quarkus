@@ -268,8 +268,8 @@ public final class HibernateOrmProcessor {
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
         if (!shouldIgnorePersistenceXmlResources(config)) {
             var explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
-            for (var desc : explicitDescriptors) {
-                persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
+            for (var descriptor : explicitDescriptors) {
+                persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(descriptor));
             }
         }
     }
@@ -1306,15 +1306,15 @@ public final class HibernateOrmProcessor {
         QuarkusScanner scanner = new QuarkusScanner();
         Set<PackageDescriptor> packageDescriptors = new HashSet<>();
         for (String packageName : jpaModel.getAllModelPackageNames()) {
-            QuarkusScanner.PackageDescriptorImpl desc = new QuarkusScanner.PackageDescriptorImpl(packageName);
-            packageDescriptors.add(desc);
+            QuarkusScanner.PackageDescriptorImpl packageDescriptor = new QuarkusScanner.PackageDescriptorImpl(packageName);
+            packageDescriptors.add(packageDescriptor);
         }
         scanner.setPackageDescriptors(packageDescriptors);
         Set<ClassDescriptor> classDescriptors = new HashSet<>();
         for (String className : jpaModel.getEntityClassNames()) {
-            QuarkusScanner.ClassDescriptorImpl desc = new QuarkusScanner.ClassDescriptorImpl(className,
+            QuarkusScanner.ClassDescriptorImpl classDescriptor = new QuarkusScanner.ClassDescriptorImpl(className,
                     ClassDescriptor.Categorization.MODEL);
-            classDescriptors.add(desc);
+            classDescriptors.add(classDescriptor);
         }
         scanner.setClassDescriptors(classDescriptors);
         return scanner;

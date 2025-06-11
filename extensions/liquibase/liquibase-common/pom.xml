@@ -5,14 +5,14 @@
     <parent>
         <artifactId>quarkus-liquibase-parent-aggregator</artifactId>
         <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
+        <version>3.23.3</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>quarkus-liquibase-common</artifactId>
     <name>Quarkus - Liquibase - Common</name>
-    <version>999-SNAPSHOT</version>
+    <version>3.23.3</version>
 
     <dependencies>
         <dependency>

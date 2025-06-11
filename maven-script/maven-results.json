@@ -1,0 +1,9 @@
+{
+  "/home/jason/projects/triage/java/quarkus/maven-script": {
+    "name": "com.example:maven-script",
+    "projectType": "library",
+    "implicitDependencies": {
+      "projects": []
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "../bom/application": {
+    "name": "bom",
+    "projectType": "library",
+    "implicitDependencies": {
+      "projects": ["bootstrap_bom"]
+    }
+  },
+  "../bom/test": {
+    "name": "bom_test",
+    "projectType": "library",
+    "implicitDependencies": {
+      "projects": ["bom"]
+    }
+  }
+}

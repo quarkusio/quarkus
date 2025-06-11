@@ -1,0 +1,539 @@
+import {
+  CreateDependencies,
+  CreateNodesV2,
+  CreateNodesContextV2,
+  CreateNodesResult,
+  DependencyType,
+  detectPackageManager,
+  NxJsonConfiguration,
+  TargetConfiguration,
+  workspaceRoot,
+} from '@nx/devkit';
+import { dirname, join, relative } from 'path';
+import { existsSync, readFileSync, unlinkSync } from 'fs';
+import { exec, execSync, spawn } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+
+export interface MavenPluginOptions {
+  buildTargetName?: string;
+  testTargetName?: string;
+  serveTargetName?: string;
+  javaExecutable?: string;
+  mavenExecutable?: string;
+  compilerArgs?: string[];
+}
+
+const DEFAULT_OPTIONS: MavenPluginOptions = {
+  buildTargetName: 'build',
+  testTargetName: 'test',
+  serveTargetName: 'serve',
+  javaExecutable: 'java',
+  mavenExecutable: 'mvn',
+  compilerArgs: [],
+};
+
+/**
+ * Maven plugin that uses a Java program to analyze pom.xml files
+ * and generate Nx project configurations with comprehensive dependencies
+ */
+export const createNodesV2: CreateNodesV2 = [
+  '**/pom.xml',
+  async (configFiles, options, context) => {
+    const opts: MavenPluginOptions = Object.assign({}, DEFAULT_OPTIONS, options || {});
+
+    console.log(`Maven plugin found ${configFiles.length} total pom.xml files`);
+
+    // Filter out the maven-script pom.xml and build artifact directories  
+    const filteredConfigFiles = configFiles.filter(file =>
+      !file.includes('maven-script/pom.xml') &&
+      !file.includes('target/') &&
+      !file.includes('node_modules/') &&
+      file !== 'pom.xml' // Exclude workspace root
+    );
+
+    // No limits - process all projects but in efficient batches
+
+    console.log(`Filtered config files: ${filteredConfigFiles.length} files`);
+
+    if (filteredConfigFiles.length === 0) {
+      return [];
+    }
+
+    try {
+      // Send all files to Java - let Java handle batching and memory management
+      const batchResults = await generateBatchNxConfigFromMavenAsync(filteredConfigFiles, opts, context);
+
+      console.log(`Generated ${Object.keys(batchResults).length} Maven project configurations`);
+
+      // Convert batch results to the expected format
+      const tupleResults: Array<[string, any]> = [];
+      
+      for (const [projectRoot, nxConfig] of Object.entries(batchResults)) {
+        // Convert absolute path from Java back to relative path for matching
+        const relativePath = projectRoot.startsWith(workspaceRoot) 
+          ? projectRoot.substring(workspaceRoot.length + 1)
+          : projectRoot;
+          
+        // Find the corresponding config file
+        const configFile = filteredConfigFiles.find(file => dirname(file) === relativePath);
+        if (!configFile) {
+          console.log(`DEBUG: No config file found for projectRoot: "${relativePath}" (from: "${projectRoot}")`);
+          if (Object.keys(batchResults).length < 5) {
+            console.log(`DEBUG: Available config files: ${filteredConfigFiles.slice(0, 3).join(', ')}`);
+          }
+          continue;
+        }
+
+        // Cache the batch results for createDependencies to use later
+        cachedBatchResults.set(projectRoot, nxConfig);
+
+        // Normalize and validate targets
+        const normalizedTargets = normalizeTargets(nxConfig.targets || {}, opts);
+
+        const result = {
+          projects: {
+            [relativePath]: {
+              name: nxConfig.name || projectRoot.split('/').pop() || 'unknown',
+              root: relativePath,
+              sourceRoot: nxConfig.sourceRoot || join(relativePath, 'src/main/java'),
+              projectType: nxConfig.projectType || 'library',
+              targets: normalizedTargets,
+              tags: nxConfig.tags || [],
+              implicitDependencies: (nxConfig.implicitDependencies?.projects || []).concat(nxConfig.implicitDependencies?.inheritsFrom || []),
+              namedInputs: nxConfig.namedInputs,
+              metadata: {
+                technologies: ['maven', 'java'],
+                framework: detectFramework(nxConfig),
+              },
+            },
+          },
+        };
+
+        tupleResults.push([configFile, result]);
+      }
+      
+      console.log(`Generated ${tupleResults.length} valid project configurations`);
+      return tupleResults;
+
+    } catch (error) {
+      console.warn(`Failed to process Maven projects:`, error.message);
+      return [];
+    }
+  },
+];
+
+/**
+ * Create dependencies based on Maven dependency analysis
+ */
+// Cache for batch results to avoid re-processing in createDependencies
+let cachedBatchResults: Map<string, any> = new Map();
+
+/**
+ * Create dependencies using cached batch results (no additional processes)
+ */
+export const createDependencies: CreateDependencies = async () => {
+  const dependencies: ReturnType<CreateDependencies> = [];
+
+  // Use cached results from createNodesV2 batch processing
+  for (const [projectRoot, nxConfig] of cachedBatchResults.entries()) {
+    if (!nxConfig?.implicitDependencies) continue;
+
+    const sourceProjectName = nxConfig.name;
+    if (!sourceProjectName) continue;
+
+    // Add project dependencies
+    const projectDeps = nxConfig.implicitDependencies.projects || [];
+    for (const depName of projectDeps) {
+      // Find target project in cached results
+      for (const [_, targetConfig] of cachedBatchResults.entries()) {
+        if (targetConfig.name === depName) {
+          dependencies.push({
+            source: sourceProjectName,
+            target: targetConfig.name,
+            type: DependencyType.static,
+          });
+          break;
+        }
+      }
+    }
+
+    // Add parent dependencies
+    const parentDeps = nxConfig.implicitDependencies.inheritsFrom || [];
+    for (const parentName of parentDeps) {
+      // Find parent project in cached results
+      for (const [_, parentConfig] of cachedBatchResults.entries()) {
+        if (parentConfig.name === parentName) {
+          dependencies.push({
+            source: sourceProjectName,
+            target: parentConfig.name,
+            type: DependencyType.implicit,
+          });
+          break;
+        }
+      }
+    }
+  }
+
+  console.log(`Generated ${dependencies.length} dependencies from cached batch results`);
+  return dependencies;
+};
+
+/**
+ * Generate Nx configuration by calling the Java Maven analyzer (async version)
+ */
+async function generateNxConfigFromMavenAsync(
+  pomPath: string,
+  options: MavenPluginOptions,
+  context: CreateNodesContextV2
+): Promise<any> {
+  const javaAnalyzerPath = findJavaAnalyzer();
+  if (!javaAnalyzerPath) {
+    throw new Error('Maven analyzer Java program not found. Please ensure maven-script is compiled.');
+  }
+
+  try {
+    // Use Maven exec to run the Java program with proper classpath
+    const mavenScriptDir = javaAnalyzerPath.endsWith('.jar')
+      ? dirname(javaAnalyzerPath)
+      : dirname(dirname(javaAnalyzerPath)); // target/classes -> project root
+
+    // Convert relative path to absolute path
+    const absolutePomPath = pomPath.startsWith('/') ? pomPath : join(workspaceRoot, pomPath);
+    
+    console.log(`Analyzing ${absolutePomPath} using Maven script in ${mavenScriptDir}`);
+
+    const command = `${options.mavenExecutable} exec:java -Dexec.mainClass="MavenModelReader" -Dexec.args="${absolutePomPath} --nx" -q`;
+    const { stdout, stderr } = await execAsync(command, {
+      cwd: mavenScriptDir,
+      timeout: 30000, // 30 second timeout
+      maxBuffer: 1024 * 1024 * 10, // 10MB buffer for large outputs
+    });
+
+    if (stderr && stderr.trim()) {
+      console.warn(`Maven analyzer stderr: ${stderr}`);
+    }
+
+    // Parse JSON output from the Java program
+    const output = stdout;
+    const jsonStart = output.indexOf('{');
+    const jsonEnd = output.lastIndexOf('}') + 1;
+
+    if (jsonStart === -1 || jsonEnd === 0) {
+      throw new Error('No valid JSON output from Maven analyzer');
+    }
+
+    const jsonOutput = output.substring(jsonStart, jsonEnd);
+    return JSON.parse(jsonOutput);
+
+  } catch (error) {
+    throw new Error(`Failed to execute Maven analyzer: ${error.message}`);
+  }
+}
+
+/**
+ * Generate Nx configurations for multiple projects using batch processing
+ */
+async function generateBatchNxConfigFromMavenAsync(
+  pomPaths: string[],
+  options: MavenPluginOptions,
+  context: CreateNodesContextV2
+): Promise<Record<string, any>> {
+  const javaAnalyzerPath = findJavaAnalyzer();
+  if (!javaAnalyzerPath) {
+    throw new Error('Maven analyzer Java program not found. Please ensure maven-script is compiled.');
+  }
+  
+  try {
+    // Use Maven exec to run the Java program with stdin
+    const mavenScriptDir = javaAnalyzerPath.endsWith('.jar') 
+      ? dirname(javaAnalyzerPath) 
+      : dirname(dirname(javaAnalyzerPath)); // target/classes -> project root
+    
+    // Convert relative paths to absolute paths
+    const absolutePomPaths = pomPaths.map(pomPath => 
+      pomPath.startsWith('/') ? pomPath : join(workspaceRoot, pomPath)
+    );
+    
+    console.log(`Processing ${absolutePomPaths.length} Maven projects...`);
+    
+    // Create unique output file name to avoid conflicts
+    const outputFile = join(workspaceRoot, `maven-results-${Date.now()}.json`);
+    
+    const { stdout, stderr } = await new Promise<{stdout: string, stderr: string}>((resolve, reject) => {
+      const child = spawn(options.mavenExecutable, [
+        'exec:java',
+        '-Dexec.mainClass=MavenModelReader',
+        '-Dexec.args=--hierarchical --nx',
+        `-Dmaven.output.file=${outputFile}`,
+        `-Duser.dir=${workspaceRoot}`,
+        '-q'
+      ], {
+        cwd: mavenScriptDir,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      child.stdout?.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      child.stderr?.on('data', (data) => {
+        const text = data.toString();
+        stderr += text;
+        // Only show important logs, not debug spam
+        if (text.includes('ERROR:') || text.includes('Final results')) {
+          console.log(`[Java] ${text.trim()}`);
+        }
+      });
+
+      child.on('close', (code) => {
+        if (code === 0) {
+          resolve({ stdout, stderr });
+        } else {
+          reject(new Error(`Maven process exited with code ${code}. stderr: ${stderr}`));
+        }
+      });
+
+      child.on('error', (error) => {
+        reject(new Error(`Failed to spawn Maven process: ${error.message}`));
+      });
+
+      // No stdin input needed for hierarchical traversal
+      child.stdin?.end();
+
+      // Shorter timeout for responsiveness
+      setTimeout(() => {
+        child.kill();
+        reject(new Error('Maven process timed out after 1 minute'));
+      }, 60000);
+    });
+    
+    if (stderr && stderr.trim()) {
+      console.warn(`Maven analyzer stderr: ${stderr}`);
+    }
+    
+    // Check if process completed successfully
+    if (!stdout.includes('SUCCESS:')) {
+      throw new Error('Maven analyzer did not complete successfully');
+    }
+    
+    // Read JSON output from the file
+    try {
+      const jsonContent = readFileSync(outputFile, 'utf8');
+      
+      // Clean up the temp file
+      try {
+        unlinkSync(outputFile);
+      } catch (e) {
+        console.warn(`Could not delete temp file ${outputFile}: ${e.message}`);
+      }
+      
+      return JSON.parse(jsonContent);
+    } catch (error) {
+      throw new Error(`Failed to read output file ${outputFile}: ${error.message}`);
+    }
+    
+  } catch (error) {
+    throw new Error(`Failed to execute Maven analyzer in batch mode: ${error.message}`);
+  }
+}
+
+/**
+ * Build classpath including Maven dependencies
+ */
+function buildClasspath(javaAnalyzerPath: string): string {
+  const classpathParts: string[] = [javaAnalyzerPath];
+
+  // If it's a JAR file, just return it
+  if (javaAnalyzerPath.endsWith('.jar')) {
+    return javaAnalyzerPath;
+  }
+
+  // For compiled classes, we need to include Maven dependencies
+  const mavenScriptDir = dirname(javaAnalyzerPath); // target/classes -> target
+  const projectDir = dirname(mavenScriptDir);       // target -> project root
+
+  try {
+    // Use Maven to build dependency classpath
+    const command = 'mvn dependency:build-classpath -q -Dmdep.outputFile=/dev/stdout';
+    const dependencyClasspath = execSync(command, {
+      cwd: projectDir,
+      encoding: 'utf8',
+      timeout: 30000,
+    }).trim();
+
+    if (dependencyClasspath) {
+      classpathParts.push(dependencyClasspath);
+    }
+  } catch (error) {
+    console.warn('Failed to build Maven dependency classpath, using basic classpath');
+  }
+
+  return classpathParts.join(process.platform === 'win32' ? ';' : ':');
+}
+
+/**
+ * Find the compiled Java Maven analyzer
+ */
+function findJavaAnalyzer(): string | null {
+  // Look for the compiled Java program in common locations
+  const possiblePaths = [
+    join(workspaceRoot, 'maven-script/target/classes'),
+    join(workspaceRoot, 'tools/maven-script/target/classes'),
+    join(workspaceRoot, 'scripts/maven-script/target/classes'),
+    join(__dirname, '../maven-script/target/classes'),
+  ];
+
+  for (const path of possiblePaths) {
+    if (existsSync(join(path, 'MavenModelReader.class'))) {
+      return path;
+    }
+  }
+
+  // Also check if there's a JAR file
+  const jarPaths = [
+    join(workspaceRoot, 'maven-script/target/maven-script-1.0-SNAPSHOT.jar'),
+    join(workspaceRoot, 'tools/maven-script/target/maven-script-1.0-SNAPSHOT.jar'),
+  ];
+
+  for (const jarPath of jarPaths) {
+    if (existsSync(jarPath)) {
+      return jarPath;
+    }
+  }
+
+  return null;
+}
+
+// Simplified function for finding Maven projects
+function findMavenProjects(): string[] {
+  try {
+    const command = 'find . -name "pom.xml" -type f';
+    const output = execSync(command, {
+      cwd: workspaceRoot,
+      encoding: 'utf8',
+    });
+
+    const pomFiles = output.trim().split('\n').filter(Boolean);
+    return pomFiles.map(pomFile => dirname(pomFile.replace('./', '')))
+                   .filter(path => path !== '.');
+  } catch {
+    return [];
+  }
+}
+
+// Simplified function for getting project name
+function getProjectName(projectPath: string): string | null {
+  return projectPath.split('/').pop() || null;
+}
+
+// Find a project by its Maven artifactId
+function findProjectByName(artifactId: string, mavenProjects: string[]): string | null {
+  // Try to find by directory name first (most common case)
+  for (const projectPath of mavenProjects) {
+    const dirName = projectPath.split('/').pop();
+    if (dirName === artifactId) {
+      return dirName;
+    }
+  }
+
+  // Try to find by parsing pom.xml artifactId for more accurate matching
+  for (const projectPath of mavenProjects) {
+    try {
+      const pomPath = join(workspaceRoot, projectPath, 'pom.xml');
+      if (existsSync(pomPath)) {
+        const pomContent = readFileSync(pomPath, 'utf8');
+        const artifactIdMatch = pomContent.match(/<artifactId>([^<]+)<\/artifactId>/);
+        if (artifactIdMatch && artifactIdMatch[1] === artifactId) {
+          return projectPath.split('/').pop() || artifactId;
+        }
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Detect framework based on dependencies and plugins in the Maven config
+ */
+function detectFramework(nxConfig: any): string {
+  const dependencies = nxConfig.implicitDependencies?.external || [];
+  const targets = nxConfig.targets || {};
+
+  // Check for Spring Boot
+  if (dependencies.some((dep: string) => dep.includes('spring-boot')) ||
+      Object.values(targets).some((target: any) =>
+        target.options?.command?.includes('spring-boot'))) {
+    return 'spring-boot';
+  }
+
+  // Check for Quarkus
+  if (dependencies.some((dep: string) => dep.includes('quarkus')) ||
+      Object.values(targets).some((target: any) =>
+        target.options?.command?.includes('quarkus'))) {
+    return 'quarkus';
+  }
+
+  // Check for Micronaut
+  if (dependencies.some((dep: string) => dep.includes('micronaut'))) {
+    return 'micronaut';
+  }
+
+  // Check for Jakarta EE
+  if (dependencies.some((dep: string) => dep.includes('jakarta'))) {
+    return 'jakarta-ee';
+  }
+
+  // Check for Maven specific patterns
+  if (Object.keys(targets).includes('serve')) {
+    return 'web-app';
+  }
+
+  return 'maven';
+}
+
+/**
+ * Normalize target configurations from Maven analysis
+ */
+function normalizeTargets(targets: Record<string, any>, options: MavenPluginOptions): Record<string, TargetConfiguration> {
+  const normalizedTargets: Record<string, TargetConfiguration> = {};
+
+  for (const [name, target] of Object.entries(targets)) {
+    // Map common Maven targets to Nx conventions
+    let targetName = name;
+    if (name === 'package' && options.buildTargetName !== 'package') {
+      targetName = options.buildTargetName!;
+    } else if (name === 'test' && options.testTargetName !== 'test') {
+      targetName = options.testTargetName!;
+    } else if (name === 'serve' && options.serveTargetName !== 'serve') {
+      targetName = options.serveTargetName!;
+    }
+
+    normalizedTargets[targetName] = {
+      executor: target.executor || '@nx/run-commands:run-commands',
+      options: target.options || {},
+      inputs: target.inputs,
+      outputs: target.outputs,
+      dependsOn: target.dependsOn,
+      configurations: target.configurations,
+    };
+  }
+
+  return normalizedTargets;
+}
+
+/**
+ * Plugin configuration for registration
+ */
+export default {
+  name: 'maven-plugin2',
+  createNodesV2,
+  createDependencies, // Re-enabled: now uses cached batch results, no additional processes
+};

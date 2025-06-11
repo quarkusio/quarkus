@@ -1,0 +1,48 @@
+{
+  "plugins": [
+    {
+      "plugin": "./maven-plugin2.ts",
+      "options": {
+        "buildTargetName": "build",
+        "testTargetName": "test",
+        "serveTargetName": "serve",
+        "javaExecutable": "java",
+        "mavenExecutable": "mvn"
+      }
+    }
+  ],
+  "defaultProject": "quarkus-project",
+  "targetDefaults": {
+    "build": {
+      "cache": true,
+      "dependsOn": ["^build"],
+      "inputs": ["production", "^production"]
+    },
+    "test": {
+      "cache": true,
+      "inputs": ["default", "^production"],
+      "outputs": ["{projectRoot}/target/surefire-reports"]
+    },
+    "lint": {
+      "cache": true,
+      "inputs": ["default", "{workspaceRoot}/.eslintrc.json"]
+    }
+  },
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "!{projectRoot}/target/**"],
+    "production": [
+      "default",
+      "!{projectRoot}/**/*.spec.java",
+      "!{projectRoot}/**/*Test.java",
+      "!{projectRoot}/src/test/**/*"
+    ]
+  },
+  "generators": {
+    "@nx/maven": {
+      "application": {
+        "groupId": "com.example",
+        "version": "1.0-SNAPSHOT"
+      }
+    }
+  }
+}

@@ -54,6 +54,10 @@ public class FrontendResource {
     OidcClient jwtBearerGrantClient;
 
     @Inject
+    @RestClient
+    ProtectedResourceServiceRefreshIntervalTestClient tokenRefreshIntervalTestClient;
+
+    @Inject
     OidcClients clients;
 
     @GET
@@ -66,6 +70,12 @@ public class FrontendResource {
     @Path("crashTest")
     public String crashTest() {
         return protectedResourceServiceCrashTestClient.echoToken();
+    }
+
+    @GET
+    @Path("tokenRefreshInterval")
+    public String tokenRefreshInterval() {
+        return tokenRefreshIntervalTestClient.echoToken();
     }
 
     @GET

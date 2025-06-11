@@ -366,4 +366,8 @@ public class OidcClientImpl implements OidcClient {
         }
         return request;
     }
+
+    OidcClientConfig getConfig() {
+        return oidcConfig;
+    }
 }

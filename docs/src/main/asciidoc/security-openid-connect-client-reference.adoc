@@ -713,6 +713,16 @@ You can also inject named `Tokens`, see <<named-oidc-clients,Inject named OidcCl
 `OidcClientRequestReactiveFilter`, `OidcClientRequestFilter` and `Tokens` producers will refresh the current expired access token if the refresh token is available.
 Additionally, the `quarkus.oidc-client.refresh-token-time-skew` property can be used for a preemptive access token refreshment to avoid sending nearly expired access tokens that might cause HTTP 401 errors. For example, if this property is set to `3S` and the access token will expire in less than 3 seconds, then this token will be auto-refreshed.
 
+
+By default, OIDC client refreshes the token during the current request, when it detects that it has expired, or nearly expired if the [refresh token time skew](https://quarkus.io/guides/security-openid-connect-client-reference#quarkus-oidc-client_quarkus-oidc-client-refresh-token-time-skew) is configured.
+Performance critical applications may want to avoid having to wait for a possible token refresh during the incoming requests and configure an asynchronous token refresh instead, for example:
+
+[source,properties]
+----
+quarkus.oidc-client.refresh-interval=1m <1>
+----
+<1> Check every minute if the current access token is expired and must be refreshed.
+
 If the access token needs to be refreshed, but no refresh token is available, then an attempt is made to acquire a new token by using a configured grant, such as `client_credentials`.
 
 Some OpenID Connect Providers will not return a refresh token in a `client_credentials` grant response. For example, starting from Keycloak 12, a refresh token will not be returned by default for `client_credentials`. The providers might also restrict the number of times a refresh token can be used.

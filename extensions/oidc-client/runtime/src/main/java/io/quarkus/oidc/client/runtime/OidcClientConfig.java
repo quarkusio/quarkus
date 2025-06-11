@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import io.quarkus.oidc.client.OidcClient;
 import io.quarkus.oidc.client.OidcClientConfigBuilder;
 import io.quarkus.oidc.common.runtime.OidcConstants;
 import io.quarkus.oidc.common.runtime.config.OidcClientCommonConfig;
@@ -171,6 +172,16 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
      * Custom HTTP headers which have to be sent to the token endpoint
      */
     Map<String, String> headers();
+
+    /**
+     * Token refresh interval.
+     * By default, OIDC client refreshes the token during the current request, when it detects that it has expired,
+     * or nearly expired if the {@link #refreshTokenTimeSkew()} is configured.
+     * But, when this property is configured, OIDC client can refresh the token asynchronously in the configured interval.
+     * This property is only effective with OIDC client filters and other {@link AbstractTokensProducer} extensions,
+     * but not when you use the {@link OidcClient#getTokens()} API directly.
+     */
+    Optional<Duration> refreshInterval();
 
     /**
      * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.

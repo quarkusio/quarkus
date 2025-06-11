@@ -91,7 +91,8 @@ final class OidcClientConfigImpl implements OidcClientConfig {
         CREDENTIALS_JWT_ASSERTION,
         CREDENTIALS_JWT_AUDIENCE,
         CREDENTIALS_JWT_TOKEN_ID,
-        JWT_BEARER_TOKEN_PATH
+        JWT_BEARER_TOKEN_PATH,
+        REFRESH_INTERVAL
     }
 
     final Map<ConfigMappingMethods, Boolean> invocationsRecorder = new EnumMap<>(ConfigMappingMethods.class);
@@ -403,6 +404,12 @@ final class OidcClientConfigImpl implements OidcClientConfig {
     public Map<String, String> headers() {
         invocationsRecorder.put(ConfigMappingMethods.HEADERS, true);
         return Map.of();
+    }
+
+    @Override
+    public Optional<Duration> refreshInterval() {
+        invocationsRecorder.put(ConfigMappingMethods.REFRESH_INTERVAL, true);
+        return Optional.empty();
     }
 
     @Override

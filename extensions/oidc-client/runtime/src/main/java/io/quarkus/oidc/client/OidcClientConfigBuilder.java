@@ -33,6 +33,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         private final Optional<List<String>> scopes;
         private final boolean clientEnabled;
         private final Optional<String> id;
+        private final Optional<Duration> refreshInterval;;
 
         private OidcClientConfigImpl(OidcClientConfigBuilder builder) {
             super(builder);
@@ -47,6 +48,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
             this.scopes = builder.scopes.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.scopes));
             this.clientEnabled = builder.clientEnabled;
             this.id = builder.id;
+            this.refreshInterval = builder.refreshInterval;
         }
 
         @Override
@@ -103,6 +105,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         public Map<String, String> headers() {
             return headers;
         }
+
+        @Override
+        public Optional<Duration> refreshInterval() {
+            return refreshInterval;
+        }
     }
 
     /**
@@ -123,6 +130,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
     private Optional<Duration> refreshTokenTimeSkew;
     private boolean clientEnabled;
     private Optional<String> id;
+    private Optional<Duration> refreshInterval;
 
     /**
      * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
@@ -146,6 +154,7 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
         this.refreshTokenTimeSkew = config.refreshTokenTimeSkew();
         this.clientEnabled = config.clientEnabled();
         this.id = config.id();
+        this.refreshInterval = config.refreshInterval();
         if (config.scopes().isPresent()) {
             this.scopes.addAll(config.scopes().get());
         }
@@ -328,6 +337,11 @@ public final class OidcClientConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public GrantBuilder grant() {
         return new GrantBuilder(this);
+    }
+
+    public OidcClientConfigBuilder refreshInterval(Duration refreshInterval) {
+        this.refreshInterval = Optional.ofNullable(refreshInterval);
+        return this;
     }
 
     /**

@@ -16,7 +16,7 @@ import io.quarkus.oidc.common.runtime.OidcConstants;
 public class OidcClientConfig extends OidcClientCommonConfig implements io.quarkus.oidc.client.runtime.OidcClientConfig {
 
     public OidcClientConfig() {
-
+        this.refreshInterval = Optional.empty();
     }
 
     public OidcClientConfig(io.quarkus.oidc.client.runtime.OidcClientConfig mapping) {
@@ -32,6 +32,7 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
         grantOptions = mapping.grantOptions();
         earlyTokensAcquisition = mapping.earlyTokensAcquisition();
         headers = mapping.headers();
+        refreshInterval = mapping.refreshInterval();
     }
 
     /**
@@ -77,6 +78,8 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
     public boolean absoluteExpiresIn;
 
     public Grant grant = new Grant();
+
+    private final Optional<Duration> refreshInterval;
 
     @Override
     public Optional<String> id() {
@@ -131,6 +134,11 @@ public class OidcClientConfig extends OidcClientCommonConfig implements io.quark
     @Override
     public Map<String, String> headers() {
         return headers;
+    }
+
+    @Override
+    public Optional<Duration> refreshInterval() {
+        return refreshInterval;
     }
 
     public static class Grant implements io.quarkus.oidc.client.runtime.OidcClientConfig.Grant {

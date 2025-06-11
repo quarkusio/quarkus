@@ -63,24 +63,20 @@ class OpenApiIntegrationTest {
                         is(COLLECTIONS_SCHEMA_REF))
                 .body("paths.'/collections'.post.responses.'201'.content.'application/json'.schema.$ref",
                         is(COLLECTIONS_SCHEMA_REF))
-                // Disabled as it's currently failing - needs investigation
-                //                .body("paths.'/collections'.post.security[0].SecurityScheme", Matchers.hasItem("user"))
+                .body("paths.'/collections'.post.security[0].SecurityScheme", Matchers.hasItem("user"))
                 .body("paths.'/collections/{id}'", Matchers.hasKey("get"))
                 .body("paths.'/collections/{id}'.get.responses.'200'.content.'application/json'.schema.$ref",
                         is(COLLECTIONS_SCHEMA_REF))
-                // Disabled as it's currently failing - needs investigation
-                //                .body("paths.'/collections/{id}'.get.security[0].SecurityScheme", Matchers.hasItem("user"))
+                .body("paths.'/collections/{id}'.get.security[0].SecurityScheme", Matchers.hasItem("user"))
                 .body("paths.'/collections/{id}'", Matchers.hasKey("put"))
                 .body("paths.'/collections/{id}'.put.requestBody.content.'application/json'.schema.$ref",
                         is(COLLECTIONS_SCHEMA_REF))
                 .body("paths.'/collections/{id}'.put.responses.'201'.content.'application/json'.schema.$ref",
                         is(COLLECTIONS_SCHEMA_REF))
-                // Disabled as it's currently failing - needs investigation
-                //                .body("paths.'/collections/{id}'.put.security[0].SecurityScheme", Matchers.hasItem("user"))
+                .body("paths.'/collections/{id}'.put.security[0].SecurityScheme", Matchers.hasItem("user"))
                 .body("paths.'/collections/{id}'", Matchers.hasKey("delete"))
                 .body("paths.'/collections/{id}'.delete.responses", Matchers.hasKey("204"))
-                // Disabled as it's currently failing - needs investigation
-                //                .body("paths.'/collections/{id}'.delete.security[0].SecurityScheme", Matchers.hasItem("admin"))
+                .body("paths.'/collections/{id}'.delete.security[0].SecurityScheme", Matchers.hasItem("admin"))
                 .body("paths.'/empty-list-items'", Matchers.hasKey("get"))
                 .body("paths.'/empty-list-items'.get.tags", Matchers.hasItem("EmptyListItemsResource"))
                 .body("paths.'/empty-list-items'", Matchers.hasKey("post"))

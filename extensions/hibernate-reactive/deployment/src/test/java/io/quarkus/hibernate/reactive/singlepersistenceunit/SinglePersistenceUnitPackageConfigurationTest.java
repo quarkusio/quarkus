@@ -60,7 +60,7 @@ public class SinglePersistenceUnitPackageConfigurationTest {
     public void testExcluded(UniAsserter asserter) {
         ExcludedEntity entity = new ExcludedEntity("gsmet");
         asserter.assertFailedWith(() -> persist(entity), t -> {
-            assertThat(t).hasMessageContaining("Unable to locate persister:");
+            assertThat(t).hasMessageContaining("Unknown entity type:");
         });
     }
 

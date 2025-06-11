@@ -2,6 +2,7 @@ package io.quarkus.it.keycloak;
 
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.enterprise.context.ApplicationScoped;
@@ -14,6 +15,7 @@ import io.quarkus.oidc.OidcTenantConfig;
 import io.quarkus.oidc.OidcTenantConfig.Provider;
 import io.quarkus.oidc.TenantConfigResolver;
 import io.quarkus.oidc.runtime.OidcUtils;
+import io.quarkus.oidc.runtime.TenantConfigBean;
 import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
@@ -23,6 +25,9 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
     @Inject
     @ConfigProperty(name = "keycloak.url")
     String keycloakUrl;
+
+    @Inject
+    TenantConfigBean tenantConfigBean;
 
     @Override
     public Uni<OidcTenantConfig> resolve(RoutingContext context,
@@ -47,11 +52,46 @@ public class CustomTenantConfigResolver implements TenantConfigResolver {
             // Expect an already resolved tenant context be used
             if (path.endsWith("code-flow-user-info-dynamic-github")) {
                 context.put("tenant-config-resolver", "true");
+
+                List<String> update = context.queryParam("update");
+                if (update != null && !update.isEmpty() && "true".equals(update.get(0))) {
+                    var currentTenantConfig = tenantConfigBean.getDynamicTenant("code-flow-user-info-dynamic-github")
+                            .getOidcTenantConfig();
+                    if ("name".equals(currentTenantConfig.token().principalClaim().get())) {
+                        // This is the original config
+                        OidcTenantConfig updatedConfig = OidcTenantConfig.builder(currentTenantConfig)
+                                .token().principalClaim("email").end()
+                                .build();
+                        return Uni.createFrom().item(updatedConfig);
+                    }
+                }
+
+                List<String> reconnect = context.queryParam("reconnect");
+                if (reconnect != null && !reconnect.isEmpty() && "true".equals(reconnect.get(0))) {
+
+                    var currentTenantConfig = tenantConfigBean.getDynamicTenant("code-flow-user-info-dynamic-github")
+                            .getOidcTenantConfig();
+                    if ("email".equals(currentTenantConfig.token().principalClaim().get())) {
+                        // This is the config created at the update step
+                        OidcTenantConfig updatedConfig = OidcTenantConfig.builder(currentTenantConfig)
+                                .authServerUrl(keycloakUrl + "/realms/github/")
+                                .provider(null)
+                                .discoveryEnabled(true)
+                                .authorizationPath(null)
+                                .userInfoPath(null)
+                                .tokenPath(null)
+                                .token().principalClaim("personal-email").end()
+                                .build();
+
+                        context.put("replace-tenant-configuration-context", "true");
+                        context.put("remove-session-cookie", "true");
+                        return Uni.createFrom().item(updatedConfig);
+                    }
+                }
             }
             return null;
         }
         if (path.endsWith("code-flow-user-info-dynamic-github")) {
-
             OidcTenantConfig config = new OidcTenantConfig();
             config.setTenantId("code-flow-user-info-dynamic-github");
 

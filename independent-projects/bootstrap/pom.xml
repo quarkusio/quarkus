@@ -40,7 +40,7 @@
         <assertj.version>3.27.3</assertj.version>
         <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
         <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <junit5.version>5.12.2</junit5.version>
+        <junit5.version>5.13.1</junit5.version>
         <maven-core.version>3.9.9</maven-core.version><!-- Keep in sync with sisu.version -->
         <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->
         <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>

@@ -71,12 +71,6 @@
             <artifactId>byte-buddy</artifactId>
             <scope>compile</scope>
         </dependency>
-        <!-- HCANN is marked as a "runtime" dependency of Hibernate ORM but we need it to compile the extension -->
-        <dependency>
-            <groupId>org.hibernate.common</groupId>
-            <artifactId>hibernate-commons-annotations</artifactId>
-            <scope>compile</scope>
-        </dependency>
 
         <!--
         Pull in the optional GraalVM Feature of Hibernate ORM as it contains the static list of classes
@@ -142,6 +136,11 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-jaxb</artifactId>
             <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-hibernate-orm-derby</artifactId>
+            <optional>true</optional>  <!-- conditional dependency -->
         </dependency>
     </dependencies>
 

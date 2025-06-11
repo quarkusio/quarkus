@@ -149,7 +149,17 @@ public final class DatabaseInspector {
 
                                     }
                                 }
-                                tableList.add(new Table(tableSchema, tableName, primaryKeyList, columnList));
+                                List<ForeignKey> foreignKeyList = new ArrayList<>();
+                                try (ResultSet fks = metaData.getImportedKeys(null, tableSchema, tableName)) {
+                                    while (fks.next()) {
+                                        String fkColumn = fks.getString("FKCOLUMN_NAME");
+                                        String pkTable = fks.getString("PKTABLE_NAME");
+                                        String pkColumn = fks.getString("PKCOLUMN_NAME");
+                                        foreignKeyList.add(new ForeignKey(fkColumn, pkTable, pkColumn));
+                                    }
+                                }
+
+                                tableList.add(new Table(tableSchema, tableName, primaryKeyList, columnList, foreignKeyList));
                             }
                         }
                     }
@@ -159,6 +169,56 @@ public final class DatabaseInspector {
             }
 
             return tableList;
+        }
+        return null;
+    }
+
+    public String generateDot(String datasource) {
+        if (isDev) {
+            List<Table> tables = getTables(datasource);
+
+            StringBuilder dot = new StringBuilder();
+            dot.append("digraph ER {\n");
+            dot.append("  graph [splines=ortho, nodesep=1, ranksep=2];\n");
+            dot.append("  node [shape=record, fontname=Helvetica];\n\n");
+
+            for (Table table : tables) {
+                StringBuilder fields = new StringBuilder();
+                for (Column col : table.columns()) {
+                    boolean isPK = table.primaryKeys().contains(col.columnName());
+                    fields.append(col.columnName())
+                            .append(": ")
+                            .append(col.columnType())
+                            .append(" (")
+                            .append(col.columnSize())
+                            .append(")")
+                            .append(isPK ? " (PK)" : "")
+                            .append("\\l");
+                }
+
+                dot.append("  ")
+                        .append(escape(table.tableName()))
+                        .append(" [label=\"{")
+                        .append(table.tableName())
+                        .append("|")
+                        .append(fields)
+                        .append("}\"];\n");
+
+                for (ForeignKey fk : table.foreignKeys()) {
+                    dot.append("  ")
+                            .append(escape(table.tableName()))
+                            .append(" -> ")
+                            .append(escape(fk.referencedTable()))
+                            .append(" [label=\"")
+                            .append(fk.columnName())
+                            .append(" → ")
+                            .append(fk.referencedColumn())
+                            .append("\"];\n");
+                }
+            }
+
+            dot.append("}\n");
+            return dot.toString();
         }
         return null;
     }
@@ -308,6 +368,10 @@ public final class DatabaseInspector {
         }
     }
 
+    private String escape(String value) {
+        return "\"" + value.replace("\"", "\\\"") + "\"";
+    }
+
     private boolean sqlIsValid(String sql) {
         if (sql == null || sql.isEmpty())
             return false;
@@ -391,7 +455,11 @@ public final class DatabaseInspector {
     private static record Column(String columnName, String columnType, int columnSize, String nullable, boolean binary) {
     }
 
-    private static record Table(String tableSchema, String tableName, List<String> primaryKeys, List<Column> columns) {
+    private static record ForeignKey(String columnName, String referencedTable, String referencedColumn) {
+    }
+
+    private static record Table(String tableSchema, String tableName, List<String> primaryKeys, List<Column> columns,
+            List<ForeignKey> foreignKeys) {
     }
 
     private static record Datasource(String name, String jdbcUrl, boolean isDefault) {

@@ -36,7 +36,7 @@ import javax.xml.namespace.QName;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Default;
-import jakarta.persistence.spi.PersistenceUnitTransactionType;
+import jakarta.persistence.PersistenceUnitTransactionType;
 import jakarta.xml.bind.JAXBElement;
 
 import org.hibernate.boot.archive.scan.spi.ClassDescriptor;
@@ -45,9 +45,9 @@ import org.hibernate.boot.beanvalidation.BeanValidationIntegrator;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.integrator.spi.Integrator;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
+import org.hibernate.jpa.boot.spi.PersistenceXmlParser;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationTarget.Kind;
-import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.CompositeIndex;
 import org.jboss.jandex.DotName;
@@ -128,6 +128,7 @@ import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.hibernate.orm.runtime.proxies.PreGeneratedProxies;
 import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.hibernate.orm.runtime.schema.SchemaManagementIntegrator;
+import io.quarkus.hibernate.orm.runtime.service.FlatClassLoaderService;
 import io.quarkus.hibernate.orm.runtime.tenant.DataSourceTenantConnectionResolver;
 import io.quarkus.hibernate.orm.runtime.tenant.TenantConnectionResolver;
 import io.quarkus.panache.hibernate.common.deployment.HibernateEnhancersRegisteredBuildItem;
@@ -171,8 +172,6 @@ public final class HibernateOrmProcessor {
             BuildProducer<DatabaseKindDialectBuildItem> producer) {
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DB2, "DB2",
                 Set.of("org.hibernate.dialect.DB2Dialect")));
-        producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.DERBY, "Apache Derby",
-                Set.of("org.hibernate.dialect.DerbyDialect")));
         producer.produce(DatabaseKindDialectBuildItem.forCoreDialect(DatabaseKind.H2, "H2",
                 Set.of("org.hibernate.dialect.H2Dialect"),
                 // Using our own default version is extra important for H2
@@ -267,9 +266,13 @@ public final class HibernateOrmProcessor {
     public void parsePersistenceXmlDescriptors(HibernateOrmConfig config,
             BuildProducer<PersistenceXmlDescriptorBuildItem> persistenceXmlDescriptorBuildItemBuildProducer) {
         if (!shouldIgnorePersistenceXmlResources(config)) {
-            var explicitDescriptors = QuarkusPersistenceXmlParser.locatePersistenceUnits();
-            for (var descriptor : explicitDescriptors) {
-                persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(descriptor));
+            var parser = PersistenceXmlParser.create(Map.of(), null, FlatClassLoaderService.INSTANCE);
+            var urls = parser.getClassLoaderService().locateResources("META-INF/persistence.xml");
+            if (urls.isEmpty()) {
+                return;
+            }
+            for (var desc : parser.parse(urls).values()) {
+                persistenceXmlDescriptorBuildItemBuildProducer.produce(new PersistenceXmlDescriptorBuildItem(desc));
             }
         }
     }
@@ -1345,14 +1348,6 @@ public final class HibernateOrmProcessor {
         }
         //create a map of entity to proxy type
         PreGeneratedProxies preGeneratedProxies = new PreGeneratedProxies();
-        Map<String, String> proxyAnnotations = new HashMap<>();
-        for (AnnotationInstance i : combinedIndex.getAnnotations(ClassNames.PROXY)) {
-            AnnotationValue proxyClass = i.value("proxyClass");
-            if (proxyClass == null) {
-                continue;
-            }
-            proxyAnnotations.put(i.target().asClass().name().toString(), proxyClass.asClass().name().toString());
-        }
         TypePool transformedClassesTypePool = createTransformedClassesTypePool(transformedClassesBuildItem,
                 managedClassAndPackageNames);
         try (ProxyBuildingHelper proxyHelper = new ProxyBuildingHelper(transformedClassesTypePool)) {
@@ -1364,28 +1359,11 @@ public final class HibernateOrmProcessor {
                 } else {
                     Set<String> proxyInterfaceNames = new TreeSet<>();
                     proxyInterfaceNames.add(ClassNames.HIBERNATE_PROXY.toString()); //always added
-                    String proxy = proxyAnnotations.get(managedClassOrPackageName);
-                    if (proxy == null) {
-                        if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
-                            //if there is no @Proxy we need to make sure the actual class is proxiable
-                            continue;
-                        }
-                    } else {
-                        proxyInterfaceNames.add(proxy);
+                    if (!proxyHelper.isProxiable(managedClassOrPackageName)) {
+                        // we need to make sure the actual class is proxiable
+                        continue;
                     }
                     final String mappedClass = managedClassOrPackageName;
-                    for (ClassInfo subclass : combinedIndex
-                            .getAllKnownSubclasses(DotName.createSimple(managedClassOrPackageName))) {
-                        String subclassName = subclass.name().toString();
-                        if (!managedClassAndPackageNames.contains(subclassName)) {
-                            //not an entity
-                            continue;
-                        }
-                        proxy = proxyAnnotations.get(subclassName);
-                        if (proxy != null) {
-                            proxyInterfaceNames.add(proxy);
-                        }
-                    }
                     DynamicType.Unloaded<?> unloaded = proxyHelper.buildUnloadedProxy(mappedClass, proxyInterfaceNames);
                     result = new CachedProxy(unloaded, proxyInterfaceNames);
                     proxyCache.cache.put(managedClassOrPackageName, result);

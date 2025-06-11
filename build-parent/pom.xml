@@ -41,7 +41,7 @@
         <!-- Dev tools -->
         <freemarker.version>2.3.34</freemarker.version>
         <commonmark.version>0.24.0</commonmark.version>
-        <jgit.version>7.2.1.202505142326-r</jgit.version>
+        <jgit.version>7.3.0.202506031305-r</jgit.version>
 
         <!-- Arquillian BOM -->
         <arquillian.version>1.7.0.Final</arquillian.version>
@@ -73,12 +73,12 @@
         <volume.access.modifier>:Z</volume.access.modifier>
 
         <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>8.18.2</elasticsearch-server.version>
+        <elasticsearch-server.version>9.0.2</elasticsearch-server.version>
         <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
         <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
         <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
         <elasticsearch.protocol>http</elasticsearch.protocol>
-        <opensearch-server.version>2.16.0</opensearch-server.version>
+        <opensearch-server.version>3.0.0</opensearch-server.version>
         <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
         <opensearch.protocol>http</opensearch.protocol>
         <junit-pioneer.version>2.2.0</junit-pioneer.version>
@@ -121,7 +121,7 @@
         <!-- revapi API check -->
         <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
         <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
-        <build-helper-plugin.version>3.6.0</build-helper-plugin.version>
+        <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
         <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
         <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
         <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
@@ -135,9 +135,6 @@
         <revapi.checkdeps>true</revapi.checkdeps>
         <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
         <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
-
-        <!-- Forbidden API checks -->
-        <forbiddenapis-maven-plugin.version>3.4</forbiddenapis-maven-plugin.version>
 
         <!-- platform properties - this is a floating tag -->
         <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
@@ -622,7 +619,6 @@
                 <plugin>
                     <groupId>de.thetaphi</groupId>
                     <artifactId>forbiddenapis</artifactId>
-                    <version>${forbiddenapis-maven-plugin.version}</version>
                     <executions>
                         <execution>
                             <id>verify-forbidden-apis</id>

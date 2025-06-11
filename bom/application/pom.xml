@@ -47,10 +47,10 @@
         <microprofile-lra.version>2.0.1</microprofile-lra.version>
         <microprofile-openapi.version>4.0.2</microprofile-openapi.version>
         <smallrye-common.version>2.12.0</smallrye-common.version>
-        <smallrye-config.version>3.13.0</smallrye-config.version>
+        <smallrye-config.version>3.13.1</smallrye-config.version>
         <smallrye-health.version>4.2.0</smallrye-health.version>
         <smallrye-metrics.version>4.0.0</smallrye-metrics.version>
-        <smallrye-open-api.version>4.0.10</smallrye-open-api.version>
+        <smallrye-open-api.version>4.0.11</smallrye-open-api.version>
         <smallrye-graphql.version>2.13.0</smallrye-graphql.version>
         <smallrye-fault-tolerance.version>6.9.1</smallrye-fault-tolerance.version>
         <smallrye-jwt.version>4.6.2</smallrye-jwt.version>
@@ -95,12 +95,12 @@
         <commons-codec.version>1.18.0</commons-codec.version>
         <classmate.version>1.7.0</classmate.version>
         <!-- See root POM for hibernate-orm.version, hibernate-reactive.version, hibernate-validator.version,
-             hibernate-search.version, antlr.version, bytebuddy.version, hibernate-commons-annotations.version -->
+             hibernate-search.version, antlr.version, bytebuddy.version -->
         <narayana.version>7.2.2.Final</narayana.version>
-        <narayana-lra.version>1.0.0.Final</narayana-lra.version>
+        <narayana-lra.version>1.0.1.Final</narayana-lra.version>
         <agroal.version>2.7.1</agroal.version>
         <jboss-transaction-spi.version>8.0.0.Final</jboss-transaction-spi.version>
-        <elasticsearch-opensource-components.version>8.18.2</elasticsearch-opensource-components.version>
+        <elasticsearch-opensource-components.version>9.0.2</elasticsearch-opensource-components.version>
         <rxjava.version>2.2.21</rxjava.version>
         <wildfly.openssl-java.version>2.2.5.Final</wildfly.openssl-java.version>
         <wildfly.openssl-linux.version>2.2.2.SP01</wildfly.openssl-linux.version>
@@ -129,7 +129,7 @@
         <db2-jdbc.version>12.1.0.0</db2-jdbc.version>
         <shrinkwrap.version>1.2.6</shrinkwrap.version>
         <hamcrest.version>2.2</hamcrest.version><!-- The version needs to be compatible with both REST Assured and Awaitility -->
-        <junit.jupiter.version>5.12.2</junit.jupiter.version>
+        <junit.jupiter.version>5.13.1</junit.jupiter.version>
         <infinispan.version>15.0.15.Final</infinispan.version>
         <infinispan.protostream.version>5.0.13.Final</infinispan.protostream.version>
         <caffeine.version>3.2.0</caffeine.version>
@@ -154,23 +154,23 @@
         <kotlin.version>2.1.21</kotlin.version>
         <kotlin.coroutine.version>1.10.2</kotlin.coroutine.version>
         <kotlin-serialization.version>1.8.1</kotlin-serialization.version>
-        <azure.toolkit-lib.version>0.27.0</azure.toolkit-lib.version>
+        <azure.toolkit-lib.version>0.53.0</azure.toolkit-lib.version>
         <dekorate.version>4.1.5</dekorate.version> <!-- Please check with Java Operator SDK team before updating -->
         <maven-invoker.version>3.2.0</maven-invoker.version>
         <awaitility.version>4.3.0</awaitility.version>
         <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <flyway.version>11.9.0</flyway.version>
+        <flyway.version>11.9.1</flyway.version>
         <yasson.version>3.0.4</yasson.version>
         <!-- liquibase-mongodb is not released everytime with liquibase anymore, but the two versions need to be compatible -->
         <liquibase.version>4.29.1</liquibase.version>
         <liquibase-mongodb.version>4.29.1</liquibase-mongodb.version>
         <snakeyaml.version>2.4</snakeyaml.version>
         <osgi.version>6.0.0</osgi.version>
-        <mongo-client.version>5.5.0</mongo-client.version>
+        <mongo-client.version>5.5.1</mongo-client.version>
         <proton-j.version>0.34.1</proton-j.version>
         <javaparser.version>3.26.4</javaparser.version>
         <hibernate-quarkus-local-cache.version>0.3.1</hibernate-quarkus-local-cache.version>
-        <flapdoodle.mongo.version>4.20.0</flapdoodle.mongo.version>
+        <flapdoodle.mongo.version>4.20.1</flapdoodle.mongo.version>
         <quarkus-spring-api.version>6.2.SP1</quarkus-spring-api.version>
         <quarkus-spring-data-api.version>3.4</quarkus-spring-data-api.version>
         <quarkus-spring-security-api.version>6.4</quarkus-spring-security-api.version>
@@ -183,7 +183,7 @@
         <checker-qual.version>3.49.4</checker-qual.version>
         <error-prone-annotations.version>2.38.0</error-prone-annotations.version>
         <jib-core.version>0.27.3</jib-core.version>
-        <google-http-client.version>1.46.3</google-http-client.version>
+        <google-http-client.version>1.47.0</google-http-client.version>
         <scram-client.version>2.1</scram-client.version>
         <picocli.version>4.7.7</picocli.version>
         <google-cloud-functions.version>1.1.4</google-cloud-functions.version>
@@ -1286,6 +1286,16 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-orm-derby</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-hibernate-orm-derby-deployment</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-hibernate-envers</artifactId>
                 <version>${project.version}</version>
             </dependency>
@@ -1922,6 +1932,11 @@
             </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-openapi-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-openapi-deployment</artifactId>
                 <version>${project.version}</version>
                 <exclusions>
@@ -1941,7 +1956,11 @@
                 <artifactId>quarkus-smallrye-graphql</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+            <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-smallrye-graphql-dev</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-smallrye-graphql-deployment</artifactId>
@@ -5469,13 +5488,6 @@
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-core</artifactId>
                 <version>${hibernate-orm.version}</version>
-                <exclusions>
-                    <!-- We don't want Jandex at runtime -->
-                    <exclusion>
-                        <groupId>io.smallrye</groupId>
-                        <artifactId>jandex</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
@@ -5485,6 +5497,11 @@
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
                 <artifactId>hibernate-envers</artifactId>
+                <version>${hibernate-orm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.hibernate.orm</groupId>
+                <artifactId>hibernate-processor</artifactId>
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
@@ -5501,9 +5518,9 @@
                 <version>${hibernate-orm.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.hibernate.common</groupId>
-                <artifactId>hibernate-commons-annotations</artifactId>
-                <version>${hibernate-commons-annotations.version}</version>
+                <groupId>org.hibernate.models</groupId>
+                <artifactId>hibernate-models</artifactId>
+                <version>${hibernate-models.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hibernate.orm</groupId>
@@ -5540,6 +5557,10 @@
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
                     </exclusion>
+                    <exclusion>
+                        <groupId>org.hibernate.models</groupId>
+                        <artifactId>hibernate-models-jandex</artifactId>
+                    </exclusion>
                 </exclusions>
             </dependency>
             <dependency>
@@ -5563,6 +5584,10 @@
                     <exclusion>
                         <groupId>io.smallrye</groupId>
                         <artifactId>jandex</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.hibernate.models</groupId>
+                        <artifactId>hibernate-models-jandex</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -5673,11 +5698,11 @@
                 <groupId>co.elastic.clients</groupId>
                 <artifactId>elasticsearch-java</artifactId>
                 <version>${elasticsearch-opensource-components.version}</version>
-                <!-- exclude log4j2 to get its version from log4j2-jboss-logmanager -->
+                <!-- exclude commons-logging to get its version from commons-logging-jboss-logmanager -->
                 <exclusions>
                     <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-core</artifactId>
+                        <groupId>commons-logging</groupId>
+                        <artifactId>commons-logging</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>

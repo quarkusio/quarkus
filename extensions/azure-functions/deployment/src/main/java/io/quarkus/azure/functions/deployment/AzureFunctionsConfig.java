@@ -14,10 +14,8 @@ import com.azure.core.management.AzureEnvironment;
 import com.microsoft.azure.toolkit.lib.Azure;
 import com.microsoft.azure.toolkit.lib.appservice.AzureAppService;
 import com.microsoft.azure.toolkit.lib.appservice.config.FunctionAppConfig;
-import com.microsoft.azure.toolkit.lib.appservice.model.JavaVersion;
 import com.microsoft.azure.toolkit.lib.appservice.model.OperatingSystem;
 import com.microsoft.azure.toolkit.lib.appservice.model.PricingTier;
-import com.microsoft.azure.toolkit.lib.appservice.model.WebContainer;
 import com.microsoft.azure.toolkit.lib.appservice.plan.AppServicePlan;
 import com.microsoft.azure.toolkit.lib.auth.AuthConfiguration;
 import com.microsoft.azure.toolkit.lib.auth.AuthType;
@@ -127,9 +125,9 @@ public interface AzureFunctionsConfig {
         String os();
 
         /**
-         * Valid values are 8, 11, and 17
+         * Should be set to at least the minimum Quarkus compatible version
          */
-        @WithDefault("11")
+        @WithDefault("17")
         String javaVersion();
 
         /**
@@ -188,10 +186,9 @@ public interface AzureFunctionsConfig {
                 .orElseGet(
                         () -> Optional.ofNullable(getServicePlan(subscriptionId)).map(AppServicePlan::getOperatingSystem)
                                 .orElse(null));
-        final JavaVersion javaVersion = Optional.ofNullable(runtime.javaVersion()).map(JavaVersion::fromString).orElse(null);
         final com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig result = new com.microsoft.azure.toolkit.lib.appservice.config.RuntimeConfig()
                 .os(os)
-                .javaVersion(javaVersion).webContainer(WebContainer.JAVA_OFF)
+                .javaVersion(runtime.javaVersion())
                 .image(runtime.image().orElse(null)).registryUrl(runtime.registryUrl().orElse(null));
         return result;
     }

@@ -68,6 +68,8 @@ export class QwcWorkspace extends observeState(QwcHotReloadElement) {
             display: flex;
             flex-direction: row-reverse;
             padding-right: 10px;
+            position: absolute;
+            right: 0px;
         }
     
         iframe {

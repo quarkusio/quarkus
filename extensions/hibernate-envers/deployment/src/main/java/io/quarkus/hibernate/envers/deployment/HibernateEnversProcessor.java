@@ -29,15 +29,21 @@ public final class HibernateEnversProcessor {
     List<AdditionalJpaModelBuildItem> addJpaModelClasses() {
         return Arrays.asList(
                 new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultRevisionEntity"),
-                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"));
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity"),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.RevisionMapping"),
+                new AdditionalJpaModelBuildItem("org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping"));
     }
 
     @BuildStep
     public void registerEnversReflections(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             HibernateEnversBuildTimeConfig buildTimeConfig) {
+        // This is necessary because these classes are added to the model conditionally at static init,
+        // so they don't get processed by HibernateOrmProcessor and in particular don't get reflection enabled.
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
                 "org.hibernate.envers.DefaultRevisionEntity",
-                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity")
+                "org.hibernate.envers.DefaultTrackingModifiedEntitiesRevisionEntity",
+                "org.hibernate.envers.RevisionMapping",
+                "org.hibernate.envers.TrackingModifiedEntitiesRevisionMapping")
                 .reason(getClass().getName())
                 .methods().build());
 

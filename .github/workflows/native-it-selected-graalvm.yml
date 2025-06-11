@@ -103,7 +103,7 @@ jobs:
       - name: Verify virtual-threads-tests.json
         run: ./.github/verify-tests-json.sh virtual-threads-tests.json integration-tests/virtual-threads/
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v1.3
+        uses: gradle/develocity-actions/setup-maven@v1.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Initial JDK 17 Build"
@@ -266,7 +266,7 @@ jobs:
             cat <<< $(jq '.HttpHeaders += {"User-Agent": "Quarkus-CI-Docker-Client"}' ~/.docker/config.json) > ~/.docker/config.json
           fi
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v1.3
+        uses: gradle/develocity-actions/setup-maven@v1.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - Virtual Thread - ${{matrix.category}}"
@@ -353,7 +353,7 @@ jobs:
       - name: Extract .m2/repository/io/quarkus
         run: tar -xzf m2-io-quarkus.tgz -C ~
       - name: Setup Develocity Build Scan capture
-        uses: gradle/develocity-actions/setup-maven@v1.3
+        uses: gradle/develocity-actions/setup-maven@v1.4
         with:
           capture-strategy: ON_DEMAND
           job-name: "Native Tests - ${{matrix.category}}"

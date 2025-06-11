@@ -13,7 +13,7 @@
     <description>Dependency management for dev-ui. Importable by third party extension developers.</description>
 
     <properties>
-        <vaadin.version>24.7.7</vaadin.version>
+        <vaadin.version>24.7.8</vaadin.version>
         <lit.version>3.2.1</lit.version>
         <lit-element.version>4.1.1</lit-element.version>
         <lit-html.version>3.2.1</lit-html.version>
@@ -51,6 +51,8 @@
         <ansi-styles.version>4.3.0</ansi-styles.version>
         <color-convert.version>2.0.1</color-convert.version>
         <color-name.version>1.1.4</color-name.version>
+        <dot.version>0.0.1</dot.version>
+        <viz-js.version>3.12.0</viz-js.version>
     </properties>
 
     <dependencyManagement>
@@ -342,6 +344,22 @@
                 <groupId>org.mvnpm</groupId>
                 <artifactId>es-module-shims</artifactId>
                 <version>${es-module-shims.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            
+            <!-- Dot files render -->
+            <dependency>
+                <groupId>org.mvnpm.at.qomponent</groupId>
+                <artifactId>qui-dot</artifactId>
+                <version>${dot.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+
+            <!-- Viz.js to render dot file -->
+            <dependency>
+                <groupId>org.mvnpm.at.viz-js</groupId>
+                <artifactId>viz</artifactId>
+                <version>${viz-js.version}</version>
                 <scope>runtime</scope>
             </dependency>
         </dependencies>

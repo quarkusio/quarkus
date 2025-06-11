@@ -3,6 +3,7 @@ import { unsafeHTML } from 'lit/directives/unsafe-html.js';
 import { RouterController } from 'router-controller';
 import { devuiState } from 'devui-state';
 import { observeState } from 'lit-element-state';
+import { allowExtensionManagement } from 'devui-data';
 import 'qwc/qwc-extension.js';
 import 'qwc/qwc-extension-link.js';
 import 'qwc/qwc-extension-add.js';
@@ -11,7 +12,9 @@ import '@vaadin/dialog';
 import { dialogHeaderRenderer, dialogRenderer } from '@vaadin/dialog/lit.js';
 import { notifier } from 'notifier';
 import { connectionState } from 'connection-state';
+import { themeState } from 'theme-state';
 import { JsonRpc } from 'jsonrpc';
+import '@qomponent/qui-badge';
 
 /**
  * This component create cards of all the extensions
@@ -33,14 +36,31 @@ export class QwcExtensions extends observeState(LitElement) {
             gap: 20px;
             padding-left: 5px;
             padding-right: 10px;
+            padding-bottom: 10px;
         }
         
         .description {
             padding-bottom: 10px;
             color: var(--lumo-contrast-50pct);
+            display: flex;
+            gap: 10px;
+        }
+    
+        .libraryVersion {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
         }
     
         .card-content {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            height: 100%;
+            gap: 20px;
+        }
+    
+        .card-content-top{
             color: var(--lumo-contrast-90pct);
             display: flex;
             flex-direction: column;
@@ -96,14 +116,16 @@ export class QwcExtensions extends observeState(LitElement) {
     connectedCallback() {
         super.connectedCallback();
         window.addEventListener('extensions-filters-changed', this._onFiltersChanged);
-        this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
-            if (jsonRpcResponse.result) {
-                this._installedExtensions = jsonRpcResponse.result;
-                this._addExtensionsEnabled = true;
-            }
-        }).catch(e => {
-            notifier.showErrorMessage("Could not list namespaces "+ e?.error?.message);
-        });
+        if (allowExtensionManagement) {
+            this.jsonRpc.getInstalledNamespaces().then(jsonRpcResponse => {
+                if (jsonRpcResponse.result) {
+                    this._installedExtensions = jsonRpcResponse.result;
+                    this._addExtensionsEnabled = true;
+                }
+            }).catch(e => {
+                notifier.showErrorMessage("Could not list namespaces "+ e?.error?.message);
+            });
+        }
     }
 
     disconnectedCallback() {
@@ -207,7 +229,7 @@ export class QwcExtensions extends observeState(LitElement) {
     }
 
     _renderInactive(extension){
-        if(extension.unlisted === "false"){
+        if(extension.unlisted === "false" || extension.libraryLinks){
             return html`<qwc-extension
                 clazz="inactive"
                 name="${extension.name}" 
@@ -224,9 +246,9 @@ export class QwcExtensions extends observeState(LitElement) {
                 builtWith="${extension.builtWith}"
                 providesCapabilities="${extension.providesCapabilities}"
                 extensionDependencies="${extension.extensionDependencies}">
-                <div class="card-content" slot="content">
-                    ${extension.description}
-                </div>    
+            
+                ${this._renderCardContent(extension)}
+                
             </qwc-extension>`;
         }
     }
@@ -271,7 +293,7 @@ export class QwcExtensions extends observeState(LitElement) {
     _renderCustomCardContent(extension){
         import(extension.card.componentRef);
         let customCardCode = `<${extension.card.componentName} 
-                                class="card-content"
+                                class="card-content-top"
                                 slot="content"
                                 extensionName="${extension.name}"
                                 description="${extension.description}"
@@ -287,11 +309,36 @@ export class QwcExtensions extends observeState(LitElement) {
     _renderDefaultCardContent(extension){
         return html`
             <div class="card-content" slot="content">
-                <span class="description">
-                    ${extension.description}
-                </span>
-                ${this._renderCardLinks(extension)}
+                <div class="card-content-top">
+                    <span class="description">
+                        ${this._renderLogo(extension)}
+                        ${extension.description}
+                    </span>
+                    ${this._renderCardLinks(extension)}
+                </div>
+                ${this._renderLibraryVersions(extension)}
             </div>`;
+    }
+
+    _renderLogo(extension){
+        let logo = null;
+        
+        if(extension.darkLogo && themeState.theme.name === "dark"){
+            logo = this._getLogoUrl(extension, extension.darkLogo);
+        }else if(extension.lightLogo){
+            logo = this._getLogoUrl(extension, extension.lightLogo);
+        }
+        
+        if(logo){
+            return html`<img src="${logo}" height="45" @error="${(e) => e.target.style.display = 'none'}">`;
+        }
+    }
+
+    _getLogoUrl(extension, logoUrl){
+        if(!logoUrl.startsWith("http://") && !logoUrl.startsWith("https://")){
+            return "./" + extension.namespace + "/" + logoUrl;
+        }
+        return logoUrl;
     }
 
     _renderCardLinks(extension){
@@ -316,6 +363,13 @@ export class QwcExtensions extends observeState(LitElement) {
                             </qwc-extension-link>
                         `)}`;
     }
+
+    _renderLibraryVersions(extension){
+        return html`<div class="libraryVersion" @click=${() => window.open(libraryLink.url, '_blank', 'noopener,noreferrer')} style="cursor: pointer">
+                        ${extension.libraryLinks?.map(libraryLink => html`
+                            <qui-badge small><span>${libraryLink.name} ${libraryLink.version}</span></qui-badge>
+                    `)}</div>`;
+        }
 
     _handleDragStart(event) {
         const extensionNamespace = event.currentTarget.getAttribute('namespace');

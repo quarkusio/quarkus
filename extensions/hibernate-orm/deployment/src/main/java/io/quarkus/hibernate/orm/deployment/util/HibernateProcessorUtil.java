@@ -22,7 +22,6 @@ import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.id.SequenceMismatchStrategy;
 import org.hibernate.jpa.boot.spi.JpaSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
-import org.hibernate.loader.BatchFetchStyle;
 import org.jboss.logging.Logger;
 
 import io.quarkus.datasource.common.runtime.DatabaseKind;
@@ -174,7 +173,6 @@ public final class HibernateProcessorUtil {
         int batchSize = firstPresent(config.fetch().batchSize(), config.batchFetchSize()).orElse(defaultBatchSize(reactive));
         if (batchSize > 0) {
             desc.getProperties().setProperty(AvailableSettings.DEFAULT_BATCH_FETCH_SIZE, Integer.toString(batchSize));
-            desc.getProperties().setProperty(AvailableSettings.BATCH_FETCH_STYLE, BatchFetchStyle.PADDED.toString());
         }
 
         // Fetch
@@ -192,6 +190,9 @@ public final class HibernateProcessorUtil {
 
         desc.getProperties().setProperty(AvailableSettings.IN_CLAUSE_PARAMETER_PADDING,
                 String.valueOf(config.query().inClauseParameterPadding()));
+
+        desc.getProperties().setProperty(AvailableSettings.FAIL_ON_PAGINATION_OVER_COLLECTION_FETCH,
+                String.valueOf(config.query().failOnPaginationOverCollectionFetch()));
 
         // Disable sequence validations: they are reportedly slow, and people already get the same validation from normal schema validation
         desc.getProperties().put(AvailableSettings.SEQUENCE_INCREMENT_SIZE_MISMATCH_STRATEGY,

@@ -8,6 +8,7 @@ package io.quarkus.it.hibernate.search.standalone.elasticsearch.search;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.OptionalLong;
 
 import org.hibernate.search.mapper.pojo.standalone.loading.LoadingTypeGroup;
 import org.hibernate.search.mapper.pojo.standalone.loading.MassEntityLoader;
@@ -49,8 +50,8 @@ public class MyMassLoadingStrategy<E>
             }
 
             @Override
-            public long totalCount() {
-                return connection.countEntities(typeFilter);
+            public OptionalLong totalCount() {
+                return OptionalLong.of(connection.countEntities(typeFilter));
             }
 
             @Override

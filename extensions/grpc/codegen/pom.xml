@@ -26,6 +26,10 @@
             <artifactId>smallrye-common-cpu</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.smallrye.common</groupId>
+            <artifactId>smallrye-common-process</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
         </dependency>

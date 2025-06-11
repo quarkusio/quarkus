@@ -11,6 +11,7 @@
     "@types/node": "^24.0.0",
     "@types/xml2js": "^0.4.14",
     "nx": "latest",
+    "nx-mcp": "^0.2.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "vitest": "^2.1.9",

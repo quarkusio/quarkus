@@ -1,0 +1,13 @@
+const fs = require('fs');
+const data = JSON.parse(fs.readFileSync('./maven-results-with-targets.json', 'utf8'));
+const firstProject = Object.keys(data)[0];
+const project = data[firstProject];
+console.log('First project:', firstProject);
+console.log('Has relevantPhases:', !!project.relevantPhases);
+console.log('Phases count:', project.relevantPhases ? project.relevantPhases.length : 0);
+console.log('Has pluginGoals:', !!project.pluginGoals);
+console.log('Goals count:', project.pluginGoals ? project.pluginGoals.length : 0);
+console.log('Has phaseDependencies:', !!project.phaseDependencies);
+console.log('Phase deps:', Object.keys(project.phaseDependencies || {}).length);
+console.log('Sample phases:', project.relevantPhases ? project.relevantPhases.slice(0, 3) : []);
+console.log('Sample goals:', project.pluginGoals ? project.pluginGoals.slice(0, 2) : []);

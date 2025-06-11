@@ -1234,7 +1234,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-apicurio-registry-json-schema",
             "io.quarkus:quarkus-apicurio-registry-common-deployment"
           ],
           "metadata": {
@@ -2023,9 +2022,7 @@
           "sourceRoot": "extensions/schema-registry/apicurio/json-schema/runtime/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus:quarkus-apicurio-registry-common"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -2805,7 +2802,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-apicurio-registry-common",
             "io.quarkus:quarkus-core-deployment",
             "io.quarkus:quarkus-schema-registry-devservice-deployment",
             "io.quarkus:quarkus-vertx-deployment",
@@ -3600,9 +3596,7 @@
           "sourceRoot": "independent-projects/resteasy-reactive/server/vertx/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus.vertx.utils:quarkus-vertx-utils"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -3623,7 +3617,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-apicurio-registry-avro",
             "io.quarkus:quarkus-apicurio-registry-common-deployment",
             "io.quarkus:quarkus-avro-deployment"
           ],
@@ -4394,9 +4387,7 @@
           "sourceRoot": "independent-projects/arc/tcks/cdi-tck-porting-pkg/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus.arc:arc"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -4962,7 +4953,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-apicurio-registry-common",
             "io.quarkus:quarkus-avro"
           ],
           "metadata": {
@@ -6881,8 +6871,7 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-core",
-            "io.quarkus.arc:arc"
+            "io.quarkus:quarkus-core"
           ],
           "metadata": {
             "technologies": [
@@ -7262,7 +7251,6 @@
           "tags": [],
           "implicitDependencies": [
             "io.quarkus:quarkus-vertx-http",
-            "io.quarkus.vertx.utils:quarkus-vertx-utils",
             "io.quarkus:quarkus-resteasy-server-common"
           ],
           "metadata": {
@@ -11543,7 +11531,6 @@
             "io.quarkus:quarkus-arc-deployment",
             "io.quarkus:quarkus-security-deployment",
             "io.quarkus:quarkus-junit5-internal",
-            "io.quarkus:quarkus-security",
             "io.quarkus:quarkus-security-test-utils",
             "io.quarkus:quarkus-spring-web-deployment",
             "io.quarkus:quarkus-resteasy-jackson-deployment",
@@ -11620,8 +11607,7 @@
           "tags": [],
           "implicitDependencies": [
             "io.quarkus:quarkus-core-deployment",
-            "io.quarkus:quarkus-vertx-http-dev-console-runtime-spi",
-            "io.quarkus.arc:arc"
+            "io.quarkus:quarkus-vertx-http-dev-console-runtime-spi"
           ],
           "metadata": {
             "technologies": [
@@ -12199,8 +12185,7 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-vertx",
-            "io.quarkus:quarkus-security"
+            "io.quarkus:quarkus-vertx"
           ],
           "metadata": {
             "technologies": [
@@ -12871,9 +12856,7 @@
           "sourceRoot": "independent-projects/arc/processor/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus.arc:arc"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -13394,8 +13377,7 @@
             "io.quarkus:quarkus-core",
             "io.quarkus:quarkus-vertx",
             "io.quarkus:quarkus-jackson",
-            "io.quarkus:quarkus-vertx-http",
-            "io.quarkus:quarkus-security"
+            "io.quarkus:quarkus-vertx-http"
           ],
           "metadata": {
             "technologies": [
@@ -13791,11 +13773,9 @@
           "implicitDependencies": [
             "io.quarkus:quarkus-core",
             "io.quarkus:quarkus-vertx-http",
-            "io.quarkus.vertx.utils:quarkus-vertx-utils",
             "io.quarkus:quarkus-jackson",
             "io.quarkus:quarkus-tls-registry",
-            "io.quarkus:quarkus-websockets-next-kotlin",
-            "io.quarkus:quarkus-security"
+            "io.quarkus:quarkus-websockets-next-kotlin"
           ],
           "metadata": {
             "technologies": [
@@ -15479,8 +15459,7 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-core",
-            "io.quarkus:quarkus-security"
+            "io.quarkus:quarkus-core"
           ],
           "metadata": {
             "technologies": [
@@ -15685,9 +15664,7 @@
           "sourceRoot": "independent-projects/arc/tests/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus.arc:arc"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -15835,9 +15812,7 @@
           "sourceRoot": "extensions/credentials/runtime/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus.arc:arc"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -16802,7 +16777,6 @@
             "io.quarkus:quarkus-tls-registry",
             "io.quarkus:quarkus-credentials",
             "io.quarkus:quarkus-mutiny",
-            "io.quarkus:quarkus-security",
             "io.quarkus:quarkus-vertx"
           ],
           "metadata": {
@@ -17927,7 +17901,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-scheduler-api",
             "io.quarkus:quarkus-scheduler-spi"
           ],
           "metadata": {
@@ -18143,7 +18116,6 @@
           "tags": [],
           "implicitDependencies": [
             "io.quarkus:quarkus-core",
-            "io.quarkus.arc:arc",
             "io.quarkus:quarkus-vertx"
           ],
           "metadata": {
@@ -18168,7 +18140,6 @@
           "implicitDependencies": [
             "io.quarkus:quarkus-arc",
             "io.quarkus:quarkus-vertx-http",
-            "io.quarkus:quarkus-security",
             "io.quarkus:quarkus-core"
           ],
           "metadata": {
@@ -18345,7 +18316,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-grpc-api",
             "io.quarkus:quarkus-grpc-stubs"
           ],
           "metadata": {
@@ -19561,9 +19531,7 @@
           "sourceRoot": "extensions/scheduler/spi/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus:quarkus-scheduler-api"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -19733,13 +19701,11 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-grpc-api",
             "io.quarkus:quarkus-grpc-common",
             "io.quarkus:quarkus-grpc-reflection",
             "io.quarkus:quarkus-vertx-http",
             "io.quarkus:quarkus-core",
             "io.quarkus:quarkus-arc",
-            "io.quarkus:quarkus-security",
             "io.quarkus:quarkus-smallrye-stork",
             "io.quarkus:quarkus-virtual-threads",
             "io.quarkus:quarkus-grpc-stubs",
@@ -20092,8 +20058,7 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-core-deployment",
-            "io.quarkus:quarkus-security"
+            "io.quarkus:quarkus-core-deployment"
           ],
           "metadata": {
             "technologies": [
@@ -20242,7 +20207,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus.arc:arc",
             "io.quarkus:quarkus-core"
           ],
           "metadata": {
@@ -20605,7 +20569,6 @@
           "projectType": "library",
           "tags": [],
           "implicitDependencies": [
-            "io.quarkus:quarkus-grpc-api",
             "io.quarkus:quarkus-grpc-common",
             "io.quarkus:quarkus-grpc-codegen",
             "io.quarkus:quarkus-mutiny"
@@ -21031,9 +20994,7 @@
           "sourceRoot": "extensions/grpc/api/src/main/java",
           "projectType": "library",
           "tags": [],
-          "implicitDependencies": [
-            "io.quarkus.arc:arc"
-          ],
+          "implicitDependencies": [],
           "metadata": {
             "technologies": [
               "maven",
@@ -23460,11 +23421,6 @@
       "io.quarkus:quarkus-apicurio-registry-json-schema-deployment": [
         {
           "source": "io.quarkus:quarkus-apicurio-registry-json-schema-deployment",
-          "target": "io.quarkus:quarkus-apicurio-registry-json-schema",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-apicurio-registry-json-schema-deployment",
           "target": "io.quarkus:quarkus-apicurio-registry-common-deployment",
           "type": "implicit"
         }
@@ -24131,13 +24087,7 @@
       "io.quarkus.resteasy.reactive:resteasy-reactive-client-processor": [],
       "io.quarkus.resteasy.reactive:resteasy-reactive-common-processor": [],
       "io.quarkus.resteasy.reactive:resteasy-reactive-processor": [],
-      "io.quarkus:quarkus-apicurio-registry-json-schema": [
-        {
-          "source": "io.quarkus:quarkus-apicurio-registry-json-schema",
-          "target": "io.quarkus:quarkus-apicurio-registry-common",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus:quarkus-apicurio-registry-json-schema": [],
       "io.quarkus:quarkus-hibernate-orm-panache-common": [
         {
           "source": "io.quarkus:quarkus-hibernate-orm-panache-common",
@@ -24767,11 +24717,6 @@
       "io.quarkus:quarkus-apicurio-registry-common-deployment": [
         {
           "source": "io.quarkus:quarkus-apicurio-registry-common-deployment",
-          "target": "io.quarkus:quarkus-apicurio-registry-common",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-apicurio-registry-common-deployment",
           "target": "io.quarkus:quarkus-core-deployment",
           "type": "implicit"
         },
@@ -25385,19 +25330,8 @@
       "io.quarkus.arc:arc-lang-model-tck-runner": [],
       "io.quarkus.resteasy.reactive:resteasy-reactive-common-types": [],
       "io.quarkus.resteasy.reactive:resteasy-reactive-jsonb": [],
-      "io.quarkus.resteasy.reactive:resteasy-reactive-vertx": [
-        {
-          "source": "io.quarkus.resteasy.reactive:resteasy-reactive-vertx",
-          "target": "io.quarkus.vertx.utils:quarkus-vertx-utils",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus.resteasy.reactive:resteasy-reactive-vertx": [],
       "io.quarkus:quarkus-apicurio-registry-avro-deployment": [
-        {
-          "source": "io.quarkus:quarkus-apicurio-registry-avro-deployment",
-          "target": "io.quarkus:quarkus-apicurio-registry-avro",
-          "type": "implicit"
-        },
         {
           "source": "io.quarkus:quarkus-apicurio-registry-avro-deployment",
           "target": "io.quarkus:quarkus-apicurio-registry-common-deployment",
@@ -25984,13 +25918,7 @@
         }
       ],
       "io.quarkus.arc:arc-atinject-tck-runner": [],
-      "io.quarkus.arc:arc-cdi-tck-porting-pkg": [
-        {
-          "source": "io.quarkus.arc:arc-cdi-tck-porting-pkg",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus.arc:arc-cdi-tck-porting-pkg": [],
       "io.quarkus:quarkus-confluent-registry-avro": [
         {
           "source": "io.quarkus:quarkus-confluent-registry-avro",
@@ -26463,11 +26391,6 @@
         }
       ],
       "io.quarkus:quarkus-apicurio-registry-avro": [
-        {
-          "source": "io.quarkus:quarkus-apicurio-registry-avro",
-          "target": "io.quarkus:quarkus-apicurio-registry-common",
-          "type": "implicit"
-        },
         {
           "source": "io.quarkus:quarkus-apicurio-registry-avro",
           "target": "io.quarkus:quarkus-avro",
@@ -27720,11 +27643,6 @@
           "source": "io.quarkus:quarkus-vertx-http-dev-console-runtime-spi",
           "target": "io.quarkus:quarkus-core",
           "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-vertx-http-dev-console-runtime-spi",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
         }
       ],
       "io.quarkus.arc:arc-cdi-tck-runner": [],
@@ -28086,11 +28004,6 @@
         {
           "source": "io.quarkus:quarkus-resteasy",
           "target": "io.quarkus:quarkus-vertx-http",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-resteasy",
-          "target": "io.quarkus.vertx.utils:quarkus-vertx-utils",
           "type": "implicit"
         },
         {
@@ -31314,11 +31227,6 @@
         },
         {
           "source": "io.quarkus:quarkus-spring-security-deployment",
-          "target": "io.quarkus:quarkus-security",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-spring-security-deployment",
           "target": "io.quarkus:quarkus-security-test-utils",
           "type": "implicit"
         },
@@ -31391,11 +31299,6 @@
         {
           "source": "io.quarkus:quarkus-vertx-http-dev-console-spi",
           "target": "io.quarkus:quarkus-vertx-http-dev-console-runtime-spi",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-vertx-http-dev-console-spi",
-          "target": "io.quarkus.arc:arc",
           "type": "implicit"
         }
       ],
@@ -31751,11 +31654,6 @@
         {
           "source": "io.quarkus:quarkus-websockets-client",
           "target": "io.quarkus:quarkus-vertx",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-websockets-client",
-          "target": "io.quarkus:quarkus-security",
           "type": "implicit"
         }
       ],
@@ -32355,13 +32253,7 @@
           "type": "implicit"
         }
       ],
-      "io.quarkus.arc:arc-processor": [
-        {
-          "source": "io.quarkus.arc:arc-processor",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus.arc:arc-processor": [],
       "io.quarkus:quarkus-azure-functions": [
         {
           "source": "io.quarkus:quarkus-azure-functions",
@@ -32720,11 +32612,6 @@
           "source": "io.quarkus:quarkus-reactive-routes",
           "target": "io.quarkus:quarkus-vertx-http",
           "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-reactive-routes",
-          "target": "io.quarkus:quarkus-security",
-          "type": "implicit"
         }
       ],
       "io.quarkus:quarkus-redis-client-deployment": [
@@ -33067,11 +32954,6 @@
         },
         {
           "source": "io.quarkus:quarkus-websockets-next",
-          "target": "io.quarkus.vertx.utils:quarkus-vertx-utils",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-websockets-next",
           "target": "io.quarkus:quarkus-jackson",
           "type": "implicit"
         },
@@ -33083,11 +32965,6 @@
         {
           "source": "io.quarkus:quarkus-websockets-next",
           "target": "io.quarkus:quarkus-websockets-next-kotlin",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-websockets-next",
-          "target": "io.quarkus:quarkus-security",
           "type": "implicit"
         }
       ],
@@ -34280,11 +34157,6 @@
           "source": "io.quarkus:quarkus-security-runtime-spi",
           "target": "io.quarkus:quarkus-core",
           "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-security-runtime-spi",
-          "target": "io.quarkus:quarkus-security",
-          "type": "implicit"
         }
       ],
       "io.quarkus:quarkus-smallrye-jwt": [
@@ -34383,13 +34255,7 @@
           "type": "implicit"
         }
       ],
-      "io.quarkus.arc:arc-tests": [
-        {
-          "source": "io.quarkus.arc:arc-tests",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus.arc:arc-tests": [],
       "io.quarkus.qute:qute-core": [],
       "io.quarkus:quarkus-arc-test-supplement": [],
       "io.quarkus:quarkus-bootstrap-parent": [],
@@ -34424,13 +34290,7 @@
           "type": "implicit"
         }
       ],
-      "io.quarkus:quarkus-credentials": [
-        {
-          "source": "io.quarkus:quarkus-credentials",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus:quarkus-credentials": [],
       "io.quarkus:quarkus-cyclonedx-generator": [
         {
           "source": "io.quarkus:quarkus-cyclonedx-generator",
@@ -34991,11 +34851,6 @@
         {
           "source": "io.quarkus:quarkus-vertx-http",
           "target": "io.quarkus:quarkus-mutiny",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-vertx-http",
-          "target": "io.quarkus:quarkus-security",
           "type": "implicit"
         },
         {
@@ -35566,11 +35421,6 @@
       "io.quarkus:quarkus-scheduler-common": [
         {
           "source": "io.quarkus:quarkus-scheduler-common",
-          "target": "io.quarkus:quarkus-scheduler-api",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-scheduler-common",
           "target": "io.quarkus:quarkus-scheduler-spi",
           "type": "implicit"
         }
@@ -35640,11 +35490,6 @@
         },
         {
           "source": "io.quarkus:quarkus-tls-registry-spi",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-tls-registry-spi",
           "target": "io.quarkus:quarkus-vertx",
           "type": "implicit"
         }
@@ -35658,11 +35503,6 @@
         {
           "source": "io.quarkus:quarkus-undertow",
           "target": "io.quarkus:quarkus-vertx-http",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-undertow",
-          "target": "io.quarkus:quarkus-security",
           "type": "implicit"
         },
         {
@@ -35832,11 +35672,6 @@
         }
       ],
       "io.quarkus:quarkus-grpc-reflection": [
-        {
-          "source": "io.quarkus:quarkus-grpc-reflection",
-          "target": "io.quarkus:quarkus-grpc-api",
-          "type": "implicit"
-        },
         {
           "source": "io.quarkus:quarkus-grpc-reflection",
           "target": "io.quarkus:quarkus-grpc-stubs",
@@ -36450,13 +36285,7 @@
           "type": "implicit"
         }
       ],
-      "io.quarkus:quarkus-scheduler-spi": [
-        {
-          "source": "io.quarkus:quarkus-scheduler-spi",
-          "target": "io.quarkus:quarkus-scheduler-api",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus:quarkus-scheduler-spi": [],
       "io.quarkus:quarkus-vertx": [
         {
           "source": "io.quarkus:quarkus-vertx",
@@ -36504,11 +36333,6 @@
       "io.quarkus:quarkus-grpc": [
         {
           "source": "io.quarkus:quarkus-grpc",
-          "target": "io.quarkus:quarkus-grpc-api",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-grpc",
           "target": "io.quarkus:quarkus-grpc-common",
           "type": "implicit"
         },
@@ -36530,11 +36354,6 @@
         {
           "source": "io.quarkus:quarkus-grpc",
           "target": "io.quarkus:quarkus-arc",
-          "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-grpc",
-          "target": "io.quarkus:quarkus-security",
           "type": "implicit"
         },
         {
@@ -36689,11 +36508,6 @@
           "source": "io.quarkus:quarkus-security-spi",
           "target": "io.quarkus:quarkus-core-deployment",
           "type": "implicit"
-        },
-        {
-          "source": "io.quarkus:quarkus-security-spi",
-          "target": "io.quarkus:quarkus-security",
-          "type": "implicit"
         }
       ],
       "io.quarkus:quarkus-smallrye-jwt-parent": [],
@@ -36730,11 +36544,6 @@
       ],
       "io.quarkus:quarkus-vertx-kotlin-parent": [],
       "io.quarkus:quarkus-arc": [
-        {
-          "source": "io.quarkus:quarkus-arc",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
-        },
         {
           "source": "io.quarkus:quarkus-arc",
           "target": "io.quarkus:quarkus-core",
@@ -36834,11 +36643,6 @@
       "io.quarkus:quarkus-datasource-parent": [],
       "io.quarkus:quarkus-flyway-db2-parent": [],
       "io.quarkus:quarkus-grpc-stubs": [
-        {
-          "source": "io.quarkus:quarkus-grpc-stubs",
-          "target": "io.quarkus:quarkus-grpc-api",
-          "type": "implicit"
-        },
         {
           "source": "io.quarkus:quarkus-grpc-stubs",
           "target": "io.quarkus:quarkus-grpc-common",
@@ -36960,13 +36764,7 @@
         }
       ],
       "io.quarkus:quarkus-caffeine-parent": [],
-      "io.quarkus:quarkus-grpc-api": [
-        {
-          "source": "io.quarkus:quarkus-grpc-api",
-          "target": "io.quarkus.arc:arc",
-          "type": "implicit"
-        }
-      ],
+      "io.quarkus:quarkus-grpc-api": [],
       "io.quarkus:quarkus-grpc-cli": [
         {
           "source": "io.quarkus:quarkus-grpc-cli",

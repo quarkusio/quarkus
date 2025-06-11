@@ -16,6 +16,7 @@ import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+
 export interface MavenPluginOptions {
   buildTargetName?: string;
   testTargetName?: string;
@@ -49,8 +50,7 @@ export const createNodesV2: CreateNodesV2 = [
     const filteredConfigFiles = configFiles.filter(file =>
       !file.includes('maven-script/pom.xml') &&
       !file.includes('target/') &&
-      !file.includes('node_modules/') &&
-      file !== 'pom.xml' // Exclude workspace root
+      !file.includes('node_modules/')
     );
 
     // No limits - process all projects but in efficient batches
@@ -86,11 +86,9 @@ export const createNodesV2: CreateNodesV2 = [
           continue;
         }
 
-        // Cache the batch results for createDependencies to use later
-        cachedBatchResults.set(projectRoot, nxConfig);
 
         // Normalize and validate targets
-        const normalizedTargets = normalizeTargets(nxConfig.targets || {}, opts);
+        const normalizedTargets = normalizeTargets(nxConfig.targets || {}, nxConfig, opts);
 
         const result = {
           projects: {
@@ -115,11 +113,19 @@ export const createNodesV2: CreateNodesV2 = [
       }
       
       console.log(`Generated ${tupleResults.length} valid project configurations`);
+      
+      // Debug: log first few project names
+      if (tupleResults.length > 0) {
+        console.log(`DEBUG: First 3 projects: ${tupleResults.slice(0, 3).map(([file, result]) => 
+          Object.keys(result.projects)[0] + ' -> ' + (Object.values(result.projects)[0] as any).name
+        ).join(', ')}`);
+      }
+      
       return tupleResults;
 
     } catch (error) {
-      console.warn(`Failed to process Maven projects:`, error.message);
-      return [];
+      console.error(`Failed to process Maven projects with Java analyzer:`, error.message);
+      throw new Error(`Maven analysis failed: ${error.message}`);
     }
   },
 ];
@@ -127,15 +133,14 @@ export const createNodesV2: CreateNodesV2 = [
 /**
  * Create dependencies based on Maven dependency analysis
  */
-// Cache for batch results to avoid re-processing in createDependencies
-let cachedBatchResults: Map<string, any> = new Map();
 
 /**
- * Create dependencies using cached batch results (no additional processes)
+ * Create dependencies (no caching needed - Java handles batch processing)
  */
 export const createDependencies: CreateDependencies = async () => {
-  // Temporarily disable dependency creation to isolate the issue
-  console.log(`Dependency creation temporarily disabled for debugging`);
+  console.log(`DEBUG: Dependency creation called`);
+  
+  // Dependencies are handled via target dependsOn configuration
   return [];
 };
 
@@ -291,7 +296,26 @@ async function generateBatchNxConfigFromMavenAsync(
         console.warn(`Could not delete temp file ${outputFile}: ${e.message}`);
       }
       
-      return JSON.parse(jsonContent);
+      const result = JSON.parse(jsonContent);
+      
+      // Check for errors in the result
+      if (result._errors && result._errors.length > 0) {
+        console.warn(`Maven analyzer encountered ${result._errors.length} errors:`);
+        result._errors.forEach((error: string, index: number) => {
+          console.warn(`  ${index + 1}. ${error}`);
+        });
+      }
+      
+      // Log statistics
+      if (result._stats) {
+        console.log(`Maven analysis stats: ${result._stats.successful}/${result._stats.processed} projects processed successfully (${result._stats.errors} errors)`);
+      }
+      
+      // Remove metadata fields from result before returning
+      delete result._errors;
+      delete result._stats;
+      
+      return result;
     } catch (error) {
       throw new Error(`Failed to read output file ${outputFile}: ${error.message}`);
     }
@@ -461,7 +485,7 @@ function detectFramework(nxConfig: any): string {
 /**
  * Normalize target configurations from Maven analysis and add Maven lifecycle phases
  */
-function normalizeTargets(targets: Record<string, any>, options: MavenPluginOptions): Record<string, TargetConfiguration> {
+function normalizeTargets(targets: Record<string, any>, nxConfig: any, options: MavenPluginOptions): Record<string, TargetConfiguration> {
   const normalizedTargets: Record<string, TargetConfiguration> = {};
 
   // First add any existing targets from Maven analysis
@@ -486,162 +510,286 @@ function normalizeTargets(targets: Record<string, any>, options: MavenPluginOpti
     };
   }
 
-  // Add Maven lifecycle phase targets
-  const mavenPhaseTargets = generateMavenPhaseTargets(options);
-  Object.assign(normalizedTargets, mavenPhaseTargets);
+  // Add Maven lifecycle phase targets and plugin goals from detected data
+  const detectedTargets = generateDetectedTargets(nxConfig, options);
+  Object.assign(normalizedTargets, detectedTargets);
 
   return normalizedTargets;
 }
 
 /**
- * Generate Maven lifecycle phase targets
+ * Generate targets based on pre-calculated data from Java analyzer
+ * Uses goalsByPhase and goalDependencies from Java for optimal structure
  */
-function generateMavenPhaseTargets(options: MavenPluginOptions): Record<string, TargetConfiguration> {
-  const phaseTargets: Record<string, TargetConfiguration> = {};
+function generateDetectedTargets(nxConfig: any, options: MavenPluginOptions): Record<string, TargetConfiguration> {
+  const detectedTargets: Record<string, TargetConfiguration> = {};
+  
+  // Get pre-calculated data from Java analyzer
+  const relevantPhases = nxConfig.relevantPhases || [];
+  const pluginGoals = nxConfig.pluginGoals || [];
+  const goalsByPhase = nxConfig.goalsByPhase || {};
+  const goalDependencies = nxConfig.goalDependencies || {};
+  const crossProjectDependencies = nxConfig.crossProjectDependencies || {};
+  
+  // Step 1: Generate goal targets using pre-calculated dependencies
+  for (const goalInfo of pluginGoals) {
+    if (goalInfo.targetName && !detectedTargets[goalInfo.targetName]) {
+      const goalTarget = createGoalTarget(goalInfo, options, goalDependencies, crossProjectDependencies);
+      if (goalTarget) {
+        detectedTargets[goalInfo.targetName] = goalTarget;
+      }
+    }
+  }
+  
+  // Step 2: Generate phase targets that depend on their own goals (from Java)
+  for (const phase of relevantPhases) {
+    const phaseTarget = createPhaseTarget(phase, options, goalsByPhase);
+    if (phaseTarget) {
+      detectedTargets[phase] = phaseTarget;
+    }
+  }
+  
+  return detectedTargets;
+}
 
-  // Clean lifecycle
-  phaseTargets['clean'] = {
+
+/**
+ * Create a target configuration for a Maven phase (aggregator that depends on its own goals)
+ */
+function createPhaseTarget(phase: string, options: MavenPluginOptions, goalsByPhase: Record<string, string[]>): TargetConfiguration | null {
+  const baseInputs = ['{projectRoot}/pom.xml'];
+  const baseCommand = `${options.mavenExecutable} ${phase}`;
+  
+  // Define phase-specific configurations
+  const phaseConfig: Record<string, Partial<TargetConfiguration>> = {
+    'clean': {
+      inputs: baseInputs,
+      outputs: [],
+    },
+    'validate': {
+      inputs: baseInputs,
+      outputs: [],
+    },
+    'compile': {
+      inputs: ['{projectRoot}/src/main/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/classes/**/*'],
+    },
+    'test-compile': {
+      inputs: ['{projectRoot}/src/test/**/*', '{projectRoot}/src/main/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/test-classes/**/*'],
+    },
+    'test': {
+      inputs: ['{projectRoot}/src/test/**/*', '{projectRoot}/src/main/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/surefire-reports/**/*', '{projectRoot}/target/test-classes/**/*'],
+    },
+    'package': {
+      inputs: ['{projectRoot}/src/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/*.jar', '{projectRoot}/target/*.war'],
+    },
+    'verify': {
+      inputs: ['{projectRoot}/src/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/**/*', '{projectRoot}/target/failsafe-reports/**/*'],
+    },
+    'install': {
+      inputs: ['{projectRoot}/src/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/**/*'],
+    },
+    'deploy': {
+      inputs: ['{projectRoot}/src/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/**/*'],
+    },
+    'site': {
+      inputs: ['{projectRoot}/src/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/site/**/*'],
+    },
+    'integration-test': {
+      inputs: ['{projectRoot}/src/**/*', ...baseInputs],
+      outputs: ['{projectRoot}/target/failsafe-reports/**/*'],
+    },
+  };
+  
+  const config = phaseConfig[phase] || {
+    inputs: baseInputs,
+    outputs: [],
+  };
+  
+  const targetConfig: TargetConfiguration = {
     executor: '@nx/run-commands:run-commands',
     options: {
-      command: `${options.mavenExecutable} clean`,
+      command: baseCommand,
       cwd: '{projectRoot}',
+    },
+    metadata: {
+      type: 'phase',
+      phase: phase,
+      technologies: ['maven'],
+      description: `Maven lifecycle phase: ${phase} (aggregator)`,
+    },
+    ...config,
+  };
+  
+  // Phase depends on all its own goals
+  const goalsInPhase = goalsByPhase[phase] || [];
+  if (goalsInPhase.length > 0) {
+    targetConfig.dependsOn = goalsInPhase;
+  }
+  
+  return targetConfig;
+}
+
+/**
+ * Create a target configuration for a plugin goal using pre-calculated dependencies
+ */
+function createGoalTarget(goalInfo: any, options: MavenPluginOptions, goalDependencies: Record<string, string[]>, crossProjectDependencies: Record<string, string[]>): TargetConfiguration | null {
+  const { pluginKey, goal, targetType, phase } = goalInfo;
+  
+  // Create the Maven command
+  const [groupId, artifactId] = pluginKey.split(':');
+  const command = `${options.mavenExecutable} ${groupId}:${artifactId}:${goal}`;
+  
+  // Create a more user-friendly description
+  const pluginName = artifactId.replace('-maven-plugin', '').replace('-plugin', '');
+  let description = `${pluginName}:${goal}`;
+  
+  // Add framework-specific descriptions
+  if (pluginKey.includes('quarkus')) {
+    switch (goal) {
+      case 'dev':
+        description = 'Start Quarkus development mode';
+        break;
+      case 'build':
+        description = 'Build Quarkus application';
+        break;
+      case 'generate-code':
+        description = 'Generate Quarkus code';
+        break;
+      case 'test':
+        description = 'Run Quarkus tests';
+        break;
+      default:
+        description = `Quarkus ${goal}`;
+    }
+  } else if (pluginKey.includes('spring-boot')) {
+    switch (goal) {
+      case 'run':
+        description = 'Start Spring Boot application';
+        break;
+      case 'build-image':
+        description = 'Build Spring Boot Docker image';
+        break;
+      case 'repackage':
+        description = 'Repackage Spring Boot application';
+        break;
+      default:
+        description = `Spring Boot ${goal}`;
+    }
+  } else if (pluginKey.includes('surefire')) {
+    description = 'Run unit tests';
+  } else if (pluginKey.includes('failsafe')) {
+    description = 'Run integration tests';
+  }
+
+  // Base configuration
+  const baseConfig: TargetConfiguration = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command,
+      cwd: '{projectRoot}',
+    },
+    metadata: {
+      type: 'goal',
+      plugin: pluginKey,
+      goal: goal,
+      targetType: targetType,
+      phase: phase !== 'null' ? phase : undefined,
+      technologies: ['maven'],
+      description: description,
     },
     inputs: ['{projectRoot}/pom.xml'],
     outputs: [],
   };
+  
+  // Customize based on target type
+  switch (targetType) {
+    case 'serve':
+      baseConfig.inputs!.push('{projectRoot}/src/**/*');
+      break;
+    case 'build':
+      baseConfig.inputs!.push('{projectRoot}/src/**/*');
+      baseConfig.outputs = ['{projectRoot}/target/**/*'];
+      break;
+    case 'test':
+      baseConfig.inputs!.push('{projectRoot}/src/test/**/*', '{projectRoot}/src/main/**/*');
+      baseConfig.outputs = ['{projectRoot}/target/surefire-reports/**/*'];
+      break;
+    case 'deploy':
+      baseConfig.inputs!.push('{projectRoot}/src/**/*');
+      break;
+    case 'utility':
+      baseConfig.inputs!.push('{projectRoot}/src/**/*');
+      break;
+  }
+  
+  // Get goal-to-goal dependencies from Java analyzer
+  const targetName = goalInfo.targetName || goal;
+  const goalDeps = goalDependencies[targetName] || [];
+  
+  // Get cross-project dependencies for this target
+  const crossProjectDeps = crossProjectDependencies[targetName] || [];
+  
+  // Merge goal dependencies and cross-project dependencies
+  const allDependencies = [...goalDeps, ...crossProjectDeps];
+  if (allDependencies.length > 0) {
+    // Resolve cross-project dependencies with fallbacks
+    const resolvedDeps = allDependencies.map(dep => {
+      if (dep.includes(':')) {
+        return resolveCrossProjectDependency(dep);
+      }
+      return dep;
+    }).filter(dep => dep !== null);
+    
+    if (resolvedDeps.length > 0) {
+      baseConfig.dependsOn = resolvedDeps;
+    }
+  }
+  
+  return baseConfig;
+}
 
-  // Default lifecycle phases
-  phaseTargets['validate'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} validate`,
-      cwd: '{projectRoot}',
-    },
-    inputs: ['{projectRoot}/pom.xml'],
-    outputs: [],
+/**
+ * Resolve cross-project dependency with fallback support
+ * Handles dependencies like "projectA:package|compile|validate"
+ */
+function resolveCrossProjectDependency(dependency: string): string {
+  if (!dependency.includes(':')) {
+    return dependency; // Not a cross-project dependency
+  }
+  
+  const [project, fallbackChain] = dependency.split(':', 2);
+  if (!fallbackChain || !fallbackChain.includes('|')) {
+    return dependency; // No fallback, return as-is
+  }
+  
+  // For now, just return the first target in the fallback chain
+  // In a complete implementation, this would check which targets actually exist
+  const targets = fallbackChain.split('|');
+  return `${project}:${targets[0]}`;
+}
+
+/**
+ * Get dependencies for a Maven phase
+ */
+function getPhaseDependencies(phase: string): string[] {
+  const phaseDependencies: Record<string, string[]> = {
+    'test': ['compile'],
+    'package': ['test'],
+    'verify': ['package'],
+    'install': ['verify'],
+    'deploy': ['install'],
+    'integration-test': ['package'],
   };
-
-  phaseTargets['compile'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} compile`,
-      cwd: '{projectRoot}',
-    },
-    dependsOn: ['validate'],
-    inputs: [
-      '{projectRoot}/src/main/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: ['{projectRoot}/target/classes/**/*'],
-  };
-
-  phaseTargets['test-compile'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} test-compile`,
-      cwd: '{projectRoot}',
-    },
-    dependsOn: ['compile'],
-    inputs: [
-      '{projectRoot}/src/test/**/*',
-      '{projectRoot}/src/main/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: ['{projectRoot}/target/test-classes/**/*'],
-  };
-
-  phaseTargets['test'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} test`,
-      cwd: '{projectRoot}',
-    },
-    dependsOn: ['test-compile'],
-    inputs: [
-      '{projectRoot}/src/test/**/*',
-      '{projectRoot}/src/main/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: [
-      '{projectRoot}/target/surefire-reports/**/*',
-      '{projectRoot}/target/test-classes/**/*',
-    ],
-  };
-
-  phaseTargets['package'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} package`,
-      cwd: '{projectRoot}',
-    },
-    dependsOn: ['test'],
-    inputs: [
-      '{projectRoot}/src/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: ['{projectRoot}/target/*.jar', '{projectRoot}/target/*.war'],
-  };
-
-  phaseTargets['verify'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} verify`,
-      cwd: '{projectRoot}',
-    },
-    dependsOn: ['package'],
-    inputs: [
-      '{projectRoot}/src/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: [
-      '{projectRoot}/target/**/*',
-      '{projectRoot}/target/failsafe-reports/**/*',
-    ],
-  };
-
-  phaseTargets['install'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} install`,
-      cwd: '{projectRoot}',
-    },
-    dependsOn: ['verify'],
-    inputs: [
-      '{projectRoot}/src/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: ['{projectRoot}/target/**/*'],
-  };
-
-  phaseTargets['deploy'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} deploy`,
-      cwd: '{projectRoot}',
-    },
-    dependsOn: ['install'],
-    inputs: [
-      '{projectRoot}/src/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: ['{projectRoot}/target/**/*'],
-  };
-
-  // Site lifecycle
-  phaseTargets['site'] = {
-    executor: '@nx/run-commands:run-commands',
-    options: {
-      command: `${options.mavenExecutable} site`,
-      cwd: '{projectRoot}',
-    },
-    inputs: [
-      '{projectRoot}/src/**/*',
-      '{projectRoot}/pom.xml',
-    ],
-    outputs: ['{projectRoot}/target/site/**/*'],
-  };
-
-  return phaseTargets;
+  
+  return phaseDependencies[phase] || [];
 }
 
 /**
@@ -650,5 +798,5 @@ function generateMavenPhaseTargets(options: MavenPluginOptions): Record<string, 
 export default {
   name: 'maven-plugin2',
   createNodesV2,
-  createDependencies, // Re-enabled: now uses cached batch results, no additional processes
+  createDependencies,
 };

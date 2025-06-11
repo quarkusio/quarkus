@@ -1,9 +1,9 @@
 {
-  "/home/jason/projects/triage/java/quarkus/maven-script": {
-    "name": "com.example:maven-script",
+  "/home/jason/projects/triage/java/quarkus/independent-projects/bootstrap/app-model": {
+    "name": "io.quarkus:quarkus-bootstrap-app-model",
     "projectType": "library",
     "implicitDependencies": {
-      "projects": []
+      "projects": ["io.quarkus:quarkus-bootstrap-bom", "io.quarkus:quarkus-bootstrap-bom-test"]
     }
   }
 }

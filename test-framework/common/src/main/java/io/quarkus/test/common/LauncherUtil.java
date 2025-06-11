@@ -25,7 +25,7 @@ import org.eclipse.microprofile.config.Config;
 import org.eclipse.microprofile.config.ConfigProvider;
 
 import io.quarkus.test.common.http.TestHTTPResourceManager;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.os.OS;
 
 public final class LauncherUtil {
 
@@ -113,7 +113,7 @@ public final class LauncherUtil {
             int exit = quarkusProcess.exitValue();
             String message = "Unable to successfully launch process '" + quarkusProcess.pid() + "'. Exit code is: '"
                     + exit + "'.";
-            if (OS.determineOS().equals(OS.MAC) && exit == 126) {
+            if (OS.current() == OS.MAC && exit == 126) {
                 message += System.lineSeparator()
                         + "This may be caused by building the native binary in a Linux container while the host is macOS.";
             }

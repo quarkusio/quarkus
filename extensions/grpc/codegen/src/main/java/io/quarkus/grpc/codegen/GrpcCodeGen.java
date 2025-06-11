@@ -40,7 +40,8 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
 import io.quarkus.utilities.JavaBinFinder;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.cpu.CPU;
+import io.smallrye.common.os.OS;
 
 /**
  * Code generation for gRPC. Generates java classes from proto files placed in either src/main/proto or src/test/proto
@@ -180,7 +181,7 @@ public class GrpcCodeGen implements CodeGenProvider {
                 // Estimate command length to avoid command line too long error
                 int commandLength = command.stream().mapToInt(String::length).sum();
                 // 8191 is the maximum command line length for Windows
-                if (useArgFile || (commandLength > 8190 && OS.determineOS() == OS.WINDOWS)) {
+                if (useArgFile || (commandLength > 8190 && OS.current() == OS.WINDOWS)) {
                     File argFile = File.createTempFile("grpc-protoc-params", ".txt");
                     argFile.deleteOnExit();
 
@@ -412,7 +413,7 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private String escapeWhitespace(String path) {
-        if (OS.determineOS() == OS.LINUX) {
+        if (OS.current() == OS.LINUX) {
             return path.replace(" ", "\\ ");
         } else {
             return path;
@@ -490,18 +491,35 @@ public class GrpcCodeGen implements CodeGenProvider {
     }
 
     private String osClassifier() throws CodeGenException {
-        String architecture = OS.getArchitecture();
-        switch (OS.determineOS()) {
-            case LINUX:
-                return "linux-" + architecture;
-            case WINDOWS:
-                return "windows-" + architecture;
-            case MAC:
-                return "osx-" + architecture;
-            default:
-                throw new CodeGenException(
-                        "Unsupported OS, please use maven plugin instead to generate Java classes from proto files");
-        }
+        String architecture = getArchitecture();
+        return switch (OS.current()) {
+            case LINUX -> "linux-" + architecture;
+            case WINDOWS -> "windows-" + architecture;
+            case MAC -> "osx-" + architecture;
+            default -> throw new CodeGenException(
+                    "Unsupported OS, please use maven plugin instead to generate Java classes from proto files");
+        };
+    }
+
+    /**
+     * {@return the bespoke architecture string, or {@code null} if unknown}
+     */
+    private static String getArchitecture() {
+        return switch (CPU.host()) {
+            case x64 -> "x86_64";
+            case x86 -> "x86_32";
+            case arm -> "arm_32";
+            case aarch64 -> "aarch_64";
+            case mips -> "mips_32";
+            case mipsel -> "mipsel_32";
+            case mips64 -> "mips_64";
+            case mips64el -> "mipsel_64";
+            case ppc32 -> "ppc_32";
+            case ppc32le -> "ppcle_32";
+            case ppc -> "ppc_64";
+            case ppcle -> "ppcle_64";
+            default -> null;
+        };
     }
 
     private static Path prepareQuarkusGrpcExecutable(ApplicationModel appModel, Path buildDir) throws CodeGenException {
@@ -510,7 +528,7 @@ public class GrpcCodeGen implements CodeGenProvider {
             throw new CodeGenException("Failed to find Quarkus gRPC protoc plugin among dependencies");
         }
 
-        if (OS.determineOS() != OS.WINDOWS) {
+        if (OS.current() != OS.WINDOWS) {
             return writeScript(buildDir, pluginPath, "#!/bin/sh\n", ".sh");
         } else {
             return writeScript(buildDir, pluginPath, "@echo off\r\n", ".cmd");

@@ -2,6 +2,8 @@ package io.quarkus.utilities;
 
 import java.io.File;
 
+import io.smallrye.common.os.OS;
+
 public class JavaBinFinder {
     /**
      * Search for the java command in the order:
@@ -19,7 +21,7 @@ public class JavaBinFinder {
 
             java = null;
             // Try executable extensions if windows
-            if (OS.determineOS() == OS.WINDOWS && System.getenv().containsKey("PATHEXT")) {
+            if (OS.current() == OS.WINDOWS && System.getenv().containsKey("PATHEXT")) {
                 String extpath = System.getenv("PATHEXT");
                 String[] exts = extpath.split(";");
                 for (String ext : exts) {
@@ -39,7 +41,7 @@ public class JavaBinFinder {
     }
 
     public static String simpleBinaryName() {
-        if (OS.determineOS() == OS.WINDOWS) {
+        if (OS.current() == OS.WINDOWS) {
             return "java.exe";
         }
         return "java";

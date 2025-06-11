@@ -7,7 +7,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import io.quarkus.devtools.messagewriter.MessageWriter;
-import io.quarkus.utilities.OS;
+import io.smallrye.common.os.OS;
 
 public class Executable {
 
@@ -15,7 +15,7 @@ public class Executable {
         String path = null;
         String executable = base;
 
-        if (OS.determineOS() == OS.WINDOWS) {
+        if (OS.current() == OS.WINDOWS) {
             executable = base + ".cmd";
             path = findExecutable(executable);
             if (path == null) {
@@ -50,7 +50,7 @@ public class Executable {
         if (projectRoot == null) {
             return null;
         }
-        if (OS.determineOS() == OS.WINDOWS) {
+        if (OS.current() == OS.WINDOWS) {
             for (String name : windows) {
                 File wrapper = new File(projectRoot + File.separator + name);
                 if (wrapper.isFile())

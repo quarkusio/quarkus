@@ -93,10 +93,7 @@ public class MavenModelReader {
         String outputFile = System.getProperty("maven.output.file", "maven-results.json");
         System.err.println("INFO: Writing results to " + outputFile);
         
-        try (FileWriter writer = new FileWriter(outputFile)) {
-            // Output JSON start to file
-            writer.write("{\n");
-            
+        try {
             // Start from workspace root pom.xml
             String workspaceRoot = System.getProperty("user.dir");
             String rootPomPath = workspaceRoot + "/pom.xml";
@@ -106,16 +103,30 @@ public class MavenModelReader {
                 throw new Exception("Root pom.xml not found at: " + rootPomPath);
             }
             
-            // Track processed projects and statistics
+            // PASS 1: Discover all project names first
             List<String> processedPomPaths = new ArrayList<>();
+            List<String> discoveredProjects = new ArrayList<>();
             int[] stats = {0, 0}; // [processed, successful]
-            boolean[] firstProject = {true};
             
-            // Recursively traverse the module hierarchy
-            traverseModules(rootPomPath, workspaceRoot, processedPomPaths, stats, firstProject, writer);
+            System.err.println("INFO: Pass 1 - Discovering all project names");
+            discoverAllProjects(rootPomPath, workspaceRoot, processedPomPaths, discoveredProjects, stats);
             
-            // Close JSON in file
-            writer.write("\n}\n");
+            System.err.println("INFO: Pass 1 completed - Discovered " + discoveredProjects.size() + " projects");
+            
+            // PASS 2: Generate configurations with filtered dependencies
+            try (FileWriter writer = new FileWriter(outputFile)) {
+                writer.write("{\n");
+                
+                // Reset for second pass
+                processedPomPaths.clear();
+                stats[0] = 0; stats[1] = 0;
+                boolean[] firstProject = {true};
+                
+                System.err.println("INFO: Pass 2 - Generating configurations with filtered dependencies");
+                traverseModulesWithFiltering(rootPomPath, workspaceRoot, processedPomPaths, discoveredProjects, stats, firstProject, writer);
+                
+                writer.write("\n}\n");
+            }
             
             long duration = System.currentTimeMillis() - startTime;
             System.err.println("INFO: Hierarchical processing completed in " + duration + "ms");
@@ -133,7 +144,7 @@ public class MavenModelReader {
     }
     
     private static void traverseModules(String pomPath, String workspaceRoot, List<String> processedPomPaths, 
-                                        int[] stats, boolean[] firstProject, FileWriter writer) throws Exception {
+                                        List<String> discoveredProjects, int[] stats, boolean[] firstProject, FileWriter writer) throws Exception {
         
         // Skip if already processed (avoid cycles)
         if (processedPomPaths.contains(pomPath)) {
@@ -159,6 +170,15 @@ public class MavenModelReader {
             stats[1]++; // increment successful count
             firstProject[0] = false;
             
+            // Track the discovered project name for dependency filtering
+            String artifactId = model.getArtifactId();
+            String groupId = model.getGroupId();
+            if (groupId == null && model.getParent() != null) {
+                groupId = model.getParent().getGroupId();
+            }
+            String projectName = (groupId != null ? groupId : "unknown") + ":" + artifactId;
+            discoveredProjects.add(projectName);
+            
             // If this is a parent POM with modules, traverse child modules
             if ("pom".equals(packaging) && model.getModules() != null && !model.getModules().isEmpty()) {
                 String parentDir = pomFile.getParent();
@@ -169,7 +189,7 @@ public class MavenModelReader {
                     String childPomPath = parentDir + "/" + module + "/pom.xml";
                     
                     // Recursively traverse child modules
-                    traverseModules(childPomPath, workspaceRoot, processedPomPaths, stats, firstProject, writer);
+                    traverseModules(childPomPath, workspaceRoot, processedPomPaths, discoveredProjects, stats, firstProject, writer);
                 }
             }
             
@@ -181,6 +201,86 @@ public class MavenModelReader {
             
         } catch (Exception e) {
             System.err.println("ERROR: Failed to process " + pomPath + ": " + e.getMessage());
+            // Continue processing other modules
+        }
+    }
+    
+    private static void discoverAllProjects(String pomPath, String workspaceRoot, List<String> processedPomPaths, 
+                                           List<String> discoveredProjects, int[] stats) throws Exception {
+        // Skip if already processed (avoid cycles)
+        if (processedPomPaths.contains(pomPath)) {
+            return;
+        }
+        
+        File pomFile = new File(pomPath);
+        if (!pomFile.exists()) {
+            return;
+        }
+        
+        try {
+            stats[0]++; // increment processed count
+            processedPomPaths.add(pomPath);
+            
+            Model model = readPomFile(pomPath);
+            
+            // Get project name
+            String artifactId = model.getArtifactId();
+            String groupId = model.getGroupId();
+            if (groupId == null && model.getParent() != null) {
+                groupId = model.getParent().getGroupId();
+            }
+            String projectName = (groupId != null ? groupId : "unknown") + ":" + artifactId;
+            discoveredProjects.add(projectName);
+            
+            // Traverse child modules if this is a parent POM
+            String packaging = model.getPackaging();
+            if ("pom".equals(packaging) && model.getModules() != null && !model.getModules().isEmpty()) {
+                String parentDir = pomFile.getParent();
+                for (String module : model.getModules()) {
+                    String childPomPath = parentDir + "/" + module + "/pom.xml";
+                    discoverAllProjects(childPomPath, workspaceRoot, processedPomPaths, discoveredProjects, stats);
+                }
+            }
+            
+        } catch (Exception e) {
+            // Continue processing other modules
+        }
+    }
+    
+    private static void traverseModulesWithFiltering(String pomPath, String workspaceRoot, List<String> processedPomPaths, 
+                                                    List<String> discoveredProjects, int[] stats, boolean[] firstProject, FileWriter writer) throws Exception {
+        // Skip if already processed (avoid cycles)
+        if (processedPomPaths.contains(pomPath)) {
+            return;
+        }
+        
+        File pomFile = new File(pomPath);
+        if (!pomFile.exists()) {
+            return;
+        }
+        
+        try {
+            stats[0]++; // increment processed count
+            processedPomPaths.add(pomPath);
+            
+            Model model = readPomFile(pomPath);
+            String packaging = model.getPackaging();
+            
+            // Process this project with filtered dependencies
+            processOneFileLightweightToFileWithFiltering(pomPath, firstProject[0], writer, stats[0], discoveredProjects);
+            stats[1]++; // increment successful count
+            firstProject[0] = false;
+            
+            // If this is a parent POM with modules, traverse child modules
+            if ("pom".equals(packaging) && model.getModules() != null && !model.getModules().isEmpty()) {
+                String parentDir = pomFile.getParent();
+                for (String module : model.getModules()) {
+                    String childPomPath = parentDir + "/" + module + "/pom.xml";
+                    traverseModulesWithFiltering(childPomPath, workspaceRoot, processedPomPaths, discoveredProjects, stats, firstProject, writer);
+                }
+            }
+            
+        } catch (Exception e) {
             // Continue processing other modules
         }
     }
@@ -375,6 +475,85 @@ public class MavenModelReader {
         }
     }
     
+    private static void processOneFileLightweightToFileWithFiltering(String pomPath, boolean isFirst, FileWriter writer, int processed, List<String> discoveredProjects) throws Exception {
+        Model model = null;
+        try {
+            // Only log every 10 projects to reduce output
+            if (processed % 10 == 1) {
+                System.err.println("DEBUG: Processing " + pomPath);
+            }
+            
+            // Read and immediately process
+            model = readPomFile(pomPath);
+            String artifactId = model.getArtifactId();
+            String groupId = model.getGroupId();
+            
+            // Use parent groupId if not defined locally
+            if (groupId == null && model.getParent() != null) {
+                groupId = model.getParent().getGroupId();
+            }
+            
+            // Create unique project name: groupId:artifactId
+            String projectName = (groupId != null ? groupId : "unknown") + ":" + artifactId;
+            
+            // Get project root
+            File pomFile = new File(pomPath);
+            String projectRoot = pomFile.getParent();
+            if (projectRoot == null) {
+                projectRoot = ".";
+            }
+            
+            // Convert absolute path to relative path
+            if (projectRoot.startsWith("/")) {
+                String workspaceRoot = System.getProperty("user.dir");
+                if (projectRoot.startsWith(workspaceRoot + "/")) {
+                    projectRoot = projectRoot.substring(workspaceRoot.length() + 1);
+                }
+            }
+            
+            // Filter internal dependencies to only include discovered projects
+            List<String> internalDeps = new ArrayList<>();
+            if (model.getDependencies() != null) {
+                for (Dependency dep : model.getDependencies()) {
+                    if (isInternalDependency(dep.getGroupId(), dep.getArtifactId())) {
+                        String depName = dep.getGroupId() + ":" + dep.getArtifactId();
+                        // Only include if the dependency is in our discovered projects list
+                        if (discoveredProjects.contains(depName)) {
+                            internalDeps.add(depName);
+                        }
+                    }
+                }
+            }
+            
+            // Write to file
+            if (!isFirst) {
+                writer.write(",\n");
+            }
+            
+            writer.write("  \"" + escapeJsonString(projectRoot) + "\": {\n");
+            writer.write("    \"name\": \"" + escapeJsonString(projectName) + "\",\n");
+            writer.write("    \"projectType\": \"library\",\n");
+            writer.write("    \"implicitDependencies\": {\n");
+            writer.write("      \"projects\": [");
+            for (int i = 0; i < internalDeps.size(); i++) {
+                if (i > 0) writer.write(", ");
+                writer.write("\"" + escapeJsonString(internalDeps.get(i)) + "\"");
+            }
+            writer.write("]\n");
+            writer.write("    }\n");
+            writer.write("  }");
+            
+            // Only log every 25 projects to reduce output
+            if (processed % 25 == 0 || processed == 1) {
+                System.err.println("DEBUG: Processed " + projectName + " with " + internalDeps.size() + " filtered dependencies (" + processed + " total)");
+            }
+            
+        } finally {
+            // Explicitly clear references
+            model = null;
+        }
+    }
+    
     private static Model readPomFile(String pomPath) throws Exception {
         MavenXpp3Reader reader = new MavenXpp3Reader();
         return reader.read(new FileReader(pomPath));
@@ -435,9 +614,21 @@ public class MavenModelReader {
             return false;
         }
         
-        // Check for Quarkus internal dependencies
-        return groupId.startsWith("io.quarkus") && 
-               (artifactId.startsWith("quarkus-") || artifactId.equals("arc"));
+        // More conservative check for Quarkus internal dependencies
+        // Only include artifacts that are likely to be in the workspace
+        if (!groupId.equals("io.quarkus")) {
+            return false;
+        }
+        
+        // Exclude known external dependencies that are not part of the workspace
+        if (artifactId.equals("quarkus-fs-util") || 
+            artifactId.equals("quarkus-spring-context-api") ||
+            artifactId.equals("quarkus-spring-data-rest-api") ||
+            artifactId.contains("-api") && !artifactId.endsWith("-deployment")) {
+            return false;
+        }
+        
+        return artifactId.startsWith("quarkus-") || artifactId.equals("arc");
     }
     
     private static Map<String, Object> createBuildTarget() {

@@ -134,50 +134,9 @@ let cachedBatchResults: Map<string, any> = new Map();
  * Create dependencies using cached batch results (no additional processes)
  */
 export const createDependencies: CreateDependencies = async () => {
-  const dependencies: ReturnType<CreateDependencies> = [];
-
-  // Use cached results from createNodesV2 batch processing
-  for (const [projectRoot, nxConfig] of cachedBatchResults.entries()) {
-    if (!nxConfig?.implicitDependencies) continue;
-
-    const sourceProjectName = nxConfig.name;
-    if (!sourceProjectName) continue;
-
-    // Add project dependencies
-    const projectDeps = nxConfig.implicitDependencies.projects || [];
-    for (const depName of projectDeps) {
-      // Find target project in cached results
-      for (const [_, targetConfig] of cachedBatchResults.entries()) {
-        if (targetConfig.name === depName) {
-          dependencies.push({
-            source: sourceProjectName,
-            target: targetConfig.name,
-            type: DependencyType.static,
-          });
-          break;
-        }
-      }
-    }
-
-    // Add parent dependencies
-    const parentDeps = nxConfig.implicitDependencies.inheritsFrom || [];
-    for (const parentName of parentDeps) {
-      // Find parent project in cached results
-      for (const [_, parentConfig] of cachedBatchResults.entries()) {
-        if (parentConfig.name === parentName) {
-          dependencies.push({
-            source: sourceProjectName,
-            target: parentConfig.name,
-            type: DependencyType.implicit,
-          });
-          break;
-        }
-      }
-    }
-  }
-
-  console.log(`Generated ${dependencies.length} dependencies from cached batch results`);
-  return dependencies;
+  // Temporarily disable dependency creation to isolate the issue
+  console.log(`Dependency creation temporarily disabled for debugging`);
+  return [];
 };
 
 /**
@@ -500,11 +459,12 @@ function detectFramework(nxConfig: any): string {
 }
 
 /**
- * Normalize target configurations from Maven analysis
+ * Normalize target configurations from Maven analysis and add Maven lifecycle phases
  */
 function normalizeTargets(targets: Record<string, any>, options: MavenPluginOptions): Record<string, TargetConfiguration> {
   const normalizedTargets: Record<string, TargetConfiguration> = {};
 
+  // First add any existing targets from Maven analysis
   for (const [name, target] of Object.entries(targets)) {
     // Map common Maven targets to Nx conventions
     let targetName = name;
@@ -526,7 +486,162 @@ function normalizeTargets(targets: Record<string, any>, options: MavenPluginOpti
     };
   }
 
+  // Add Maven lifecycle phase targets
+  const mavenPhaseTargets = generateMavenPhaseTargets(options);
+  Object.assign(normalizedTargets, mavenPhaseTargets);
+
   return normalizedTargets;
+}
+
+/**
+ * Generate Maven lifecycle phase targets
+ */
+function generateMavenPhaseTargets(options: MavenPluginOptions): Record<string, TargetConfiguration> {
+  const phaseTargets: Record<string, TargetConfiguration> = {};
+
+  // Clean lifecycle
+  phaseTargets['clean'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} clean`,
+      cwd: '{projectRoot}',
+    },
+    inputs: ['{projectRoot}/pom.xml'],
+    outputs: [],
+  };
+
+  // Default lifecycle phases
+  phaseTargets['validate'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} validate`,
+      cwd: '{projectRoot}',
+    },
+    inputs: ['{projectRoot}/pom.xml'],
+    outputs: [],
+  };
+
+  phaseTargets['compile'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} compile`,
+      cwd: '{projectRoot}',
+    },
+    dependsOn: ['validate'],
+    inputs: [
+      '{projectRoot}/src/main/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: ['{projectRoot}/target/classes/**/*'],
+  };
+
+  phaseTargets['test-compile'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} test-compile`,
+      cwd: '{projectRoot}',
+    },
+    dependsOn: ['compile'],
+    inputs: [
+      '{projectRoot}/src/test/**/*',
+      '{projectRoot}/src/main/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: ['{projectRoot}/target/test-classes/**/*'],
+  };
+
+  phaseTargets['test'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} test`,
+      cwd: '{projectRoot}',
+    },
+    dependsOn: ['test-compile'],
+    inputs: [
+      '{projectRoot}/src/test/**/*',
+      '{projectRoot}/src/main/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: [
+      '{projectRoot}/target/surefire-reports/**/*',
+      '{projectRoot}/target/test-classes/**/*',
+    ],
+  };
+
+  phaseTargets['package'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} package`,
+      cwd: '{projectRoot}',
+    },
+    dependsOn: ['test'],
+    inputs: [
+      '{projectRoot}/src/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: ['{projectRoot}/target/*.jar', '{projectRoot}/target/*.war'],
+  };
+
+  phaseTargets['verify'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} verify`,
+      cwd: '{projectRoot}',
+    },
+    dependsOn: ['package'],
+    inputs: [
+      '{projectRoot}/src/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: [
+      '{projectRoot}/target/**/*',
+      '{projectRoot}/target/failsafe-reports/**/*',
+    ],
+  };
+
+  phaseTargets['install'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} install`,
+      cwd: '{projectRoot}',
+    },
+    dependsOn: ['verify'],
+    inputs: [
+      '{projectRoot}/src/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: ['{projectRoot}/target/**/*'],
+  };
+
+  phaseTargets['deploy'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} deploy`,
+      cwd: '{projectRoot}',
+    },
+    dependsOn: ['install'],
+    inputs: [
+      '{projectRoot}/src/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: ['{projectRoot}/target/**/*'],
+  };
+
+  // Site lifecycle
+  phaseTargets['site'] = {
+    executor: '@nx/run-commands:run-commands',
+    options: {
+      command: `${options.mavenExecutable} site`,
+      cwd: '{projectRoot}',
+    },
+    inputs: [
+      '{projectRoot}/src/**/*',
+      '{projectRoot}/pom.xml',
+    ],
+    outputs: ['{projectRoot}/target/site/**/*'],
+  };
+
+  return phaseTargets;
 }
 
 /**

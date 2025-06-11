@@ -42,3 +42,9 @@ nb-configuration.xml
 
 .goosehints
 .goose
+node_modules
+
+
+
+.nx/cache
+.nx/workspace-data

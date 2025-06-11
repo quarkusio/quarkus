@@ -1,0 +1,6 @@
+{
+  "plugins": [
+    "./maven-plugin.ts",
+  ],
+  "$schema": "./node_modules/nx/schemas/nx-schema.json"
+}

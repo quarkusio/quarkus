@@ -119,7 +119,7 @@
         <quartz.version>2.5.0</quartz.version>
         <h2.version>2.3.230</h2.version> <!-- When updating, needs to be matched in io.quarkus.hibernate.orm.runtime.config.DialectVersions
                                               and the dependency jts-core needs to be updated in extensions/jdbc/jdbc-h2/runtime/pom.xml -->
-        <postgresql-jdbc.version>42.7.6</postgresql-jdbc.version>
+        <postgresql-jdbc.version>42.7.7</postgresql-jdbc.version>
         <mariadb-jdbc.version>3.5.3</mariadb-jdbc.version>
         <mysql-jdbc.version>8.3.0</mysql-jdbc.version>
         <mssql-jdbc.version>12.10.0.jre11</mssql-jdbc.version>

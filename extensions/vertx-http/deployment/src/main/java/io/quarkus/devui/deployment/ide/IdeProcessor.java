@@ -2,11 +2,9 @@ package io.quarkus.devui.deployment.ide;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.jboss.logging.Logger;
 
@@ -23,6 +21,7 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.quarkus.vertx.http.deployment.RouteBuildItem;
 import io.quarkus.vertx.http.runtime.ide.IdeRecorder;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
 
 /**
  * Processor for Ide interaction in Dev UI
@@ -110,11 +109,10 @@ public class IdeProcessor {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    List<String> command = new ArrayList<>();
-                    command.add(effectiveCommand);
-                    command.addAll(args);
-                    new ProcessBuilder(command).inheritIO().start().waitFor(10,
-                            TimeUnit.SECONDS);
+                    ProcessBuilder.newBuilder(effectiveCommand)
+                            .arguments(args)
+                            .output().inherited().gatherOnFail(true)
+                            .run();
                 } catch (Exception e) {
                     log.error("Could not launch IDE", e);
                 }

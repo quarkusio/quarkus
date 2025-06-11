@@ -22,10 +22,10 @@ class AgroalDevUIProcessor {
             BuildProducer<CardPageBuildItem> cardPageProducer,
             LaunchModeBuildItem launchMode) {
 
+        CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
+        cardPageBuildItem.setLogo("agroal_logo_dark.png", "agroal_logo_light.png");
         if (launchMode.getDevModeType().isPresent() && launchMode.getDevModeType().get().equals(DevModeType.LOCAL)) {
             if (config.devui().enabled()) {
-                CardPageBuildItem cardPageBuildItem = new CardPageBuildItem();
-
                 cardPageBuildItem.addPage(Page.webComponentPageBuilder()
                         .icon("font-awesome-solid:database")
                         .title("Database view")
@@ -33,10 +33,10 @@ class AgroalDevUIProcessor {
                         .metadata("allowSql", String.valueOf(config.devui().allowSql()))
                         .metadata("appendSql", config.devui().appendToDefaultSelect().orElse(""))
                         .metadata("allowedHost", config.devui().allowedDBHost().orElse(null)));
-
-                cardPageProducer.produce(cardPageBuildItem);
             }
         }
+
+        cardPageProducer.produce(cardPageBuildItem);
     }
 
     @BuildStep

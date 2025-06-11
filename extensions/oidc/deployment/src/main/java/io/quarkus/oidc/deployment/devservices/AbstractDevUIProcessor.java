@@ -46,6 +46,8 @@ public abstract class AbstractDevUIProcessor {
             VertxHttpConfig httpConfig, boolean discoverMetadata, String authServerUrl) {
         final CardPageBuildItem cardPage = new CardPageBuildItem();
 
+        cardPage.setLogo("oidc_logo.png", "oidc_logo.png");
+
         // prepare provider component
         cardPage.addPage(Page
                 .webComponentPageBuilder()

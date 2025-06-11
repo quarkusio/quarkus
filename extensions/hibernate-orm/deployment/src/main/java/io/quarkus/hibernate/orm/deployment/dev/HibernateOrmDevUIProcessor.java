@@ -25,6 +25,8 @@ public class HibernateOrmDevUIProcessor {
     @BuildStep
     public CardPageBuildItem create(HibernateOrmConfig config) {
         CardPageBuildItem card = new CardPageBuildItem();
+        card.setLogo("hibernate_icon_dark.svg", "hibernate_icon_light.svg");
+        card.addLibraryVersion("org.hibernate.orm", "hibernate-core", "Hibernate", "https://hibernate.org/orm/");
         card.addPage(Page.webComponentPageBuilder()
                 .title("Persistence Units")
                 .componentLink("hibernate-orm-persistence-units.js")

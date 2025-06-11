@@ -102,6 +102,7 @@ export class QwcExtension extends observeState(LitElement) {
         extensionDependencies: {}, 
         favourite: {type: Boolean},
         installed: {type: Boolean},
+        logoUrl: {type: String}
     };
     
     constructor() {
@@ -109,6 +110,7 @@ export class QwcExtension extends observeState(LitElement) {
         this._dialogOpened = false;
         this.favourite = false;
         this.installed = false;
+        this.logoUrl = null;
     }
 
     render() {
@@ -209,7 +211,9 @@ export class QwcExtension extends observeState(LitElement) {
     }
 
     _renderDialog(){
-        return html`<table>
+        return html`
+            ${this._renderLogo()}
+            <table>
                 <tr>
                     <td><b>Name</b></td>
                     <td>${this.name}</td>
@@ -269,6 +273,12 @@ export class QwcExtension extends observeState(LitElement) {
             </table>
             ${this._renderUninstallButton()}
         `;
+    }
+
+    _renderLogo(){
+        if(this.logoUrl){
+            return html`<img style="position: absolute;right: 10px;" src="${this.logoUrl}" height="45" @error="${(e) => e.target.style.display = 'none'}">`;
+        }
     }
 
     _renderUninstallButton(){

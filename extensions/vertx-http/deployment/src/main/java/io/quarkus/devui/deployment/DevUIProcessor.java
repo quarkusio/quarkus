@@ -6,12 +6,12 @@ import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Modifier;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -20,6 +20,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.jboss.jandex.ClassInfo;
@@ -129,6 +131,9 @@ public class DevUIProcessor {
     private static final String HIDE = "hide-in-dev-ui";
     private static final String CODESTART = "codestart";
     private static final String LANGUAGES = "languages";
+    private static final String ICON_URL = "icon-url";
+    private static final String LIB_GA = "lib-ga";
+    private final Pattern libGAPattern = Pattern.compile("([^:\\[\\]]+):([^\\[\\]]+)(\\[(.+?)\\])?");
 
     private static final Logger log = Logger.getLogger(DevUIProcessor.class);
 
@@ -605,22 +610,23 @@ public class DevUIProcessor {
                                         extension.setCard(card);
                                     });
 
-                                    addLogo(extension, cardPageBuildItem);
-                                    addLibraryLinks(extension, cardPageBuildItem, curateOutcomeBuildItem);
+                                    addLogo(extension, cardPageBuildItem, metaData);
+                                    addLibraryLinks(extension, cardPageBuildItem, curateOutcomeBuildItem, metaData);
 
                                     // Also make sure the static resources for that static resource is available
                                     produceResources(artifactId, webJarBuildProducer,
                                             devUIWebJarProducer);
                                     activeExtensions.add(extension);
                                 } else { // Inactive
-                                    if (cardPagesMap.containsKey(namespace)) {
-                                        if (addLogo(extension, cardPagesMap.get(namespace))) {
-                                            // Also make sure the static resources for that static resource is available
-                                            produceResources(artifactId, webJarBuildProducer,
-                                                    devUIWebJarProducer);
-                                        }
-                                        addLibraryLinks(extension, cardPagesMap.get(namespace), curateOutcomeBuildItem);
+                                    if (addLogo(extension, cardPagesMap.get(namespace), metaData)) {
+                                        // Also make sure the static resources for that static resource is available
+                                        produceResources(artifactId, webJarBuildProducer,
+                                                devUIWebJarProducer);
                                     }
+
+                                    addLibraryLinks(extension, cardPagesMap.get(namespace), curateOutcomeBuildItem,
+                                            metaData);
+
                                     inactiveExtensions.add(extension);
                                 }
 
@@ -708,35 +714,68 @@ public class DevUIProcessor {
     }
 
     private void addLibraryLinks(Extension extension, CardPageBuildItem cardPageBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        // See if there is any library versions and links
-        if (cardPageBuildItem.hasLibraryVersions()) {
+            CurateOutcomeBuildItem curateOutcomeBuildItem, Map<String, Object> metaData) {
+        if (cardPageBuildItem != null && !cardPageBuildItem.hasLibraryVersions() && !metaData.containsKey(LIB_GA)) {
+            return;
+        }
+
+        // Build a lookup map once
+        Map<String, String> versionMap = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
+                .collect(Collectors.toMap(
+                        rd -> rd.getGroupId() + ":" + rd.getArtifactId(),
+                        ResolvedDependency::getVersion,
+                        (existing, replacement) -> existing // keep the first one
+                ));
+
+        if (cardPageBuildItem != null) {
             for (LibraryLink lib : cardPageBuildItem.getLibraryVersions()) {
-                String version = getLibraryVersion(curateOutcomeBuildItem, lib.getGroupId(),
-                        lib.getArtifactId());
+                String key = lib.getGroupId() + ":" + lib.getArtifactId();
+                String version = versionMap.get(key);
                 if (version != null) {
                     lib.setVersion(version);
                     extension.addLibraryLink(lib);
                 }
             }
         }
-    }
 
-    private boolean addLogo(Extension extension, CardPageBuildItem cardPageBuildItem) {
-        if (cardPageBuildItem.hasLogo()) {
-            extension.setLogo(cardPageBuildItem.getDarkLogo(), cardPageBuildItem.getLightLogo());
-        }
-        return cardPageBuildItem.hasLogo();
-    }
+        if (metaData.containsKey(LIB_GA) && !extension.hasLibraryLinks()) {
+            String libGA = (String) metaData.get(LIB_GA);
+            Matcher matcher = libGAPattern.matcher(libGA);
 
-    private String getLibraryVersion(CurateOutcomeBuildItem curateOutcomeBuildItem, String groupId, String artifactId) {
-        Collection<ResolvedDependency> dependencies = curateOutcomeBuildItem.getApplicationModel().getDependencies();
-        for (ResolvedDependency rd : dependencies) {
-            if (rd.getGroupId().equals(groupId) && rd.getArtifactId().equals(artifactId)) {
-                return rd.getVersion();
+            if (matcher.matches()) {
+
+                String groupId = matcher.group(1);
+                String artifactId = matcher.group(2);
+                URL url = null;
+                if (matcher.group(4) != null) {
+                    try {
+                        url = URI.create(matcher.group(4)).toURL();
+                    } catch (MalformedURLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+
+                String version = versionMap.get(groupId + ":" + artifactId);
+                if (version != null) {
+                    LibraryLink l = new LibraryLink(groupId, artifactId, artifactId, url);
+                    l.setVersion(version);
+                    extension.addLibraryLink(l);
+                }
             }
         }
-        return null;
+
+    }
+
+    private boolean addLogo(Extension extension, CardPageBuildItem cardPageBuildItem, Map<String, Object> metaData) {
+        if (cardPageBuildItem != null && cardPageBuildItem.hasLogo()) {
+            extension.setLogo(cardPageBuildItem.getDarkLogo(), cardPageBuildItem.getLightLogo());
+            return true;
+        } else if (metaData.containsKey(ICON_URL)) {
+            String iconUrl = (String) metaData.get(ICON_URL);
+            extension.setLogo(iconUrl, iconUrl);
+            return true;
+        }
+        return false;
     }
 
     private String collectionToString(Map<String, Object> metaData, String key) {

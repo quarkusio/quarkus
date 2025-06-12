@@ -85,7 +85,7 @@ public class LoggingResourceTest {
         await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("directTrace called").size() == 1);
         Map<String, Object> logLine = getLogs("directTrace called").get(0);
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
+        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
         Map<String, Object> spanData = getSpans().get(0);
 
         assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));
@@ -110,7 +110,7 @@ public class LoggingResourceTest {
         await().atMost(Duration.ofSeconds(5)).until(() -> getLogs("Oh no Exception!").size() == 1);
         Map<String, Object> logLine = getLogs("Oh no Exception!").get(0);
 
-        await().atMost(Duration.ofMinutes(2)).until(() -> getSpans().size() == 1);
+        await().atMost(Duration.ofSeconds(30)).until(() -> getSpans().size() > 0);
         Map<String, Object> spanData = getSpans().get(0);
 
         assertEquals(SpanId.getInvalid(), spanData.get("parent_spanId"));

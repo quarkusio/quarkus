@@ -1,7 +1,5 @@
 package io.quarkus.virtual.graphql;
 
-import java.util.concurrent.ExecutorService;
-
 import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.graphql.GraphQLApi;
@@ -14,10 +12,8 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit5.virtual.ShouldNotPin;
 import io.quarkus.test.junit5.virtual.VirtualThreadUnit;
-import io.quarkus.virtual.threads.VirtualThreads;
 import io.restassured.RestAssured;
 import io.smallrye.common.annotation.RunOnVirtualThread;
-import io.vertx.core.Vertx;
 
 @QuarkusTest
 @VirtualThreadUnit
@@ -111,13 +107,6 @@ class RunOnVirtualThreadTest extends AbstractGraphQLTest {
 
     @GraphQLApi
     public static class RunOnVirtualThreadObjectTestThreadResource {
-        //todo how to make sure vt executor is not removed?
-        @Inject
-        @VirtualThreads
-        ExecutorService vt;
-
-        @Inject
-        Vertx vertx;
 
         // Return type Object with @RunOnVirtualThread
         @Query

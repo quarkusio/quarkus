@@ -58,60 +58,39 @@ public class RunningDevServicesTracker {
         return servicesIndexedByOwner.get(owner);
     }
 
-    public void addRunningService(ComparableDevServicesConfig key,
-            Closeable service) {
-        {
-            DevServiceOwner owner = key.getDevServicesOwner();
-            Set<Closeable> services = servicesIndexedByOwner.get(owner);
-
-            if (services == null) {
-                // Make a Set so that we can add and remove to it
-                services = new HashSet();
-                servicesIndexedByOwner.put(owner, services);
-            }
-
-            services.add(service);
-        }
-        {
-            Set<Closeable> services = servicesIndexedByConfig.get(key);
-            if (services == null) {
-                // Make a Set so that we can add and remove to it
-                services = new HashSet();
-                servicesIndexedByConfig.put(key, services);
-                services.add(service);
-            }
-        }
-
-        addToConfig(key.getDevServicesOwner().launchMode(), (Supplier<Map>) service);
+    public void addRunningService(ComparableDevServicesConfig key, Closeable service) {
+        addServiceToIndex(servicesIndexedByOwner, key.getDevServicesOwner(), service);
+        addServiceToIndex(servicesIndexedByConfig, key, service);
+        addServiceToConfig(key.getDevServicesOwner().launchMode(), (Supplier<Map>) service);
     }
 
     // The service passed in here might be from a different classloader
-    public void removeRunningService(ComparableDevServicesConfig key,
-            Closeable service) {
+    public void removeRunningService(ComparableDevServicesConfig key, Closeable service) {
         DevServiceOwner owner = key.getDevServicesOwner();
-
-        {
-            Set servicesForConfig = servicesIndexedByConfig.get(key);
-            if (servicesForConfig != null) {
-                servicesForConfig.remove(service);
-            }
-        }
-
-        {
-            Set servicesForOwner = servicesIndexedByOwner.get(owner);
-            if (servicesForOwner != null) {
-                servicesForOwner.remove(service);
-            }
-        }
-
-        removeFromConfig(owner.launchMode(), (Supplier<Map>) service);
+        removeServiceFromIndex(servicesIndexedByConfig, key, service);
+        removeServiceFromIndex(servicesIndexedByOwner, owner, service);
+        removeServiceFromConfig(owner.launchMode(), (Supplier<Map>) service);
     }
 
-    void addToConfig(String launchMode, Supplier<Map> configSupplier) {
+    static <T, K> void addServiceToIndex(Map<K, Set<T>> servicesIndexed, K key, T value) {
+        servicesIndexed.computeIfAbsent(key, k -> new HashSet<>()).add(value);
+    }
+
+    static <T, K> void removeServiceFromIndex(Map<K, Set<T>> servicesIndexed, K key, T value) {
+        Set<T> servicesForOwner = servicesIndexed.get(key);
+        if (servicesForOwner != null) {
+            servicesForOwner.remove(value);
+            if (servicesForOwner.isEmpty()) {
+                servicesIndexed.remove(key);
+            }
+        }
+    }
+
+    void addServiceToConfig(String launchMode, Supplier<Map> configSupplier) {
         configTracker.computeIfAbsent(launchMode, k -> new HashSet<>()).add(configSupplier);
     }
 
-    void removeFromConfig(String launchMode, Supplier<Map> configSupplier) {
+    void removeServiceFromConfig(String launchMode, Supplier<Map> configSupplier) {
         Set<Supplier<Map>> configs = configTracker.get(launchMode);
         if (configs != null) {
             configs.remove(configSupplier);

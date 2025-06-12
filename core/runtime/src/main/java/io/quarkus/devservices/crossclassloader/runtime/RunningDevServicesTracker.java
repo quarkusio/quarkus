@@ -59,14 +59,14 @@ public class RunningDevServicesTracker {
     }
 
     public void addRunningService(ComparableDevServicesConfig key, Closeable service) {
-        addServiceToIndex(servicesIndexedByOwner, key.getDevServicesOwner(), service);
+        addServiceToIndex(servicesIndexedByOwner, key.owner(), service);
         addServiceToIndex(servicesIndexedByConfig, key, service);
-        addServiceToConfig(key.getDevServicesOwner().launchMode(), (Supplier<Map>) service);
+        addServiceToConfig(key.owner().launchMode(), (Supplier<Map>) service);
     }
 
     // The service passed in here might be from a different classloader
     public void removeRunningService(ComparableDevServicesConfig key, Closeable service) {
-        DevServiceOwner owner = key.getDevServicesOwner();
+        DevServiceOwner owner = key.owner();
         removeServiceFromIndex(servicesIndexedByConfig, key, service);
         removeServiceFromIndex(servicesIndexedByOwner, owner, service);
         removeServiceFromConfig(owner.launchMode(), (Supplier<Map>) service);

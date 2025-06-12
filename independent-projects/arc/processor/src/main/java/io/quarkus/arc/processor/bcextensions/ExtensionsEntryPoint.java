@@ -3,6 +3,7 @@ package io.quarkus.arc.processor.bcextensions;
 import static io.quarkus.arc.processor.Beans.stereotypesWithTransitive;
 
 import java.lang.annotation.Annotation;
+import java.lang.constant.ClassDesc;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -62,6 +63,7 @@ import io.quarkus.arc.processor.StereotypeRegistrar;
 import io.quarkus.gizmo.FieldDescriptor;
 import io.quarkus.gizmo.MethodDescriptor;
 import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.desc.ConstructorDesc;
 
 /**
  * Entrypoint for the Build Compatible Extensions implementation. Used by the rest of ArC.
@@ -237,8 +239,8 @@ public class ExtensionsEntryPoint {
                         } else {
                             CustomAlterableContextInfo info = customAlterableContexts.add(contextClass, context.isNormal,
                                     scopeAnnotation);
-                            config.creator(bytecode -> {
-                                return bytecode.newInstance(MethodDescriptor.ofConstructor(info.generatedName));
+                            config.creator(cg -> {
+                                return cg.method().new_(ConstructorDesc.of(ClassDesc.of(info.generatedName)));
                             });
                         }
                         if (context.isNormal != null) {

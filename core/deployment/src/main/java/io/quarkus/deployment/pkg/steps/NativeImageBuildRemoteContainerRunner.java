@@ -1,8 +1,6 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -17,6 +15,7 @@ import io.quarkus.builder.json.JsonObject;
 import io.quarkus.builder.json.JsonString;
 import io.quarkus.builder.json.JsonValue;
 import io.quarkus.deployment.pkg.NativeConfig;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildContainerRunner {
 
@@ -54,14 +53,11 @@ public class NativeImageBuildRemoteContainerRunner extends NativeImageBuildConta
     }
 
     private List<String> runCommandAndReadOutput(String[] command) throws IOException, InterruptedException {
-        log.info(String.join(" ", command).replace("$", "\\$"));
-        final Process process = new ProcessBuilder(command).start();
-        if (process.waitFor() != 0) {
-            throw new RuntimeException("Command failed: " + String.join(" ", command));
-        }
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
-            return reader.lines().toList();
-        }
+        log.infof("%s", String.join(" ", command));
+        return ProcessBuilder.newBuilder(command[0])
+                .arguments(Arrays.copyOfRange(command, 1, command.length))
+                .output().toStringList(100000, 8192)
+                .run();
     }
 
     @Override

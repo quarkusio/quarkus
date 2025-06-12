@@ -39,9 +39,6 @@ public abstract class NativeImageBuildRunner {
     public void setup(boolean processInheritIODisabled) {
     }
 
-    public void addShutdownHook(Process buildNativeProcess) {
-    }
-
     public Result build(List<String> args, String nativeImageName, String resultingExecutableName, Path outputDir,
             GraalVM.Version graalVMVersion, boolean debugSymbolsEnabled, boolean processInheritIODisabled)
             throws InterruptedException, IOException {

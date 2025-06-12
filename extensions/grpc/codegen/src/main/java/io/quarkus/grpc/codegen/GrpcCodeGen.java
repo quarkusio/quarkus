@@ -35,12 +35,12 @@ import io.quarkus.bootstrap.prebuild.CodeGenException;
 import io.quarkus.bootstrap.prebuild.CodeGenFailureException;
 import io.quarkus.deployment.CodeGenContext;
 import io.quarkus.deployment.CodeGenProvider;
-import io.quarkus.deployment.util.ProcessUtil;
 import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 import io.quarkus.runtime.util.HashUtil;
 import io.smallrye.common.cpu.CPU;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
 
 /**
  * Code generation for gRPC. Generates java classes from proto files placed in either src/main/proto or src/test/proto
@@ -190,23 +190,21 @@ public class GrpcCodeGen implements CodeGenProvider {
                         }
                     }
 
-                    command = new ArrayList<>(Arrays.asList(command.get(0), "@" + argFile.getAbsolutePath()));
+                    command = new ArrayList<>(List.of(command.get(0), "@" + argFile.getAbsolutePath()));
                 }
                 log.debugf("Executing command: %s", String.join(" ", command));
-                ProcessBuilder processBuilder = new ProcessBuilder(command);
-
-                final Process process = ProcessUtil.launchProcess(processBuilder, context.shouldRedirectIO());
-                int resultCode = process.waitFor();
-                if (resultCode != 0) {
-                    throw new CodeGenException("Failed to generate Java classes from proto files: " + protoFiles +
-                            " to " + outDir.toAbsolutePath() + " with command " + String.join(" ", command));
+                try {
+                    ProcessBuilder.exec(command.get(0), command.subList(1, command.size()));
+                } catch (Exception e) {
+                    throw new CodeGenException("Failed to generate Java classes from proto files: %s to %s with command %s"
+                            .formatted(protoFiles, outDir.toAbsolutePath(), String.join(" ", command)), e);
                 }
                 postprocessing(context, outDir);
                 log.info("Successfully finished generating and post-processing sources from proto files");
 
                 return true;
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (IOException e) {
             throw new CodeGenException(
                     "Failed to generate java files from proto file in " + inputDir.toAbsolutePath(), e);
         }

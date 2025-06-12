@@ -41,8 +41,7 @@ import io.quarkus.arc.processor.ResourceOutput.Resource;
 import io.quarkus.arc.processor.ResourceOutput.Resource.SpecialType;
 import io.quarkus.arc.processor.bcextensions.ExtensionsEntryPoint;
 import io.quarkus.gizmo.BytecodeCreator;
-import io.quarkus.gizmo.MethodCreator;
-import io.quarkus.gizmo.ResultHandle;
+import io.quarkus.gizmo2.Expr;
 
 /**
  * An integrator should create a new instance of the bean processor using the convenient {@link Builder} and then invoke the
@@ -595,11 +594,12 @@ public class BeanProcessor {
         contextsForScope.put(BuiltinScope.REQUEST.getName(), 1);
         contextsForScope.put(BuiltinScope.SESSION.getName(), 1);
         // custom contexts
-        for (Map.Entry<ScopeInfo, List<Function<MethodCreator, ResultHandle>>> entry : beanDeployment
-                .getCustomContexts()
-                .entrySet()) {
-            if (entry.getKey().isNormal()) {
-                contextsForScope.merge(entry.getKey().getDotName(), entry.getValue().size(), Integer::sum);
+        for (var entry : beanDeployment.getCustomContexts().entrySet()) {
+            ScopeInfo scope = entry.getKey();
+            List<Function<ContextConfigurator.CreateGeneration, Expr>> creators = entry.getValue();
+
+            if (scope.isNormal()) {
+                contextsForScope.merge(scope.getDotName(), creators.size(), Integer::sum);
             }
         }
 

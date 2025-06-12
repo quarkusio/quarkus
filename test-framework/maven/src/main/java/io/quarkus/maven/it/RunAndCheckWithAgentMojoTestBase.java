@@ -3,18 +3,20 @@ package io.quarkus.maven.it;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
+import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+import io.smallrye.common.process.ProcessBuilder;
 import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -90,14 +92,15 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
     }
 
     private Process doLaunch(Path jar, File output) throws IOException {
-        List<String> commands = new ArrayList<>();
-        commands.add(ProcessUtil.pathOfJava().toString());
-        commands.add("-jar");
-        commands.add(jar.toString());
-        ProcessBuilder processBuilder = new ProcessBuilder(commands.toArray(new String[0]));
-        processBuilder.redirectOutput(output);
-        processBuilder.redirectError(output);
-        processBuilder.environment().put("QUARKUS_LAUNCH_DEVMODE", "true");
-        return processBuilder.start();
+        var env = new HashMap<>(System.getenv());
+        env.put("QUARKUS_LAUNCH_DEVMODE", "true");
+        try (BufferedWriter bw = Files.newBufferedWriter(output.toPath(), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+            ProcessBuilder.newBuilder(ProcessUtil.pathOfJava())
+                .arguments("-jar", jar.toString())
+                .output().transferTo(bw)
+                .error().transferTo(bw)
+                .environment(env)
+                .run();
+        }
     }
 }

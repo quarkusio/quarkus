@@ -2,7 +2,6 @@ package io.quarkus.devservices.deployment.compose;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -13,7 +12,7 @@ import org.testcontainers.DockerClientFactory;
 import org.testcontainers.dockerclient.TransportConfig;
 import org.testcontainers.utility.CommandLine;
 
-import io.quarkus.deployment.util.ExecUtil;
+import io.smallrye.common.process.ProcessBuilder;
 
 /**
  * A class that runs compose commands.
@@ -91,45 +90,37 @@ public class ComposeRunner {
             return;
         }
 
-        final Map<String, String> environment = new HashMap<>(env);
-        environment.put(PROJECT_NAME_ENV, identifier);
-
-        TransportConfig transportConfig = DockerClientFactory.instance().getTransportConfig();
-        String certPath = System.getenv(DOCKER_CERT_PATH_ENV);
-        if (certPath != null) {
-            environment.put(DOCKER_CERT_PATH_ENV, certPath);
-            environment.put(DOCKER_TLS_VERIFY_ENV, "true");
-        }
-        environment.put(DOCKER_HOST_ENV, transportConfig.getDockerHost().toString());
-        environment.put(COMPOSE_FILE_ENV, composeFiles
-                .stream()
-                .map(File::getAbsolutePath)
-                .map(Objects::toString)
-                .collect(Collectors.joining(File.pathSeparator)));
-        if (!profiles.isEmpty()) {
-            environment.put(COMPOSE_PROFILES_ENV, String.join(",", this.profiles));
-        }
-
-        LOG.debugv("Compose is running with env {0}", environment);
         LOG.infov("Compose is running command: {0} {1}", composeExecutable, cmd);
 
-        try {
-            final File pwd = composeFiles.get(0).getAbsoluteFile().getParentFile().getAbsoluteFile();
-            int exitCode = ExecUtil.execProcess(
-                    ExecUtil.startProcess(pwd, environment, composeExecutable, cmd.split("\\s+")),
-                    is -> new ExecUtil.HandleOutput(is, Logger.Level.INFO, LOG));
-            if (exitCode == 0) {
-                LOG.info("Compose has finished running");
-            } else {
-                throw new RuntimeException("Compose exited abnormally with code " + exitCode +
-                        " whilst running command: " +
-                        composeExecutable + " " + cmd + ", with env vars: " + environment);
-            }
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("Error running Compose command: " + cmd, e);
-        }
+        final File pwd = composeFiles.get(0).getAbsoluteFile().getParentFile().getAbsoluteFile();
+
+        ProcessBuilder.newBuilder(composeExecutable)
+                .directory(pwd.toPath())
+                .arguments(cmd.split("\\s+"))
+                .environment(env)
+                .modifyEnvironment(env -> {
+                    env.put(PROJECT_NAME_ENV, identifier);
+
+                    TransportConfig transportConfig = DockerClientFactory.instance().getTransportConfig();
+                    String certPath = System.getenv(DOCKER_CERT_PATH_ENV);
+                    if (certPath != null) {
+                        env.put(DOCKER_CERT_PATH_ENV, certPath);
+                        env.put(DOCKER_TLS_VERIFY_ENV, "true");
+                    }
+                    env.put(DOCKER_HOST_ENV, transportConfig.getDockerHost().toString());
+                    env.put(COMPOSE_FILE_ENV, composeFiles
+                            .stream()
+                            .map(File::getAbsolutePath)
+                            .map(Objects::toString)
+                            .collect(Collectors.joining(File.pathSeparator)));
+                    if (!profiles.isEmpty()) {
+                        env.put(COMPOSE_PROFILES_ENV, String.join(",", this.profiles));
+                    }
+                })
+                .output().consumeLinesWith(8192, LOG::info)
+                .run();
+
+        LOG.info("Compose has finished running");
     }
 
 }

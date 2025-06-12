@@ -582,7 +582,7 @@ public class RestClientBuilderImpl implements RestClientBuilder {
             }
         }
 
-        ClientImpl clientImpl = clientBuilder.build();
+        ClientImpl clientImpl = clientBuilder.proxyClass(aClass).build();
         TlsConfig tlsConfig = clientBuilder.getTlsConfig();
         if (tlsConfig != null && tlsConfig.getName().isPresent()) {
             RestClientRecorder.registerReloadableHttpClient(tlsConfig.getName().get(), clientImpl.getVertxHttpClient());

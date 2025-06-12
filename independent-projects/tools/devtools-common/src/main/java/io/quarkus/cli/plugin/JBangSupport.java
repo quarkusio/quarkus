@@ -1,9 +1,7 @@
 package io.quarkus.cli.plugin;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -12,8 +10,6 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -23,6 +19,7 @@ import io.quarkus.devtools.exec.Executable;
 import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.utils.Prompt;
 import io.quarkus.fs.util.ZipUtils;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class JBangSupport {
 
@@ -105,39 +102,12 @@ public class JBangSupport {
     }
 
     public List<String> execute(String... args) {
-        try {
-            List<String> command = new ArrayList<>(args.length + 1);
-            command.add(getExecutable().getAbsolutePath());
-            command.addAll(Arrays.asList(args));
-            List<String> lines = new ArrayList<>();
-            try {
-                Process process = new ProcessBuilder()
-                        .directory(workingDirectory.toFile())
-                        .redirectError(ProcessBuilder.Redirect.DISCARD)
-                        .command(command)
-                        .start();
-                // make sure the process does not block waiting for input
-                process.getOutputStream().close();
-
-                try (InputStreamReader isr = new InputStreamReader(process.getInputStream());
-                        BufferedReader reader = new BufferedReader(isr)) {
-                    for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-                        //Remove ansi escape codes
-                        lines.add(line.replaceAll("\u001B\\[[;\\d]*m", ""));
-                    }
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-                process.waitFor();
-
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-            return lines;
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        // todo: configurable line limit?
+        return ProcessBuilder.newBuilder(getExecutable().toPath())
+                .arguments(args)
+                .output()
+                .processWith(br -> br.lines().limit(100000).map(s -> s.replaceAll("\u001B\\[[;\\d]*m", "")).toList())
+                .run();
     }
 
     public Optional<String> version() {

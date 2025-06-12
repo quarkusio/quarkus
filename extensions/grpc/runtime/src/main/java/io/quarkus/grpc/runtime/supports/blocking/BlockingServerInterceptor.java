@@ -1,10 +1,6 @@
 package io.quarkus.grpc.runtime.supports.blocking;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -27,6 +23,8 @@ import io.quarkus.arc.InjectableContext.ContextState;
 import io.quarkus.arc.ManagedContext;
 import io.quarkus.grpc.runtime.Interceptors;
 import io.vertx.core.Vertx;
+
+import static javax.lang.model.SourceVersion.isKeyword;
 
 /**
  * gRPC Server interceptor offloading the execution of the gRPC method on a worker thread if the method is annotated
@@ -68,12 +66,22 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     @Override
     public Boolean apply(String name) {
         String methodName = name.substring(name.lastIndexOf("/") + 1);
-        return blockingMethods.contains(methodName.toLowerCase());
+        return blockingMethods.contains(toLowerCaseBeanSpec(methodName));
     }
 
     public Boolean applyVirtual(String name) {
         String methodName = name.substring(name.lastIndexOf("/") + 1);
-        return virtualMethods.contains(methodName.toLowerCase());
+        return virtualMethods.contains(toLowerCaseBeanSpec(methodName));
+    }
+
+    private String toLowerCaseBeanSpec(String name) {
+
+        // Methods cannot always be lowercased for comparison.
+        // - gRPC allows using method names which normally would not work in java because of reserved keywords.
+        // - Underscores are removed.
+
+        String lowerBeanSpec = name.toLowerCase().replace("_", "");
+        return isKeyword(lowerBeanSpec) ? lowerBeanSpec + "_" : lowerBeanSpec;
     }
 
     @Override

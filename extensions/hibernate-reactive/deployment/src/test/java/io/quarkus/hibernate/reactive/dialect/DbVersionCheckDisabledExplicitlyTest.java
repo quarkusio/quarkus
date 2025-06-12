@@ -1,20 +1,19 @@
-package io.quarkus.hibernate.orm.config.dialect;
+package io.quarkus.hibernate.reactive.dialect;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import jakarta.inject.Inject;
-import jakarta.transaction.Transactional;
 
-import org.hibernate.Session;
-import org.hibernate.SessionFactory;
-import org.hibernate.engine.spi.SessionFactoryImplementor;
+import org.hibernate.reactive.mutiny.Mutiny;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import io.quarkus.hibernate.orm.MyEntity;
-import io.quarkus.hibernate.orm.SmokeTestUtils;
-import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
+import io.quarkus.hibernate.reactive.DialectUtils;
+import io.quarkus.hibernate.reactive.MyEntity;
+import io.quarkus.hibernate.reactive.SmokeTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
+import io.quarkus.test.vertx.RunOnVertxContext;
+import io.quarkus.test.vertx.UniAsserter;
 
 /**
  * Tests that DB version checks can be disabled explicitly.
@@ -25,19 +24,14 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class DbVersionCheckDisabledExplicitlyTest {
 
-    private static final String ACTUAL_H2_VERSION = DialectVersions.Defaults.H2;
     // We will set the DB version to something higher than the actual version: this is invalid.
     private static final String CONFIGURED_DB_VERSION = "999.999.0";
-    static {
-        assertThat(ACTUAL_H2_VERSION)
-                .as("Test setup - we need the required version to be different from the actual one")
-                .doesNotStartWith(CONFIGURED_DB_VERSION);
-    }
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
                     .addClass(SmokeTestUtils.class)
+                    .addClass(DialectUtils.class)
                     .addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.db-version", "999.999")
@@ -45,21 +39,18 @@ public class DbVersionCheckDisabledExplicitlyTest {
             .overrideConfigKey("quarkus.hibernate-orm.database.version-check.enabled", "false");
 
     @Inject
-    SessionFactory sessionFactory;
-
-    @Inject
-    Session session;
+    Mutiny.SessionFactory sessionFactory;
 
     @Test
     public void dialectVersion() {
-        var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
-        assertThat(DialectVersions.toString(dialectVersion)).isEqualTo(CONFIGURED_DB_VERSION);
+        var dialectVersion = DialectUtils.getConfiguredVersion(sessionFactory);
+        assertThat(dialectVersion).isEqualTo(CONFIGURED_DB_VERSION);
     }
 
     @Test
-    @Transactional
-    public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(session,
+    @RunOnVertxContext
+    public void smokeTest(UniAsserter asserter) {
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(asserter, sessionFactory,
                 MyEntity.class, MyEntity::new,
                 MyEntity::getId,
                 MyEntity::setName, MyEntity::getName);

@@ -238,7 +238,12 @@ public final class FastBootHibernatePersistenceProvider implements PersistencePr
         }
 
         // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
-        runtimeSettingsBuilder.put("hibernate.boot.allow_jdbc_metadata_access", "true");
+        runtimeSettingsBuilder.put(AvailableSettings.ALLOW_METADATA_ON_BOOT, "true");
+        // Remove database version information, if any;
+        // it was necessary during static init to force creation of a dialect,
+        // but now the dialect is there, and we'll reuse it.
+        // Keeping this information would prevent us from getting the actual information from the database on start.
+        runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, null);
 
         if (!persistenceUnitConfig.unsupportedProperties().isEmpty()) {
             log.warnf("Persistence-unit [%s] sets unsupported properties."

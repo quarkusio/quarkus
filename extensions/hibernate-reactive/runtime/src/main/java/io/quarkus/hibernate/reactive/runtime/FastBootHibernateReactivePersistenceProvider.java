@@ -179,6 +179,14 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
                 }
             }
 
+            // Allow detection of driver/database capabilities on runtime init (was disabled during static init)
+            runtimeSettingsBuilder.put(AvailableSettings.ALLOW_METADATA_ON_BOOT, "true");
+            // Remove database version information, if any;
+            // it was necessary during static init to force creation of a dialect,
+            // but now the dialect is there, and we'll reuse it.
+            // Keeping this information would prevent us from getting the actual information from the database on start.
+            runtimeSettingsBuilder.put(AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION, null);
+
             if (!puConfig.unsupportedProperties().isEmpty()) {
                 log.warnf("Persistence-unit [%s] sets unsupported properties."
                         + " These properties may not work correctly, and even if they do,"
@@ -211,7 +219,8 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
             RuntimeSettings runtimeSettings = runtimeSettingsBuilder.build();
 
             StandardServiceRegistry standardServiceRegistry = rewireMetadataAndExtractServiceRegistry(
-                    persistenceUnitName, recordedState, runtimeSettings, puConfig);
+                    persistenceUnitName, persistenceUnit.getConfigurationName(),
+                    recordedState, runtimeSettings, puConfig);
 
             final Object cdiBeanManager = Arc.container().beanManager();
             final Object validatorFactory = Arc.container().instance("quarkus-hibernate-validator-factory").get();
@@ -230,10 +239,11 @@ public final class FastBootHibernateReactivePersistenceProvider implements Persi
     }
 
     private StandardServiceRegistry rewireMetadataAndExtractServiceRegistry(String persistenceUnitName,
+            String persistenceUnitConfigurationName,
             RecordedState recordedState,
             RuntimeSettings runtimeSettings, HibernateOrmRuntimeConfigPersistenceUnit puConfig) {
         PreconfiguredReactiveServiceRegistryBuilder serviceRegistryBuilder = new PreconfiguredReactiveServiceRegistryBuilder(
-                persistenceUnitName, recordedState, puConfig);
+                persistenceUnitConfigurationName, recordedState, puConfig);
 
         Optional<String> dataSourceName = recordedState.getBuildTimeSettings().getSource().getDataSource();
         if (dataSourceName.isPresent()) {

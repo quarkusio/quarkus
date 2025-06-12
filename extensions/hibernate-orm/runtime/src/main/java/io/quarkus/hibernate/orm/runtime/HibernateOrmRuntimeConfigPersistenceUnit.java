@@ -112,13 +112,10 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
          *
          * @asciidoclet
          */
-        // TODO change the default to "always enabled" when we solve version detection problems
-        //   See https://github.com/quarkusio/quarkus/issues/43703
-        //   See https://github.com/quarkusio/quarkus/issues/42255
         // TODO disable the check by default when offline startup is opted in
         //   See https://github.com/quarkusio/quarkus/issues/13522
         @WithName("version-check.enabled")
-        @ConfigDocDefault("`true` if the dialect was set automatically by Quarkus, `false` if it was set explicitly")
+        @ConfigDocDefault("`true`")
         Optional<Boolean> versionCheckEnabled();
     }
 

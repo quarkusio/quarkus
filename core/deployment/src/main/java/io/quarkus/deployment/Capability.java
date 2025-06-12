@@ -116,6 +116,8 @@ public interface Capability {
     String HIBERNATE_REACTIVE = QUARKUS_PREFIX + ".hibernate.reactive";
     String HIBERNATE_VALIDATOR = QUARKUS_PREFIX + ".hibernate.validator";
     String OPENTELEMETRY_TRACER = QUARKUS_PREFIX + ".opentelemetry.tracer";
+    String OPENTELEMETRY_METRICS = QUARKUS_PREFIX + ".opentelemetry.metrics";
+    String OPENTELEMETRY_LOGS = QUARKUS_PREFIX + ".opentelemetry.logs";
 
     String OPENSHIFT = QUARKUS_PREFIX + ".openshift";
     String OPENSHIFT_CLIENT = OPENSHIFT + ".client";

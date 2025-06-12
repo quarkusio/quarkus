@@ -58,6 +58,7 @@ import io.quarkus.runtime.graal.DisableLoggingFeature;
 import io.quarkus.sbom.ApplicationComponent;
 import io.quarkus.sbom.ApplicationManifestConfig;
 import io.smallrye.common.os.OS;
+import io.smallrye.common.process.ProcessBuilder;
 
 public class NativeImageBuildStep {
 
@@ -571,7 +572,7 @@ public class NativeImageBuildStep {
     private static String detectNoPIE() {
         String argument = testGCCArgument("-no-pie");
 
-        return argument.length() == 0 ? testGCCArgument("-nopie") : argument;
+        return argument.isEmpty() ? testGCCArgument("-nopie") : argument;
     }
 
     private static String detectPIE() {
@@ -580,17 +581,11 @@ public class NativeImageBuildStep {
 
     private static String testGCCArgument(String argument) {
         try {
-            Process gcc = new ProcessBuilder("cc", "-v", "-E", argument, "-").start();
-            gcc.getOutputStream().close();
-            if (gcc.waitFor() == 0) {
-                return argument;
-            }
-
-        } catch (IOException | InterruptedException e) {
-            // eat
+            ProcessBuilder.exec("cc", "-v", "-E", argument, "-");
+            return argument;
+        } catch (Exception ignored) {
+            return "";
         }
-
-        return "";
     }
 
     private static class NativeImageInvokerInfo {

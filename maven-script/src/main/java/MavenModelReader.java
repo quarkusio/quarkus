@@ -36,7 +36,13 @@ import java.util.LinkedHashSet;
 
 public class MavenModelReader {
     
+    // Singleton RepositorySystem for resource management
+    private static RepositorySystem repositorySystem = null;
+    private static boolean shutdownHookRegistered = false;
+    
     public static void main(String[] args) {
+        // Register shutdown hook early
+        registerShutdownHook();
         boolean generateNxConfig = false;
         boolean useStdin = false;
         boolean useHierarchical = false;
@@ -661,7 +667,15 @@ public class MavenModelReader {
             for (Map.Entry<String, List<String>> entry : goalDependencies.entrySet()) {
                 goalDepsAsObjects.put(entry.getKey(), entry.getValue());
             }
-            writer.write("    \"goalDependencies\": " + mapToJson(goalDepsAsObjects) + "\n");
+            writer.write("    \"goalDependencies\": " + mapToJson(goalDepsAsObjects) + ",\n");
+            
+            // Add phase target dependencies (phases depend on their goals and preceding phases)
+            Map<String, List<String>> phaseTargetDependencies = generatePhaseTargetDependencies(relevantPhases, goalsByPhase, updatedPhaseDependencies);
+            Map<String, Object> phaseTargetDepsAsObjects = new LinkedHashMap<>();
+            for (Map.Entry<String, List<String>> entry : phaseTargetDependencies.entrySet()) {
+                phaseTargetDepsAsObjects.put(entry.getKey(), entry.getValue());
+            }
+            writer.write("    \"phaseTargetDependencies\": " + mapToJson(phaseTargetDepsAsObjects) + "\n");
             writer.write("  }");
             
             // Only log every 25 projects to reduce output
@@ -682,7 +696,9 @@ public class MavenModelReader {
         } catch (Exception e) {
             System.err.println("WARNING: Failed to read effective POM, falling back to raw POM: " + e.getMessage());
             MavenXpp3Reader reader = new MavenXpp3Reader();
-            return reader.read(new FileReader(pomPath));
+            try (FileReader fileReader = new FileReader(pomPath)) {
+                return reader.read(fileReader);
+            }
         }
     }
     
@@ -707,14 +723,25 @@ public class MavenModelReader {
             return result.getEffectiveModel();
         } catch (Exception e) {
             // If that fails, try with a basic model resolver
-            RepositorySystem repositorySystem = createRepositorySystem();
-            RepositorySystemSession repositorySession = createRepositorySession(repositorySystem);
-            ModelResolver modelResolver = createModelResolver(repositorySystem, repositorySession);
+            RepositorySystem repoSystem = getRepositorySystem();
+            RepositorySystemSession repositorySession = createRepositorySession(repoSystem);
+            ModelResolver modelResolver = createModelResolver(repoSystem, repositorySession);
             
             request.setModelResolver(modelResolver);
             ModelBuildingResult result = modelBuilder.build(request);
             return result.getEffectiveModel();
         }
+    }
+    
+    /**
+     * Get singleton RepositorySystem instance with proper cleanup
+     */
+    private static synchronized RepositorySystem getRepositorySystem() {
+        if (repositorySystem == null) {
+            repositorySystem = createRepositorySystem();
+            registerShutdownHook();
+        }
+        return repositorySystem;
     }
     
     /**
@@ -727,6 +754,32 @@ public class MavenModelReader {
         locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
         
         return locator.getService(RepositorySystem.class);
+    }
+    
+    /**
+     * Register shutdown hook to properly cleanup Maven resources
+     */
+    private static void registerShutdownHook() {
+        if (!shutdownHookRegistered) {
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                if (repositorySystem != null) {
+                    try {
+                        System.err.println("[MavenModelReader] Shutting down RepositorySystem...");
+                        // Use reflection to call shutdown() if it exists (Maven Resolver 1.8+)
+                        try {
+                            java.lang.reflect.Method shutdownMethod = repositorySystem.getClass().getMethod("shutdown");
+                            shutdownMethod.invoke(repositorySystem);
+                            System.err.println("[MavenModelReader] RepositorySystem shutdown complete.");
+                        } catch (NoSuchMethodException e) {
+                            System.err.println("[MavenModelReader] RepositorySystem shutdown() method not available (older version), skipping shutdown.");
+                        }
+                    } catch (Exception e) {
+                        System.err.println("[MavenModelReader] Error during RepositorySystem shutdown: " + e.getMessage());
+                    }
+                }
+            }));
+            shutdownHookRegistered = true;
+        }
     }
     
     /**
@@ -1945,17 +1998,48 @@ public class MavenModelReader {
             }
             
             if (goalPhase != null) {
-                List<String> prerequisiteGoals = new ArrayList<>();
+                List<String> allDependencies = new ArrayList<>();
                 
-                // Traverse the full phase dependency chain to find phases with actual goals
+                // 1. Add dependencies on goals from prerequisite phases
+                List<String> prerequisiteGoals = new ArrayList<>();
                 Set<String> visitedPhases = new LinkedHashSet<>();
                 findPrerequisiteGoalsRecursively(goalPhase, phaseDependencies, goalsByPhase, 
                                                 relevantPhases, prerequisiteGoals, visitedPhases);
+                allDependencies.addAll(prerequisiteGoals);
+                
+                // 2. Add dependency on the immediately preceding phase (if it exists and has relevance)
+                List<String> immediatePrereqs = phaseDependencies.get(goalPhase);
+                if (immediatePrereqs != null && !immediatePrereqs.isEmpty()) {
+                    // Take the first (most immediate) prerequisite phase
+                    String immediatePrecedingPhase = immediatePrereqs.get(0);
+                    
+                    // Only add phase dependency if the phase is relevant or has goals
+                    List<String> precedingPhaseGoals = goalsByPhase.get(immediatePrecedingPhase);
+                    if (relevantPhases.contains(immediatePrecedingPhase) || 
+                        (precedingPhaseGoals != null && !precedingPhaseGoals.isEmpty())) {
+                        
+                        // Don't add if we already depend on goals from this phase
+                        boolean alreadyDependsOnPhaseGoals = false;
+                        if (precedingPhaseGoals != null) {
+                            for (String phaseGoal : precedingPhaseGoals) {
+                                if (allDependencies.contains(phaseGoal)) {
+                                    alreadyDependsOnPhaseGoals = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // Add phase dependency if we don't already depend on its goals
+                        if (!alreadyDependsOnPhaseGoals && !allDependencies.contains(immediatePrecedingPhase)) {
+                            allDependencies.add(immediatePrecedingPhase);
+                        }
+                    }
+                }
                 
                 // Remove duplicates and add to dependencies
-                if (!prerequisiteGoals.isEmpty()) {
-                    Set<String> uniqueGoals = new LinkedHashSet<>(prerequisiteGoals);
-                    goalDependencies.put(targetName, new ArrayList<>(uniqueGoals));
+                if (!allDependencies.isEmpty()) {
+                    Set<String> uniqueDependencies = new LinkedHashSet<>(allDependencies);
+                    goalDependencies.put(targetName, new ArrayList<>(uniqueDependencies));
                 }
             }
         }
@@ -1996,6 +2080,110 @@ public class MavenModelReader {
                                                    relevantPhases, prerequisiteGoals, visitedPhases);
                 }
             }
+        }
+    }
+    
+    /**
+     * Generate phase target dependencies where each phase depends on:
+     * 1. All goals associated with that phase
+     * 2. The phase that precedes it in the Maven lifecycle
+     */
+    private static Map<String, List<String>> generatePhaseTargetDependencies(
+            List<String> relevantPhases,
+            Map<String, List<String>> goalsByPhase,
+            Map<String, List<String>> phaseDependencies) {
+        
+        Map<String, List<String>> phaseTargetDeps = new LinkedHashMap<>();
+        
+        for (String phase : relevantPhases) {
+            List<String> dependencies = new ArrayList<>();
+            
+            // 1. Add all goals associated with this phase
+            List<String> goalsInPhase = goalsByPhase.get(phase);
+            if (goalsInPhase != null && !goalsInPhase.isEmpty()) {
+                dependencies.addAll(goalsInPhase);
+            }
+            
+            // 2. Add dependencies on preceding phases in the Maven lifecycle
+            // Find the closest relevant preceding phases by traversing the dependency chain
+            Set<String> visitedPhases = new LinkedHashSet<>();
+            addRelevantPrecedingPhases(phase, phaseDependencies, relevantPhases, goalsByPhase, dependencies, visitedPhases);
+            
+            // Only add phase target dependencies if there are actual dependencies
+            if (!dependencies.isEmpty()) {
+                phaseTargetDeps.put(phase, dependencies);
+            }
+        }
+        
+        return phaseTargetDeps;
+    }
+    
+    /**
+     * Recursively find and add relevant preceding phases for lifecycle dependencies
+     */
+    private static void addRelevantPrecedingPhases(
+            String phase,
+            Map<String, List<String>> phaseDependencies,
+            List<String> relevantPhases,
+            Map<String, List<String>> goalsByPhase,
+            List<String> dependencies,
+            Set<String> visitedPhases) {
+        
+        // Avoid infinite loops
+        if (visitedPhases.contains(phase)) {
+            return;
+        }
+        visitedPhases.add(phase);
+        
+        List<String> immediatePrereqs = phaseDependencies.get(phase);
+        if (immediatePrereqs != null) {
+            for (String prereqPhase : immediatePrereqs) {
+                // Check if this prerequisite phase is relevant or has goals
+                if (relevantPhases.contains(prereqPhase)) {
+                    // This is a relevant phase - add it as a dependency
+                    if (!dependencies.contains(prereqPhase)) {
+                        dependencies.add(prereqPhase);
+                    }
+                } else {
+                    // Check if this phase has goals
+                    List<String> phaseGoals = goalsByPhase.get(prereqPhase);
+                    if (phaseGoals != null && !phaseGoals.isEmpty()) {
+                        // Phase has goals but isn't marked as relevant - still depend on it
+                        if (!dependencies.contains(prereqPhase)) {
+                            dependencies.add(prereqPhase);
+                        }
+                    } else if (isKeyLifecyclePhase(prereqPhase)) {
+                        // Key lifecycle phase without goals - still depend on it for ordering
+                        if (!dependencies.contains(prereqPhase)) {
+                            dependencies.add(prereqPhase);
+                        }
+                    } else {
+                        // No goals and not a key phase - traverse further to find relevant phases
+                        addRelevantPrecedingPhases(prereqPhase, phaseDependencies, relevantPhases, goalsByPhase, dependencies, visitedPhases);
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Check if a phase is a key lifecycle phase that should always be respected for ordering
+     */
+    private static boolean isKeyLifecyclePhase(String phase) {
+        // Key phases that define important boundaries in the Maven lifecycle
+        switch (phase) {
+            case "validate":
+            case "compile":
+            case "test-compile":
+            case "test":
+            case "package":
+            case "verify":
+            case "install":
+            case "deploy":
+            case "clean":
+                return true;
+            default:
+                return false;
         }
     }
 }

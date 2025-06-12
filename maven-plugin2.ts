@@ -7,6 +7,7 @@ import {
   detectPackageManager,
   NxJsonConfiguration,
   TargetConfiguration,
+  CreateNodesResultV2,
   workspaceRoot,
 } from '@nx/devkit';
 import { dirname, join, relative } from 'path';
@@ -41,12 +42,12 @@ const DEFAULT_OPTIONS: MavenPluginOptions = {
  */
 export const createNodesV2: CreateNodesV2 = [
   '**/pom.xml',
-  async (configFiles, options, context) => {
+  async (configFiles, options, context): Promise<CreateNodesResultV2> => {
     const opts: MavenPluginOptions = Object.assign({}, DEFAULT_OPTIONS, options || {});
 
     console.log(`Maven plugin found ${configFiles.length} total pom.xml files`);
 
-    // Filter out the maven-script pom.xml and build artifact directories  
+    // Filter out the maven-script pom.xml and build artifact directories
     const filteredConfigFiles = configFiles.filter(file =>
       !file.includes('maven-script/pom.xml') &&
       !file.includes('target/') &&
@@ -69,13 +70,13 @@ export const createNodesV2: CreateNodesV2 = [
 
       // Convert batch results to the expected format
       const tupleResults: Array<[string, any]> = [];
-      
+
       for (const [projectRoot, nxConfig] of Object.entries(batchResults)) {
         // Convert absolute path from Java back to relative path for matching
-        const relativePath = projectRoot.startsWith(workspaceRoot) 
+        const relativePath = projectRoot.startsWith(workspaceRoot)
           ? projectRoot.substring(workspaceRoot.length + 1)
           : projectRoot;
-          
+
         // Find the corresponding config file
         const configFile = filteredConfigFiles.find(file => dirname(file) === relativePath);
         if (!configFile) {
@@ -102,6 +103,7 @@ export const createNodesV2: CreateNodesV2 = [
               implicitDependencies: (nxConfig.implicitDependencies?.projects || []).concat(nxConfig.implicitDependencies?.inheritsFrom || []),
               namedInputs: nxConfig.namedInputs,
               metadata: {
+                targetGroups: generateTargetGroups(normalizedTargets, nxConfig),
                 technologies: ['maven', 'java'],
                 framework: detectFramework(nxConfig),
               },
@@ -111,16 +113,16 @@ export const createNodesV2: CreateNodesV2 = [
 
         tupleResults.push([configFile, result]);
       }
-      
+
       console.log(`Generated ${tupleResults.length} valid project configurations`);
-      
+
       // Debug: log first few project names
       if (tupleResults.length > 0) {
         console.log(`DEBUG: First 3 projects: ${tupleResults.slice(0, 3).map(([file, result]) => 
           Object.keys(result.projects)[0] + ' -> ' + (Object.values(result.projects)[0] as any).name
         ).join(', ')}`);
       }
-      
+
       return tupleResults;
 
     } catch (error) {
@@ -139,7 +141,7 @@ export const createNodesV2: CreateNodesV2 = [
  */
 export const createDependencies: CreateDependencies = async () => {
   console.log(`DEBUG: Dependency creation called`);
-  
+
   // Dependencies are handled via target dependsOn configuration
   return [];
 };
@@ -165,7 +167,7 @@ async function generateNxConfigFromMavenAsync(
 
     // Convert relative path to absolute path
     const absolutePomPath = pomPath.startsWith('/') ? pomPath : join(workspaceRoot, pomPath);
-    
+
     console.log(`Analyzing ${absolutePomPath} using Maven script in ${mavenScriptDir}`);
 
     const command = `${options.mavenExecutable} exec:java -Dexec.mainClass="MavenModelReader" -Dexec.args="${absolutePomPath} --nx" -q`;
@@ -202,15 +204,29 @@ const activeMavenProcesses = new Set<any>();
 // Cleanup function for Maven processes
 function cleanupMavenProcesses(): void {
   console.log(`[Maven Plugin2] Cleaning up ${activeMavenProcesses.size} active Maven processes`);
-  for (const process of activeMavenProcesses) {
+  for (const process of Array.from(activeMavenProcesses)) {
     try {
-      if (process && process.pid && !process.killed) {
-        console.log(`[Maven Plugin2] Killing Maven process ${process.pid}`);
-        process.kill('SIGTERM');
+      if (process && process.pid) {
+        console.log(`[Maven Plugin2] Killing process group ${process.pid}`);
+        // Kill the entire process group to ensure Maven and Java subprocesses are terminated
+        try {
+          process.kill('SIGTERM');
+          // Also try to kill the process group (negative PID)
+          process.kill(-process.pid, 'SIGTERM');
+        } catch (e) {
+          // Fallback to individual process kill if process group kill fails
+          console.warn(`[Maven Plugin2] Process group kill failed, trying individual process`);
+        }
+
         setTimeout(() => {
-          if (process.pid && !process.killed) {
-            console.log(`[Maven Plugin2] Force killing Maven process ${process.pid}`);
-            process.kill('SIGKILL');
+          try {
+            if (process.pid) {
+              console.log(`[Maven Plugin2] Force killing process group ${process.pid}`);
+              process.kill('SIGKILL');
+              process.kill(-process.pid, 'SIGKILL');
+            }
+          } catch (e) {
+            // Process may already be dead
           }
         }, 2000);
       }
@@ -261,23 +277,23 @@ async function generateBatchNxConfigFromMavenAsync(
   if (!javaAnalyzerPath) {
     throw new Error('Maven analyzer Java program not found. Please ensure maven-script is compiled.');
   }
-  
+
   try {
     // Use Maven exec to run the Java program with stdin
-    const mavenScriptDir = javaAnalyzerPath.endsWith('.jar') 
-      ? dirname(javaAnalyzerPath) 
+    const mavenScriptDir = javaAnalyzerPath.endsWith('.jar')
+      ? dirname(javaAnalyzerPath)
       : dirname(dirname(javaAnalyzerPath)); // target/classes -> project root
-    
+
     // Convert relative paths to absolute paths
-    const absolutePomPaths = pomPaths.map(pomPath => 
+    const absolutePomPaths = pomPaths.map(pomPath =>
       pomPath.startsWith('/') ? pomPath : join(workspaceRoot, pomPath)
     );
-    
+
     console.log(`Processing ${absolutePomPaths.length} Maven projects...`);
-    
+
     // Use consistent output file path
     const outputFile = join(workspaceRoot, 'maven-script/maven-results.json');
-    
+
     const { stdout, stderr } = await new Promise<{stdout: string, stderr: string}>((resolve, reject) => {
       const child = spawn(options.mavenExecutable, [
         'exec:java',
@@ -288,7 +304,8 @@ async function generateBatchNxConfigFromMavenAsync(
         '-q'
       ], {
         cwd: mavenScriptDir,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
+        detached: true // Create new process group to allow killing entire group
       });
 
       // Track this process for cleanup
@@ -313,7 +330,8 @@ async function generateBatchNxConfigFromMavenAsync(
       child.on('close', (code) => {
         // Remove from active processes when done
         activeMavenProcesses.delete(child);
-        
+        clearTimeout(timeoutId); // Clear timeout when process completes
+
         if (code === 0) {
           resolve({ stdout, stderr });
         } else {
@@ -324,21 +342,31 @@ async function generateBatchNxConfigFromMavenAsync(
       child.on('error', (error) => {
         // Remove from active processes on error
         activeMavenProcesses.delete(child);
+        clearTimeout(timeoutId); // Clear timeout on error
         reject(new Error(`Failed to spawn Maven process: ${error.message}`));
       });
 
       // No stdin input needed for hierarchical traversal
       child.stdin?.end();
 
-      // Shorter timeout for responsiveness with proper cleanup
+      // Timeout with proper process group cleanup
       const timeoutId = setTimeout(() => {
         if (activeMavenProcesses.has(child)) {
-          console.warn(`[Maven Plugin2] Maven process timed out, killing process ${child.pid}`);
+          console.warn(`[Maven Plugin2] Maven process timed out, killing process group ${child.pid}`);
           try {
+            // Kill the entire process group
             child.kill('SIGTERM');
+            if (child.pid) {
+              process.kill(-child.pid, 'SIGTERM');
+            }
             setTimeout(() => {
-              if (child.pid && !child.killed) {
-                child.kill('SIGKILL');
+              try {
+                if (child.pid) {
+                  child.kill('SIGKILL');
+                  process.kill(-child.pid, 'SIGKILL');
+                }
+              } catch (e) {
+                // Process may already be dead
               }
             }, 2000);
           } catch (error: any) {
@@ -348,33 +376,26 @@ async function generateBatchNxConfigFromMavenAsync(
         }
         reject(new Error('Maven process timed out after 1 minute'));
       }, 60000);
-
-      // Clear timeout if process completes
-      child.on('close', () => clearTimeout(timeoutId));
     });
-    
+
     if (stderr && stderr.trim()) {
       console.warn(`Maven analyzer stderr: ${stderr}`);
     }
-    
+
     // Check if process completed successfully
     if (!stdout.includes('SUCCESS:')) {
       throw new Error('Maven analyzer did not complete successfully');
     }
-    
+
     // Read JSON output from the file
     try {
       const jsonContent = readFileSync(outputFile, 'utf8');
-      
-      // Clean up the temp file
-      try {
-        unlinkSync(outputFile);
-      } catch (e) {
-        console.warn(`Could not delete temp file ${outputFile}: ${e.message}`);
-      }
-      
+
+      // Keep the output file since it's now at a consistent path
+      // Don't delete maven-script/maven-results.json
+
       const result = JSON.parse(jsonContent);
-      
+
       // Check for errors in the result
       if (result._errors && result._errors.length > 0) {
         console.warn(`Maven analyzer encountered ${result._errors.length} errors:`);
@@ -382,21 +403,21 @@ async function generateBatchNxConfigFromMavenAsync(
           console.warn(`  ${index + 1}. ${error}`);
         });
       }
-      
+
       // Log statistics
       if (result._stats) {
         console.log(`Maven analysis stats: ${result._stats.successful}/${result._stats.processed} projects processed successfully (${result._stats.errors} errors)`);
       }
-      
+
       // Remove metadata fields from result before returning
       delete result._errors;
       delete result._stats;
-      
+
       return result;
     } catch (error) {
       throw new Error(`Failed to read output file ${outputFile}: ${error.message}`);
     }
-    
+
   } catch (error) {
     throw new Error(`Failed to execute Maven analyzer in batch mode: ${error.message}`);
   }
@@ -600,14 +621,15 @@ function normalizeTargets(targets: Record<string, any>, nxConfig: any, options: 
  */
 function generateDetectedTargets(nxConfig: any, options: MavenPluginOptions): Record<string, TargetConfiguration> {
   const detectedTargets: Record<string, TargetConfiguration> = {};
-  
+
   // Get pre-calculated data from Java analyzer
   const relevantPhases = nxConfig.relevantPhases || [];
   const pluginGoals = nxConfig.pluginGoals || [];
   const goalsByPhase = nxConfig.goalsByPhase || {};
   const goalDependencies = nxConfig.goalDependencies || {};
   const crossProjectDependencies = nxConfig.crossProjectDependencies || {};
-  
+  const phaseTargetDependencies = nxConfig.phaseTargetDependencies || {};
+
   // Step 1: Generate goal targets using pre-calculated dependencies
   for (const goalInfo of pluginGoals) {
     if (goalInfo.targetName && !detectedTargets[goalInfo.targetName]) {
@@ -617,26 +639,110 @@ function generateDetectedTargets(nxConfig: any, options: MavenPluginOptions): Re
       }
     }
   }
-  
-  // Step 2: Generate phase targets that depend on their own goals (from Java)
+
+  // Step 2: Generate phase targets that depend on their own goals and preceding phases (from Java)
   for (const phase of relevantPhases) {
-    const phaseTarget = createPhaseTarget(phase, options, goalsByPhase);
+    const phaseTarget = createPhaseTarget(phase, options, goalsByPhase, phaseTargetDependencies);
     if (phaseTarget) {
       detectedTargets[phase] = phaseTarget;
     }
   }
-  
+
   return detectedTargets;
 }
 
 
 /**
+ * Generate target groups for Maven projects using goalsByPhase data from Java analyzer
+ */
+function generateTargetGroups(targets: Record<string, TargetConfiguration>, nxConfig: any): Record<string, string[]> {
+  const targetGroups: Record<string, string[]> = {};
+
+  // Use goalsByPhase data from Java analyzer if available
+  const goalsByPhase = nxConfig.goalsByPhase || {};
+
+  // Create a target group for each Maven phase that has goals
+  for (const [phase, goals] of Object.entries(goalsByPhase)) {
+    if (Array.isArray(goals) && goals.length > 0) {
+      // Filter to only include goals that actually exist as targets
+      const existingGoals = goals.filter(goal => targets[goal]);
+      if (existingGoals.length > 0) {
+        // Capitalize first letter of phase for group name
+        const groupName = phase.charAt(0).toUpperCase() + phase.slice(1);
+        
+        // Include both the goals and the phase itself in the target group
+        const targetGroupItems = [...existingGoals];
+        
+        // Add the phase target itself if it exists
+        if (targets[phase]) {
+          targetGroupItems.push(phase);
+        }
+        
+        targetGroups[groupName] = targetGroupItems;
+      }
+    }
+  }
+
+  return targetGroups;
+}
+
+/**
+ * Get target tags for Maven lifecycle phases to organize them into logical groups
+ */
+function getPhaseTargetTags(phase: string): string[] {
+  const baseTags = ['maven', 'phase'];
+
+  // Define phase groups based on Maven lifecycle
+  const phaseGroups: Record<string, string[]> = {
+    // Validation and preparation phases
+    'clean': ['cleanup', 'pre-build'],
+    'validate': ['validation', 'pre-build'],
+    'initialize': ['initialization', 'pre-build'],
+    'generate-sources': ['code-generation', 'pre-build'],
+    'process-sources': ['source-processing', 'pre-build'],
+    'generate-resources': ['resource-generation', 'pre-build'],
+    'process-resources': ['resource-processing', 'pre-build'],
+
+    // Compilation phases
+    'compile': ['compilation', 'build'],
+    'process-classes': ['post-compilation', 'build'],
+    'generate-test-sources': ['test-generation', 'test-prep'],
+    'process-test-sources': ['test-source-processing', 'test-prep'],
+    'generate-test-resources': ['test-resource-generation', 'test-prep'],
+    'process-test-resources': ['test-resource-processing', 'test-prep'],
+    'test-compile': ['test-compilation', 'test-prep'],
+    'process-test-classes': ['test-post-compilation', 'test-prep'],
+
+    // Testing phases
+    'test': ['testing', 'unit-test'],
+    'prepare-package': ['packaging-prep', 'build'],
+    'package': ['packaging', 'build', 'artifact'],
+    'pre-integration-test': ['integration-test-prep', 'integration-test'],
+    'integration-test': ['testing', 'integration-test'],
+    'post-integration-test': ['integration-test-cleanup', 'integration-test'],
+    'verify': ['verification', 'quality-assurance'],
+
+    // Distribution phases
+    'install': ['distribution', 'local-install'],
+    'deploy': ['distribution', 'remote-deploy'],
+
+    // Documentation and reporting
+    'site': ['documentation', 'reporting'],
+    'pre-site': ['documentation-prep', 'reporting'],
+    'site-deploy': ['documentation', 'reporting', 'distribution'],
+  };
+
+  const groupTags = phaseGroups[phase] || ['misc'];
+  return [...baseTags, ...groupTags];
+}
+
+/**
  * Create a target configuration for a Maven phase (aggregator that depends on its own goals)
  */
-function createPhaseTarget(phase: string, options: MavenPluginOptions, goalsByPhase: Record<string, string[]>): TargetConfiguration | null {
+function createPhaseTarget(phase: string, options: MavenPluginOptions, goalsByPhase: Record<string, string[]>, phaseTargetDependencies: Record<string, string[]>): TargetConfiguration | null {
   const baseInputs = ['{projectRoot}/pom.xml'];
   const baseCommand = `${options.mavenExecutable} ${phase}`;
-  
+
   // Define phase-specific configurations
   const phaseConfig: Record<string, Partial<TargetConfiguration>> = {
     'clean': {
@@ -684,12 +790,12 @@ function createPhaseTarget(phase: string, options: MavenPluginOptions, goalsByPh
       outputs: ['{projectRoot}/target/failsafe-reports/**/*'],
     },
   };
-  
+
   const config = phaseConfig[phase] || {
     inputs: baseInputs,
     outputs: [],
   };
-  
+
   const targetConfig: TargetConfiguration = {
     executor: '@nx/run-commands:run-commands',
     options: {
@@ -704,14 +810,95 @@ function createPhaseTarget(phase: string, options: MavenPluginOptions, goalsByPh
     },
     ...config,
   };
-  
-  // Phase depends on all its own goals
-  const goalsInPhase = goalsByPhase[phase] || [];
-  if (goalsInPhase.length > 0) {
-    targetConfig.dependsOn = goalsInPhase;
+
+  // Use phase target dependencies calculated by Java analyzer
+  const phaseDependencies = phaseTargetDependencies[phase] || [];
+  if (phaseDependencies.length > 0) {
+    targetConfig.dependsOn = phaseDependencies;
+  } else {
+    // Fallback: Phase depends on all its own goals
+    const goalsInPhase = goalsByPhase[phase] || [];
+    if (goalsInPhase.length > 0) {
+      targetConfig.dependsOn = goalsInPhase;
+    }
   }
-  
+
   return targetConfig;
+}
+
+/**
+ * Get target tags for Maven plugin goals to organize them into logical groups
+ */
+function getGoalTargetTags(pluginKey: string, goal: string, targetType: string): string[] {
+  const baseTags = ['maven', 'goal'];
+  const typeTags = [targetType];
+
+  // Plugin-specific tags
+  const pluginTags: string[] = [];
+
+  if (pluginKey.includes('quarkus')) {
+    pluginTags.push('quarkus', 'framework');
+    if (goal === 'dev') pluginTags.push('dev-server', 'hot-reload');
+    if (goal === 'build') pluginTags.push('native-build');
+    if (goal === 'test') pluginTags.push('quarkus-test');
+  } else if (pluginKey.includes('spring-boot')) {
+    pluginTags.push('spring-boot', 'framework');
+    if (goal === 'run') pluginTags.push('dev-server');
+    if (goal === 'build-image') pluginTags.push('docker', 'containerization');
+    if (goal === 'repackage') pluginTags.push('fat-jar');
+  } else if (pluginKey.includes('surefire')) {
+    pluginTags.push('surefire', 'unit-testing');
+  } else if (pluginKey.includes('failsafe')) {
+    pluginTags.push('failsafe', 'integration-testing');
+  } else if (pluginKey.includes('compiler')) {
+    pluginTags.push('compiler', 'compilation');
+    if (goal === 'compile') pluginTags.push('main-sources');
+    if (goal === 'testCompile') pluginTags.push('test-sources');
+  } else if (pluginKey.includes('resources')) {
+    pluginTags.push('resources', 'resource-processing');
+  } else if (pluginKey.includes('jar')) {
+    pluginTags.push('packaging', 'jar');
+  } else if (pluginKey.includes('war')) {
+    pluginTags.push('packaging', 'war', 'web');
+  } else if (pluginKey.includes('deploy')) {
+    pluginTags.push('deployment', 'distribution');
+  } else if (pluginKey.includes('site')) {
+    pluginTags.push('documentation', 'reporting');
+  } else if (pluginKey.includes('clean')) {
+    pluginTags.push('cleanup');
+  } else if (pluginKey.includes('install')) {
+    pluginTags.push('local-install', 'distribution');
+  } else if (pluginKey.includes('enforcer')) {
+    pluginTags.push('validation', 'quality-assurance');
+  } else if (pluginKey.includes('checkstyle')) {
+    pluginTags.push('code-quality', 'style-check');
+  } else if (pluginKey.includes('spotbugs') || pluginKey.includes('findbugs')) {
+    pluginTags.push('code-quality', 'bug-detection');
+  } else if (pluginKey.includes('jacoco')) {
+    pluginTags.push('code-coverage', 'testing');
+  }
+
+  // Target type specific tags
+  const targetTypeTags: string[] = [];
+  switch (targetType) {
+    case 'serve':
+      targetTypeTags.push('development', 'server');
+      break;
+    case 'build':
+      targetTypeTags.push('compilation', 'build-artifact');
+      break;
+    case 'test':
+      targetTypeTags.push('testing', 'verification');
+      break;
+    case 'deploy':
+      targetTypeTags.push('deployment', 'distribution');
+      break;
+    case 'utility':
+      targetTypeTags.push('utility', 'tool');
+      break;
+  }
+
+  return [...baseTags, ...typeTags, ...pluginTags, ...targetTypeTags];
 }
 
 /**
@@ -719,15 +906,15 @@ function createPhaseTarget(phase: string, options: MavenPluginOptions, goalsByPh
  */
 function createGoalTarget(goalInfo: any, options: MavenPluginOptions, goalDependencies: Record<string, string[]>, crossProjectDependencies: Record<string, string[]>): TargetConfiguration | null {
   const { pluginKey, goal, targetType, phase } = goalInfo;
-  
+
   // Create the Maven command
   const [groupId, artifactId] = pluginKey.split(':');
   const command = `${options.mavenExecutable} ${groupId}:${artifactId}:${goal}`;
-  
+
   // Create a more user-friendly description
   const pluginName = artifactId.replace('-maven-plugin', '').replace('-plugin', '');
   let description = `${pluginName}:${goal}`;
-  
+
   // Add framework-specific descriptions
   if (pluginKey.includes('quarkus')) {
     switch (goal) {
@@ -785,7 +972,7 @@ function createGoalTarget(goalInfo: any, options: MavenPluginOptions, goalDepend
     inputs: ['{projectRoot}/pom.xml'],
     outputs: [],
   };
-  
+
   // Customize based on target type
   switch (targetType) {
     case 'serve':
@@ -806,14 +993,14 @@ function createGoalTarget(goalInfo: any, options: MavenPluginOptions, goalDepend
       baseConfig.inputs!.push('{projectRoot}/src/**/*');
       break;
   }
-  
+
   // Get goal-to-goal dependencies from Java analyzer
   const targetName = goalInfo.targetName || goal;
   const goalDeps = goalDependencies[targetName] || [];
-  
+
   // Get cross-project dependencies for this target
   const crossProjectDeps = crossProjectDependencies[targetName] || [];
-  
+
   // Merge goal dependencies and cross-project dependencies
   const allDependencies = [...goalDeps, ...crossProjectDeps];
   if (allDependencies.length > 0) {
@@ -824,12 +1011,12 @@ function createGoalTarget(goalInfo: any, options: MavenPluginOptions, goalDepend
       }
       return dep;
     }).filter(dep => dep !== null);
-    
+
     if (resolvedDeps.length > 0) {
       baseConfig.dependsOn = resolvedDeps;
     }
   }
-  
+
   return baseConfig;
 }
 
@@ -841,12 +1028,12 @@ function resolveCrossProjectDependency(dependency: string): string {
   if (!dependency.includes(':')) {
     return dependency; // Not a cross-project dependency
   }
-  
+
   const [project, fallbackChain] = dependency.split(':', 2);
   if (!fallbackChain || !fallbackChain.includes('|')) {
     return dependency; // No fallback, return as-is
   }
-  
+
   // For now, just return the first target in the fallback chain
   // In a complete implementation, this would check which targets actually exist
   const targets = fallbackChain.split('|');
@@ -865,7 +1052,7 @@ function getPhaseDependencies(phase: string): string[] {
     'deploy': ['install'],
     'integration-test': ['package'],
   };
-  
+
   return phaseDependencies[phase] || [];
 }
 

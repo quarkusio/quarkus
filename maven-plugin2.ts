@@ -196,6 +196,59 @@ async function generateNxConfigFromMavenAsync(
   }
 }
 
+// Track active Maven processes for cleanup
+const activeMavenProcesses = new Set<any>();
+
+// Cleanup function for Maven processes
+function cleanupMavenProcesses(): void {
+  console.log(`[Maven Plugin2] Cleaning up ${activeMavenProcesses.size} active Maven processes`);
+  for (const process of activeMavenProcesses) {
+    try {
+      if (process && process.pid && !process.killed) {
+        console.log(`[Maven Plugin2] Killing Maven process ${process.pid}`);
+        process.kill('SIGTERM');
+        setTimeout(() => {
+          if (process.pid && !process.killed) {
+            console.log(`[Maven Plugin2] Force killing Maven process ${process.pid}`);
+            process.kill('SIGKILL');
+          }
+        }, 2000);
+      }
+    } catch (error: any) {
+      console.warn(`[Maven Plugin2] Error cleaning up Maven process:`, error?.message || error);
+    }
+  }
+  activeMavenProcesses.clear();
+}
+
+// Ensure cleanup on process exit
+process.on('exit', () => {
+  cleanupMavenProcesses();
+});
+
+process.on('SIGINT', () => {
+  console.log('\n[Maven Plugin2] Received SIGINT, cleaning up Maven processes...');
+  cleanupMavenProcesses();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('\n[Maven Plugin2] Received SIGTERM, cleaning up Maven processes...');
+  cleanupMavenProcesses();
+  process.exit(0);
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('[Maven Plugin2] Uncaught exception, cleaning up Maven processes...', error);
+  cleanupMavenProcesses();
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('[Maven Plugin2] Unhandled rejection, cleaning up Maven processes...', reason);
+  cleanupMavenProcesses();
+});
+
 /**
  * Generate Nx configurations for multiple projects using batch processing
  */
@@ -222,8 +275,8 @@ async function generateBatchNxConfigFromMavenAsync(
     
     console.log(`Processing ${absolutePomPaths.length} Maven projects...`);
     
-    // Create unique output file name to avoid conflicts
-    const outputFile = join(workspaceRoot, `maven-results-${Date.now()}.json`);
+    // Use consistent output file path
+    const outputFile = join(workspaceRoot, 'maven-script/maven-results.json');
     
     const { stdout, stderr } = await new Promise<{stdout: string, stderr: string}>((resolve, reject) => {
       const child = spawn(options.mavenExecutable, [
@@ -237,6 +290,9 @@ async function generateBatchNxConfigFromMavenAsync(
         cwd: mavenScriptDir,
         stdio: ['pipe', 'pipe', 'pipe']
       });
+
+      // Track this process for cleanup
+      activeMavenProcesses.add(child);
 
       let stdout = '';
       let stderr = '';
@@ -255,6 +311,9 @@ async function generateBatchNxConfigFromMavenAsync(
       });
 
       child.on('close', (code) => {
+        // Remove from active processes when done
+        activeMavenProcesses.delete(child);
+        
         if (code === 0) {
           resolve({ stdout, stderr });
         } else {
@@ -263,17 +322,35 @@ async function generateBatchNxConfigFromMavenAsync(
       });
 
       child.on('error', (error) => {
+        // Remove from active processes on error
+        activeMavenProcesses.delete(child);
         reject(new Error(`Failed to spawn Maven process: ${error.message}`));
       });
 
       // No stdin input needed for hierarchical traversal
       child.stdin?.end();
 
-      // Shorter timeout for responsiveness
-      setTimeout(() => {
-        child.kill();
+      // Shorter timeout for responsiveness with proper cleanup
+      const timeoutId = setTimeout(() => {
+        if (activeMavenProcesses.has(child)) {
+          console.warn(`[Maven Plugin2] Maven process timed out, killing process ${child.pid}`);
+          try {
+            child.kill('SIGTERM');
+            setTimeout(() => {
+              if (child.pid && !child.killed) {
+                child.kill('SIGKILL');
+              }
+            }, 2000);
+          } catch (error: any) {
+            console.warn(`[Maven Plugin2] Error killing timed out process:`, error?.message);
+          }
+          activeMavenProcesses.delete(child);
+        }
         reject(new Error('Maven process timed out after 1 minute'));
       }, 60000);
+
+      // Clear timeout if process completes
+      child.on('close', () => clearTimeout(timeoutId));
     });
     
     if (stderr && stderr.trim()) {

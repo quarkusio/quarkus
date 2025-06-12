@@ -1,12 +1,9 @@
 package io.quarkus.deployment.pkg.steps;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -15,7 +12,7 @@ import org.jboss.logging.Logger;
 
 import io.quarkus.deployment.pkg.NativeConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
-import io.quarkus.deployment.util.ProcessUtil;
+import io.smallrye.common.process.ProcessBuilder;
 
 public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRunner {
 
@@ -51,17 +48,18 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
             var builderImagePull = nativeConfig.builderImage().pull();
             if (builderImagePull != NativeConfig.ImagePullStrategy.ALWAYS) {
                 log.infof("Checking status of builder image '%s'", effectiveBuilderImage);
-                Process imageInspectProcess = null;
                 try {
-                    final ProcessBuilder pb = new ProcessBuilder(
-                            Arrays.asList(containerRuntime.getExecutableName(), "image", "inspect",
-                                    "-f", "{{ .Id }}",
-                                    effectiveBuilderImage))
-                            // We only need the command's return status
-                            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                            .redirectError(ProcessBuilder.Redirect.DISCARD);
-                    imageInspectProcess = pb.start();
-                    if (imageInspectProcess.waitFor() != 0) {
+                    var holder = new Object() {
+                        int exitCode;
+                    };
+                    ProcessBuilder.newBuilder(containerRuntime.getExecutableName())
+                            .arguments("image", "inspect", "-f", "{{ .Id }}")
+                            .exitCodeChecker(ec -> {
+                                holder.exitCode = ec;
+                                return true;
+                            })
+                            .run();
+                    if (holder.exitCode != 0) {
                         if (builderImagePull == NativeConfig.ImagePullStrategy.NEVER) {
                             throw new RuntimeException(
                                     "Could not find builder image '" + effectiveBuilderImage
@@ -74,12 +72,8 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
                         log.infof("Found builder image '%s' locally, skipping image pulling", effectiveBuilderImage);
                         return;
                     }
-                } catch (IOException | InterruptedException e) {
+                } catch (Exception e) {
                     throw new RuntimeException("Failed to check status of builder image '" + effectiveBuilderImage + "'", e);
-                } finally {
-                    if (imageInspectProcess != null) {
-                        imageInspectProcess.destroy();
-                    }
                 }
             }
 
@@ -100,20 +94,19 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
     }
 
     private void pull(String effectiveBuilderImage, boolean processInheritIODisabled) {
-        Process pullProcess = null;
+        var pb = ProcessBuilder.newBuilder(containerRuntime.getExecutableName())
+                .arguments("pull", effectiveBuilderImage);
+        // todo: maybe this should just be logged or something?
+        if (processInheritIODisabled) {
+            pb.output().consumeLinesWith(8192, System.out::println);
+            pb.error().consumeLinesWith(8192, System.err::println);
+        } else {
+            pb.output().inherited().error().inherited();
+        }
         try {
-            final ProcessBuilder pb = new ProcessBuilder(
-                    Arrays.asList(containerRuntime.getExecutableName(), "pull", effectiveBuilderImage));
-            pullProcess = ProcessUtil.launchProcess(pb, processInheritIODisabled);
-            if (pullProcess.waitFor() != 0) {
-                throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'");
-            }
-        } catch (IOException | InterruptedException e) {
-            throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'");
-        } finally {
-            if (pullProcess != null) {
-                pullProcess.destroy();
-            }
+            pb.run();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to pull builder image '" + effectiveBuilderImage + "'", e);
         }
     }
 
@@ -150,24 +143,6 @@ public abstract class NativeImageBuildContainerRunner extends NativeImageBuildRu
         objcopyCommand.add("objcopy " + String.join(" ", args));
         final String[] command = buildCommand("run", containerRuntimeBuildArgs, objcopyCommand);
         runCommand(command, null, null);
-    }
-
-    @Override
-    public void addShutdownHook(Process process) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (process.isAlive()) {
-                try {
-                    Process removeProcess = new ProcessBuilder(
-                            List.of(containerRuntime.getExecutableName(), "rm", "-f", containerName))
-                            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                            .redirectError(ProcessBuilder.Redirect.DISCARD)
-                            .start();
-                    removeProcess.waitFor(2, TimeUnit.SECONDS);
-                } catch (IOException | InterruptedException e) {
-                    log.debug("Unable to stop running container", e);
-                }
-            }
-        }));
     }
 
     protected List<String> getContainerRuntimeBuildArgs(Path outputDir) {

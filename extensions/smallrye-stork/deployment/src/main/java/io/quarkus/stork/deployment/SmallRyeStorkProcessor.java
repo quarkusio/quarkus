@@ -2,6 +2,8 @@ package io.quarkus.stork.deployment;
 
 import static java.util.Arrays.asList;
 
+import org.eclipse.microprofile.config.Config;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.jboss.jandex.DotName;
 import org.jboss.logging.Logger;
 
@@ -17,6 +19,7 @@ import io.quarkus.deployment.annotations.Consume;
 import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.deployment.annotations.Produce;
 import io.quarkus.deployment.annotations.Record;
+import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.RunTimeConfigurationDefaultBuildItem;
 import io.quarkus.deployment.builditem.RuntimeConfigSetupCompleteBuildItem;
 import io.quarkus.deployment.builditem.ShutdownContextBuildItem;
@@ -106,11 +109,21 @@ public class SmallRyeStorkProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void checkStorkConsulRegistrar(BuildProducer<StorkRegistrationBuildItem> registration,
             BuildProducer<RunTimeConfigurationDefaultBuildItem> config,
-            StorkRegistrarConfigRecorder registrarConfigRecorder, StorkConfiguration configuration) {
+            StorkRegistrarConfigRecorder registrarConfigRecorder, StorkConfiguration configuration, Capabilities capabilities,
+            CombinedIndexBuildItem index) {
+        String smallryeHealthCheckDefaultUrl = "";
         if (QuarkusClassLoader.isClassPresentAtRuntime(CONSUL_SERVICE_REGISTRAR_PROVIDER)) {
-            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE);
+            if (capabilities.isPresent(Capability.SMALLRYE_HEALTH)) {
+                Config quarkusConfig = ConfigProvider.getConfig();
+                smallryeHealthCheckDefaultUrl = quarkusConfig.getConfigValue("quarkus.management.root-path").getValue() + "/"
+                        + quarkusConfig.getConfigValue("quarkus.smallrye-health.root-path").getValue() + "/"
+                        + quarkusConfig.getConfigValue("quarkus.smallrye-health.liveness-path").getValue();
+            }
+            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, CONSUL_SERVICE_REGISTRAR_TYPE,
+                    smallryeHealthCheckDefaultUrl);
         } else if (QuarkusClassLoader.isClassPresentAtRuntime(EUREKA_SERVICE_REGISTRAR_PROVIDER)) {
-            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, EUREKA_SERVICE_REGISTRAR_TYPE);
+            registrarConfigRecorder.setupServiceRegistrarConfig(configuration, EUREKA_SERVICE_REGISTRAR_TYPE,
+                    smallryeHealthCheckDefaultUrl);
         }
         registration.produce(new StorkRegistrationBuildItem());
 

@@ -1,0 +1,16 @@
+# Ignore Maven project JavaScript/TypeScript files that trigger plugin resolution
+**/src/main/resources/**/*.js
+**/src/main/resources/**/*.ts
+**/src/test/resources/**/*.js
+**/src/test/resources/**/*.ts
+**/target/**
+**/node_modules/**
+
+# Ignore utility scripts that might trigger plugin resolution
+test-*.js
+effective-pom-resolver.*
+maven-plugin.js
+maven-plugin.ts
+parse-pom-xml.*
+show-nx-targets.*
+test-*.js

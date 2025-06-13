@@ -1,0 +1,30 @@
+{
+  "createNodesResults": [
+    [
+      "core/runtime/pom.xml",
+      {
+        "projects": {
+          "core/runtime": {
+            "name": "io.quarkus:quarkus-core",
+            "root": "core/runtime",
+            "sourceRoot": null,
+            "projectType": null,
+            "targets": {
+              "clean": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn clean",
+                  "cwd": "core/runtime"
+                },
+                "inputs": ["core/runtime/pom.xml"],
+                "outputs": [],
+                "dependsOn": []
+              }
+            }
+          }
+        }
+      }
+    ]
+  ]
+}
+EOF < /dev/null

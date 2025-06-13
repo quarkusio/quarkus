@@ -1,7 +1,9 @@
 import model.*;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.artifact.Artifact;
 import java.io.File;
 import java.util.*;
+import java.util.LinkedHashMap;
 
 /**
  * Generates CreateNodesV2 compatible results for Nx integration
@@ -65,12 +67,21 @@ public class CreateNodesResultGenerator {
             project.getPackaging()
         );
         
-        // Add target groups to metadata
+        // Add target groups to metadata (convert from Map<String, TargetGroup> to Map<String, List<String>>)
         if (targetGroups != null && !targetGroups.isEmpty()) {
-            metadata.setTargetGroups(targetGroups);
+            Map<String, List<String>> convertedTargetGroups = new LinkedHashMap<>();
+            for (Map.Entry<String, TargetGroup> entry : targetGroups.entrySet()) {
+                String phaseName = entry.getKey();
+                TargetGroup targetGroup = entry.getValue();
+                convertedTargetGroups.put(phaseName, new ArrayList<>(targetGroup.getTargets()));
+            }
+            metadata.setTargetGroups(convertedTargetGroups);
         }
         
         projectConfig.setMetadata(metadata);
+        
+        // Set project type
+        projectConfig.setProjectType(determineProjectType(project));
         
         // Create CreateNodesResult
         CreateNodesResult result = new CreateNodesResult();
@@ -132,5 +143,32 @@ public class CreateNodesResultGenerator {
         }
         
         return updatedTargets;
+    }
+    
+    /**
+     * Determine project type based on Maven project configuration
+     * @param project The Maven project to analyze
+     * @return "application" or "library" (never null)
+     */
+    private static String determineProjectType(MavenProject project) {
+        String packaging = project.getPackaging();
+        
+        // Handle null packaging by defaulting to library
+        if (packaging == null) {
+            return "library";
+        }
+        
+        // POM packaging usually indicates an aggregator/parent project
+        if ("pom".equals(packaging)) {
+            return "library";
+        }
+        
+        // WAR and EAR packaging indicates web applications
+        if ("war".equals(packaging) || "ear".equals(packaging)) {
+            return "application";
+        }
+        
+        // Default to library for all other packaging types (jar, etc.)
+        return "library";
     }
 }

@@ -1,6 +1,21 @@
 {
   "plugins": [
-    "./maven-plugin2.ts"
+    {
+      "plugin": "./maven-plugin2.ts",
+      "options": {
+        "mavenExecutable": "mvn"
+      }
+    }
   ],
+  "pluginsConfig": {
+    "@nx/js": {
+      "analyzeSourceFiles": false,
+      "analyzePackageJson": false,
+      "analyzeLockfile": false
+    }
+  },
+  "workspaceLayout": {
+    "projectNameAndRootFormat": "as-provided"
+  },
   "$schema": "./node_modules/nx/schemas/nx-schema.json"
 }

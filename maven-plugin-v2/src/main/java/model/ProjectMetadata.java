@@ -1,6 +1,7 @@
 package model;
 
 import java.util.Map;
+import java.util.List;
 import java.util.LinkedHashMap;
 
 /**
@@ -11,7 +12,7 @@ public class ProjectMetadata {
     private String artifactId;
     private String version;
     private String packaging;
-    private Map<String, TargetGroup> targetGroups = new LinkedHashMap<>();
+    private Map<String, List<String>> targetGroups = new LinkedHashMap<>();
     
     public ProjectMetadata() {}
     
@@ -35,10 +36,10 @@ public class ProjectMetadata {
     public String getPackaging() { return packaging; }
     public void setPackaging(String packaging) { this.packaging = packaging; }
 
-    public Map<String, TargetGroup> getTargetGroups() { return targetGroups; }
-    public void setTargetGroups(Map<String, TargetGroup> targetGroups) { this.targetGroups = targetGroups; }
+    public Map<String, List<String>> getTargetGroups() { return targetGroups; }
+    public void setTargetGroups(Map<String, List<String>> targetGroups) { this.targetGroups = targetGroups; }
     
-    public void addTargetGroup(String name, TargetGroup group) {
-        this.targetGroups.put(name, group);
+    public void addTargetGroup(String groupName, List<String> targets) {
+        this.targetGroups.put(groupName, targets);
     }
 }

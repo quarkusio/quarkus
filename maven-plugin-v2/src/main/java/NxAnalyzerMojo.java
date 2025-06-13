@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * Maven plugin that uses MavenSession API to analyze Maven projects for Nx integration
  */
-@Mojo(name = "analyze", aggregator = true, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME)
+@Mojo(name = "analyze", aggregator = true, requiresDependencyResolution = ResolutionScope.NONE)
 public class NxAnalyzerMojo extends AbstractMojo {
     
     @Parameter(defaultValue = "${session}", readonly = true, required = true)
@@ -224,20 +224,22 @@ public class NxAnalyzerMojo extends AbstractMojo {
         
         File workspaceRoot = new File(session.getExecutionRootDirectory());
         
-        // Generate Maven lifecycle phase targets
-        targets.putAll(generatePhaseTargets(project, workspaceRoot));
-        
-        // Generate plugin goal targets using effective POM
+        // Generate plugin goal targets first
         targets.putAll(generatePluginGoalTargets(project, workspaceRoot));
+        
+        // Goal dependencies are now set directly in goal creation
+        
+        // Generate Maven lifecycle phase targets after goals are generated and dependencies applied
+        targets.putAll(generatePhaseTargets(project, workspaceRoot, targets));
         
         return targets;
     }
     
     private Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project) {
-        return generatePhaseTargets(project, null);
+        return generatePhaseTargets(project, null, new LinkedHashMap<>());
     }
     
-    private Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project, File workspaceRoot) {
+    private Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project, File workspaceRoot, Map<String, TargetConfiguration> allTargets) {
         Map<String, TargetConfiguration> phaseTargets = new LinkedHashMap<>();
         
         String[] phases = {
@@ -245,39 +247,32 @@ public class NxAnalyzerMojo extends AbstractMojo {
             "verify", "install", "deploy", "site"
         };
         
-        String projectRootToken = "{projectRoot}";
-        if (workspaceRoot != null) {
-            String relativePath = NxPathUtils.getRelativePath(workspaceRoot, project.getBasedir());
-            projectRootToken = relativePath.isEmpty() ? "." : relativePath;
-        }
-        
         for (String phase : phases) {
-            TargetConfiguration target = new TargetConfiguration("@nx/run-commands:run-commands");
+            // All phase targets use noop executor since phases are just logical groupings
+            TargetConfiguration target = new TargetConfiguration("noop");
             
-            Map<String, Object> options = new LinkedHashMap<>();
-            options.put("command", "mvn " + phase);
-            options.put("cwd", projectRootToken);
-            target.setOptions(options);
+            // Configure as no-op
+            target.setOptions(new LinkedHashMap<>());
+            target.setInputs(new ArrayList<>());
+            target.setOutputs(new ArrayList<>());
             
-            // Add inputs based on phase
-            List<String> inputs = new ArrayList<>();
-            inputs.add(projectRootToken + "/pom.xml");
-            if (needsSourceInputs(phase)) {
-                inputs.add(projectRootToken + "/src/**/*");
-            }
-            target.setInputs(inputs);
+            // Phase depends on both the preceding phase AND all goals that belong to this phase
+            List<String> dependsOn = new ArrayList<>();
             
-            // Add outputs based on phase
-            List<String> outputs = getPhaseOutputs(phase, projectRootToken);
-            target.setOutputs(outputs);
+            // Add dependency on preceding phase
+            List<String> phaseDependencies = getPhaseDependencies(phase);
+            dependsOn.addAll(phaseDependencies);
             
-            // Add phase dependencies
-            List<String> dependsOn = getPhaseDependencies(phase);
+            // Add dependencies on all goals that belong to this phase
+            List<String> goalsForPhase = getGoalsForPhase(phase, allTargets);
+            dependsOn.addAll(goalsForPhase);
+            
             target.setDependsOn(dependsOn);
             
             // Add metadata
             TargetMetadata metadata = new TargetMetadata("phase", "Maven lifecycle phase: " + phase);
             metadata.setPhase(phase);
+            metadata.setPlugin("org.apache.maven:maven-core");
             metadata.setTechnologies(Arrays.asList("maven"));
             target.setMetadata(metadata);
             
@@ -285,6 +280,27 @@ public class NxAnalyzerMojo extends AbstractMojo {
         }
         
         return phaseTargets;
+    }
+    
+    /**
+     * Get all goal targets that belong to a specific phase
+     */
+    private List<String> getGoalsForPhase(String phase, Map<String, TargetConfiguration> allTargets) {
+        List<String> goalsForPhase = new ArrayList<>();
+        
+        for (Map.Entry<String, TargetConfiguration> entry : allTargets.entrySet()) {
+            String targetName = entry.getKey();
+            TargetConfiguration target = entry.getValue();
+            
+            // Check if this is a goal target (not a phase target) and belongs to the specified phase
+            if (target.getMetadata() != null && 
+                "goal".equals(target.getMetadata().getType()) &&
+                phase.equals(target.getMetadata().getPhase())) {
+                goalsForPhase.add(targetName);
+            }
+        }
+        
+        return goalsForPhase;
     }
     
     private Map<String, TargetConfiguration> generatePluginGoalTargets(MavenProject project) {
@@ -352,6 +368,17 @@ public class NxAnalyzerMojo extends AbstractMojo {
         List<String> outputs = getGoalOutputs(goal, projectRootToken);
         target.setOutputs(outputs);
         
+        // Goal depends on the preceding phase of the phase it belongs to
+        List<String> dependsOn = new ArrayList<>();
+        String executionPhase = execution.getPhase();
+        if (executionPhase != null && !executionPhase.isEmpty()) {
+            String precedingPhase = getPrecedingPhase(executionPhase);
+            if (precedingPhase != null) {
+                dependsOn.add(precedingPhase);
+            }
+        }
+        target.setDependsOn(dependsOn);
+        
         // Metadata with execution info
         TargetMetadata metadata = new TargetMetadata("goal", generateGoalDescription(plugin.getArtifactId(), goal));
         metadata.setPlugin(pluginKey);
@@ -406,6 +433,17 @@ public class NxAnalyzerMojo extends AbstractMojo {
         
         List<String> outputs = getGoalOutputs(goal, projectRootToken);
         target.setOutputs(outputs);
+        
+        // Goal depends on the preceding phase of the phase it belongs to
+        List<String> dependsOn = new ArrayList<>();
+        String inferredPhase = inferPhaseFromGoal(goal);
+        if (inferredPhase != null) {
+            String precedingPhase = getPrecedingPhase(inferredPhase);
+            if (precedingPhase != null) {
+                dependsOn.add(precedingPhase);
+            }
+        }
+        target.setDependsOn(dependsOn);
         
         TargetMetadata metadata = new TargetMetadata("goal", generateGoalDescription(plugin.getArtifactId(), goal));
         metadata.setPlugin(pluginKey);
@@ -509,6 +547,275 @@ public class NxAnalyzerMojo extends AbstractMojo {
             case "create": return "Create build metadata";
             default: return pluginName + " " + goal;
         }
+    }
+    
+    /**
+     * Apply goal-to-goal dependencies based on Maven execution plan with fallback strategies
+     */
+    private void applyGoalDependencies(MavenProject project, Map<String, TargetConfiguration> targets) {
+        try {
+            // Strategy 1: Try to get execution plan with dependency resolution disabled
+            Map<String, List<String>> goalDependencies = null;
+            
+            try {
+                // Try to calculate execution plan with current session
+                MavenExecutionPlan executionPlan = lifecycleExecutor.calculateExecutionPlan(session, "install");
+                goalDependencies = buildGoalDependencyMap(executionPlan);
+                
+                if (isVerbose()) {
+                    getLog().info("Successfully calculated execution plan for project: " + project.getArtifactId());
+                }
+                
+            } catch (Exception planException) {
+                if (isVerbose()) {
+                    getLog().warn("Execution plan calculation failed, using fallback strategy: " + planException.getMessage());
+                }
+                
+                // Strategy 2: Use static Maven lifecycle knowledge as fallback
+                goalDependencies = buildFallbackGoalDependencies(project, targets);
+            }
+            
+            if (goalDependencies != null && !goalDependencies.isEmpty()) {
+                applyGoalDependenciesToTargets(goalDependencies, targets);
+                
+                if (isVerbose()) {
+                    getLog().info("Applied " + goalDependencies.size() + " goal dependencies for project: " + project.getArtifactId());
+                }
+            }
+            
+        } catch (Exception e) {
+            if (isVerbose()) {
+                getLog().warn("Failed to apply goal dependencies for project " + project.getArtifactId() + ": " + e.getMessage());
+            }
+            // Continue without goal dependencies - phase dependencies will still work
+        }
+    }
+    
+    /**
+     * Apply goal dependencies to targets
+     */
+    private void applyGoalDependenciesToTargets(Map<String, List<String>> goalDependencies, Map<String, TargetConfiguration> targets) {
+        for (Map.Entry<String, List<String>> entry : goalDependencies.entrySet()) {
+            String goalTargetName = entry.getKey();
+            List<String> precedingGoals = entry.getValue();
+            
+            TargetConfiguration target = targets.get(goalTargetName);
+            if (target != null && !precedingGoals.isEmpty()) {
+                // Get current dependencies and add goal dependencies
+                List<String> currentDeps = target.getDependsOn();
+                if (currentDeps == null) {
+                    currentDeps = new ArrayList<>();
+                } else {
+                    currentDeps = new ArrayList<>(currentDeps); // Make mutable copy
+                }
+                
+                // Add goal dependencies that exist as targets
+                for (String precedingGoal : precedingGoals) {
+                    if (targets.containsKey(precedingGoal) && !currentDeps.contains(precedingGoal)) {
+                        currentDeps.add(precedingGoal);
+                    }
+                }
+                
+                target.setDependsOn(currentDeps);
+                
+                if (isVerbose() && !precedingGoals.isEmpty()) {
+                    getLog().info("  " + goalTargetName + " depends on: " + precedingGoals);
+                }
+            }
+        }
+    }
+    
+    /**
+     * Build goal dependencies using static Maven lifecycle knowledge as fallback
+     */
+    private Map<String, List<String>> buildFallbackGoalDependencies(MavenProject project, Map<String, TargetConfiguration> targets) {
+        Map<String, List<String>> dependencies = new LinkedHashMap<>();
+        
+        // Define standard Maven lifecycle phases and their typical goals
+        Map<String, List<String>> phaseGoals = new LinkedHashMap<>();
+        phaseGoals.put("validate", Arrays.asList("maven-enforcer:enforce", "buildnumber:create"));
+        phaseGoals.put("generate-sources", Arrays.asList());
+        phaseGoals.put("process-sources", Arrays.asList("formatter:format"));
+        phaseGoals.put("generate-resources", Arrays.asList());
+        phaseGoals.put("process-resources", Arrays.asList("maven-resources:resources", "quarkus-extension:extension-descriptor"));
+        phaseGoals.put("compile", Arrays.asList("maven-compiler:compile"));
+        phaseGoals.put("process-classes", Arrays.asList());
+        phaseGoals.put("generate-test-sources", Arrays.asList());
+        phaseGoals.put("process-test-sources", Arrays.asList());
+        phaseGoals.put("generate-test-resources", Arrays.asList());
+        phaseGoals.put("process-test-resources", Arrays.asList("maven-resources:testResources"));
+        phaseGoals.put("test-compile", Arrays.asList("maven-compiler:testCompile"));
+        phaseGoals.put("process-test-classes", Arrays.asList());
+        phaseGoals.put("test", Arrays.asList("maven-surefire:test"));
+        phaseGoals.put("prepare-package", Arrays.asList());
+        phaseGoals.put("package", Arrays.asList("maven-jar:jar", "maven-source:jar-no-fork"));
+        phaseGoals.put("pre-integration-test", Arrays.asList());
+        phaseGoals.put("integration-test", Arrays.asList());
+        phaseGoals.put("post-integration-test", Arrays.asList());
+        phaseGoals.put("verify", Arrays.asList("forbiddenapis:check"));
+        phaseGoals.put("install", Arrays.asList("maven-install:install"));
+        phaseGoals.put("deploy", Arrays.asList("maven-deploy:deploy"));
+        
+        // Build dependencies: each goal depends on all goals from previous phases + previous goals in same phase
+        List<String> allPhases = Arrays.asList(
+            "validate", "generate-sources", "process-sources", "generate-resources", "process-resources",
+            "compile", "process-classes", "generate-test-sources", "process-test-sources", 
+            "generate-test-resources", "process-test-resources", "test-compile", "process-test-classes",
+            "test", "prepare-package", "package", "pre-integration-test", "integration-test", 
+            "post-integration-test", "verify", "install", "deploy"
+        );
+        
+        List<String> allPreviousGoals = new ArrayList<>();
+        
+        for (String phase : allPhases) {
+            List<String> goalsInPhase = phaseGoals.getOrDefault(phase, new ArrayList<>());
+            
+            for (int i = 0; i < goalsInPhase.size(); i++) {
+                String currentGoal = goalsInPhase.get(i);
+                
+                // Only process goals that exist as targets
+                if (targets.containsKey(currentGoal)) {
+                    List<String> goalDeps = new ArrayList<>();
+                    
+                    // Add dependency on previous goal in same phase
+                    if (i > 0) {
+                        String previousGoalInPhase = goalsInPhase.get(i - 1);
+                        if (targets.containsKey(previousGoalInPhase)) {
+                            goalDeps.add(previousGoalInPhase);
+                        }
+                    } else if (!allPreviousGoals.isEmpty()) {
+                        // If first goal in phase, depend on last goal from previous phase
+                        String lastPreviousGoal = allPreviousGoals.get(allPreviousGoals.size() - 1);
+                        if (targets.containsKey(lastPreviousGoal)) {
+                            goalDeps.add(lastPreviousGoal);
+                        }
+                    }
+                    
+                    dependencies.put(currentGoal, goalDeps);
+                }
+            }
+            
+            // Add all goals from this phase to the list of previous goals
+            for (String goal : goalsInPhase) {
+                if (targets.containsKey(goal)) {
+                    allPreviousGoals.add(goal);
+                }
+            }
+        }
+        
+        if (isVerbose()) {
+            getLog().info("Built fallback goal dependencies for " + dependencies.size() + " goals");
+        }
+        
+        return dependencies;
+    }
+    
+    /**
+     * Build a map of goal dependencies from the execution plan
+     */
+    private Map<String, List<String>> buildGoalDependencyMap(MavenExecutionPlan executionPlan) {
+        if (executionPlan == null) {
+            return new LinkedHashMap<>();
+        }
+        Map<String, List<String>> goalDependencies = new LinkedHashMap<>();
+        List<MojoExecution> executions = executionPlan.getMojoExecutions();
+        
+        if (executions == null || executions.isEmpty()) {
+            if (isVerbose()) {
+                getLog().warn("Execution plan contains no mojo executions");
+            }
+            return goalDependencies;
+        }
+        
+        if (isVerbose()) {
+            getLog().info("Processing " + executions.size() + " mojo executions from execution plan");
+        }
+        
+        // Build list of target names in execution order
+        List<String> executionOrder = new ArrayList<>();
+        for (MojoExecution execution : executions) {
+            String targetName = getTargetName(execution.getPlugin().getArtifactId(), execution.getGoal());
+            executionOrder.add(targetName);
+        }
+        
+        // For each goal, find its dependencies (all preceding goals in same or earlier phases)
+        for (int i = 0; i < executions.size(); i++) {
+            MojoExecution currentExecution = executions.get(i);
+            String currentTargetName = getTargetName(currentExecution.getPlugin().getArtifactId(), currentExecution.getGoal());
+            String currentPhase = currentExecution.getLifecyclePhase();
+            
+            List<String> dependencies = new ArrayList<>();
+            
+            // Look at preceding executions
+            for (int j = 0; j < i; j++) {
+                MojoExecution precedingExecution = executions.get(j);
+                String precedingTargetName = getTargetName(precedingExecution.getPlugin().getArtifactId(), precedingExecution.getGoal());
+                String precedingPhase = precedingExecution.getLifecyclePhase();
+                
+                // Add dependency if:
+                // 1. It's in the same phase (immediate dependency)
+                // 2. It's the last goal of the immediately preceding phase
+                if (currentPhase != null && precedingPhase != null) {
+                    if (currentPhase.equals(precedingPhase)) {
+                        // Same phase - add as direct dependency
+                        dependencies.add(precedingTargetName);
+                    } else if (isImmediatelyPrecedingPhase(precedingPhase, currentPhase)) {
+                        // Check if this is the last goal of the preceding phase
+                        if (j == executions.size() - 1 || !precedingPhase.equals(executions.get(j + 1).getLifecyclePhase())) {
+                            dependencies.add(precedingTargetName);
+                        }
+                    }
+                }
+            }
+            
+            // For goals, only keep the most immediate dependencies to avoid redundant edges
+            List<String> immediateDeps = getImmediateDependencies(dependencies, executionOrder);
+            goalDependencies.put(currentTargetName, immediateDeps);
+        }
+        
+        return goalDependencies;
+    }
+    
+    /**
+     * Check if phase1 immediately precedes phase2 in the Maven lifecycle
+     */
+    private boolean isImmediatelyPrecedingPhase(String phase1, String phase2) {
+        String[] phaseOrder = {
+            "validate", "initialize", "generate-sources", "process-sources",
+            "generate-resources", "process-resources", "compile", "process-classes",
+            "generate-test-sources", "process-test-sources", "generate-test-resources",
+            "process-test-resources", "test-compile", "process-test-classes", "test",
+            "prepare-package", "package", "pre-integration-test", "integration-test",
+            "post-integration-test", "verify", "install", "deploy"
+        };
+        
+        int index1 = -1, index2 = -1;
+        for (int i = 0; i < phaseOrder.length; i++) {
+            if (phaseOrder[i].equals(phase1)) index1 = i;
+            if (phaseOrder[i].equals(phase2)) index2 = i;
+        }
+        
+        return index1 >= 0 && index2 >= 0 && index2 == index1 + 1;
+    }
+    
+    /**
+     * Get immediate dependencies by removing transitive ones
+     */
+    private List<String> getImmediateDependencies(List<String> allDeps, List<String> executionOrder) {
+        if (allDeps.size() <= 1) {
+            return allDeps;
+        }
+        
+        // For goals in the same phase, only depend on the immediately preceding goal
+        // For cross-phase dependencies, keep the last goal of the preceding phase
+        List<String> immediate = new ArrayList<>();
+        
+        if (!allDeps.isEmpty()) {
+            // Add the most recent dependency (immediate predecessor)
+            immediate.add(allDeps.get(allDeps.size() - 1));
+        }
+        
+        return immediate;
     }
     
     /**
@@ -634,6 +941,84 @@ public class NxAnalyzerMojo extends AbstractMojo {
         }
         
         return combinedMapping;
+    }
+    
+    /**
+     * Get the preceding phase for a given phase to establish goal dependencies.
+     * Returns the closest available phase target that precedes the given phase.
+     */
+    private String getPrecedingPhase(String phase) {
+        if (phase == null || phase.isEmpty()) {
+            return null;
+        }
+        
+        // All Maven lifecycle phases in order
+        String[] allPhases = {
+            "pre-clean", "clean", "post-clean",
+            "validate", "initialize", "generate-sources", "process-sources",
+            "generate-resources", "process-resources", "compile", "process-classes",
+            "generate-test-sources", "process-test-sources", "generate-test-resources",
+            "process-test-resources", "test-compile", "process-test-classes", "test",
+            "prepare-package", "package", "pre-integration-test", "integration-test",
+            "post-integration-test", "verify", "install", "deploy",
+            "pre-site", "site", "post-site", "site-deploy"
+        };
+        
+        // Available phase targets that we actually generate
+        String[] availablePhases = {
+            "clean", "validate", "compile", "test", "package", 
+            "verify", "install", "deploy", "site"
+        };
+        
+        // Find the current phase index
+        int currentPhaseIndex = -1;
+        for (int i = 0; i < allPhases.length; i++) {
+            if (allPhases[i].equals(phase)) {
+                currentPhaseIndex = i;
+                break;
+            }
+        }
+        
+        if (currentPhaseIndex == -1) {
+            return null; // Phase not found
+        }
+        
+        // Find the closest available phase that comes before the current phase
+        for (int i = currentPhaseIndex - 1; i >= 0; i--) {
+            String candidatePhase = allPhases[i];
+            for (String availablePhase : availablePhases) {
+                if (availablePhase.equals(candidatePhase)) {
+                    return availablePhase;
+                }
+            }
+        }
+        
+        return null; // No preceding available phase found
+    }
+    
+    /**
+     * Infer the Maven lifecycle phase for a goal based on naming patterns.
+     * Used for common goals that don't have explicit execution phase information.
+     */
+    private String inferPhaseFromGoal(String goal) {
+        if (goal == null || goal.isEmpty()) {
+            return null;
+        }
+        
+        // Pattern-based phase inference
+        if (goal.equals("compile") || goal.equals("testCompile")) {
+            return "compile";
+        } else if (goal.equals("test") || goal.contains("test")) {
+            return "test";
+        } else if (goal.equals("jar") || goal.equals("war") || goal.equals("build") || goal.equals("repackage")) {
+            return "package";
+        } else if (goal.equals("dev") || goal.equals("run")) {
+            return "compile"; // Development goals typically run after compilation
+        } else if (goal.contains("site") || goal.contains("javadoc")) {
+            return "site";
+        } else {
+            return "compile"; // Default to compile phase for unknown goals
+        }
     }
     
     /**

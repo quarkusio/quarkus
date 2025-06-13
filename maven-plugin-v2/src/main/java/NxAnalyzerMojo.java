@@ -230,16 +230,49 @@ public class NxAnalyzerMojo extends AbstractMojo {
         // Goal dependencies are now set directly in goal creation
         
         // Generate Maven lifecycle phase targets after goals are generated and dependencies applied
-        targets.putAll(generatePhaseTargets(project, workspaceRoot, targets));
+        targets.putAll(generatePhaseTargets(project, workspaceRoot, targets, reactorProjects));
         
         return targets;
     }
     
     private Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project) {
-        return generatePhaseTargets(project, null, new LinkedHashMap<>());
+        return generatePhaseTargets(project, null, new LinkedHashMap<>(), new ArrayList<>());
     }
     
-    private Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project, File workspaceRoot, Map<String, TargetConfiguration> allTargets) {
+    /**
+     * Get cross-module phase dependencies - this phase depends on the same phase in dependency modules
+     */
+    private List<String> getCrossModulePhaseDependencies(MavenProject project, String phase, List<MavenProject> reactorProjects) {
+        List<String> crossModuleDeps = new ArrayList<>();
+        
+        // Build map of reactor projects by artifact key
+        Map<String, MavenProject> artifactToProject = new LinkedHashMap<>();
+        for (MavenProject reactorProject : reactorProjects) {
+            String key = reactorProject.getGroupId() + ":" + reactorProject.getArtifactId();
+            artifactToProject.put(key, reactorProject);
+        }
+        
+        // Check direct dependencies
+        if (project.getDependencies() != null) {
+            for (org.apache.maven.model.Dependency dependency : project.getDependencies()) {
+                String depKey = dependency.getGroupId() + ":" + dependency.getArtifactId();
+                
+                // If this dependency is a reactor project, add phase dependency
+                if (artifactToProject.containsKey(depKey)) {
+                    String dependentProjectPhase = depKey + ":" + phase;
+                    crossModuleDeps.add(dependentProjectPhase);
+                    
+                    if (isVerbose()) {
+                        getLog().info("Cross-module dependency: " + project.getArtifactId() + ":" + phase + " depends on " + dependentProjectPhase);
+                    }
+                }
+            }
+        }
+        
+        return crossModuleDeps;
+    }
+    
+    private Map<String, TargetConfiguration> generatePhaseTargets(MavenProject project, File workspaceRoot, Map<String, TargetConfiguration> allTargets, List<MavenProject> reactorProjects) {
         Map<String, TargetConfiguration> phaseTargets = new LinkedHashMap<>();
         
         String[] phases = {
@@ -256,7 +289,10 @@ public class NxAnalyzerMojo extends AbstractMojo {
             target.setInputs(new ArrayList<>());
             target.setOutputs(new ArrayList<>());
             
-            // Phase depends on both the preceding phase AND all goals that belong to this phase
+            // Phase depends on:
+            // 1. The preceding phase in this module
+            // 2. All goals that belong to this phase in this module  
+            // 3. The same phase in dependent modules
             List<String> dependsOn = new ArrayList<>();
             
             // Add dependency on preceding phase
@@ -266,6 +302,10 @@ public class NxAnalyzerMojo extends AbstractMojo {
             // Add dependencies on all goals that belong to this phase
             List<String> goalsForPhase = getGoalsForPhase(phase, allTargets);
             dependsOn.addAll(goalsForPhase);
+            
+            // Add cross-module dependencies - this phase depends on the same phase in dependency modules
+            List<String> crossModuleDependencies = getCrossModulePhaseDependencies(project, phase, reactorProjects);
+            dependsOn.addAll(crossModuleDependencies);
             
             target.setDependsOn(dependsOn);
             

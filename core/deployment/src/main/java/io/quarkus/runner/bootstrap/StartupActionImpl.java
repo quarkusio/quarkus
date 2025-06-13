@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +34,8 @@ import io.quarkus.builder.BuildResult;
 import io.quarkus.deployment.builditem.ApplicationClassNameBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
-import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRequestBuildItem;
 import io.quarkus.deployment.builditem.GeneratedClassBuildItem;
 import io.quarkus.deployment.builditem.GeneratedResourceBuildItem;
 import io.quarkus.deployment.builditem.MainClassBuildItem;
@@ -55,10 +57,11 @@ public class StartupActionImpl implements StartupAction {
     private final String mainClassName;
     private final String applicationClassName;
     private final Map<String, String> devServicesProperties;
-    private final List<DevServicesResultBuildItem> devServicesResultBuildItems;
+    private final List<DevServicesRequestBuildItem> devServicesRequests;
     private final String devServicesNetworkId;
     private final List<RuntimeApplicationShutdownBuildItem> runtimeApplicationShutdownBuildItems;
     private final List<Closeable> runtimeCloseTasks = new ArrayList<>();
+    private final DevServicesRegistryBuildItem devServicesRegistry;
 
     public StartupActionImpl(CuratedApplication curatedApplication, BuildResult buildResult) {
         this.curatedApplication = curatedApplication;
@@ -69,8 +72,8 @@ public class StartupActionImpl implements StartupAction {
         this.devServicesNetworkId = extractDevServicesNetworkId(buildResult);
         this.runtimeApplicationShutdownBuildItems = buildResult.consumeMulti(RuntimeApplicationShutdownBuildItem.class);
 
-        devServicesResultBuildItems = buildResult
-                .consumeMulti(DevServicesResultBuildItem.class);
+        devServicesRequests = buildResult.consumeMulti(DevServicesRequestBuildItem.class);
+        devServicesRegistry = buildResult.consumeOptional(DevServicesRegistryBuildItem.class);
 
         Map<String, byte[]> transformedClasses = extractTransformedClasses(buildResult);
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
@@ -105,7 +108,7 @@ public class StartupActionImpl implements StartupAction {
      */
     public RunningQuarkusApplication runMainClass(String... args) throws Exception {
         // Start dev services that weren't started in the augmentation phase
-        startDevServices(devServicesResultBuildItems);
+        startDevServices(devServicesRegistry, devServicesRequests);
 
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
@@ -214,7 +217,7 @@ public class StartupActionImpl implements StartupAction {
     @Override
     public int runMainClassBlocking(String... args) throws Exception {
         // Start dev services that weren't started in the augmentation phase
-        startDevServices(devServicesResultBuildItems);
+        startDevServices(devServicesRegistry, devServicesRequests);
 
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
@@ -286,9 +289,12 @@ public class StartupActionImpl implements StartupAction {
         RuntimeOverrideConfigSource.setConfig(runtimeClassLoader, config);
     }
 
-    private static void startDevServices(List<DevServicesResultBuildItem> devServicesResultBuildItems) {
-        for (DevServicesResultBuildItem devServicesResultBuildItem : devServicesResultBuildItems) {
-            devServicesResultBuildItem.start();
+    private void startDevServices(DevServicesRegistryBuildItem devServicesRegistry,
+            List<DevServicesRequestBuildItem> devServicesRequests) {
+        if (devServicesRegistry != null) {
+            CompletableFuture.allOf(devServicesRequests.stream()
+                    .map(serv -> CompletableFuture.runAsync(() -> devServicesRegistry.start(serv)))
+                    .toArray(CompletableFuture[]::new)).join();
         }
     }
 
@@ -297,7 +303,7 @@ public class StartupActionImpl implements StartupAction {
      */
     public RunningQuarkusApplication run(String... args) throws Exception {
         // Start dev services that weren't started in the augmentation phase
-        startDevServices(devServicesResultBuildItems);
+        startDevServices(devServicesRegistry, devServicesRequests);
 
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);

@@ -1,0 +1,343 @@
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
+import org.apache.maven.plugins.annotations.ResolutionScope;
+import org.apache.maven.project.MavenProject;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import model.CreateNodesV2Entry;
+import model.RawProjectGraphDependency;
+import model.TargetConfiguration;
+import model.TargetGroup;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Refactored Maven plugin that analyzes Maven projects for Nx integration.
+ * This version delegates complex logic to specialized service classes.
+ */
+@Mojo(name = "analyze", aggregator = true, requiresDependencyResolution = ResolutionScope.NONE)
+public class NxAnalyzerMojo extends AbstractMojo {
+    
+    @Parameter(defaultValue = "${session}", readonly = true, required = true)
+    private MavenSession session;
+    
+    @Parameter(defaultValue = "${reactorProjects}", readonly = true, required = true)
+    private List<MavenProject> reactorProjects;
+    
+    @Parameter(property = "nx.outputFile")
+    private String outputFile;
+    
+    @Parameter(property = "nx.verbose", defaultValue = "false")
+    private String verboseStr;
+    
+    // Services for delegating complex operations
+    private TargetGenerationService targetGenerationService;
+    private TargetGroupService targetGroupService;
+    private TargetDependencyService targetDependencyService;
+    
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        long startTime = System.currentTimeMillis();
+        
+        
+        try {
+            initializeServices();
+            
+            getLog().info("Starting Nx analysis for " + reactorProjects.size() + " projects");
+            logBasicInfo();
+            
+            // Generate analysis results
+            Map<String, Object> result = performAnalysis();
+            
+            // Write output
+            String outputPath = determineOutputPath();
+            writeResult(result, outputPath);
+            
+            logCompletion(startTime, outputPath);
+            
+        } catch (Exception e) {
+            throw new MojoExecutionException("Analysis failed: " + e.getMessage(), e);
+        }
+    }
+    
+    private void initializeServices() {
+        this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose());
+        this.targetGroupService = new TargetGroupService();
+        this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), session);
+    }
+    
+    private void logBasicInfo() {
+        if (isVerbose()) {
+            getLog().info("Verbose mode enabled");
+        }
+        
+        getLog().info("Root directory: " + session.getExecutionRootDirectory());
+        if (!reactorProjects.isEmpty()) {
+            MavenProject first = reactorProjects.get(0);
+            MavenProject last = reactorProjects.get(reactorProjects.size() - 1);
+            getLog().info("First project: " + first.getGroupId() + ":" + first.getArtifactId());
+            getLog().info("Last project: " + last.getGroupId() + ":" + last.getArtifactId());
+        }
+    }
+    
+    private Map<String, Object> performAnalysis() {
+        File workspaceRoot = new File(session.getExecutionRootDirectory());
+        
+        
+        // Generate targets and groups for each project
+        Map<MavenProject, Map<String, TargetConfiguration>> projectTargets = new LinkedHashMap<>();
+        Map<MavenProject, Map<String, TargetGroup>> projectTargetGroups = new LinkedHashMap<>();
+        
+        for (MavenProject project : reactorProjects) {
+            try {
+                // Calculate goal dependencies first
+                Map<String, List<String>> goalDependencies = calculateGoalDependencies(project, workspaceRoot);
+                
+                // Generate targets using pre-calculated goal dependencies (phase dependencies calculated later)
+                Map<String, TargetConfiguration> targets = targetGenerationService.generateTargets(
+                    project, workspaceRoot, goalDependencies, new LinkedHashMap<>());
+                
+                // Now calculate phase dependencies using the generated targets
+                Map<String, List<String>> phaseDependencies = calculatePhaseDependencies(project, targets);
+                
+                // Update phase targets with calculated dependencies
+                updatePhaseTargetsWithDependencies(targets, phaseDependencies);
+                projectTargets.put(project, targets);
+                
+                // Generate target groups
+                Map<String, TargetGroup> targetGroups = targetGroupService.generateTargetGroups(project, targets, session);
+                projectTargetGroups.put(project, targetGroups);
+                
+                if (isVerbose()) {
+                    getLog().info("Processed " + project.getArtifactId() + 
+                                 ": " + targets.size() + " targets, " + targetGroups.size() + " groups");
+                }
+                
+            } catch (Exception e) {
+                getLog().error("Error processing project " + project.getArtifactId() + ": " + e.getMessage(), e);
+                // Continue with empty targets and groups
+                projectTargets.put(project, new LinkedHashMap<>());
+                projectTargetGroups.put(project, new LinkedHashMap<>());
+            }
+        }
+        
+        // Generate Nx-compatible outputs
+        List<CreateNodesV2Entry> createNodesEntries = CreateNodesResultGenerator.generateCreateNodesV2Results(
+            reactorProjects, workspaceRoot, projectTargets, projectTargetGroups);
+        
+        List<Object[]> createNodesResults = new ArrayList<>();
+        for (CreateNodesV2Entry entry : createNodesEntries) {
+            createNodesResults.add(entry.toArray());
+        }
+        
+        List<RawProjectGraphDependency> createDependencies = CreateDependenciesGenerator.generateCreateDependencies(
+            reactorProjects, workspaceRoot, getLog(), isVerbose());
+        
+        if (isVerbose()) {
+            getLog().info("Generated " + createDependencies.size() + " workspace dependencies");
+        }
+        
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("createNodesResults", createNodesResults);
+        result.put("createDependencies", createDependencies);
+        
+        return result;
+    }
+    
+    /**
+     * Calculate goal dependencies for a project
+     */
+    private Map<String, List<String>> calculateGoalDependencies(MavenProject project, File workspaceRoot) {
+        Map<String, List<String>> goalDependencies = new LinkedHashMap<>();
+        
+        if (isVerbose()) {
+            getLog().debug("Calculating goal dependencies for " + project.getArtifactId());
+        }
+        
+        // First pass: collect all potential goal targets
+        Set<String> goalTargets = collectGoalTargets(project);
+        
+        // Calculate dependencies for each goal target
+        for (String targetName : goalTargets) {
+            String goal = MavenUtils.extractGoalFromTargetName(targetName);
+            
+            // Try to find execution phase from plugin configuration
+            String executionPhase = findExecutionPhase(project, targetName);
+            
+            List<String> dependencies = targetDependencyService.calculateGoalDependencies(
+                project, executionPhase, targetName, reactorProjects);
+            goalDependencies.put(targetName, dependencies);
+        }
+        
+        return goalDependencies;
+    }
+    
+    /**
+     * Calculate phase dependencies for a project using generated targets
+     */
+    private Map<String, List<String>> calculatePhaseDependencies(MavenProject project, Map<String, TargetConfiguration> allTargets) {
+        Map<String, List<String>> phaseDependencies = new LinkedHashMap<>();
+        
+        String[] phases = {
+            "clean", "validate", "compile", "test", "package", 
+            "verify", "install", "deploy", "site"
+        };
+        
+        for (String phase : phases) {
+            List<String> dependencies = targetDependencyService.calculatePhaseDependencies(
+                phase, allTargets, project, reactorProjects);
+            phaseDependencies.put(phase, dependencies);
+        }
+        
+        return phaseDependencies;
+    }
+    
+    /**
+     * Update phase targets with calculated dependencies
+     */
+    private void updatePhaseTargetsWithDependencies(Map<String, TargetConfiguration> targets, 
+                                                   Map<String, List<String>> phaseDependencies) {
+        for (Map.Entry<String, List<String>> entry : phaseDependencies.entrySet()) {
+            String phase = entry.getKey();
+            List<String> dependencies = entry.getValue();
+            
+            TargetConfiguration phaseTarget = targets.get(phase);
+            if (phaseTarget != null) {
+                phaseTarget.setDependsOn(dependencies);
+            }
+        }
+    }
+    
+    /**
+     * Collect all potential goal targets from project plugins
+     */
+    private Set<String> collectGoalTargets(MavenProject project) {
+        Set<String> goalTargets = new LinkedHashSet<>();
+        
+        if (isVerbose()) {
+            getLog().debug("Collecting goals for " + project.getArtifactId() + " (" + 
+                          (project.getBuildPlugins() != null ? project.getBuildPlugins().size() : 0) + " plugins)");
+        }
+        
+        if (project.getBuildPlugins() != null) {
+            project.getBuildPlugins().forEach(plugin -> {
+                String artifactId = plugin.getArtifactId();
+                
+                // Add goals from executions
+                if (plugin.getExecutions() != null) {
+                    plugin.getExecutions().forEach(execution -> {
+                        if (execution.getGoals() != null) {
+                            execution.getGoals().forEach(goal -> {
+                                String targetName = MavenUtils.getTargetName(artifactId, goal);
+                                goalTargets.add(targetName);
+                            });
+                        }
+                    });
+                }
+                
+                // Add common goals for well-known plugins
+                addCommonGoals(artifactId, goalTargets);
+            });
+        }
+        
+        if (isVerbose()) {
+            getLog().debug("Found " + goalTargets.size() + " goals for " + project.getArtifactId());
+        }
+        return goalTargets;
+    }
+    
+    /**
+     * Find execution phase for a goal target
+     */
+    private String findExecutionPhase(MavenProject project, String targetName) {
+        String goal = MavenUtils.extractGoalFromTargetName(targetName);
+        
+        if (project.getBuildPlugins() != null) {
+            for (org.apache.maven.model.Plugin plugin : project.getBuildPlugins()) {
+                if (plugin.getExecutions() != null) {
+                    for (org.apache.maven.model.PluginExecution execution : plugin.getExecutions()) {
+                        if (execution.getGoals() != null && execution.getGoals().contains(goal)) {
+                            return execution.getPhase();
+                        }
+                    }
+                }
+            }
+        }
+        
+        return null; // Will trigger phase inference in dependency service
+    }
+    
+    /**
+     * Add common goals for well-known plugins
+     */
+    private void addCommonGoals(String artifactId, Set<String> goalTargets) {
+        if (artifactId.contains("compiler")) {
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "compile"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "testCompile"));
+        } else if (artifactId.contains("surefire")) {
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "test"));
+        } else if (artifactId.contains("quarkus")) {
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "dev"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "build"));
+        } else if (artifactId.contains("spring-boot")) {
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "run"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "repackage"));
+        }
+    }
+    
+    
+    private boolean isVerbose() {
+        String systemProp = System.getProperty("nx.verbose");
+        boolean fromParam = "true".equalsIgnoreCase(verboseStr);
+        boolean fromSystem = "true".equalsIgnoreCase(systemProp);
+        return fromParam || fromSystem;
+    }
+    
+    private String determineOutputPath() {
+        if (outputFile != null && !outputFile.isEmpty()) {
+            return outputFile;
+        }
+        return new File(session.getExecutionRootDirectory(), "maven-analysis.json").getAbsolutePath();
+    }
+    
+    private void writeResult(Map<String, Object> result, String outputPath) throws IOException {
+        Gson gson = new GsonBuilder()
+            .setPrettyPrinting()
+            .serializeNulls()
+            .create();
+            
+        try (FileWriter writer = new FileWriter(outputPath)) {
+            gson.toJson(result, writer);
+        }
+        
+        if (isVerbose()) {
+            long fileSize = new File(outputPath).length();
+            getLog().info("Wrote " + (fileSize / 1024) + "KB analysis results");
+        }
+    }
+    
+    private void logCompletion(long startTime, String outputPath) {
+        long totalTime = System.currentTimeMillis() - startTime;
+        
+        getLog().info("Analysis complete. Results written to: " + outputPath);
+        if (isVerbose()) {
+            double projectsPerSecond = reactorProjects.size() / (totalTime / 1000.0);
+            getLog().info("Performance: Processed " + reactorProjects.size() + " projects in " + 
+                         (totalTime / 1000.0) + "s (" + String.format("%.1f", projectsPerSecond) + " projects/sec)");
+        }
+        getLog().info("SUCCESS: Maven analysis completed successfully");
+    }
+}

@@ -1,7 +1,7 @@
 {
   "plugins": [
     {
-      "plugin": "./maven-plugin2.ts",
+      "plugin": "./maven-plugin.ts",
       "options": {
         "mavenExecutable": "mvn"
       }

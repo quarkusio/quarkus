@@ -6,6 +6,8 @@ import static org.awaitility.Awaitility.await;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.UUID;
@@ -31,7 +33,17 @@ public class RemoteDevMojoIT extends RunAndCheckWithAgentMojoTestBase {
         agentDir = initProject("projects/multimodule", "projects/multimodule-remote-dev/local");
         runAndCheckModule("runner");
 
-        assertThat(devModeClient.getHttpResponse("/app/hello")).isEqualTo("hello");
+        final Path remoteLog = testDir.toPath().resolve("runner").resolve("target").resolve("output.log");
+        assertThat(devModeClient.getHttpResponse("/app/hello", false, () -> {
+            System.out.println("===== start remote log");
+            try {
+                System.out.println(Files.readString(remoteLog));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            System.out.println("===== end remote log");
+            return null;
+        })).isEqualTo("hello");
 
         // Edit the "Hello" message.
         File source = new File(agentDir, "rest/src/main/java/org/acme/HelloResource.java");

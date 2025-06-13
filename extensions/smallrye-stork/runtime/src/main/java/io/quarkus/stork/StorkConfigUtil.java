@@ -6,6 +6,7 @@ import java.net.NetworkInterface;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,15 +48,22 @@ public class StorkConfigUtil {
         return storkServicesConfigs;
     }
 
-    public static ServiceConfiguration buildDefaultRegistrarConfiguration(String serviceRegistrarType) {
-        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, Map.of());
+    public static ServiceConfiguration buildDefaultRegistrarConfiguration(String serviceRegistrarType, String healthCheckUrl) {
+        Map<String, String> parameters = new HashMap<>();
+        if (healthCheckUrl != null && !healthCheckUrl.isBlank()) {
+            parameters.put("health-check-url", healthCheckUrl);
+        }
+        return buildServiceConfigurationWithRegistrar(serviceRegistrarType, parameters);
     }
 
     public static ServiceConfiguration addRegistrarTypeIfAbsent(String serviceRegistrarType,
-            ServiceConfiguration serviceConfiguration) {
+            ServiceConfiguration serviceConfiguration, String healthCheckUrl) {
         Map<String, String> parameters = serviceConfiguration.serviceRegistrar()
                 .map(StorkServiceRegistrarConfiguration::parameters)
-                .orElse(Map.of());
+                .orElse(new HashMap<>());
+        if (healthCheckUrl != null && !healthCheckUrl.isBlank()) {
+            parameters.put("health-check-url", healthCheckUrl);
+        }
         return buildServiceConfigurationWithRegistrar(serviceRegistrarType, parameters);
     }
 
@@ -81,6 +89,11 @@ public class StorkConfigUtil {
     private static StorkServiceRegistrarConfiguration buildServiceRegistrarConfiguration(String type,
             Map<String, String> parameters) {
         return new StorkServiceRegistrarConfiguration() {
+            @Override
+            public boolean enabled() {
+                return true;
+            }
+
             @Override
             public Optional<String> type() {
                 return Optional.of(type);

@@ -20,6 +20,13 @@ public class SmallRyeStorkRegistrationRecorder {
         Config quarkusConfig = ConfigProvider.getConfig();
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
+            if (configuration.serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
+                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration.serviceConfiguration()
+                        .get(serviceName).serviceRegistrar().get();
+                if (!storkServiceRegistrarConfiguration.enabled()) {
+                    continue;
+                }
+            }
             Map<String, String> parameters = serviceConfig.serviceRegistrar().parameters();
             String host = parameters.containsKey("ip-address") ? parameters.get("ip-address")
                     : quarkusConfig.getValue("quarkus.http.host", String.class);
@@ -47,6 +54,13 @@ public class SmallRyeStorkRegistrationRecorder {
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(configuration);
         for (ServiceConfig serviceConfig : serviceConfigs) {
             String serviceName = serviceConfig.serviceName();
+            if (configuration.serviceConfiguration().get(serviceName).serviceRegistrar().isPresent()) {
+                StorkServiceRegistrarConfiguration storkServiceRegistrarConfiguration = configuration.serviceConfiguration()
+                        .get(serviceName).serviceRegistrar().get();
+                if (!storkServiceRegistrarConfiguration.enabled()) {
+                    continue;
+                }
+            }
             Stork.getInstance().getService(serviceName).getServiceRegistrar().deregisterServiceInstance(serviceName).await()
                     .indefinitely();
         }

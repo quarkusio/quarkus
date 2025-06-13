@@ -1,5 +1,6 @@
 package io.quarkus.vertx.core.runtime;
 
+import static io.quarkus.runtime.ShutdownContext.*;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configureJksKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
@@ -98,7 +99,7 @@ public class VertxCoreRecorder {
             vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
             // we need this to be part of the last shutdown tasks because closing it early (basically before Arc)
             // could cause problem to beans that rely on Vert.x and contain shutdown tasks
-            shutdown.addLastShutdownTask(new Runnable() {
+            shutdown.addShutdownTask(Priority.core(), new Runnable() {
                 @Override
                 public void run() {
                     destroy();
@@ -112,7 +113,7 @@ public class VertxCoreRecorder {
             } else if (vertx.v != null) {
                 tryCleanTccl();
             }
-            shutdown.addLastShutdownTask(new Runnable() {
+            shutdown.addShutdownTask(Priority.core(), new Runnable() {
                 @Override
                 public void run() {
                     List<CountDownLatch> latches = new ArrayList<>();
@@ -344,7 +345,7 @@ public class VertxCoreRecorder {
                 LOGGER.debugf("Vert.x Cache configured to: %s", cache.getAbsolutePath());
                 fileSystemOptions.setFileCacheDir(cache.getAbsolutePath());
                 if (shutdown != null) {
-                    shutdown.addLastShutdownTask(new Runnable() {
+                    shutdown.addShutdownTask(Priority.core(), new Runnable() {
                         @Override
                         public void run() {
                             // Recursively delete the created directory and all the files

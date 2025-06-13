@@ -1,5 +1,7 @@
 package io.quarkus.stork;
 
+import static io.quarkus.runtime.ShutdownContext.*;
+
 import java.util.List;
 
 import jakarta.enterprise.inject.Instance;
@@ -27,7 +29,7 @@ public class SmallRyeStorkRecorder {
             Stork.initialize(infrastructure);
         }
 
-        shutdown.addLastShutdownTask(new Runnable() {
+        shutdown.addShutdownTask(Priority.core(), new Runnable() {
             @Override
             public void run() {
                 Stork.shutdown();

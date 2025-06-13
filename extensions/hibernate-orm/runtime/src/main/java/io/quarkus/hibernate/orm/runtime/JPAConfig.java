@@ -10,14 +10,12 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-import jakarta.enterprise.context.spi.CreationalContext;
 import jakarta.inject.Inject;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 import org.jboss.logging.Logger;
 
-import io.quarkus.arc.BeanDestroyer;
 import io.quarkus.hibernate.orm.runtime.boot.QuarkusPersistenceUnitDescriptor;
 
 public class JPAConfig {
@@ -129,18 +127,22 @@ public class JPAConfig {
         return this.requestScopedSessionEnabled;
     }
 
-    public static class Destroyer implements BeanDestroyer<JPAConfig> {
-        @Override
-        public void destroy(JPAConfig instance, CreationalContext<JPAConfig> creationalContext, Map<String, Object> params) {
-            for (LazyPersistenceUnit factory : instance.persistenceUnits.values()) {
+    void shutdown() {
+        LOGGER.trace("Starting to shut down Hibernate ORM persistence units.");
+        for (LazyPersistenceUnit factory : this.persistenceUnits.values()) {
+            if (factory.isStarted()) {
                 try {
+                    LOGGER.tracef("Closing Hibernate ORM persistence unit: %s.", factory.name);
                     factory.close();
                 } catch (Exception e) {
                     LOGGER.warn("Unable to close the EntityManagerFactory: " + factory, e);
                 }
+            } else {
+                LOGGER.tracef("Skipping Hibernate ORM persistence unit, that failed to start: %s.", factory.name);
             }
-            instance.persistenceUnits.clear();
         }
+        this.persistenceUnits.clear();
+        LOGGER.trace("Finished shutting down Hibernate ORM persistence units.");
     }
 
     static final class LazyPersistenceUnit {
@@ -174,6 +176,10 @@ public class JPAConfig {
             if (emf != null) {
                 emf.close();
             }
+        }
+
+        boolean isStarted() {
+            return !closed && value != null;
         }
     }
 

@@ -1,5 +1,7 @@
 package io.quarkus.runtime.dev.io;
 
+import static io.quarkus.runtime.ShutdownContext.*;
+
 import io.quarkus.dev.io.NioThreadPoolThreadFactory;
 import io.quarkus.runtime.ShutdownContext;
 import io.quarkus.runtime.annotations.Recorder;
@@ -11,7 +13,7 @@ public class NioThreadPoolRecorder {
         ClassLoader newTccl = Thread.currentThread().getContextClassLoader();
         ClassLoader oldTccl = NioThreadPoolThreadFactory.updateTccl(newTccl);
         if (newTccl != oldTccl) {
-            context.addLastShutdownTask(new Runnable() {
+            context.addShutdownTask(Priority.core(), new Runnable() {
                 @Override
                 public void run() {
                     NioThreadPoolThreadFactory.updateTccl(oldTccl);

@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 
 import java.io.Closeable;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -21,24 +22,49 @@ public class RunningDevServicesTracker {
     // A useful uniqueness marker which will persist across profiles and application restarts, since this class lives in the system classloader. The value will be the same between dev and test mode.
     public static final String APPLICATION_UUID = randomUUID().toString();
 
-    private static volatile Map<String, Set<Supplier<Map>>> configTracker = null;
+    private static final Map<String, Set<Supplier<Map>>> configTracker = new ConcurrentHashMap<>();
 
     // A dev service owner is a combination of an extension (feature) and the app type (dev or test) which identifies which dev services
     // an extension processor can safely close.
-    private static Map<DevServiceOwner, Set<Closeable>> servicesIndexedByOwner = null;
-    private static Map<ComparableDevServicesConfig, Set<Closeable>> servicesIndexedByConfig = null;
+    private static final Map<DevServiceOwner, Set<Closeable>> servicesIndexedByOwner = new ConcurrentHashMap<>();
+    private static final Map<ComparableDevServicesConfig, Set<Closeable>> servicesIndexedByConfig = new ConcurrentHashMap<>();
 
-    public RunningDevServicesTracker() {
-        //This needs to work across classloaders, and the QuarkusClassLoader will load us parent first
-        if (configTracker == null) {
-            configTracker = new ConcurrentHashMap<>();
+    public void closeAllRunningServices() {
+        // This is called when the application is shutting down, so we can close all running services
+        servicesIndexedByOwner.forEach((owner, services) -> {
+            for (Closeable service : services) {
+                try {
+                    service.close();
+                } catch (Exception e) {
+                    // We don't want to fail the shutdown hook if a service fails to close
+                    e.printStackTrace();
+                }
+            }
+        });
+        servicesIndexedByOwner.clear();
+        servicesIndexedByConfig.clear();
+        configTracker.clear();
+    }
+
+    public void closeAllRunningServices(String launchMode) {
+        Iterator<Map.Entry<ComparableDevServicesConfig, Set<Closeable>>> it = servicesIndexedByConfig.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<ComparableDevServicesConfig, Set<Closeable>> next = it.next();
+            DevServiceOwner owner = next.getKey().owner();
+            if (owner.launchMode().equals(launchMode)) {
+                it.remove();
+                servicesIndexedByOwner.remove(owner);
+                for (Closeable service : next.getValue()) {
+                    try {
+                        service.close();
+                    } catch (Exception e) {
+                        // We don't want to fail the shutdown hook if a service fails to close
+                        e.printStackTrace();
+                    }
+                }
+            }
         }
-        if (servicesIndexedByOwner == null) {
-            servicesIndexedByOwner = new ConcurrentHashMap<>();
-        }
-        if (servicesIndexedByConfig == null) {
-            servicesIndexedByConfig = new ConcurrentHashMap<>();
-        }
+        configTracker.remove(launchMode);
     }
 
     /**

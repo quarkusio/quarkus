@@ -9,6 +9,7 @@ import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.devservices.crossclassloader.runtime.ComparableDevServicesConfig;
 import io.quarkus.devservices.crossclassloader.runtime.DevServiceOwner;
 import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesTracker;
+import io.quarkus.runtime.LaunchMode;
 
 // Ideally we would have a unique build item for each processor/feature, but that would need a new KeyedBuildItem or FeatureBuildItem type
 // Needs to be in core because DevServicesResultBuildItem is in core
@@ -46,6 +47,14 @@ public final class DevServicesTrackerBuildItem extends SimpleBuildItem {
             DevServicesResultBuildItem.RunnableDevService service) {
         ComparableDevServicesConfig key = new ComparableDevServicesConfig(uuid, owner, globalConfig, identifyingConfig);
         tracker.removeRunningService(key, service);
+    }
+
+    public void closeAllRunningServices() {
+        tracker.closeAllRunningServices();
+    }
+
+    public void closeAllRunningServices(LaunchMode launchMode) {
+        tracker.closeAllRunningServices(launchMode.name());
     }
 
 }

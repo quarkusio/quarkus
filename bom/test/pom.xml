@@ -29,14 +29,6 @@
         <dependencies>
 
             <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom</artifactId>
-                <version>${project.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <dependency>
                 <groupId>io.reactivex</groupId>
                 <artifactId>rxjava</artifactId>
                 <version>${rxjava1.version}</version>

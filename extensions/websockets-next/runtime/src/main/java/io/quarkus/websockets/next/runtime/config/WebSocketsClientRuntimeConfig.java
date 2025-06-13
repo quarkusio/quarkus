@@ -48,6 +48,11 @@ public interface WebSocketsClientRuntimeConfig {
     Optional<Duration> autoPingInterval();
 
     /**
+     * If set then a connection will be closed if no data is received nor sent within the given timeout.
+     */
+    Optional<Duration> connectionIdleTimeout();
+
+    /**
      * The strategy used when an error occurs but no error handler can handle the failure.
      * <p>
      * By default, the error message is logged when an unhandled failure occurs.

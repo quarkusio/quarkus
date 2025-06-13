@@ -3,6 +3,7 @@ package io.quarkus.websockets.next.runtime;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -181,7 +183,16 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         if (config.maxFrameSize().isPresent()) {
             clientOptions.setMaxFrameSize(config.maxFrameSize().getAsInt());
         }
-
+        if (config.connectionIdleTimeout().isPresent()) {
+            Duration timeout = config.connectionIdleTimeout().get();
+            if (timeout.toMillis() > Integer.MAX_VALUE) {
+                clientOptions.setIdleTimeoutUnit(TimeUnit.SECONDS);
+                clientOptions.setIdleTimeout((int) timeout.toSeconds());
+            } else {
+                clientOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+                clientOptions.setIdleTimeout((int) timeout.toMillis());
+            }
+        }
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
                 Optional.ofNullable(tlsConfigurationName));
         if (maybeTlsConfiguration.isEmpty()) {

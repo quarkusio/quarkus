@@ -117,27 +117,11 @@ public class CreateNodesResultGenerator {
             }
             updatedTarget.setOptions(options);
             
-            // Update inputs
-            List<String> updatedInputs = new ArrayList<>();
-            for (String input : target.getInputs()) {
-                if (input.startsWith("{projectRoot}/")) {
-                    updatedInputs.add(input.replace("{projectRoot}", projectRootToken));
-                } else {
-                    updatedInputs.add(input);
-                }
-            }
-            updatedTarget.setInputs(updatedInputs);
+            // Keep inputs as-is (preserve {projectRoot} placeholders)
+            updatedTarget.setInputs(new ArrayList<>(target.getInputs()));
             
-            // Update outputs
-            List<String> updatedOutputs = new ArrayList<>();
-            for (String output : target.getOutputs()) {
-                if (output.startsWith("{projectRoot}/")) {
-                    updatedOutputs.add(output.replace("{projectRoot}", projectRootToken));
-                } else {
-                    updatedOutputs.add(output);
-                }
-            }
-            updatedTarget.setOutputs(updatedOutputs);
+            // Keep outputs as-is (preserve {projectRoot} placeholders)
+            updatedTarget.setOutputs(new ArrayList<>(target.getOutputs()));
             
             updatedTargets.put(targetName, updatedTarget);
         }

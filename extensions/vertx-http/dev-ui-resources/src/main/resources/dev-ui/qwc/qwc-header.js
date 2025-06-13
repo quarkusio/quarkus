@@ -13,6 +13,7 @@ import 'qui-assistant-warning';
 import { popoverRenderer } from '@vaadin/popover/lit.js';
 import 'qwc/qwc-extension-link.js';
 import './qwc-theme-switch.js';
+import { assistantState } from 'assistant-state';
 
 /**
  * This component represent the Dev UI Header
@@ -265,14 +266,16 @@ export class QwcHeader extends observeState(LitElement) {
     }
 
     _renderTab(index, link){
-        if(!link.page.embed && link.page.includeInMenu){
-            return html`
-                ${this._renderSubMenuLink(index, link)}
-                `;
-        }else{
-            return html`<vaadin-tab>
-                ${this._renderSubMenuLink(index, link)}
-            </vaadin-tab>`;
+        if(!link.page.assistantPage || assistantState.current.isConfigured){
+            if(!link.page.embed && link.page.includeInMenu){
+                return html`
+                    ${this._renderSubMenuLink(index, link)}
+                    `;
+            }else{
+                return html`<vaadin-tab>
+                    ${this._renderSubMenuLink(index, link)}
+                </vaadin-tab>`;
+            }
         }
     }
 

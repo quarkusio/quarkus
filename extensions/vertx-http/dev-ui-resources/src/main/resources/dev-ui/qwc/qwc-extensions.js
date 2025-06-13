@@ -15,6 +15,7 @@ import { connectionState } from 'connection-state';
 import { themeState } from 'theme-state';
 import { JsonRpc } from 'jsonrpc';
 import '@qomponent/qui-badge';
+import { assistantState } from 'assistant-state';
 
 /**
  * This component create cards of all the extensions
@@ -349,9 +350,12 @@ export class QwcExtensions extends observeState(LitElement) {
     }
 
     _renderCardLinks(extension){
+        return html`${extension.cardPages.map(page => html`${this._renderCardLink(extension, page)}`)}`;
+    }
 
-        return html`${extension.cardPages.map(page => html`
-                            <qwc-extension-link slot="link"
+    _renderCardLink(extension, page){
+        if(!page.assistantPage || assistantState.current.isConfigured){
+            return html`<qwc-extension-link slot="link"
                                 namespace="${extension.namespace}"
                                 extensionName="${extension.name}"
                                 iconName="${page.icon}"
@@ -368,7 +372,8 @@ export class QwcExtensions extends observeState(LitElement) {
                                 webcomponent="${page.componentLink}" 
                                 draggable="true" @dragstart="${this._handleDragStart}">
                             </qwc-extension-link>
-                        `)}`;
+                        `;
+        }
     }
 
     _renderLibraryVersions(extension) {

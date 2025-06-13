@@ -138,6 +138,7 @@
 
         <!-- Misc. -->
         <module>docs</module>
+        <module>maven-plugin-v2</module>
     </modules>
 
     <repositories>

@@ -1,0 +1,556 @@
+{
+  "createNodesResults": [
+    [
+      "pom.xml",
+      {
+        "projects": {
+          "parent": {
+            "root": ".",
+            "targets": {
+              "clean": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn clean",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "clean",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: clean"
+                }
+              },
+              "validate": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn validate",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "validate",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: validate"
+                }
+              },
+              "compile": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn compile",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/classes/**/*"
+                ],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "compile",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: compile"
+                }
+              },
+              "test": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn test",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/surefire-reports/**/*",
+                  "./target/test-classes/**/*"
+                ],
+                "dependsOn": [
+                  "compile"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "test",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: test"
+                }
+              },
+              "package": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn package",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/*.jar",
+                  "./target/*.war"
+                ],
+                "dependsOn": [
+                  "test"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "package",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: package"
+                }
+              },
+              "verify": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn verify",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/*.jar",
+                  "./target/*.war"
+                ],
+                "dependsOn": [
+                  "package"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "verify",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: verify"
+                }
+              },
+              "install": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn install",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/*.jar",
+                  "./target/*.war"
+                ],
+                "dependsOn": [
+                  "verify"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "install",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: install"
+                }
+              },
+              "deploy": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn deploy",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/*.jar",
+                  "./target/*.war"
+                ],
+                "dependsOn": [
+                  "install"
+                ],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "deploy",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: deploy"
+                }
+              },
+              "site": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn site",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [
+                  "./target/site/**/*"
+                ],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "phase",
+                  "phase": "site",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Maven lifecycle phase: site"
+                }
+              },
+              "maven-enforcer:enforce": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-enforcer-plugin:enforce",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "${maven-enforcer-plugin.phase}",
+                  "plugin": "org.apache.maven.plugins:maven-enforcer-plugin",
+                  "goal": "enforce",
+                  "executionId": "enforce",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Enforce build rules"
+                }
+              },
+              "buildnumber:create": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.codehaus.mojo:buildnumber-maven-plugin:create",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "initialize",
+                  "plugin": "org.codehaus.mojo:buildnumber-maven-plugin",
+                  "goal": "create",
+                  "executionId": "get-scm-revision",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Create build metadata"
+                }
+              },
+              "maven-compiler:compile": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-compiler-plugin:compile",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/**/*"
+                ],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "plugin": "org.apache.maven.plugins:maven-compiler-plugin",
+                  "goal": "compile",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Compile main sources"
+                }
+              },
+              "maven-compiler:testCompile": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-compiler-plugin:testCompile",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml",
+                  "./src/**/*"
+                ],
+                "outputs": [
+                  "./target/surefire-reports/**/*",
+                  "./target/failsafe-reports/**/*"
+                ],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "plugin": "org.apache.maven.plugins:maven-compiler-plugin",
+                  "goal": "testCompile",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Compile test sources"
+                }
+              },
+              "maven-source:jar-no-fork": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-source-plugin:jar-no-fork",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [
+                  "./target/**/*"
+                ],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "plugin": "org.apache.maven.plugins:maven-source-plugin",
+                  "goal": "jar-no-fork",
+                  "executionId": "attach-sources",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-source jar-no-fork"
+                }
+              },
+              "maven-clean:clean": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-clean-plugin:clean",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "clean",
+                  "plugin": "org.apache.maven.plugins:maven-clean-plugin",
+                  "goal": "clean",
+                  "executionId": "default-clean",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-clean clean"
+                }
+              },
+              "maven-install:install": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-install-plugin:install",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "install",
+                  "plugin": "org.apache.maven.plugins:maven-install-plugin",
+                  "goal": "install",
+                  "executionId": "default-install",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-install install"
+                }
+              },
+              "maven-deploy:deploy": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-deploy-plugin:deploy",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "deploy",
+                  "plugin": "org.apache.maven.plugins:maven-deploy-plugin",
+                  "goal": "deploy",
+                  "executionId": "default-deploy",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-deploy deploy"
+                }
+              },
+              "maven-site:site": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-site-plugin:site",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [
+                  "./target/site/**/*"
+                ],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "site",
+                  "plugin": "org.apache.maven.plugins:maven-site-plugin",
+                  "goal": "site",
+                  "executionId": "default-site",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "Generate site documentation"
+                }
+              },
+              "maven-site:deploy": {
+                "executor": "@nx/run-commands:run-commands",
+                "options": {
+                  "command": "mvn org.apache.maven.plugins:maven-site-plugin:deploy",
+                  "cwd": "."
+                },
+                "inputs": [
+                  "./pom.xml"
+                ],
+                "outputs": [],
+                "dependsOn": [],
+                "metadata": {
+                  "type": "goal",
+                  "phase": "site-deploy",
+                  "plugin": "org.apache.maven.plugins:maven-site-plugin",
+                  "goal": "deploy",
+                  "executionId": "default-deploy",
+                  "technologies": [
+                    "maven"
+                  ],
+                  "description": "maven-site deploy"
+                }
+              }
+            },
+            "metadata": {
+              "groupId": "io.quarkus",
+              "artifactId": "quarkus-parent",
+              "version": "999-SNAPSHOT",
+              "packaging": "pom",
+              "targetGroups": {
+                "clean": {
+                  "phase": "clean",
+                  "description": "Clean up artifacts created by build",
+                  "targets": [
+                    "clean",
+                    "maven-clean:clean"
+                  ],
+                  "order": 0
+                },
+                "validate": {
+                  "phase": "validate",
+                  "description": "Validate project structure and configuration",
+                  "targets": [
+                    "validate"
+                  ],
+                  "order": 1
+                },
+                "compile": {
+                  "phase": "compile",
+                  "description": "Compile source code",
+                  "targets": [
+                    "compile",
+                    "maven-compiler:compile",
+                    "maven-compiler:testCompile"
+                  ],
+                  "order": 2
+                },
+                "test": {
+                  "phase": "test",
+                  "description": "Run unit tests",
+                  "targets": [
+                    "test"
+                  ],
+                  "order": 3
+                },
+                "package": {
+                  "phase": "package",
+                  "description": "Package compiled code",
+                  "targets": [
+                    "package",
+                    "maven-source:jar-no-fork"
+                  ],
+                  "order": 4
+                },
+                "verify": {
+                  "phase": "verify",
+                  "description": "Verify package integrity",
+                  "targets": [
+                    "verify"
+                  ],
+                  "order": 5
+                },
+                "install": {
+                  "phase": "install",
+                  "description": "Install package to local repository",
+                  "targets": [
+                    "install",
+                    "maven-install:install"
+                  ],
+                  "order": 6
+                },
+                "deploy": {
+                  "phase": "deploy",
+                  "description": "Deploy package to remote repository",
+                  "targets": [
+                    "deploy",
+                    "maven-deploy:deploy"
+                  ],
+                  "order": 7
+                },
+                "site": {
+                  "phase": "site",
+                  "description": "Generate project documentation",
+                  "targets": [
+                    "site",
+                    "maven-site:site"
+                  ],
+                  "order": 8
+                }
+              }
+            }
+          }
+        },
+        "externalNodes": {}
+      }
+    ]
+  ],
+  "createDependencies": []
+}

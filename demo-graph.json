@@ -1,0 +1,117 @@
+{
+  "graph": {
+    "nodes": {
+      "parent": {
+        "name": "parent",
+        "type": "app",
+        "data": {
+          "root": "independent-projects/parent",
+          "name": "parent",
+          "projectType": "application",
+          "tags": ["maven:pom", "group:io.quarkus"],
+          "implicitDependencies": [],
+          "namedInputs": {},
+          "metadata": {
+            "targetGroups": {
+              "clean": {
+                "phase": "clean",
+                "description": "Clean up artifacts created by build",
+                "targets": ["clean", "maven-clean:clean"],
+                "order": 0
+              },
+              "validate": {
+                "phase": "validate", 
+                "description": "Validate project structure and configuration",
+                "targets": ["validate"],
+                "order": 1
+              },
+              "compile": {
+                "phase": "compile",
+                "description": "Compile source code", 
+                "targets": ["compile", "maven-compiler:compile", "maven-compiler:testCompile"],
+                "order": 2
+              },
+              "test": {
+                "phase": "test",
+                "description": "Run unit tests",
+                "targets": ["test"],
+                "order": 3
+              },
+              "package": {
+                "phase": "package",
+                "description": "Package compiled code",
+                "targets": ["package", "maven-source:jar-no-fork"],
+                "order": 4
+              },
+              "verify": {
+                "phase": "verify",
+                "description": "Verify package integrity", 
+                "targets": ["verify"],
+                "order": 5
+              },
+              "install": {
+                "phase": "install",
+                "description": "Install package to local repository",
+                "targets": ["install", "maven-install:install"],
+                "order": 6
+              },
+              "deploy": {
+                "phase": "deploy",
+                "description": "Deploy package to remote repository",
+                "targets": ["deploy", "maven-deploy:deploy"],
+                "order": 7
+              },
+              "site": {
+                "phase": "site",
+                "description": "Generate project documentation",
+                "targets": ["site", "maven-site:site"],
+                "order": 8
+              }
+            },
+            "technologies": ["maven", "java"],
+            "framework": "maven",
+            "maven": {
+              "groupId": "io.quarkus",
+              "artifactId": "quarkus-parent",
+              "version": "999-SNAPSHOT",
+              "packaging": "pom"
+            }
+          },
+          "targets": {
+            "clean": {
+              "executor": "@nx/run-commands:run-commands",
+              "options": {
+                "command": "mvn clean",
+                "cwd": "independent-projects/parent"
+              },
+              "inputs": ["independent-projects/parent/pom.xml"],
+              "configurations": {},
+              "parallelism": true
+            },
+            "compile": {
+              "executor": "@nx/run-commands:run-commands", 
+              "options": {
+                "command": "mvn compile",
+                "cwd": "independent-projects/parent"
+              },
+              "inputs": ["independent-projects/parent/pom.xml", "independent-projects/parent/src/**/*"],
+              "configurations": {},
+              "parallelism": true
+            },
+            "test": {
+              "executor": "@nx/run-commands:run-commands",
+              "options": {
+                "command": "mvn test", 
+                "cwd": "independent-projects/parent"
+              },
+              "inputs": ["independent-projects/parent/pom.xml", "independent-projects/parent/src/**/*"],
+              "configurations": {},
+              "parallelism": true
+            }
+          }
+        }
+      }
+    },
+    "dependencies": {}
+  }
+}

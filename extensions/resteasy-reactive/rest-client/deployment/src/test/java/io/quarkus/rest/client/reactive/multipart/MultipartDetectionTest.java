@@ -45,8 +45,7 @@ public class MultipartDetectionTest {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         File file = File.createTempFile("MultipartTest", ".txt");
-        byte[] contents = "Hello".getBytes(StandardCharsets.UTF_8);
-        Files.write(file.toPath(), contents);
+        Files.writeString(file.toPath(), "Hello");
         file.deleteOnExit();
 
         assertThat(client.postMultipartExplicit(file.getName(), file))

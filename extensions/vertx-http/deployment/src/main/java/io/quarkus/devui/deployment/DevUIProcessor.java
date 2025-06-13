@@ -212,7 +212,7 @@ public class DevUIProcessor {
                 String parsedContent = Qute.fmt(new String(c.getTemplate()), c.getData());
                 Path tempFile = devUiBasePath
                         .resolve(c.getFileName());
-                Files.write(tempFile, parsedContent.getBytes(StandardCharsets.UTF_8));
+                Files.writeString(tempFile, parsedContent);
 
                 urlAndPath.put(c.getFileName(), tempFile.toString());
             }

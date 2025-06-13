@@ -21,7 +21,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
     private static final Logger log = Logger.getLogger(LgtmResource.class.getName());
 
     protected static final Set<String> SCRAPING_REGISTRIES = Set.of(
-            "io.micrometer.prometheus.PrometheusMeterRegistry");
+            "io.micrometer.prometheusmetrics.PrometheusMeterRegistry");
 
     protected static final Function<String, Boolean> TCCL_FN = s -> {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();

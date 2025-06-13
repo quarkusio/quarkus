@@ -53,6 +53,6 @@ public class JsonAndPrometheusRegistryEnabledTest {
                 .get("/relative/metrics")
                 .then()
                 .statusCode(200)
-                .body(containsString("jvm_info_total{runtime=\""));
+                .body(containsString("jvm_total{runtime=\""));
     }
 }

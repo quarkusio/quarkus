@@ -22,6 +22,7 @@ import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.cmd.RunCommandActionResultBuildItem;
 import io.quarkus.deployment.cmd.StartDevServicesAndRunCommandHandler;
 import io.quarkus.runtime.LaunchMode;
+import io.smallrye.common.process.ProcessBuilder;
 
 @Mojo(name = "run")
 public class RunMojo extends QuarkusBootstrapMojo {
@@ -96,18 +97,14 @@ public class RunMojo extends QuarkusBootstrapMojo {
                         getLog().info("Executing \"" + String.join(" ", args) + "\"");
                     }
                     Path workingDirectory = (Path) cmd.get(1);
-                    try {
-                        ProcessBuilder builder = new ProcessBuilder()
-                                .command(args)
-                                .inheritIO();
-                        if (workingDirectory != null) {
-                            builder.directory(workingDirectory.toFile());
-                        }
-                        Process process = builder.start();
-                        int exit = process.waitFor();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
+                    var pb = ProcessBuilder.newBuilder(args.get(0))
+                            .arguments(args.subList(1, args.size()))
+                            .output().inherited()
+                            .error().inherited();
+                    if (workingDirectory != null) {
+                        pb.directory(workingDirectory);
                     }
+                    pb.run();
                 }
             },
                     RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());

@@ -48,12 +48,10 @@ public class Prompter {
             return;
         }
         final TerminalConnection connection = new TerminalConnection();
-        connection.setSignalHandler(interruptionSignalHandler());
-        try {
+        try (connection) {
+            connection.setSignalHandler(interruptionSignalHandler());
             read(connection, ReadlineBuilder.builder().enableHistory(false).build(), prompts.iterator());
             connection.openBlocking();
-        } finally {
-            connection.close();
         }
     }
 

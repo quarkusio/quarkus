@@ -50,7 +50,7 @@ public class TestResourceForConstructorProperties {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void serverSentEvents(@Context SseEventSink sink) {
         VanillaJavaImmutableData data = new VanillaJavaImmutableData("sse", "ssevalue");
-        try {
+        try (sink) {
             OutboundSseEvent.Builder builder = sse.newEventBuilder();
             builder.id(String.valueOf(1))
                     .mediaType(MediaType.APPLICATION_JSON_TYPE)
@@ -58,8 +58,6 @@ public class TestResourceForConstructorProperties {
                     .name("stream of json data");
 
             sink.send(builder.build());
-        } finally {
-            sink.close();
         }
     }
 

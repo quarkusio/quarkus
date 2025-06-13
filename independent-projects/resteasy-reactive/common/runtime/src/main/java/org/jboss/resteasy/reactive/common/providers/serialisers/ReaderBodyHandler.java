@@ -29,17 +29,13 @@ public class ReaderBodyHandler implements MessageBodyWriter<Reader>, MessageBody
 
     public void writeTo(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
             MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException {
-        try {
+        try (inputStream) {
             int c;
             while ((c = inputStream.read()) != -1) {
                 entityStream.write(c);
             }
-        } finally {
-            try {
-                inputStream.close();
-            } catch (IOException e) {
-                // Drop the exception so we don't mask real IO errors
-            }
+        } catch (IOException e) {
+            // Drop the exception so we don't mask real IO errors
         }
     }
 }

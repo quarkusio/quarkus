@@ -35,7 +35,8 @@ public class WebsocketOidcTestCase {
     public void websocketTest() throws Exception {
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
                 session.addMessageHandler(new MessageHandler.Whole<String>() {
@@ -46,12 +47,8 @@ public class WebsocketOidcTestCase {
                 });
                 session.getAsyncRemote().sendText("hello");
             }
-        }, new BearerTokenClientEndpointConfigurator(client.getAccessToken("alice")), wsUri);
-
-        try {
+        }, new BearerTokenClientEndpointConfigurator(client.getAccessToken("alice")), wsUri)) {
             Assertions.assertEquals("hello alice@gmail.com", message.poll(20, TimeUnit.SECONDS));
-        } finally {
-            session.close();
         }
     }
 

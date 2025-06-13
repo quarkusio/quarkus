@@ -26,7 +26,7 @@ public class ServerSentEventResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void sendData(@Context SseEventSink sink) {
         // send a stream of few events
-        try {
+        try (sink) {
             for (int i = 0; i < 3; i++) {
                 final OutboundSseEvent.Builder builder = this.sse.newEventBuilder();
                 builder.id(String.valueOf(i)).mediaType(MediaType.TEXT_PLAIN_TYPE)
@@ -35,8 +35,6 @@ public class ServerSentEventResource {
 
                 sink.send(builder.build());
             }
-        } finally {
-            sink.close();
         }
     }
 
@@ -46,7 +44,7 @@ public class ServerSentEventResource {
     @SseElementType("text/html")
     public void sendHtmlData(@Context SseEventSink sink) {
         // send a stream of few events
-        try {
+        try (sink) {
             for (int i = 0; i < 3; i++) {
                 final OutboundSseEvent.Builder builder = this.sse.newEventBuilder();
                 builder.id(String.valueOf(i)).mediaType(MediaType.TEXT_HTML_TYPE)
@@ -55,8 +53,6 @@ public class ServerSentEventResource {
 
                 sink.send(builder.build());
             }
-        } finally {
-            sink.close();
         }
     }
 
@@ -66,7 +62,7 @@ public class ServerSentEventResource {
     @Produces(MediaType.SERVER_SENT_EVENTS)
     public void sendXmlData(@Context SseEventSink sink) {
         // send a stream of few events
-        try {
+        try (sink) {
             for (int i = 0; i < 3; i++) {
                 final OutboundSseEvent.Builder builder = this.sse.newEventBuilder();
                 builder.id(String.valueOf(i)).mediaType(MediaType.TEXT_XML_TYPE)
@@ -75,8 +71,6 @@ public class ServerSentEventResource {
 
                 sink.send(builder.build());
             }
-        } finally {
-            sink.close();
         }
     }
 }

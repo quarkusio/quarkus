@@ -84,18 +84,15 @@ public class QuarkusEntryPoint {
                 Files.newInputStream(appRoot.resolve(LIB_DEPLOYMENT_DEPLOYMENT_CLASS_PATH_DAT)))) {
             List<String> paths = (List<String>) in.readObject();
             //yuck, should use runner class loader
-            URLClassLoader loader = new URLClassLoader(paths.stream().map((s) -> {
+            try (URLClassLoader loader = new URLClassLoader(paths.stream().map((s) -> {
                 try {
                     return appRoot.resolve(s).toUri().toURL();
                 } catch (MalformedURLException e) {
                     throw new RuntimeException(e);
                 }
-            }).toArray(URL[]::new));
-            try {
+            }).toArray(URL[]::new))) {
                 loader.loadClass("io.quarkus.deployment.mutability.ReaugmentTask")
                         .getDeclaredMethod("main", Path.class).invoke(null, appRoot);
-            } finally {
-                loader.close();
             }
         }
     }

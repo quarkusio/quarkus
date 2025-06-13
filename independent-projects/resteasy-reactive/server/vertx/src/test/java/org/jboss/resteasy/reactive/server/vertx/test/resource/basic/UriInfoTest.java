@@ -161,11 +161,8 @@ public class UriInfoTest {
     }
 
     private static void basicTest(String path, String testName) throws Exception {
-        Response response = client.target(PortProviderUtil.generateURL("/" + testName + path)).request().get();
-        try {
+        try (Response response = client.target(PortProviderUtil.generateURL("/" + testName + path)).request().get()) {
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-        } finally {
-            response.close();
         }
     }
 

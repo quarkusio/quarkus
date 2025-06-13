@@ -14,7 +14,6 @@ import org.hibernate.engine.jdbc.env.internal.JdbcEnvironmentInitiator;
 import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
-import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
 import org.hibernate.property.access.internal.PropertyAccessStrategyResolverInitiator;
 import org.hibernate.reactive.loader.ast.internal.ReactiveBatchLoaderFactoryInitiator;
@@ -37,6 +36,7 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusImportSqlCommandExtractor
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.StandardHibernateORMInitiatorListProvider;
+import io.quarkus.hibernate.orm.runtime.service.internalcache.QuarkusInternalCacheFactoryInitiator;
 import io.quarkus.hibernate.reactive.runtime.customized.QuarkusNoJdbcConnectionProviderInitiator;
 
 /**
@@ -124,8 +124,8 @@ public final class ReactiveHibernateInitiatorListProvider implements InitialInit
         // Custom for Hibernate Reactive: BatchLoaderFactory
         serviceInitiators.add(ReactiveBatchLoaderFactoryInitiator.INSTANCE);
 
-        // Default implementation -- TODO use Caffeine instead
-        serviceInitiators.add(InternalCacheFactoryInitiator.INSTANCE);
+        // Custom Quarkus implementation: overrides the internal cache to leverage Caffeine
+        serviceInitiators.add(QuarkusInternalCacheFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

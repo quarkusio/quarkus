@@ -1,8 +1,6 @@
 
 package io.quarkus.micrometer.deployment.binder;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
 import java.util.concurrent.TimeUnit;
 
 import jakarta.inject.Inject;

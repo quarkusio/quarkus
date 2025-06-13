@@ -8,7 +8,6 @@ import jakarta.inject.Inject;
 
 import org.assertj.core.api.AbstractObjectAssert;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.hibernate.SessionFactory;
 import org.hibernate.id.OptimizableGenerator;
 import org.hibernate.id.enhanced.Optimizer;
 import org.hibernate.id.enhanced.PooledLoOptimizer;

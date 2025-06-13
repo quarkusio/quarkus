@@ -17,7 +17,6 @@ import io.quarkus.qute.RawString;
 import io.quarkus.qute.Template;
 import io.quarkus.qute.TemplateExtension;
 import io.quarkus.qute.UserTagSectionHelper;
-import io.quarkus.qute.UserTagSectionHelper.Arguments;
 import io.quarkus.test.QuarkusUnitTest;
 
 public class UserTagArgumentsTest {

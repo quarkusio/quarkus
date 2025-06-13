@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
  * Represents an Nx project configuration
  */
 public class ProjectConfiguration {
+    private String name;
     private String root;
     private String sourceRoot;
     private String projectType;
@@ -20,6 +21,9 @@ public class ProjectConfiguration {
     }
 
     // Getters and setters
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
     public String getRoot() { return root; }
     public void setRoot(String root) { this.root = root; }
 

@@ -44,9 +44,6 @@ public class NxAnalyzerMojo extends AbstractMojo {
     @Parameter(property = "nx.verbose", defaultValue = "false")
     private String verboseStr;
     
-    @Parameter(property = "nx.fastMode", defaultValue = "false")
-    private String fastModeStr;
-    
     // Performance optimization caches
     private final Map<String, MavenExecutionPlan> executionPlanCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, String>> phaseGoalMappingCache = new ConcurrentHashMap<>();

@@ -40,9 +40,16 @@ public class CreateNodesResultGenerator {
         String projectName = NxPathUtils.getProjectName(project);
         String projectRoot = NxPathUtils.getRelativePath(workspaceRoot, project.getBasedir());
         
+        // Handle root project case
+        if (projectRoot.isEmpty()) {
+            projectRoot = ".";
+        }
+        
         // Create ProjectConfiguration
         ProjectConfiguration projectConfig = new ProjectConfiguration();
-        projectConfig.setRoot(projectRoot.isEmpty() ? "." : projectRoot);
+        projectConfig.setName(project.getGroupId() + ":" + project.getArtifactId());
+        projectConfig.setRoot(projectRoot);
+        
         
         // Add targets (update paths to use workspace-relative paths)
         if (targets != null && !targets.isEmpty()) {
@@ -67,7 +74,7 @@ public class CreateNodesResultGenerator {
         
         // Create CreateNodesResult
         CreateNodesResult result = new CreateNodesResult();
-        result.addProject(projectName, projectConfig);
+        result.addProject(projectRoot, projectConfig);
         
         return result;
     }

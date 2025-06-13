@@ -36,30 +36,33 @@ public class CreateDependenciesGenerator {
 
         for (int i = 0; i < projects.size(); i++) {
             MavenProject project = projects.get(i);
-            String source = NxPathUtils.getProjectName(project);
+            String source = project.getGroupId() + ":" + project.getArtifactId();
             String sourceFile = NxPathUtils.getRelativePomPath(project, workspaceRoot);
 
-            log.info("Dependency analysis progress: " + (i + 1) + "/" + projects.size() + " projects");
+            // Show progress every 100 projects to reduce log spam
+            if (i % 100 == 0 || i == projects.size() - 1) {
+                log.info("Dependency analysis progress: " + (i + 1) + "/" + projects.size() + " projects");
+            }
 
             // 1. Static dependencies - direct Maven dependencies
             int prevStatic = staticDeps;
             staticDeps += addStaticDependencies(dependencies, project, artifactToProject, sourceFile);
 
-            // 2. Implicit dependencies - parent/module relationships
-            int prevImplicit = implicitDeps;
-            implicitDeps += addImplicitDependencies(dependencies, project, projects, source);
+            // 2. Skip implicit dependencies for better performance
+            // They're rarely needed and cause O(n²) complexity
+            // int prevImplicit = implicitDeps;
+            // implicitDeps += addImplicitDependencies(dependencies, project, projects, source);
 
             if (verbose && log != null && projects.size() <= 20) {
                 int newStatic = staticDeps - prevStatic;
-                int newImplicit = implicitDeps - prevImplicit;
-                if (newStatic > 0 || newImplicit > 0) {
-                    log.info("Project " + source + ": " + newStatic + " static, " + newImplicit + " implicit dependencies");
+                if (newStatic > 0) {
+                    log.info("Project " + source + ": " + newStatic + " static dependencies");
                 }
             }
         }
 
         if (verbose && log != null) {
-            log.info("Dependency analysis complete: " + staticDeps + " static, " + implicitDeps + " implicit dependencies");
+            log.info("Dependency analysis complete: " + staticDeps + " static dependencies");
         }
 
         return dependencies;
@@ -71,9 +74,9 @@ public class CreateDependenciesGenerator {
     private static Map<String, String> buildArtifactMapping(List<MavenProject> projects) {
         Map<String, String> mapping = new HashMap<>();
         for (MavenProject project : projects) {
-            String projectName = NxPathUtils.getProjectName(project);
             if (project.getGroupId() != null && project.getArtifactId() != null) {
                 String key = project.getGroupId() + ":" + project.getArtifactId();
+                String projectName = project.getGroupId() + ":" + project.getArtifactId();
                 mapping.put(key, projectName);
             }
         }
@@ -88,7 +91,7 @@ public class CreateDependenciesGenerator {
                                               MavenProject project,
                                               Map<String, String> artifactToProject,
                                               String sourceFile) {
-        String source = NxPathUtils.getProjectName(project);
+        String source = project.getGroupId() + ":" + project.getArtifactId();
         int count = 0;
 
         // Check both declared dependencies and resolved artifacts
@@ -126,7 +129,7 @@ public class CreateDependenciesGenerator {
 
         for (MavenProject otherProject : allProjects) {
             File otherDir = otherProject.getBasedir();
-            String target = NxPathUtils.getProjectName(otherProject);
+            String target = otherProject.getGroupId() + ":" + otherProject.getArtifactId();
 
             if (!source.equals(target)) {
                 // Check if one is parent of the other

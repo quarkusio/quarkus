@@ -99,14 +99,11 @@ public class MediaTypeNegotiationClientQualityTest {
     public void testClientQuality() throws Exception {
         Invocation.Builder request = client.target(generateURL()).path("echo").request("application/x;q=0.7",
                 "application/y;q=0.9");
-        Response response = request.get();
-        try {
+        try (Response response = request.get()) {
             Assertions.assertEquals(Status.OK.getStatusCode(), response.getStatus());
             MediaType mediaType = response.getMediaType();
             Assertions.assertEquals(mediaType.getType(), "application");
             Assertions.assertEquals(mediaType.getSubtype(), "y");
-        } finally {
-            response.close();
         }
     }
 }

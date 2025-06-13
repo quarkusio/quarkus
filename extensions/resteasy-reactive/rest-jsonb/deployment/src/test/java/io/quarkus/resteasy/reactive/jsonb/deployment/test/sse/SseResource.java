@@ -10,7 +10,6 @@ import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseBroadcaster;
 import jakarta.ws.rs.sse.SseEventSink;
 
-// Using `@RestStreamElementType` on purpose to ensure the backward compatibility.
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 

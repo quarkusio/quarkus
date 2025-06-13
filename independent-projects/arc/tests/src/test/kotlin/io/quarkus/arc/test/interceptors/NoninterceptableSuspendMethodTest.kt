@@ -8,17 +8,22 @@ import jakarta.interceptor.AroundInvoke
 import jakarta.interceptor.Interceptor
 import jakarta.interceptor.InterceptorBinding
 import jakarta.interceptor.InvocationContext
-import kotlinx.coroutines.delay
-import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.RegisterExtension
 import kotlin.test.assertContains
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlinx.coroutines.delay
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 
 class NoninterceptableSuspendMethodTest {
     @RegisterExtension
-    val container = ArcTestContainer.builder()
-            .beanClasses(MyInterceptorBinding::class.java, MyInterceptor::class.java, MyService::class.java)
+    val container =
+        ArcTestContainer.builder()
+            .beanClasses(
+                MyInterceptorBinding::class.java,
+                MyInterceptor::class.java,
+                MyService::class.java,
+            )
             .shouldFail()
             .build()
 
@@ -27,7 +32,10 @@ class NoninterceptableSuspendMethodTest {
         val error = container.failure
         assertNotNull(error)
         assertIs<DeploymentException>(error)
-        assertContains(error.message!!, "Kotlin `suspend` functions must be `open` and declared in `open` classes, otherwise they cannot be intercepted")
+        assertContains(
+            error.message!!,
+            "Kotlin `suspend` functions must be `open` and declared in `open` classes, otherwise they cannot be intercepted",
+        )
     }
 
     @Target(AnnotationTarget.CLASS, AnnotationTarget.FUNCTION)

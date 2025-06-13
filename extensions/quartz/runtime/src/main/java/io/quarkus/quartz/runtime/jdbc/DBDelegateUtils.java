@@ -16,11 +16,8 @@ class DBDelegateUtils {
         }
         // use an instance of the QuarkusObjectInputStream class instead of the ObjectInputStream when deserializing
         // to workaround a CNFE in test and dev mode.
-        ObjectInputStream in = new QuarkusObjectInputStream(binaryInput);
-        try {
+        try (ObjectInputStream in = new QuarkusObjectInputStream(binaryInput)) {
             return in.readObject();
-        } finally {
-            in.close();
         }
     }
 }

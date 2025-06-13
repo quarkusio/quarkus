@@ -1,7 +1,5 @@
 package io.quarkus.jwt.test.dev;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.junit.jupiter.api.Test;

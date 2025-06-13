@@ -43,7 +43,8 @@ public class WebsocketRootPathTestCase {
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
         LinkedBlockingDeque<String> pongMessages = new LinkedBlockingDeque<>();
-        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
                 session.addMessageHandler(new MessageHandler.Whole<String>() {
@@ -68,14 +69,10 @@ public class WebsocketRootPathTestCase {
                     throw new RuntimeException(e);
                 }
             }
-        }, ClientEndpointConfig.Builder.create().build(), echoUri);
-
-        try {
+        }, ClientEndpointConfig.Builder.create().build(), echoUri)) {
             Assertions.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
 
             Assertions.assertEquals("PING", pongMessages.poll(20, TimeUnit.SECONDS));
-        } finally {
-            session.close();
         }
     }
 }

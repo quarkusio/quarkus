@@ -1,9 +1,16 @@
-import model.*;
+import model.CreateNodesResult;
+import model.CreateNodesV2Entry;
+import model.ProjectConfiguration;
+import model.ProjectMetadata;
+import model.TargetConfiguration;
+import model.TargetGroup;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.artifact.Artifact;
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Generates CreateNodesV2 compatible results for Nx integration

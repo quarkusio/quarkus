@@ -1,9 +1,14 @@
-import model.*;
+import model.RawProjectGraphDependency;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.logging.Log;
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Generates CreateDependencies compatible results for Nx integration
@@ -75,9 +80,11 @@ public class CreateDependenciesGenerator {
         Map<String, String> mapping = new HashMap<>();
         for (MavenProject project : projects) {
             if (project.getGroupId() != null && project.getArtifactId() != null) {
-                String key = project.getGroupId() + ":" + project.getArtifactId();
-                String projectName = project.getGroupId() + ":" + project.getArtifactId();
+                String key = MavenUtils.formatProjectKey(project);
+                String projectName = MavenUtils.formatProjectKey(project);
                 mapping.put(key, projectName);
+            } else {
+                System.err.println("Warning: Skipping project with null groupId or artifactId: " + project);
             }
         }
         return mapping;
@@ -115,48 +122,6 @@ public class CreateDependenciesGenerator {
         return count;
     }
 
-    /**
-     * Add implicit dependencies (parent-child module relationships)
-     * Returns: number of dependencies added
-     */
-    private static int addImplicitDependencies(List<RawProjectGraphDependency> dependencies,
-                                                MavenProject project,
-                                                List<MavenProject> allProjects,
-                                                String source) {
-        // Find parent-child relationships
-        File projectDir = project.getBasedir();
-        int count = 0;
-
-        for (MavenProject otherProject : allProjects) {
-            File otherDir = otherProject.getBasedir();
-            String target = otherProject.getGroupId() + ":" + otherProject.getArtifactId();
-
-            if (!source.equals(target)) {
-                // Check if one is parent of the other
-                if (NxPathUtils.isParentChildRelation(projectDir, otherDir)) {
-                    RawProjectGraphDependency dependency = new RawProjectGraphDependency(
-                        source, target, RawProjectGraphDependency.DependencyType.IMPLICIT);
-                    dependencies.add(dependency);
-                    count++;
-                }
-            }
-        }
-
-        return count;
-    }
 
 
-    /**
-     * Check if a dependency is a test-scoped dependency
-     */
-    private static boolean isTestDependency(Dependency dep) {
-        return "test".equals(dep.getScope());
-    }
-
-    /**
-     * Check if a dependency is optional
-     */
-    private static boolean isOptionalDependency(Dependency dep) {
-        return dep.isOptional();
-    }
 }

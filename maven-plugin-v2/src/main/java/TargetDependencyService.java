@@ -1,8 +1,18 @@
-import model.*;
+import model.TargetConfiguration;
+import org.apache.maven.execution.MavenSession;
+import org.apache.maven.lifecycle.LifecycleExecutor;
+import org.apache.maven.lifecycle.MavenExecutionPlan;
+import org.apache.maven.plugin.MojoExecution;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
-import java.util.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Service responsible for calculating target dependencies in Maven projects.
@@ -12,10 +22,12 @@ public class TargetDependencyService {
     
     private final Log log;
     private final boolean verbose;
+    private final MavenSession session;
 
-    public TargetDependencyService(Log log, boolean verbose) {
+    public TargetDependencyService(Log log, boolean verbose, MavenSession session) {
         this.log = log;
         this.verbose = verbose;
+        this.session = session;
     }
 
     /**
@@ -25,28 +37,34 @@ public class TargetDependencyService {
                                                   String targetName, List<MavenProject> reactorProjects) {
         List<String> dependsOn = new ArrayList<>();
         
-        if (executionPhase != null && !executionPhase.isEmpty() && !executionPhase.startsWith("${")) {
-            String precedingPhase = getPrecedingPhase(executionPhase);
-            if (precedingPhase != null) {
-                dependsOn.add(precedingPhase);
-            }
-            
-            List<String> samePhaseDeps = getCrossModuleGoalDependencies(project, executionPhase, 
-                                                                        targetName, reactorProjects);
-            dependsOn.addAll(samePhaseDeps);
-        } else {
-            String inferredPhase = inferPhaseFromGoal(extractGoalFromTargetName(targetName));
-            if (inferredPhase != null) {
-                String precedingPhase = getPrecedingPhase(inferredPhase);
-                if (precedingPhase != null) {
+        
+        String effectivePhase = executionPhase;
+        if (effectivePhase == null || effectivePhase.isEmpty() || effectivePhase.startsWith("${")) {
+            effectivePhase = inferPhaseFromGoal(MavenUtils.extractGoalFromTargetName(targetName));
+        }
+        
+        // Fallback: map common goals to known phases if inference fails
+        if (effectivePhase == null || effectivePhase.isEmpty()) {
+            String goal = MavenUtils.extractGoalFromTargetName(targetName);
+            effectivePhase = mapGoalToPhase(goal);
+        }
+        
+        if (effectivePhase != null && !effectivePhase.isEmpty()) {
+            // Add dependency on preceding phase (but don't fail if this doesn't work)
+            try {
+                String precedingPhase = getPrecedingPhase(effectivePhase);
+                if (precedingPhase != null && !precedingPhase.isEmpty()) {
                     dependsOn.add(precedingPhase);
                 }
-                
-                List<String> samePhaseDeps = getCrossModuleGoalDependencies(project, inferredPhase, 
-                                                                            targetName, reactorProjects);
-                dependsOn.addAll(samePhaseDeps);
+            } catch (Exception e) {
+                // Continue even if preceding phase detection fails
             }
+            
+            // ALWAYS add cross-module dependencies using Nx ^ syntax
+            // Goals depend on their phase across all dependent projects
+            dependsOn.add("^" + effectivePhase);
         }
+        
         
         return dependsOn;
     }
@@ -66,9 +84,8 @@ public class TargetDependencyService {
         List<String> goalsForPhase = getGoalsForPhase(phase, allTargets);
         dependsOn.addAll(goalsForPhase);
         
-        // Add cross-module dependencies
-        List<String> crossModuleDependencies = getCrossModulePhaseDependencies(project, phase, reactorProjects);
-        dependsOn.addAll(crossModuleDependencies);
+        // Add cross-module dependencies using Nx ^ syntax
+        dependsOn.add("^" + phase);
         
         return dependsOn;
     }
@@ -78,22 +95,9 @@ public class TargetDependencyService {
      */
     public List<String> getPhaseDependencies(String phase) {
         List<String> deps = new ArrayList<>();
-        switch (phase) {
-            case "test":
-                deps.add("compile");
-                break;
-            case "package":
-                deps.add("test");
-                break;
-            case "verify":
-                deps.add("package");
-                break;
-            case "install":
-                deps.add("verify");
-                break;
-            case "deploy":
-                deps.add("install");
-                break;
+        String precedingPhase = getPrecedingPhase(phase);
+        if (precedingPhase != null) {
+            deps.add(precedingPhase);
         }
         return deps;
     }
@@ -118,75 +122,22 @@ public class TargetDependencyService {
         return goalsForPhase;
     }
 
-    /**
-     * Get cross-module phase dependencies
-     */
-    public List<String> getCrossModulePhaseDependencies(MavenProject project, String phase, List<MavenProject> reactorProjects) {
-        List<String> crossModuleDeps = new ArrayList<>();
-        
-        Map<String, MavenProject> artifactToProject = buildReactorProjectMap(reactorProjects);
-        
-        if (project.getDependencies() != null) {
-            for (org.apache.maven.model.Dependency dependency : project.getDependencies()) {
-                String depKey = dependency.getGroupId() + ":" + dependency.getArtifactId();
-                
-                if (artifactToProject.containsKey(depKey)) {
-                    String dependentProjectPhase = depKey + ":" + phase;
-                    crossModuleDeps.add(dependentProjectPhase);
-                    
-                    if (verbose) {
-                        log.info("Cross-module dependency: " + project.getArtifactId() + ":" + phase + " depends on " + dependentProjectPhase);
-                    }
-                }
-            }
-        }
-        
-        return crossModuleDeps;
-    }
+
 
     /**
-     * Get cross-module goal dependencies
+     * Get Maven execution plan using the lifecycle executor
      */
-    public List<String> getCrossModuleGoalDependencies(MavenProject project, String phase, String currentTarget, List<MavenProject> reactorProjects) {
-        List<String> crossModuleGoalDeps = new ArrayList<>();
-        
-        if (verbose) {
-            log.info("Checking cross-module goal dependencies for " + project.getArtifactId() + ":" + currentTarget + " (phase: " + phase + ")");
-        }
-        
-        Map<String, MavenProject> artifactToProject = buildReactorProjectMap(reactorProjects);
-        
-        if (project.getDependencies() != null) {
-            for (org.apache.maven.model.Dependency dependency : project.getDependencies()) {
-                String depKey = dependency.getGroupId() + ":" + dependency.getArtifactId();
-                String scope = dependency.getScope();
-                
-                // Only consider compile and runtime scope dependencies for cross-module goal dependencies
-                // Test scope dependencies don't need to be compiled before main compilation
-                if (scope != null && ("test".equals(scope) || "provided".equals(scope))) {
-                    continue;
-                }
-                
-                if (verbose && artifactToProject.containsKey(depKey)) {
-                    log.info("Found reactor dependency: " + depKey + " for " + project.getArtifactId());
-                }
-                
-                if (artifactToProject.containsKey(depKey)) {
-                    String dependentGoalTarget = depKey + ":" + currentTarget;
-                    crossModuleGoalDeps.add(dependentGoalTarget);
-                    
-                    if (verbose) {
-                        log.info("Cross-module goal dependency: " + project.getArtifactId() + ":" + currentTarget + " depends on " + dependentGoalTarget);
-                    }
-                }
+    private MavenExecutionPlan getExecutionPlan() {
+        try {
+            LifecycleExecutor lifecycleExecutor = session.getContainer().lookup(LifecycleExecutor.class);
+            List<String> goals = session.getGoals();
+            return lifecycleExecutor.calculateExecutionPlan(session, goals.toArray(new String[0]));
+        } catch (Exception e) {
+            if (verbose) {
+                log.warn("Could not access Maven execution plan: " + e.getMessage(), e);
             }
+            return null;
         }
-        
-        if (verbose) {
-            log.info("Cross-module goal dependencies found: " + crossModuleGoalDeps.size() + " for " + project.getArtifactId() + ":" + currentTarget);
-        }
-        
-        return crossModuleGoalDeps;
     }
 
     /**
@@ -197,88 +148,87 @@ public class TargetDependencyService {
             return null;
         }
         
-        String[] allPhases = {
-            "pre-clean", "clean", "post-clean",
-            "validate", "initialize", "generate-sources", "process-sources",
-            "generate-resources", "process-resources", "compile", "process-classes",
-            "generate-test-sources", "process-test-sources", "generate-test-resources",
-            "process-test-resources", "test-compile", "process-test-classes", "test",
-            "prepare-package", "package", "pre-integration-test", "integration-test",
-            "post-integration-test", "verify", "install", "deploy",
-            "pre-site", "site", "post-site", "site-deploy"
-        };
-        
-        String[] availablePhases = {
-            "clean", "validate", "compile", "test", "package", 
-            "verify", "install", "deploy", "site"
-        };
-        
-        int currentPhaseIndex = -1;
-        for (int i = 0; i < allPhases.length; i++) {
-            if (allPhases[i].equals(phase)) {
-                currentPhaseIndex = i;
-                break;
-            }
-        }
-        
-        if (currentPhaseIndex == -1) {
+        MavenExecutionPlan executionPlan = getExecutionPlan();
+        if (executionPlan == null) {
             return null;
         }
         
-        for (int i = currentPhaseIndex - 1; i >= 0; i--) {
-            String candidatePhase = allPhases[i];
-            for (String availablePhase : availablePhases) {
-                if (availablePhase.equals(candidatePhase)) {
-                    return availablePhase;
-                }
+        List<String> allPhases = new ArrayList<>();
+        Set<String> seenPhases = new LinkedHashSet<>();
+        
+        for (MojoExecution mojoExecution : executionPlan.getMojoExecutions()) {
+            String executionPhase = mojoExecution.getLifecyclePhase();
+            if (executionPhase != null && !executionPhase.isEmpty()) {
+                seenPhases.add(executionPhase);
             }
+        }
+        allPhases.addAll(seenPhases);
+        
+        int currentPhaseIndex = allPhases.indexOf(phase);
+        if (currentPhaseIndex > 0) {
+            return allPhases.get(currentPhaseIndex - 1);
         }
         
         return null;
     }
 
     /**
-     * Infer the Maven phase from a goal name
+     * Simple mapping of common goals to their typical phases
+     */
+    private String mapGoalToPhase(String goal) {
+        if (goal == null) return null;
+        
+        switch (goal) {
+            case "clean": return "clean";
+            case "compile": return "compile";
+            case "testCompile": return "test-compile";
+            case "test": return "test";
+            case "package": return "package";
+            case "jar": return "package";
+            case "war": return "package";
+            case "install": return "install";
+            case "deploy": return "deploy";
+            case "site": return "site";
+            default: return null;
+        }
+    }
+
+    /**
+     * Infer the Maven phase from a goal name by examining plugin configurations
      */
     public String inferPhaseFromGoal(String goal) {
         if (goal == null || goal.isEmpty()) {
             return null;
         }
         
-        if (goal.equals("compile") || goal.equals("testCompile")) {
-            return "compile";
-        } else if (goal.equals("test") || goal.contains("test")) {
-            return "test";
-        } else if (goal.equals("jar") || goal.equals("war") || goal.equals("build") || goal.equals("repackage")) {
-            return "package";
-        } else if (goal.equals("dev") || goal.equals("run")) {
-            return "compile";
-        } else if (goal.contains("site") || goal.contains("javadoc")) {
-            return "site";
+        MavenExecutionPlan executionPlan = getExecutionPlan();
+        if (executionPlan == null) {
+            return null;
+        }
+        
+        for (MojoExecution mojoExecution : executionPlan.getMojoExecutions()) {
+            String executionGoal = mojoExecution.getGoal();
+            if (goal.equals(executionGoal) || goal.endsWith(":" + executionGoal)) {
+                return mojoExecution.getLifecyclePhase();
+            }
+        }
+        
+        return null;
+    }
+
+    
+    /**
+     * Get Nx project path from Maven project (relative path from workspace root)
+     */
+    private String getProjectPath(MavenProject project) {
+        if (session != null) {
+            File workspaceRoot = new File(session.getExecutionRootDirectory());
+            String relativePath = NxPathUtils.getRelativePath(workspaceRoot, project.getBasedir());
+            return relativePath.isEmpty() ? "." : relativePath;
         } else {
-            return "compile";
+            // Fallback to project base directory name
+            return project.getBasedir().getName();
         }
     }
 
-    /**
-     * Build a map of reactor projects by artifact key for efficient lookups
-     */
-    private Map<String, MavenProject> buildReactorProjectMap(List<MavenProject> reactorProjects) {
-        Map<String, MavenProject> artifactToProject = new LinkedHashMap<>();
-        for (MavenProject reactorProject : reactorProjects) {
-            String key = reactorProject.getGroupId() + ":" + reactorProject.getArtifactId();
-            artifactToProject.put(key, reactorProject);
-        }
-        return artifactToProject;
-    }
-
-    /**
-     * Extract goal name from target name (e.g., "compiler:compile" -> "compile")
-     */
-    private String extractGoalFromTargetName(String targetName) {
-        if (targetName == null || !targetName.contains(":")) {
-            return targetName;
-        }
-        return targetName.substring(targetName.lastIndexOf(":") + 1);
-    }
 }

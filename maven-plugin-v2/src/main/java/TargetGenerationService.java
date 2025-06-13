@@ -1,11 +1,17 @@
-import model.*;
+import model.TargetConfiguration;
+import model.TargetMetadata;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.model.PluginExecution;
 import org.apache.maven.plugin.logging.Log;
 import org.apache.maven.project.MavenProject;
 
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Service responsible for generating Nx targets from Maven project configuration.
@@ -48,7 +54,7 @@ public class TargetGenerationService {
             
         } catch (Exception e) {
             if (log != null) {
-                log.warn("Error generating targets for project " + project.getArtifactId() + ": " + e.getMessage());
+                log.warn("Error generating targets for project " + project.getArtifactId() + ": " + e.getMessage(), e);
             }
             // Return empty targets rather than failing completely
         }
@@ -103,7 +109,7 @@ public class TargetGenerationService {
         Map<String, TargetConfiguration> goalTargets = new LinkedHashMap<>();
         
         if (verbose) {
-            log.info("Generating plugin goal targets for project: " + project.getArtifactId());
+            log.debug("Generating plugin goal targets for project: " + project.getArtifactId());
         }
         
         final String projectRootToken = "{projectRoot}";
@@ -123,7 +129,7 @@ public class TargetGenerationService {
                     plugin.getExecutions().forEach(execution -> {
                         if (execution.getGoals() != null) {
                             execution.getGoals().forEach(goal -> {
-                                String targetName = getTargetName(plugin.getArtifactId(), goal);
+                                String targetName = MavenUtils.getTargetName(plugin.getArtifactId(), goal);
                                 
                                 if (!goalTargets.containsKey(targetName)) {
                                     TargetConfiguration target = createGoalTarget(plugin, goal, execution, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()));
@@ -205,7 +211,7 @@ public class TargetGenerationService {
         }
         
         for (String goal : commonGoals) {
-            String targetName = getTargetName(artifactId, goal);
+            String targetName = MavenUtils.getTargetName(artifactId, goal);
             if (!goalTargets.containsKey(targetName)) {
                 TargetConfiguration target = createSimpleGoalTarget(plugin, goal, projectRootToken, actualProjectPath, goalDependencies.getOrDefault(targetName, new ArrayList<>()));
                 goalTargets.put(targetName, target);
@@ -268,10 +274,6 @@ public class TargetGenerationService {
         return outputs;
     }
 
-    private String getTargetName(String artifactId, String goal) {
-        String pluginName = artifactId.replace("-maven-plugin", "").replace("-plugin", "");
-        return pluginName + ":" + goal;
-    }
 
     private String generateGoalDescription(String artifactId, String goal) {
         String pluginName = artifactId.replace("-maven-plugin", "").replace("-plugin", "");

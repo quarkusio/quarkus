@@ -25,6 +25,7 @@ public class NxPathUtils {
             
             return targetPath;
         } catch (IOException e) {
+            System.err.println("Warning: Failed to calculate relative path, using absolute path: " + e.getMessage());
             return target.getAbsolutePath();
         }
     }
@@ -54,6 +55,7 @@ public class NxPathUtils {
             String path2 = dir2.getCanonicalPath();
             return path1.startsWith(path2) || path2.startsWith(path1);
         } catch (IOException e) {
+            System.err.println("Warning: Failed to check parent-child relationship: " + e.getMessage());
             return false;
         }
     }

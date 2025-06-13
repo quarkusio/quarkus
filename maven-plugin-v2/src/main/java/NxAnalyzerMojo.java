@@ -10,11 +10,19 @@ import org.apache.maven.project.MavenProject;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import model.*;
+import model.CreateNodesV2Entry;
+import model.RawProjectGraphDependency;
+import model.TargetConfiguration;
+import model.TargetGroup;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Refactored Maven plugin that analyzes Maven projects for Nx integration.
@@ -44,6 +52,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
         long startTime = System.currentTimeMillis();
         
+        
         try {
             initializeServices();
             
@@ -67,7 +76,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
     private void initializeServices() {
         this.targetGenerationService = new TargetGenerationService(getLog(), isVerbose());
         this.targetGroupService = new TargetGroupService();
-        this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose());
+        this.targetDependencyService = new TargetDependencyService(getLog(), isVerbose(), session);
     }
     
     private void logBasicInfo() {
@@ -86,6 +95,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
     
     private Map<String, Object> performAnalysis() {
         File workspaceRoot = new File(session.getExecutionRootDirectory());
+        
         
         // Generate targets and groups for each project
         Map<MavenProject, Map<String, TargetConfiguration>> projectTargets = new LinkedHashMap<>();
@@ -153,12 +163,16 @@ public class NxAnalyzerMojo extends AbstractMojo {
     private Map<String, List<String>> calculateGoalDependencies(MavenProject project, File workspaceRoot) {
         Map<String, List<String>> goalDependencies = new LinkedHashMap<>();
         
+        if (isVerbose()) {
+            getLog().debug("Calculating goal dependencies for " + project.getArtifactId());
+        }
+        
         // First pass: collect all potential goal targets
         Set<String> goalTargets = collectGoalTargets(project);
         
         // Calculate dependencies for each goal target
         for (String targetName : goalTargets) {
-            String goal = extractGoalFromTargetName(targetName);
+            String goal = MavenUtils.extractGoalFromTargetName(targetName);
             
             // Try to find execution phase from plugin configuration
             String executionPhase = findExecutionPhase(project, targetName);
@@ -213,6 +227,11 @@ public class NxAnalyzerMojo extends AbstractMojo {
     private Set<String> collectGoalTargets(MavenProject project) {
         Set<String> goalTargets = new LinkedHashSet<>();
         
+        if (isVerbose()) {
+            getLog().debug("Collecting goals for " + project.getArtifactId() + " (" + 
+                          (project.getBuildPlugins() != null ? project.getBuildPlugins().size() : 0) + " plugins)");
+        }
+        
         if (project.getBuildPlugins() != null) {
             project.getBuildPlugins().forEach(plugin -> {
                 String artifactId = plugin.getArtifactId();
@@ -222,7 +241,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
                     plugin.getExecutions().forEach(execution -> {
                         if (execution.getGoals() != null) {
                             execution.getGoals().forEach(goal -> {
-                                String targetName = getTargetName(artifactId, goal);
+                                String targetName = MavenUtils.getTargetName(artifactId, goal);
                                 goalTargets.add(targetName);
                             });
                         }
@@ -234,6 +253,9 @@ public class NxAnalyzerMojo extends AbstractMojo {
             });
         }
         
+        if (isVerbose()) {
+            getLog().debug("Found " + goalTargets.size() + " goals for " + project.getArtifactId());
+        }
         return goalTargets;
     }
     
@@ -241,7 +263,7 @@ public class NxAnalyzerMojo extends AbstractMojo {
      * Find execution phase for a goal target
      */
     private String findExecutionPhase(MavenProject project, String targetName) {
-        String goal = extractGoalFromTargetName(targetName);
+        String goal = MavenUtils.extractGoalFromTargetName(targetName);
         
         if (project.getBuildPlugins() != null) {
             for (org.apache.maven.model.Plugin plugin : project.getBuildPlugins()) {
@@ -263,36 +285,19 @@ public class NxAnalyzerMojo extends AbstractMojo {
      */
     private void addCommonGoals(String artifactId, Set<String> goalTargets) {
         if (artifactId.contains("compiler")) {
-            goalTargets.add(getTargetName(artifactId, "compile"));
-            goalTargets.add(getTargetName(artifactId, "testCompile"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "compile"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "testCompile"));
         } else if (artifactId.contains("surefire")) {
-            goalTargets.add(getTargetName(artifactId, "test"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "test"));
         } else if (artifactId.contains("quarkus")) {
-            goalTargets.add(getTargetName(artifactId, "dev"));
-            goalTargets.add(getTargetName(artifactId, "build"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "dev"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "build"));
         } else if (artifactId.contains("spring-boot")) {
-            goalTargets.add(getTargetName(artifactId, "run"));
-            goalTargets.add(getTargetName(artifactId, "repackage"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "run"));
+            goalTargets.add(MavenUtils.getTargetName(artifactId, "repackage"));
         }
     }
     
-    /**
-     * Extract goal name from target name
-     */
-    private String extractGoalFromTargetName(String targetName) {
-        if (targetName == null || !targetName.contains(":")) {
-            return targetName;
-        }
-        return targetName.substring(targetName.lastIndexOf(":") + 1);
-    }
-    
-    /**
-     * Generate target name from artifact ID and goal
-     */
-    private String getTargetName(String artifactId, String goal) {
-        String pluginName = artifactId.replace("-maven-plugin", "").replace("-plugin", "");
-        return pluginName + ":" + goal;
-    }
     
     private boolean isVerbose() {
         String systemProp = System.getProperty("nx.verbose");

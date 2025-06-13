@@ -151,7 +151,7 @@ export const createDependencies: CreateDependencies = async (options, context) =
  * Run Maven analysis using Java plugin
  */
 async function runMavenAnalysis(options: MavenPluginOptions): Promise<any> {
-  const outputFile = join(workspaceRoot, 'maven-plugin-v2/maven-analysis.json');
+  const outputFile = join(workspaceDataDirectory, 'maven-analysis.json');
 
   // Check if verbose mode is enabled
   const isVerbose = process.env.NX_VERBOSE_LOGGING === 'true' || process.argv.includes('--verbose');

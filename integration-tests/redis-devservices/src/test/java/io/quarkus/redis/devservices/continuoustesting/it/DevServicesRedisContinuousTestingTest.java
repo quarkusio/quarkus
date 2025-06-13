@@ -15,11 +15,13 @@ import java.util.stream.Collectors;
 import org.jboss.shrinkwrap.api.ShrinkWrap;
 import org.jboss.shrinkwrap.api.asset.StringAsset;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.testcontainers.DockerClientFactory;
 
+import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
@@ -52,6 +54,11 @@ public class DevServicesRedisContinuousTestingTest {
                             "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(PlainQuarkusTest.class));
 
+    @AfterAll
+    static void afterAll() {
+        stopAllContainers();
+    }
+
     @Disabled("Not currently working")
     @Test
     public void testContinuousTestingDisablesDevServicesWhenPropertiesChange() {
@@ -69,15 +76,15 @@ public class DevServicesRedisContinuousTestingTest {
         // We could check the container goes away, but we'd have to check slowly, because ryuk can be slow
     }
 
-    // This tests behaviour in dev mode proper (rather than continuous testing)
+    // This tests behaviour in dev mode proper when combined with continuous testing. This creates a possibility of port conflicts, false sharing of state, and all sorts of race conditions.
     @Test
     public void testDevModeCoexistingWithContinuousTestingServiceUpdatesContainersOnConfigChange() {
-        // Interacting with the app will force a refresh
         // Note that driving continuous testing concurrently can sometimes cause 500s caused by containers not yet being available on slow machines
         ContinuousTestingTestUtils continuousTestingTestUtils = new ContinuousTestingTestUtils();
         ContinuousTestingTestUtils.TestStatus result = continuousTestingTestUtils.waitForNextCompletion();
         assertEquals(result.getTotalTestsPassed(), 1);
         assertEquals(result.getTotalTestsFailed(), 0);
+        // Interacting with the app will force a refresh
         ping();
 
         List<Container> started = getRedisContainers();
@@ -121,62 +128,6 @@ public class DevServicesRedisContinuousTestingTest {
                 "Expected port " + testPort + ", but got: "
                         + newContainers.stream().map(c -> Arrays.toString(c.getPorts())).collect(Collectors.joining(", ")));
 
-    }
-
-    @Test
-    public void testDevModeServiceUpdatesContainersOnConfigChange() {
-        // Interacting with the app will force a refresh
-        ping();
-        List<Container> started = getRedisContainers();
-
-        assertFalse(started.isEmpty());
-        Container container = started.get(0);
-        assertTrue(Arrays.stream(container.getPorts()).noneMatch(p -> p.getPublicPort() == 6377),
-                "Expected random port, but got: " + Arrays.toString(container.getPorts()));
-
-        int newPort = 6388;
-        test.modifyResourceFile("application.properties",
-                s -> ContinuousTestingTestUtils.appProperties("quarkus.redis.devservices.port=" + newPort));
-
-        // Force another refresh
-        ping();
-        List<Container> newContainers = getRedisContainersExcludingExisting(started);
-
-        // We expect 1 new containers, since test was not refreshed
-        assertEquals(1, newContainers.size(),
-                "New containers: "
-                        + prettyPrintContainerList(newContainers)
-                        + "\n Old containers: " + prettyPrintContainerList(started) + "\n All containers: "
-                        + prettyPrintContainerList(getAllContainers())); // this can be wrong
-        // We need to inspect the dev-mode container; we don't have a non-brittle way of distinguishing them, so just look in them all
-        boolean hasRightPort = newContainers.stream()
-                .anyMatch(newContainer -> hasPublicPort(newContainer, newPort));
-        assertTrue(hasRightPort,
-                "Expected port " + newPort + ", but got: "
-                        + newContainers.stream().map(c -> Arrays.toString(c.getPorts())).collect(Collectors.joining(", ")));
-    }
-
-    @Test
-    public void testDevModeServiceDoesNotRestartContainersOnCodeChange() {
-        ping();
-        List<Container> started = getRedisContainers();
-
-        assertFalse(started.isEmpty());
-        Container container = started.get(0);
-        assertTrue(Arrays.stream(container.getPorts()).noneMatch(p -> p.getPublicPort() == 6377),
-                "Expected random port 6377, but got: " + Arrays.toString(container.getPorts()));
-
-        // Make a change that shouldn't affect dev services
-        test.modifySourceFile(BundledResource.class, s -> s.replaceAll("OK", "poink"));
-
-        ping();
-
-        List<Container> newContainers = getRedisContainersExcludingExisting(started);
-
-        // No new containers should have spawned
-        assertEquals(0, newContainers.size(),
-                "New containers: " + newContainers + "\n Old containers: " + started + "\n All containers: "
-                        + getAllContainers()); // this can be wrong
     }
 
     private static String prettyPrintContainerList(List<Container> newContainers) {
@@ -276,6 +227,13 @@ public class DevServicesRedisContinuousTestingTest {
     private static List<Container> getAllContainers() {
         return DockerClientFactory.lazyClient().listContainersCmd().exec().stream()
                 .filter(container -> isRedisContainer(container)).toList();
+    }
+
+    private static void stopAllContainers() {
+        DockerClient dockerClient = DockerClientFactory.lazyClient();
+        dockerClient.listContainersCmd().exec().stream()
+                .filter(DevServicesRedisContinuousTestingTest::isRedisContainer)
+                .forEach(c -> dockerClient.stopContainerCmd(c.getId()).exec());
     }
 
     private static List<Container> getRedisContainers() {

@@ -20,7 +20,6 @@ import org.hibernate.engine.jdbc.internal.JdbcServicesInitiator;
 import org.hibernate.engine.jdbc.internal.SqlStatementLoggerInitiator;
 import org.hibernate.event.internal.EntityCopyObserverFactoryInitiator;
 import org.hibernate.integrator.spi.Integrator;
-import org.hibernate.internal.util.cache.InternalCacheFactoryInitiator;
 import org.hibernate.loader.ast.internal.BatchLoaderFactoryInitiator;
 import org.hibernate.persister.internal.PersisterClassResolverInitiator;
 import org.hibernate.persister.internal.PersisterFactoryInitiator;
@@ -50,6 +49,7 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusRegionFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectFactoryInitiator;
 import io.quarkus.hibernate.orm.runtime.service.QuarkusRuntimeInitDialectResolverInitiator;
 import io.quarkus.hibernate.orm.runtime.service.bytecodeprovider.QuarkusRuntimeBytecodeProviderInitiator;
+import io.quarkus.hibernate.orm.runtime.service.internalcache.QuarkusInternalCacheFactoryInitiator;
 
 /**
  * Helps to instantiate a ServiceRegistryBuilder from a previous state. This
@@ -249,8 +249,8 @@ public class PreconfiguredServiceRegistryBuilder {
         // Default implementation
         serviceInitiators.add(SqlStatementLoggerInitiator.INSTANCE);
 
-        // Default implementation -- TODO use Caffeine instead
-        serviceInitiators.add(InternalCacheFactoryInitiator.INSTANCE);
+        // Custom Quarkus implementation: overrides the internal cache to leverage Caffeine
+        serviceInitiators.add(QuarkusInternalCacheFactoryInitiator.INSTANCE);
 
         serviceInitiators.trimToSize();
         return serviceInitiators;

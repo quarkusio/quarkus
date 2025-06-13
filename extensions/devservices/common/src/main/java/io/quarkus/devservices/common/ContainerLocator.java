@@ -14,7 +14,7 @@ import org.testcontainers.DockerClientFactory;
 import com.github.dockerjava.api.model.Container;
 import com.github.dockerjava.api.model.ContainerPort;
 
-import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesTracker;
+import io.quarkus.devservices.crossclassloader.runtime.RunningDevServicesRegistry;
 import io.quarkus.runtime.LaunchMode;
 
 public class ContainerLocator {
@@ -29,7 +29,7 @@ public class ContainerLocator {
 
     // Read the UUID off the RunningDevServicesTracker, because it's guaranteed to be parent-first, unlike this class
     public static final BiPredicate<Container, String> IS_NOT_CREATED_BY_US_SELECTOR = (container,
-            expectedLabel) -> !RunningDevServicesTracker.APPLICATION_UUID
+            expectedLabel) -> !RunningDevServicesRegistry.APPLICATION_UUID
                     .equals(container.getLabels().get(MANAGED_DEV_SERVICE_LABEL));
 
     private static final Logger log = Logger.getLogger(ContainerLocator.class);

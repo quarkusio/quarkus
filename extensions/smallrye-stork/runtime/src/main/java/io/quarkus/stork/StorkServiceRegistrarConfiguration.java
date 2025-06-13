@@ -4,10 +4,17 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.quarkus.runtime.annotations.ConfigGroup;
+import io.smallrye.config.WithDefault;
 import io.smallrye.config.WithParentName;
 
 @ConfigGroup
 public interface StorkServiceRegistrarConfiguration {
+
+    /**
+     * Whether automatic registration and deregistration of service instances is enabled.
+     */
+    @WithDefault("true")
+    boolean enabled();
 
     /**
      * Configures service registrar type, e.g. "consul".
@@ -21,7 +28,6 @@ public interface StorkServiceRegistrarConfiguration {
      * Check the documentation of the selected registrar type for available parameters
      *
      */
-    //    @ConfigItem(name = ConfigItem.PARENT)
     @WithParentName
     Map<String, String> parameters();
 

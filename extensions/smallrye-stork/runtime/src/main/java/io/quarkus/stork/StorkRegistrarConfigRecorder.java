@@ -14,7 +14,7 @@ public class StorkRegistrarConfigRecorder {
 
     private static final Logger LOGGER = Logger.getLogger(StorkRegistrarConfigRecorder.class.getName());
 
-    public void setupServiceRegistrarConfig(StorkConfiguration config, String serviceRegistrarType) {
+    public void setupServiceRegistrarConfig(StorkConfiguration config, String serviceRegistrarType, String healthCheckUrl) {
         Config quarkusConfig = ConfigProvider.getConfig();
         List<ServiceConfig> serviceConfigs = StorkConfigUtil.toStorkServiceConfig(config);
         List<ServiceConfig> registrationConfigs = serviceConfigs.stream()
@@ -23,21 +23,23 @@ public class StorkRegistrarConfigRecorder {
                 .orElse("auri-application");
         if (registrationConfigs.isEmpty()) {
             config.serviceConfiguration().put(serviceName,
-                    StorkConfigUtil.buildDefaultRegistrarConfiguration(serviceRegistrarType));
+                    StorkConfigUtil.buildDefaultRegistrarConfiguration(serviceRegistrarType, healthCheckUrl));
         } else if (registrationConfigs.size() == 1) {
             config.serviceConfiguration().computeIfPresent(serviceName,
-                    (k, v) -> StorkConfigUtil.addRegistrarTypeIfAbsent(serviceRegistrarType, v));
+                    (k, serviceConfiguration) -> StorkConfigUtil.addRegistrarTypeIfAbsent(serviceRegistrarType,
+                            serviceConfiguration, healthCheckUrl));
         } else {
-            failOnMissingRegistrarTypes(registrationConfigs, serviceName);
+            failOnMissingRegistrarTypes(registrationConfigs);
         }
     }
 
-    private static void failOnMissingRegistrarTypes(List<ServiceConfig> registrationConfigs, String serviceName) {
+    private static void failOnMissingRegistrarTypes(List<ServiceConfig> registrationConfigs) {
         List<String> servicesWithMissingType = new ArrayList<>();
         for (ServiceConfig registrationConfig : registrationConfigs) {
             if (registrationConfig.serviceRegistrar().type().isBlank()) {
                 servicesWithMissingType.add(registrationConfig.serviceName());
-                LOGGER.info("Missing 'type' for service '" + serviceName + "'. This may lead to a runtime error.");
+                LOGGER.info("Missing 'type' for service '" + registrationConfig.serviceName()
+                        + "'. This may lead to a runtime error.");
             }
 
         }

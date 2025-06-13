@@ -704,7 +704,7 @@ The `EventBus` object provides methods to:
 [source, java]
 ----
 // Case 1
-bus.sendAndForget("greeting", name)
+bus.send("greeting", name)
 // Case 2
 bus.publish("greeting", name)
 // Case 3

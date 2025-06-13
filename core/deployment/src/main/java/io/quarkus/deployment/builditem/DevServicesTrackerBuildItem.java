@@ -19,41 +19,42 @@ public final class DevServicesTrackerBuildItem extends SimpleBuildItem {
     // The QuarkusClassLoader takes care of loading the tracker with the right classloader
     private final RunningDevServicesTracker tracker;
     private final UUID uuid;
+    private final DevServicesConfig globalConfig;
+    private final LaunchMode launchMode;
 
-    public DevServicesTrackerBuildItem(UUID uuid) {
-        tracker = new RunningDevServicesTracker();
+    public DevServicesTrackerBuildItem(UUID uuid, DevServicesConfig globalDevServicesConfig, LaunchMode launchMode) {
+        this.launchMode = launchMode;
+        this.tracker = new RunningDevServicesTracker();
         this.uuid = uuid;
+        this.globalConfig = globalDevServicesConfig;
     }
 
-    public Set<Closeable> getRunningServices(DevServiceOwner owner, DevServicesConfig globalConfig,
-            Object identifyingConfig) {
+    public Set<Closeable> getRunningServices(String featureName, String configName, Object identifyingConfig) {
+        DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
         ComparableDevServicesConfig key = new ComparableDevServicesConfig(uuid, owner, globalConfig, identifyingConfig);
         return tracker.getRunningServices(key);
     }
 
-    public Set<Closeable> getAllRunningServices(DevServiceOwner owner) {
+    public Set<Closeable> getAllRunningServices(String featureName, String configName) {
+        DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
         return tracker.getAllRunningServices(owner);
     }
 
-    public void addRunningService(DevServiceOwner owner, DevServicesConfig globalConfig,
-            Object identifyingConfig,
+    public void addRunningService(String featureName, String configName, Object identifyingConfig,
             DevServicesResultBuildItem.RunnableDevService service) {
+        DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
         ComparableDevServicesConfig key = new ComparableDevServicesConfig(uuid, owner, globalConfig, identifyingConfig);
         tracker.addRunningService(key, service);
     }
 
-    public void removeRunningService(DevServiceOwner owner, DevServicesConfig globalConfig,
-            Object identifyingConfig,
+    public void removeRunningService(String featureName, String configName, Object identifyingConfig,
             DevServicesResultBuildItem.RunnableDevService service) {
+        DevServiceOwner owner = new DevServiceOwner(featureName, launchMode.name(), configName);
         ComparableDevServicesConfig key = new ComparableDevServicesConfig(uuid, owner, globalConfig, identifyingConfig);
         tracker.removeRunningService(key, service);
     }
 
     public void closeAllRunningServices() {
-        tracker.closeAllRunningServices();
-    }
-
-    public void closeAllRunningServices(LaunchMode launchMode) {
         tracker.closeAllRunningServices(launchMode.name());
     }
 

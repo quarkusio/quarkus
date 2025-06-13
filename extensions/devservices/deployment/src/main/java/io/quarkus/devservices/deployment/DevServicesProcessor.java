@@ -52,6 +52,7 @@ import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.console.ConsoleStateManager;
 import io.quarkus.deployment.dev.devservices.ContainerInfo;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
+import io.quarkus.deployment.dev.devservices.DevServicesConfig;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.deployment.util.ContainerRuntimeUtil.ContainerRuntime;
 import io.quarkus.dev.spi.DevModeType;
@@ -108,12 +109,14 @@ public class DevServicesProcessor {
     @BuildStep(onlyIfNot = IsNormal.class)
     DevServicesTrackerBuildItem getDevServicesTracker(LaunchModeBuildItem launchMode,
             ApplicationInstanceIdBuildItem applicationId,
+            DevServicesConfig globalDevServicesConfig,
             CuratedApplicationShutdownBuildItem shutdownBuildItem) {
         //        We want to track two kinds of things;
         //        one is dev services from a previous run that a processor might want to re - use, and the other is dev services from a previous run that a processor might want to close
         //        The getting is different, but the setting can be the same
-        DevServicesTrackerBuildItem trackerBuildItem = new DevServicesTrackerBuildItem(applicationId.getUUID());
-        shutdownBuildItem.addCloseTask(() -> trackerBuildItem.closeAllRunningServices(launchMode.getLaunchMode()), true);
+        DevServicesTrackerBuildItem trackerBuildItem = new DevServicesTrackerBuildItem(applicationId.getUUID(),
+                globalDevServicesConfig, launchMode.getLaunchMode());
+        shutdownBuildItem.addCloseTask(trackerBuildItem::closeAllRunningServices, true);
         return trackerBuildItem;
     }
 

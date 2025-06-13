@@ -50,8 +50,6 @@ import io.quarkus.runtime.configuration.ConfigUtils;
 public class DevServicesRedisProcessor {
     private static final Logger log = Logger.getLogger(DevServicesRedisProcessor.class);
 
-    private static final String IMAGE_NAME_KEY = "quarkus.redis.devservices.image-name";
-
     private static final String REDIS_IMAGE = "docker.io/redis:7";
     private static final int REDIS_EXPOSED_PORT = 6379;
     private static final String REDIS_SCHEME = "redis://";
@@ -103,7 +101,7 @@ public class DevServicesRedisProcessor {
                         connectionName,
                         entry.getValue().devservices(),
                         launchMode.getLaunchMode(),
-                        useSharedNetwork, devServicesConfig.timeout(), devServicesConfig, tracker);
+                        useSharedNetwork, devServicesConfig.timeout(), tracker);
                 if (devService == null) {
                     continue;
                 }
@@ -127,8 +125,7 @@ public class DevServicesRedisProcessor {
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
             String name,
             io.quarkus.redis.deployment.client.DevServicesConfig devServicesConfig, LaunchMode launchMode,
-            boolean useSharedNetwork, Optional<Duration> timeout,
-            DevServicesConfig globalConfig, DevServicesTrackerBuildItem tracker) {
+            boolean useSharedNetwork, Optional<Duration> timeout, DevServicesTrackerBuildItem tracker) {
 
         if (!devServicesConfig.enabled()) {
             // explicitly disabled
@@ -166,27 +163,13 @@ public class DevServicesRedisProcessor {
                     useSharedNetwork, launchMode);
             timeout.ifPresent(redisContainer::withStartupTimeout);
             redisContainer.withEnv(devServicesConfig.containerEnv());
-            String redisHost = fixedExposedPort.isPresent()
-                    ? REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort()
-                    : null;
 
-            // TODO ideally the container properties would get put into it in a centralised way, but the RunnableDevService object doesn't get passed detailed information about the container
-            Map<String, String> config = new HashMap();
-            if (fixedExposedPort.isPresent()) {
-                config.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, redisHost);
-            }
-            config.put(IMAGE_NAME_KEY, dockerImageName.asCanonicalNameString());
+            Map<String, Supplier<String>> dynamicConfig = new HashMap<>();
+            dynamicConfig.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME,
+                    () -> REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort());
 
-            Map<String, Supplier<String>> dynamicConfig = new HashMap();
-            Supplier<String> hoster = () -> REDIS_SCHEME + redisContainer.getHost() + ":" + redisContainer.getPort();
-            dynamicConfig.put(configPrefix + RedisConfig.HOSTS_CONFIG_NAME, hoster);
-
-            RunnableDevService answer = new RunnableDevService(
-                    Feature.REDIS_CLIENT.getName(), launchMode, name,
-                    redisContainer, config, dynamicConfig, globalConfig, devServicesConfig, tracker);
-
-            return answer;
-
+            return new RunnableDevService(Feature.REDIS_CLIENT.getName(), name, redisContainer,
+                    dynamicConfig, devServicesConfig, tracker);
         };
 
         // The ideal re-use precedence order is the following:

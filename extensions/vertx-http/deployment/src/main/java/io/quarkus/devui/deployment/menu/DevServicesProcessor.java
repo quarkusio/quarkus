@@ -1,15 +1,22 @@
 package io.quarkus.devui.deployment.menu;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CompletableFuture;
 
 import io.quarkus.deployment.IsLocalDevelopment;
+import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.DevServicesResultBuildItem;
+import io.quarkus.deployment.builditem.LaunchModeBuildItem;
 import io.quarkus.deployment.dev.devservices.DevServiceDescriptionBuildItem;
+import io.quarkus.dev.spi.DevModeType;
+import io.quarkus.devui.deployment.DevUIConfig;
 import io.quarkus.devui.deployment.InternalPageBuildItem;
+import io.quarkus.devui.spi.buildtime.BuildTimeActionBuildItem;
 import io.quarkus.devui.spi.page.Page;
 
 /**
@@ -18,24 +25,33 @@ import io.quarkus.devui.spi.page.Page;
 public class DevServicesProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    InternalPageBuildItem createDevServicesPages(List<DevServiceDescriptionBuildItem> devServiceDescriptions,
-            List<DevServicesResultBuildItem> devServicesResultBuildItems) {
+    InternalPageBuildItem createDevServicesPages(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+            List<DevServiceDescriptionBuildItem> devServiceDescriptions,
+            List<DevServicesResultBuildItem> devServicesResultBuildItems, LaunchModeBuildItem launchModeBuildItem,
+            DevUIConfig config) {
 
         List<DevServiceDescriptionBuildItem> otherDevServices = getOtherDevServices(devServicesResultBuildItems);
 
         InternalPageBuildItem devServicesPages = new InternalPageBuildItem("Dev Services", 40);
 
         devServicesPages.addPage(Page.webComponentPageBuilder()
-                .namespace("devui-dev-services")
+                .namespace(NAMESPACE)
                 .title("Dev services")
                 .icon("font-awesome-solid:wand-magic-sparkles")
                 .componentLink("qwc-dev-services.js"));
 
-        Map<String, DevServiceDescriptionBuildItem> combined = new TreeMap<>();
-        addToMap(combined, devServiceDescriptions);
-        addToMap(combined, otherDevServices);
+        Collection<DevServiceDescriptionBuildItem> services = getServices(devServiceDescriptions, otherDevServices);
 
-        devServicesPages.addBuildTimeData("devServices", combined.values());
+        devServicesPages.addBuildTimeData("devServices", services);
+
+        if (launchModeBuildItem.getDevModeType().isPresent()
+                && launchModeBuildItem.getDevModeType().get().equals(DevModeType.LOCAL)
+                && config.allowExtensionManagement()) {
+
+            BuildTimeActionBuildItem buildTimeActions = new BuildTimeActionBuildItem(NAMESPACE);
+            getDevServices(buildTimeActions, devServiceDescriptions, otherDevServices);
+            buildTimeActionProducer.produce(buildTimeActions);
+        }
 
         return devServicesPages;
 
@@ -64,4 +80,24 @@ public class DevServicesProcessor {
         }
         return devServiceDescriptions;
     }
+
+    private void getDevServices(BuildTimeActionBuildItem buildTimeActions,
+            List<DevServiceDescriptionBuildItem> devServiceDescriptions,
+            List<DevServiceDescriptionBuildItem> otherDevServices) {
+        buildTimeActions.addAction(new Object() {
+        }.getClass().getEnclosingMethod().getName(),
+                ignored -> CompletableFuture.supplyAsync(() -> getServices(devServiceDescriptions, otherDevServices)));
+    }
+
+    private Collection<DevServiceDescriptionBuildItem> getServices(List<DevServiceDescriptionBuildItem> devServiceDescriptions,
+            List<DevServiceDescriptionBuildItem> otherDevServices) {
+        Map<String, DevServiceDescriptionBuildItem> combined = new TreeMap<>();
+        addToMap(combined, devServiceDescriptions);
+        addToMap(combined, otherDevServices);
+
+        return combined.values();
+    }
+
+    private static final String NAMESPACE = "devui-dev-services";
+
 }

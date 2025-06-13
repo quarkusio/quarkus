@@ -48,7 +48,7 @@ public class BlockingServerInterceptor implements ServerInterceptor, Function<St
     private final Executor virtualThreadExecutor;
 
     public BlockingServerInterceptor(Vertx vertx, List<String> blockingMethods, List<String> virtualMethods,
-                                     Executor virtualThreadExecutor, boolean devMode) {
+            Executor virtualThreadExecutor, boolean devMode) {
         this.vertx = vertx;
         this.blockingMethods = new HashSet<>();
         this.virtualMethods = new HashSet<>();

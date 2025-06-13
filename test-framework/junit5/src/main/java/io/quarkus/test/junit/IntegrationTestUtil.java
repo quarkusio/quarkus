@@ -43,8 +43,10 @@ import io.quarkus.bootstrap.model.ApplicationModel;
 import io.quarkus.bootstrap.utils.BuildToolHelper;
 import io.quarkus.bootstrap.workspace.ArtifactSources;
 import io.quarkus.bootstrap.workspace.SourceDir;
+import io.quarkus.deployment.builditem.DevServicesCustomizerBuildItem;
 import io.quarkus.deployment.builditem.DevServicesLauncherConfigResultBuildItem;
 import io.quarkus.deployment.builditem.DevServicesNetworkIdBuildItem;
+import io.quarkus.deployment.builditem.DevServicesRegistryBuildItem;
 import io.quarkus.deployment.util.ContainerRuntimeUtil;
 import io.quarkus.paths.PathList;
 import io.quarkus.runtime.LaunchMode;
@@ -270,8 +272,8 @@ public final class IntegrationTestUtil {
             public void accept(String s, String s2) {
                 propertyMap.put(s, s2);
             }
-        }, DevServicesLauncherConfigResultBuildItem.class.getName(),
-                DevServicesNetworkIdBuildItem.class.getName());
+        }, DevServicesLauncherConfigResultBuildItem.class.getName(), DevServicesNetworkIdBuildItem.class.getName(),
+                DevServicesRegistryBuildItem.class.getName(), DevServicesCustomizerBuildItem.class.getName());
 
         networkId = propertyMap.get("quarkus.test.container.network");
         boolean manageNetwork = false;

@@ -162,12 +162,12 @@ public class ComposeDevServicesProcessor {
     @BuildStep
     public DevServicesResultBuildItem toDevServicesResult(DevServicesComposeProjectBuildItem composeBuildItem) {
         if (composeBuildItem.getProject() != null) {
-            return new DevServicesResultBuildItem(
-                    "Compose Dev Services",
-                    String.format("Project: %s, Services: %s", composeBuildItem.getProject(),
-                            String.join(", ", composeBuildItem.getComposeServices().keySet())),
-                    null,
-                    composeBuildItem.getConfig());
+            return DevServicesResultBuildItem.discovered()
+                    .name("Compose Dev Services")
+                    .description(String.format("Project: %s, Services: %s", composeBuildItem.getProject(),
+                            String.join(", ", composeBuildItem.getComposeServices().keySet())))
+                    .config(composeBuildItem.getConfig())
+                    .build();
         }
         return null;
     }

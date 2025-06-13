@@ -28,6 +28,7 @@ import com.github.dockerjava.api.model.ContainerPort;
 import io.quarkus.it.kafka.BundledEndpoint;
 import io.quarkus.it.kafka.KafkaAdminManager;
 import io.quarkus.it.kafka.KafkaAdminTest;
+import io.quarkus.it.kafka.KafkaEndpoint;
 import io.quarkus.test.ContinuousTestingTestUtils;
 import io.quarkus.test.QuarkusDevModeTest;
 
@@ -52,13 +53,13 @@ public class DevServicesKafkaContinuousTestingTest {
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClass(BundledEndpoint.class)
                     .addClass(KafkaAdminManager.class)
+                    .deleteClass(KafkaEndpoint.class)
                     .addAsResource(
                             new StringAsset(ContinuousTestingTestUtils
                                     .appProperties("quarkus.kafka.devservices.provider=kafka-native",
                                             "quarkus.kafka.devservices.topic-partitions.test=2",
                                             "quarkus.kafka.devservices.topic-partitions.test-consumer=3",
-                                            "quarkus.kafka.health.enabled=true",
-                                            "quarkus.kafka.devservices.provider=kafka-native")),
+                                            "quarkus.kafka.health.enabled=true")),
                             "application.properties"))
             .setTestArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(KafkaAdminTest.class));
 
@@ -177,16 +178,15 @@ public class DevServicesKafkaContinuousTestingTest {
                         + getAllContainers());
     }
 
-    @Disabled("Image change is not working, should be fixed by https://github.com/quarkusio/quarkus/issues/47627")
     @Test
+    @Disabled("This seems to work in dev mode with continuous testing mode, but not in tests")
     public void testContinuousTestingCreatesANewInstanceWhenPropertiesAreChanged() {
 
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();
         var result = utils.waitForNextCompletion();
         assertEquals(2, result.getTotalTestsPassed());
         assertEquals(0, result.getTotalTestsFailed());
-        List<Container> existingContainers = new ArrayList<>();
-        existingContainers.addAll(getKafkaContainers());
+        List<Container> existingContainers = new ArrayList<>(getKafkaContainers());
 
         test.modifyResourceFile("application.properties", s -> s.replaceAll("kafka-native", "Redpanda"));
 
@@ -197,18 +197,21 @@ public class DevServicesKafkaContinuousTestingTest {
         // A new container should have appeared
         {
             List<Container> newContainers = getKafkaContainersExcludingExisting(existingContainers);
-            existingContainers.addAll(newContainers);
             assertEquals(1, newContainers.size(),
                     "New containers: " + newContainers + "\n Old containers: " + existingContainers + "\n All containers: "
                             + getAllContainers());
 
+            List<Integer> existingPorts = Arrays.stream(existingContainers.get(0).getPorts())
+                    .map(ContainerPort::getPublicPort)
+                    .toList();
             // The new container should be on the new port
             List<Integer> ports = Arrays.stream(newContainers.get(0).getPorts())
                     .map(ContainerPort::getPublicPort)
                     .toList();
 
             // Oh good, it's one port, so it should be the expected one
-            assertTrue(ports.contains(6377), "Container ports: " + ports);
+            assertFalse(ports.containsAll(existingPorts), "Container ports: " + ports);
+            existingContainers.addAll(newContainers);
         }
         test.modifyResourceFile("application.properties", s -> UPDATED_FIXED_PORT_PROPERTIES);
 
@@ -263,6 +266,6 @@ public class DevServicesKafkaContinuousTestingTest {
 
     private static boolean isKafkaContainer(Container container) {
         // The output of getCommand() seems to vary by host OS (it's different on CI and mac), but the image name should be reliable
-        return container.getImage().contains("kafka");
+        return container.getImage().contains("kafka") || container.getImage().contains("redpanda");
     }
 }

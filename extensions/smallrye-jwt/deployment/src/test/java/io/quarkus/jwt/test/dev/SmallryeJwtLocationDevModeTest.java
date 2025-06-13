@@ -38,7 +38,7 @@ public class SmallryeJwtLocationDevModeTest {
                         public void execute(BuildContext context) {
                             List<DevServicesResultBuildItem> buildItems = context
                                     .consumeMulti(DevServicesResultBuildItem.class);
-                            assertThat(buildItems).filteredOn(item -> item.getName().equals("SMALLRYE_JWT"))
+                            assertThat(buildItems).filteredOn(item -> item.getName().equals("smallrye-jwt"))
                                     .first()
                                     .satisfies(item -> {
                                         assertThat(item.getConfig())

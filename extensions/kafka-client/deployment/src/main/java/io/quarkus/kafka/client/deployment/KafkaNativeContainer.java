@@ -9,10 +9,10 @@ import org.testcontainers.utility.DockerImageName;
 
 import com.github.dockerjava.api.command.InspectContainerResponse;
 
+import io.quarkus.deployment.builditem.Startable;
 import io.quarkus.devservices.common.ConfigureUtil;
-import io.quarkus.devservices.common.Labels;
 
-public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer> {
+public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer> implements Startable {
 
     private static final String STARTER_SCRIPT = "/work/run.sh";
 
@@ -24,15 +24,11 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
 
     private final String hostName;
 
-    public KafkaNativeContainer(DockerImageName dockerImageName, int fixedExposedPort, String serviceName,
-            String defaultNetworkId, boolean useSharedNetwork) {
+    public KafkaNativeContainer(DockerImageName dockerImageName, int fixedExposedPort, String defaultNetworkId,
+            boolean useSharedNetwork) {
         super(dockerImageName);
         this.fixedExposedPort = fixedExposedPort;
         this.useSharedNetwork = useSharedNetwork;
-        if (serviceName != null) {
-            withLabel(DevServicesKafkaProcessor.DEV_SERVICE_LABEL, serviceName);
-            withLabel(Labels.QUARKUS_DEV_SERVICE, serviceName);
-        }
         String cmd = String.format("while [ ! -f %s ]; do sleep 0.1; done; sleep 0.1; %s", STARTER_SCRIPT, STARTER_SCRIPT);
         withCommand("sh", "-c", cmd);
         waitingFor(Wait.forLogMessage(".*Kafka broker started.*", 1));
@@ -99,4 +95,13 @@ public class KafkaNativeContainer extends GenericContainer<KafkaNativeContainer>
         return getKafkaAdvertisedListeners();
     }
 
+    @Override
+    public String getConnectionInfo() {
+        return getBootstrapServers();
+    }
+
+    @Override
+    public void close() {
+        super.close();
+    }
 }

@@ -3,6 +3,7 @@ package io.quarkus.devui.deployment.menu;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.file.AccessDeniedException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,7 +75,8 @@ public class WorkspaceProcessor {
                 Files.walkFileTree(projectRoot, new SimpleFileVisitor<Path>() {
                     @Override
                     public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                        if (Files.isHidden(dir) || ignoreFolders.contains(dir.getFileName().toString())) {
+                        if (Files.isHidden(dir) || ignoreFolders.contains(dir.getFileName().toString())
+                                || !Files.isReadable(dir) || !Files.isExecutable(dir)) {
                             return FileVisitResult.SKIP_SUBTREE;
                         }
                         return FileVisitResult.CONTINUE;
@@ -84,7 +86,7 @@ public class WorkspaceProcessor {
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         String fileName = file.getFileName().toString();
                         boolean shouldIgnore = Files.isHidden(file)
-                                || file.startsWith(outputDir)
+                                || file.startsWith(outputDir) || !Files.isReadable(file) || !Files.isExecutable(file)
                                 || ignoreFilePatterns.stream().anyMatch(p -> p.matcher(fileName).matches());
 
                         if (!shouldIgnore) {
@@ -92,6 +94,18 @@ public class WorkspaceProcessor {
                             workspaceItems.add(new WorkspaceBuildItem.WorkspaceItem(name, file));
                         }
                         return FileVisitResult.CONTINUE;
+                    }
+
+                    @Override
+                    public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                        if (exc instanceof AccessDeniedException) {
+                            if (Files.isDirectory(file)) {
+                                return FileVisitResult.SKIP_SUBTREE;
+                            } else {
+                                return FileVisitResult.CONTINUE;
+                            }
+                        }
+                        return super.visitFileFailed(file, exc);
                     }
                 });
 

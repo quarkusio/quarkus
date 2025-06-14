@@ -3,6 +3,7 @@ package io.quarkus.websockets.next.runtime;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,22 +12,32 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.jboss.logging.Logger;
 
 import io.quarkus.tls.TlsConfiguration;
 import io.quarkus.tls.TlsConfigurationRegistry;
 import io.quarkus.tls.runtime.config.TlsConfigUtils;
 import io.quarkus.websockets.next.UserData.TypedKey;
+import io.quarkus.websockets.next.WebSocketClientConnection;
 import io.quarkus.websockets.next.WebSocketClientException;
 import io.quarkus.websockets.next.runtime.config.WebSocketsClientRuntimeConfig;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.WebSocket;
+import io.vertx.core.http.WebSocketClient;
 import io.vertx.core.http.WebSocketClientOptions;
 import io.vertx.core.http.WebSocketConnectOptions;
+import io.vertx.core.impl.ContextImpl;
 
 abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>> {
 
     protected static final Pattern PATH_PARAM_PATTERN = Pattern.compile("\\{[a-zA-Z0-9_]+\\}");
+
+    private static final Logger LOG = Logger.getLogger(WebSocketConnectorBase.class);
 
     // mutable state
 
@@ -172,7 +183,16 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
         if (config.maxFrameSize().isPresent()) {
             clientOptions.setMaxFrameSize(config.maxFrameSize().getAsInt());
         }
-
+        if (config.connectionIdleTimeout().isPresent()) {
+            Duration timeout = config.connectionIdleTimeout().get();
+            if (timeout.toMillis() > Integer.MAX_VALUE) {
+                clientOptions.setIdleTimeoutUnit(TimeUnit.SECONDS);
+                clientOptions.setIdleTimeout((int) timeout.toSeconds());
+            } else {
+                clientOptions.setIdleTimeoutUnit(TimeUnit.MILLISECONDS);
+                clientOptions.setIdleTimeout((int) timeout.toMillis());
+            }
+        }
         Optional<TlsConfiguration> maybeTlsConfiguration = TlsConfiguration.from(tlsConfigurationRegistry,
                 Optional.ofNullable(tlsConfigurationName));
         if (maybeTlsConfiguration.isEmpty()) {
@@ -201,4 +221,28 @@ abstract class WebSocketConnectorBase<THIS extends WebSocketConnectorBase<THIS>>
     protected boolean isSecure(URI uri) {
         return "https".equals(uri.getScheme()) || "wss".equals(uri.getScheme());
     }
+
+    record WebSocketOpen(Consumer<WebSocketClientConnection> cleanup, WebSocket websocket) {
+    }
+
+    Consumer<WebSocketClientConnection> newCleanupConsumer(WebSocketClient client, ContextImpl context) {
+        return new Consumer<WebSocketClientConnection>() {
+            @Override
+            public void accept(WebSocketClientConnection conn) {
+                try {
+                    client.close();
+                    LOG.debugf("Client closed for connection %s", conn.id());
+                } catch (Throwable e) {
+                    LOG.errorf(e, "Unable to close the client for connection %s", conn.id());
+                }
+                try {
+                    context.close();
+                    LOG.debugf("Context closed for connection %s", conn.id());
+                } catch (Throwable e) {
+                    LOG.errorf(e, "Unable to close the context for connection %s", conn.id());
+                }
+            }
+        };
+    }
+
 }

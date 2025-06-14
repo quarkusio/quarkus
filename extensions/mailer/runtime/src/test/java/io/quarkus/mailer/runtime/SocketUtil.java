@@ -1,6 +1,5 @@
 package io.quarkus.mailer.runtime;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 
 final class SocketUtil {

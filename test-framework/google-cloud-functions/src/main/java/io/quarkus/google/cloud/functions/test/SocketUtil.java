@@ -1,6 +1,5 @@
 package io.quarkus.google.cloud.functions.test;
 
-import java.io.IOException;
 import java.net.ServerSocket;
 
 // copied from the mailer extension: io.quarkus.mailer.runtime.SocketUtil

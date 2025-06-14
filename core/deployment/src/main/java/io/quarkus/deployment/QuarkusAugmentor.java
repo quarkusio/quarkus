@@ -104,9 +104,9 @@ public class QuarkusAugmentor {
             chainBuilder.setClassLoader(deploymentClassLoader);
 
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
-                            buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                            runtimeProperties == null ? new Properties() : runtimeProperties,
-                            effectiveModel, launchMode, devModeType)
+                    buildSystemProperties == null ? new Properties() : buildSystemProperties,
+                    runtimeProperties == null ? new Properties() : runtimeProperties,
+                    effectiveModel, launchMode, devModeType)
                     .accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);

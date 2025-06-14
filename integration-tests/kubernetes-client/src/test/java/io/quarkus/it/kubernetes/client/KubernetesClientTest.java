@@ -56,17 +56,12 @@ public class KubernetesClientTest {
 
     @Test
     public void testEcKeyIsSupported() throws Exception {
-        InputStream certInputStream = KubernetesClientTest.class.getResourceAsStream("/cert.pem");
-        InputStream keyInputStream = KubernetesClientTest.class.getResourceAsStream("/private-key.pem");
 
-        try {
+        try (InputStream certInputStream = KubernetesClientTest.class.getResourceAsStream("/cert.pem"); InputStream keyInputStream = KubernetesClientTest.class.getResourceAsStream("/private-key.pem")) {
             KeyStore keyStore = CertUtils.createKeyStore(certInputStream, keyInputStream, "EC", "eckey".toCharArray(),
                     (String) null, "keystore".toCharArray());
             Key key = keyStore.getKey("CN=Client,OU=Test,O=Test", "eckey".toCharArray());
             assertTrue(key instanceof ECPrivateKey);
-        } finally {
-            certInputStream.close();
-            keyInputStream.close();
         }
     }
 

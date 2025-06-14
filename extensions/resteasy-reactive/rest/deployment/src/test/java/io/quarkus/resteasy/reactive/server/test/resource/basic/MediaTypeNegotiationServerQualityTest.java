@@ -110,14 +110,11 @@ public class MediaTypeNegotiationServerQualityTest {
     @DisplayName("Test Server Quality")
     public void testServerQuality() throws Exception {
         Invocation.Builder request = client.target(generateURL()).path("foo/echo").request("application/x;", "text/y");
-        Response response = request.get();
-        try {
+        try (Response response = request.get()) {
             Assertions.assertEquals(Status.NOT_FOUND.getStatusCode(), response.getStatus());
             MediaType mediaType = response.getMediaType();
             Assertions.assertEquals("text", mediaType.getType());
             Assertions.assertEquals("y", mediaType.getSubtype());
-        } finally {
-            response.close();
         }
     }
 }

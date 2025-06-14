@@ -39,7 +39,8 @@ public class WebsocketTestCase {
     public void websocketTest() throws Exception {
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
                 session.addMessageHandler(new MessageHandler.Whole<String>() {
@@ -50,12 +51,8 @@ public class WebsocketTestCase {
                 });
                 session.getAsyncRemote().sendText("hello");
             }
-        }, ClientEndpointConfig.Builder.create().build(), echoUri);
-
-        try {
+        }, ClientEndpointConfig.Builder.create().build(), echoUri)) {
             Assertions.assertEquals("hello", message.poll(20, TimeUnit.SECONDS));
-        } finally {
-            session.close();
         }
     }
 
@@ -63,7 +60,8 @@ public class WebsocketTestCase {
     public void addedWebSocketTest() throws Exception {
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
                 session.addMessageHandler(new MessageHandler.Whole<String>() {
@@ -73,19 +71,16 @@ public class WebsocketTestCase {
                     }
                 });
             }
-        }, ClientEndpointConfig.Builder.create().build(), added);
-
-        try {
+        }, ClientEndpointConfig.Builder.create().build(), added)) {
             Assertions.assertEquals("DYNAMIC", message.poll(20, TimeUnit.SECONDS));
-        } finally {
-            session.close();
         }
     }
 
     @Test
     public void websocketServerEncodingAndDecodingTest() throws Exception {
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
                 session.addMessageHandler(new MessageHandler.Whole<String>() {
@@ -96,12 +91,8 @@ public class WebsocketTestCase {
                 });
                 session.getAsyncRemote().sendText("{\"content\":\"message content\"}");
             }
-        }, ClientEndpointConfig.Builder.create().build(), recoderUri);
-
-        try {
+        }, ClientEndpointConfig.Builder.create().build(), recoderUri)) {
             Assertions.assertEquals("{\"content\":\"[recoded]message content\"}", message.poll(20, TimeUnit.SECONDS));
-        } finally {
-            session.close();
         }
     }
 
@@ -132,7 +123,8 @@ public class WebsocketTestCase {
     public void testSendMessageOnOpen() throws Exception {
 
         LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-        Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
+
+        try (Session session = ContainerProvider.getWebSocketContainer().connectToServer(new Endpoint() {
             @Override
             public void onOpen(Session session, EndpointConfig endpointConfig) {
                 session.addMessageHandler(new MessageHandler.Whole<String>() {
@@ -142,14 +134,10 @@ public class WebsocketTestCase {
                     }
                 });
             }
-        }, ClientEndpointConfig.Builder.create().build(), openURI);
-
-        try {
+        }, ClientEndpointConfig.Builder.create().build(), openURI)) {
             for (String i : WebSocketOpenEndpoint.messages) {
                 Assertions.assertEquals(i, message.poll(20, TimeUnit.SECONDS));
             }
-        } finally {
-            session.close();
         }
     }
 }

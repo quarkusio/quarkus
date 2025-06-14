@@ -147,18 +147,13 @@ public class WithSpanInterceptor {
             });
         } else {
             final Context currentSpanContext = instrumenter.start(parentContext, methodRequest);
-            final Scope currentScope = currentSpanContext.makeCurrent();
-            try {
+            try (Scope currentScope = currentSpanContext.makeCurrent()) {
                 Object result = invocationContext.proceed();
                 instrumenter.end(currentSpanContext, methodRequest, null, null);
                 return result;
             } catch (Throwable t) {
                 instrumenter.end(currentSpanContext, methodRequest, null, t);
                 throw t;
-            } finally {
-                if (currentScope != null) {
-                    currentScope.close();
-                }
             }
         }
     }

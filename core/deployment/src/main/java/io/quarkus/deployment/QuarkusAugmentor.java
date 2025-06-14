@@ -97,17 +97,16 @@ public class QuarkusAugmentor {
         long start = System.nanoTime();
         log.debug("Beginning Quarkus augmentation");
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
-        QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem();
-        try {
+        try (QuarkusBuildCloseablesBuildItem buildCloseables = new QuarkusBuildCloseablesBuildItem()) {
             Thread.currentThread().setContextClassLoader(deploymentClassLoader);
 
             final BuildChainBuilder chainBuilder = BuildChain.builder();
             chainBuilder.setClassLoader(deploymentClassLoader);
 
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
-                    buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                    runtimeProperties == null ? new Properties() : runtimeProperties,
-                    effectiveModel, launchMode, devModeType)
+                            buildSystemProperties == null ? new Properties() : buildSystemProperties,
+                            runtimeProperties == null ? new Properties() : runtimeProperties,
+                            effectiveModel, launchMode, devModeType)
                     .accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);
@@ -184,7 +183,6 @@ public class QuarkusAugmentor {
 
             }
             Thread.currentThread().setContextClassLoader(originalClassLoader);
-            buildCloseables.close();
         }
     }
 

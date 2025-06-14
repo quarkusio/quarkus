@@ -10,20 +10,11 @@ final class SocketUtil {
     }
 
     static int findAvailablePort() {
-        ServerSocket serverSocket = null;
-        try {
-            serverSocket = new ServerSocket(0);
+        try (ServerSocket serverSocket = new ServerSocket(0)) {
             return serverSocket.getLocalPort();
         } catch (Exception e) {
             // return a default port
             return 25347;
-        } finally {
-            if (serverSocket != null) {
-                try {
-                    serverSocket.close();
-                } catch (IOException e) {
-                }
-            }
         }
     }
 }

@@ -121,13 +121,11 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
 
     @Override
     public void filter(final ClientRequestContext request, final ClientResponseContext response) {
-        Scope scope = (Scope) request.getProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE);
-        if (scope == null) {
-            return;
-        }
-
-        Context spanContext = (Context) request.getProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT);
-        try {
+        try (Scope scope = (Scope) request.getProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE)) {
+            if (scope == null) {
+                return;
+            }
+            Context spanContext = (Context) request.getProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT);
             String pathTemplate = (String) request.getProperty(URL_PATH_TEMPLATE_KEY);
             if (pathTemplate != null && !pathTemplate.isEmpty()) {
                 Span.fromContext(spanContext)
@@ -135,8 +133,6 @@ public class OpenTelemetryClientFilter implements ClientRequestFilter, ClientRes
             }
             instrumenter.end(spanContext, request, response, null);
         } finally {
-            scope.close();
-
             request.removeProperty(REST_CLIENT_OTEL_SPAN_CLIENT_CONTEXT);
             request.removeProperty(REST_CLIENT_OTEL_SPAN_CLIENT_PARENT_CONTEXT);
             request.removeProperty(REST_CLIENT_OTEL_SPAN_CLIENT_SCOPE);

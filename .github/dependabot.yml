@@ -85,6 +85,7 @@ updates:
       # Maven plugins
       - dependency-name: org.apache.maven.plugins:*
       - dependency-name: org.codehaus.mojo:*
+      - dependency-name: org.openrewrite.maven:rewrite-maven-plugin
       - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin

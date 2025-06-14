@@ -81,12 +81,13 @@ updates:
       - dependency-name: org.awaitility:awaitility
       - dependency-name: com.thoughtworks.xstream:xstream
       - dependency-name: org.jacoco:*
-      # Maven plugins
+      # Maven plugins and extensions
       - dependency-name: org.apache.maven.plugins:*
       - dependency-name: org.codehaus.mojo:*
       - dependency-name: io.fabric8:docker-maven-plugin
       - dependency-name: net.revelc.code.formatter:formatter-maven-plugin
       - dependency-name: net.revelc.code:impsort-maven-plugin
+      - dependency-name: eu.maveniverse.maven.njord:*
       # Narayana
       - dependency-name: org.jboss.narayana.jta:*
       - dependency-name: org.jboss.narayana.jts:*

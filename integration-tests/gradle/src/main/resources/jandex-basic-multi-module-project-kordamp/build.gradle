@@ -39,7 +39,7 @@ subprojects {
     }
 
     dependencies {
-        implementation 'io.quarkus:quarkus-resteasy'
+        implementation 'io.quarkus:quarkus-rest'
 
         implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
     }

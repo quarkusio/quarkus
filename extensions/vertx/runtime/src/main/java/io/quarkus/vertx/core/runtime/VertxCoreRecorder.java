@@ -38,6 +38,7 @@ import io.quarkus.vertx.mdc.provider.LateBoundMDCProvider;
 import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 import io.quarkus.vertx.runtime.jackson.QuarkusJacksonFactory;
 import io.smallrye.common.cpu.ProcessorInfo;
+import io.smallrye.common.vertx.VertxContext;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Context;
 import io.vertx.core.Handler;
@@ -626,7 +627,7 @@ public class VertxCoreRecorder {
                         ConcurrentMap<Object, Object> local = vertxContext.localContextData();
                         if (containsIgnoredKey(ignoredKeys, local)) {
                             // Duplicate the context, copy the data, remove the request context
-                            vertxContext = vertxContext.duplicate();
+                            vertxContext = ((ContextInternal) VertxContext.getRootContext(vertxContext)).duplicate();
                             vertxContext.localContextData().putAll(local);
                             ignoredKeys.forEach(vertxContext.localContextData()::remove);
                             VertxContextSafetyToggle.setContextSafe(vertxContext, true);

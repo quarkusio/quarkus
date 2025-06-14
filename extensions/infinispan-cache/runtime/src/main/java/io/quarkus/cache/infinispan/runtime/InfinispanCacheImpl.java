@@ -23,6 +23,7 @@ import io.quarkus.cache.Cache;
 import io.quarkus.cache.runtime.AbstractCache;
 import io.quarkus.infinispan.client.runtime.InfinispanClientProducer;
 import io.quarkus.infinispan.client.runtime.InfinispanClientUtil;
+import io.smallrye.common.vertx.VertxContext;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Context;
@@ -167,9 +168,8 @@ public class InfinispanCacheImpl extends AbstractCache implements Cache {
                     } else {
                         // We are on a context.
                         // We cannot continue on the current context as we may share a duplicated context.
-                        // We need a new one. Note that duplicate() does not duplicate the duplicated context,
-                        // but the root context.
-                        ((ContextInternal) ctx).duplicate()
+                        // We need a new one
+                        ((ContextInternal) VertxContext.getRootContext(ctx)).duplicate()
                                 .runOnContext(new Handler<Void>() {
                                     @Override
                                     public void handle(Void ignored) {

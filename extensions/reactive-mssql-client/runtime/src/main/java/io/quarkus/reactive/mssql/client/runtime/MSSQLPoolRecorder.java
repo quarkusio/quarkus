@@ -10,6 +10,7 @@ import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemKeyCertO
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePemTrustOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxKeyCertOptions;
 import static io.quarkus.vertx.core.runtime.SSLConfigHelper.configurePfxTrustOptions;
+import static io.quarkus.vertx.core.runtime.SSLConfigHelper.setJdkHeapBufferPooling;
 
 import java.util.List;
 import java.util.Map;
@@ -251,6 +252,8 @@ public class MSSQLPoolRecorder {
         } else {
             mssqlConnectOptions.setHostnameVerificationAlgorithm(algo);
         }
+
+        setJdkHeapBufferPooling(mssqlConnectOptions);
 
         dataSourceReactiveRuntimeConfig.additionalProperties().forEach(mssqlConnectOptions::addProperty);
 

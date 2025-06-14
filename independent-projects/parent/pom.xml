@@ -30,11 +30,14 @@
         <version.gpg.plugin>3.2.7</version.gpg.plugin>
         <version.impsort.plugin>1.12.0</version.impsort.plugin>
         <version.install.plugin>3.1.4</version.install.plugin>
-        <version.javadoc.plugin>3.11.2</version.javadoc.plugin>
         <version.jar.plugin>3.4.2</version.jar.plugin>
+        <version.javadoc.plugin>3.11.2</version.javadoc.plugin>
         <version.plugin.plugin>3.15.1</version.plugin.plugin>
         <version.release.plugin>3.1.1</version.release.plugin>
         <version.resources.plugin>3.3.1</version.resources.plugin>
+        <version.rewrite.plugin>6.10.0</version.rewrite.plugin>
+        <version.rewrite.static.analysis>2.10.0</version.rewrite.static.analysis>
+        <version.spotless.plugin>3.3.1</version.spotless.plugin>
         <!-- Do not update for now as it is causing test issues in integration-tests/devmode
         java.lang.NoClassDefFoundError: com/salesforce/jprotoc/Generator -->
         <version.shade.plugin>3.2.1</version.shade.plugin>

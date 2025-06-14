@@ -9,7 +9,6 @@ import java.lang.annotation.Annotation;
 import java.util.function.Supplier;
 
 import jakarta.validation.Valid;
-import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.UriInfo;
 
 import org.jboss.resteasy.reactive.RestResponse;

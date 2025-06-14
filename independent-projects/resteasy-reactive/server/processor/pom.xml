@@ -1,84 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.quarkus.resteasy.reactive</groupId>
-        <artifactId>resteasy-reactive-server-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-    </parent>
+  <parent>
+    <groupId>io.quarkus.resteasy.reactive</groupId>
+    <artifactId>resteasy-reactive-server-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+  </parent>
 
-    <artifactId>resteasy-reactive-processor</artifactId>
-    <name>RESTEasy Reactive - Processor</name>
+  <artifactId>resteasy-reactive-processor</artifactId>
+  <name>RESTEasy Reactive - Processor</name>
 
-    <dependencies>
-        <dependency>
-            <groupId>io.smallrye</groupId>
-            <artifactId>jandex</artifactId>
-        </dependency>
+  <dependencies>
+    <dependency>
+      <groupId>io.smallrye</groupId>
+      <artifactId>jandex</artifactId>
+    </dependency>
 
-        <dependency>
-            <groupId>io.quarkus.resteasy.reactive</groupId>
-            <artifactId>resteasy-reactive</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus.gizmo</groupId>
-            <artifactId>gizmo</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus.resteasy.reactive</groupId>
-            <artifactId>resteasy-reactive-common-processor</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.ws.rs</groupId>
-            <artifactId>jakarta.ws.rs-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>jakarta.enterprise.cdi-api</artifactId>
-        </dependency>
+    <dependency>
+      <groupId>io.quarkus.resteasy.reactive</groupId>
+      <artifactId>resteasy-reactive</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus.gizmo</groupId>
+      <artifactId>gizmo</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus.resteasy.reactive</groupId>
+      <artifactId>resteasy-reactive-common-processor</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.ws.rs</groupId>
+      <artifactId>jakarta.ws.rs-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.enterprise</groupId>
+      <artifactId>jakarta.enterprise.cdi-api</artifactId>
+    </dependency>
 
-        <dependency>
-            <groupId>jakarta.annotation</groupId>
-            <artifactId>jakarta.annotation-api</artifactId>
-        </dependency>
+    <dependency>
+      <groupId>jakarta.annotation</groupId>
+      <artifactId>jakarta.annotation-api</artifactId>
+    </dependency>
 
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
 
-        <dependency>
-            <groupId>org.jboss.logging</groupId>
-            <artifactId>jboss-logging</artifactId>
-        </dependency>
+    <dependency>
+      <groupId>org.jboss.logging</groupId>
+      <artifactId>jboss-logging</artifactId>
+    </dependency>
 
-        <!-- this is only done in order to ensure that resteasy-reactive-build-support is built before this module -->
-        <dependency>
-            <groupId>io.quarkus.resteasy.reactive</groupId>
-            <artifactId>resteasy-reactive-build-support</artifactId>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+    <!-- this is only done in order to ensure that resteasy-reactive-build-support is built before this module -->
+    <dependency>
+      <groupId>io.quarkus.resteasy.reactive</groupId>
+      <artifactId>resteasy-reactive-build-support</artifactId>
+      <type>pom</type>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
 
-    </dependencies>
+  </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>de.thetaphi</groupId>
-                <artifactId>forbiddenapis</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>de.thetaphi</groupId>
+        <artifactId>forbiddenapis</artifactId>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

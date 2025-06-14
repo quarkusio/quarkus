@@ -1,212 +1,208 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
-    </parent>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
 
-    <groupId>io.quarkus.junit5</groupId>
-    <artifactId>junit5-virtual-threads</artifactId>
+  <groupId>io.quarkus.junit5</groupId>
+  <artifactId>junit5-virtual-threads</artifactId>
 
-    <name>Quarkus - JUnit 5 Extension - Virtual Threads</name>
-    <description>Module that allows detecting virtual threads pinning</description>
+  <name>Quarkus - JUnit 5 Extension - Virtual Threads</name>
+  <description>Module that allows detecting virtual threads pinning</description>
+  <url>https://github.com/quarkusio/quarkus</url>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
+    <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+    <tag>HEAD</tag>
     <url>https://github.com/quarkusio/quarkus</url>
+  </scm>
 
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <distribution>repo</distribution>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
-        </license>
-    </licenses>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <scm child.scm.connection.inherit.append.path="false"
-         child.scm.developerConnection.inherit.append.path="false"
-         child.scm.url.inherit.append.path="false">
-        <url>https://github.com/quarkusio/quarkus</url>
-        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
-        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
+    <compiler.plugin.version>3.14.0</compiler.plugin.version>
+    <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
+    <surefire.plugin.version>3.5.2</surefire.plugin.version>
+    <jandex.version>3.3.1</jandex.version>
 
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <junit5.version>5.13.1</junit5.version>
+    <junit.testkit.version>1.13.1</junit.testkit.version>
+    <assertj.version>3.27.3</assertj.version>
+  </properties>
 
-        <compiler.plugin.version>3.14.0</compiler.plugin.version>
-        <enforcer.plugin.version>3.2.1</enforcer.plugin.version>
-        <surefire.plugin.version>3.5.2</surefire.plugin.version>
-        <jandex.version>3.3.1</jandex.version>
-
-        <junit5.version>5.13.1</junit5.version>
-        <junit.testkit.version>1.13.1</junit.testkit.version>
-        <assertj.version>3.27.3</assertj.version>
-    </properties>
-
-    <dependencyManagement>
-        <dependencies>
-            <!-- JUnit 5 dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit5.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
+  <dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-testkit</artifactId>
-            <version>${junit.testkit.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <version>${assertj.version}</version>
-            <scope>test</scope>
-        </dependency>
+      <!-- JUnit 5 dependencies, imported as a BOM -->
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit5.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
     </dependencies>
+  </dependencyManagement>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>${compiler.plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>io.smallrye</groupId>
-                    <artifactId>jandex-maven-plugin</artifactId>
-                    <version>${jandex.version}</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <configuration>
-                        <quiet>true</quiet>
-                        <doclint>none</doclint>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <dependencies>
-                        <dependency>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-enforcer-rules</artifactId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <executions>
-                        <execution>
-                            <id>enforce</id>
-                            <phase>${maven-enforcer-plugin.phase}</phase>
-                            <configuration>
-                                <rules>
-                                    <dependencyConvergence/>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
-                                    </externalRules>
-                                    <bannedDependencies>
-                                        <excludes>
-                                            <!-- findbugs is not required at runtime -->
-                                            <exclude>com.google.code.findbugs:jsr305</exclude>
-                                            <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
-                                            <exclude>com.google.guava:listenablefuture</exclude>
-                                        </excludes>
-                                    </bannedDependencies>
-                                </rules>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>${surefire.plugin.version}</version>
-                    <configuration>
-                        <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
-                        <systemPropertyVariables combine.self="override"/>
-                        <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
-                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
-                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                        <excludes>
-                            <exclude>io.quarkus.test.junit5.virtual.internal.ignore.**Test.java</exclude>
-                        </excludes>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-testkit</artifactId>
+      <version>${junit.testkit.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
-    <profiles>
-        <profile>
-            <id>quick-build</id>
-            <activation>
-                <property>
-                    <name>quickly</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>quick-build-docs</id>
-            <activation>
-                <property>
-                    <name>quicklyDocs</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
-            <id>quick-build-ci</id>
-            <activation>
-                <property>
-                    <name>quickly-ci</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
-            </properties>
-        </profile>
-    </profiles>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${compiler.plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>io.smallrye</groupId>
+          <artifactId>jandex-maven-plugin</artifactId>
+          <version>${jandex.version}</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <quiet>true</quiet>
+            <doclint>none</doclint>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>io.quarkus</groupId>
+              <artifactId>quarkus-enforcer-rules</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>enforce</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <phase>${maven-enforcer-plugin.phase}</phase>
+              <configuration>
+                <rules>
+                  <dependencyConvergence></dependencyConvergence>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                  </externalRules>
+                  <bannedDependencies>
+                    <excludes>
+                      <!-- findbugs is not required at runtime -->
+                      <exclude>com.google.code.findbugs:jsr305</exclude>
+                      <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
+                      <exclude>com.google.guava:listenablefuture</exclude>
+                    </excludes>
+                  </bannedDependencies>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>${surefire.plugin.version}</version>
+          <configuration>
+            <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+            <systemPropertyVariables combine.self="override"></systemPropertyVariables>
+            <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+            <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
+            <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
+            <excludes>
+              <exclude>io.quarkus.test.junit5.virtual.internal.ignore.**Test.java</exclude>
+            </excludes>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <profiles>
+    <profile>
+      <id>quick-build</id>
+      <activation>
+        <property>
+          <name>quickly</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>quick-build-docs</id>
+      <activation>
+        <property>
+          <name>quicklyDocs</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+      <id>quick-build-ci</id>
+      <activation>
+        <property>
+          <name>quickly-ci</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+        <format.skip>true</format.skip>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>

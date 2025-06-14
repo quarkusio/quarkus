@@ -1,342 +1,354 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-         child.project.url.inherit.append.path="false">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>independent-projects/parent/pom.xml</relativePath>
-    </parent>
-
-    <artifactId>quarkus-project</artifactId>
-    <name>Quarkus - Project pom</name>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" child.project.url.inherit.append.path="false" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-parent</artifactId>
     <version>999-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    <relativePath>independent-projects/parent/pom.xml</relativePath>
+  </parent>
 
-    <description>Quarkus - Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM</description>
+  <artifactId>quarkus-project</artifactId>
+  <version>999-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>Quarkus - Project pom</name>
+
+  <description>Quarkus - Kubernetes Native Java stack tailored for OpenJDK HotSpot and GraalVM</description>
+  <url>https://github.com/quarkusio/quarkus</url>
+
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>quarkus</id>
+      <name>Quarkus Community</name>
+      <organization>Quarkus</organization>
+      <organizationUrl>https://quarkus.io</organizationUrl>
+    </developer>
+  </developers>
+
+  <modules>
+
+    <!-- External projects -->
+    <module>independent-projects/parent</module>
+    <module>independent-projects/ide-config</module>
+    <module>independent-projects/revapi</module>
+    <module>independent-projects/arc</module>
+    <module>independent-projects/bootstrap</module>
+    <module>independent-projects/qute</module>
+    <module>independent-projects/tools</module>
+    <module>independent-projects/enforcer-rules</module>
+    <module>independent-projects/vertx-utils</module>
+    <module>independent-projects/resteasy-reactive</module>
+    <module>independent-projects/extension-maven-plugin</module>
+    <module>independent-projects/junit5-virtual-threads</module>
+
+    <!-- BOMs and parent POM -->
+    <module>bom/application</module>
+    <module>bom/test</module>
+    <module>bom/dev-ui</module>
+    <module>build-parent</module>
+
+    <!-- Core components -->
+    <module>core</module>
+    <module>test-framework</module>
+
+    <!-- Extensions -->
+    <module>extensions</module>
+
+    <!-- Devtools (Maven, cli, gradle) -->
+    <!-- MUST BE BUILT AFTER EXTENSIONS BUT BEFORE IT -->
+    <!-- the tools are generating the JSON descriptor for the BOM -->
+    <!-- relying on the fact that the extension descriptor, generated as part of an extension build, is available -->
+    <module>devtools</module>
+
+    <!-- Integration Tests -->
+    <module>integration-tests</module>
+
+    <!-- Misc. -->
+    <module>docs</module>
+  </modules>
+
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
+    <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+    <tag>HEAD</tag>
     <url>https://github.com/quarkusio/quarkus</url>
+  </scm>
 
-    <developers>
-        <developer>
-            <id>quarkus</id>
-            <name>Quarkus Community</name>
-            <organization>Quarkus</organization>
-            <organizationUrl>https://quarkus.io</organizationUrl>
-        </developer>
-    </developers>
+  <issueManagement>
+    <system>GitHub</system>
+    <url>https://github.com/quarkusio/quarkus/issues/</url>
+  </issueManagement>
 
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
+  <properties>
+    <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
+    <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
 
-    <scm child.scm.connection.inherit.append.path="false"
-         child.scm.developerConnection.inherit.append.path="false"
-         child.scm.url.inherit.append.path="false">
-        <url>https://github.com/quarkusio/quarkus</url>
-        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
-        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
+    <gitflow-incremental-builder.version>4.5.4</gitflow-incremental-builder.version>
+    <quarkus-platform-bom-plugin.version>0.0.121</quarkus-platform-bom-plugin.version>
 
-    <issueManagement>
-        <system>GitHub</system>
-        <url>https://github.com/quarkusio/quarkus/issues/</url>
-    </issueManagement>
+    <skipDocs>false</skipDocs>
+    <skip.gradle.tests>false</skip.gradle.tests>
 
-    <properties>
-        <graalvmHome>${env.GRAALVM_HOME}</graalvmHome>
-        <postgres.url>jdbc:postgresql:hibernate_orm_test</postgres.url>
+    <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
+    <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
 
-        <gitflow-incremental-builder.version>4.5.4</gitflow-incremental-builder.version>
-        <quarkus-platform-bom-plugin.version>0.0.121</quarkus-platform-bom-plugin.version>
+    <owasp-dependency-check-plugin.version>11.1.0</owasp-dependency-check-plugin.version>
 
-        <skipDocs>false</skipDocs>
-        <skip.gradle.tests>false</skip.gradle.tests>
-
-        <maven-enforcer-plugin.phase>validate</maven-enforcer-plugin.phase>
-        <forbiddenapis-maven-plugin.phase>verify</forbiddenapis-maven-plugin.phase>
-
-        <owasp-dependency-check-plugin.version>11.1.0</owasp-dependency-check-plugin.version>
-
-        <!-- Dependency versions -->
-        <!-- Properties below are set in this file because they are used
+    <!-- Dependency versions -->
+    <!-- Properties below are set in this file because they are used
              in the BOM as well as other POMs (build-parent/pom.xml, docs/pom.xml, ...) -->
-        <jacoco.version>0.8.13</jacoco.version>
-        <kubernetes-client.version>7.3.1</kubernetes-client.version> <!-- Please check with Java Operator SDK team before updating -->
-        <rest-assured.version>5.5.5</rest-assured.version>
-        <hibernate-orm.version>7.0.2.Final</hibernate-orm.version> <!-- WARNING when updating, also align the versions below -->
-        <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version> <!-- version controlled by Hibernate ORM's needs -->
-        <antlr.version>4.13.0</antlr.version> <!-- version controlled by Hibernate ORM's needs -->
-        <bytebuddy.version>1.15.11</bytebuddy.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-models.version>1.0.0</hibernate-models.version> <!-- version controlled by Hibernate ORM's needs -->
-        <hibernate-reactive.version>3.0.0.Final</hibernate-reactive.version> <!-- highly sensitive to Hibernate ORM upgrades -->
-        <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
-        <hibernate-search.version>8.0.0.Final</hibernate-search.version>
+    <jacoco.version>0.8.13</jacoco.version>
+    <kubernetes-client.version>7.3.1</kubernetes-client.version>
+    <!-- Please check with Java Operator SDK team before updating -->
+    <rest-assured.version>5.5.5</rest-assured.version>
+    <hibernate-orm.version>7.0.2.Final</hibernate-orm.version>
+    <!-- WARNING when updating, also align the versions below -->
+    <jakarta.persistence-api.version>3.2.0</jakarta.persistence-api.version>
+    <!-- version controlled by Hibernate ORM's needs -->
+    <antlr.version>4.13.0</antlr.version>
+    <!-- version controlled by Hibernate ORM's needs -->
+    <bytebuddy.version>1.15.11</bytebuddy.version>
+    <!-- version controlled by Hibernate ORM's needs -->
+    <hibernate-models.version>1.0.0</hibernate-models.version>
+    <!-- version controlled by Hibernate ORM's needs -->
+    <hibernate-reactive.version>3.0.0.Final</hibernate-reactive.version>
+    <!-- highly sensitive to Hibernate ORM upgrades -->
+    <hibernate-validator.version>9.0.0.Final</hibernate-validator.version>
+    <hibernate-search.version>8.0.0.Final</hibernate-search.version>
 
-        <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
-        <grpc.version>1.69.1</grpc.version> <!-- when updating, verify if following versions should not be updated too: -->
-                                            <!-- com.google.auth -->
-                                            <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
-        <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
-        <protoc.version>3.25.5</protoc.version>
-        <protobuf-java.version>${protoc.version}</protobuf-java.version>
-        <protobuf-kotlin.version>${protoc.version}</protobuf-kotlin.version>
-        <proto-google-common-protos.version>2.58.0</proto-google-common-protos.version>
-        <perfmark.version>0.27.0</perfmark.version><!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
+    <!-- Make sure to check compatibility between these 2 gRPC components before upgrade -->
+    <grpc.version>1.69.1</grpc.version>
+    <!-- when updating, verify if following versions should not be updated too: -->
+    <!-- com.google.auth -->
+    <!-- perfmark.version https://central.sonatype.com/artifact/io.grpc/grpc-core  -->
+    <grpc-jprotoc.version>1.2.2</grpc-jprotoc.version>
+    <protoc.version>3.25.5</protoc.version>
+    <protobuf-java.version>${protoc.version}</protobuf-java.version>
+    <protobuf-kotlin.version>${protoc.version}</protobuf-kotlin.version>
+    <proto-google-common-protos.version>2.58.0</proto-google-common-protos.version>
+    <perfmark.version>0.27.0</perfmark.version>
+    <!-- dependency of io.grpc:grpc-core not managed in io.grpc:grpc-bom -->
 
-        <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
-        <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>
+    <!-- Used in the build parent and test BOM (for the junit 5 plugin) and in the BOM (for the API) -->
+    <smallrye-certificate-generator.version>0.9.2</smallrye-certificate-generator.version>
 
-        <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
-        <testng.version>7.8.0</testng.version>
-    </properties>
+    <!-- TestNG version: we don't enforce it in the BOM as it is mostly used in the MP TCKs and we need to use the version from the TCKs -->
+    <testng.version>7.8.0</testng.version>
+  </properties>
 
-    <modules>
+  <repositories>
+    <repository>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>central</id>
+      <name>Maven Repository Switchboard</name>
+      <url>https://repo.maven.apache.org/maven2</url>
+    </repository>
+  </repositories>
 
-        <!-- External projects -->
-        <module>independent-projects/parent</module>
-        <module>independent-projects/ide-config</module>
-        <module>independent-projects/revapi</module>
-        <module>independent-projects/arc</module>
-        <module>independent-projects/bootstrap</module>
-        <module>independent-projects/qute</module>
-        <module>independent-projects/tools</module>
-        <module>independent-projects/enforcer-rules</module>
-        <module>independent-projects/vertx-utils</module>
-        <module>independent-projects/resteasy-reactive</module>
-        <module>independent-projects/extension-maven-plugin</module>
-        <module>independent-projects/junit5-virtual-threads</module>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
+          <version>${quarkus-platform-bom-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.owasp</groupId>
+          <artifactId>dependency-check-maven</artifactId>
+          <version>${owasp-dependency-check-plugin.version}</version>
+          <configuration>
+            <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
+            <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
+            <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
+            <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
+            <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+    <extensions>
+      <extension>
+        <groupId>io.quarkus.bot</groupId>
+        <artifactId>build-reporter-maven-extension</artifactId>
+        <version>3.11.1</version>
+      </extension>
+    </extensions>
+  </build>
 
-        <!-- BOMs and parent POM -->
-        <module>bom/application</module>
-        <module>bom/test</module>
-        <module>bom/dev-ui</module>
-        <module>build-parent</module>
-
-        <!-- Core components -->
-        <module>core</module>
-        <module>test-framework</module>
-
-        <!-- Extensions -->
-        <module>extensions</module>
-
-        <!-- Devtools (Maven, cli, gradle) -->
-        <!-- MUST BE BUILT AFTER EXTENSIONS BUT BEFORE IT -->
-        <!-- the tools are generating the JSON descriptor for the BOM -->
-        <!-- relying on the fact that the extension descriptor, generated as part of an extension build, is available -->
-        <module>devtools</module>
-
-        <!-- Integration Tests -->
-        <module>integration-tests</module>
-
-        <!-- Misc. -->
-        <module>docs</module>
-    </modules>
-
-    <repositories>
-        <repository>
-            <id>central</id>
-            <name>Maven Repository Switchboard</name>
-            <url>https://repo.maven.apache.org/maven2</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-platform-bom-maven-plugin</artifactId>
-                    <version>${quarkus-platform-bom-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.owasp</groupId>
-                    <artifactId>dependency-check-maven</artifactId>
-                    <version>${owasp-dependency-check-plugin.version}</version>
-                    <configuration>
-                        <assemblyAnalyzerEnabled>false</assemblyAnalyzerEnabled>
-                        <nugetconfAnalyzerEnabled>false</nugetconfAnalyzerEnabled>
-                        <nuspecAnalyzerEnabled>false</nuspecAnalyzerEnabled>
-                        <retireJsAnalyzerEnabled>false</retireJsAnalyzerEnabled>
-                        <nodeAnalyzerEnabled>false</nodeAnalyzerEnabled>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-        <extensions>
-            <extension>
-                <groupId>io.quarkus.bot</groupId>
-                <artifactId>build-reporter-maven-extension</artifactId>
-                <version>3.11.1</version>
-            </extension>
-        </extensions>
-    </build>
-
-    <profiles>
-        <profile>
-            <id>quick-build</id>
-            <activation>
-                <property>
-                    <name>quickly</name>
-                </property>
-            </activation>
-            <properties>
-                <!-- please check quick-build-ci as well when modifying these properties -->
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <skipDocs>true</skipDocs>
-                <enforcer.skip>true</enforcer.skip>
-                <maven-enforcer-plugin.phase>none</maven-enforcer-plugin.phase>
-                <skipExtensionValidation>true</skipExtensionValidation>
-                <skip.gradle.tests>true</skip.gradle.tests>
-                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
-                <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
-                <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
-                <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
-                <skipCodestartValidation>true</skipCodestartValidation>
-                <truststore.skip>true</truststore.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>quick-build-docs</id>
-            <activation>
-                <property>
-                    <name>quicklyDocs</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-                <skipExtensionValidation>true</skipExtensionValidation>
-                <skip.gradle.tests>true</skip.gradle.tests>
-                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
-                <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
-                <skipCodestartValidation>true</skipCodestartValidation>
-                <truststore.skip>true</truststore.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
-            <id>quick-build-ci</id>
-            <activation>
-                <property>
-                    <name>quickly-ci</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <skipDocs>true</skipDocs>
-                <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
-                <skipExtensionValidation>true</skipExtensionValidation>
-                <skip.gradle.tests>true</skip.gradle.tests>
-                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
-                <jbang.skip>true</jbang.skip> <!-- jbang-maven-plugin -->
-                <forbiddenapis.skip>true</forbiddenapis.skip> <!-- forbidden-apis maven plugin -->
-                <truststore.skip>true</truststore.skip>
-            </properties>
-        </profile>
-        <profile>
-            <id>relocations</id>
-            <modules>
-                <module>relocations</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>release</id>
-            <modules>
-                <module>relocations</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>tcks</id>
-            <activation>
-                <property>
-                    <name>tcks</name>
-                </property>
-            </activation>
-            <modules>
-                <module>tcks</module>
-            </modules>
-        </profile>
-        <profile>
-            <id>incremental</id>
-            <activation>
-                <property>
-                    <name>incremental</name>
-                </property>
-            </activation>
-            <properties>
-                <!-- the *local* main, not refs/remotes/... -->
-                <gib.referenceBranch>main</gib.referenceBranch>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.github.gitflow-incremental-builder</groupId>
-                        <artifactId>gitflow-incremental-builder</artifactId>
-                        <version>${gitflow-incremental-builder.version}</version>
-                        <extensions>true</extensions>
-                        <!-- https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
+  <profiles>
+    <profile>
+      <id>quick-build</id>
+      <activation>
+        <property>
+          <name>quickly</name>
+        </property>
+      </activation>
+      <properties>
+        <!-- please check quick-build-ci as well when modifying these properties -->
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <skipDocs>true</skipDocs>
+        <enforcer.skip>true</enforcer.skip>
+        <maven-enforcer-plugin.phase>none</maven-enforcer-plugin.phase>
+        <skipExtensionValidation>true</skipExtensionValidation>
+        <skip.gradle.tests>true</skip.gradle.tests>
+        <invoker.skip>true</invoker.skip>
+        <!-- maven-invoker-plugin -->
+        <jbang.skip>true</jbang.skip>
+        <!-- jbang-maven-plugin -->
+        <forbiddenapis.skip>true</forbiddenapis.skip>
+        <!-- forbidden-apis maven plugin -->
+        <forbiddenapis-maven-plugin.phase>none</forbiddenapis-maven-plugin.phase>
+        <skipCodestartValidation>true</skipCodestartValidation>
+        <truststore.skip>true</truststore.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>quick-build-docs</id>
+      <activation>
+        <property>
+          <name>quicklyDocs</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+        <skipExtensionValidation>true</skipExtensionValidation>
+        <skip.gradle.tests>true</skip.gradle.tests>
+        <invoker.skip>true</invoker.skip>
+        <!-- maven-invoker-plugin -->
+        <forbiddenapis.skip>true</forbiddenapis.skip>
+        <!-- forbidden-apis maven plugin -->
+        <skipCodestartValidation>true</skipCodestartValidation>
+        <truststore.skip>true</truststore.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+      <id>quick-build-ci</id>
+      <activation>
+        <property>
+          <name>quickly-ci</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <skipDocs>true</skipDocs>
+        <enforcer.skip>true</enforcer.skip>
+        <format.skip>true</format.skip>
+        <skipExtensionValidation>true</skipExtensionValidation>
+        <skip.gradle.tests>true</skip.gradle.tests>
+        <invoker.skip>true</invoker.skip>
+        <!-- maven-invoker-plugin -->
+        <jbang.skip>true</jbang.skip>
+        <!-- jbang-maven-plugin -->
+        <forbiddenapis.skip>true</forbiddenapis.skip>
+        <!-- forbidden-apis maven plugin -->
+        <truststore.skip>true</truststore.skip>
+      </properties>
+    </profile>
+    <profile>
+      <id>relocations</id>
+      <modules>
+        <module>relocations</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>release</id>
+      <modules>
+        <module>relocations</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>tcks</id>
+      <activation>
+        <property>
+          <name>tcks</name>
+        </property>
+      </activation>
+      <modules>
+        <module>tcks</module>
+      </modules>
+    </profile>
+    <profile>
+      <id>incremental</id>
+      <activation>
+        <property>
+          <name>incremental</name>
+        </property>
+      </activation>
+      <properties>
+        <!-- the *local* main, not refs/remotes/... -->
+        <gib.referenceBranch>main</gib.referenceBranch>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>io.github.gitflow-incremental-builder</groupId>
+            <artifactId>gitflow-incremental-builder</artifactId>
+            <version>${gitflow-incremental-builder.version}</version>
+            <extensions>true</extensions>
+            <!-- https://github.com/gitflow-incremental-builder/gitflow-incremental-builder#configuration
                              General recap: Anything that is directly set in <configuration> cannot be redefined via '-D...'!
                              See also: https://github.com/gitflow-incremental-builder/gitflow-incremental-builder/issues/213 -->
-                        <configuration>
-                            <!-- these metadata file can't affect the build -->
-                            <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*|LICENSE|[^/\\]+\.md|[^/\\]+\.txt|[^/\\]+\.adoc</excludePathsMatching>
-                            <!-- pointless to attempt incremental build if something like mvnw was changed
+            <configuration>
+              <!-- these metadata file can't affect the build -->
+              <excludePathsMatching>\.sdkmanrc|.gitpod.yml|\.gitpod[/\\].*|LICENSE|[^/\\]+\.md|[^/\\]+\.txt|[^/\\]+\.adoc</excludePathsMatching>
+              <!-- pointless to attempt incremental build if something like mvnw was changed
                                  (and also potentially wrong, given that independent-projects might not be built) -->
-                            <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
-                            <!-- Note: *Upstream* is only relevant in case of:
+              <skipIfPathMatches>\.github[/\\].*|\.mvn[/\\].*|mvnw.*</skipIfPathMatches>
+              <!-- Note: *Upstream* is only relevant in case of:
                                  -am or
                                  -Dgib.buildUpstream=always|true or
                                  -Dgib.buildAll=true or
                                  -Dgib.forceBuildModules=... -->
-                            <skipTestsForUpstreamModules>true</skipTestsForUpstreamModules>
-                            <argsForUpstreamModules>skipITs invoker.skip no-format</argsForUpstreamModules>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>owasp-check</id>
-            <activation>
-                <property>
-                    <name>owasp-check</name>
-                </property>
-            </activation>
-            <build>
-                <defaultGoal>org.owasp:dependency-check-maven:check</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>owasp-report</id>
-            <activation>
-                <property>
-                    <name>owasp-report</name>
-                </property>
-            </activation>
-            <build>
-                <defaultGoal>org.owasp:dependency-check-maven:aggregate</defaultGoal>
-            </build>
-        </profile>
-    </profiles>
+              <skipTestsForUpstreamModules>true</skipTestsForUpstreamModules>
+              <argsForUpstreamModules>skipITs invoker.skip no-format</argsForUpstreamModules>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>owasp-check</id>
+      <activation>
+        <property>
+          <name>owasp-check</name>
+        </property>
+      </activation>
+      <build>
+        <defaultGoal>org.owasp:dependency-check-maven:check</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>owasp-report</id>
+      <activation>
+        <property>
+          <name>owasp-report</name>
+        </property>
+      </activation>
+      <build>
+        <defaultGoal>org.owasp:dependency-check-maven:aggregate</defaultGoal>
+      </build>
+    </profile>
+  </profiles>
 </project>

@@ -1,575 +1,570 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-    child.project.url.inherit.append.path="false">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" child.project.url.inherit.append.path="false" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
-    </parent>
-    <groupId>io.quarkus.resteasy.reactive</groupId>
-    <artifactId>resteasy-reactive-parent</artifactId>
-    <name>RESTEasy Reactive - Parent pom</name>
-    <url>https://github.com/quarkusio/quarkus</url>
-    <packaging>pom</packaging>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-parent</artifactId>
     <version>999-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+  <groupId>io.quarkus.resteasy.reactive</groupId>
+  <artifactId>resteasy-reactive-parent</artifactId>
+  <version>999-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>RESTEasy Reactive - Parent pom</name>
+  <url>https://github.com/quarkusio/quarkus</url>
 
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <distribution>repo</distribution>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
-        </license>
-    </licenses>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
-    <scm child.scm.connection.inherit.append.path="false"
-         child.scm.developerConnection.inherit.append.path="false"
-         child.scm.url.inherit.append.path="false">
-        <url>https://github.com/quarkusio/quarkus</url>
-        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
-        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
+  <modules>
+    <module>common</module>
+    <module>build-support</module>
+    <module>server</module>
+    <module>client</module>
+  </modules>
 
-    <properties>
-        <angus-activation.version>1.0.0</angus-activation.version>
-        <jakarta.json-api.version>2.1.3</jakarta.json-api.version>
-        <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
-        <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
-        <parsson.version>1.1.7</parsson.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- Versions -->
-        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <jandex.version>3.3.1</jandex.version>
-        <bytebuddy.version>1.15.11</bytebuddy.version>
-        <junit5.version>5.13.1</junit5.version>
-        <maven.version>3.9.9</maven.version>
-        <assertj.version>3.27.3</assertj.version>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
-        <gizmo.version>1.9.0</gizmo.version>
-        <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
+    <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/quarkusio/quarkus</url>
+  </scm>
 
-        <mutiny.version>2.9.0</mutiny.version>
-        <smallrye-common.version>2.12.0</smallrye-common.version>
-        <vertx.version>4.5.14</vertx.version>
-        <rest-assured.version>5.5.5</rest-assured.version>
-        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jackson-bom.version>2.19.0</jackson-bom.version>
-        <smallrye-stork.version>2.7.3</smallrye-stork.version>
-        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
-        <yasson.version>3.0.4</yasson.version>
-        <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
-        <awaitility.version>4.3.0</awaitility.version>
-        <smallrye-mutiny-vertx-core.version>3.19.0</smallrye-mutiny-vertx-core.version>
-        <reactive-streams.version>1.0.4</reactive-streams.version>
-        <mockito.version>5.18.0</mockito.version>
-        <wiremock.version>3.13.1</wiremock.version>
-        <mutiny-zero.version>1.1.1</mutiny-zero.version>
-    </properties>
+  <properties>
+    <angus-activation.version>1.0.0</angus-activation.version>
+    <jakarta.json-api.version>2.1.3</jakarta.json-api.version>
+    <jakarta.ws.rs-api.version>3.1.0</jakarta.ws.rs-api.version>
+    <jakarta.xml.bind-api.version>4.0.2</jakarta.xml.bind-api.version>
+    <parsson.version>1.1.7</parsson.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Versions -->
+    <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
+    <jandex.version>3.3.1</jandex.version>
+    <bytebuddy.version>1.15.11</bytebuddy.version>
+    <junit5.version>5.13.1</junit5.version>
+    <maven.version>3.9.9</maven.version>
+    <assertj.version>3.27.3</assertj.version>
+    <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+    <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
+    <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
+    <gizmo.version>1.9.0</gizmo.version>
+    <jakarta.persistence-api.version>3.1.0</jakarta.persistence-api.version>
 
-    <modules>
-        <module>common</module>
-        <module>build-support</module>
-        <module>server</module>
-        <module>client</module>
-    </modules>
+    <mutiny.version>2.9.0</mutiny.version>
+    <smallrye-common.version>2.12.0</smallrye-common.version>
+    <vertx.version>4.5.14</vertx.version>
+    <rest-assured.version>5.5.5</rest-assured.version>
+    <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+    <jackson-bom.version>2.19.0</jackson-bom.version>
+    <smallrye-stork.version>2.7.3</smallrye-stork.version>
+    <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
+    <yasson.version>3.0.4</yasson.version>
+    <jakarta.json.bind-api.version>3.0.1</jakarta.json.bind-api.version>
+    <awaitility.version>4.3.0</awaitility.version>
+    <smallrye-mutiny-vertx-core.version>3.19.0</smallrye-mutiny-vertx-core.version>
+    <reactive-streams.version>1.0.4</reactive-streams.version>
+    <mockito.version>5.18.0</mockito.version>
+    <wiremock.version>3.13.1</wiremock.version>
+    <mutiny-zero.version>1.1.1</mutiny-zero.version>
+  </properties>
 
-    <dependencyManagement>
+  <dependencyManagement>
 
-        <dependencies>
-            <!-- Jackson dependencies, imported as a BOM -->
+    <dependencies>
+      <!-- Jackson dependencies, imported as a BOM -->
+      <dependency>
+        <groupId>com.fasterxml.jackson</groupId>
+        <artifactId>jackson-bom</artifactId>
+        <version>${jackson-bom.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Mockito dependencies, imported as a BOM -->
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-bom</artifactId>
+        <version>${mockito.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-processor</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-build-support</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-common-types</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-common-processor</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-common</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.vertx.utils</groupId>
+        <artifactId>quarkus-vertx-utils</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-client-processor</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-client</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-jsonb</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus.resteasy.reactive</groupId>
+        <artifactId>resteasy-reactive-jackson</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.enterprise</groupId>
+        <artifactId>jakarta.enterprise.cdi-api</artifactId>
+        <version>${jakarta.enterprise.cdi-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.json</groupId>
+        <artifactId>jakarta.json-api</artifactId>
+        <version>${jakarta.json-api.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.smallrye</groupId>
+        <artifactId>jandex</artifactId>
+        <version>${jandex.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy</artifactId>
+        <version>${bytebuddy.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>net.bytebuddy</groupId>
+        <artifactId>byte-buddy-maven-plugin</artifactId>
+        <version>${bytebuddy.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.quarkus.gizmo</groupId>
+        <artifactId>gizmo</artifactId>
+        <version>${gizmo.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse</groupId>
+        <artifactId>yasson</artifactId>
+        <version>${yasson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.parsson</groupId>
+        <artifactId>parsson</artifactId>
+        <version>${parsson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.json.bind</groupId>
+        <artifactId>jakarta.json.bind-api</artifactId>
+        <version>${jakarta.json.bind-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-web</artifactId>
+        <version>${vertx.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-core</artifactId>
+        <version>${vertx.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.vertx</groupId>
+        <artifactId>vertx-web-client</artifactId>
+        <version>${vertx.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.reactivestreams</groupId>
+        <artifactId>reactive-streams</artifactId>
+        <version>${reactive-streams.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.smallrye.reactive</groupId>
+        <artifactId>mutiny-bom</artifactId>
+        <version>${mutiny.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.smallrye.reactive</groupId>
+        <artifactId>mutiny-zero-flow-adapters</artifactId>
+        <version>${mutiny-zero.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.smallrye.reactive</groupId>
+        <artifactId>smallrye-mutiny-vertx-core</artifactId>
+        <version>${smallrye-mutiny-vertx-core.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.smallrye.common</groupId>
+        <artifactId>smallrye-common-bom</artifactId>
+        <version>${smallrye-common.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- JUnit 5 dependencies, imported as a BOM -->
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit5.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.shrinkwrap</groupId>
+        <artifactId>shrinkwrap-depchain</artifactId>
+        <version>1.2.6</version>
+        <type>pom</type>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-plugin-api</artifactId>
+        <version>${maven.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven.plugin-tools</groupId>
+        <artifactId>maven-plugin-annotations</artifactId>
+        <version>${maven.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.maven</groupId>
+        <artifactId>maven-core</artifactId>
+        <version>${maven.version}</version>
+        <scope>provided</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>jboss-logging</artifactId>
+        <version>${jboss-logging.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.jboss.logmanager</groupId>
+        <artifactId>jboss-logmanager</artifactId>
+        <version>${jboss-logmanager.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>*</groupId>
+            <artifactId>*</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>jakarta.annotation</groupId>
+        <artifactId>jakarta.annotation-api</artifactId>
+        <version>${jakarta.annotation-api.version}</version>
+        <!-- scope>provided</scope -->
+      </dependency>
+
+      <dependency>
+        <groupId>jakarta.persistence</groupId>
+        <artifactId>jakarta.persistence-api</artifactId>
+        <version>${jakarta.persistence-api.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${awaitility.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${wiremock.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <version>${rest-assured.version}</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>javax.activation</groupId>
+            <artifactId>javax.activation-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <!-- https://github.com/quarkusio/quarkus/issues/1991 -->
+            <groupId>com.sun.xml.bind</groupId>
+            <artifactId>jaxb-osgi</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.logging</groupId>
+        <artifactId>commons-logging-jboss-logging</artifactId>
+        <version>${commons-logging-jboss-logging.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.smallrye.stork</groupId>
+        <artifactId>stork-bom</artifactId>
+        <version>${smallrye-stork.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.validation</groupId>
+        <artifactId>jakarta.validation-api</artifactId>
+        <version>${jakarta.validation-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.ws.rs</groupId>
+        <artifactId>jakarta.ws.rs-api</artifactId>
+        <version>${jakarta.ws.rs-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>${jakarta.xml.bind-api.version}</version>
+      </dependency>
+    </dependencies>
+
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+            <parameters>true</parameters>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <quiet>true</quiet>
+            <doclint>none</doclint>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <dependencies>
             <dependency>
-                <groupId>com.fasterxml.jackson</groupId>
-                <artifactId>jackson-bom</artifactId>
-                <version>${jackson-bom.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
+              <groupId>io.quarkus</groupId>
+              <artifactId>quarkus-enforcer-rules</artifactId>
+              <version>${project.version}</version>
             </dependency>
-
-            <!-- Mockito dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>org.mockito</groupId>
-                <artifactId>mockito-bom</artifactId>
-                <version>${mockito.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-processor</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>enforce</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <phase>${maven-enforcer-plugin.phase}</phase>
+              <configuration>
+                <rules>
+                  <dependencyConvergence></dependencyConvergence>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                  </externalRules>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+            <systemPropertyVariables combine.self="override"></systemPropertyVariables>
+            <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+            <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
+            <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>net.bytebuddy</groupId>
+          <artifactId>byte-buddy-maven-plugin</artifactId>
+          <version>${bytebuddy.version}</version>
+          <configuration>
+            <skip>${bytebuddy.skip}</skip>
+            <transformations>
+              <transformation>
+                <groupId>${project.groupId}</groupId>
                 <artifactId>resteasy-reactive-build-support</artifactId>
                 <version>${project.version}</version>
-                <type>pom</type>
-            </dependency>
+                <plugin>org.jboss.resteasy.reactive.build.support.AllWriteableMessageBodyWriterByteBuddyPlugin</plugin>
+              </transformation>
+            </transformations>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>transform</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>de.thetaphi</groupId>
+          <artifactId>forbiddenapis</artifactId>
+          <executions>
+            <execution>
+              <id>verify-forbidden-apis</id>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <phase>compile</phase>
+              <configuration>
+                <!-- if the used Java version is too new, don't fail, just do nothing: -->
+                <failOnUnsupportedJava>false</failOnUnsupportedJava>
+                <signaturesFiles>
+                  <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                </signaturesFiles>
+                <failOnMissingClasses>false</failOnMissingClasses>
+                <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-common-types</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-common-processor</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-common</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.vertx.utils</groupId>
-                <artifactId>quarkus-vertx-utils</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-client-processor</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-client</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-jsonb</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus.resteasy.reactive</groupId>
-                <artifactId>resteasy-reactive-jackson</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.enterprise</groupId>
-                <artifactId>jakarta.enterprise.cdi-api</artifactId>
-                <version>${jakarta.enterprise.cdi-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.json</groupId>
-                <artifactId>jakarta.json-api</artifactId>
-                <version>${jakarta.json-api.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.smallrye</groupId>
-                <artifactId>jandex</artifactId>
-                <version>${jandex.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>net.bytebuddy</groupId>
-                <artifactId>byte-buddy</artifactId>
-                <version>${bytebuddy.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>net.bytebuddy</groupId>
-                <artifactId>byte-buddy-maven-plugin</artifactId>
-                <version>${bytebuddy.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.quarkus.gizmo</groupId>
-                <artifactId>gizmo</artifactId>
-                <version>${gizmo.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse</groupId>
-                <artifactId>yasson</artifactId>
-                <version>${yasson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.parsson</groupId>
-                <artifactId>parsson</artifactId>
-                <version>${parsson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.json.bind</groupId>
-                <artifactId>jakarta.json.bind-api</artifactId>
-                <version>${jakarta.json.bind-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-web</artifactId>
-                <version>${vertx.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-core</artifactId>
-                <version>${vertx.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.vertx</groupId>
-                <artifactId>vertx-web-client</artifactId>
-                <version>${vertx.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.reactivestreams</groupId>
-                <artifactId>reactive-streams</artifactId>
-                <version>${reactive-streams.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-bom</artifactId>
-                <version>${mutiny.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>mutiny-zero-flow-adapters</artifactId>
-                <version>${mutiny-zero.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.reactive</groupId>
-                <artifactId>smallrye-mutiny-vertx-core</artifactId>
-                <version>${smallrye-mutiny-vertx-core.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.smallrye.common</groupId>
-                <artifactId>smallrye-common-bom</artifactId>
-                <version>${smallrye-common.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-            <!-- JUnit 5 dependencies, imported as a BOM -->
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>${junit5.version}</version>
-                <scope>import</scope>
-                <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.jboss.shrinkwrap</groupId>
-                <artifactId>shrinkwrap-depchain</artifactId>
-                <type>pom</type>
-                <scope>test</scope>
-                <version>1.2.6</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-plugin-api</artifactId>
-                <version>${maven.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.maven.plugin-tools</groupId>
-                <artifactId>maven-plugin-annotations</artifactId>
-                <version>${maven.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.maven</groupId>
-                <artifactId>maven-core</artifactId>
-                <version>${maven.version}</version>
-                <scope>provided</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.jboss.logging</groupId>
-                <artifactId>jboss-logging</artifactId>
-                <version>${jboss-logging.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>org.jboss.logmanager</groupId>
-                <artifactId>jboss-logmanager</artifactId>
-                <version>${jboss-logmanager.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>*</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>jakarta.annotation</groupId>
-                <artifactId>jakarta.annotation-api</artifactId>
-                <version>${jakarta.annotation-api.version}</version>
-                <!-- scope>provided</scope -->
-            </dependency>
-
-            <dependency>
-                <groupId>jakarta.persistence</groupId>
-                <artifactId>jakarta.persistence-api</artifactId>
-                <version>${jakarta.persistence-api.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.assertj</groupId>
-                <artifactId>assertj-core</artifactId>
-                <version>${assertj.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.awaitility</groupId>
-                <artifactId>awaitility</artifactId>
-                <version>${awaitility.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.wiremock</groupId>
-                <artifactId>wiremock-standalone</artifactId>
-                <version>${wiremock.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>io.rest-assured</groupId>
-                <artifactId>rest-assured</artifactId>
-                <version>${rest-assured.version}</version>
-                <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.activation</groupId>
-                        <artifactId>activation</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>javax.activation</groupId>
-                        <artifactId>javax.activation-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <!-- https://github.com/quarkusio/quarkus/issues/1991 -->
-                        <groupId>com.sun.xml.bind</groupId>
-                        <artifactId>jaxb-osgi</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>jakarta.xml.bind</groupId>
-                        <artifactId>jakarta.xml.bind-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.jboss.logging</groupId>
-                <artifactId>commons-logging-jboss-logging</artifactId>
-                <version>${commons-logging-jboss-logging.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.smallrye.stork</groupId>
-                <artifactId>stork-bom</artifactId>
-                <version>${smallrye-stork.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.validation</groupId>
-                <artifactId>jakarta.validation-api</artifactId>
-                <version>${jakarta.validation-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.ws.rs</groupId>
-                <artifactId>jakarta.ws.rs-api</artifactId>
-                <version>${jakarta.ws.rs-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.xml.bind</groupId>
-                <artifactId>jakarta.xml.bind-api</artifactId>
-                <version>${jakarta.xml.bind-api.version}</version>
-            </dependency>
-        </dependencies>
-
-    </dependencyManagement>
-
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <parameters>true</parameters>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <configuration>
-                        <quiet>true</quiet>
-                        <doclint>none</doclint>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <dependencies>
-                        <dependency>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-enforcer-rules</artifactId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <executions>
-                        <execution>
-                            <id>enforce</id>
-                            <phase>${maven-enforcer-plugin.phase}</phase>
-                            <configuration>
-                                <rules>
-                                    <dependencyConvergence/>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
-                                    </externalRules>
-                                </rules>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
-                        <systemPropertyVariables combine.self="override"/>
-                        <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
-                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
-                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>net.bytebuddy</groupId>
-                    <artifactId>byte-buddy-maven-plugin</artifactId>
-                    <version>${bytebuddy.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>transform</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                    <configuration>
-                        <skip>${bytebuddy.skip}</skip>
-                        <transformations>
-                            <transformation>
-                                <groupId>${project.groupId}</groupId>
-                                <artifactId>resteasy-reactive-build-support</artifactId>
-                                <version>${project.version}</version>
-                                <plugin>org.jboss.resteasy.reactive.build.support.AllWriteableMessageBodyWriterByteBuddyPlugin</plugin>
-                            </transformation>
-                        </transformations>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>de.thetaphi</groupId>
-                    <artifactId>forbiddenapis</artifactId>
-                    <executions>
-                        <execution>
-                            <id>verify-forbidden-apis</id>
-                            <configuration>
-                                <!-- if the used Java version is too new, don't fail, just do nothing: -->
-                                <failOnUnsupportedJava>false</failOnUnsupportedJava>
-                                <signaturesFiles>
-                                    <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
-                                </signaturesFiles>
-                                <failOnMissingClasses>false</failOnMissingClasses>
-                                <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
-                            </configuration>
-                            <phase>compile</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
-
-    <profiles>
-        <profile>
-            <id>quick-build</id>
-            <activation>
-                <property>
-                    <name>quickly</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>quick-build-docs</id>
-            <activation>
-                <property>
-                    <name>quicklyDocs</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
-            <id>quick-build-ci</id>
-            <activation>
-                <property>
-                    <name>quickly-ci</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
-            </properties>
-        </profile>
-    </profiles>
+  <profiles>
+    <profile>
+      <id>quick-build</id>
+      <activation>
+        <property>
+          <name>quickly</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>quick-build-docs</id>
+      <activation>
+        <property>
+          <name>quicklyDocs</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+      <id>quick-build-ci</id>
+      <activation>
+        <property>
+          <name>quickly-ci</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+        <format.skip>true</format.skip>
+      </properties>
+    </profile>
+  </profiles>
 
 </project>

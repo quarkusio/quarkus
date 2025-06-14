@@ -1,99 +1,97 @@
-<?xml version="1.0" encoding="utf-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-project</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-    <artifactId>quarkus-bom-test</artifactId>
-    <name>Quarkus - BOM - Test</name>
-    <packaging>pom</packaging>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-project</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>quarkus-bom-test</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - BOM - Test</name>
 
-    <description>Dependency management for integration tests. Importable by third party extension developers.</description>
+  <description>Dependency management for integration tests. Importable by third party extension developers.</description>
 
-    <properties>
-        <!-- just for test dependency convergence -->
-        <jaxb-api.version>2.3.1</jaxb-api.version>
+  <properties>
+    <!-- just for test dependency convergence -->
+    <jaxb-api.version>2.3.1</jaxb-api.version>
 
-        <rxjava1.version>1.3.8</rxjava1.version>
-        <strimzi-test-container.version>0.109.1</strimzi-test-container.version>
+    <rxjava1.version>1.3.8</rxjava1.version>
+    <strimzi-test-container.version>0.109.1</strimzi-test-container.version>
 
-        <opentelemetry-proto.version>1.3.2-alpha</opentelemetry-proto.version>
-    </properties>
+    <opentelemetry-proto.version>1.3.2-alpha</opentelemetry-proto.version>
+  </properties>
 
-    <dependencyManagement>
-        <dependencies>
-
-            <dependency>
-                <groupId>io.reactivex</groupId>
-                <artifactId>rxjava</artifactId>
-                <version>${rxjava1.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.smallrye.certs</groupId>
-                <artifactId>smallrye-certificate-generator-junit5</artifactId>
-                <version>${smallrye-certificate-generator.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>io.strimzi</groupId>
-                <artifactId>strimzi-test-container</artifactId>
-                <version>${strimzi-test-container.version}</version>
-                <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-simple</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.github.docker-java</groupId>
-                        <artifactId>docker-java-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.logging.log4j</groupId>
-                        <artifactId>log4j-slf4j-impl</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>javax.xml.bind</groupId>
-                <artifactId>jaxb-api</artifactId>
-                <version>${jaxb-api.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>io.opentelemetry.proto</groupId>
-                <artifactId>opentelemetry-proto</artifactId>
-                <version>${opentelemetry-proto.version}</version>
-            </dependency>
-
-        </dependencies>
-    </dependencyManagement>
-
+  <dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
+      <dependency>
+        <groupId>io.reactivex</groupId>
+        <artifactId>rxjava</artifactId>
+        <version>${rxjava1.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.smallrye.certs</groupId>
+        <artifactId>smallrye-certificate-generator-junit5</artifactId>
+        <version>${smallrye-certificate-generator.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>io.strimzi</groupId>
+        <artifactId>strimzi-test-container</artifactId>
+        <version>${strimzi-test-container.version}</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.github.docker-java</groupId>
+            <artifactId>docker-java-api</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>javax.xml.bind</groupId>
+        <artifactId>jaxb-api</artifactId>
+        <version>${jaxb-api.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.opentelemetry.proto</groupId>
+        <artifactId>opentelemetry-proto</artifactId>
+        <version>${opentelemetry-proto.version}</version>
+      </dependency>
+
     </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-bom</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
 </project>

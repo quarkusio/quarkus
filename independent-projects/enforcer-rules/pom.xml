@@ -1,166 +1,164 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-         child.project.url.inherit.append.path="false">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
-    </parent>
-    <artifactId>quarkus-enforcer-rules</artifactId>
-    <name>Quarkus - Enforcer Rules</name>
-    <url>https://github.com/quarkusio/quarkus</url>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" child.project.url.inherit.append.path="false" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-parent</artifactId>
     <version>999-SNAPSHOT</version>
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <distribution>repo</distribution>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
-        </license>
-    </licenses>
-    <scm child.scm.connection.inherit.append.path="false"
-         child.scm.developerConnection.inherit.append.path="false"
-         child.scm.url.inherit.append.path="false">
-        <url>https://github.com/quarkusio/quarkus</url>
-        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
-        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+  <artifactId>quarkus-enforcer-rules</artifactId>
+  <version>999-SNAPSHOT</version>
+  <name>Quarkus - Enforcer Rules</name>
+  <url>https://github.com/quarkusio/quarkus</url>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
+    <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+    <tag>HEAD</tag>
+    <url>https://github.com/quarkusio/quarkus</url>
+  </scm>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <!-- Keeping 3.0.0.M3 because 3.2.1 requires class changes -->
-        <enforcer-api.version>3.0.0-M3</enforcer-api.version>
-        <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
-        <maven-core.version>3.9.9</maven-core.version>
+    <!-- Keeping 3.0.0.M3 because 3.2.1 requires class changes -->
+    <enforcer-api.version>3.0.0-M3</enforcer-api.version>
+    <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
+    <maven-core.version>3.9.9</maven-core.version>
 
-        <!--
+    <!--
            Supported Maven versions, interpreted as a version range (Also defined in build-parent)
         -->
-        <supported-maven-versions>[3.6.2,)</supported-maven-versions>
-    </properties>
+    <supported-maven-versions>[3.6.2,)</supported-maven-versions>
+  </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.apache.maven.enforcer</groupId>
-            <artifactId>enforcer-api</artifactId>
-            <version>${enforcer-api.version}</version>
-            <scope>provided</scope>
-            <!-- avoid dependencyConvergence issues -->
-            <exclusions>
-                <exclusion>
-                    <groupId>org.eclipse.sisu</groupId>
-                    <artifactId>org.eclipse.sisu.plexus</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.maven</groupId>
-            <artifactId>maven-core</artifactId>
-            <version>${maven-core.version}</version>
-            <scope>provided</scope>
-            <!-- avoid dependencyConvergence issues -->
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-    </dependencies>
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.maven.enforcer</groupId>
+      <artifactId>enforcer-api</artifactId>
+      <version>${enforcer-api.version}</version>
+      <scope>provided</scope>
+      <!-- avoid dependencyConvergence issues -->
+      <exclusions>
+        <exclusion>
+          <groupId>org.eclipse.sisu</groupId>
+          <artifactId>org.eclipse.sisu.plexus</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.maven</groupId>
+      <artifactId>maven-core</artifactId>
+      <version>${maven-core.version}</version>
+      <scope>provided</scope>
+      <!-- avoid dependencyConvergence issues -->
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
 
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-        </resources>
-        <plugins>
-            <plugin>
-                <artifactId>maven-invoker-plugin</artifactId>
-                <version>${maven-invoker-plugin.version}</version>
-                <!-- https://maven.apache.org/plugins/maven-invoker-plugin/usage.html -->
-                <configuration>
-                    <skipInvocation>${skipTests}</skipInvocation>
-                    <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
-                    <settingsFile>src/it/settings.xml</settingsFile>
-                    <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
-                    <postBuildHookScript>verify</postBuildHookScript> <!-- no extension required -->
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>integration-test</id>
-                        <goals>
-                            <goal>install</goal>
-                            <goal>run</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.groovy</groupId>
-                        <artifactId>groovy</artifactId>
-                        <version>4.0.27</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <artifactId>maven-invoker-plugin</artifactId>
+        <version>${maven-invoker-plugin.version}</version>
+        <!-- https://maven.apache.org/plugins/maven-invoker-plugin/usage.html -->
+        <configuration>
+          <skipInvocation>${skipTests}</skipInvocation>
+          <cloneProjectsTo>${project.build.directory}/it</cloneProjectsTo>
+          <settingsFile>src/it/settings.xml</settingsFile>
+          <localRepositoryPath>${project.build.directory}/local-repo</localRepositoryPath>
+          <postBuildHookScript>verify</postBuildHookScript>
+          <!-- no extension required -->
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>4.0.27</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>install</goal>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
-    <profiles>
-        <profile>
-            <id>quick-build</id>
-            <activation>
-                <property>
-                    <name>quickly</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>quick-build-docs</id>
-            <activation>
-                <property>
-                    <name>quicklyDocs</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-                <invoker.skip>true</invoker.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
-            <id>quick-build-ci</id>
-            <activation>
-                <property>
-                    <name>quickly-ci</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
-                <invoker.skip>true</invoker.skip>   <!-- maven-invoker-plugin -->
-            </properties>
-        </profile>
-    </profiles>
+  <profiles>
+    <profile>
+      <id>quick-build</id>
+      <activation>
+        <property>
+          <name>quickly</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+        <invoker.skip>true</invoker.skip>
+        <!-- maven-invoker-plugin -->
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>quick-build-docs</id>
+      <activation>
+        <property>
+          <name>quicklyDocs</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+        <invoker.skip>true</invoker.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+      <id>quick-build-ci</id>
+      <activation>
+        <property>
+          <name>quickly-ci</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+        <format.skip>true</format.skip>
+        <invoker.skip>true</invoker.skip>
+        <!-- maven-invoker-plugin -->
+      </properties>
+    </profile>
+  </profiles>
 </project>

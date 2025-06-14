@@ -1,1084 +1,1058 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-project</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-project</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
 
-    <artifactId>quarkus-build-parent</artifactId>
-    <name>Quarkus - Build Parent</name>
-    <description>Build parent to bring in required dependencies</description>
-    <packaging>pom</packaging>
+  <artifactId>quarkus-build-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Build Parent</name>
+  <description>Build parent to bring in required dependencies</description>
 
-    <properties>
-        <!-- Maven plugin versions -->
+  <properties>
+    <!-- Maven plugin versions -->
 
-        <!-- These properties are needed in order for them to be resolvable by the generated projects -->
-        <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
-        <kotlin.version>2.1.21</kotlin.version>
-        <dokka.version>2.0.0</dokka.version>
-        <scala.version>2.13.12</scala.version>
-        <scala-maven-plugin.version>4.9.5</scala-maven-plugin.version>
-        <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
-        <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
-        <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
+    <!-- These properties are needed in order for them to be resolvable by the generated projects -->
+    <compiler-plugin.version>${version.compiler.plugin}</compiler-plugin.version>
+    <kotlin.version>2.1.21</kotlin.version>
+    <dokka.version>2.0.0</dokka.version>
+    <scala.version>2.13.12</scala.version>
+    <scala-maven-plugin.version>4.9.5</scala-maven-plugin.version>
+    <!-- not pretty but this is used in the codestarts and we don't want to break compatibility -->
+    <scala-plugin.version>${scala-maven-plugin.version}</scala-plugin.version>
+    <jboss-bridger-plugin.version>1.6.Final</jboss-bridger-plugin.version>
 
-        <!-- Jandex versions -->
-        <jandex.version>3.3.1</jandex.version>
-        <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
+    <!-- Jandex versions -->
+    <jandex.version>3.3.1</jandex.version>
+    <jandex-gradle-plugin.version>1.0.0</jandex-gradle-plugin.version>
 
-        <asciidoctorj.version>2.5.13</asciidoctorj.version>
-        <htmlunit.version>4.13.0</htmlunit.version>
-        <javaparser-core.version>3.26.4</javaparser-core.version>
-        <jdeparser.version>2.0.3.Final</jdeparser.version>
-        <subethasmtp.version>6.0.1</subethasmtp.version>
+    <asciidoctorj.version>2.5.13</asciidoctorj.version>
+    <htmlunit.version>4.13.0</htmlunit.version>
+    <javaparser-core.version>3.26.4</javaparser-core.version>
+    <jdeparser.version>2.0.3.Final</jdeparser.version>
+    <subethasmtp.version>6.0.1</subethasmtp.version>
 
-        <!-- Dev tools -->
-        <freemarker.version>2.3.34</freemarker.version>
-        <commonmark.version>0.24.0</commonmark.version>
-        <jgit.version>7.3.0.202506031305-r</jgit.version>
+    <!-- Dev tools -->
+    <freemarker.version>2.3.34</freemarker.version>
+    <commonmark.version>0.24.0</commonmark.version>
+    <jgit.version>7.3.0.202506031305-r</jgit.version>
 
-        <!-- Arquillian BOM -->
-        <arquillian.version>1.7.0.Final</arquillian.version>
+    <!-- Arquillian BOM -->
+    <arquillian.version>1.7.0.Final</arquillian.version>
 
-        <!-- Enable APT by default for Eclipse -->
-        <m2e.apt.activation>jdt_apt</m2e.apt.activation>
+    <!-- Enable APT by default for Eclipse -->
+    <m2e.apt.activation>jdt_apt</m2e.apt.activation>
 
-        <!-- These 2 properties are used in catalog-overrides.json -->
-        <minimum-java-version>${maven.compiler.release}</minimum-java-version>
-        <recommended-java-version>21</recommended-java-version>
+    <!-- These 2 properties are used in catalog-overrides.json -->
+    <minimum-java-version>${maven.compiler.release}</minimum-java-version>
+    <recommended-java-version>21</recommended-java-version>
 
-        <!--
+    <!--
         Supported Maven versions, interpreted as a version range (Also defined in quarkus-enforcer-rules)
          -->
-        <!-- TODO: once we can upgrade the minimum Maven version to use for Quarkus projects, let's use ${maven.min.version} again -->
-        <supported-maven-versions>[3.8.6,)</supported-maven-versions>
+    <!-- TODO: once we can upgrade the minimum Maven version to use for Quarkus projects, let's use ${maven.min.version} again -->
+    <supported-maven-versions>[3.8.6,)</supported-maven-versions>
 
-        <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
-        <proposed-maven-version>3.9.9</proposed-maven-version>
-        <maven-wrapper.version>3.3.2</maven-wrapper.version>
-        <gradle-wrapper.version>8.14</gradle-wrapper.version>
-        <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
-        <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
-        <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
+    <!-- These 2 properties are used by CreateProjectMojo to add the Maven Wrapper -->
+    <proposed-maven-version>3.9.9</proposed-maven-version>
+    <maven-wrapper.version>3.3.2</maven-wrapper.version>
+    <gradle-wrapper.version>8.14</gradle-wrapper.version>
+    <quarkus-gradle-plugin.version>${project.version}</quarkus-gradle-plugin.version>
+    <quarkus-maven-plugin.version>${project.version}</quarkus-maven-plugin.version>
+    <maven-plugin-plugin.version>3.8.1</maven-plugin-plugin.version>
 
-        <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
+    <!-- MicroProfile TCK versions used to be defined here but have moved to the concrete tck modules -->
 
-        <!-- SELinux access label, used when mounting local volumes into containers in tests -->
-        <volume.access.modifier>:Z</volume.access.modifier>
+    <!-- SELinux access label, used when mounting local volumes into containers in tests -->
+    <volume.access.modifier>:Z</volume.access.modifier>
 
-        <!-- Defaults for integration tests -->
-        <elasticsearch-server.version>9.0.2</elasticsearch-server.version>
-        <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
-        <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
-        <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
-        <elasticsearch.protocol>http</elasticsearch.protocol>
-        <opensearch-server.version>3.0.0</opensearch-server.version>
-        <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
-        <opensearch.protocol>http</opensearch.protocol>
-        <junit-pioneer.version>2.2.0</junit-pioneer.version>
+    <!-- Defaults for integration tests -->
+    <elasticsearch-server.version>9.0.2</elasticsearch-server.version>
+    <elasticsearch.image>docker.io/elastic/elasticsearch:${elasticsearch-server.version}</elasticsearch.image>
+    <logstash.image>docker.io/elastic/logstash:${elasticsearch-server.version}</logstash.image>
+    <kibana.image>docker.io/elastic/kibana:${elasticsearch-server.version}</kibana.image>
+    <elasticsearch.protocol>http</elasticsearch.protocol>
+    <opensearch-server.version>3.0.0</opensearch-server.version>
+    <opensearch.image>docker.io/opensearchproject/opensearch:${opensearch-server.version}</opensearch.image>
+    <opensearch.protocol>http</opensearch.protocol>
+    <junit-pioneer.version>2.2.0</junit-pioneer.version>
 
-        <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
-        <postgres.image>docker.io/postgres:17</postgres.image>
-        <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
-        <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
-        <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
-        <mysql.image>docker.io/mysql:8.4</mysql.image>
-        <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
-        <mongo.image>docker.io/mongo:7.0</mongo.image>
+    <!-- Database images for JDBC/Reactive/Hibernate tests and devservices -->
+    <postgres.image>docker.io/postgres:17</postgres.image>
+    <mariadb.image>docker.io/mariadb:10.11</mariadb.image>
+    <db2.image>icr.io/db2_community/db2:12.1.0.0</db2.image>
+    <mssql.image>mcr.microsoft.com/mssql/server:2022-latest</mssql.image>
+    <mysql.image>docker.io/mysql:8.4</mysql.image>
+    <oracle.image>docker.io/gvenzl/oracle-free:23-slim-faststart</oracle.image>
+    <mongo.image>docker.io/mongo:7.0</mongo.image>
 
-        <!-- Align various dependencies that are not really part of the bom-->
-        <junit4.version>4.13.2</junit4.version>
+    <!-- Align various dependencies that are not really part of the bom-->
+    <junit4.version>4.13.2</junit4.version>
 
-        <!-- The image to use for tests that run Keycloak -->
-        <keycloak.server.version>26.2.4</keycloak.server.version>
-        <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
-        <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
-        <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
+    <!-- The image to use for tests that run Keycloak -->
+    <keycloak.server.version>26.2.4</keycloak.server.version>
+    <keycloak.wildfly.version>19.0.3</keycloak.wildfly.version>
+    <keycloak.docker.image>quay.io/keycloak/keycloak:${keycloak.server.version}</keycloak.docker.image>
+    <keycloak.docker.legacy.image>quay.io/keycloak/keycloak:${keycloak.wildfly.version}-legacy</keycloak.docker.legacy.image>
 
-        <unboundid-ldap.version>7.0.2</unboundid-ldap.version>
+    <unboundid-ldap.version>7.0.2</unboundid-ldap.version>
 
-        <assertj.version>3.27.3</assertj.version>
+    <assertj.version>3.27.3</assertj.version>
 
-        <wiremock.version>3.13.1</wiremock.version>
-        <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
+    <wiremock.version>3.13.1</wiremock.version>
+    <wiremock-maven-plugin.version>7.3.0</wiremock-maven-plugin.version>
 
-        <!-- Artemis test dependencies -->
-        <artemis.version>2.41.0</artemis.version>
+    <!-- Artemis test dependencies -->
+    <artemis.version>2.41.0</artemis.version>
 
-        <!-- Code Coverage Properties-->
-        <jacoco.agent.argLine></jacoco.agent.argLine>
+    <!-- Code Coverage Properties-->
+    <jacoco.agent.argLine></jacoco.agent.argLine>
 
-        <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
-        <docker-maven-plugin.version>0.46.0</docker-maven-plugin.version>
-        <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
+    <asciidoctor-maven-plugin.version>2.0.0</asciidoctor-maven-plugin.version>
+    <docker-maven-plugin.version>0.46.0</docker-maven-plugin.version>
+    <maven-invoker-plugin.version>3.9.0</maven-invoker-plugin.version>
 
-        <!-- revapi API check -->
-        <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
-        <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
-        <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
-        <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
-        <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
-        <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
-        <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
-        <revapi.newVersion>${project.version}</revapi.newVersion>
-        <!-- severity Possible values: equivalent, nonBreaking, potentiallyBreaking, breaking -->
-        <revapi.reportSeverity>nonBreaking</revapi.reportSeverity>
-        <!-- Skip the API checks by default. Let the modules opt in. -->
-        <revapi.skip>true</revapi.skip>
-        <!-- By default don't check dependencies -->
-        <revapi.checkdeps>true</revapi.checkdeps>
-        <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
-        <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
+    <!-- revapi API check -->
+    <revapi-maven-plugin.version>0.14.7</revapi-maven-plugin.version>
+    <revapi-java-plugin.version>0.26.1</revapi-java-plugin.version>
+    <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
+    <revapi-reporter-text.version>0.14.5</revapi-reporter-text.version>
+    <revapi-reporter-json.version>0.4.5</revapi-reporter-json.version>
+    <!-- Latest release to be used by api-compatibility-check to check backwards compatibility of the Quarkus API. -->
+    <revapi.oldVersion>1.6.0.Final</revapi.oldVersion>
+    <revapi.newVersion>${project.version}</revapi.newVersion>
+    <!-- severity Possible values: equivalent, nonBreaking, potentiallyBreaking, breaking -->
+    <revapi.reportSeverity>nonBreaking</revapi.reportSeverity>
+    <!-- Skip the API checks by default. Let the modules opt in. -->
+    <revapi.skip>true</revapi.skip>
+    <!-- By default don't check dependencies -->
+    <revapi.checkdeps>true</revapi.checkdeps>
+    <!-- The message that is appended to the end of the plugin error output when the API problems fail the build -->
+    <revapi.buildFailureMessage>Run "jbang revapi-update" to update api-changes.xml file and also add the justification for those changes in that file.</revapi.buildFailureMessage>
 
-        <!-- platform properties - this is a floating tag -->
-        <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
+    <!-- platform properties - this is a floating tag -->
+    <platform.quarkus.native.builder-image>mandrel</platform.quarkus.native.builder-image>
 
-        <script.extension>sh</script.extension>
-        <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
+    <script.extension>sh</script.extension>
+    <docker-prune.location>${maven.multiModuleProjectDirectory}/.github/docker-prune.${script.extension}</docker-prune.location>
 
-        <surefire.argLine.additional></surefire.argLine.additional>
-        <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
+    <surefire.argLine.additional></surefire.argLine.additional>
+    <failsafe.argLine.additional>${surefire.argLine.additional}</failsafe.argLine.additional>
 
-        <!-- google cloud functions invoker-->
-        <gcf-invoker.version>1.4.1</gcf-invoker.version>
-        <!-- Jakarta JMS API -->
-        <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
+    <!-- google cloud functions invoker-->
+    <gcf-invoker.version>1.4.1</gcf-invoker.version>
+    <!-- Jakarta JMS API -->
+    <jakarta.jms-api.version>3.1.0</jakarta.jms-api.version>
 
-        <!-- Quarkus Analytics -->
-        <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
-        <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
+    <!-- Quarkus Analytics -->
+    <properties-maven-plugin.version>1.2.1</properties-maven-plugin.version>
+    <quarkus.analytics.disabled>true</quarkus.analytics.disabled>
 
-        <!-- If PTS is enabled at the global level  -->
-        <develocity.pts.enabled>false</develocity.pts.enabled>
-        <!-- If PTS is active for specific modules -->
-        <develocity.pts.active>false</develocity.pts.active>
-    </properties>
+    <!-- If PTS is enabled at the global level  -->
+    <develocity.pts.enabled>false</develocity.pts.enabled>
+    <!-- If PTS is active for specific modules -->
+    <develocity.pts.active>false</develocity.pts.active>
+  </properties>
 
-    <dependencyManagement>
-        <dependencies>
-
-            <!-- Quarkus Extensions Dependencies are coming from quarkus-bom-deployment (that also imports quarkus-bom) -->
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bom</artifactId>
-                <version>${project.version}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-
-            <!-- Dev tools -->
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-devmode-test-utils</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.freemarker</groupId>
-                <artifactId>freemarker</artifactId>
-                <version>${freemarker.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.commonmark</groupId>
-                <artifactId>commonmark</artifactId>
-                <version>${commonmark.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.eclipse.jgit</groupId>
-                <artifactId>org.eclipse.jgit</artifactId>
-                <version>${jgit.version}</version>
-            </dependency>
-
-            <!-- Extension processor -->
-            <dependency>
-                <groupId>org.jboss.jdeparser</groupId>
-                <artifactId>jdeparser</artifactId>
-                <version>${jdeparser.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.javaparser</groupId>
-                <artifactId>javaparser-core</artifactId>
-                <version>${javaparser-core.version}</version>
-            </dependency>
-
-            <!-- Miscellaneous -->
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-bootstrap-core</artifactId>
-                <version>${project.version}</version>
-                <type>test-jar</type>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-reactive-datasource-deployment</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-                <type>test-jar</type>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-rest-deployment</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-                <type>test-jar</type>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-war-launcher-runner</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-legacy-launcher</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.unboundid</groupId>
-                <artifactId>unboundid-ldapsdk</artifactId>
-                <version>${unboundid-ldap.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.wiremock</groupId>
-                <artifactId>wiremock-standalone</artifactId>
-                <version>${wiremock.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-integration-test-class-transformer</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-integration-test-shared-library</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-test-maven</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-security-test-utils</artifactId>
-                <version>${project.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-arc-test-supplement</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.assertj</groupId>
-                <artifactId>assertj-core</artifactId>
-                <version>${assertj.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.junit-pioneer</groupId>
-                <artifactId>junit-pioneer</artifactId>
-                <version>${junit-pioneer.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.asciidoctor</groupId>
-                <artifactId>asciidoctorj</artifactId>
-                <version>${asciidoctorj.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>javax.annotation</groupId>
-                        <artifactId>javax.annotation-api</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.htmlunit</groupId>
-                <artifactId>htmlunit</artifactId>
-                <version>${htmlunit.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.httpcomponents</groupId>
-                        <artifactId>httpmime</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>jakarta.jms</groupId>
-                <artifactId>jakarta.jms-api</artifactId>
-                <version>${jakarta.jms-api.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.github.davidmoten</groupId>
-                <artifactId>subethasmtp</artifactId>
-                <version>${subethasmtp.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <!-- Artemis test dependencies -->
-            <dependency>
-                <groupId>org.apache.activemq</groupId>
-                <artifactId>artemis-server</artifactId>
-                <version>${artemis.version}</version>
-                <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.checkerframework</groupId>
-                        <artifactId>checker-qual</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.geronimo.specs</groupId>
-                        <artifactId>geronimo-json_1.0_spec</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.apache.johnzon</groupId>
-                        <artifactId>johnzon-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.jboss.logmanager</groupId>
-                        <artifactId>jboss-logmanager</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>commons-logging</groupId>
-                        <artifactId>commons-logging</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.activemq</groupId>
-                <artifactId>artemis-amqp-protocol</artifactId>
-                <version>${artemis.version}</version>
-                <scope>test</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.apache.activemq</groupId>
-                        <artifactId>artemis-server</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>io.smallrye.certs</groupId>
-                <artifactId>smallrye-certificate-generator-junit5</artifactId>
-                <version>${smallrye-certificate-generator.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-        </dependencies>
-    </dependencyManagement>
-
+  <dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bom</artifactId>
-            <version>${project.version}</version>
-            <type>pom</type>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>*</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+
+      <!-- Quarkus Extensions Dependencies are coming from quarkus-bom-deployment (that also imports quarkus-bom) -->
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${project.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- Dev tools -->
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-devmode-test-utils</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.freemarker</groupId>
+        <artifactId>freemarker</artifactId>
+        <version>${freemarker.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.commonmark</groupId>
+        <artifactId>commonmark</artifactId>
+        <version>${commonmark.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.eclipse.jgit</groupId>
+        <artifactId>org.eclipse.jgit</artifactId>
+        <version>${jgit.version}</version>
+      </dependency>
+
+      <!-- Extension processor -->
+      <dependency>
+        <groupId>org.jboss.jdeparser</groupId>
+        <artifactId>jdeparser</artifactId>
+        <version>${jdeparser.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.javaparser</groupId>
+        <artifactId>javaparser-core</artifactId>
+        <version>${javaparser-core.version}</version>
+      </dependency>
+
+      <!-- Miscellaneous -->
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-bootstrap-core</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-reactive-datasource-deployment</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-rest-deployment</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-war-launcher-runner</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-legacy-launcher</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.unboundid</groupId>
+        <artifactId>unboundid-ldapsdk</artifactId>
+        <version>${unboundid-ldap.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.wiremock</groupId>
+        <artifactId>wiremock-standalone</artifactId>
+        <version>${wiremock.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-integration-test-class-transformer</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-integration-test-shared-library</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-test-maven</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-security-test-utils</artifactId>
+        <version>${project.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-arc-test-supplement</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-arc-test-supplement-decorator</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.assertj</groupId>
+        <artifactId>assertj-core</artifactId>
+        <version>${assertj.version}</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit-pioneer</groupId>
+        <artifactId>junit-pioneer</artifactId>
+        <version>${junit-pioneer.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.asciidoctor</groupId>
+        <artifactId>asciidoctorj</artifactId>
+        <version>${asciidoctorj.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>org.htmlunit</groupId>
+        <artifactId>htmlunit</artifactId>
+        <version>${htmlunit.version}</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpmime</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>jakarta.jms</groupId>
+        <artifactId>jakarta.jms-api</artifactId>
+        <version>${jakarta.jms-api.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.github.davidmoten</groupId>
+        <artifactId>subethasmtp</artifactId>
+        <version>${subethasmtp.version}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <!-- Artemis test dependencies -->
+      <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>artemis-server</artifactId>
+        <version>${artemis.version}</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.geronimo.specs</groupId>
+            <artifactId>geronimo-json_1.0_spec</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.apache.johnzon</groupId>
+            <artifactId>johnzon-core</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.jboss.logmanager</groupId>
+            <artifactId>jboss-logmanager</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.activemq</groupId>
+        <artifactId>artemis-amqp-protocol</artifactId>
+        <version>${artemis.version}</version>
+        <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>org.apache.activemq</groupId>
+            <artifactId>artemis-server</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+
+      <dependency>
+        <groupId>io.smallrye.certs</groupId>
+        <artifactId>smallrye-certificate-generator-junit5</artifactId>
+        <version>${smallrye-certificate-generator.version}</version>
+        <scope>test</scope>
+      </dependency>
+
     </dependencies>
+  </dependencyManagement>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>properties-maven-plugin</artifactId>
-                    <version>${properties-maven-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <goals>
-                                <goal>set-system-properties</goal>
-                            </goals>
-                            <configuration>
-                                <properties>
-                                    <property>
-                                        <name>quarkus.analytics.disabled</name>
-                                        <value>${quarkus.analytics.disabled}</value>
-                                    </property>
-                                </properties>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <properties>
-                            <predictiveSelection>
-                                <enabled>${develocity.pts.active}</enabled>
-                            </predictiveSelection>
-                        </properties>
-                        <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
-                        <systemPropertyVariables combine.self="override">
-                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                            <maven.home>${maven.home}</maven.home>
-                            <maven.repo.local>${settings.localRepository}</maven.repo.local>
-                            <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <!-- some dev tools tests need the following properties -->
-                            <project.version>${project.version}</project.version>
-                            <project.groupId>${project.groupId}</project.groupId>
-                        </systemPropertyVariables>
-                        <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
-                        <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
-                        <!-- the add-opens java.naming/com.sun.naming.internal is here to allow to clear
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-bom</artifactId>
+      <version>${project.version}</version>
+      <type>pom</type>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>properties-maven-plugin</artifactId>
+          <version>${properties-maven-plugin.version}</version>
+          <executions>
+            <execution>
+              <goals>
+                <goal>set-system-properties</goal>
+              </goals>
+              <configuration>
+                <properties>
+                  <property>
+                    <name>quarkus.analytics.disabled</name>
+                    <value>${quarkus.analytics.disabled}</value>
+                  </property>
+                </properties>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <properties>
+              <predictiveSelection>
+                <enabled>${develocity.pts.active}</enabled>
+              </predictiveSelection>
+            </properties>
+            <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+            <systemPropertyVariables combine.self="override">
+              <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+              <maven.home>${maven.home}</maven.home>
+              <maven.repo.local>${settings.localRepository}</maven.repo.local>
+              <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
+              <!-- some dev tools tests need the following properties -->
+              <project.version>${project.version}</project.version>
+              <project.groupId>${project.groupId}</project.groupId>
+            </systemPropertyVariables>
+            <!-- limit the amount of memory surefire can use, 1500m should be plenty-->
+            <!-- set tmpdir as early as possible because surefire sets it too late for JDK16 -->
+            <!-- the add-opens java.naming/com.sun.naming.internal is here to allow to clear
                              the propertiesCache in com.sun.naming.internal.ResourceManager -->
-                        <!-- the add-opens java.base/java.lang=ALL-UNNAMED is here for
+            <!-- the add-opens java.base/java.lang=ALL-UNNAMED is here for
                              org.jboss.JDKSpecific.ThreadAccess.clearThreadLocals() -->
-                        <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
-                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-failsafe-plugin</artifactId>
-                    <configuration>
-                        <properties>
-                            <predictiveSelection>
-                                <enabled>${develocity.pts.active}</enabled>
-                            </predictiveSelection>
-                        </properties>
-                        <systemPropertyVariables>
-                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                            <maven.home>${maven.home}</maven.home>
-                            <maven.repo.local>${settings.localRepository}</maven.repo.local>
-                            <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
-                            <!-- some dev tools tests need the following properties -->
-                            <project.version>${project.version}</project.version>
-                            <project.groupId>${project.groupId}</project.groupId>
-                        </systemPropertyVariables>
-                        <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
-                        <argLine>-Djava.io.tmpdir="${project.build.directory}" ${failsafe.argLine.additional}</argLine>
-                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-maven-plugin</artifactId>
-                    <version>${project.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-extension-maven-plugin</artifactId>
-                    <version>${project.version}</version>
-                    <executions>
-                        <execution>
-                            <id>generate-extension-descriptor</id>
-                            <goals>
-                                <goal>extension-descriptor</goal>
-                            </goals>
-                            <phase>process-resources</phase>
-                            <configuration>
-                                <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}
-                                </deployment>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <dependencies>
-                        <dependency>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-enforcer-rules</artifactId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <executions>
-                        <execution>
-                            <id>enforce</id>
-                            <phase>${maven-enforcer-plugin.phase}</phase>
-                            <configuration>
-                                <rules>
-                                    <dependencyConvergence/>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies-test.xml</location>
-                                    </externalRules>
-                                </rules>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>io.fabric8</groupId>
-                    <artifactId>docker-maven-plugin</artifactId>
-                    <version>${docker-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <configuration>
-                        <quiet>true</quiet>
-                        <doclint>none</doclint>
-                        <show>package</show>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>io.smallrye</groupId>
-                    <artifactId>jandex-maven-plugin</artifactId>
-                    <version>${jandex.version}</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <configuration>
-                        <nonFilteredFileExtensions>
-                            <nonFilteredFileExtension>eot</nonFilteredFileExtension>
-                            <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
-                            <nonFilteredFileExtension>woff</nonFilteredFileExtension>
-                            <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
-                            <nonFilteredFileExtension>svg</nonFilteredFileExtension>
-                            <nonFilteredFileExtension>ico</nonFilteredFileExtension>
-                            <nonFilteredFileExtension>js</nonFilteredFileExtension>
-                        </nonFilteredFileExtensions>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.antlr</groupId>
-                    <artifactId>antlr4-maven-plugin</artifactId>
-                    <version>${antlr.version}</version><!-- keep it aligned with the runtime bom-->
-                </plugin>
-                <plugin>
-                    <groupId>uk.co.automatictester</groupId>
-                    <artifactId>wiremock-maven-plugin</artifactId>
-                    <version>${wiremock-maven-plugin.version}</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.wiremock</groupId>
-                            <artifactId>wiremock-standalone</artifactId>
-                            <version>${wiremock.version}</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>${build-helper-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.revapi</groupId>
-                    <artifactId>revapi-maven-plugin</artifactId>
-                    <version>${revapi-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                    <artifactId>kotlin-maven-plugin</artifactId>
-                    <version>${kotlin.version}</version>
-                    <configuration>
-                        <javaParameters>true</javaParameters>
-                        <jvmTarget>${maven.compiler.release}</jvmTarget>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-invoker-plugin</artifactId>
-                    <version>${maven-invoker-plugin.version}</version>
-                    <dependencies>
-                        <dependency>
-                            <groupId>org.apache.groovy</groupId>
-                            <artifactId>groovy</artifactId>
-                            <version>4.0.27</version>
-                        </dependency>
-                    </dependencies>
-                </plugin>
-                <plugin>
-                    <groupId>org.asciidoctor</groupId>
-                    <artifactId>asciidoctor-maven-plugin</artifactId>
-                    <version>${asciidoctor-maven-plugin.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>de.thetaphi</groupId>
-                    <artifactId>forbiddenapis</artifactId>
-                    <executions>
-                        <execution>
-                            <id>verify-forbidden-apis</id>
-                            <configuration>
-                                <!-- if the used Java version is too new, don't fail, just do nothing: -->
-                                <failOnUnsupportedJava>false</failOnUnsupportedJava>
-                                <signaturesFiles>
-                                    <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
-                                </signaturesFiles>
-                                <failOnMissingClasses>false</failOnMissingClasses>
-                                <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
-                                <suppressAnnotations><annotation>**.SuppressForbidden</annotation></suppressAnnotations>
-                            </configuration>
-                            <phase>${forbiddenapis-maven-plugin.phase}</phase>
-                            <goals>
-                                <goal>check</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-plugin-plugin</artifactId>
-                    <configuration>
-                        <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>help-goal</id>
-                            <goals>
-                                <goal>helpmojo</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.jboss.bridger</groupId>
-                    <artifactId>bridger</artifactId>
-                    <version>${jboss-bridger-plugin.version}</version>
-                    <executions>
-                        <execution>
-                            <id>weave</id>
-                            <phase>process-classes</phase>
-                            <goals>
-                                <goal>transform</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>io.smallrye.certs</groupId>
-                    <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
-                    <version>${smallrye-certificate-generator.version}</version>
-                </plugin>
-                <plugin>
-                    <groupId>com.diffplug.spotless</groupId>
-                    <artifactId>spotless-maven-plugin</artifactId>
-                    <version>2.44.4</version>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+            <argLine>${jacoco.agent.argLine} -Xmx1500m -XX:MaxMetaspaceSize=1500m -Djava.io.tmpdir="${project.build.directory}" ${surefire.argLine.additional} --add-opens java.naming/com.sun.naming.internal=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED</argLine>
+            <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-failsafe-plugin</artifactId>
+          <configuration>
+            <properties>
+              <predictiveSelection>
+                <enabled>${develocity.pts.active}</enabled>
+              </predictiveSelection>
+            </properties>
+            <systemPropertyVariables>
+              <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+              <maven.home>${maven.home}</maven.home>
+              <maven.repo.local>${settings.localRepository}</maven.repo.local>
+              <maven.settings>${session.request.userSettingsFile.path}</maven.settings>
+              <!-- some dev tools tests need the following properties -->
+              <project.version>${project.version}</project.version>
+              <project.groupId>${project.groupId}</project.groupId>
+            </systemPropertyVariables>
+            <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+            <argLine>-Djava.io.tmpdir="${project.build.directory}" ${failsafe.argLine.additional}</argLine>
+            <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-maven-plugin</artifactId>
+          <version>${project.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>io.quarkus</groupId>
+          <artifactId>quarkus-extension-maven-plugin</artifactId>
+          <version>${project.version}</version>
+          <executions>
+            <execution>
+              <id>generate-extension-descriptor</id>
+              <goals>
+                <goal>extension-descriptor</goal>
+              </goals>
+              <phase>process-resources</phase>
+              <configuration>
+                <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>io.quarkus</groupId>
+              <artifactId>quarkus-enforcer-rules</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>enforce</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <phase>${maven-enforcer-plugin.phase}</phase>
+              <configuration>
+                <rules>
+                  <dependencyConvergence></dependencyConvergence>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-test.xml</location>
+                  </externalRules>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>io.fabric8</groupId>
+          <artifactId>docker-maven-plugin</artifactId>
+          <version>${docker-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <quiet>true</quiet>
+            <doclint>none</doclint>
+            <show>package</show>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>io.smallrye</groupId>
+          <artifactId>jandex-maven-plugin</artifactId>
+          <version>${jandex.version}</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-resources-plugin</artifactId>
+          <configuration>
+            <nonFilteredFileExtensions>
+              <nonFilteredFileExtension>eot</nonFilteredFileExtension>
+              <nonFilteredFileExtension>ttf</nonFilteredFileExtension>
+              <nonFilteredFileExtension>woff</nonFilteredFileExtension>
+              <nonFilteredFileExtension>woff2</nonFilteredFileExtension>
+              <nonFilteredFileExtension>svg</nonFilteredFileExtension>
+              <nonFilteredFileExtension>ico</nonFilteredFileExtension>
+              <nonFilteredFileExtension>js</nonFilteredFileExtension>
+            </nonFilteredFileExtensions>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.antlr</groupId>
+          <artifactId>antlr4-maven-plugin</artifactId>
+          <version>${antlr.version}</version>
+          <!-- keep it aligned with the runtime bom-->
+        </plugin>
+        <plugin>
+          <groupId>uk.co.automatictester</groupId>
+          <artifactId>wiremock-maven-plugin</artifactId>
+          <version>${wiremock-maven-plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.wiremock</groupId>
+              <artifactId>wiremock-standalone</artifactId>
+              <version>${wiremock.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>build-helper-maven-plugin</artifactId>
+          <version>${build-helper-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.revapi</groupId>
+          <artifactId>revapi-maven-plugin</artifactId>
+          <version>${revapi-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jetbrains.kotlin</groupId>
+          <artifactId>kotlin-maven-plugin</artifactId>
+          <version>${kotlin.version}</version>
+          <configuration>
+            <javaParameters>true</javaParameters>
+            <jvmTarget>${maven.compiler.release}</jvmTarget>
+          </configuration>
+        </plugin>
+        <plugin>
+          <artifactId>maven-invoker-plugin</artifactId>
+          <version>${maven-invoker-plugin.version}</version>
+          <dependencies>
+            <dependency>
+              <groupId>org.apache.groovy</groupId>
+              <artifactId>groovy</artifactId>
+              <version>4.0.27</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.asciidoctor</groupId>
+          <artifactId>asciidoctor-maven-plugin</artifactId>
+          <version>${asciidoctor-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>de.thetaphi</groupId>
+          <artifactId>forbiddenapis</artifactId>
+          <executions>
+            <execution>
+              <id>verify-forbidden-apis</id>
+              <goals>
+                <goal>check</goal>
+              </goals>
+              <phase>${forbiddenapis-maven-plugin.phase}</phase>
+              <configuration>
+                <!-- if the used Java version is too new, don't fail, just do nothing: -->
+                <failOnUnsupportedJava>false</failOnUnsupportedJava>
+                <signaturesFiles>
+                  <signaturesFile>${maven.multiModuleProjectDirectory}/.forbiddenapis/banned-signatures-common.txt</signaturesFile>
+                </signaturesFiles>
+                <failOnMissingClasses>false</failOnMissingClasses>
+                <ignoreSignaturesOfMissingClasses>true</ignoreSignaturesOfMissingClasses>
+                <suppressAnnotations>
+                  <annotation>**.SuppressForbidden</annotation>
+                </suppressAnnotations>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <configuration>
+            <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+          </configuration>
+          <executions>
+            <execution>
+              <id>help-goal</id>
+              <goals>
+                <goal>helpmojo</goal>
+              </goals>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>org.jboss.bridger</groupId>
+          <artifactId>bridger</artifactId>
+          <version>${jboss-bridger-plugin.version}</version>
+          <executions>
+            <execution>
+              <id>weave</id>
+              <goals>
+                <goal>transform</goal>
+              </goals>
+              <phase>process-classes</phase>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <groupId>io.smallrye.certs</groupId>
+          <artifactId>smallrye-certificate-generator-maven-plugin</artifactId>
+          <version>${smallrye-certificate-generator.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.44.4</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
-    <profiles>
-        <profile>
-            <id>format-kotlin</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-                <property>
-                    <name>!no-format</name>
-                </property>
-                <file>
-                    <exists>src/main/kotlin</exists>
-                </file>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>com.diffplug.spotless</groupId>
-                        <artifactId>spotless-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>format-kotlin</id>
-                                <phase>process-sources</phase>
-                                <goals>
-                                    <goal>apply</goal>
-                                </goals>
-                            </execution>
-                        </executions>
+  <profiles>
+    <profile>
+      <id>format-kotlin</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+        <property>
+          <name>!no-format</name>
+        </property>
+        <file>
+          <exists>src/main/kotlin</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.diffplug.spotless</groupId>
+            <artifactId>spotless-maven-plugin</artifactId>
 
-                        <configuration>
-                            <kotlin>
-                                <ktfmt>
-                                    <style>KOTLINLANG</style>
-                                    <!-- optional, other options are DEFAULT, DROPBOX, GOOGLE and KOTLINLANG -->
-                                </ktfmt>
+            <configuration>
+              <kotlin>
+                <ktfmt>
+                  <style>KOTLINLANG</style>
+                  <!-- optional, other options are DEFAULT, DROPBOX, GOOGLE and KOTLINLANG -->
+                </ktfmt>
 
-                                <!--
+                <!--
                                     <ktfmt>
                                         <style>DEFAULT</style> &lt;!&ndash; optional, other options are DEFAULT, DROPBOX, GOOGLE and KOTLINLANG &ndash;&gt;
                                     </ktfmt>
                                 -->
 
-                            </kotlin>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>dokka</id>
-            <activation>
-                <property>
-                    <name>dokka</name>
-                </property>
-                <file>
-                    <exists>src/main/kotlin</exists>
-                </file>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jetbrains.dokka</groupId>
-                        <artifactId>dokka-maven-plugin</artifactId>
-                        <version>${dokka.version}</version>
-                        <executions>
-                            <execution>
-                                <id>dokka</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>dokka</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <jdkVersion>17</jdkVersion>
-                            <outputFormat>html</outputFormat>
-                            <externalDocumentationLinks>
-                                <link>
-                                    <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
-                                    <url>https://docs.oracle.com/en/java/javase/17/docs/api/</url>
-                                </link>
-                            </externalDocumentationLinks>
-                        </configuration>
-                    </plugin>
-                    <plugin>
+              </kotlin>
+            </configuration>
+            <executions>
+              <execution>
+                <id>format-kotlin</id>
+                <goals>
+                  <goal>apply</goal>
+                </goals>
+                <phase>process-sources</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>dokka</id>
+      <activation>
+        <property>
+          <name>dokka</name>
+        </property>
+        <file>
+          <exists>src/main/kotlin</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jetbrains.dokka</groupId>
+            <artifactId>dokka-maven-plugin</artifactId>
+            <version>${dokka.version}</version>
+            <configuration>
+              <jdkVersion>17</jdkVersion>
+              <outputFormat>html</outputFormat>
+              <externalDocumentationLinks>
+                <link>
+                  <!-- Root URL of the generated documentation to link with. The trailing slash is required! -->
+                  <url>https://docs.oracle.com/en/java/javase/17/docs/api/</url>
+                </link>
+              </externalDocumentationLinks>
+            </configuration>
+            <executions>
+              <execution>
+                <id>dokka</id>
+                <goals>
+                  <goal>dokka</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-jar-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>dokka-jar</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+                <phase>package</phase>
+                <configuration>
+                  <classifier>javadoc</classifier>
+                  <classesDirectory>${project.build.directory}/dokka</classesDirectory>
+                  <skipIfEmpty>true</skipIfEmpty>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>eclipse</id>
+      <activation>
+        <property>
+          <!-- This is a trick to have the profile automatically activated by Eclipse -->
+          <name>m2e.version</name>
+        </property>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
+            <plugin>
+              <groupId>org.eclipse.m2e</groupId>
+              <artifactId>lifecycle-mapping</artifactId>
+              <version>1.0.0</version>
+              <configuration>
+                <lifecycleMappingMetadata>
+                  <pluginExecutions>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
+                        <groupId>io.fabric8</groupId>
+                        <artifactId>docker-maven-plugin</artifactId>
+                        <versionRange>[0.26.1,)</versionRange>
+                        <goals>
+                          <goal>start</goal>
+                          <goal>stop</goal>
+                        </goals>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore></ignore>
+                      </action>
+                    </pluginExecution>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-jar-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>dokka-jar</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                                <configuration>
-                                    <classifier>javadoc</classifier>
-                                    <classesDirectory>${project.build.directory}/dokka</classesDirectory>
-                                    <skipIfEmpty>true</skipIfEmpty>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>eclipse</id>
-            <activation>
-                <property>
-                    <!-- This is a trick to have the profile automatically activated by Eclipse -->
-                    <name>m2e.version</name>
-                </property>
-            </activation>
-            <build>
-                <pluginManagement>
-                    <plugins>
-                        <!--This plugin's configuration is used to store Eclipse m2e settings only. It has no influence on the Maven build itself.-->
-                        <plugin>
-                            <groupId>org.eclipse.m2e</groupId>
-                            <artifactId>lifecycle-mapping</artifactId>
-                            <version>1.0.0</version>
-                            <configuration>
-                                <lifecycleMappingMetadata>
-                                    <pluginExecutions>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>io.fabric8</groupId>
-                                                <artifactId>
-                                                    docker-maven-plugin
-                                                </artifactId>
-                                                <versionRange>
-                                                    [0.26.1,)
-                                                </versionRange>
-                                                <goals>
-                                                    <goal>start</goal>
-                                                    <goal>stop</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>
-                                                    org.apache.maven.plugins
-                                                </groupId>
-                                                <artifactId>
-                                                    maven-antrun-plugin
-                                                </artifactId>
-                                                <versionRange>
-                                                    [1.8,)
-                                                </versionRange>
-                                                <goals>
-                                                    <goal>run</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>
-                                                    org.apache.maven.plugins
-                                                </groupId>
-                                                <artifactId>
-                                                    maven-dependency-plugin
-                                                </artifactId>
-                                                <versionRange>
-                                                    [3.1.1,)
-                                                </versionRange>
-                                                <goals>
-                                                    <goal>resolve</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>
-                                                    io.smallrye
-                                                </groupId>
-                                                <artifactId>
-                                                    jandex-maven-plugin
-                                                </artifactId>
-                                                <versionRange>
-                                                    [1.1.0,)
-                                                </versionRange>
-                                                <goals>
-                                                    <goal>jandex</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                        <pluginExecution>
-                                            <pluginExecutionFilter>
-                                                <groupId>io.quarkus</groupId>
-                                                <artifactId>
-                                                    quarkus-extension-plugin
-                                                </artifactId>
-                                                <versionRange>
-                                                    [0.1.0,)
-                                                </versionRange>
-                                                <goals>
-                                                    <goal>extension-list</goal>
-                                                </goals>
-                                            </pluginExecutionFilter>
-                                            <action>
-                                                <ignore></ignore>
-                                            </action>
-                                        </pluginExecution>
-                                    </pluginExecutions>
-                                </lifecycleMappingMetadata>
-                            </configuration>
-                        </plugin>
-                    </plugins>
-                </pluginManagement>
-            </build>
-        </profile>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <versionRange>[1.8,)</versionRange>
+                        <goals>
+                          <goal>run</goal>
+                        </goals>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore></ignore>
+                      </action>
+                    </pluginExecution>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <versionRange>[3.1.1,)</versionRange>
+                        <goals>
+                          <goal>resolve</goal>
+                        </goals>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore></ignore>
+                      </action>
+                    </pluginExecution>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
+                        <groupId>io.smallrye</groupId>
+                        <artifactId>jandex-maven-plugin</artifactId>
+                        <versionRange>[1.1.0,)</versionRange>
+                        <goals>
+                          <goal>jandex</goal>
+                        </goals>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore></ignore>
+                      </action>
+                    </pluginExecution>
+                    <pluginExecution>
+                      <pluginExecutionFilter>
+                        <groupId>io.quarkus</groupId>
+                        <artifactId>quarkus-extension-plugin</artifactId>
+                        <versionRange>[0.1.0,)</versionRange>
+                        <goals>
+                          <goal>extension-list</goal>
+                        </goals>
+                      </pluginExecutionFilter>
+                      <action>
+                        <ignore></ignore>
+                      </action>
+                    </pluginExecution>
+                  </pluginExecutions>
+                </lifecycleMappingMetadata>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
 
-        <profile>
-            <id>test-coverage</id>
-            <properties>
-                <jacoco.agent.argLine>${jacoco.activated.agent.argLine}</jacoco.agent.argLine>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>${jacoco.version}</version>
-                        <executions>
-                            <execution>
-                                <id>agent</id>
-                                <goals>
-                                    <goal>prepare-agent</goal>
-                                </goals>
-                                <configuration>
-                                    <includes>
-                                        <include>io.quarkus*</include>
-                                    </includes>
-                                    <propertyName>jacoco.activated.agent.argLine</propertyName>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
+    <profile>
+      <id>test-coverage</id>
+      <properties>
+        <jacoco.agent.argLine>${jacoco.activated.agent.argLine}</jacoco.agent.argLine>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+              <execution>
+                <id>agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+                <configuration>
+                  <includes>
+                    <include>io.quarkus*</include>
+                  </includes>
+                  <propertyName>jacoco.activated.agent.argLine</propertyName>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
 
-        <profile>
-            <id>api-check</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>parse-version</id>
-                                <goals>
-                                    <goal>parse-version</goal>
-                                </goals>
-                                <phase>validate</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.revapi</groupId>
-                        <artifactId>revapi-maven-plugin</artifactId>
-                        <dependencies>
-                            <dependency>
-                                <groupId>io.quarkus</groupId>
-                                <artifactId>quarkus-revapi-config</artifactId>
-                                <version>${project.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.revapi</groupId>
-                                <artifactId>revapi-java</artifactId>
-                                <version>${revapi-java-plugin.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.revapi</groupId>
-                                <artifactId>revapi-reporter-json</artifactId>
-                                <version>${revapi-reporter-json.version}</version>
-                            </dependency>
-                            <dependency>
-                                <groupId>org.revapi</groupId>
-                                <artifactId>revapi-reporter-text</artifactId>
-                                <version>${revapi-reporter-text.version}</version>
-                            </dependency>
-                        </dependencies>
-                        <configuration>
-                            <oldArtifacts>
-                                <artifact>${project.groupId}:${project.artifactId}:${revapi.oldVersion}</artifact>
-                            </oldArtifacts>
-                            <newArtifacts>
-                                <artifact>${project.groupId}:${project.artifactId}:${revapi.newVersion}</artifact>
-                            </newArtifacts>
-                            <!-- don't fail is false making it possible to have
+    <profile>
+      <id>api-check</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>build-helper-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>parse-version</id>
+                <goals>
+                  <goal>parse-version</goal>
+                </goals>
+                <phase>validate</phase>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.revapi</groupId>
+            <artifactId>revapi-maven-plugin</artifactId>
+            <configuration>
+              <oldArtifacts>
+                <artifact>${project.groupId}:${project.artifactId}:${revapi.oldVersion}</artifact>
+              </oldArtifacts>
+              <newArtifacts>
+                <artifact>${project.groupId}:${project.artifactId}:${revapi.newVersion}</artifact>
+              </newArtifacts>
+              <!-- don't fail is false making it possible to have
                                 revapi checks without requiring config files -->
-                            <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
-                            <!-- Consider changes from the latest .Final version,
+              <failOnMissingConfigurationFiles>false</failOnMissingConfigurationFiles>
+              <!-- Consider changes from the latest .Final version,
                                 not from the latest non-snapshot. -->
-                            <versionFormat>\d+\.\d+\.\d+\.Final</versionFormat>
-                            <!-- By default revapi will check the oldArtifact
+              <versionFormat>\d+\.\d+\.\d+\.Final</versionFormat>
+              <!-- By default revapi will check the oldArtifact
                                 against the currently executed build -->
-                            <!-- <checkDependencies>false</checkDependencies> -->
-                            <analysisConfigurationFiles>
-                                <configurationFile>
-                                    <resource>revapi/revapi-configuration.xml</resource>
-                                </configurationFile>
-                                <configurationFile>
-                                    <path>api-changes.xml</path>
-                                    <roots>
-                                        <root>versions/v${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</root>
-                                    </roots>
-                                </configurationFile>
-                            </analysisConfigurationFiles>
-                            <!-- By default, revapi will only fail the build
+              <!-- <checkDependencies>false</checkDependencies> -->
+              <analysisConfigurationFiles>
+                <configurationFile>
+                  <resource>revapi/revapi-configuration.xml</resource>
+                </configurationFile>
+                <configurationFile>
+                  <path>api-changes.xml</path>
+                  <roots>
+                    <root>versions/v${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}</root>
+                  </roots>
+                </configurationFile>
+              </analysisConfigurationFiles>
+              <!-- By default, revapi will only fail the build
                                  if there are potentially breaking or breaking changes. However, in the report
                                  we want even non breaking changes to be present. -->
-                            <reportSeverity>nonBreaking</reportSeverity>
-                            <failSeverity>potentiallyBreaking</failSeverity>
-                            <failBuildOnProblemsFound>true</failBuildOnProblemsFound>
-                            <checkDependencies>${revapi.checkdeps}</checkDependencies>
-                            <buildFailureMessage>${revapi.buildFailureMessage}</buildFailureMessage>
-                            <ignoreSuggestionsFormat>xml</ignoreSuggestionsFormat>
-                            <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
-                            <expandProperties>true</expandProperties>
-                        </configuration>
-                        <!-- Running two executions is a workaround to make sure
+              <reportSeverity>nonBreaking</reportSeverity>
+              <failSeverity>potentiallyBreaking</failSeverity>
+              <failBuildOnProblemsFound>true</failBuildOnProblemsFound>
+              <checkDependencies>${revapi.checkdeps}</checkDependencies>
+              <buildFailureMessage>${revapi.buildFailureMessage}</buildFailureMessage>
+              <ignoreSuggestionsFormat>xml</ignoreSuggestionsFormat>
+              <ignoreSuggestionsFile>${project.build.directory}/api-changes-suggestions.xml</ignoreSuggestionsFile>
+              <expandProperties>true</expandProperties>
+            </configuration>
+            <dependencies>
+              <dependency>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-revapi-config</artifactId>
+                <version>${project.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.revapi</groupId>
+                <artifactId>revapi-java</artifactId>
+                <version>${revapi-java-plugin.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.revapi</groupId>
+                <artifactId>revapi-reporter-json</artifactId>
+                <version>${revapi-reporter-json.version}</version>
+              </dependency>
+              <dependency>
+                <groupId>org.revapi</groupId>
+                <artifactId>revapi-reporter-text</artifactId>
+                <version>${revapi-reporter-text.version}</version>
+              </dependency>
+            </dependencies>
+            <!-- Running two executions is a workaround to make sure
                              we get a HTML report in case revapi finds some incompatible changes. The
                              "check" goal will simply fail the whole build before it could get to the
                              report. To make sure we always get a HTML report, the "report" goal needs
                              to be executed before the "check" goal. Once https://github.com/revapi/revapi/issues/11
                              is fixed it should be possible to use single execution. -->
-                        <executions>
-                            <execution>
-                                <id>api-check</id>
-                                <goals>
-                                    <goal>check</goal>
-                                </goals>
-                                <phase>verify</phase>
-                            </execution>
-                            <execution>
-                                <!-- report can be found in ${build.directory}/site/revapi-report.html -->
-                                <id>api-report</id>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                                <phase>package</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>Windows</id>
-            <activation>
-                <os>
-                    <family>Windows</family>
-                </os>
-            </activation>
-            <properties>
-                <script.extension>bat</script.extension>
-            </properties>
-        </profile>
+            <executions>
+              <execution>
+                <id>api-check</id>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+                <phase>verify</phase>
+              </execution>
+              <execution>
+                <!-- report can be found in ${build.directory}/site/revapi-report.html -->
+                <id>api-report</id>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>Windows</id>
+      <activation>
+        <os>
+          <family>Windows</family>
+        </os>
+      </activation>
+      <properties>
+        <script.extension>bat</script.extension>
+      </properties>
+    </profile>
 
-        <profile>
-            <id>mac-m1</id>
-            <activation>
-                <os>
-                    <arch>aarch64</arch>
-                </os>
-            </activation>
-            <properties>
-                <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
-                <volume.access.modifier></volume.access.modifier>
+    <profile>
+      <id>mac-m1</id>
+      <activation>
+        <os>
+          <arch>aarch64</arch>
+        </os>
+      </activation>
+      <properties>
+        <!-- Podman compatibility. Currently, mac file systems based on Plan 9 does not support SELinux labeling z and Z should not be used. When they transition to use virtiofsd, it should support SELinux labeling, and then we can use it for better container separation on the Mac.-->
+        <volume.access.modifier></volume.access.modifier>
 
-                <!-- See https://stackoverflow.com/questions/65456814/docker-apple-silicon-m1-preview-mysql-no-matching-manifest-for-linux-arm64-v8
+        <!-- See https://stackoverflow.com/questions/65456814/docker-apple-silicon-m1-preview-mysql-no-matching-manifest-for-linux-arm64-v8
                 and https://www.emmanuelgautier.com/blog/mysql-docker-arm-m1
                 This hopefully should be temporary -->
-                <mysql.image>arm64v8/mysql:8-oracle</mysql.image>
+        <mysql.image>arm64v8/mysql:8-oracle</mysql.image>
 
-                <!-- See
+        <!-- See
                 https://github.com/microsoft/mssql-docker/issues/668 and https://stackoverflow.com/questions/65398641/docker-connect-sql-server-container-non-zero-code-1/66919852#66919852.
                 The MS SQL image segfaults on ARM. Azure Edge is not fully compatible, but it is better than not running the tests at all. -->
-                <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
-            </properties>
-        </profile>
-    </profiles>
+        <mssql.image>mcr.microsoft.com/azure-sql-edge:latest</mssql.image>
+      </properties>
+    </profile>
+  </profiles>
 </project>

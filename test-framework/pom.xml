@@ -1,79 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>quarkus-build-parent</artifactId>
-        <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../build-parent/pom.xml</relativePath>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-build-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../build-parent/pom.xml</relativePath>
+  </parent>
 
-    <artifactId>quarkus-test-framework</artifactId>
-    <name>Quarkus - Test Framework</name>
-    <packaging>pom</packaging>
+  <artifactId>quarkus-test-framework</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Test Framework</name>
 
-    <modules>
-        <module>common</module>
-        <module>h2</module>
-        <module>grpc</module>
-        <module>derby</module>
-        <module>kubernetes-client</module>
-        <module>junit5-config</module>
-        <module>junit5-internal</module>
-        <module>junit5</module>
-        <module>junit5-component</module>
-        <module>junit5-mockito</module>
-        <module>junit5-mockito-config</module>
-        <module>vertx</module>
-        <module>hibernate-reactive-panache</module>
-        <module>amazon-lambda</module>
-        <module>arquillian</module>
-        <module>devmode-test-utils</module>
-        <module>maven</module>
-        <module>ldap</module>
-        <module>security</module>
-        <module>security-jwt</module>
-        <module>security-oidc</module>
-        <module>security-webauthn</module>
-        <module>oidc-server</module>
-        <module>keycloak-server</module>
-        <module>jacoco</module>
-        <module>mongodb</module>
-        <module>kafka-companion</module>
-        <module>google-cloud-functions</module>
-        <module>observability</module>
-    </modules>
+  <modules>
+    <module>common</module>
+    <module>h2</module>
+    <module>grpc</module>
+    <module>derby</module>
+    <module>kubernetes-client</module>
+    <module>junit5-config</module>
+    <module>junit5-internal</module>
+    <module>junit5</module>
+    <module>junit5-component</module>
+    <module>junit5-mockito</module>
+    <module>junit5-mockito-config</module>
+    <module>vertx</module>
+    <module>hibernate-reactive-panache</module>
+    <module>amazon-lambda</module>
+    <module>arquillian</module>
+    <module>devmode-test-utils</module>
+    <module>maven</module>
+    <module>ldap</module>
+    <module>security</module>
+    <module>security-jwt</module>
+    <module>security-oidc</module>
+    <module>security-webauthn</module>
+    <module>oidc-server</module>
+    <module>keycloak-server</module>
+    <module>jacoco</module>
+    <module>mongodb</module>
+    <module>kafka-companion</module>
+    <module>google-cloud-functions</module>
+    <module>observability</module>
+  </modules>
 
-    <build>
-        <plugins>
-            <!--
+  <build>
+    <plugins>
+      <!--
                 This is a test dependency and as such some test libraries don't have the test scope
                 which is perfectly fine.
                 We override the enforcer rules to avoid testing that.
             -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-enforcer-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>enforce</id>
-                        <phase>${maven-enforcer-plugin.phase}</phase>
-                        <configuration>
-                            <rules combine.self="override">
-                                <dependencyConvergence/>
-                                <externalRules>
-                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
-                                </externalRules>
-                                <externalRules>
-                                    <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
-                                </externalRules>
-                            </rules>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>enforce</id>
+            <phase>${maven-enforcer-plugin.phase}</phase>
+            <configuration>
+              <rules combine.self="override">
+                <dependencyConvergence></dependencyConvergence>
+                <externalRules>
+                  <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                </externalRules>
+                <externalRules>
+                  <location>classpath:enforcer-rules/quarkus-banned-dependencies-okhttp.xml</location>
+                </externalRules>
+              </rules>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 </project>

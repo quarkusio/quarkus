@@ -1,86 +1,84 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <groupId>io.quarkus.arc</groupId>
-        <artifactId>arc-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
-    </parent>
+  <parent>
+    <groupId>io.quarkus.arc</groupId>
+    <artifactId>arc-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
 
-    <artifactId>arc-cdi-tck-runner</artifactId>
-    <name>ArC - CDI TCK Runner</name>
+  <artifactId>arc-cdi-tck-runner</artifactId>
+  <name>ArC - CDI TCK Runner</name>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.jboss.arquillian</groupId>
-                <artifactId>arquillian-bom</artifactId>
-                <version>${version.arquillian}</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
+  <dependencyManagement>
     <dependencies>
-        <dependency>
-            <groupId>io.quarkus.arc</groupId>
-            <artifactId>arc-arquillian</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus.arc</groupId>
-            <artifactId>arc-cdi-tck-porting-pkg</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>jakarta.enterprise</groupId>
-            <artifactId>cdi-tck-core-impl</artifactId>
-            <version>${version.cdi-tck}</version>
-        </dependency>
+      <dependency>
+        <groupId>org.jboss.arquillian</groupId>
+        <artifactId>arquillian-bom</artifactId>
+        <version>${version.arquillian}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
     </dependencies>
+  </dependencyManagement>
 
-    <build>
-        <plugins>
-            <!-- copy the porting package JAR to a special directory before running tests -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-porting-pkg</id>
-                        <phase>generate-test-resources</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <includeGroupIds>io.quarkus.arc</includeGroupIds>
-                            <includeArtifactIds>arc-cdi-tck-porting-pkg</includeArtifactIds>
-                            <outputDirectory>${project.build.directory}/porting-pkg</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <dependenciesToScan>
-                        <dependency>jakarta.enterprise:cdi-tck-core-impl</dependency>
-                    </dependenciesToScan>
-                    <suiteXmlFiles>
-                        <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
-                    </suiteXmlFiles>
-                    <systemPropertyVariables>
-                        <org.jboss.cdi.tck.cdiCoreMode>true</org.jboss.cdi.tck.cdiCoreMode>
-                        <org.jboss.cdi.tck.libraryDirectory>${project.build.directory}/porting-pkg</org.jboss.cdi.tck.libraryDirectory>
-                    </systemPropertyVariables>
-                    <reuseForks>false</reuseForks>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus.arc</groupId>
+      <artifactId>arc-arquillian</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus.arc</groupId>
+      <artifactId>arc-cdi-tck-porting-pkg</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>jakarta.enterprise</groupId>
+      <artifactId>cdi-tck-core-impl</artifactId>
+      <version>${version.cdi-tck}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <!-- copy the porting package JAR to a special directory before running tests -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy-porting-pkg</id>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <phase>generate-test-resources</phase>
+            <configuration>
+              <includeGroupIds>io.quarkus.arc</includeGroupIds>
+              <includeArtifactIds>arc-cdi-tck-porting-pkg</includeArtifactIds>
+              <outputDirectory>${project.build.directory}/porting-pkg</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <dependenciesToScan>
+            <dependency>jakarta.enterprise:cdi-tck-core-impl</dependency>
+          </dependenciesToScan>
+          <suiteXmlFiles>
+            <suiteXmlFile>src/test/resources/testng.xml</suiteXmlFile>
+          </suiteXmlFiles>
+          <systemPropertyVariables>
+            <org.jboss.cdi.tck.cdiCoreMode>true</org.jboss.cdi.tck.cdiCoreMode>
+            <org.jboss.cdi.tck.libraryDirectory>${project.build.directory}/porting-pkg</org.jboss.cdi.tck.libraryDirectory>
+          </systemPropertyVariables>
+          <reuseForks>false</reuseForks>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

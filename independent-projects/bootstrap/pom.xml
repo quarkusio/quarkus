@@ -1,232 +1,235 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-    child.project.url.inherit.append.path="false">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../parent/pom.xml</relativePath>
-    </parent>
-    <artifactId>quarkus-bootstrap-parent</artifactId>
-    <name>Quarkus - Bootstrap - Parent</name>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" child.project.url.inherit.append.path="false" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../parent/pom.xml</relativePath>
+  </parent>
+  <artifactId>quarkus-bootstrap-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Bootstrap - Parent</name>
+  <url>https://github.com/quarkusio/quarkus</url>
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <modules>
+    <module>bom</module>
+    <module>bom-test</module>
+    <module>app-model</module>
+    <module>maven-resolver</module>
+    <module>core</module>
+    <module>runner</module>
+    <module>gradle-resolver</module>
+    <module>classloader-commons</module>
+    <module>benchmarks</module>
+  </modules>
+  <scm child.scm.connection.inherit.append.path="false" child.scm.developerConnection.inherit.append.path="false" child.scm.url.inherit.append.path="false">
+    <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
+    <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
+    <tag>HEAD</tag>
     <url>https://github.com/quarkusio/quarkus</url>
-    <packaging>pom</packaging>
-    <licenses>
-        <license>
-            <name>Apache License, Version 2.0</name>
-            <distribution>repo</distribution>
-            <url>https://www.apache.org/licenses/LICENSE-2.0.html</url>
-        </license>
-    </licenses>
-    <scm child.scm.connection.inherit.append.path="false"
-         child.scm.developerConnection.inherit.append.path="false"
-         child.scm.url.inherit.append.path="false">
-        <url>https://github.com/quarkusio/quarkus</url>
-        <connection>scm:git:git@github.com:quarkusio/quarkus.git</connection>
-        <developerConnection>scm:git:git@github.com:quarkusio/quarkus.git</developerConnection>
-        <tag>HEAD</tag>
-    </scm>
-    <properties>
-        <angus-activation.version>1.0.0</angus-activation.version>
-        <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
-        <javax.inject.version>1</javax.inject.version>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jandex.version>3.3.1</jandex.version>
-        <jmh.version>1.37</jmh.version>
+  </scm>
+  <properties>
+    <angus-activation.version>1.0.0</angus-activation.version>
+    <javax.annotation-api.version>1.3.2</javax.annotation-api.version>
+    <javax.inject.version>1</javax.inject.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <jandex.version>3.3.1</jandex.version>
+    <jmh.version>1.37</jmh.version>
 
-        <!-- Dependency versions -->
-        <assertj.version>3.27.3</assertj.version>
-        <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
-        <jboss-logging.version>3.6.1.Final</jboss-logging.version>
-        <junit5.version>5.13.1</junit5.version>
-        <maven-core.version>3.9.9</maven-core.version><!-- Keep in sync with sisu.version -->
-        <sisu.version>0.9.0.M4</sisu.version><!-- Keep in sync with maven-core.version -->
-        <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>
-        <maven-resolver.version>1.9.22</maven-resolver.version>
-        <maven-shared-utils.version>3.4.2</maven-shared-utils.version> <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
-        <maven-wagon.version>3.5.3</maven-wagon.version>
-        <httpcore.version>4.4.16</httpcore.version><!-- Keep in sync with maven-wagon.version (wagon-http 3.5.3 brings in httpclient 4.5.14 which brings httpcore 4.4.16) -->
-        <httpclient.version>4.5.14</httpclient.version>
-        <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
-        <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
-        <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
-        <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
-        <commons-codec.version>1.18.0</commons-codec.version>
-        <commons-io.version>2.19.0</commons-io.version>
-        <commons-lang.version>3.17.0</commons-lang.version>
-        <guava.version>33.4.8-jre</guava.version>
-        <guava.failureaccess.version>1.0.1</guava.failureaccess.version><!-- keep in sync with guava.version -->
-        <j2objc.annotations.version>2.8</j2objc.annotations.version><!-- keep in sync with guava.version -->
-        <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
-        <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
-        <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
-        <slf4j-api.version>2.0.6</slf4j-api.version>
-        <graal-sdk.version>23.1.0</graal-sdk.version>
-        <plexus-classworlds.version>2.6.0</plexus-classworlds.version> <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
-        <plexus-cipher.version>2.0</plexus-cipher.version>
-        <plexus-interpolation.version>1.26</plexus-interpolation.version>
-        <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
-        <plexus-utils.version>3.5.1</plexus-utils.version>
-        <smallrye-common.version>2.12.0</smallrye-common.version>
-        <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
-        <gradle-tooling.version>8.14</gradle-tooling.version>
-        <quarkus-fs-util.version>1.0.0</quarkus-fs-util.version>
-        <org-crac.version>0.1.3</org-crac.version>
-    </properties>
-    <modules>
-        <module>bom</module>
-        <module>bom-test</module>
-        <module>app-model</module>
-        <module>maven-resolver</module>
-        <module>core</module>
-        <module>runner</module>
-        <module>gradle-resolver</module>
-        <module>classloader-commons</module>
-        <module>benchmarks</module>
-    </modules>
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                </plugin>
-                <plugin>
-                    <groupId>io.smallrye</groupId>
-                    <artifactId>jandex-maven-plugin</artifactId>
-                    <version>${jandex.version}</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <configuration>
-                        <quiet>true</quiet>
-                        <doclint>none</doclint>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-enforcer-plugin</artifactId>
-                    <dependencies>
-                        <dependency>
-                            <groupId>io.quarkus</groupId>
-                            <artifactId>quarkus-enforcer-rules</artifactId>
-                            <version>${project.version}</version>
-                        </dependency>
-                    </dependencies>
-                    <executions>
-                        <execution>
-                            <id>enforce</id>
-                            <phase>${maven-enforcer-plugin.phase}</phase>
-                            <configuration>
-                                <rules>
-                                    <dependencyConvergence/>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
-                                    </externalRules>
-                                    <externalRules>
-                                        <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
-                                    </externalRules>
-                                    <bannedDependencies>
-                                        <excludes>
-                                            <!-- findbugs is not required at runtime -->
-                                            <exclude>com.google.code.findbugs:jsr305</exclude>
-                                            <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
-                                            <exclude>com.google.guava:listenablefuture</exclude>
-                                        </excludes>
-                                    </bannedDependencies>
-                                </rules>
-                            </configuration>
-                            <goals>
-                                <goal>enforce</goal>
-                            </goals>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <configuration>
-                        <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
-                        <systemPropertyVariables combine.self="override"/>
-                        <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
-                        <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
-                        <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
-                    </configuration>
-                </plugin>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-plugin-plugin</artifactId>
-                    <configuration>
-                        <goalPrefix>quarkus-bootstrap</goalPrefix>
-                        <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
-                    </configuration>
-                    <executions>
-                        <execution>
-                            <id>help-goal</id>
-                            <goals>
-                                <goal>helpmojo</goal>
-                            </goals>
-                        </execution>
-                        <execution>
-                            <id>default-descriptor</id>
-                            <phase>process-classes</phase>
-                        </execution>
-                    </executions>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+    <!-- Dependency versions -->
+    <assertj.version>3.27.3</assertj.version>
+    <eclipse-minimal-json.version>0.9.5</eclipse-minimal-json.version>
+    <jboss-logging.version>3.6.1.Final</jboss-logging.version>
+    <junit5.version>5.13.1</junit5.version>
+    <maven-core.version>3.9.9</maven-core.version>
+    <!-- Keep in sync with sisu.version -->
+    <sisu.version>0.9.0.M4</sisu.version>
+    <!-- Keep in sync with maven-core.version -->
+    <maven-plugin-annotations.version>3.13.1</maven-plugin-annotations.version>
+    <maven-resolver.version>1.9.22</maven-resolver.version>
+    <maven-shared-utils.version>3.4.2</maven-shared-utils.version>
+    <!-- Keep in sync with maven-core.version (force this version on maven-invoker) -->
+    <maven-wagon.version>3.5.3</maven-wagon.version>
+    <httpcore.version>4.4.16</httpcore.version>
+    <!-- Keep in sync with maven-wagon.version (wagon-http 3.5.3 brings in httpclient 4.5.14 which brings httpcore 4.4.16) -->
+    <httpclient.version>4.5.14</httpclient.version>
+    <commons-logging-jboss-logging.version>1.0.0.Final</commons-logging-jboss-logging.version>
+    <jakarta.annotation-api.version>3.0.0</jakarta.annotation-api.version>
+    <jakarta.enterprise.cdi-api.version>4.1.0</jakarta.enterprise.cdi-api.version>
+    <jakarta.inject-api.version>2.0.1</jakarta.inject-api.version>
+    <commons-codec.version>1.18.0</commons-codec.version>
+    <commons-io.version>2.19.0</commons-io.version>
+    <commons-lang.version>3.17.0</commons-lang.version>
+    <guava.version>33.4.8-jre</guava.version>
+    <guava.failureaccess.version>1.0.1</guava.failureaccess.version>
+    <!-- keep in sync with guava.version -->
+    <j2objc.annotations.version>2.8</j2objc.annotations.version>
+    <!-- keep in sync with guava.version -->
+    <shrinkwrap-depchain.version>1.2.6</shrinkwrap-depchain.version>
+    <jboss-logmanager.version>3.1.2.Final</jboss-logmanager.version>
+    <slf4j-jboss-logmanager.version>1.1.0.Final</slf4j-jboss-logmanager.version>
+    <slf4j-api.version>2.0.6</slf4j-api.version>
+    <graal-sdk.version>23.1.0</graal-sdk.version>
+    <plexus-classworlds.version>2.6.0</plexus-classworlds.version>
+    <!-- not actually used but ClassRealm class is referenced from the API used in BootstrapWagonConfigurator -->
+    <plexus-cipher.version>2.0</plexus-cipher.version>
+    <plexus-interpolation.version>1.26</plexus-interpolation.version>
+    <plexus-sec-dispatcher.version>2.0</plexus-sec-dispatcher.version>
+    <plexus-utils.version>3.5.1</plexus-utils.version>
+    <smallrye-common.version>2.12.0</smallrye-common.version>
+    <smallrye-beanbag.version>1.5.3</smallrye-beanbag.version>
+    <gradle-tooling.version>8.14</gradle-tooling.version>
+    <quarkus-fs-util.version>1.0.0</quarkus-fs-util.version>
+    <org-crac.version>0.1.3</org-crac.version>
+  </properties>
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <artifactId>maven-compiler-plugin</artifactId>
+        </plugin>
+        <plugin>
+          <groupId>io.smallrye</groupId>
+          <artifactId>jandex-maven-plugin</artifactId>
+          <version>${jandex.version}</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-javadoc-plugin</artifactId>
+          <configuration>
+            <quiet>true</quiet>
+            <doclint>none</doclint>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-enforcer-plugin</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>io.quarkus</groupId>
+              <artifactId>quarkus-enforcer-rules</artifactId>
+              <version>${project.version}</version>
+            </dependency>
+          </dependencies>
+          <executions>
+            <execution>
+              <id>enforce</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <phase>${maven-enforcer-plugin.phase}</phase>
+              <configuration>
+                <rules>
+                  <dependencyConvergence></dependencyConvergence>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-require-java-version.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-require-maven-version.xml</location>
+                  </externalRules>
+                  <externalRules>
+                    <location>classpath:enforcer-rules/quarkus-banned-dependencies.xml</location>
+                  </externalRules>
+                  <bannedDependencies>
+                    <excludes>
+                      <!-- findbugs is not required at runtime -->
+                      <exclude>com.google.code.findbugs:jsr305</exclude>
+                      <!-- com.google.guava:listenablefuture is empty and the ListenableFuture class is available in Guava -->
+                      <exclude>com.google.guava:listenablefuture</exclude>
+                    </excludes>
+                  </bannedDependencies>
+                </rules>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+            <!-- combine.self suppresses warnings about java.io.tmpdir being defined twice -->
+            <systemPropertyVariables combine.self="override"></systemPropertyVariables>
+            <!-- set tmpdir as early as possible because failsafe sets it too late for JDK16 -->
+            <argLine>-Djava.io.tmpdir="${project.build.directory}"</argLine>
+            <excludedEnvironmentVariables>MAVEN_OPTS</excludedEnvironmentVariables>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-plugin-plugin</artifactId>
+          <configuration>
+            <goalPrefix>quarkus-bootstrap</goalPrefix>
+            <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
+          </configuration>
+          <executions>
+            <execution>
+              <id>help-goal</id>
+              <goals>
+                <goal>helpmojo</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>default-descriptor</id>
+              <phase>process-classes</phase>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
 
-    <profiles>
-        <profile>
-            <id>quick-build</id>
-            <activation>
-                <property>
-                    <name>quickly</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <id>quick-build-docs</id>
-            <activation>
-                <property>
-                    <name>quicklyDocs</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-            </properties>
-            <build>
-                <defaultGoal>clean install</defaultGoal>
-            </build>
-        </profile>
-        <profile>
-            <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
-            <id>quick-build-ci</id>
-            <activation>
-                <property>
-                    <name>quickly-ci</name>
-                </property>
-            </activation>
-            <properties>
-                <skipTests>true</skipTests>
-                <skipITs>true</skipITs>
-                <enforcer.skip>true</enforcer.skip>
-                <format.skip>true</format.skip>
-            </properties>
-        </profile>
-    </profiles>
+  <profiles>
+    <profile>
+      <id>quick-build</id>
+      <activation>
+        <property>
+          <name>quickly</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <id>quick-build-docs</id>
+      <activation>
+        <property>
+          <name>quicklyDocs</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+      </properties>
+      <build>
+        <defaultGoal>clean install</defaultGoal>
+      </build>
+    </profile>
+    <profile>
+      <!-- separate "quickly" profile for CI to keep local "quickly" demands separated from CI demands -->
+      <id>quick-build-ci</id>
+      <activation>
+        <property>
+          <name>quickly-ci</name>
+        </property>
+      </activation>
+      <properties>
+        <skipTests>true</skipTests>
+        <skipITs>true</skipITs>
+        <enforcer.skip>true</enforcer.skip>
+        <format.skip>true</format.skip>
+      </properties>
+    </profile>
+  </profiles>
 </project>

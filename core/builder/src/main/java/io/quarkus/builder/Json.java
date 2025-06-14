@@ -216,10 +216,12 @@ public final class Json {
             }
         }
 
+        @Override
         public boolean isEmpty() {
             return isValuesEmpty(values);
         }
 
+        @Override
         String build() throws IOException {
             StringBuilder builder = new StringBuilder();
             appendTo(builder);
@@ -329,6 +331,7 @@ public final class Json {
             }
         }
 
+        @Override
         public boolean isEmpty() {
             if (properties.isEmpty()) {
                 return true;
@@ -336,6 +339,7 @@ public final class Json {
             return isValuesEmpty(properties.values());
         }
 
+        @Override
         String build() throws IOException {
             StringBuilder builder = new StringBuilder();
             appendTo(builder);

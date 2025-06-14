@@ -102,7 +102,9 @@ public class VertxOutputStream extends OutputStream {
                     data.release();
                 } else {
                     if (last) {
-                        request.response().end(createBuffer(data), null);
+                        if (!request.response().ended()) { // can happen when an exception occurs during JSON serialization with Jackson
+                            request.response().end(createBuffer(data), null);
+                        }
                     } else {
                         request.response().write(createBuffer(data), null);
                     }

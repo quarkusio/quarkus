@@ -709,16 +709,8 @@ The Quarkus build uses the `prod` configuration profile:
 
 1. System properties (for example `./gradlew -Dquarkus.package.jar.type=fast-jar ...`)
 2. System environment (for example `QUARKUS_PACKAGE_JAR_TYPE=fast-jar ./gradlew ...`)
-3. Configuration via the `quarkus` extensions's `quarkusBuildProperties` For example:
-
-   quarkus {
-       quarkusBuildProperties {
-           set("package.jar.type", "uber-jar")
-       }
-   }
-
-4. Configuration via Gradle project properties (for example `./gradlew -Pquarkus.package.jar.type=fast-jar`)
-5. Configuration from a project's `application.properties`, `application.yaml` and `application.yml` files, as well
+3. Configuration via Gradle project properties (for example `./gradlew -Pquarkus.package.jar.type=fast-jar`)
+4. Configuration from a project's `application.properties`, `application.yaml` and `application.yml` files, as well
    as a project's `application-prod.properties`, `application-prod.yaml` and `application-prod.yml` files
 
 [WARNING]

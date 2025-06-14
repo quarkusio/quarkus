@@ -37,7 +37,7 @@
         <version.resources.plugin>3.3.1</version.resources.plugin>
         <version.rewrite.plugin>6.10.0</version.rewrite.plugin>
         <version.rewrite.static.analysis>2.10.0</version.rewrite.static.analysis>
-        <version.spotless.plugin>3.3.1</version.spotless.plugin>
+        <version.spotless.plugin>2.44.5</version.spotless.plugin>
         <!-- Do not update for now as it is causing test issues in integration-tests/devmode
         java.lang.NoClassDefFoundError: com/salesforce/jprotoc/Generator -->
         <version.shade.plugin>3.2.1</version.shade.plugin>

@@ -324,8 +324,9 @@ public final class HibernateOrmProcessor {
                     .filter(i -> i.isDefault())
                     .findFirst();
             collectDialectConfigForPersistenceXml(puName, xmlDescriptor);
-            Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
-            Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+            Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities,
+                    hibernateOrmConfig.mapping().format().global());
+            Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
             jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
                     .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
             xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
@@ -341,7 +342,8 @@ public final class HibernateOrmProcessor {
                                     getMultiTenancyStrategy(
                                             Optional.ofNullable(persistenceXmlDescriptorBuildItem.getDescriptor()
                                                     .getProperties().getProperty("hibernate.multiTenancy"))), //FIXME this property is meaningless in Hibernate ORM 6
-                                    hibernateOrmConfig.database().ormCompatibilityVersion(), Collections.emptyMap()),
+                                    hibernateOrmConfig.database().ormCompatibilityVersion(),
+                                    hibernateOrmConfig.mapping().format().global(), Collections.emptyMap()),
                             null,
                             jpaModel.getXmlMappings(persistenceXmlDescriptorBuildItem.getDescriptor().getName()),
                             true, isHibernateValidatorPresent(capabilities), jsonMapper, xmlMapper));
@@ -948,8 +950,8 @@ public final class HibernateOrmProcessor {
         configureSqlLoadScript(persistenceUnitName, persistenceUnitConfig, applicationArchivesBuildItem, launchMode,
                 nativeImageResources, hotDeploymentWatchedFiles, descriptor);
 
-        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities);
-        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities);
+        Optional<FormatMapperKind> jsonMapper = jsonMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
+        Optional<FormatMapperKind> xmlMapper = xmlMapperKind(capabilities, hibernateOrmConfig.mapping().format().global());
         jsonMapper.flatMap(FormatMapperKind::requiredBeanType)
                 .ifPresent(type -> unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(type)));
         xmlMapper.flatMap(FormatMapperKind::requiredBeanType)
@@ -963,6 +965,7 @@ public final class HibernateOrmProcessor {
                                 persistenceUnitConfig.dialect().dialect(),
                                 multiTenancyStrategy,
                                 hibernateOrmConfig.database().ormCompatibilityVersion(),
+                                hibernateOrmConfig.mapping().format().global(),
                                 persistenceUnitConfig.unsupportedProperties()),
                         persistenceUnitConfig.multitenantSchemaDatasource().orElse(null),
                         xmlMappings,

@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import io.quarkus.hibernate.orm.runtime.config.DatabaseOrmCompatibilityVersion;
+import io.quarkus.hibernate.orm.runtime.customized.BuiltinFormatMapperBehaviour;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
@@ -19,12 +20,14 @@ public class RecordedConfig {
     private final MultiTenancyStrategy multiTenancyStrategy;
     private final Map<String, String> quarkusConfigUnsupportedProperties;
     private final DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
+    private final BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour;
 
     @RecordableConstructor
     public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
             Optional<String> dbVersion, Optional<String> explicitDialect,
             MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
+            BuiltinFormatMapperBehaviour builtinFormatMapperBehaviour,
             Map<String, String> quarkusConfigUnsupportedProperties) {
         Objects.requireNonNull(dataSource);
         Objects.requireNonNull(dbKind);
@@ -35,8 +38,9 @@ public class RecordedConfig {
         this.dbVersion = dbVersion;
         this.explicitDialect = explicitDialect;
         this.multiTenancyStrategy = multiTenancyStrategy;
-        this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
         this.databaseOrmCompatibilityVersion = databaseOrmCompatibilityVersion;
+        this.builtinFormatMapperBehaviour = builtinFormatMapperBehaviour;
+        this.quarkusConfigUnsupportedProperties = quarkusConfigUnsupportedProperties;
     }
 
     public Optional<String> getDataSource() {
@@ -59,11 +63,15 @@ public class RecordedConfig {
         return multiTenancyStrategy;
     }
 
-    public Map<String, String> getQuarkusConfigUnsupportedProperties() {
-        return quarkusConfigUnsupportedProperties;
-    }
-
     public DatabaseOrmCompatibilityVersion getDatabaseOrmCompatibilityVersion() {
         return databaseOrmCompatibilityVersion;
+    }
+
+    public BuiltinFormatMapperBehaviour getBuiltinFormatMapperBehaviour() {
+        return builtinFormatMapperBehaviour;
+    }
+
+    public Map<String, String> getQuarkusConfigUnsupportedProperties() {
+        return quarkusConfigUnsupportedProperties;
     }
 }

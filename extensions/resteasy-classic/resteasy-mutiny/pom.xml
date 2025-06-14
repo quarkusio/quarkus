@@ -1,23 +1,20 @@
-<?xml version="1.0"?>
-<project
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>quarkus-resteasy-parent-aggregator</artifactId>
-        <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-resteasy-parent-aggregator</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
 
-    <artifactId>quarkus-resteasy-mutiny-parent</artifactId>
-    <name>Quarkus - RESTEasy Classic - Mutiny</name>
-    <packaging>pom</packaging>
+  <artifactId>quarkus-resteasy-mutiny-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - RESTEasy Classic - Mutiny</name>
 
-    <modules>
-        <module>deployment</module>
-        <module>runtime</module>
-     </modules>
+  <modules>
+    <module>deployment</module>
+    <module>runtime</module>
+  </modules>
 
 </project>

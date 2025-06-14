@@ -1,11 +1,10 @@
-<?xml version="1.0"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <artifactId>quarkus-integration-tests-parent</artifactId>
     <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-integration-tests-parent</artifactId>
     <version>999-SNAPSHOT</version>
   </parent>
 
@@ -93,8 +92,8 @@
   <build>
     <resources>
       <resource>
-        <directory>src/main/resources</directory>
         <filtering>true</filtering>
+        <directory>src/main/resources</directory>
       </resource>
     </resources>
     <plugins>
@@ -198,7 +197,7 @@
                       <port>9200:9200</port>
                     </ports>
                     <log>
-                      <prefix>Elasticsearch: </prefix>
+                      <prefix>Elasticsearch:</prefix>
                       <date>default</date>
                       <color>cyan</color>
                     </log>
@@ -218,18 +217,18 @@
             <executions>
               <execution>
                 <id>docker-start</id>
-                <phase>process-test-classes</phase>
                 <goals>
                   <goal>stop</goal>
                   <goal>start</goal>
                 </goals>
+                <phase>process-test-classes</phase>
               </execution>
               <execution>
                 <id>docker-stop</id>
-                <phase>post-integration-test</phase>
                 <goals>
                   <goal>stop</goal>
                 </goals>
+                <phase>post-integration-test</phase>
               </execution>
             </executions>
           </plugin>
@@ -239,10 +238,10 @@
             <executions>
               <execution>
                 <id>docker-prune</id>
-                <phase>generate-resources</phase>
                 <goals>
                   <goal>exec</goal>
                 </goals>
+                <phase>generate-resources</phase>
                 <configuration>
                   <executable>${docker-prune.location}</executable>
                 </configuration>

@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-extensions-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-extensions-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+  </parent>
 
-    <artifactId>quarkus-liquibase-parent-aggregator</artifactId>
-    <name>Quarkus - Liquibase - Parent - Aggregator</name>
-    <packaging>pom</packaging>
+  <artifactId>quarkus-liquibase-parent-aggregator</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Liquibase - Parent - Aggregator</name>
 
-    <modules>
-        <module>liquibase</module>
-        <module>liquibase-mongodb</module>
-        <module>liquibase-common</module>
-    </modules>
+  <modules>
+    <module>liquibase</module>
+    <module>liquibase-mongodb</module>
+    <module>liquibase-common</module>
+  </modules>
 
 </project>

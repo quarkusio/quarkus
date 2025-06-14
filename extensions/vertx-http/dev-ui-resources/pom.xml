@@ -1,178 +1,178 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>quarkus-vertx-http-parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../</relativePath>
-    </parent>
-    <artifactId>quarkus-vertx-http-dev-ui-resources</artifactId>
-    <name>Quarkus - Vert.x - HTTP - Dev UI Resources</name>
-    
-    <dependencies>
-        <!-- Vaadin Router -->
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>router</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>path-to-regexp</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <!-- Vaadin Web components -->
-        <dependency>
-            <groupId>org.mvnpm.at.mvnpm</groupId>
-            <artifactId>vaadin-webcomponents</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>vaadin-usage-statistics</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.vaadin</groupId>
-            <artifactId>vaadin-development-mode-detector</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.polymer</groupId>
-            <artifactId>polymer</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.webcomponents</groupId>
-            <artifactId>shadycss</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.open-wc</groupId>
-            <artifactId>dedupe-mixin</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-vertx-http-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+  <artifactId>quarkus-vertx-http-dev-ui-resources</artifactId>
+  <name>Quarkus - Vert.x - HTTP - Dev UI Resources</name>
 
-        <!-- Lit -->
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>lit</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.lit</groupId>
-            <artifactId>reactive-element</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>lit-element</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>lit-html</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.lit-labs</groupId>
-            <artifactId>ssr-dom-shim</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.types</groupId>
-            <artifactId>trusted-types</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>lit-element-state</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+  <dependencies>
+    <!-- Vaadin Router -->
+    <dependency>
+      <groupId>org.mvnpm.at.vaadin</groupId>
+      <artifactId>router</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>path-to-regexp</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- Vaadin Web components -->
+    <dependency>
+      <groupId>org.mvnpm.at.mvnpm</groupId>
+      <artifactId>vaadin-webcomponents</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.vaadin</groupId>
+      <artifactId>vaadin-usage-statistics</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.vaadin</groupId>
+      <artifactId>vaadin-development-mode-detector</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.polymer</groupId>
+      <artifactId>polymer</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.webcomponents</groupId>
+      <artifactId>shadycss</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.open-wc</groupId>
+      <artifactId>dedupe-mixin</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
-        <!-- Apache echarts -->
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>echarts</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+    <!-- Lit -->
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>lit</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.lit</groupId>
+      <artifactId>reactive-element</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>lit-element</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>lit-html</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.lit-labs</groupId>
+      <artifactId>ssr-dom-shim</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.types</groupId>
+      <artifactId>trusted-types</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>lit-element-state</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
-        <!-- Code editor -->
-        <dependency>
-            <groupId>org.mvnpm.at.mvnpm</groupId>
-            <artifactId>codeblock</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+    <!-- Apache echarts -->
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>echarts</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
-        <!-- Qomponent -->
-        <dependency>
-            <groupId>org.mvnpm.at.mvnpm</groupId>
-            <artifactId>qomponent</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm.at.qomponent</groupId>
-            <artifactId>qui-directory-tree</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        
-        <!-- Loading indicators -->
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>ldrs</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        
-        <!-- Markdown it -->
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>markdown-it</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>argparse</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>entities</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>linkify-it</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>mdurl</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>punycode.js</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>uc.micro</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+    <!-- Code editor -->
+    <dependency>
+      <groupId>org.mvnpm.at.mvnpm</groupId>
+      <artifactId>codeblock</artifactId>
+      <scope>runtime</scope>
+    </dependency>
 
-        <!-- Polyfill for importmaps -->
-        <dependency>
-            <groupId>org.mvnpm</groupId>
-            <artifactId>es-module-shims</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-        
-        <!-- To render dot files -->
-        <dependency>
-            <groupId>org.mvnpm.at.qomponent</groupId>
-            <artifactId>qui-dot</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-    </dependencies>
+    <!-- Qomponent -->
+    <dependency>
+      <groupId>org.mvnpm.at.mvnpm</groupId>
+      <artifactId>qomponent</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm.at.qomponent</groupId>
+      <artifactId>qui-directory-tree</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Loading indicators -->
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>ldrs</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Markdown it -->
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>markdown-it</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>argparse</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>entities</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>linkify-it</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>mdurl</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>punycode.js</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>uc.micro</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- Polyfill for importmaps -->
+    <dependency>
+      <groupId>org.mvnpm</groupId>
+      <artifactId>es-module-shims</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <!-- To render dot files -->
+    <dependency>
+      <groupId>org.mvnpm.at.qomponent</groupId>
+      <artifactId>qui-dot</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+  </dependencies>
 </project>

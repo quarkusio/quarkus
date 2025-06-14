@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-   <parent>
-      <artifactId>quarkus-extensions-parent</artifactId>
-      <groupId>io.quarkus</groupId>
-      <version>999-SNAPSHOT</version>
-      <relativePath>../pom.xml</relativePath>
-   </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-   <modelVersion>4.0.0</modelVersion>
-   <artifactId>quarkus-messaging-rabbitmq-parent</artifactId>
-   <name>Quarkus - Messaging - RabbitMQ 1.0</name>
-   <packaging>pom</packaging>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-extensions-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>quarkus-messaging-rabbitmq-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Messaging - RabbitMQ 1.0</name>
 
-   <modules>
-      <module>deployment</module>
-      <module>runtime</module>
-      <module>runtime-dev</module>
-   </modules>
+  <modules>
+    <module>deployment</module>
+    <module>runtime</module>
+    <module>runtime-dev</module>
+  </modules>
 </project>

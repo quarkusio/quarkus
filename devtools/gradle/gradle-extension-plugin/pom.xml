@@ -1,52 +1,50 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <groupId>io.quarkus</groupId>
-        <artifactId>io.quarkus.gradle.plugin.parent</artifactId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>io.quarkus.gradle.plugin.parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
 
-    <groupId>io.quarkus.extension</groupId>
-    <artifactId>io.quarkus.extension.gradle.plugin</artifactId>
-    <packaging>pom</packaging>
-    <name>Quarkus - Extension Gradle Plugin</name>
-    <description>Quarkus - Extension Gradle Plugin</description>
+  <groupId>io.quarkus.extension</groupId>
+  <artifactId>io.quarkus.extension.gradle.plugin</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Extension Gradle Plugin</name>
+  <description>Quarkus - Extension Gradle Plugin</description>
 
-    <properties>
-        <artifactFilePrefix>gradle-extension-plugin</artifactFilePrefix>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
+  <properties>
+    <artifactFilePrefix>gradle-extension-plugin</artifactFilePrefix>
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
 
-    <dependencies>
-        <!-- Compile -->
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-core-deployment</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-gradle-model</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-        </dependency>
-        <dependency>
-          <groupId>io.quarkus</groupId>
-          <artifactId>quarkus-devtools-common</artifactId>
-        </dependency>
-    </dependencies>
+  <dependencies>
+    <!-- Compile -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-core-deployment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-bootstrap-gradle-resolver</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-gradle-model</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-devtools-common</artifactId>
+    </dependency>
+  </dependencies>
 
 </project>

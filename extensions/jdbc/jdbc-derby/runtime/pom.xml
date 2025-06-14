@@ -1,77 +1,76 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>quarkus-jdbc-derby-parent</artifactId>
-        <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-jdbc-derby-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+  </parent>
 
-    <artifactId>quarkus-jdbc-derby</artifactId>
-    <name>Quarkus - JDBC - Derby - Runtime</name>
-    <description>Connect to the Derby database via JDBC</description>
-    <dependencies>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-arc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-agroal</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derbyclient</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-flyway-derby</artifactId>
-            <optional>true</optional>  <!-- conditional dependency -->
-        </dependency>
-        <!-- Required for JTA and to reference JDBC drivers by name.
+  <artifactId>quarkus-jdbc-derby</artifactId>
+  <name>Quarkus - JDBC - Derby - Runtime</name>
+  <description>Connect to the Derby database via JDBC</description>
+  <dependencies>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-arc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-agroal</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derbyclient</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-flyway-derby</artifactId>
+      <optional>true</optional>
+      <!-- conditional dependency -->
+    </dependency>
+    <!-- Required for JTA and to reference JDBC drivers by name.
              See https://db.apache.org/derby/releases/release-10.15.1.3.cgi#Note%20for%20DERBY-6945
              "the derbytools.jar library is now required [...] when using Derby DataSources, and when directly referencing the JDBC drivers" -->
-        <dependency>
-            <groupId>org.apache.derby</groupId>
-            <artifactId>derbytools</artifactId>
-        </dependency>
-    </dependencies>
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derbytools</artifactId>
+    </dependency>
+  </dependencies>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>io.quarkus</groupId>
-                <artifactId>quarkus-extension-maven-plugin</artifactId>
-                <configuration>
-                    <parentFirstArtifacts>
-                        <parentFirstArtifact>org.apache.derby:derbyclient</parentFirstArtifact>
-                        <!-- for Dev Services, see: https://github.com/quarkusio/quarkus/issues/21639 -->
-                        <parentFirstArtifact>org.apache.derby:derby</parentFirstArtifact>
-                        <parentFirstArtifact>org.apache.derby:derbynet</parentFirstArtifact>
-                        <parentFirstArtifact>org.apache.derby:derbytools</parentFirstArtifact>
-                    </parentFirstArtifacts>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>default-compile</id>
-                        <configuration>
-                            <annotationProcessorPaths>
-                                <path>
-                                    <groupId>io.quarkus</groupId>
-                                    <artifactId>quarkus-extension-processor</artifactId>
-                                    <version>${project.version}</version>
-                                </path>
-                            </annotationProcessorPaths>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>io.quarkus</groupId>
+        <artifactId>quarkus-extension-maven-plugin</artifactId>
+        <configuration>
+          <parentFirstArtifacts>
+            <parentFirstArtifact>org.apache.derby:derbyclient</parentFirstArtifact>
+            <!-- for Dev Services, see: https://github.com/quarkusio/quarkus/issues/21639 -->
+            <parentFirstArtifact>org.apache.derby:derby</parentFirstArtifact>
+            <parentFirstArtifact>org.apache.derby:derbynet</parentFirstArtifact>
+            <parentFirstArtifact>org.apache.derby:derbytools</parentFirstArtifact>
+          </parentFirstArtifacts>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default-compile</id>
+            <configuration>
+              <annotationProcessorPaths>
+                <path>
+                  <groupId>io.quarkus</groupId>
+                  <artifactId>quarkus-extension-processor</artifactId>
+                  <version>${project.version}</version>
+                </path>
+              </annotationProcessorPaths>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>

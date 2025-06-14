@@ -1,30 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-    <modelVersion>4.0.0</modelVersion>
-    <parent>
-        <artifactId>quarkus-integration-tests-parent</artifactId>
-        <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
-    </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-integration-tests-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+  </parent>
 
-    <artifactId>quarkus-integration-test-kubernetes-parent</artifactId>
-    <name>Quarkus - Integration Tests - Kubernetes - Parent</name>
-    <packaging>pom</packaging>
+  <artifactId>quarkus-integration-test-kubernetes-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Integration Tests - Kubernetes - Parent</name>
 
-    <profiles>
-        <profile>
-            <id>test-kubernetes</id>
-            <activation>
-                <property>
-                    <name>!no-test-kubernetes</name>
-                </property>
-            </activation>
-            <modules>
-                <module>maven-invoker-way</module>
-                <module>quarkus-standard-way</module>
-                <module>quarkus-standard-way-kafka</module>
-            </modules>
-        </profile>
-    </profiles>
+  <profiles>
+    <profile>
+      <id>test-kubernetes</id>
+      <activation>
+        <property>
+          <name>!no-test-kubernetes</name>
+        </property>
+      </activation>
+      <modules>
+        <module>maven-invoker-way</module>
+        <module>quarkus-standard-way</module>
+        <module>quarkus-standard-way-kafka</module>
+      </modules>
+    </profile>
+  </profiles>
 </project>

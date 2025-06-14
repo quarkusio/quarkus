@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-   <parent>
-      <artifactId>quarkus-schema-registry-parent</artifactId>
-      <groupId>io.quarkus</groupId>
-      <version>999-SNAPSHOT</version>
-      <relativePath>../pom.xml</relativePath>
-   </parent>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-   <modelVersion>4.0.0</modelVersion>
-   <artifactId>quarkus-apicurio-registry-parent</artifactId>
-   <name>Quarkus - Apicurio Registry</name>
-   <packaging>pom</packaging>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-schema-registry-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+  <artifactId>quarkus-apicurio-registry-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Apicurio Registry</name>
 
-   <modules>
-      <module>common</module>
-      <module>avro</module>
-      <module>json-schema</module>
-   </modules>
+  <modules>
+    <module>common</module>
+    <module>avro</module>
+    <module>json-schema</module>
+  </modules>
 </project>

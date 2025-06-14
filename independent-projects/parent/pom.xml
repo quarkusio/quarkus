@@ -55,6 +55,27 @@
 
   <properties>
     <!-- Plugin versions (please keep in alphabetical order) -->
+    <format.skip>false</format.skip>
+    <insecure.repositories>ERROR</insecure.repositories>
+    <jdk.min.version>${maven.compiler.argument.source}</jdk.min.version>
+    <maven.compiler.argument.source>${maven.compiler.source}</maven.compiler.argument.source>
+    <maven.compiler.argument.target>${maven.compiler.target}</maven.compiler.argument.target>
+    <maven.compiler.argument.testSource>${maven.compiler.testSource}</maven.compiler.argument.testSource>
+    <maven.compiler.argument.testTarget>${maven.compiler.testTarget}</maven.compiler.argument.testTarget>
+    <maven.compiler.parameters>true</maven.compiler.parameters>
+    <maven.compiler.release>17</maven.compiler.release>
+    <maven.compiler.source>${maven.compiler.release}</maven.compiler.source>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>${maven.compiler.release}</maven.compiler.target>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.compiler.testSource>${maven.compiler.source}</maven.compiler.testSource>
+    <maven.compiler.testTarget>${maven.compiler.target}</maven.compiler.testTarget>
+    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
+    <maven.min.version>3.9.6</maven.min.version>
+    <project.build.outputTimestamp>2024-01-01T00:00:00Z</project.build.outputTimestamp>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    <useReleaseProfile>false</useReleaseProfile>
     <version.archetype.plugin>3.4.0</version.archetype.plugin>
     <version.buildhelper.plugin>3.6.1</version.buildhelper.plugin>
     <version.buildnumber.plugin>3.2.1</version.buildnumber.plugin>
@@ -64,12 +85,14 @@
     <version.deploy.plugin>3.1.4</version.deploy.plugin>
     <version.enforcer.plugin>3.5.0</version.enforcer.plugin>
     <version.exec.plugin>3.5.1</version.exec.plugin>
+    <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
+    <version.forbiddenapis-maven-plugin>3.4</version.forbiddenapis-maven-plugin>
     <version.formatter.plugin>2.26.0</version.formatter.plugin>
     <version.gpg.plugin>3.2.7</version.gpg.plugin>
     <version.impsort.plugin>1.12.0</version.impsort.plugin>
     <version.install.plugin>3.1.4</version.install.plugin>
-    <version.javadoc.plugin>3.11.2</version.javadoc.plugin>
     <version.jar.plugin>3.4.2</version.jar.plugin>
+    <version.javadoc.plugin>3.11.2</version.javadoc.plugin>
     <version.plugin.plugin>3.15.1</version.plugin.plugin>
     <version.release.plugin>3.1.1</version.release.plugin>
     <version.resources.plugin>3.3.1</version.resources.plugin>
@@ -78,49 +101,8 @@
     <version.shade.plugin>3.2.1</version.shade.plugin>
     <version.source.plugin>3.3.1</version.source.plugin>
     <version.surefire.plugin>3.5.3</version.surefire.plugin>
-    <version.failsafe.plugin>${version.surefire.plugin}</version.failsafe.plugin>
     <version.versions.plugin>2.18.0</version.versions.plugin>
     <version.yaml-properties.plugin>1.1.3</version.yaml-properties.plugin>
-    <!-- Forbidden API checks -->
-    <version.forbiddenapis-maven-plugin>3.4</version.forbiddenapis-maven-plugin>
-
-    <!-- Code format -->
-    <format.skip>false</format.skip>
-
-    <!-- Default properties -->
-    <maven.compiler.parameters>true</maven.compiler.parameters>
-    <maven.compiler.source>17</maven.compiler.source>
-    <maven.compiler.target>17</maven.compiler.target>
-    <maven.compiler.release>17</maven.compiler.release>
-    <maven.compiler.source>${maven.compiler.release}</maven.compiler.source>
-    <maven.compiler.target>${maven.compiler.release}</maven.compiler.target>
-    <maven.compiler.testTarget>${maven.compiler.target}</maven.compiler.testTarget>
-    <maven.compiler.testSource>${maven.compiler.source}</maven.compiler.testSource>
-    <maven.javadoc.failOnError>false</maven.javadoc.failOnError>
-
-    <!-- Cross plugins settings -->
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-
-    <!-- Make the builds reproducible - see https://maven.apache.org/guides/mini/guide-reproducible-builds.html -->
-    <project.build.outputTimestamp>2024-01-01T00:00:00Z</project.build.outputTimestamp>
-
-    <!--
-            Options to override the compiler arguments directly on the compiler argument line to separate between what
-            the IDE understands as the source level and what the Maven compiler actually use.
-        -->
-    <maven.compiler.argument.target>${maven.compiler.target}</maven.compiler.argument.target>
-    <maven.compiler.argument.source>${maven.compiler.source}</maven.compiler.argument.source>
-    <maven.compiler.argument.testTarget>${maven.compiler.testTarget}</maven.compiler.argument.testTarget>
-    <maven.compiler.argument.testSource>${maven.compiler.testSource}</maven.compiler.argument.testSource>
-
-    <!-- maven-enforcer-plugin -->
-    <maven.min.version>3.9.6</maven.min.version>
-    <jdk.min.version>${maven.compiler.argument.source}</jdk.min.version>
-    <insecure.repositories>ERROR</insecure.repositories>
-
-    <!-- maven-release-plugin -->
-    <useReleaseProfile>false</useReleaseProfile>
   </properties>
 
   <build>

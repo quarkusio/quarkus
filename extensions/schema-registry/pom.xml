@@ -1,23 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
-    <parent>
-        <artifactId>quarkus-extensions-parent</artifactId>
-        <groupId>io.quarkus</groupId>
-        <version>999-SNAPSHOT</version>
-        <relativePath>../pom.xml</relativePath>
-    </parent>
+  <parent>
+    <groupId>io.quarkus</groupId>
+    <artifactId>quarkus-extensions-parent</artifactId>
+    <version>999-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
 
-    <artifactId>quarkus-schema-registry-parent</artifactId>
-    <name>Quarkus - Schema Registry Parent</name>
-    <packaging>pom</packaging>
+  <artifactId>quarkus-schema-registry-parent</artifactId>
+  <packaging>pom</packaging>
+  <name>Quarkus - Schema Registry Parent</name>
 
-    <modules>
-        <module>apicurio</module>
-        <module>confluent</module>
-        <module>devservice</module>
-    </modules>
+  <modules>
+    <module>apicurio</module>
+    <module>confluent</module>
+    <module>devservice</module>
+  </modules>
 </project>

@@ -1,6 +1,7 @@
 .DS_Store
 target
 *.iml
+**/pom.xml.bak
 .idea
 !.idea/runConfigurations
 .settings

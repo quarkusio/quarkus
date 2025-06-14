@@ -34,7 +34,7 @@ export class QuiAssistantButton extends LitElement {
                 ?disabled=${this.disabled}
                 title=${this.title}
                 @click=${(e) => this._handleClick(e)}>
-                    <vaadin-icon icon="font-awesome-solid:brain"></vaadin-icon>
+                    <vaadin-icon icon="font-awesome-solid:robot"></vaadin-icon>
                     <slot></slot>
             </vaadin-button>
           `;

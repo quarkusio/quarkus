@@ -875,4 +875,15 @@ public class TransactionScopedStatelessSession implements StatelessSession {
             emr.statelessSession.setCacheMode(cacheMode);
         }
     }
+
+    @Override
+    public <T> T unwrap(Class<T> type) {
+        if (type.isAssignableFrom(StatelessSession.class)) {
+            return (T) this;
+        }
+        checkBlocking();
+        try (SessionResult emr = acquireSession()) {
+            return emr.statelessSession.unwrap(type);
+        }
+    }
 }

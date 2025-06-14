@@ -19,7 +19,7 @@ export class QuiAssistantWarning extends LitElement {
     }
 
     render() {
-        return html`<qui-badge style="padding-left: 20px;" text="Warning" level="contrast" color="var(--quarkus-assistant)" icon="brain" tiny>
+        return html`<qui-badge style="padding-left: 20px;" text="Warning" level="contrast" color="var(--quarkus-assistant)" icon="robot" tiny>
                             <span>${this.warning}</span>
                         </qui-badge>`;
     }

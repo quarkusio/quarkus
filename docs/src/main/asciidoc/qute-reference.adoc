@@ -1006,19 +1006,39 @@ The following operators are supported in `is`/`case` block conditions:
 [[let_section]]
 ==== Let Section
 
-This section allows you to define named local variables:
+This section allows you to define named local variables.
 
+.Let
 [source,html]
 ----
 {#let myParent=order.item.parent isActive=false age=10 price=(order.price + 10)} <1><2>
   <h1>{myParent.name}</h1>
   Is active: {isActive}
   Age: {age}
+  Price: {price}
 {/let} <3>
 ----
 <1> The local variable is initialized with an expression that can also represent a <<literals,literal>>, i.e. `isActive=false` and `age=10`.
 <2> The infix notation is only supported if parentheses are used for grouping, e.g. `price=(order.price + 10)` is equivalent to `price=order.price.plus(10)`.
-<3> Keep in mind that the variable is not available outside the `let` section that defines it.
+<3> Variables are not available outside the `let` section.
+
+The variables are not available outside the defining `let` section.
+However, the end tag is optional, if missing then the section ends where the parent section ends.
+
+.Let with optional end tag
+[source,html]
+----
+<ul>
+{#for item in items}
+{#let price=item.price} <1>
+   <li>{price}</li>
+{! a synthetic {/let} is added here automatically !}
+{/for}
+</ul>
+{price} --> BOOM! <2>
+----
+<1> The local variable `price` is initialized with expression `item.price`.
+<2> Variable `price` is not available outside the `let` section.
 
 If a key of a section parameter, such as the name of the local variable, ends with a `?`, then the local variable is only set if the key without the `?` suffix resolves to `null` or _"not found"_:
 

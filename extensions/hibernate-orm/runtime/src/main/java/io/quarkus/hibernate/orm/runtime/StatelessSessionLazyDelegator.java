@@ -502,4 +502,9 @@ class StatelessSessionLazyDelegator implements StatelessSession {
     public void setCacheMode(CacheMode cacheMode) {
         delegate.get().setCacheMode(cacheMode);
     }
+
+    @Override
+    public <T> T unwrap(Class<T> type) {
+        return delegate.get().unwrap(type);
+    }
 }

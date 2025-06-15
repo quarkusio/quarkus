@@ -20,12 +20,7 @@ public final class ShutdownContextBuildItem extends SimpleBuildItem
     }
 
     @Override
-    public void addShutdownTask(Runnable runnable) {
-        throw new IllegalStateException();
-    }
-
-    @Override
-    public void addLastShutdownTask(Runnable runnable) {
+    public void addShutdownTask(Priority priority, Runnable runnable) {
         throw new IllegalStateException();
     }
 }

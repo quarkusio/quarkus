@@ -1,5 +1,7 @@
 package io.quarkus.runtime;
 
+import static io.quarkus.runtime.ShutdownContext.*;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +41,7 @@ public class ExecutorRecorder {
             LaunchMode launchMode, ThreadFactory threadFactory, ContextHandler<Object> contextHandler) {
         final EnhancedQueueExecutor underlying = createExecutor(threadPoolConfig, threadFactory, contextHandler);
         if (launchMode == LaunchMode.DEVELOPMENT) {
-            shutdownContext.addLastShutdownTask(new Runnable() {
+            shutdownContext.addShutdownTask(Priority.core(), new Runnable() {
                 @Override
                 public void run() {
                     for (Runnable i : underlying.shutdownNow()) {
@@ -53,7 +55,7 @@ public class ExecutorRecorder {
             });
         } else {
             Runnable shutdownTask = createShutdownTask(threadPoolConfig, underlying);
-            shutdownContext.addLastShutdownTask(shutdownTask);
+            shutdownContext.addShutdownTask(Priority.core(), shutdownTask);
         }
         if (threadPoolConfig.prefill()) {
             underlying.prestartAllCoreThreads();

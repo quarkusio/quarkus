@@ -7,6 +7,6 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class DevResourceShutdownRecorder {
     public void shutdown(ShutdownContext context) {
-        context.addLastShutdownTask(DevResources::stop);
+        context.addShutdownTask(ShutdownContext.Priority.core(), DevResources::stop);
     }
 }

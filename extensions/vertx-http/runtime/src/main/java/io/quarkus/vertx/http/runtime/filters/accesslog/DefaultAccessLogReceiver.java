@@ -55,6 +55,8 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
 
     private static final String DEFAULT_LOG_SUFFIX = "log";
 
+    private static final String DOT = ".";
+
     private final Executor logWriteExecutor;
 
     private final Deque<String> pendingMessages;
@@ -117,7 +119,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
             final String logNameSuffix, boolean rotate, LogFileHeaderGenerator fileHeader) {
         this.logWriteExecutor = logWriteExecutor;
         this.outputDirectory = outputDirectory;
-        this.logBaseName = logBaseName;
+        this.logBaseName = normalizeLogBaseName(logBaseName);
         this.rotate = rotate;
         this.fileHeaderGenerator = fileHeader;
         this.logNameSuffix = effectiveLogNameSuffix(logNameSuffix);
@@ -126,12 +128,17 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
         calculateChangeOverPoint();
     }
 
+    private String normalizeLogBaseName(String logBaseName) {
+        return logBaseName.endsWith(DOT)
+                ? logBaseName.substring(0, logBaseName.length() - 1)
+                : logBaseName;
+    }
+
     private static String effectiveLogNameSuffix(String logNameSuffix) {
-        var result = (logNameSuffix != null) ? logNameSuffix : DEFAULT_LOG_SUFFIX;
-        if (result.charAt(0) != '.') {
-            return '.' + result;
-        }
-        return result;
+        var result = logNameSuffix != null ? logNameSuffix : DEFAULT_LOG_SUFFIX;
+        return result.startsWith(DOT)
+                ? result
+                : DOT + result;
     }
 
     private void calculateChangeOverPoint() {

@@ -11,7 +11,6 @@ public interface ExtendedHeaderFiller extends HeaderFiller {
     void addHeaders(MultivaluedMap<String, String> headers, ResteasyReactiveClientRequestContext requestContext);
 
     @Override
-    @Override
     default void addHeaders(MultivaluedMap<String, String> headers) {
         throw new IllegalStateException("should not be used");
     }

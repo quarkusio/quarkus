@@ -19,7 +19,6 @@ import io.quarkus.bootstrap.resolver.maven.MavenArtifactResolver;
 public class ResolveEmptyJarProjectArtifactTest extends BootstrapMavenContextTestBase {
 
     @Override
-    @Override
     protected BootstrapMavenContextConfig<?> initBootstrapMavenContextConfig() throws Exception {
         return BootstrapMavenContext.config();
     }

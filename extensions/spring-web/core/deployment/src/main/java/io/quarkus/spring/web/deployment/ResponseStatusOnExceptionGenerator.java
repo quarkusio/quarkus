@@ -19,7 +19,6 @@ class ResponseStatusOnExceptionGenerator extends AbstractExceptionMapperGenerato
     }
 
     @Override
-    @Override
     void generateMethodBody(MethodCreator toResponse) {
         ResultHandle status = toResponse
                 .load(getHttpStatusFromAnnotation(exceptionClassInfo.declaredAnnotation(RESPONSE_STATUS)));

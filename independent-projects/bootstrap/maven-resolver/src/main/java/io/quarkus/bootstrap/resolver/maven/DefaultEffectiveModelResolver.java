@@ -44,12 +44,10 @@ class DefaultEffectiveModelResolver implements EffectiveModelResolver {
     }
 
     @Override
-    @Override
     public Model resolveEffectiveModel(ArtifactCoords coords) {
         return resolveEffectiveModel(coords, List.of());
     }
 
-    @Override
     @Override
     public Model resolveEffectiveModel(ArtifactCoords coords, List<RemoteRepository> repos) {
 

@@ -31,7 +31,6 @@ public class PomReposMirroredTest extends BootstrapMavenContextTestBase {
     }
 
     @Override
-    @Override
     protected BootstrapMavenContextConfig<?> initBootstrapMavenContextConfig() throws Exception {
         final Path projectLocation = getProjectLocation(projectPath);
         return BootstrapMavenContext.config()

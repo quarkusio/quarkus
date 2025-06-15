@@ -31,7 +31,6 @@ public class BlockingTaskRunner<T> implements OidcRequestContext<T> {
     }
 
     @Override
-    @Override
     public Uni<T> runBlocking(Supplier<T> function) {
         return blockingExecutor.executeBlocking(function);
     }

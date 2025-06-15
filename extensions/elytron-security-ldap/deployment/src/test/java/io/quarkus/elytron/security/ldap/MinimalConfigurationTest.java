@@ -13,7 +13,6 @@ public class MinimalConfigurationTest extends LdapSecurityRealmTest {
                     .addAsResource("minimal-config/application.properties", "application.properties"));
 
     @Override
-    @Override
     protected String expectedStandardUserName() {
         return "standardUser:Standard User";
     }

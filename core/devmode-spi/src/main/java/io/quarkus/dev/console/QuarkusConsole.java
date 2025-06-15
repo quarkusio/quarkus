@@ -151,6 +151,8 @@ public abstract class QuarkusConsole {
 
     public abstract void doReadLine();
 
+    public abstract void doReadLineWithPrompt(String prompt);
+
     public abstract StatusLine registerStatusLine(int priority);
 
     public abstract void setPromptMessage(String message);

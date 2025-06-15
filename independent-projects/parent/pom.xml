@@ -368,7 +368,7 @@
                         <analysisCache>true</analysisCache>
                         <printFailingErrors>true</printFailingErrors>
                         <rulesets>
-                            <ruleset>.pmd/ruleset.xml</ruleset>
+                            <ruleset>independent-projects/.pmd/ruleset.xml</ruleset>
                         </rulesets>
                     </configuration>
                 </plugin>
@@ -632,6 +632,31 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
+            </build>
+        </profile>
+        <profile>
+            <id>pmd</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+                <property>
+                    <name>no-format</name>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-pmd-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>process-sources</phase>
+                                <goals>
+                                    <goal>check</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>

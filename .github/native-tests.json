@@ -123,7 +123,7 @@
         {
             "category": "Observability",
             "timeout": 130,
-            "test-modules": "smallrye-metrics, micrometer-mp-metrics, micrometer-prometheus, logging-json, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
+            "test-modules": "smallrye-metrics, micrometer-mp-metrics, micrometer-prometheus, micrometer-prometheus-opentelemetry, logging-json, observability-lgtm, opentelemetry, opentelemetry-jdbc-instrumentation, opentelemetry-mongodb-client-instrumentation, opentelemetry-redis-instrumentation, micrometer-opentelemetry",
             "os-name": "ubuntu-latest"
         },
         {

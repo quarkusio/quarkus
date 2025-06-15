@@ -49,7 +49,7 @@
 
         <dependency>
             <groupId>io.micrometer</groupId>
-            <artifactId>micrometer-registry-prometheus-simpleclient</artifactId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
             <optional>true</optional>
         </dependency>
 
@@ -129,6 +129,12 @@
             <groupId>io.quarkus.resteasy.reactive</groupId>
             <artifactId>resteasy-reactive-client</artifactId>
             <optional>true</optional>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>nativeimage</artifactId>
+            <scope>provided</scope>
         </dependency>
 
         <!-- Test -->

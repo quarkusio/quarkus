@@ -362,6 +362,17 @@
                     </configuration>
                 </plugin>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-pmd-plugin</artifactId>
+                    <configuration>
+                        <analysisCache>true</analysisCache>
+                        <printFailingErrors>true</printFailingErrors>
+                        <rulesets>
+                            <ruleset>.pmd/ruleset.xml</ruleset>
+                        </rulesets>
+                    </configuration>
+                </plugin>
+                <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
                     <version>${version.formatter.plugin}</version>

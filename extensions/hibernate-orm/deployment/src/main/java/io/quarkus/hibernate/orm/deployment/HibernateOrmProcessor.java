@@ -693,7 +693,7 @@ public final class HibernateOrmProcessor {
         boolean multitenancyEnabled = false;
 
         for (PersistenceUnitDescriptorBuildItem persistenceUnitDescriptor : persistenceUnitDescriptors) {
-            String persistenceUnitConfigName = persistenceUnitDescriptor.getConfigurationName();
+            String persistenceUnitConfigName = persistenceUnitDescriptor.getPersistenceUnitName();
             var multitenancyStrategy = persistenceUnitDescriptor.getConfig().getMultiTenancyStrategy();
             switch (multitenancyStrategy) {
                 case NONE -> {
@@ -921,7 +921,7 @@ public final class HibernateOrmProcessor {
         }
 
         QuarkusPersistenceUnitDescriptor descriptor = new QuarkusPersistenceUnitDescriptor(
-                persistenceUnitName, persistenceUnitName,
+                persistenceUnitName,
                 PersistenceUnitTransactionType.JTA,
                 // That's right, we're pushing both class names and package names
                 // to a method called "addClasses".

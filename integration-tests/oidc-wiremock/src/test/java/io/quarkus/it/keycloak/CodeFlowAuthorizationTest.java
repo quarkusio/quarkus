@@ -546,6 +546,44 @@ public class CodeFlowAuthorizationTest {
     }
 
     @Test
+    public void testCodeFlowTokenIntrospectionActiveRefresh_noEncryption() throws Exception {
+        // exactly as testCodeFlowTokenIntrospectionActiveRefresh but with
+        // quarkus.oidc.token-state-manager.split-tokens=true
+        // quarkus.oidc.token-state-manager.encryption-required=false
+        // to assure that cookie is valid when there are multiple scopes
+
+        // This stub does not return an access token expires_in property
+        defineCodeFlowTokenIntrospectionStub();
+        try (final WebClient webClient = createWebClient()) {
+            webClient.getOptions().setRedirectEnabled(true);
+            HtmlPage page = webClient.getPage("http://localhost:8081/code-flow-token-introspection-no-encryption");
+
+            HtmlForm form = page.getFormByName("form");
+            form.getInputByName("username").type("alice");
+            form.getInputByName("password").type("alice");
+
+            TextPage textPage = form.getInputByValue("login").click();
+
+            assertEquals("alice:alice", textPage.getContent());
+
+            textPage = webClient.getPage("http://localhost:8081/code-flow-token-introspection-no-encryption");
+            assertEquals("alice:alice", textPage.getContent());
+
+            // Refresh
+            // The internal ID token lifespan is 5 mins
+            // Configured refresh token skew is 298 secs = 5 mins - 2 secs
+            // Therefore, after waiting for 3 secs, an active refresh is happening
+            Thread.sleep(3000);
+            textPage = webClient.getPage("http://localhost:8081/code-flow-token-introspection-no-encryption");
+            assertEquals("admin:admin", textPage.getContent());
+
+            webClient.getCookieManager().clearCookies();
+        }
+
+        clearCache();
+    }
+
+    @Test
     public void testCodeFlowTokenIntrospectionExpiresInRefresh() throws Exception {
         // This stub does return an access token expires_in property
         defineCodeFlowTokenIntrospectionExpiresInStub();
@@ -844,7 +882,7 @@ public class CodeFlowAuthorizationTest {
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \"alice\","
-                                        + "  \"scope\": \"email\","
+                                        + "  \"scope\": \"openid profile email\","
                                         + "  \"refresh_token\": \"refresh5678\""
                                         + "}")));
 
@@ -855,7 +893,7 @@ public class CodeFlowAuthorizationTest {
                                 .withHeader("Content-Type", "application/json")
                                 .withBody("{\n" +
                                         "  \"access_token\": \"admin\","
-                                        + "  \"scope\": \"email\""
+                                        + "  \"scope\": \"openid profile email\""
                                         + "}")));
     }
 

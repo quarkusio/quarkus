@@ -35,6 +35,7 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         }
     }
 
+    @Override
     protected void handleRequestScopeActivation() {
         super.handleRequestScopeActivation();
         if (!userSetup && association != null) {
@@ -56,6 +57,7 @@ public class QuarkusResteasyReactiveRequestContext extends VertxResteasyReactive
         // as that is backed by a DuplicatedContext and not accessible to other requests anyway
     }
 
+    @Override
     protected SecurityContext createSecurityContext() {
         return new ResteasyReactiveSecurityContext(context);
     }

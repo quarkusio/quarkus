@@ -33,6 +33,7 @@ public class JaxRsMetricsProcessor {
     static class RestMetricsEnabled implements BooleanSupplier {
         SmallRyeMetricsConfig smConfig;
 
+        @Override
         public boolean getAsBoolean() {
             boolean resteasyConfigEnabled = ConfigProvider.getConfig().getOptionalValue(RESTEASY_CONFIG_PROPERTY, Boolean.class)
                     .orElse(false);

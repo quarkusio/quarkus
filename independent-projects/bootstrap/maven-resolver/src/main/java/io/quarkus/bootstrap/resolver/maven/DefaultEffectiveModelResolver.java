@@ -43,10 +43,14 @@ class DefaultEffectiveModelResolver implements EffectiveModelResolver {
         modelBuilder = BootstrapModelBuilderFactory.getDefaultModelBuilder();
     }
 
+    @Override
+    @Override
     public Model resolveEffectiveModel(ArtifactCoords coords) {
         return resolveEffectiveModel(coords, List.of());
     }
 
+    @Override
+    @Override
     public Model resolveEffectiveModel(ArtifactCoords coords, List<RemoteRepository> repos) {
 
         if (!ArtifactCoords.TYPE_POM.equals(coords.getType())) {

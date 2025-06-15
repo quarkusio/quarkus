@@ -114,6 +114,7 @@ public class ListOfBeansTest {
     @Component
     public static class ServiceAlpha implements Service {
 
+        @Override
         public String ping() {
             return "alpha";
         }
@@ -122,6 +123,7 @@ public class ListOfBeansTest {
     @Component
     public static class ServiceBravo implements Service {
 
+        @Override
         public String ping() {
             return "bravo";
         }

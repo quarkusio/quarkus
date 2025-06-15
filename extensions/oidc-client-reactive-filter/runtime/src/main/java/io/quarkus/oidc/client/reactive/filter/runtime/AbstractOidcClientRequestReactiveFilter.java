@@ -18,6 +18,7 @@ public class AbstractOidcClientRequestReactiveFilter extends AbstractTokensProdu
     private static final Logger LOG = Logger.getLogger(AbstractOidcClientRequestReactiveFilter.class);
     private static final String BEARER_SCHEME_WITH_SPACE = OidcConstants.BEARER_SCHEME + " ";
 
+    @Override
     protected void initTokens() {
         if (earlyTokenAcquisition) {
             LOG.debug("Token acquisition will be delayed until this filter is executed to avoid blocking an IO thread");

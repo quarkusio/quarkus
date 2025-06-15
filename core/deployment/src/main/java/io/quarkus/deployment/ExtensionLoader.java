@@ -795,6 +795,7 @@ public final class ExtensionLoader {
             chainConfig = chainConfig
                     .andThen(bcb -> {
                         BuildStepBuilder bsb = bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
+                            @Override
                             public void execute(final BuildContext bc) {
                                 Object[] ctorArgs = new Object[ctorParamFns.size()];
                                 for (int i = 0; i < ctorArgs.length; i++) {

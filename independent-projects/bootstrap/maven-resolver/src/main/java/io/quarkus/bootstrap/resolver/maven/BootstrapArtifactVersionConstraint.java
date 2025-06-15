@@ -34,14 +34,17 @@ public class BootstrapArtifactVersionConstraint implements VersionConstraint {
         this.range = null;
     }
 
+    @Override
     public VersionRange getRange() {
         return range;
     }
 
+    @Override
     public Version getVersion() {
         return version;
     }
 
+    @Override
     public boolean containsVersion(Version version) {
         if (range == null) {
             return version.equals(this.version);

@@ -24,6 +24,7 @@ public class TemplateDevModeIT extends RunAndCheckMojoTestBase {
         return 8092;
     }
 
+    @Override
     protected void runAndCheck(boolean performCompile, String... options)
             throws MavenInvocationException, FileNotFoundException {
         run(performCompile, options);

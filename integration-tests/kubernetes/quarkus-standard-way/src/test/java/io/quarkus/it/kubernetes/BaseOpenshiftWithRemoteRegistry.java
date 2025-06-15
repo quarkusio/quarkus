@@ -13,6 +13,7 @@ import io.fabric8.openshift.api.model.ImageStream;
 
 public class BaseOpenshiftWithRemoteRegistry extends BaseWithRemoteRegistry {
 
+    @Override
     public void assertGeneratedResources(String name, String tag, Path buildDir) throws IOException {
         List<HasMetadata> resourceList = getResources("openshift", buildDir);
         assertGeneratedResources(name, tag, resourceList);

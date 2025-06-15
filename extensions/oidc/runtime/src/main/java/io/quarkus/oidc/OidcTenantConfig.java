@@ -2489,6 +2489,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             return binding;
         }
 
+        @Override
         public io.quarkus.oidc.runtime.OidcTenantConfig.Binding binding() {
             return binding;
         }

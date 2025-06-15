@@ -22,6 +22,7 @@ public class ParameterDevModeIT extends RunAndCheckMojoTestBase {
         return 8098;
     }
 
+    @Override
     protected void runAndCheck(boolean performCompile, String... options)
             throws MavenInvocationException, FileNotFoundException {
         run(performCompile, options);

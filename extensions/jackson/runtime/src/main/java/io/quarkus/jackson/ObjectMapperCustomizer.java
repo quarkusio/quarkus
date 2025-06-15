@@ -33,6 +33,7 @@ public interface ObjectMapperCustomizer extends Comparable<ObjectMapperCustomize
         return DEFAULT_PRIORITY;
     }
 
+    @Override
     default int compareTo(ObjectMapperCustomizer o) {
         return Integer.compare(o.priority(), priority());
     }

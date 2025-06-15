@@ -855,6 +855,7 @@ public class BootstrapMavenContext {
                 .addProfileActivator(createFileProfileActivator());
         List<org.apache.maven.model.Profile> selectedProfiles = profileSelector
                 .getActiveProfiles(toModelProfiles(allSettingsProfiles), context, new ModelProblemCollector() {
+                    @Override
                     public void add(ModelProblemCollectorRequest req) {
                         log.error("Failed to activate a Maven profile: " + req.getMessage());
                     }

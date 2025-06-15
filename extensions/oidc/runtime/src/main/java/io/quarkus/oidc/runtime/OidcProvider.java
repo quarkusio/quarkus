@@ -616,6 +616,7 @@ public class OidcProvider implements Closeable {
             }
         }
 
+        @Override
         public Uni<Void> refresh() {
             final long now = now();
             if (now > lastForcedRefreshTime + forcedJwksRefreshIntervalMilliSecs) {

@@ -11,6 +11,7 @@ import io.vertx.redis.client.impl.types.ErrorType;
 @Singleton
 public class RegisterCustomModuleCustomizer implements ObjectMapperCustomizer {
 
+    @Override
     public void customize(ObjectMapper mapper) {
         SimpleModule module = new SimpleModule();
         module.addSerializer(ErrorType.class, new ErrorTypeSerializer());

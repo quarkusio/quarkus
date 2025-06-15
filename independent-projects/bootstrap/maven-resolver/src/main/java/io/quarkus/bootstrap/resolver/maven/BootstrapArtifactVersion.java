@@ -59,6 +59,7 @@ public class BootstrapArtifactVersion implements Version {
         }
     }
 
+    @Override
     public int compareTo(Version obj) {
         final Item[] these = items;
         final Item[] those = ((BootstrapArtifactVersion) obj).items;

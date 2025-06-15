@@ -24,6 +24,8 @@ public class FormAuthTest extends LdapSecurityRealmTest {
                                 .withLoggingEnabled());
     }
 
+    @Override
+    @Override
     protected int getAuthFailureStatusCode() {
         return 302;
     }

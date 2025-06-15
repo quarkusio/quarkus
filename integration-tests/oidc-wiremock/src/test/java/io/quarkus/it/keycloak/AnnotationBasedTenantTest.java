@@ -49,6 +49,7 @@ import io.vertx.core.http.WebSocketConnectOptions;
 @QuarkusTestResource(OidcWiremockTestResource.class)
 public class AnnotationBasedTenantTest {
     public static class NoProactiveAuthTestProfile implements QuarkusTestProfile {
+        @Override
         public Map<String, String> getConfigOverrides() {
             return Map.ofEntries(Map.entry("quarkus.http.auth.proactive", "false"),
                     Map.entry("quarkus.oidc.hr.authentication.user-info-required", "false"),

@@ -23,6 +23,7 @@ public interface JacksonOptimizationConfig {
     class IsReflectionFreeSerializersEnabled implements BooleanSupplier {
         JacksonOptimizationConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enableReflectionFreeSerializers();
         }

@@ -21,10 +21,12 @@ public class CallbackDevModeIT extends RunAndCheckMojoTestBase {
     /*
      * We have a few tests that will run in parallel, so set a unique port
      */
+    @Override
     protected int getPort() {
         return 8094;
     }
 
+    @Override
     protected void runAndCheck(boolean performCompile, String... options)
             throws MavenInvocationException, FileNotFoundException {
         run(performCompile, options);

@@ -81,10 +81,8 @@ public class TransactionScopedSession implements Session {
     private final Instance<RequestScopedSessionHolder> requestScopedSessions;
 
     public TransactionScopedSession(TransactionManager transactionManager,
-            TransactionSynchronizationRegistry transactionSynchronizationRegistry,
-            SessionFactory sessionFactory,
-            String unitName,
-            boolean requestScopedSessionEnabled,
+            TransactionSynchronizationRegistry transactionSynchronizationRegistry, SessionFactory sessionFactory,
+            String unitName, boolean requestScopedSessionEnabled,
             Instance<RequestScopedSessionHolder> requestScopedSessions) {
         this.transactionManager = transactionManager;
         this.transactionSynchronizationRegistry = transactionSynchronizationRegistry;
@@ -109,15 +107,16 @@ public class TransactionScopedSession implements Session {
             // Hibernate ORM itself registers a transaction that does just that.
             // See:
             // - io.quarkus.hibernate.orm.runtime.boot.FastBootMetadataBuilder.mergeSettings
-            // - org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorImpl.joinJtaTransaction
+            // -
+            // org.hibernate.resource.transaction.backend.jta.internal.JtaTransactionCoordinatorImpl.joinJtaTransaction
             // - org.hibernate.internal.SessionImpl.beforeTransactionCompletion
             // - org.hibernate.internal.SessionImpl.afterTransactionCompletion
             return new SessionResult(newSession, false, true);
         } else if (requestScopedSessionEnabled) {
             if (Arc.container().requestContext().isActive()) {
                 RequestScopedSessionHolder requestScopedSessions = this.requestScopedSessions.get();
-                return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory),
-                        false, false);
+                return new SessionResult(requestScopedSessions.getOrCreateSession(unitName, sessionFactory), false,
+                        false);
             } else {
                 throw new ContextNotActiveException(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active."
@@ -125,11 +124,10 @@ public class TransactionScopedSession implements Session {
                                 + " or @ActivateRequestContext if you have valid reasons not to use transactions.");
             }
         } else {
-            throw new ContextNotActiveException(
-                    "Cannot use the EntityManager/Session because no transaction is active."
-                            + " Consider adding @Transactional to your method to automatically activate a transaction,"
-                            + " or set '" + HibernateOrmRuntimeConfig.extensionPropertyKey("request-scoped.enabled")
-                            + "' to 'true' if you have valid reasons not to use transactions.");
+            throw new ContextNotActiveException("Cannot use the EntityManager/Session because no transaction is active."
+                    + " Consider adding @Transactional to your method to automatically activate a transaction,"
+                    + " or set '" + HibernateOrmRuntimeConfig.extensionPropertyKey("request-scoped.enabled")
+                    + "' to 'true' if you have valid reasons not to use transactions.");
         }
     }
 
@@ -427,7 +425,7 @@ public class TransactionScopedSession implements Session {
     @Override
     public Query createQuery(String qlString) {
         checkBlocking();
-        //TODO: this needs some thought for how it works outside a tx
+        // TODO: this needs some thought for how it works outside a tx
         try (SessionResult emr = acquireSession()) {
             return emr.session.createQuery(qlString);
         }

@@ -26,7 +26,9 @@ public interface OpenConnections extends Iterable<WebSocketConnection> {
      * Returns an immutable snapshot of all open connections for the given endpoint id.
      *
      * @param endpointId
+     *
      * @return an immutable collection of all open connections for the given endpoint id
+     *
      * @see WebSocket#endpointId()
      */
     default Collection<WebSocketConnection> findByEndpointId(String endpointId) {
@@ -37,7 +39,9 @@ public interface OpenConnections extends Iterable<WebSocketConnection> {
      * Returns the open connection with the given id.
      *
      * @param connectionId
+     *
      * @return the open connection or empty {@link Optional} if no open connection with the given id exists
+     *
      * @see WebSocketConnection#id()
      */
     default Optional<WebSocketConnection> findByConnectionId(String connectionId) {

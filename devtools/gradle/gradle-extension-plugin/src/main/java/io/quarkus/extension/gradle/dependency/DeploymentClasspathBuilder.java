@@ -53,8 +53,7 @@ public class DeploymentClasspathBuilder {
 
         Set<ModuleVersionIdentifier> visitedArtifacts = new HashSet<>();
         for (ResolvedDependency firstLevelModuleDependency : firstLevelModuleDependencies) {
-            firstLevelExtensions
-                    .addAll(collectQuarkusExtensions(firstLevelModuleDependency, visitedArtifacts));
+            firstLevelExtensions.addAll(collectQuarkusExtensions(firstLevelModuleDependency, visitedArtifacts));
         }
         return firstLevelExtensions;
     }

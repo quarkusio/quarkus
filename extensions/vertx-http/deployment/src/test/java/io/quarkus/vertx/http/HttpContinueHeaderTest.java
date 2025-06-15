@@ -23,8 +23,7 @@ public class HttpContinueHeaderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(HttpContinueHeaderTest.BeanRegisteringRouteUsingObserves.class));
 
     @TestHTTPResource

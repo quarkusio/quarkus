@@ -50,16 +50,15 @@ public class RestDataProcessor {
         } else {
             containerRequestFilterBuildItemBuildProducer
                     .produce(new ContainerRequestFilterBuildItem.Builder(SortQueryParamFilter.class.getName())
-                            .setNameBindingNames(Collections.singleton(SortQueryParamValidator.class.getName())).build());
+                            .setNameBindingNames(Collections.singleton(SortQueryParamValidator.class.getName()))
+                            .build());
         }
     }
 
     @BuildStep
-    void implementResources(CombinedIndexBuildItem index,
-            List<RestDataResourceBuildItem> resourceBuildItems,
+    void implementResources(CombinedIndexBuildItem index, List<RestDataResourceBuildItem> resourceBuildItems,
             List<ResourcePropertiesBuildItem> resourcePropertiesBuildItems,
-            List<BuildTimeConditionBuildItem> buildTimeConditions,
-            Capabilities capabilities,
+            List<BuildTimeConditionBuildItem> buildTimeConditions, Capabilities capabilities,
             BuildProducer<GeneratedBeanBuildItem> resteasyClassicImplementationsProducer,
             BuildProducer<GeneratedJaxRsResourceBuildItem> resteasyReactiveImplementationsProducer) {
 
@@ -72,7 +71,8 @@ public class RestDataProcessor {
         }
 
         Set<String> excludedClasses = getExcludedClasses(buildTimeConditions);
-        ClassOutput classOutput = isResteasyClassic ? new GeneratedBeanGizmoAdaptor(resteasyClassicImplementationsProducer)
+        ClassOutput classOutput = isResteasyClassic
+                ? new GeneratedBeanGizmoAdaptor(resteasyClassicImplementationsProducer)
                 : new GeneratedJaxRsResourceGizmoAdaptor(resteasyReactiveImplementationsProducer);
         JaxRsResourceImplementor jaxRsResourceImplementor = new JaxRsResourceImplementor(capabilities);
         ResourcePropertiesProvider resourcePropertiesProvider = new ResourcePropertiesProvider(index.getIndex());
@@ -121,11 +121,9 @@ public class RestDataProcessor {
     }
 
     private static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
-        return buildTimeConditions.stream()
-                .filter(item -> !item.isEnabled())
+        return buildTimeConditions.stream().filter(item -> !item.isEnabled())
                 .map(BuildTimeConditionBuildItem::getTarget)
                 .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
-                .map(target -> target.asClass().toString())
-                .collect(Collectors.toSet());
+                .map(target -> target.asClass().toString()).collect(Collectors.toSet());
     }
 }

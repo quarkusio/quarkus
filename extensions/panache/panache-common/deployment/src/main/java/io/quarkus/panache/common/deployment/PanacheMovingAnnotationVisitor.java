@@ -6,8 +6,7 @@ import io.quarkus.gizmo.Gizmo;
 import io.quarkus.panache.common.deployment.EntityField.EntityFieldAnnotation;
 
 /**
- * An AnnotationVisitor that intercepts and records annotations so that they can
- * be applied to a different element later
+ * An AnnotationVisitor that intercepts and records annotations so that they can be applied to a different element later
  */
 public class PanacheMovingAnnotationVisitor extends AnnotationVisitor {
 

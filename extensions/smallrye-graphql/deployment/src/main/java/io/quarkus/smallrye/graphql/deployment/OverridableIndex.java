@@ -50,7 +50,8 @@ public class OverridableIndex implements IndexView {
 
     @Override
     public Collection<ClassInfo> getAllKnownSubclasses(DotName dn) {
-        return overrideCollection(original.getAllKnownSubclasses(dn), override.getAllKnownSubclasses(dn), classInfoComparator);
+        return overrideCollection(original.getAllKnownSubclasses(dn), override.getAllKnownSubclasses(dn),
+                classInfoComparator);
     }
 
     @Override
@@ -67,8 +68,8 @@ public class OverridableIndex implements IndexView {
 
     @Override
     public Collection<ClassInfo> getKnownDirectImplementations(DotName dn) {
-        return overrideCollection(original.getKnownDirectImplementations(dn), override.getKnownDirectImplementations(dn),
-                classInfoComparator);
+        return overrideCollection(original.getKnownDirectImplementations(dn),
+                override.getKnownDirectImplementations(dn), classInfoComparator);
     }
 
     @Override
@@ -91,13 +92,14 @@ public class OverridableIndex implements IndexView {
 
     @Override
     public Collection<AnnotationInstance> getAnnotations(DotName dn) {
-        return overrideCollection(original.getAnnotations(dn), override.getAnnotations(dn), annotationInstanceComparator);
+        return overrideCollection(original.getAnnotations(dn), override.getAnnotations(dn),
+                annotationInstanceComparator);
     }
 
     @Override
     public Collection<AnnotationInstance> getAnnotationsWithRepeatable(DotName dn, IndexView iv) {
-        return overrideCollection(original.getAnnotationsWithRepeatable(dn, iv), override.getAnnotationsWithRepeatable(dn, iv),
-                annotationInstanceComparator);
+        return overrideCollection(original.getAnnotationsWithRepeatable(dn, iv),
+                override.getAnnotationsWithRepeatable(dn, iv), annotationInstanceComparator);
     }
 
     @Override
@@ -117,7 +119,8 @@ public class OverridableIndex implements IndexView {
 
     @Override
     public Collection<ClassInfo> getClassesInPackage(DotName pn) {
-        return overrideCollection(original.getClassesInPackage(pn), override.getClassesInPackage(pn), classInfoComparator);
+        return overrideCollection(original.getClassesInPackage(pn), override.getClassesInPackage(pn),
+                classInfoComparator);
     }
 
     @Override

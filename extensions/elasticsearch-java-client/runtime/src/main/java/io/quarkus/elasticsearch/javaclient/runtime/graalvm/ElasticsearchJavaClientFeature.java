@@ -15,20 +15,17 @@ import co.elastic.clients.util.WithJsonObjectBuilderBase;
 /**
  * Custom GraalVM feature to make Elasticsearch Java Client work in native mode.
  * <p>
- * In particular, when applications rely on `WithJsonObjectBuilderBase#withJson(...)`,
- * this automatically registers the corresponding Jsonp deserializers
- * as accessed through reflection.
- * We can't just register them all indiscriminately,
- * because this would result in literally thousands of registrations,
- * most of which would probably be useless.
+ * In particular, when applications rely on `WithJsonObjectBuilderBase#withJson(...)`, this automatically registers the
+ * corresponding Jsonp deserializers as accessed through reflection. We can't just register them all indiscriminately,
+ * because this would result in literally thousands of registrations, most of which would probably be useless.
  */
 public final class ElasticsearchJavaClientFeature implements Feature {
 
     private static final String BUILDER_BASE_CLASS_NAME = "co.elastic.clients.util.WithJsonObjectBuilderBase";
 
     /**
-     * To set this, add `-J-Dio.quarkus.elasticsearch.javaclient.graalvm.diagnostics=true` to the native-image parameters,
-     * e.g. pass this to Maven:
+     * To set this, add `-J-Dio.quarkus.elasticsearch.javaclient.graalvm.diagnostics=true` to the native-image
+     * parameters, e.g. pass this to Maven:
      * -Dquarkus.native.additional-build-args=-J-Dio.quarkus.elasticsearch.javaclient.graalvm.diagnostics=true
      */
     private static final boolean log = Boolean.getBoolean("io.quarkus.elasticsearch.javaclient.graalvm.diagnostics");
@@ -80,8 +77,7 @@ public final class ElasticsearchJavaClientFeature implements Feature {
 
         var deserializable = builtClass.getAnnotation(JsonpDeserializable.class);
         if (deserializable == null) {
-            logf("Could not find @JsonpDeserializable on %s for builder %s",
-                    builtClass, builderSubClass);
+            logf("Could not find @JsonpDeserializable on %s for builder %s", builtClass, builderSubClass);
             // Just ignore and hope this class doesn't matter.
             return;
         }

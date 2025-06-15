@@ -16,11 +16,8 @@ public class TemplateGlobalDuplicityTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Globals.class, NextGlobals.class)
-                    .addAsResource(new StringAsset(
-                            "Hello {user}!"),
-                            "templates/hello.txt"))
+            .withApplicationRoot(root -> root.addClasses(Globals.class, NextGlobals.class)
+                    .addAsResource(new StringAsset("Hello {user}!"), "templates/hello.txt"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;
@@ -33,15 +30,14 @@ public class TemplateGlobalDuplicityTest {
                 }
                 assertNotNull(te);
                 assertTrue(
-                        te.getMessage().contains("Duplicate global variable defined via @TemplateGlobal for the name [user]"),
+                        te.getMessage()
+                                .contains("Duplicate global variable defined via @TemplateGlobal for the name [user]"),
                         te.getMessage());
-                assertTrue(
-                        te.getMessage().contains(
-                                "Variable [user] supplied by io.quarkus.qute.deployment.globals.TemplateGlobalDuplicityTest$NextGlobals.user()"),
+                assertTrue(te.getMessage().contains(
+                        "Variable [user] supplied by io.quarkus.qute.deployment.globals.TemplateGlobalDuplicityTest$NextGlobals.user()"),
                         te.getMessage());
-                assertTrue(
-                        te.getMessage().contains(
-                                "Variable [user] supplied by io.quarkus.qute.deployment.globals.TemplateGlobalDuplicityTest$Globals.user"),
+                assertTrue(te.getMessage().contains(
+                        "Variable [user] supplied by io.quarkus.qute.deployment.globals.TemplateGlobalDuplicityTest$Globals.user"),
                         te.getMessage());
             });
 

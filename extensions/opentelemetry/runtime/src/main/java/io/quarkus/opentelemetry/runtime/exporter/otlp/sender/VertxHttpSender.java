@@ -52,24 +52,16 @@ public final class VertxHttpSender implements HttpSender {
     private final HttpClient client;
     private final String signalPath;
 
-    public VertxHttpSender(
-            URI baseUri,
-            String signalPath,
-            boolean compressionEnabled,
-            Duration timeout,
-            Map<String, String> headersMap,
-            String contentType,
-            Consumer<HttpClientOptions> clientOptionsCustomizer,
+    public VertxHttpSender(URI baseUri, String signalPath, boolean compressionEnabled, Duration timeout,
+            Map<String, String> headersMap, String contentType, Consumer<HttpClientOptions> clientOptionsCustomizer,
             Vertx vertx) {
         this.basePath = determineBasePath(baseUri);
         this.signalPath = signalPath;
         this.compressionEnabled = compressionEnabled;
         this.headers = headersMap;
         this.contentType = contentType;
-        var httpClientOptions = new HttpClientOptions()
-                .setReadIdleTimeout((int) timeout.getSeconds())
-                .setDefaultHost(baseUri.getHost())
-                .setDefaultPort(getPort(baseUri))
+        var httpClientOptions = new HttpClientOptions().setReadIdleTimeout((int) timeout.getSeconds())
+                .setDefaultHost(baseUri.getHost()).setDefaultPort(getPort(baseUri))
                 .setTracingPolicy(TracingPolicy.IGNORE); // needed to avoid tracing the calls from this http client
         clientOptionsCustomizer.accept(httpClientOptions);
         this.client = vertx.createHttpClient(httpClientOptions);
@@ -93,58 +85,45 @@ public final class VertxHttpSender implements HttpSender {
     }
 
     @Override
-    public void send(Marshaler marshaler,
-            int contentLength,
-            Consumer<Response> onHttpResponseRead,
+    public void send(Marshaler marshaler, int contentLength, Consumer<Response> onHttpResponseRead,
             Consumer<Throwable> onError) {
         if (isShutdown.get()) {
             return;
         }
 
         String requestURI = basePath + signalPath;
-        var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
-                contentType,
-                contentLength, onHttpResponseRead,
-                onError, marshaler, 1, isShutdown::get);
+        var clientRequestSuccessHandler = new ClientRequestSuccessHandler(client, requestURI, headers,
+                compressionEnabled, contentType, contentLength, onHttpResponseRead, onError, marshaler, 1,
+                isShutdown::get);
         initiateSend(client, requestURI, MAX_ATTEMPTS, clientRequestSuccessHandler, onError, isShutdown::get);
     }
 
-    private static void initiateSend(HttpClient client, String requestURI,
-            int numberOfAttempts,
-            Handler<HttpClientRequest> clientRequestSuccessHandler,
-            Consumer<Throwable> onError,
+    private static void initiateSend(HttpClient client, String requestURI, int numberOfAttempts,
+            Handler<HttpClientRequest> clientRequestSuccessHandler, Consumer<Throwable> onError,
             Supplier<Boolean> isShutdown) {
         Uni.createFrom().completionStage(new Supplier<CompletionStage<HttpClientRequest>>() {
             @Override
             public CompletionStage<HttpClientRequest> get() {
                 return client.request(HttpMethod.POST, requestURI).toCompletionStage();
             }
-        })
-                .onFailure(new Predicate<Throwable>() {
+        }).onFailure(new Predicate<Throwable>() {
+            @Override
+            public boolean test(Throwable t) {
+                // Will not retry on shutdown
+                return t instanceof IllegalStateException || t instanceof RejectedExecutionException;
+            }
+        }).recoverWithUni(new Supplier<Uni<? extends HttpClientRequest>>() {
+            @Override
+            public Uni<? extends HttpClientRequest> get() {
+                return Uni.createFrom().nothing();
+            }
+        }).onFailure().retry().withBackOff(Duration.ofMillis(100)).atMost(numberOfAttempts).subscribe()
+                .with(new Consumer<>() {
                     @Override
-                    public boolean test(Throwable t) {
-                        // Will not retry on shutdown
-                        return t instanceof IllegalStateException ||
-                                t instanceof RejectedExecutionException;
+                    public void accept(HttpClientRequest request) {
+                        clientRequestSuccessHandler.handle(request);
                     }
-                })
-                .recoverWithUni(new Supplier<Uni<? extends HttpClientRequest>>() {
-                    @Override
-                    public Uni<? extends HttpClientRequest> get() {
-                        return Uni.createFrom().nothing();
-                    }
-                })
-                .onFailure()
-                .retry()
-                .withBackOff(Duration.ofMillis(100))
-                .atMost(numberOfAttempts)
-                .subscribe().with(
-                        new Consumer<>() {
-                            @Override
-                            public void accept(HttpClientRequest request) {
-                                clientRequestSuccessHandler.handle(request);
-                            }
-                        }, onError);
+                }, onError);
     }
 
     @Override
@@ -155,20 +134,17 @@ public final class VertxHttpSender implements HttpSender {
         }
 
         try {
-            client.close()
-                    .onSuccess(
-                            new Handler<>() {
-                                @Override
-                                public void handle(Void event) {
-                                    shutdownResult.succeed();
-                                }
-                            })
-                    .onFailure(new Handler<>() {
-                        @Override
-                        public void handle(Throwable event) {
-                            shutdownResult.fail();
-                        }
-                    });
+            client.close().onSuccess(new Handler<>() {
+                @Override
+                public void handle(Void event) {
+                    shutdownResult.succeed();
+                }
+            }).onFailure(new Handler<>() {
+                @Override
+                public void handle(Throwable event) {
+                    shutdownResult.fail();
+                }
+            });
         } catch (RejectedExecutionException e) {
             internalLogger.log(Level.FINE, "Unable to complete shutdown", e);
             // if Netty's ThreadPool has been closed, this onSuccess() will immediately throw RejectedExecutionException
@@ -192,16 +168,10 @@ public final class VertxHttpSender implements HttpSender {
         private final int attemptNumber;
         private final Supplier<Boolean> isShutdown;
 
-        public ClientRequestSuccessHandler(HttpClient client,
-                String requestURI, Map<String, String> headers,
-                boolean compressionEnabled,
-                String contentType,
-                int contentLength,
-                Consumer<Response> onHttpResponseRead,
-                Consumer<Throwable> onError,
-                Marshaler marshaler,
-                int attemptNumber,
-                Supplier<Boolean> isShutdown) {
+        public ClientRequestSuccessHandler(HttpClient client, String requestURI, Map<String, String> headers,
+                boolean compressionEnabled, String contentType, int contentLength,
+                Consumer<Response> onHttpResponseRead, Consumer<Throwable> onError, Marshaler marshaler,
+                int attemptNumber, Supplier<Boolean> isShutdown) {
             this.client = client;
             this.requestURI = requestURI;
             this.headers = headers;
@@ -231,11 +201,8 @@ public final class VertxHttpSender implements HttpSender {
                                     if (clientResponse.statusCode() >= 500) {
                                         if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
                                             // we should retry for 5xx error as they might be recoverable
-                                            initiateSend(client, requestURI,
-                                                    MAX_ATTEMPTS - attemptNumber,
-                                                    newAttempt(),
-                                                    onError,
-                                                    isShutdown);
+                                            initiateSend(client, requestURI, MAX_ATTEMPTS - attemptNumber, newAttempt(),
+                                                    onError, isShutdown);
                                             return;
                                         }
                                     }
@@ -258,11 +225,8 @@ public final class VertxHttpSender implements HttpSender {
                                 } else {
                                     if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
                                         // retry
-                                        initiateSend(client, requestURI,
-                                                MAX_ATTEMPTS - attemptNumber,
-                                                newAttempt(),
-                                                onError,
-                                                isShutdown);
+                                        initiateSend(client, requestURI, MAX_ATTEMPTS - attemptNumber, newAttempt(),
+                                                onError, isShutdown);
                                     } else {
                                         onError.accept(bodyResult.cause());
                                     }
@@ -272,18 +236,14 @@ public final class VertxHttpSender implements HttpSender {
                     } else {
                         if (attemptNumber <= MAX_ATTEMPTS && !isShutdown.get()) {
                             // retry
-                            initiateSend(client, requestURI,
-                                    MAX_ATTEMPTS - attemptNumber,
-                                    newAttempt(),
-                                    onError,
+                            initiateSend(client, requestURI, MAX_ATTEMPTS - attemptNumber, newAttempt(), onError,
                                     isShutdown);
                         } else {
                             onError.accept(callResult.cause());
                         }
                     }
                 }
-            })
-                    .putHeader("Content-Type", contentType);
+            }).putHeader("Content-Type", contentType);
 
             Buffer buffer = Buffer.buffer(contentLength);
             OutputStream os = new BufferOutputStream(buffer);
@@ -312,9 +272,8 @@ public final class VertxHttpSender implements HttpSender {
         }
 
         public ClientRequestSuccessHandler newAttempt() {
-            return new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled,
-                    contentType, contentLength, onHttpResponseRead,
-                    onError, marshaler, attemptNumber + 1, isShutdown);
+            return new ClientRequestSuccessHandler(client, requestURI, headers, compressionEnabled, contentType,
+                    contentLength, onHttpResponseRead, onError, marshaler, attemptNumber + 1, isShutdown);
         }
     }
 }

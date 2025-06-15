@@ -13,8 +13,7 @@ import io.smallrye.config.WithDefault;
 public interface RedisClientBuildTimeConfig {
 
     /**
-     * A list of files allowing to pre-load data into the Redis server.
-     * The file is formatted as follows:
+     * A list of files allowing to pre-load data into the Redis server. The file is formatted as follows:
      * <ul>
      * <li>One instruction per line</li>
      * <li>Each instruction is a Redis command and its parameter such as {@code HSET foo field value}</li>
@@ -33,7 +32,8 @@ public interface RedisClientBuildTimeConfig {
     boolean flushBeforeLoad();
 
     /**
-     * When using {@code redisLoadScript}, indicates if the import should only happen if the database is empty (no keys).
+     * When using {@code redisLoadScript}, indicates if the import should only happen if the database is empty (no
+     * keys).
      */
     @WithDefault("true")
     boolean loadOnlyIfEmpty();

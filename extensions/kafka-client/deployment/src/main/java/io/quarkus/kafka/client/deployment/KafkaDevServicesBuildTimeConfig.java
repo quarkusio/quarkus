@@ -10,8 +10,8 @@ import io.smallrye.config.WithDefault;
 public interface KafkaDevServicesBuildTimeConfig {
 
     /**
-     * If Dev Services for Kafka has been explicitly enabled or disabled. Dev Services are generally enabled
-     * by default, unless there is an existing configuration present. For Kafka, Dev Services starts a broker unless
+     * If Dev Services for Kafka has been explicitly enabled or disabled. Dev Services are generally enabled by default,
+     * unless there is an existing configuration present. For Kafka, Dev Services starts a broker unless
      * {@code kafka.bootstrap.servers} is set or if all the Reactive Messaging Kafka channel are configured with a
      * {@code bootstrap.servers}.
      */
@@ -29,14 +29,14 @@ public interface KafkaDevServicesBuildTimeConfig {
      * <p>
      * Redpanda, Strimzi and kafka-native container providers are supported. Default is redpanda.
      * <p>
-     * For Redpanda:
-     * See https://docs.redpanda.com/current/get-started/quick-start/ and https://hub.docker.com/r/redpandadata/redpanda
+     * For Redpanda: See https://docs.redpanda.com/current/get-started/quick-start/ and
+     * https://hub.docker.com/r/redpandadata/redpanda
      * <p>
-     * For Strimzi:
-     * See https://github.com/strimzi/test-container and https://quay.io/repository/strimzi-test-container/test-container
+     * For Strimzi: See https://github.com/strimzi/test-container and
+     * https://quay.io/repository/strimzi-test-container/test-container
      * <p>
-     * For Kafka Native:
-     * See https://github.com/ozangunalp/kafka-native and https://quay.io/repository/ogunalp/kafka-native
+     * For Kafka Native: See https://github.com/ozangunalp/kafka-native and
+     * https://quay.io/repository/ogunalp/kafka-native
      * <p>
      * Note that Strimzi and Kafka Native images are launched in Kraft mode.
      */
@@ -67,13 +67,12 @@ public interface KafkaDevServicesBuildTimeConfig {
     Optional<String> imageName();
 
     /**
-     * Indicates if the Kafka broker managed by Quarkus Dev Services is shared.
-     * When shared, Quarkus looks for running containers using label-based service discovery.
-     * If a matching container is found, it is used, and so a second one is not started.
-     * Otherwise, Dev Services for Kafka starts a new container.
+     * Indicates if the Kafka broker managed by Quarkus Dev Services is shared. When shared, Quarkus looks for running
+     * containers using label-based service discovery. If a matching container is found, it is used, and so a second one
+     * is not started. Otherwise, Dev Services for Kafka starts a new container.
      * <p>
-     * The discovery uses the {@code quarkus-dev-service-kafka} label.
-     * The value is configured using the {@code service-name} property.
+     * The discovery uses the {@code quarkus-dev-service-kafka} label. The value is configured using the
+     * {@code service-name} property.
      * <p>
      * Container sharing is only used in dev mode.
      */
@@ -81,12 +80,11 @@ public interface KafkaDevServicesBuildTimeConfig {
     boolean shared();
 
     /**
-     * The value of the {@code quarkus-dev-service-kafka} label attached to the started container.
-     * This property is used when {@code shared} is set to {@code true}.
-     * In this case, before starting a container, Dev Services for Kafka looks for a container with the
-     * {@code quarkus-dev-service-kafka} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
-     * starts a new container with the {@code quarkus-dev-service-kafka} label set to the specified value.
+     * The value of the {@code quarkus-dev-service-kafka} label attached to the started container. This property is used
+     * when {@code shared} is set to {@code true}. In this case, before starting a container, Dev Services for Kafka
+     * looks for a container with the {@code quarkus-dev-service-kafka} label set to the configured value. If found, it
+     * will use this container instead of starting a new one. Otherwise, it starts a new container with the
+     * {@code quarkus-dev-service-kafka} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared Kafka brokers.
      */
@@ -94,10 +92,10 @@ public interface KafkaDevServicesBuildTimeConfig {
     String serviceName();
 
     /**
-     * The topic-partition pairs to create in the Dev Services Kafka broker.
-     * After the broker is started, given topics with partitions are created, skipping already existing topics.
-     * For example, <code>quarkus.kafka.devservices.topic-partitions.test=2</code> will create a topic named
-     * {@code test} with 2 partitions.
+     * The topic-partition pairs to create in the Dev Services Kafka broker. After the broker is started, given topics
+     * with partitions are created, skipping already existing topics. For example,
+     * <code>quarkus.kafka.devservices.topic-partitions.test=2</code> will create a topic named {@code test} with 2
+     * partitions.
      * <p>
      * The topic creation will not try to re-partition existing topics with different number of partitions.
      */

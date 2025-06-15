@@ -235,10 +235,10 @@ public class Extension {
     @Override
     public String toString() {
         return "Extension{" + "namespace=" + namespace + ", artifact=" + artifact + ", name=" + name + ", shortName="
-                + shortName + ", description=" + description + ", guide=" + guide + ", keywords=" + keywords + ", status="
-                + status + ", configFilter=" + configFilter + ", categories=" + categories + ", unlisted=" + unlisted
-                + ", builtWith=" + builtWith + ", providesCapabilities=" + providesCapabilities + ", extensionDependencies="
-                + extensionDependencies + ", codestart=" + codestart + '}';
+                + shortName + ", description=" + description + ", guide=" + guide + ", keywords=" + keywords
+                + ", status=" + status + ", configFilter=" + configFilter + ", categories=" + categories + ", unlisted="
+                + unlisted + ", builtWith=" + builtWith + ", providesCapabilities=" + providesCapabilities
+                + ", extensionDependencies=" + extensionDependencies + ", codestart=" + codestart + '}';
     }
 
 }

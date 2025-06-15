@@ -19,9 +19,7 @@ import io.netty.buffer.ByteBufInputStream;
 
 public class ObjectMapperSchema<T> extends AbstractSchema<T> {
 
-    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder()
-            .name("ObjectMapper")
-            .type(SchemaType.NONE)
+    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder().name("ObjectMapper").type(SchemaType.NONE)
             .schema(new byte[0]).build();
 
     public static <T> ObjectMapperSchema<T> of(Class<T> type) {

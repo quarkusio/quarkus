@@ -17,7 +17,6 @@ import java.lang.annotation.Target;
  * {@link io.smallrye.config.ConfigMapping}. Moreover, this annotation can be used for
  * {@link org.eclipse.microprofile.config.inject.ConfigProperty} injection points.
  * <p>
- *
  * When a Quarkus application is starting up, Quarkus will execute first a static init method which contains some
  * extensions actions and configurations. Example:
  *
@@ -36,11 +35,10 @@ import java.lang.annotation.Target;
  * </pre>
  *
  * Please check <a href="https://docs.oracle.com/javase/tutorial/java/javaOO/initial.html">Initializing Fields</a> for
- * more information about static blocks.
- *
- * Since Config initializes first, some ConfigSources may not be suited to be initialized at static init. Consider the
- * previous code example and a ConfigSource that requires database access. In this case, it is impossible to properly
- * initialize such ConfigSource, because the database services are not yet available so the ConfigSource in unusable.
+ * more information about static blocks. Since Config initializes first, some ConfigSources may not be suited to be
+ * initialized at static init. Consider the previous code example and a ConfigSource that requires database access. In
+ * this case, it is impossible to properly initialize such ConfigSource, because the database services are not yet
+ * available so the ConfigSource in unusable.
  */
 @Target({ TYPE, FIELD, PARAMETER })
 @Retention(RUNTIME)

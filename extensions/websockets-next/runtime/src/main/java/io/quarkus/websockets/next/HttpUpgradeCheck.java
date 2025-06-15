@@ -11,24 +11,25 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 
 /**
- * A check that controls which requests are allowed to upgrade the HTTP connection to a WebSocket connection.
- * CDI beans implementing this interface are invoked on every request.
- * The CDI beans implementing `HttpUpgradeCheck` interface can be either `@ApplicationScoped`, `@Singleton`
- * or `@Dependent` beans, but never the `@RequestScoped` beans.
+ * A check that controls which requests are allowed to upgrade the HTTP connection to a WebSocket connection. CDI beans
+ * implementing this interface are invoked on every request. The CDI beans implementing `HttpUpgradeCheck` interface can
+ * be either `@ApplicationScoped`, `@Singleton` or `@Dependent` beans, but never the `@RequestScoped` beans.
  * <p>
- * The checks are called orderly according to a bean priority.
- * When no priority is declared (for example with the `@jakarta.annotation.Priority` annotation), default priority is used.
- * If one of the checks rejects the upgrade, remaining checks are not called.
+ * The checks are called orderly according to a bean priority. When no priority is declared (for example with the
+ * `@jakarta.annotation.Priority` annotation), default priority is used. If one of the checks rejects the upgrade,
+ * remaining checks are not called.
  */
 public interface HttpUpgradeCheck {
 
     /**
      * This method inspects HTTP Upgrade context and either allows or denies upgrade to a WebSocket connection.
      * <p>
-     * Use {@link VertxContextSupport#executeBlocking(java.util.concurrent.Callable)} in order to execute some blocking code in
-     * the check.
+     * Use {@link VertxContextSupport#executeBlocking(java.util.concurrent.Callable)} in order to execute some blocking
+     * code in the check.
      *
-     * @param context {@link HttpUpgradeContext}
+     * @param context
+     *        {@link HttpUpgradeContext}
+     *
      * @return check result; must never be null
      */
     Uni<CheckResult> perform(HttpUpgradeContext context);
@@ -36,7 +37,9 @@ public interface HttpUpgradeCheck {
     /**
      * Determines WebSocket endpoints this check is applied to.
      *
-     * @param endpointId WebSocket endpoint id, @see {@link WebSocket#endpointId()} for more information
+     * @param endpointId
+     *        WebSocket endpoint id, @see {@link WebSocket#endpointId()} for more information
+     *
      * @return true if this check should be applied on a WebSocket endpoint with given id
      */
     default boolean appliesTo(String endpointId) {
@@ -51,7 +54,8 @@ public interface HttpUpgradeCheck {
         HttpServerRequest httpRequest();
 
         /**
-         * @return securityIdentity {@link SecurityIdentity}; the identity is null if the Quarkus Security extension is absent
+         * @return securityIdentity {@link SecurityIdentity}; the identity is null if the Quarkus Security extension is
+         *         absent
          */
         Uni<SecurityIdentity> securityIdentity();
 
@@ -69,7 +73,8 @@ public interface HttpUpgradeCheck {
         private final int httpResponseCode;
         private final Map<String, List<String>> responseHeaders;
 
-        private CheckResult(boolean upgradePermitted, Integer httpResponseCode, Map<String, List<String>> responseHeaders) {
+        private CheckResult(boolean upgradePermitted, Integer httpResponseCode,
+                Map<String, List<String>> responseHeaders) {
             this.upgradePermitted = upgradePermitted;
             this.httpResponseCode = httpResponseCode == null ? 500 : httpResponseCode;
             this.responseHeaders = toUnmodifiableMap(responseHeaders);
@@ -98,7 +103,8 @@ public interface HttpUpgradeCheck {
             return new CheckResult(this.upgradePermitted, this.httpResponseCode, newHeaders);
         }
 
-        public static Uni<CheckResult> rejectUpgrade(Integer httpResponseCode, Map<String, List<String>> responseHeaders) {
+        public static Uni<CheckResult> rejectUpgrade(Integer httpResponseCode,
+                Map<String, List<String>> responseHeaders) {
             return Uni.createFrom().item(rejectUpgradeSync(httpResponseCode, responseHeaders));
         }
 
@@ -110,7 +116,8 @@ public interface HttpUpgradeCheck {
             return rejectUpgradeSync(httpResponseCode, null);
         }
 
-        public static CheckResult rejectUpgradeSync(Integer httpResponseCode, Map<String, List<String>> responseHeaders) {
+        public static CheckResult rejectUpgradeSync(Integer httpResponseCode,
+                Map<String, List<String>> responseHeaders) {
             return new CheckResult(false, httpResponseCode, responseHeaders);
         }
 
@@ -133,8 +140,11 @@ public interface HttpUpgradeCheck {
         /**
          * Merge two lists.
          *
-         * @param a never null
-         * @param b nullable
+         * @param a
+         *        never null
+         * @param b
+         *        nullable
+         *
          * @return list containing both {@code a} and {@code b} (if present)
          */
         private static List<String> merge(List<String> a, List<String> b) {

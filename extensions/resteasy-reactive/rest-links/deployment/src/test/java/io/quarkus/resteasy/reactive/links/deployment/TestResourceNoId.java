@@ -19,9 +19,8 @@ import io.smallrye.mutiny.Uni;
 @Produces({ MediaType.APPLICATION_JSON, RestMediaType.APPLICATION_HAL_JSON })
 public class TestResourceNoId {
 
-    private static final List<TestRecordNoId> RECORDS = new LinkedList<>(Arrays.asList(
-            new TestRecordNoId("first_value"),
-            new TestRecordNoId("second_value")));
+    private static final List<TestRecordNoId> RECORDS = new LinkedList<>(
+            Arrays.asList(new TestRecordNoId("first_value"), new TestRecordNoId("second_value")));
 
     @GET
 
@@ -36,9 +35,7 @@ public class TestResourceNoId {
     @RestLink(entityType = TestRecordNoId.class)
     @InjectRestLinks(RestLinkType.INSTANCE)
     public TestRecordNoId getByNothing(@PathParam("name") String name) {
-        return RECORDS.stream()
-                .filter(record -> record.getName().equals(name))
-                .findFirst()
+        return RECORDS.stream().filter(record -> record.getName().equals(name)).findFirst()
                 .orElseThrow(NotFoundException::new);
     }
 }

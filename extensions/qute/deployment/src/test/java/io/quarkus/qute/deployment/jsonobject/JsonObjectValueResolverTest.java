@@ -14,12 +14,10 @@ import io.vertx.core.json.JsonObject;
 public class JsonObjectValueResolverTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest quarkusApp = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    app -> app.addClass(foo.class)
-                            .addAsResource(new StringAsset(
-                                    "{tool.name} {tool.fieldNames} {tool.fields} {tool.size} {tool.empty} {tool.isEmpty} {tool.get('name')} {tool.containsKey('name')}"),
-                                    "templates/JsonObjectValueResolverTest/foo.txt"));
+    static final QuarkusUnitTest quarkusApp = new QuarkusUnitTest().withApplicationRoot(app -> app.addClass(foo.class)
+            .addAsResource(new StringAsset(
+                    "{tool.name} {tool.fieldNames} {tool.fields} {tool.size} {tool.empty} {tool.isEmpty} {tool.get('name')} {tool.containsKey('name')}"),
+                    "templates/JsonObjectValueResolverTest/foo.txt"));
 
     record foo(JsonObject tool) implements TemplateInstance {
     }

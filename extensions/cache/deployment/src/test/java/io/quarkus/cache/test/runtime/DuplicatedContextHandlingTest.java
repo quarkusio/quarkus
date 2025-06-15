@@ -23,8 +23,8 @@ import io.vertx.core.impl.ContextInternal;
 public class DuplicatedContextHandlingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar
-            .addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -50,37 +50,31 @@ public class DuplicatedContextHandlingTest {
         CountDownLatch latch = new CountDownLatch(1);
         Context tmp = context;
         context.runOnContext(x -> {
-            cachedService.direct(false)
-                    .invoke(() -> {
-                        if (!tmp.equals(Vertx.currentContext())) {
-                            throw new AssertionError("Expected to go back on the caller context");
-                        }
-                    })
-                    .subscribe().with(y -> latch.countDown());
+            cachedService.direct(false).invoke(() -> {
+                if (!tmp.equals(Vertx.currentContext())) {
+                    throw new AssertionError("Expected to go back on the caller context");
+                }
+            }).subscribe().with(y -> latch.countDown());
         });
         Assertions.assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         CountDownLatch latch2 = new CountDownLatch(1);
         context.runOnContext(x -> {
-            cachedService.direct(true)
-                    .invoke(() -> {
-                        if (!tmp.equals(Vertx.currentContext())) {
-                            throw new AssertionError("Expected to go back on the caller context");
-                        }
-                    })
-                    .subscribe().with(y -> latch2.countDown());
+            cachedService.direct(true).invoke(() -> {
+                if (!tmp.equals(Vertx.currentContext())) {
+                    throw new AssertionError("Expected to go back on the caller context");
+                }
+            }).subscribe().with(y -> latch2.countDown());
         });
         Assertions.assertTrue(latch2.await(1, TimeUnit.SECONDS));
 
         CountDownLatch latch3 = new CountDownLatch(1);
         context.runOnContext(x -> {
-            cachedService.direct(false)
-                    .invoke(() -> {
-                        if (!tmp.equals(Vertx.currentContext())) {
-                            throw new AssertionError("Expected to go back on the caller context");
-                        }
-                    })
-                    .subscribe().with(y -> latch3.countDown());
+            cachedService.direct(false).invoke(() -> {
+                if (!tmp.equals(Vertx.currentContext())) {
+                    throw new AssertionError("Expected to go back on the caller context");
+                }
+            }).subscribe().with(y -> latch3.countDown());
         });
         Assertions.assertTrue(latch3.await(1, TimeUnit.SECONDS));
 
@@ -96,25 +90,21 @@ public class DuplicatedContextHandlingTest {
         CountDownLatch latch = new CountDownLatch(1);
         Context tmp = context;
         context.runOnContext(x -> {
-            cachedService.direct(false)
-                    .invoke(() -> {
-                        if (!tmp.equals(Vertx.currentContext())) {
-                            throw new AssertionError("Expected to go back on the caller context");
-                        }
-                    })
-                    .subscribe().with(y -> latch.countDown());
+            cachedService.direct(false).invoke(() -> {
+                if (!tmp.equals(Vertx.currentContext())) {
+                    throw new AssertionError("Expected to go back on the caller context");
+                }
+            }).subscribe().with(y -> latch.countDown());
         });
         Assertions.assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         CountDownLatch latch2 = new CountDownLatch(1);
         context2.runOnContext(x -> {
-            cachedService.direct(false)
-                    .invoke(() -> {
-                        if (!context2.equals(Vertx.currentContext())) {
-                            throw new AssertionError("Expected to go back on the caller context");
-                        }
-                    })
-                    .subscribe().with(y -> latch2.countDown());
+            cachedService.direct(false).invoke(() -> {
+                if (!context2.equals(Vertx.currentContext())) {
+                    throw new AssertionError("Expected to go back on the caller context");
+                }
+            }).subscribe().with(y -> latch2.countDown());
         });
         Assertions.assertTrue(latch2.await(1, TimeUnit.SECONDS));
     }
@@ -129,25 +119,21 @@ public class DuplicatedContextHandlingTest {
         CountDownLatch latch = new CountDownLatch(1);
         Context tmp = context;
         context.runOnContext(x -> {
-            cachedService.directOnAnotherContext(false)
-                    .invoke(() -> {
-                        if (!tmp.equals(Vertx.currentContext())) {
-                            throw new AssertionError("Expected to go back on the caller context");
-                        }
-                    })
-                    .subscribe().with(y -> latch.countDown());
+            cachedService.directOnAnotherContext(false).invoke(() -> {
+                if (!tmp.equals(Vertx.currentContext())) {
+                    throw new AssertionError("Expected to go back on the caller context");
+                }
+            }).subscribe().with(y -> latch.countDown());
         });
         Assertions.assertTrue(latch.await(1, TimeUnit.SECONDS));
 
         CountDownLatch latch2 = new CountDownLatch(1);
         context2.runOnContext(x -> {
-            cachedService.directOnAnotherContext(false)
-                    .invoke(() -> {
-                        if (!context2.equals(Vertx.currentContext())) {
-                            throw new AssertionError("Expected to go back on the caller context");
-                        }
-                    })
-                    .subscribe().with(y -> latch2.countDown());
+            cachedService.directOnAnotherContext(false).invoke(() -> {
+                if (!context2.equals(Vertx.currentContext())) {
+                    throw new AssertionError("Expected to go back on the caller context");
+                }
+            }).subscribe().with(y -> latch2.countDown());
         });
         Assertions.assertTrue(latch2.await(1, TimeUnit.SECONDS));
     }
@@ -159,23 +145,19 @@ public class DuplicatedContextHandlingTest {
 
         CountDownLatch latch = new CountDownLatch(1);
         duplicatedContext1.runOnContext(x -> {
-            cachedService.async()
-                    .subscribeAsCompletionStage()
-                    .whenComplete((s, t) -> {
-                        Assertions.assertEquals(duplicatedContext1, Vertx.currentContext());
-                        latch.countDown();
-                    });
+            cachedService.async().subscribeAsCompletionStage().whenComplete((s, t) -> {
+                Assertions.assertEquals(duplicatedContext1, Vertx.currentContext());
+                latch.countDown();
+            });
         });
 
         var duplicatedContext2 = ((ContextInternal) rootContext).duplicate();
         CountDownLatch latch2 = new CountDownLatch(1);
         duplicatedContext2.runOnContext(x -> {
-            cachedService.async()
-                    .subscribeAsCompletionStage()
-                    .whenComplete((s, t) -> {
-                        Assertions.assertEquals(duplicatedContext2, Vertx.currentContext());
-                        latch2.countDown();
-                    });
+            cachedService.async().subscribeAsCompletionStage().whenComplete((s, t) -> {
+                Assertions.assertEquals(duplicatedContext2, Vertx.currentContext());
+                latch2.countDown();
+            });
         });
 
         Assertions.assertTrue(latch.await(2, TimeUnit.SECONDS));
@@ -199,17 +181,15 @@ public class DuplicatedContextHandlingTest {
         @CacheResult(cacheName = "duplicated-context-cache", lockTimeout = 100)
         public Uni<String> async() {
             Context context = Vertx.currentContext();
-            return Uni.createFrom().item("foo")
-                    .onItem().delayIt().by(Duration.ofMillis(10))
-                    .map(s -> s.toUpperCase())
+            return Uni.createFrom().item("foo").onItem().delayIt().by(Duration.ofMillis(10)).map(s -> s.toUpperCase())
                     .emitOn(runnable -> context.runOnContext(x -> runnable.run()));
         }
 
         @CacheResult(cacheName = "duplicated-context-cache", lockTimeout = 100)
         public Uni<String> directOnAnotherContext(boolean timeout) {
             if (!timeout || timedout) {
-                return Uni.createFrom().item("foo")
-                        .emitOn(c -> ((ContextInternal) Vertx.currentContext().owner()).duplicate().runOnContext(x -> c.run()));
+                return Uni.createFrom().item("foo").emitOn(
+                        c -> ((ContextInternal) Vertx.currentContext().owner()).duplicate().runOnContext(x -> c.run()));
             }
             timedout = true;
             return Uni.createFrom().nothing();

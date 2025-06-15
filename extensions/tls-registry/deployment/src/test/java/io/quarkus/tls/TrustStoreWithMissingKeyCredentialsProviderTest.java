@@ -21,8 +21,8 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-credentials-provider", password = "secret123!", formats = { Format.JKS, Format.PKCS12 })
-})
+        @Certificate(name = "test-credentials-provider", password = "secret123!", formats = { Format.JKS,
+                Format.PKCS12 }) })
 public class TrustStoreWithMissingKeyCredentialsProviderTest {
 
     private static final String configuration = """
@@ -32,11 +32,9 @@ public class TrustStoreWithMissingKeyCredentialsProviderTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"))
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"))
             .assertException(t -> {
-                assertThat(t)
-                        .hasMessageContaining("Invalid", "trust store", "foo")
+                assertThat(t).hasMessageContaining("Invalid", "trust store", "foo")
                         .hasStackTraceContaining("the trust store password");
             });
 

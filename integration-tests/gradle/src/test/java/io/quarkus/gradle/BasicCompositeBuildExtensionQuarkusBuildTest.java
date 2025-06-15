@@ -34,8 +34,7 @@ public class BasicCompositeBuildExtensionQuarkusBuildTest extends QuarkusGradleW
         runGradleWrapper(projectDir, ":application:quarkusBuild");
 
         final Path extension = projectDir.toPath().resolve("extensions").resolve("example-extension").resolve("runtime")
-                .resolve("build")
-                .resolve("libs");
+                .resolve("build").resolve("libs");
         assertThat(extension).exists();
         assertThat(extension.resolve("example-extension-1.0-SNAPSHOT.jar")).exists();
 
@@ -48,8 +47,10 @@ public class BasicCompositeBuildExtensionQuarkusBuildTest extends QuarkusGradleW
         assertThat(libB.resolve("libraryB-1.0-SNAPSHOT.jar")).exists();
 
         final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus-app");
-        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryA-1.0-SNAPSHOT.jar")).exists();
-        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryB-1.0-SNAPSHOT.jar")).exists();
+        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryA-1.0-SNAPSHOT.jar"))
+                .exists();
+        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryB-1.0-SNAPSHOT.jar"))
+                .exists();
         assertThat(applicationLib.resolve("lib").resolve("main")
                 .resolve("org.acme.extensions.example-extension-1.0-SNAPSHOT.jar")).exists();
 

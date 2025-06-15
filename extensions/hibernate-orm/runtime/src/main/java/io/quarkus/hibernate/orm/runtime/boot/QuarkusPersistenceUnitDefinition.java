@@ -11,8 +11,8 @@ import io.quarkus.hibernate.orm.runtime.recording.RecordedConfig;
 import io.quarkus.runtime.annotations.RecordableConstructor;
 
 /**
- * This represents the fully specified configuration of a Persistence Unit,
- * in a format which is compatible with the bytecode recorder.
+ * This represents the fully specified configuration of a Persistence Unit, in a format which is compatible with the
+ * bytecode recorder.
  */
 public final class QuarkusPersistenceUnitDefinition {
 
@@ -27,11 +27,8 @@ public final class QuarkusPersistenceUnitDefinition {
 
     @RecordableConstructor
     public QuarkusPersistenceUnitDefinition(QuarkusPersistenceUnitDescriptor persistenceUnitDescriptor,
-            RecordedConfig config,
-            List<RecordableXmlMapping> xmlMappings,
-            boolean fromPersistenceXml,
-            boolean hibernateValidatorPresent,
-            Optional<FormatMapperKind> jsonMapperCreator,
+            RecordedConfig config, List<RecordableXmlMapping> xmlMappings, boolean fromPersistenceXml,
+            boolean hibernateValidatorPresent, Optional<FormatMapperKind> jsonMapperCreator,
             Optional<FormatMapperKind> xmlMapperCreator,
             List<HibernateOrmIntegrationStaticDescriptor> integrationStaticDescriptors) {
         Objects.requireNonNull(persistenceUnitDescriptor);
@@ -62,7 +59,7 @@ public final class QuarkusPersistenceUnitDefinition {
         return xmlMappings;
     }
 
-    //TODO assert that we match the right type of ORM!
+    // TODO assert that we match the right type of ORM!
     public boolean isReactive() {
         return persistenceUnitDescriptor.isReactive();
     }

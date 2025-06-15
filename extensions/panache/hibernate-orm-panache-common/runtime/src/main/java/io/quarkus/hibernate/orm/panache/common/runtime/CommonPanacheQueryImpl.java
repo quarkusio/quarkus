@@ -50,8 +50,9 @@ public class CommonPanacheQueryImpl<Entity> {
      */
     private String originalQuery;
     /**
-     * This is only used by the Spring Data JPA extension, due to Spring's Query annotation allowing a custom count query
-     * See https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html#jpa.query-methods.at-query.native
+     * This is only used by the Spring Data JPA extension, due to Spring's Query annotation allowing a custom count
+     * query See
+     * https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html#jpa.query-methods.at-query.native
      * Otherwise we do not use this, and rely on ORM to generate count queries
      */
     protected String customCountQueryForSpring;
@@ -79,8 +80,7 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString,
-            String customCountQueryForSpring,
-            Class<?> projectionType) {
+            String customCountQueryForSpring, Class<?> projectionType) {
         this.session = previousQuery.session;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
@@ -107,7 +107,8 @@ public class CommonPanacheQueryImpl<Entity> {
         String lowerCasedTrimmedQuery = PanacheJpaUtil.trimForAnalysis(selectQuery);
         if (lowerCasedTrimmedQuery.startsWith("select new ")
                 || lowerCasedTrimmedQuery.startsWith("select distinct new ")) {
-            throw new PanacheQueryException("Unable to perform a projection on a 'select [distinct]? new' query: " + query);
+            throw new PanacheQueryException(
+                    "Unable to perform a projection on a 'select [distinct]? new' query: " + query);
         }
 
         // If the query starts with a select clause, we pass it on to ORM which can handle that via a projection type
@@ -130,11 +131,10 @@ public class CommonPanacheQueryImpl<Entity> {
         // so the projection class must have only one constructor,
         // and the application must be built with parameter names.
         // TODO: Maybe this should be improved some days ...
-        Constructor<?> constructor = getConstructor(type); //type.getDeclaredConstructors()[0];
+        Constructor<?> constructor = getConstructor(type); // type.getDeclaredConstructors()[0];
         selectClause.append("new ").append(type.getName()).append(" (");
         String parametersListStr = Stream.of(constructor.getParameters())
-                .map(parameter -> getParameterName(type, parentParameter, parameter))
-                .collect(Collectors.joining(","));
+                .map(parameter -> getParameterName(type, parentParameter, parameter)).collect(Collectors.joining(","));
         selectClause.append(parametersListStr);
         selectClause.append(") ");
         return selectClause;
@@ -151,13 +151,14 @@ public class CommonPanacheQueryImpl<Entity> {
             parameterName = getNameFromProjectedFieldName(parameter);
         } else if (!parameter.isNamePresent()) {
             throw new PanacheQueryException(
-                    "Your application must be built with parameter names, this should be the default if" +
-                            " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
+                    "Your application must be built with parameter names, this should be the default if"
+                            + " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
         } else {
             // Check if class field with same parameter name exists and contains @ProjectFieldName annotation
             try {
                 Field field = parentType.getDeclaredField(parameter.getName());
-                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field) : parameter.getName();
+                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field)
+                        : parameter.getName();
             } catch (NoSuchFieldException e) {
                 parameterName = parameter.getName();
             }
@@ -245,12 +246,12 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private void checkPagination() {
         if (page == null) {
-            throw new UnsupportedOperationException("Cannot call a page related method, " +
-                    "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
         if (range != null) {
-            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
-                    "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
     }
 
@@ -336,8 +337,9 @@ public class CommonPanacheQueryImpl<Entity> {
         SelectionQuery hibernateQuery = createQuery();
         try (NonThrowingCloseable c = applyFilters()) {
             // Yes, there's a much nicer hibernateQuery.uniqueResultOptional() BUT
-            //  it throws org.hibernate.NonUniqueResultException instead of a jakarta.persistence.NonUniqueResultException
-            //  and at this point changing it would be a breaking change >_<
+            // it throws org.hibernate.NonUniqueResultException instead of a
+            // jakarta.persistence.NonUniqueResultException
+            // and at this point changing it would be a breaking change >_<
             return Optional.ofNullable((T) hibernateQuery.getSingleResultOrNull());
         }
     }
@@ -353,7 +355,7 @@ public class CommonPanacheQueryImpl<Entity> {
             hibernateQuery.setFirstResult(page.index * page.size);
             hibernateQuery.setMaxResults(page.size);
         } else {
-            //no-op
+            // no-op
         }
 
         return hibernateQuery;
@@ -367,7 +369,7 @@ public class CommonPanacheQueryImpl<Entity> {
         } else if (page != null) {
             hibernateQuery.setFirstResult(page.index * page.size);
         } else {
-            //no-op
+            // no-op
         }
         hibernateQuery.setMaxResults(maxResults);
 
@@ -382,7 +384,8 @@ public class CommonPanacheQueryImpl<Entity> {
             hibernateQuery = session.createNamedSelectionQuery(namedQuery, projectionType);
         } else {
             try {
-                hibernateQuery = session.createSelectionQuery(orderBy != null ? query + orderBy : query, projectionType);
+                hibernateQuery = session.createSelectionQuery(orderBy != null ? query + orderBy : query,
+                        projectionType);
             } catch (RuntimeException x) {
                 throw NamedQueryUtil.checkForNamedQueryMistake(x, originalQuery);
             }
@@ -440,9 +443,9 @@ public class CommonPanacheQueryImpl<Entity> {
             // In theory we never use a Query, but who knows.
             return ((org.hibernate.query.Query) hibernateQuery).getQueryString();
         } else {
-            throw new IllegalArgumentException("Unexpected Query class: '" + hibernateQuery.getClass().getName() + "', where '"
-                    + SqmQuery.class.getName() + "' or '"
-                    + org.hibernate.query.Query.class + "' is expected.");
+            throw new IllegalArgumentException(
+                    "Unexpected Query class: '" + hibernateQuery.getClass().getName() + "', where '"
+                            + SqmQuery.class.getName() + "' or '" + org.hibernate.query.Query.class + "' is expected.");
         }
     }
 }

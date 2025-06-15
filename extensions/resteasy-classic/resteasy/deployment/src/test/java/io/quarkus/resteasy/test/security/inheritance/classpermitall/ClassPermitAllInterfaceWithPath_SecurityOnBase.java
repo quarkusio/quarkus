@@ -34,6 +34,7 @@ public interface ClassPermitAllInterfaceWithPath_SecurityOnBase {
     @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + CLASS_PERMIT_ALL_PATH)
     ClassPermitAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_ClassPermitAll();
 
-    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE
+            + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
     ClassPermitAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_ClassPermitAllMethodPermitAll();
 }

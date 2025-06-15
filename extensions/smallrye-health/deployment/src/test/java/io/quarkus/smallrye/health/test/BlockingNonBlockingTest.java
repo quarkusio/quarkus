@@ -28,25 +28,20 @@ class BlockingNonBlockingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BlockingHealthCheck.class, Routes.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BlockingHealthCheck.class, Routes.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     void testRegisterHealthOnBlockingThreadStep1() {
         // initial startup health blocking call on worker thread
-        given()
-                .when().get("/start-health")
-                .then().statusCode(200);
+        given().when().get("/start-health").then().statusCode(200);
 
         try {
             RestAssured.defaultParser = Parser.JSON;
             // repeat the call a few times since the block isn't always logged
             for (int i = 0; i < 3; i++) {
-                RestAssured.when().get("/q/health").then()
-                        .body("status", is("UP"),
-                                "checks.status", contains("UP"),
-                                "checks.name", contains("blocking"));
+                RestAssured.when().get("/q/health").then().body("status", is("UP"), "checks.status", contains("UP"),
+                        "checks.name", contains("blocking"));
             }
         } finally {
             RestAssured.reset();

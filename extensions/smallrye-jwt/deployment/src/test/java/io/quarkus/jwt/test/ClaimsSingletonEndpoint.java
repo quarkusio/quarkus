@@ -35,6 +35,7 @@ public class ClaimsSingletonEndpoint {
     @Path("claims")
     @Produces(MediaType.TEXT_PLAIN)
     public String verifyGroups() {
-        return upn.getValue().getString() + ":" + groups.get().stream().collect(Collectors.joining(",")) + ":" + rawToken.get();
+        return upn.getValue().getString() + ":" + groups.get().stream().collect(Collectors.joining(",")) + ":"
+                + rawToken.get();
     }
 }

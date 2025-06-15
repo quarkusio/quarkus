@@ -17,9 +17,7 @@ public class SinglePersistenceUnitCdiPersistenceUnitUtilTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addAsResource("application.properties"));
 
     @Inject
     PersistenceUnitUtil persistenceUnitUtil;

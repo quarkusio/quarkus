@@ -13,8 +13,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 
 /**
- * Bears collected intercepted methods annotated with registered security annotation.
- * Security interceptor needs to be created and applied for each intercepted method.
+ * Bears collected intercepted methods annotated with registered security annotation. Security interceptor needs to be
+ * created and applied for each intercepted method.
  *
  * @see EagerSecurityInterceptorBindingBuildItem for more information on security filters
  */
@@ -31,8 +31,8 @@ public final class EagerSecurityInterceptorMethodsBuildItem extends MultiBuildIt
     final DotName interceptorBinding;
 
     /**
-     * If this interceptor is always accompanied by {@link io.quarkus.security.spi.runtime.SecurityCheck}.
-     * For example, we know that endpoint annotated with {@link HttpAuthenticationMechanism} is always secured.
+     * If this interceptor is always accompanied by {@link io.quarkus.security.spi.runtime.SecurityCheck}. For example,
+     * we know that endpoint annotated with {@link HttpAuthenticationMechanism} is always secured.
      */
     private final boolean requiresSecurityCheck;
 
@@ -47,7 +47,8 @@ public final class EagerSecurityInterceptorMethodsBuildItem extends MultiBuildIt
         return bindingValueToInterceptedMethods.values().stream().flatMap(Collection::stream);
     }
 
-    public static Map<MethodInfo, Boolean> collectInterceptedMethods(List<EagerSecurityInterceptorMethodsBuildItem> items) {
+    public static Map<MethodInfo, Boolean> collectInterceptedMethods(
+            List<EagerSecurityInterceptorMethodsBuildItem> items) {
         Map<MethodInfo, Boolean> result = new HashMap<>();
         for (var item : items) {
             item.interceptedMethods().forEach(mi -> {

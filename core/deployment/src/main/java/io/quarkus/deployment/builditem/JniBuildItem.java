@@ -10,8 +10,8 @@ public final class JniBuildItem extends MultiBuildItem {
     private final List<String> libraryPaths;
 
     /**
-     * @deprecated This method was previously used to enable JNI from Quarkus extensions, but JNI is always enabled starting
-     *             from GraalVM 19.3.1.
+     * @deprecated This method was previously used to enable JNI from Quarkus extensions, but JNI is always enabled
+     *             starting from GraalVM 19.3.1.
      */
     @Deprecated
     public JniBuildItem() {

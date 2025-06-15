@@ -22,28 +22,17 @@ public class MultiValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyRoutes.class));
 
     @Test
     public void test() {
 
         // Valid parameter
-        given()
-                .queryParam("name", "neo")
-                .when()
-                .get("/query")
-                .then().statusCode(200);
+        given().queryParam("name", "neo").when().get("/query").then().statusCode(200);
 
         // Input parameter violation - JSON
-        given()
-                .header("Accept", "application/json")
-                .queryParam("name", "doesNotMatch")
-                .when()
-                .get("/query")
-                .then().statusCode(400)
-                .body("title", containsString("Constraint Violation"))
-                .body("status", is(400))
+        given().header("Accept", "application/json").queryParam("name", "doesNotMatch").when().get("/query").then()
+                .statusCode(400).body("title", containsString("Constraint Violation")).body("status", is(400))
                 .body("detail", containsString("validation constraint violations"))
                 .body("violations[0].field", containsString("name"))
                 .body("violations[0].message", is(not(emptyString())));

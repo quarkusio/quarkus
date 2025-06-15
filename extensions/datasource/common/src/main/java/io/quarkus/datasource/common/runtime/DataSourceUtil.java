@@ -32,18 +32,17 @@ public final class DataSourceUtil {
             return List.of("quarkus.datasource." + radical);
         } else {
             // Two possible syntaxes: with or without quotes
-            return List.of(
-                    "quarkus.datasource.\"" + datasourceName + "\"." + radical,
+            return List.of("quarkus.datasource.\"" + datasourceName + "\"." + radical,
                     "quarkus.datasource." + datasourceName + "." + radical);
         }
     }
 
     public static ConfigurationException dataSourceNotConfigured(String dataSourceName) {
-        return new ConfigurationException(String.format(Locale.ROOT,
-                "Datasource '%s' is not configured."
-                        + " To solve this, configure datasource '%s'."
-                        + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                dataSourceName, dataSourceName),
+        return new ConfigurationException(
+                String.format(Locale.ROOT,
+                        "Datasource '%s' is not configured." + " To solve this, configure datasource '%s'."
+                                + " Refer to https://quarkus.io/guides/datasource for guidance.",
+                        dataSourceName, dataSourceName),
                 Set.of(dataSourcePropertyKey(dataSourceName, "db-kind"),
                         dataSourcePropertyKey(dataSourceName, "username"),
                         dataSourcePropertyKey(dataSourceName, "password"),
@@ -51,24 +50,21 @@ public final class DataSourceUtil {
     }
 
     /**
-     * @deprecated Simply call {@code io.quarkus.arc.ClientProxy#unwrap(Object)} on a datasource bean instance:
-     *             it will throw a similar exception, with more details and an actionable message.
+     * @deprecated Simply call {@code io.quarkus.arc.ClientProxy#unwrap(Object)} on a datasource bean instance: it will
+     *             throw a similar exception, with more details and an actionable message.
      */
     @Deprecated
     public static ConfigurationException dataSourceInactive(String dataSourceName) {
-        return new ConfigurationException(dataSourceInactiveReasonDeactivated(dataSourceName),
-                Set.of(dataSourcePropertyKey(dataSourceName, "db-kind"),
-                        dataSourcePropertyKey(dataSourceName, "username"),
-                        dataSourcePropertyKey(dataSourceName, "password"),
-                        dataSourcePropertyKey(dataSourceName, "jdbc.url")));
+        return new ConfigurationException(dataSourceInactiveReasonDeactivated(dataSourceName), Set.of(
+                dataSourcePropertyKey(dataSourceName, "db-kind"), dataSourcePropertyKey(dataSourceName, "username"),
+                dataSourcePropertyKey(dataSourceName, "password"), dataSourcePropertyKey(dataSourceName, "jdbc.url")));
     }
 
     public static String dataSourceInactiveReasonDeactivated(String dataSourceName) {
-        return String.format(Locale.ROOT,
-                "Datasource '%s' was deactivated through configuration properties."
-                        + " To activate the datasource, set configuration property '%s' to 'true' and configure datasource '%s'."
-                        + " Refer to https://quarkus.io/guides/datasource for guidance.",
-                dataSourceName, dataSourcePropertyKey(dataSourceName, "active"), dataSourceName);
+        return String.format(Locale.ROOT, "Datasource '%s' was deactivated through configuration properties."
+                + " To activate the datasource, set configuration property '%s' to 'true' and configure datasource '%s'."
+                + " Refer to https://quarkus.io/guides/datasource for guidance.", dataSourceName,
+                dataSourcePropertyKey(dataSourceName, "active"), dataSourceName);
     }
 
     public static String dataSourceInactiveReasonUrlMissing(String dataSourceName, String urlPropertyRadical) {

@@ -25,8 +25,7 @@ import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-credentials-provider-alias", password = "secret123!", formats = { Format.JKS,
-                Format.PKCS12 }, aliases = @Alias(name = "my-alias", password = "alias-secret123!", subjectAlternativeNames = "dns:acme.org"))
-})
+                Format.PKCS12 }, aliases = @Alias(name = "my-alias", password = "alias-secret123!", subjectAlternativeNames = "dns:acme.org")) })
 public class DefaultJKSTrustStoreWithCredentialsProviderWithAliasTest {
 
     private static final String configuration = """
@@ -36,9 +35,8 @@ public class DefaultJKSTrustStoreWithCredentialsProviderWithAliasTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(MyCredentialProvider.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyCredentialProvider.class)
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject

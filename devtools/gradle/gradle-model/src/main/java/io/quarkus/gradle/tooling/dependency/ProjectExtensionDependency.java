@@ -11,21 +11,12 @@ import io.quarkus.maven.dependency.ArtifactKey;
 public class ProjectExtensionDependency extends ExtensionDependency<Project> {
     private final Boolean isIncludedBuild;
 
-    public ProjectExtensionDependency(
-            Project extensionProject,
-            Project deploymentModule,
-            Boolean isIncludedBuild,
-            List<Dependency> conditionalDependencies,
-            List<Dependency> conditionalDevDeps,
+    public ProjectExtensionDependency(Project extensionProject, Project deploymentModule, Boolean isIncludedBuild,
+            List<Dependency> conditionalDependencies, List<Dependency> conditionalDevDeps,
             List<ArtifactKey> dependencyConditions) {
-        super(DefaultModuleVersionIdentifier.newId(
-                extensionProject.getGroup().toString(),
-                extensionProject.getName(),
-                extensionProject.getVersion().toString()),
-                deploymentModule,
-                conditionalDependencies,
-                conditionalDevDeps,
-                dependencyConditions);
+        super(DefaultModuleVersionIdentifier.newId(extensionProject.getGroup().toString(), extensionProject.getName(),
+                extensionProject.getVersion().toString()), deploymentModule, conditionalDependencies,
+                conditionalDevDeps, dependencyConditions);
 
         this.isIncludedBuild = isIncludedBuild;
     }

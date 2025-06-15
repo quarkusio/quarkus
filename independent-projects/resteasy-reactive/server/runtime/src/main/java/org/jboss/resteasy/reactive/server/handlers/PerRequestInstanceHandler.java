@@ -13,7 +13,6 @@ public class PerRequestInstanceHandler implements ServerRestHandler {
 
     /**
      * CDI Manages the lifecycle. If this is a per request resource then this will be a client proxy
-     *
      */
     private final BeanFactory<Object> factory;
     private final Function<Object, Object> clientProxyUnwrapper;
@@ -32,8 +31,7 @@ public class PerRequestInstanceHandler implements ServerRestHandler {
         if (clientProxyUnwrapper != null) {
             unwrapped = clientProxyUnwrapper.apply(unwrapped);
         }
-        ((ResteasyReactiveInjectionTarget) unwrapped)
-                .__quarkus_rest_inject(requestContext);
+        ((ResteasyReactiveInjectionTarget) unwrapped).__quarkus_rest_inject(requestContext);
         requestContext.registerCompletionCallback(new CompletionCallback() {
             @Override
             public void onComplete(Throwable throwable) {

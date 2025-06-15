@@ -5,7 +5,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request method
- *
  */
 public class RequestMethodAttribute implements ExchangeAttribute {
 
@@ -25,7 +24,8 @@ public class RequestMethodAttribute implements ExchangeAttribute {
 
     @Override
     public String readAttribute(final RoutingContext exchange) {
-        return useOriginalRequest ? OriginalRequestContext.getMethod(exchange).name() : exchange.request().method().name();
+        return useOriginalRequest ? OriginalRequestContext.getMethod(exchange).name()
+                : exchange.request().method().name();
     }
 
     @Override

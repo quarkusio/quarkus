@@ -15,28 +15,23 @@ public class ValidationFailuresTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Movie.class, MovieExtensions.class)
-                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
-                            + "{@java.lang.Long age}"
-                            // Property not found
+            .withApplicationRoot((jar) -> jar.addClasses(Movie.class, MovieExtensions.class).addAsResource(
+                    new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}" + "{@java.lang.Long age}"
+                    // Property not found
                             + "{movie.foo}"
                             // Name ok but incorrect number of parameters
                             + "{movie.getName('foo')}"
                             // Name and number of params ok; the parameter type does not match
-                            + "{movie.findService(age)}"
-                            + "{movie.findService(10l)} "
+                            + "{movie.findService(age)}" + "{movie.findService(10l)} "
                             // Name and number of params ok; the parameter type does not match
                             + "{movie.findServices(age,name)}"
                             // Name and number of params ok for extension method; the parameter type does not match
-                            + "{movie.toNumber(age)}"
-                            + "{#each movie.mainCharacters}{it.boom(1)}{/}"
+                            + "{movie.toNumber(age)}" + "{#each movie.mainCharacters}{it.boom(1)}{/}"
                             // Template extension method must accept one param
-                            + "{movie.toNumber}"
-                            + "{#each movie}{it}{/each}"
+                            + "{movie.toNumber}" + "{#each movie}{it}{/each}"
                             // Bean not found
                             + "{movie.findService(inject:ageBean)}"),
-                            "templates/movie.html"))
+                    "templates/movie.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;
@@ -59,7 +54,8 @@ public class ValidationFailuresTest {
                 assertTrue(te.getMessage().contains("movie.toNumber"), te.getMessage());
                 assertTrue(te.getMessage().contains("inject:ageBean"), te.getMessage());
                 assertTrue(
-                        te.getMessage().contains("Unsupported iterable type found: io.quarkus.qute.deployment.typesafe.Movie"),
+                        te.getMessage()
+                                .contains("Unsupported iterable type found: io.quarkus.qute.deployment.typesafe.Movie"),
                         te.getMessage());
             });
 

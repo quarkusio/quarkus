@@ -11,10 +11,8 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 public class RESTEasyReactiveCodestartsTest {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("rest", "rest-qute")
-            .languages(JAVA, KOTLIN)
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("rest", "rest-qute")
+            .languages(JAVA, KOTLIN).build();
 
     @Test
     void testContent() throws Throwable {

@@ -29,7 +29,8 @@ final class DeleteIIOImageProvider {
 
     @Substitute
     public IIOImage readFrom(Class<IIOImage> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return null;
     }
 
@@ -39,15 +40,15 @@ final class DeleteIIOImageProvider {
     }
 
     @Substitute
-    public void writeTo(IIOImage iioImage, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(IIOImage iioImage, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
 
     }
 
     @Substitute
     public CompletionStage<Void> asyncWriteTo(IIOImage t, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders,
-            AsyncOutputStream entityStream) {
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, AsyncOutputStream entityStream) {
         return CompletableFuture.completedFuture(null);
     }
 }

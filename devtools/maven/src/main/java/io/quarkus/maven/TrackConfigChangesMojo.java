@@ -28,12 +28,11 @@ import io.quarkus.maven.dependency.DependencyFlags;
 import io.quarkus.runtime.LaunchMode;
 
 /**
- * Maven goal that is executed before the {@link BuildMojo}.
- * The goal looks for a file that contains build time configuration options read during the previous build.
- * If that file exists, the goal will check whether the configuration options used during the previous build
- * have changed in the current configuration and will persist their current values to another file, so that
- * both configuration files could be compared by tools caching build goal outcomes to check whether the previous
- * outcome of the {@link BuildMojo} needs to be rebuilt.
+ * Maven goal that is executed before the {@link BuildMojo}. The goal looks for a file that contains build time
+ * configuration options read during the previous build. If that file exists, the goal will check whether the
+ * configuration options used during the previous build have changed in the current configuration and will persist their
+ * current values to another file, so that both configuration files could be compared by tools caching build goal
+ * outcomes to check whether the previous outcome of the {@link BuildMojo} needs to be rebuilt.
  */
 @Mojo(name = "track-config-changes", defaultPhase = LifecyclePhase.PROCESS_RESOURCES, requiresDependencyResolution = ResolutionScope.COMPILE_PLUS_RUNTIME, threadSafe = true)
 public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
@@ -130,11 +129,9 @@ public class TrackConfigChangesMojo extends QuarkusBootstrapMojo {
 
                 final Class<?> codeGenerator = deploymentClassLoader.loadClass("io.quarkus.deployment.CodeGenerator");
                 final Method dumpConfig = codeGenerator.getMethod("dumpCurrentConfigValues", ApplicationModel.class,
-                        String.class,
-                        Properties.class, QuarkusClassLoader.class, Properties.class, Path.class);
-                dumpConfig.invoke(null, curatedApplication.getApplicationModel(),
-                        launchMode.name(), getBuildSystemProperties(true),
-                        deploymentClassLoader, compareProps, targetFile);
+                        String.class, Properties.class, QuarkusClassLoader.class, Properties.class, Path.class);
+                dumpConfig.invoke(null, curatedApplication.getApplicationModel(), launchMode.name(),
+                        getBuildSystemProperties(true), deploymentClassLoader, compareProps, targetFile);
             }
 
             if (dumpDependencies) {

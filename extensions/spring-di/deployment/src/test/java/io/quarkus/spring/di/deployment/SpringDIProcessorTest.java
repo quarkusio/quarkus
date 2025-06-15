@@ -78,8 +78,7 @@ class SpringDIProcessorTest {
         });
 
         Assertions.assertThrows(DefinitionException.class, () -> {
-            final ClassInfo target = index
-                    .getClassByName(DotName.createSimple(ConflictStereotypeBean.class.getName()));
+            final ClassInfo target = index.getClassByName(DotName.createSimple(ConflictStereotypeBean.class.getName()));
             processor.getAnnotationsToAdd(target, scopes, null);
         });
     }
@@ -92,9 +91,8 @@ class SpringDIProcessorTest {
 
         final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
-        final Set<AnnotationInstance> expected = setOf(
-                AnnotationInstance.create(DotName.createSimple(ApplicationScoped.class.getName()), target,
-                        Collections.emptyList()));
+        final Set<AnnotationInstance> expected = setOf(AnnotationInstance
+                .create(DotName.createSimple(ApplicationScoped.class.getName()), target, Collections.emptyList()));
         assertEquals(expected, ret);
     }
 
@@ -105,9 +103,8 @@ class SpringDIProcessorTest {
 
         final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
-        final Set<AnnotationInstance> expected = setOf(
-                AnnotationInstance.create(DotName.createSimple(RequestScoped.class.getName()), target,
-                        Collections.emptyList()));
+        final Set<AnnotationInstance> expected = setOf(AnnotationInstance
+                .create(DotName.createSimple(RequestScoped.class.getName()), target, Collections.emptyList()));
         assertEquals(expected, ret);
     }
 
@@ -118,9 +115,8 @@ class SpringDIProcessorTest {
 
         final Set<AnnotationInstance> ret = processor.getAnnotationsToAdd(target, scopes, null);
 
-        final Set<AnnotationInstance> expected = setOf(
-                AnnotationInstance.create(DotName.createSimple(Singleton.class.getName()), target,
-                        Collections.emptyList()));
+        final Set<AnnotationInstance> expected = setOf(AnnotationInstance
+                .create(DotName.createSimple(Singleton.class.getName()), target, Collections.emptyList()));
         assertEquals(expected, ret);
     }
 
@@ -180,8 +176,8 @@ class SpringDIProcessorTest {
 
         final Set<AnnotationInstance> expected = setOf(
                 AnnotationInstance.create(DotNames.PRODUCES, target, Collections.emptyList()),
-                AnnotationInstance.create(DotName.createSimple(Named.class.getName()), target,
-                        Collections.singletonList(AnnotationValue.createStringValue("value", "explicitSingletonBean"))));
+                AnnotationInstance.create(DotName.createSimple(Named.class.getName()), target, Collections
+                        .singletonList(AnnotationValue.createStringValue("value", "explicitSingletonBean"))));
         assertEquals(expected, ret);
     }
 

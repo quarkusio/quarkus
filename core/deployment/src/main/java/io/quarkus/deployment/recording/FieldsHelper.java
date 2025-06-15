@@ -16,7 +16,7 @@ final class FieldsHelper {
         }
     }
 
-    //Returns the matching Field, or null if not existing
+    // Returns the matching Field, or null if not existing
     public Field getDeclaredField(final String name) {
         return fields.get(name);
     }

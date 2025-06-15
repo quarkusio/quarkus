@@ -24,13 +24,16 @@ public class MicrometerMetricsFactory implements MetricsFactory {
 
     @Override
     public boolean metricsSystemSupported(String name) {
-        return MetricsFactory.MICROMETER.equals(name) ||
-                (MetricsFactory.MP_METRICS.equals(name) && config.binder().mpMetrics().enabled().orElse(false));
+        return MetricsFactory.MICROMETER.equals(name)
+                || (MetricsFactory.MP_METRICS.equals(name) && config.binder().mpMetrics().enabled().orElse(false));
     }
 
     /**
-     * @param name The name of the metric (required)
-     * @param type The scope or type of the metric (ignored)
+     * @param name
+     *        The name of the metric (required)
+     * @param type
+     *        The scope or type of the metric (ignored)
+     *
      * @return a fluid builder for registering metrics.
      */
     @Override
@@ -69,77 +72,51 @@ public class MicrometerMetricsFactory implements MetricsFactory {
         @Override
         public void buildCounter(Supplier<Number> countFunction) {
             FunctionCounter.builder(name, countFunction, x -> countFunction.get().doubleValue())
-                    .description(description)
-                    .baseUnit(unit)
-                    .tags(tags)
-                    .register(globalRegistry);
+                    .description(description).baseUnit(unit).tags(tags).register(globalRegistry);
         }
 
         @Override
         public <T, R extends Number> void buildCounter(T obj, Function<T, R> countFunction) {
-            FunctionCounter.builder(name, obj, x -> countFunction.apply(x).doubleValue())
-                    .description(description)
-                    .baseUnit(unit)
-                    .tags(tags)
-                    .register(globalRegistry);
+            FunctionCounter.builder(name, obj, x -> countFunction.apply(x).doubleValue()).description(description)
+                    .baseUnit(unit).tags(tags).register(globalRegistry);
         }
 
         @Override
         public void buildGauge(Supplier<Number> gaugeFunction) {
-            Gauge.builder(name, gaugeFunction)
-                    .description(description)
-                    .baseUnit(unit)
-                    .tags(tags)
-                    .strongReference(true)
+            Gauge.builder(name, gaugeFunction).description(description).baseUnit(unit).tags(tags).strongReference(true)
                     .register(globalRegistry);
         }
 
         @Override
         public <T, R extends Number> void buildGauge(T obj, Function<T, R> gaugeFunction) {
-            Gauge.builder(name, obj, x -> gaugeFunction.apply(obj).doubleValue())
-                    .description(description)
-                    .baseUnit(unit)
-                    .tags(tags)
-                    .strongReference(true)
-                    .register(globalRegistry);
+            Gauge.builder(name, obj, x -> gaugeFunction.apply(obj).doubleValue()).description(description)
+                    .baseUnit(unit).tags(tags).strongReference(true).register(globalRegistry);
         }
 
         @Override
         public TimeRecorder buildTimer() {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = Timer.builder(name).description(description).tags(tags).register(globalRegistry);
 
             return new MicrometerTimeRecorder(timer);
         }
 
         @Override
         public Runnable buildTimer(Runnable f) {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = Timer.builder(name).description(description).tags(tags).register(globalRegistry);
 
             return timer.wrap(f);
         }
 
         @Override
         public <T> Callable<T> buildTimer(Callable<T> f) {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = Timer.builder(name).description(description).tags(tags).register(globalRegistry);
 
             return timer.wrap(f);
         }
 
         @Override
         public <T> Supplier<T> buildTimer(Supplier<T> f) {
-            Timer timer = Timer.builder(name)
-                    .description(description)
-                    .tags(tags)
-                    .register(globalRegistry);
+            Timer timer = Timer.builder(name).description(description).tags(tags).register(globalRegistry);
 
             return timer.wrap(f);
         }

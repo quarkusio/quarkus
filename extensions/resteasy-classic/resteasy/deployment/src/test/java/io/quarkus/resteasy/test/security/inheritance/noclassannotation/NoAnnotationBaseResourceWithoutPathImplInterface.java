@@ -19,7 +19,8 @@ import jakarta.ws.rs.Path;
 
 import io.vertx.core.json.JsonObject;
 
-public class NoAnnotationBaseResourceWithoutPathImplInterface extends NoAnnotationParentResourceWithoutPathImplInterface {
+public class NoAnnotationBaseResourceWithoutPathImplInterface
+        extends NoAnnotationParentResourceWithoutPathImplInterface {
 
     @Override
     @POST
@@ -53,29 +54,29 @@ public class NoAnnotationBaseResourceWithoutPathImplInterface extends NoAnnotati
 
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_NoSecurityAnnotation() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_BASE + NO_SECURITY_ANNOTATION_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + NO_SECURITY_ANNOTATION_PATH);
     }
 
     @PermitAll
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_MethodPermitAll() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_BASE + METHOD_PERMIT_ALL_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + METHOD_PERMIT_ALL_PATH);
     }
 
     @DenyAll
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_MethodDenyAll() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_BASE + METHOD_DENY_ALL_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + METHOD_DENY_ALL_PATH);
     }
 
     @RolesAllowed("admin")
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_MethodRolesAllowed() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_BASE + METHOD_ROLES_ALLOWED_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + METHOD_ROLES_ALLOWED_PATH);
     }
 
     @Override

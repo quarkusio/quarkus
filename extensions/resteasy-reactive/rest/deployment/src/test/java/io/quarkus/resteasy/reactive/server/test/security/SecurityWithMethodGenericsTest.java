@@ -33,25 +33,18 @@ public class SecurityWithMethodGenericsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityProvider.class,
-                            TestIdentityController.class,
-                            BaseResource.class, AuthenticatedResource.class,
-                            CustomServerDefaultTextPlainBodyHandler.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TestIdentityProvider.class, TestIdentityController.class,
+                    BaseResource.class, AuthenticatedResource.class, CustomServerDefaultTextPlainBodyHandler.class));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
     public void test() {
-        requestWithBasicAuth().get("/auth/allow").then().statusCode(200)
-                .body(is("allow"));
-        requestWithBasicAuth().contentType(MediaType.TEXT_PLAIN).body("12345")
-                .post("/auth/generic").then()
+        requestWithBasicAuth().get("/auth/allow").then().statusCode(200).body(is("allow"));
+        requestWithBasicAuth().contentType(MediaType.TEXT_PLAIN).body("12345").post("/auth/generic").then()
                 .statusCode(200);
         requestWithBasicAuth().contentType(MediaType.TEXT_PLAIN).body("54321").post("/auth/specific").then()
                 .statusCode(200);

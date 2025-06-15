@@ -23,10 +23,9 @@ import io.vertx.core.http.WebSocketClient;
 public class BroadcastConnectionTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(LoConnection.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(LoConnection.class);
+    });
 
     @TestHTTPResource("lo-connection")
     URI loConnectionUri;
@@ -64,8 +63,7 @@ public class BroadcastConnectionTest {
         WebSocketClient client = vertx.createWebSocketClient();
         CountDownLatch connectedLatch = new CountDownLatch(1);
         CountDownLatch messageLatch = new CountDownLatch(1);
-        client
-                .connect(loConnectionUri.getPort(), loConnectionUri.getHost(), loConnectionUri.getPath() + "/" + clientId)
+        client.connect(loConnectionUri.getPort(), loConnectionUri.getHost(), loConnectionUri.getPath() + "/" + clientId)
                 .onComplete(r -> {
                     if (r.succeeded()) {
                         WebSocket ws = r.result();

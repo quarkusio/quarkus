@@ -8,8 +8,8 @@ import io.smallrye.config.WithDefault;
 public interface ProbeConfig {
 
     /**
-     * The port number to use when configuring the {@literal http get} action. If not configured, the port
-     * corresponding to the {@code httpActionPortName} will be used.
+     * The port number to use when configuring the {@literal http get} action. If not configured, the port corresponding
+     * to the {@code httpActionPortName} will be used.
      */
     Optional<Integer> httpActionPort();
 
@@ -21,9 +21,9 @@ public interface ProbeConfig {
     /**
      * The http path to use for the probe. For this to work, the container port also needs to be set.
      * <p>
-     * Assuming the container port has been set (as per above comment), if execAction or tcpSocketAction are not set,
-     * an HTTP probe will be used automatically even if no path is set (which will result in the root path being
-     * used). If Smallrye Health is used, the path will automatically be set according to the health check path.
+     * Assuming the container port has been set (as per above comment), if execAction or tcpSocketAction are not set, an
+     * HTTP probe will be used automatically even if no path is set (which will result in the root path being used). If
+     * Smallrye Health is used, the path will automatically be set according to the health check path.
      */
     Optional<String> httpActionPath();
 

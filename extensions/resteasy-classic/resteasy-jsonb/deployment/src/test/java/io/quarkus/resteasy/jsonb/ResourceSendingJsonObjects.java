@@ -27,10 +27,8 @@ public class ResourceSendingJsonObjects {
     @GET
     @Path("/arrays")
     public List<JsonArray> getJsonArrays() {
-        return Collections.singletonList(
-                new JsonArray()
-                        .add(new JsonObject().put("name", "bob").put("kind", "cat"))
-                        .add(new JsonObject().put("name", "titi").put("kind", "bird")));
+        return Collections.singletonList(new JsonArray().add(new JsonObject().put("name", "bob").put("kind", "cat"))
+                .add(new JsonObject().put("name", "titi").put("kind", "bird")));
     }
 
     @POST

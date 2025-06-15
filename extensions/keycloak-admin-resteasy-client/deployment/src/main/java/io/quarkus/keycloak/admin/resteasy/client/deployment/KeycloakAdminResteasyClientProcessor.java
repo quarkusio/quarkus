@@ -33,18 +33,17 @@ public class KeycloakAdminResteasyClientProcessor {
     ReflectiveHierarchyIgnoreWarningBuildItem marker(BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> prod) {
         prod.produce(new AdditionalApplicationArchiveMarkerBuildItem("org/keycloak/admin/client/"));
         prod.produce(new AdditionalApplicationArchiveMarkerBuildItem("org/keycloak/representations"));
-        return new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
-                DotName.createSimple(MultivaluedHashMap.class.getName())));
+        return new ReflectiveHierarchyIgnoreWarningBuildItem(
+                new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+                        DotName.createSimple(MultivaluedHashMap.class.getName())));
     }
 
     @BuildStep
     ReflectiveClassBuildItem reflect() {
-        return ReflectiveClassBuildItem.builder(ResteasyClientBuilderImpl.class, JacksonProvider.class, ProxyBuilderImpl.class,
-                StringListMapDeserializer.class,
-                StringOrArrayDeserializer.class,
-                StringOrArraySerializer.class)
-                .reason(getClass().getName())
-                .methods().build();
+        return ReflectiveClassBuildItem
+                .builder(ResteasyClientBuilderImpl.class, JacksonProvider.class, ProxyBuilderImpl.class,
+                        StringListMapDeserializer.class, StringOrArrayDeserializer.class, StringOrArraySerializer.class)
+                .reason(getClass().getName()).methods().build();
     }
 
     @Record(ExecutionTime.STATIC_INIT)
@@ -64,15 +63,9 @@ public class KeycloakAdminResteasyClientProcessor {
     @BuildStep(onlyIf = KeycloakAdminClientInjectionEnabled.class)
     public void registerKeycloakAdminClientBeans(KeycloakAdminResteasyClientRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
-                .configure(Keycloak.class)
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(Keycloak.class)
                 // use @RequestScoped as we don't want to keep client connection open too long
-                .scope(RequestScoped.class)
-                .setRuntimeInit()
-                .defaultBean()
-                .unremovable()
-                .supplier(recorder.createAdminClient())
-                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
-                .done());
+                .scope(RequestScoped.class).setRuntimeInit().defaultBean().unremovable()
+                .supplier(recorder.createAdminClient()).destroyer(BeanDestroyer.AutoCloseableDestroyer.class).done());
     }
 }

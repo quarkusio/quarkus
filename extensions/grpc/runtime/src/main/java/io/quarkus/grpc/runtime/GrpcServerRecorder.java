@@ -103,8 +103,8 @@ public class GrpcServerRecorder {
         if (!config.server().useSeparateServer()) {
             mainRouter.getValue().route().last().failureHandler(new Handler<>() {
 
-                private final Handler<RoutingContext> errorHandler = new QuarkusErrorHandler(LaunchMode.current().isDevOrTest(),
-                        false, Optional.empty());
+                private final Handler<RoutingContext> errorHandler = new QuarkusErrorHandler(
+                        LaunchMode.current().isDevOrTest(), false, Optional.empty());
 
                 @Override
                 public void handle(RoutingContext event) {
@@ -114,7 +114,8 @@ public class GrpcServerRecorder {
                         // 2. internal error raised during authentication
                         // 3. unrelated failure
                         // if there is an exception on the gRPC route, we should handle it because the most likely cause
-                        // of the failure is authentication; as for the '3.', this is better than having unhandled failures
+                        // of the failure is authentication; as for the '3.', this is better than having unhandled
+                        // failures
                         errorHandler.handle(event);
                     }
                 }
@@ -123,15 +124,13 @@ public class GrpcServerRecorder {
     }
 
     public void initializeGrpcServer(boolean hasNoBindableServiceBeans, BeanContainer beanContainer,
-            RuntimeValue<Vertx> vertxSupplier,
-            RuntimeValue<Router> routerSupplier,
-            GrpcConfiguration cfg,
-            ShutdownContext shutdown,
-            Map<String, List<String>> blockingMethodsPerService,
-            Map<String, List<String>> virtualMethodsPerService,
-            LaunchMode launchMode, boolean securityPresent, Map<Integer, Handler<RoutingContext>> securityHandlers) {
+            RuntimeValue<Vertx> vertxSupplier, RuntimeValue<Router> routerSupplier, GrpcConfiguration cfg,
+            ShutdownContext shutdown, Map<String, List<String>> blockingMethodsPerService,
+            Map<String, List<String>> virtualMethodsPerService, LaunchMode launchMode, boolean securityPresent,
+            Map<Integer, Handler<RoutingContext>> securityHandlers) {
         if (hasNoBindableServiceBeans && LaunchMode.current() != LaunchMode.DEVELOPMENT) {
-            LOGGER.error("Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
+            LOGGER.error(
+                    "Unable to find beans exposing the `BindableService` interface - not starting the gRPC server");
             return; // OK?
         }
 
@@ -154,29 +153,26 @@ public class GrpcServerRecorder {
                 // for reason unknown to me, verticles occasionally get undeployed on dev mode reload
                 if (GrpcServerReloader.getServer() != null || (provider != null && provider.serverAlreadyExists())) {
                     devModeReload(beanContainer.beanInstance(GrpcContainer.class), vertx, configuration, provider,
-                            blockingMethodsPerService,
-                            virtualMethodsPerService, shutdown);
+                            blockingMethodsPerService, virtualMethodsPerService, shutdown);
                 } else {
                     devModeStart(beanContainer.beanInstance(GrpcContainer.class), vertx, configuration, provider,
-                            blockingMethodsPerService,
-                            virtualMethodsPerService, shutdown,
-                            launchMode);
+                            blockingMethodsPerService, virtualMethodsPerService, shutdown, launchMode);
                 }
             } else {
                 prodStart(beanContainer.beanInstance(GrpcContainer.class), vertx, configuration, provider,
-                        blockingMethodsPerService, virtualMethodsPerService,
-                        launchMode);
+                        blockingMethodsPerService, virtualMethodsPerService, launchMode);
             }
         } else {
-            buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService, virtualMethodsPerService,
-                    beanContainer.beanInstance(GrpcContainer.class), launchMode, securityPresent, securityHandlers);
+            buildGrpcServer(vertx, configuration, routerSupplier, shutdown, blockingMethodsPerService,
+                    virtualMethodsPerService, beanContainer.beanInstance(GrpcContainer.class), launchMode,
+                    securityPresent, securityHandlers);
         }
     }
 
     // TODO -- handle XDS
-    private void buildGrpcServer(Vertx vertx, GrpcServerConfiguration configuration, RuntimeValue<Router> routerSupplier,
-            ShutdownContext shutdown, Map<String, List<String>> blockingMethodsPerService,
-            Map<String, List<String>> virtualMethodsPerService,
+    private void buildGrpcServer(Vertx vertx, GrpcServerConfiguration configuration,
+            RuntimeValue<Router> routerSupplier, ShutdownContext shutdown,
+            Map<String, List<String>> blockingMethodsPerService, Map<String, List<String>> virtualMethodsPerService,
             GrpcContainer grpcContainer, LaunchMode launchMode, boolean securityPresent,
             Map<Integer, Handler<RoutingContext>> securityHandlers) {
 
@@ -184,8 +180,7 @@ public class GrpcServerRecorder {
 
         List<ServerBuilderCustomizer<?>> serverBuilderCustomizers = Arc.container()
                 .select(new TypeLiteral<ServerBuilderCustomizer<?>>() {
-                }, Any.Literal.INSTANCE)
-                .stream()
+                }, Any.Literal.INSTANCE).stream()
                 .sorted(Comparator.<ServerBuilderCustomizer<?>, Integer> comparing(ServerBuilderCustomizer::priority))
                 .toList();
 
@@ -209,23 +204,24 @@ public class GrpcServerRecorder {
         CompressionInterceptor compressionInterceptor = prepareCompressionInterceptor(configuration);
 
         for (GrpcServiceDefinition service : toBeRegistered) {
-            ServerServiceDefinition serviceDefinition = serviceWithInterceptors(
-                    vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService, compressionInterceptor,
-                    globalInterceptors, service,
-                    launchMode == LaunchMode.DEVELOPMENT);
+            ServerServiceDefinition serviceDefinition = serviceWithInterceptors(vertx, grpcContainer,
+                    blockingMethodsPerService, virtualMethodsPerService, compressionInterceptor, globalInterceptors,
+                    service, launchMode == LaunchMode.DEVELOPMENT);
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
             GrpcServiceBridge bridge = GrpcServiceBridge.bridge(serviceDefinition);
             bridge.bind(server);
             definitions.add(service.definition);
         }
 
-        boolean reflectionServiceEnabled = configuration.enableReflectionService() || launchMode == LaunchMode.DEVELOPMENT;
+        boolean reflectionServiceEnabled = configuration.enableReflectionService()
+                || launchMode == LaunchMode.DEVELOPMENT;
 
         if (reflectionServiceEnabled) {
             LOGGER.debug("Registering gRPC reflection service");
             ReflectionServiceV1 reflectionServiceV1 = new ReflectionServiceV1(definitions);
             ReflectionServiceV1alpha reflectionServiceV1alpha = new ReflectionServiceV1alpha(definitions);
-            ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(reflectionServiceV1, globalInterceptors);
+            ServerServiceDefinition serviceDefinition = ServerInterceptors.intercept(reflectionServiceV1,
+                    globalInterceptors);
             GrpcServiceBridge bridge = GrpcServiceBridge.bridge(serviceDefinition);
             bridge.bind(server);
             ServerServiceDefinition serviceDefinitionAlpha = ServerInterceptors.intercept(reflectionServiceV1alpha,
@@ -325,15 +321,13 @@ public class GrpcServerRecorder {
 
     private void prodStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
             GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService,
-            Map<String, List<String>> virtualMethodsPerService,
-            LaunchMode launchMode) {
+            Map<String, List<String>> virtualMethodsPerService, LaunchMode launchMode) {
         CompletableFuture<Void> startResult = new CompletableFuture<>();
 
         vertx.deployVerticle(
-                () -> new GrpcServerVerticle(configuration, grpcContainer, provider, launchMode, blockingMethodsPerService,
-                        virtualMethodsPerService),
-                new DeploymentOptions().setInstances(configuration.instances()),
-                result -> {
+                () -> new GrpcServerVerticle(configuration, grpcContainer, provider, launchMode,
+                        blockingMethodsPerService, virtualMethodsPerService),
+                new DeploymentOptions().setInstances(configuration.instances()), result -> {
                     if (result.failed()) {
                         startResult.completeExceptionally(result.cause());
                     } else {
@@ -362,8 +356,8 @@ public class GrpcServerRecorder {
         if (provider != null)
             msg += provider.serverInfo(configuration.host(), port, configuration);
         else
-            msg += String.format("gRPC server on %s:%d [%s]",
-                    configuration.host(), port, "TLS enabled: " + !configuration.plainText());
+            msg += String.format("gRPC server on %s:%d [%s]", configuration.host(), port,
+                    "TLS enabled: " + !configuration.plainText());
         LOGGER.info(msg);
     }
 
@@ -382,12 +376,10 @@ public class GrpcServerRecorder {
 
     private void devModeStart(GrpcContainer grpcContainer, Vertx vertx, GrpcServerConfiguration configuration,
             GrpcBuilderProvider<?> provider, Map<String, List<String>> blockingMethodsPerService,
-            Map<String, List<String>> virtualMethodsPerService,
-            ShutdownContext shutdown,
-            LaunchMode launchMode) {
+            Map<String, List<String>> virtualMethodsPerService, ShutdownContext shutdown, LaunchMode launchMode) {
 
-        Map.Entry<Integer, Server> portToServer = buildServer(vertx, configuration, provider,
-                blockingMethodsPerService, virtualMethodsPerService, grpcContainer, launchMode);
+        Map.Entry<Integer, Server> portToServer = buildServer(vertx, configuration, provider, blockingMethodsPerService,
+                virtualMethodsPerService, grpcContainer, launchMode);
 
         Server server = portToServer.getValue();
         if (provider == null) {
@@ -442,8 +434,8 @@ public class GrpcServerRecorder {
             GrpcServerConfiguration.GrpcServerNettyConfig config = configuration.netty();
             NettyServerBuilder nettyServerBuilder = builder.nettyBuilder();
 
-            config.keepAliveTime().ifPresent(
-                    duration -> nettyServerBuilder.keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
+            config.keepAliveTime()
+                    .ifPresent(duration -> nettyServerBuilder.keepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
 
             config.permitKeepAliveTime().ifPresent(
                     duration -> nettyServerBuilder.permitKeepAliveTime(duration.toNanos(), TimeUnit.NANOSECONDS));
@@ -454,12 +446,8 @@ public class GrpcServerRecorder {
     @SuppressWarnings("rawtypes")
     private void applyTransportSecurityConfig(GrpcServerConfiguration configuration, ServerBuilder builder) {
         if (configuration.transportSecurity() != null) {
-            File cert = configuration.transportSecurity().certificate()
-                    .map(File::new)
-                    .orElse(null);
-            File key = configuration.transportSecurity().key()
-                    .map(File::new)
-                    .orElse(null);
+            File cert = configuration.transportSecurity().certificate().map(File::new).orElse(null);
+            File key = configuration.transportSecurity().key().map(File::new).orElse(null);
             if (cert != null || key != null) {
                 builder.useTransportSecurity(cert, key);
             }
@@ -467,9 +455,8 @@ public class GrpcServerRecorder {
     }
 
     private static boolean hasNoServices(Instance<BindableService> services) {
-        return services.isUnsatisfied()
-                || services.stream().count() == 1
-                        && services.get().bindService().getServiceDescriptor().getName().equals("grpc.health.v1.Health");
+        return services.isUnsatisfied() || services.stream().count() == 1
+                && services.get().bindService().getServiceDescriptor().getName().equals("grpc.health.v1.Health");
     }
 
     private static List<GrpcServiceDefinition> collectServiceDefinitions(Instance<BindableService> services) {
@@ -535,9 +522,8 @@ public class GrpcServerRecorder {
         List<ServerServiceDefinition> servicesWithInterceptors = new ArrayList<>();
         CompressionInterceptor compressionInterceptor = prepareCompressionInterceptor(configuration);
         for (GrpcServiceDefinition service : services) {
-            servicesWithInterceptors.add(
-                    serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService,
-                            compressionInterceptor, globalInterceptors, service, true));
+            servicesWithInterceptors.add(serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService,
+                    virtualMethodsPerService, compressionInterceptor, globalInterceptors, service, true));
         }
 
         // add after actual services, so we don't inspect them for interceptors, etc
@@ -569,16 +555,14 @@ public class GrpcServerRecorder {
     }
 
     public RuntimeValue<ServerInterceptorStorage> initServerInterceptorStorage(
-            Map<String, Set<Class<?>>> perServiceInterceptors,
-            Set<Class<?>> globalInterceptors) {
+            Map<String, Set<Class<?>>> perServiceInterceptors, Set<Class<?>> globalInterceptors) {
         return new RuntimeValue<>(new ServerInterceptorStorage(perServiceInterceptors, globalInterceptors));
     }
 
     @SuppressWarnings("rawtypes")
     private Map.Entry<Integer, Server> buildServer(Vertx vertx, GrpcServerConfiguration configuration,
             GrpcBuilderProvider provider, Map<String, List<String>> blockingMethodsPerService,
-            Map<String, List<String>> virtualMethodsPerService,
-            GrpcContainer grpcContainer, LaunchMode launchMode) {
+            Map<String, List<String>> virtualMethodsPerService, GrpcContainer grpcContainer, LaunchMode launchMode) {
 
         int port = launchMode == LaunchMode.TEST ? configuration.testPort() : configuration.port();
 
@@ -593,8 +577,7 @@ public class GrpcServerRecorder {
 
         List<ServerBuilderCustomizer<? extends ServerBuilder<?>>> serverBuilderCustomizers = Arc.container()
                 .select(new TypeLiteral<ServerBuilderCustomizer<?>>() {
-                }, Any.Literal.INSTANCE)
-                .stream()
+                }, Any.Literal.INSTANCE).stream()
                 .sorted(Comparator.<ServerBuilderCustomizer<?>, Integer> comparing(ServerBuilderCustomizer::priority))
                 .toList();
 
@@ -615,9 +598,7 @@ public class GrpcServerRecorder {
             });
             applyNettySettings(configuration, vsBuilder);
             if (launchMode == LaunchMode.DEVELOPMENT) {
-                vsBuilder.commandDecorator(command -> vertx.executeBlocking(
-                        GrpcHotReplacementInterceptor::fire,
-                        false)
+                vsBuilder.commandDecorator(command -> vertx.executeBlocking(GrpcHotReplacementInterceptor::fire, false)
                         .onComplete(result -> devModeWrapper.run(command)));
             }
         }
@@ -635,7 +616,8 @@ public class GrpcServerRecorder {
 
         applyTransportSecurityConfig(configuration, builder);
 
-        boolean reflectionServiceEnabled = configuration.enableReflectionService() || launchMode == LaunchMode.DEVELOPMENT;
+        boolean reflectionServiceEnabled = configuration.enableReflectionService()
+                || launchMode == LaunchMode.DEVELOPMENT;
         List<GrpcServiceDefinition> toBeRegistered = collectServiceDefinitions(grpcContainer.getServices());
         List<ServerServiceDefinition> definitions = new ArrayList<>();
 
@@ -645,8 +627,7 @@ public class GrpcServerRecorder {
 
         for (GrpcServiceDefinition service : toBeRegistered) {
             builder.addService(
-                    serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService,
-                            virtualMethodsPerService,
+                    serviceWithInterceptors(vertx, grpcContainer, blockingMethodsPerService, virtualMethodsPerService,
                             compressionInterceptor, globalInterceptors, service, launchMode == LaunchMode.DEVELOPMENT));
             LOGGER.debugf("Registered gRPC service '%s'", service.definition.getServiceDescriptor().getName());
             definitions.add(service.definition);
@@ -655,7 +636,8 @@ public class GrpcServerRecorder {
         if (reflectionServiceEnabled) {
             LOGGER.debug("Registering gRPC reflection service");
             builder.addService(ServerInterceptors.intercept(new ReflectionServiceV1(definitions), globalInterceptors));
-            builder.addService(ServerInterceptors.intercept(new ReflectionServiceV1alpha(definitions), globalInterceptors));
+            builder.addService(
+                    ServerInterceptors.intercept(new ReflectionServiceV1alpha(definitions), globalInterceptors));
         }
 
         if (LOGGER.isDebugEnabled()) {
@@ -663,7 +645,8 @@ public class GrpcServerRecorder {
             if (provider != null)
                 msg += provider.serverInfo(configuration.host(), port, configuration);
             else
-                msg += String.format("gRPC server on %s:%d [TLS enabled: %s]", configuration.host(), port, !usePlainText.get());
+                msg += String.format("gRPC server on %s:%d [TLS enabled: %s]", configuration.host(), port,
+                        !usePlainText.get());
             LOGGER.debug(msg);
         }
 
@@ -673,7 +656,9 @@ public class GrpcServerRecorder {
     /**
      * Compression interceptor if needed, null otherwise
      *
-     * @param configuration gRPC server configuration
+     * @param configuration
+     *        gRPC server configuration
+     *
      * @return interceptor or null
      */
     private CompressionInterceptor prepareCompressionInterceptor(GrpcServerConfiguration configuration) {
@@ -685,10 +670,8 @@ public class GrpcServerRecorder {
     }
 
     private ServerServiceDefinition serviceWithInterceptors(Vertx vertx, GrpcContainer grpcContainer,
-            Map<String, List<String>> blockingMethodsPerService,
-            Map<String, List<String>> virtualMethodsPerService,
-            CompressionInterceptor compressionInterceptor,
-            List<ServerInterceptor> globalInterceptors,
+            Map<String, List<String>> blockingMethodsPerService, Map<String, List<String>> virtualMethodsPerService,
+            CompressionInterceptor compressionInterceptor, List<ServerInterceptor> globalInterceptors,
             GrpcServiceDefinition service, boolean devMode) {
         List<ServerInterceptor> interceptors = new ArrayList<>();
         if (compressionInterceptor != null) {
@@ -697,14 +680,14 @@ public class GrpcServerRecorder {
         interceptors.addAll(globalInterceptors);
         interceptors.addAll(grpcContainer.getSortedPerServiceInterceptors(service.getImplementationClassName()));
 
-        // We only register the blocking interceptor if needed by at least one method of the service (either blocking or runOnVirtualThread)
+        // We only register the blocking interceptor if needed by at least one method of the service (either blocking or
+        // runOnVirtualThread)
         if (!blockingMethodsPerService.isEmpty()) {
             List<String> list = blockingMethodsPerService.get(service.getImplementationClassName());
             List<String> virtuals = virtualMethodsPerService.get(service.getImplementationClassName());
             if (list != null || virtuals != null) {
-                interceptors
-                        .add(new BlockingServerInterceptor(vertx, list, virtuals,
-                                VirtualThreadsRecorder.getCurrent(), devMode));
+                interceptors.add(new BlockingServerInterceptor(vertx, list, virtuals,
+                        VirtualThreadsRecorder.getCurrent(), devMode));
             }
         }
         interceptors.sort(Interceptors.INTERCEPTOR_COMPARATOR);
@@ -749,7 +732,8 @@ public class GrpcServerRecorder {
                 VertxServer server = (VertxServer) grpcServer;
                 server.start(ar -> {
                     if (ar.failed()) {
-                        Throwable effectiveCause = getEffectiveThrowable(ar, configuration.host(), portToServer.getKey());
+                        Throwable effectiveCause = getEffectiveThrowable(ar, configuration.host(),
+                                portToServer.getKey());
                         if (effectiveCause instanceof QuarkusBindException) {
                             LOGGER.error("Unable to start the gRPC server");
                         } else {

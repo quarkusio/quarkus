@@ -24,7 +24,8 @@ public class ClassPermitAllBaseResourceWithoutPathExtParentRes_SecurityOnBase
 
     @PermitAll
     @Override
-    public String classPathOnParentResource_ImplOnBase_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
+    public String classPathOnParentResource_ImplOnBase_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
         return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH
                 + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
@@ -36,8 +37,10 @@ public class ClassPermitAllBaseResourceWithoutPathExtParentRes_SecurityOnBase
 
     @PermitAll
     @Override
-    public String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    public String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @Override

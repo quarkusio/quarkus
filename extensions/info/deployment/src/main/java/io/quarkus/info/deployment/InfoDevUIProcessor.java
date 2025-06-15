@@ -18,22 +18,16 @@ public class InfoDevUIProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     void create(BuildProducer<CardPageBuildItem> cardPageProducer,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            InfoBuildTimeConfig config,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            LaunchModeBuildItem launchModeBuildItem) {
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, InfoBuildTimeConfig config,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem) {
 
-        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(),
-                managementBuildTimeConfig, launchModeBuildItem);
+        var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.path(), managementBuildTimeConfig,
+                launchModeBuildItem);
 
-        WebComponentPageBuilder infoPage = Page.webComponentPageBuilder()
-                .title("Information")
-                .icon("font-awesome-solid:circle-info")
-                .componentLink("qwc-info.js");
+        WebComponentPageBuilder infoPage = Page.webComponentPageBuilder().title("Information")
+                .icon("font-awesome-solid:circle-info").componentLink("qwc-info.js");
 
-        ExternalPageBuilder rawPage = Page.externalPageBuilder("Raw")
-                .url(path)
-                .icon("font-awesome-solid:circle-info")
+        ExternalPageBuilder rawPage = Page.externalPageBuilder("Raw").url(path).icon("font-awesome-solid:circle-info")
                 .isJsonContent();
 
         CardPageBuildItem cardBuildItem = new CardPageBuildItem();

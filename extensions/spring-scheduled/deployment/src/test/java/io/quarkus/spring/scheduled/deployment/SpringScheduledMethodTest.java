@@ -15,11 +15,9 @@ public class SpringScheduledMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SpringScheduledMethodsBean.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "springScheduledSimpleJobs.cron=0/1 * * * * ?\nspringScheduledSimpleJobs.fixedRate=1000"),
+            .withApplicationRoot((jar) -> jar.addClasses(SpringScheduledMethodsBean.class)
+                    .addAsResource(new StringAsset(
+                            "springScheduledSimpleJobs.cron=0/1 * * * * ?\nspringScheduledSimpleJobs.fixedRate=1000"),
                             "application.properties"));
 
     @Test

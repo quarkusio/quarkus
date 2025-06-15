@@ -7,7 +7,8 @@ public class TokenResponse {
     private final String accessToken;
     private final Integer expiresIn;
 
-    public TokenResponse(@JsonProperty("access_token") String accessToken, @JsonProperty("expires_in") Integer expiresIn) {
+    public TokenResponse(@JsonProperty("access_token") String accessToken,
+            @JsonProperty("expires_in") Integer expiresIn) {
         this.accessToken = accessToken;
         this.expiresIn = expiresIn;
     }

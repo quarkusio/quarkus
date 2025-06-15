@@ -10,12 +10,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidGlobalCronTriggerMisfirePolicyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(IllegalArgumentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.cron-trigger.misfire-policy=simple-trigger-reschedule-now-with-existing-repeat-count\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(IllegalArgumentException.class)
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(
+                    "quarkus.quartz.cron-trigger.misfire-policy=simple-trigger-reschedule-now-with-existing-repeat-count\n"),
+                    "application.properties"));
 
     @Test
     public void shouldFailWhenInvalidMisfirePolicyConfiguration() {

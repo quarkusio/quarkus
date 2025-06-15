@@ -16,22 +16,19 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class EntitiesInDefaultPUWithImplicitDatasourceConfigUrlMissingTest {
 
-    // To get exactly this error message, two different JDBC drivers needs to be included, otherwise the error message will be different
+    // To get exactly this error message, two different JDBC drivers needs to be included, otherwise the error message
+    // will be different
     // https://github.com/quarkusio/quarkus/issues/47036
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class))
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-reactive-pg-client", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-jdbc-h2", Version.getVersion())))
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            "The datasource must be configured for Hibernate Reactive",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-reactive-pg-client", Version.getVersion()),
+                            Dependency.of("io.quarkus", "quarkus-jdbc-h2", Version.getVersion())))
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class).hasMessageContainingAll(
+                    "The datasource must be configured for Hibernate Reactive",
+                    "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
     public void testInvalidConfiguration() {

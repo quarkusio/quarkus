@@ -25,8 +25,7 @@ public interface RedisConfig {
     /**
      * Configures additional (named) Redis clients.
      * <p>
-     * Each client has a unique name which must be identified to select the right client.
-     * For example:
+     * Each client has a unique name which must be identified to select the right client. For example:
      * <p>
      *
      * <pre>
@@ -35,9 +34,8 @@ public interface RedisConfig {
      * </pre>
      * <p>
      * And then use the {@link io.quarkus.redis.client.RedisClientName} annotation to select the
-     * {@link io.vertx.mutiny.redis.client.Redis},
-     * {@link io.vertx.redis.client.Redis}, {@link io.vertx.mutiny.redis.client.RedisAPI} and
-     * {@link io.vertx.redis.client.RedisAPI} beans.
+     * {@link io.vertx.mutiny.redis.client.Redis}, {@link io.vertx.redis.client.Redis},
+     * {@link io.vertx.mutiny.redis.client.RedisAPI} and {@link io.vertx.redis.client.RedisAPI} beans.
      * <p>
      *
      * <pre>
@@ -58,9 +56,7 @@ public interface RedisConfig {
     }
 
     static String propertyKey(String name, String radical) {
-        String prefix = DEFAULT_CLIENT_NAME.equals(name)
-                ? "quarkus.redis."
-                : "quarkus.redis.\"" + name + "\".";
+        String prefix = DEFAULT_CLIENT_NAME.equals(name) ? "quarkus.redis." : "quarkus.redis.\"" + name + "\".";
         return prefix + radical;
     }
 }

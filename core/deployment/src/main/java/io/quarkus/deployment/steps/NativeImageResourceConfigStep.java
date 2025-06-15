@@ -23,8 +23,7 @@ public class NativeImageResourceConfigStep {
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void generateResourceConfig(BuildProducer<GeneratedResourceBuildItem> resourceConfig,
             List<NativeImageResourcePatternsBuildItem> resourcePatterns,
-            List<NativeImageResourceBundleBuildItem> resourceBundles,
-            List<NativeImageResourceBuildItem> resources,
+            List<NativeImageResourceBundleBuildItem> resourceBundles, List<NativeImageResourceBuildItem> resources,
             List<ServiceProviderBuildItem> serviceProviderBuildItems) {
         JsonObjectBuilder root = Json.object();
 

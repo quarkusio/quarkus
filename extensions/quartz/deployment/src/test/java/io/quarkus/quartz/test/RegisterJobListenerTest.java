@@ -19,13 +19,11 @@ public class RegisterJobListenerTest {
     org.quartz.Scheduler quartzScheduler;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addClass(HelloJobListener.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.job-listeners.testJobListener.class=io.quarkus.quartz.test.listeners.HelloJobListener"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addClass(HelloJobListener.class)
+            .addAsResource(new StringAsset(
+                    "quarkus.quartz.job-listeners.testJobListener.class=io.quarkus.quartz.test.listeners.HelloJobListener"),
+                    "application.properties"));
 
     @Test
     public void testJobListenerRegistered() throws InterruptedException, SchedulerException {

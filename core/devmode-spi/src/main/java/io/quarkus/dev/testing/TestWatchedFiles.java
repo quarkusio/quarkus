@@ -8,9 +8,8 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 /**
- * provides a way for a test run to tell the external application about watched paths.
- *
- * This could be a test specific application.properties or import.sql for example
+ * provides a way for a test run to tell the external application about watched paths. This could be a test specific
+ * application.properties or import.sql for example
  */
 public class TestWatchedFiles {
 
@@ -19,8 +18,8 @@ public class TestWatchedFiles {
     private static volatile List<Entry<Predicate<String>, Boolean>> watchedFilePredicates;
 
     /**
-     *
      * @param watchedFilePaths
+     *
      * @deprecated Use {@link #setWatchedFilePaths(Map, List)} instead.
      */
     @Deprecated(forRemoval = true)
@@ -32,8 +31,8 @@ public class TestWatchedFiles {
     }
 
     /**
-     *
      * @param watchedFilesListener
+     *
      * @deprecated Use {@link #setWatchedFilesListener(BiConsumer)} instead.
      */
     @Deprecated(forRemoval = true)

@@ -46,10 +46,8 @@ public class OtlpExporterProcessor {
         OTelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otelBuildConfig.enabled() &&
-                    otelBuildConfig.traces().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.traces().exporter().contains(CDI_VALUE) &&
-                    exportBuildConfig.enabled();
+            return otelBuildConfig.enabled() && otelBuildConfig.traces().enabled().orElse(Boolean.TRUE)
+                    && otelBuildConfig.traces().exporter().contains(CDI_VALUE) && exportBuildConfig.enabled();
         }
     }
 
@@ -58,10 +56,8 @@ public class OtlpExporterProcessor {
         OTelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otelBuildConfig.enabled() &&
-                    otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.metrics().exporter().contains(CDI_VALUE) &&
-                    exportBuildConfig.enabled();
+            return otelBuildConfig.enabled() && otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE)
+                    && otelBuildConfig.metrics().exporter().contains(CDI_VALUE) && exportBuildConfig.enabled();
         }
     }
 
@@ -70,10 +66,8 @@ public class OtlpExporterProcessor {
         OTelBuildConfig otelBuildConfig;
 
         public boolean getAsBoolean() {
-            return otelBuildConfig.enabled() &&
-                    otelBuildConfig.logs().enabled().orElse(Boolean.TRUE) &&
-                    otelBuildConfig.logs().exporter().contains(CDI_VALUE) &&
-                    exportBuildConfig.enabled();
+            return otelBuildConfig.enabled() && otelBuildConfig.logs().enabled().orElse(Boolean.TRUE)
+                    && otelBuildConfig.logs().exporter().contains(CDI_VALUE) && exportBuildConfig.enabled();
         }
     }
 
@@ -93,46 +87,36 @@ public class OtlpExporterProcessor {
     @BuildStep(onlyIf = OtlpExporterProcessor.OtlpTracingExporterEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(TlsRegistryBuildItem.class)
-    void createSpanProcessor(OTelExporterRecorder recorder,
-            OTelBuildConfig oTelBuildConfig,
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            CoreVertxBuildItem vertxBuildItem,
-            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
+    void createSpanProcessor(OTelExporterRecorder recorder, OTelBuildConfig oTelBuildConfig,
+            OTelRuntimeConfig otelRuntimeConfig, OtlpExporterRuntimeConfig exporterRuntimeConfig,
+            CoreVertxBuildItem vertxBuildItem, List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (!externalOtelExporterBuildItem.isEmpty()) {
             // if there is an external exporter, we don't want to create the default one
             return;
         }
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
-                .configure(LateBoundSpanProcessor.class)
-                .types(SpanProcessor.class)
-                .setRuntimeInit()
-                .scope(Singleton.class)
-                .unremovable()
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(LateBoundSpanProcessor.class)
+                .types(SpanProcessor.class).setRuntimeInit().scope(Singleton.class).unremovable()
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(SpanExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
-                .createWith(recorder.spanProcessorForOtlp(oTelBuildConfig, otelRuntimeConfig,
-                        exporterRuntimeConfig, vertxBuildItem.getVertx()))
+                .createWith(recorder.spanProcessorForOtlp(oTelBuildConfig, otelRuntimeConfig, exporterRuntimeConfig,
+                        vertxBuildItem.getVertx()))
                 .done());
     }
 
     @BuildStep(onlyIf = OtlpMetricsExporterEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(TlsRegistryBuildItem.class)
-    void createMetricsExporterProcessor(
-            BeanDiscoveryFinishedBuildItem beanDiscovery,
-            OTelExporterRecorder recorder,
-            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            CoreVertxBuildItem vertxBuildItem,
+    void createMetricsExporterProcessor(BeanDiscoveryFinishedBuildItem beanDiscovery, OTelExporterRecorder recorder,
+            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem, OTelRuntimeConfig otelRuntimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig, CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         if (!externalOtelExporterBuildItem.isEmpty()) {
             // if there is an external exporter, we don't want to create the default one.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
+            // External exporter also use synthetic beans. However, synthetic beans don't show in the
+            // BeanDiscoveryFinishedBuildItem
             return;
         }
 
@@ -141,12 +125,8 @@ public class OtlpExporterProcessor {
             return;
         }
 
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
-                .configure(MetricExporter.class)
-                .types(MetricExporter.class)
-                .setRuntimeInit()
-                .scope(Singleton.class)
-                .unremovable()
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(MetricExporter.class)
+                .types(MetricExporter.class).setRuntimeInit().scope(Singleton.class).unremovable()
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(MetricExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))
@@ -158,18 +138,15 @@ public class OtlpExporterProcessor {
     @BuildStep(onlyIf = OtlpLogRecordExporterEnabled.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(TlsRegistryBuildItem.class)
-    void createLogRecordExporterProcessor(
-            BeanDiscoveryFinishedBuildItem beanDiscovery,
-            OTelExporterRecorder recorder,
-            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem,
-            OTelRuntimeConfig otelRuntimeConfig,
-            OtlpExporterRuntimeConfig exporterRuntimeConfig,
-            CoreVertxBuildItem vertxBuildItem,
+    void createLogRecordExporterProcessor(BeanDiscoveryFinishedBuildItem beanDiscovery, OTelExporterRecorder recorder,
+            List<ExternalOtelExporterBuildItem> externalOtelExporterBuildItem, OTelRuntimeConfig otelRuntimeConfig,
+            OtlpExporterRuntimeConfig exporterRuntimeConfig, CoreVertxBuildItem vertxBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         if (!externalOtelExporterBuildItem.isEmpty()) {
             // if there is an external exporter, we don't want to create the default one.
-            // External exporter also use synthetic beans. However, synthetic beans don't show in the BeanDiscoveryFinishedBuildItem
+            // External exporter also use synthetic beans. However, synthetic beans don't show in the
+            // BeanDiscoveryFinishedBuildItem
             return;
         }
 
@@ -178,12 +155,8 @@ public class OtlpExporterProcessor {
             return;
         }
 
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
-                .configure(LogRecordExporter.class)
-                .types(LogRecordExporter.class)
-                .setRuntimeInit()
-                .scope(Singleton.class)
-                .unremovable()
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(LogRecordExporter.class)
+                .types(LogRecordExporter.class).setRuntimeInit().scope(Singleton.class).unremovable()
                 .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
                         new Type[] { ClassType.create(DotName.createSimple(LogRecordExporter.class.getName())) }, null))
                 .addInjectionPoint(ClassType.create(DotName.createSimple(TlsConfigurationRegistry.class)))

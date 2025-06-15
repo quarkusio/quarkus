@@ -32,11 +32,10 @@ public class WebsocketRootPathTestCase {
     URI echoUri;
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(a -> {
-                a.addClasses(EchoWebSocket.class, EchoService.class)
-                        .add(new StringAsset("quarkus.http.root-path=/foo"), "application.properties");
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(a -> {
+        a.addClasses(EchoWebSocket.class, EchoService.class).add(new StringAsset("quarkus.http.root-path=/foo"),
+                "application.properties");
+    });
 
     @Test
     public void testHttpRootPath() throws Exception {

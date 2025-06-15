@@ -28,14 +28,14 @@ public class AsyncRequestFilterResource {
             @HeaderParam("PreMatchFilter1") @DefaultValue("") String preMatchFilter1,
             @HeaderParam("PreMatchFilter2") @DefaultValue("") String preMatchFilter2,
             @HeaderParam("PreMatchFilter3") @DefaultValue("") String preMatchFilter3) {
-        //        boolean async = isAsync(filter1)
-        //                || isAsync(filter2)
-        //                || isAsync(filter3)
-        //                || isAsync(preMatchFilter1)
-        //                || isAsync(preMatchFilter2)
-        //                || isAsync(preMatchFilter3);
-        //        if (async != ctx.isSuspended())
-        //            return Response.serverError().entity("Request suspention is wrong").build();
+        // boolean async = isAsync(filter1)
+        // || isAsync(filter2)
+        // || isAsync(filter3)
+        // || isAsync(preMatchFilter1)
+        // || isAsync(preMatchFilter2)
+        // || isAsync(preMatchFilter3);
+        // if (async != ctx.isSuspended())
+        // return Response.serverError().entity("Request suspention is wrong").build();
         return Response.ok("resource").build();
     }
 
@@ -48,14 +48,14 @@ public class AsyncRequestFilterResource {
             @HeaderParam("PreMatchFilter1") @DefaultValue("") String preMatchFilter1,
             @HeaderParam("PreMatchFilter2") @DefaultValue("") String preMatchFilter2,
             @HeaderParam("PreMatchFilter3") @DefaultValue("") String preMatchFilter3) {
-        //        boolean async = isAsync(filter1)
-        //                || isAsync(filter2)
-        //                || isAsync(filter3)
-        //                || isAsync(preMatchFilter1)
-        //                || isAsync(preMatchFilter2)
-        //                || isAsync(preMatchFilter3);
-        //        if (async != ctx.isSuspended())
-        //            throw new WebApplicationException(Response.serverError().entity("Request suspention is wrong").build());
+        // boolean async = isAsync(filter1)
+        // || isAsync(filter2)
+        // || isAsync(filter3)
+        // || isAsync(preMatchFilter1)
+        // || isAsync(preMatchFilter2)
+        // || isAsync(preMatchFilter3);
+        // if (async != ctx.isSuspended())
+        // throw new WebApplicationException(Response.serverError().entity("Request suspention is wrong").build());
         return "resource";
     }
 
@@ -89,7 +89,6 @@ public class AsyncRequestFilterResource {
     }
 
     private boolean isAsync(String filter) {
-        return filter.equals("async-pass")
-                || filter.equals("async-fail");
+        return filter.equals("async-pass") || filter.equals("async-fail");
     }
 }

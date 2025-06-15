@@ -27,8 +27,8 @@ public class OidcDbTokenStateManagerRecorder {
     }
 
     /* STATIC INIT */
-    public Supplier<OidcDbTokenStateManagerInitializerProperties> createDbTokenStateInitializerProps(String createTableDdl,
-            boolean supportsIfTableNotExists) {
+    public Supplier<OidcDbTokenStateManagerInitializerProperties> createDbTokenStateInitializerProps(
+            String createTableDdl, boolean supportsIfTableNotExists) {
         return new Supplier<OidcDbTokenStateManagerInitializerProperties>() {
             @Override
             public OidcDbTokenStateManagerInitializerProperties get() {

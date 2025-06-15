@@ -14,13 +14,12 @@ import io.restassured.RestAssured;
 public class SecuredAmqpTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class,
-                            SecuredAmqpBroker.class, ProtonProtocolManagerFactory.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class, SecuredAmqpBroker.class,
+                            ProtonProtocolManagerFactory.class)
                     .addAsResource("broker.xml"))
-            .setBeforeAllCustomizer(SecuredAmqpBroker::start)
-            .setAfterAllCustomizer(SecuredAmqpBroker::stop)
+            .setBeforeAllCustomizer(SecuredAmqpBroker::start).setAfterAllCustomizer(SecuredAmqpBroker::stop)
             .withConfigurationResource("application-secured.properties");
 
     @Test

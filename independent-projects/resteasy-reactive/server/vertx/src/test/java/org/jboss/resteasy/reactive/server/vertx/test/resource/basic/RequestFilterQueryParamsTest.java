@@ -27,16 +27,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class RequestFilterQueryParamsTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(BlockingHelloResource.class, ReplacePathAndQueryParamsFilter.class));
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(BlockingHelloResource.class, ReplacePathAndQueryParamsFilter.class));
 
     @Test
     public void test() {
-        get("/dummy")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("Hello filter"));
+        get("/dummy").then().statusCode(200).body(Matchers.equalTo("Hello filter"));
     }
 
     @Path("hello")
@@ -54,8 +50,7 @@ public class RequestFilterQueryParamsTest {
     public static class ReplacePathAndQueryParamsFilter implements ContainerRequestFilter {
 
         @Override
-        public void filter(ContainerRequestContext requestContext)
-                throws IOException {
+        public void filter(ContainerRequestContext requestContext) throws IOException {
             UriBuilder builder = requestContext.getUriInfo().getRequestUriBuilder();
             builder.replacePath("/hello");
             builder.replaceQueryParam("name", "filter");

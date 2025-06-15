@@ -8,11 +8,8 @@ public class CustomIdentityProviderConfigurationTest extends JpaSecurityRealmTes
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addClass(PlainUserEntity.class)
-                    .addClass(UserEntityIdentityProvider.class)
-                    .addAsResource("minimal-config/import.sql", "import.sql")
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addClass(PlainUserEntity.class)
+                    .addClass(UserEntityIdentityProvider.class).addAsResource("minimal-config/import.sql", "import.sql")
                     .addAsResource("minimal-config/application.properties", "application.properties"));
 
 }

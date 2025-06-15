@@ -40,8 +40,7 @@ public abstract class AbstractEnversResource {
     }
 
     public EnversService getEnversService() {
-        return ((((SessionImplementor) em.getDelegate()).getFactory().getServiceRegistry())
-                .getParentServiceRegistry())
+        return ((((SessionImplementor) em.getDelegate()).getFactory().getServiceRegistry()).getParentServiceRegistry())
                 .getService(EnversService.class);
     }
 }

@@ -62,7 +62,8 @@ class QuarkusModelBuilderTest {
     @Test
     public void shouldLoadSimpleModuleDevModel() throws URISyntaxException, IOException {
         File projectDir = getResourcesProject("builder/simple-module-project");
-        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "DEVELOPMENT", "testClasses");
+        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(projectDir, "DEVELOPMENT",
+                "testClasses");
 
         assertNotNull(quarkusModel);
         assertNotNull(quarkusModel.getApplicationModule());
@@ -79,8 +80,8 @@ class QuarkusModelBuilderTest {
     public void shouldLoadMultiModuleTestModel() throws URISyntaxException, IOException {
         File projectDir = getResourcesProject("builder/multi-module-project");
 
-        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(new File(projectDir, "application"), "TEST",
-                "testClasses");
+        final ApplicationModel quarkusModel = QuarkusGradleModelFactory.create(new File(projectDir, "application"),
+                "TEST", "testClasses");
 
         assertNotNull(quarkusModel);
 
@@ -105,8 +106,8 @@ class QuarkusModelBuilderTest {
                 .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("java"));
         assertThat(testSources.getResourceDirs().size()).isEqualTo(1);
         final SourceDir testResourcesDir = testSources.getResourceDirs().iterator().next();
-        assertThat(testResourcesDir.getDir())
-                .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("resources"));
+        assertThat(testResourcesDir.getDir()).isEqualTo(
+                projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("resources"));
     }
 
     @Test
@@ -139,8 +140,8 @@ class QuarkusModelBuilderTest {
                 .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("java"));
         assertThat(testSources.getResourceDirs().size()).isEqualTo(1);
         final SourceDir testResourcesDir = testSources.getResourceDirs().iterator().next();
-        assertThat(testResourcesDir.getDir())
-                .isEqualTo(projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("resources"));
+        assertThat(testResourcesDir.getDir()).isEqualTo(
+                projectDir.toPath().resolve("application").resolve("src").resolve("test").resolve("resources"));
     }
 
     private void assertProjectModule(WorkspaceModule projectModule, File projectDir, boolean withTests) {
@@ -162,7 +163,8 @@ class QuarkusModelBuilderTest {
         sourceTree = src.getSourceTree();
         assertThat(sourceTree).isNotNull();
         assertThat(sourceTree.getRoots()).hasSize(1);
-        assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/main/resources"));
+        assertThat(sourceTree.getRoots().iterator().next())
+                .isEqualTo(projectDir.toPath().resolve("src/main/resources"));
 
         if (withTests) {
             src = projectModule.getTestSources().getSourceDirs().iterator().next();
@@ -179,7 +181,8 @@ class QuarkusModelBuilderTest {
             sourceTree = src.getSourceTree();
             assertThat(sourceTree).isNotNull();
             assertThat(sourceTree.getRoots()).hasSize(1);
-            assertThat(sourceTree.getRoots().iterator().next()).isEqualTo(projectDir.toPath().resolve("src/test/resources"));
+            assertThat(sourceTree.getRoots().iterator().next())
+                    .isEqualTo(projectDir.toPath().resolve("src/test/resources"));
         } else {
             assertThat(projectModule.getTestSources().isOutputAvailable()).isFalse();
         }

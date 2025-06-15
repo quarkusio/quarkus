@@ -88,17 +88,13 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         this.methodCustomizers = methodCustomizers;
 
         List<TypeVariable> typeVariables = indexView.getClassByName(baseType.dotName()).typeParameters();
-        entityUpperBound = !typeVariables.isEmpty()
-                ? new ByteCodeType(typeVariables.get(0).bounds().get(0))
-                : OBJECT;
+        entityUpperBound = !typeVariables.isEmpty() ? new ByteCodeType(typeVariables.get(0).bounds().get(0)) : OBJECT;
 
         discoverTypeParameters(classInfo, indexView, typeBundle, baseType);
 
         argMapper = type -> {
             ByteCodeType byteCodeType = typeArguments.get(type);
-            return byteCodeType != null
-                    ? byteCodeType.get()
-                    : null;
+            return byteCodeType != null ? byteCodeType.get() : null;
         };
 
         collectMethods(classInfo);
@@ -112,10 +108,8 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
             return Collections.emptyList();
         }
 
-        return JandexUtil
-                .resolveTypeParameters(clazz, repositoryDotName, indexView).stream()
-                .map(t -> new ByteCodeType(t))
-                .collect(toList());
+        return JandexUtil.resolveTypeParameters(clazz, repositoryDotName, indexView).stream()
+                .map(t -> new ByteCodeType(t)).collect(toList());
     }
 
     private Label addLabel() {
@@ -145,7 +139,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         for (Type methodParameter : method.parameterTypes()) {
             org.objectweb.asm.Type parameter = asmType(methodParameter);
             mv.visitVarInsn(parameter.getOpcode(ILOAD), index);
-            // long and double take two slots and have size == 2.  others, size == 1
+            // long and double take two slots and have size == 2. others, size == 1
             if (parameter.getSort() < ARRAY) {
                 org.objectweb.asm.Type wrapper = AsmUtil.autobox(parameter);
                 mv.visitMethodInsn(INVOKESTATIC, wrapper.getInternalName(), "valueOf",
@@ -218,18 +212,18 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     private void collectMethods(ClassInfo classInfo) {
         if (classInfo != null && !classInfo.name().equals(baseType.dotName())) {
-            classInfo.methods()
-                    .forEach(method -> {
-                        String descriptor = method.descriptor(m -> {
-                            ByteCodeType byteCodeType = typeArguments.get(m);
-                            return byteCodeType != null ? byteCodeType.get() : OBJECT.get();
-                        });
-                        MethodInfo prior = definedMethods.put(method.name() + descriptor, method);
-                        if (prior != null && !isBridgeMethod(method)) {
-                            throw new IllegalStateException(format("Should not run in to duplicate " +
-                                    "mappings: \n\t%s\n\t%s\n\t%s", method, descriptor, prior));
-                        }
-                    });
+            classInfo.methods().forEach(method -> {
+                String descriptor = method.descriptor(m -> {
+                    ByteCodeType byteCodeType = typeArguments.get(m);
+                    return byteCodeType != null ? byteCodeType.get() : OBJECT.get();
+                });
+                MethodInfo prior = definedMethods.put(method.name() + descriptor, method);
+                if (prior != null && !isBridgeMethod(method)) {
+                    throw new IllegalStateException(
+                            format("Should not run in to duplicate " + "mappings: \n\t%s\n\t%s\n\t%s", method,
+                                    descriptor, prior));
+                }
+            });
             DotName superName = classInfo.superName();
             if (superName != null) {
                 collectMethods(indexView.getClassByName(superName));
@@ -253,18 +247,17 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         }
     }
 
-    protected void discoverTypeParameters(ClassInfo classInfo, IndexView indexView, TypeBundle types, ByteCodeType baseType) {
-        List<ByteCodeType> foundTypeArguments = recursivelyFindEntityTypeArguments(indexView,
-                classInfo.name(), baseType.dotName());
+    protected void discoverTypeParameters(ClassInfo classInfo, IndexView indexView, TypeBundle types,
+            ByteCodeType baseType) {
+        List<ByteCodeType> foundTypeArguments = recursivelyFindEntityTypeArguments(indexView, classInfo.name(),
+                baseType.dotName());
 
         ByteCodeType entityType = (foundTypeArguments.size() > 0) ? foundTypeArguments.get(0) : OBJECT;
         ByteCodeType idType = (foundTypeArguments.size() > 1) ? foundTypeArguments.get(1).unbox() : OBJECT;
 
         typeArguments.put("Entity", entityType);
         typeArguments.put("Id", idType);
-        typeArguments.keySet().stream()
-                .filter(k -> !k.equals("Id"))
-                .forEach(k -> erasures.put(k, OBJECT.descriptor()));
+        typeArguments.keySet().stream().filter(k -> !k.equals("Id")).forEach(k -> erasures.put(k, OBJECT.descriptor()));
         try {
             erasures.put(typeArguments.get("Entity").dotName().toString(), entityUpperBound.descriptor());
             erasures.put(types.queryType().dotName().toString(), OBJECT.descriptor());
@@ -289,11 +282,11 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
         ParameterizedType parameterizedType = ParameterizedType.create(returnType.name(),
                 new Type[] { Type.create(typeArguments.get("Entity").dotName(), Type.Kind.CLASS) }, null);
-        mv.visitLdcInsn("null cannot be cast to non-null type " + (parameterizedType.toString()
-                .replace("java.util.List", "kotlin.collections.List")));
+        mv.visitLdcInsn("null cannot be cast to non-null type "
+                + (parameterizedType.toString().replace("java.util.List", "kotlin.collections.List")));
 
-        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/NullPointerException",
-                CTOR_METHOD_NAME, "(Ljava/lang/String;)V", false);
+        mv.visitMethodInsn(INVOKESPECIAL, "java/lang/NullPointerException", CTOR_METHOD_NAME, "(Ljava/lang/String;)V",
+                false);
         mv.visitInsn(ATHROW);
         mv.visitLabel(label);
         mv.visitFrame(Opcodes.F_SAME1, 0, null, 1, new Object[] { "java/lang/Object" });
@@ -312,19 +305,18 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     }
 
     private void filterNonOverrides() {
-        new ArrayList<>(definedMethods.values())
-                .forEach(method -> {
-                    AnnotationInstance generateBridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
-                    if (generateBridge != null) {
-                        definedMethods.remove(method.name() + method.descriptor());
-                    }
-                });
+        new ArrayList<>(definedMethods.values()).forEach(method -> {
+            AnnotationInstance generateBridge = method.annotation(DOTNAME_GENERATE_BRIDGE);
+            if (generateBridge != null) {
+                definedMethods.remove(method.name() + method.descriptor());
+            }
+        });
     }
 
     private void generate(MethodInfo method) {
         // Note: we can't use SYNTHETIC here because otherwise Mockito will never mock these methods
-        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, method.name(),
-                method.descriptor(argMapper), method.genericSignature(argMapper), null);
+        MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC, method.name(), method.descriptor(argMapper),
+                method.genericSignature(argMapper), null);
 
         AsmUtil.copyParameterNames(mv, method);
         for (PanacheMethodCustomizer customizer : methodCustomizers) {
@@ -359,10 +351,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     private void generateBridge(MethodInfo method, String descriptor) {
         MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
-                method.name(),
-                descriptor,
-                null,
-                null);
+                method.name(), descriptor, null, null);
         List<Type> parameters = method.parameterTypes();
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
@@ -387,9 +376,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         }
 
         String targetDescriptor = method.descriptor(name -> typeArguments.get(name).get());
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                classInfo.name().toString().replace('.', '/'),
-                method.name(),
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, classInfo.name().toString().replace('.', '/'), method.name(),
                 targetDescriptor, false);
         String targetReturnTypeDescriptor = targetDescriptor.substring(targetDescriptor.indexOf(')') + 1);
         mv.visitInsn(AsmUtil.getReturnInstruction(targetReturnTypeDescriptor));
@@ -402,19 +389,14 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
         String substring = descriptor.substring(0, descriptor.lastIndexOf(')') + 1);
         String descriptor1 = substring + OBJECT.descriptor();
         MethodVisitor mv = cv.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
-                method.name(),
-                descriptor1,
-                null,
-                null);
+                method.name(), descriptor1, null, null);
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         // this
         mv.visitIntInsn(Opcodes.ALOAD, 0);
         mv.visitIntInsn(typeArguments.get("Id").type().getOpcode(ILOAD), 1);
         String targetDescriptor = method.descriptor(name -> typeArguments.get(name).get());
-        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                classInfo.name().toString().replace('.', '/'),
-                method.name(),
+        mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, classInfo.name().toString().replace('.', '/'), method.name(),
                 targetDescriptor, false);
         String targetReturnTypeDescriptor = targetDescriptor.substring(targetDescriptor.indexOf(')') + 1);
         mv.visitInsn(AsmUtil.getReturnInstruction(targetReturnTypeDescriptor));
@@ -434,23 +416,21 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
         Type returnType = method.returnType();
         String descriptor = returnType.descriptor(argMapper);
-        String key = returnType.kind() == Type.Kind.TYPE_VARIABLE
-                ? returnType.asTypeVariable().identifier()
+        String key = returnType.kind() == Type.Kind.TYPE_VARIABLE ? returnType.asTypeVariable().identifier()
                 : returnType.name().toString();
         String operationReturnType = erasures.getOrDefault(key, descriptor);
         operationDescriptor = joiner + operationReturnType;
 
-        mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(),
-                operationDescriptor, false);
+        mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(), operationDescriptor,
+                false);
         if (returnType.kind() != Type.Kind.PRIMITIVE && returnType.kind() != Type.Kind.VOID) {
             String retType = operationReturnType.substring(1, operationReturnType.length() - 1);
             String annotationDesc = NOT_NULL_DESCRIPTOR;
             if ("findById".equals(method.name())) {
                 annotationDesc = NULLABLE_DESCRIPTOR;
             } else {
-                nullCheckReturn(mv, returnType,
-                        typeBundle.operations().dotName().withoutPackagePrefix() + ".INSTANCE."
-                                + method.name() + joiner);
+                nullCheckReturn(mv, returnType, typeBundle.operations().dotName().withoutPackagePrefix() + ".INSTANCE."
+                        + method.name() + joiner);
             }
             checkCast(mv, returnType, retType);
             mv.visitAnnotation(annotationDesc, false);
@@ -521,8 +501,7 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
 
     @Override
     public String toString() {
-        return new StringJoiner(", ", getClass().getSimpleName() + "[", "]")
-                .add(classInfo.name().toString())
+        return new StringJoiner(", ", getClass().getSimpleName() + "[", "]").add(classInfo.name().toString())
                 .toString();
     }
 
@@ -530,18 +509,15 @@ public class KotlinPanacheClassOperationGenerationVisitor extends ClassVisitor {
     public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
             String[] exceptions) {
 
-        MethodInfo methodInfo = definedMethods.entrySet().stream()
-                .filter(e -> e.getKey().equals(name + descriptor))
-                .map(e -> e.getValue())
-                .findFirst()
-                .orElse(null);
+        MethodInfo methodInfo = definedMethods.entrySet().stream().filter(e -> e.getKey().equals(name + descriptor))
+                .map(e -> e.getValue()).findFirst().orElse(null);
         if (methodInfo != null && !methodInfo.hasAnnotation(DOTNAME_GENERATE_BRIDGE)) {
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         } else if (name.contains("$")) {
-            //some agents such as jacoco add new methods, they generally have $ in the name
+            // some agents such as jacoco add new methods, they generally have $ in the name
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         } else if (name.equals(CTOR_METHOD_NAME) || name.equals(CLINIT_METHOD_NAME)) {
-            //Arc can add no-args constructors to support intercepted beans
+            // Arc can add no-args constructors to support intercepted beans
             // Logging with Panache can add a class initializer
             return super.visitMethod(access, name, descriptor, signature, exceptions);
         }

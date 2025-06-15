@@ -20,8 +20,7 @@ import io.quarkus.runtime.LaunchMode;
 public class FileSystemResourcesBuildStep {
 
     @BuildStep(onlyIfNot = IsNormal.class)
-    public void notNormalMode(OutputTargetBuildItem outputTargetBuildItem,
-            LaunchModeBuildItem launchMode,
+    public void notNormalMode(OutputTargetBuildItem outputTargetBuildItem, LaunchModeBuildItem launchMode,
             List<GeneratedFileSystemResourceBuildItem> generatedFileSystemResources,
             BuildProducer<GeneratedFileSystemResourceHandledBuildItem> producer) {
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) {

@@ -20,12 +20,12 @@ import picocli.CommandLine;
 
 @CommandLine.Command(name = "list", aliases = "ls", header = "List platforms and extensions. ", footer = {
         "%nList modes:%n",
-        "(relative). Active when invoked within a project unless an explicit release is specified. " +
-                "The current project configuration will determine what extensions are listed, " +
-                "with installed (available) extensions listed by default.%n",
-        "(absolute). Active when invoked outside of a project or when an explicit release is specified. " +
-                "All extensions for the specified release will be listed. " +
-                "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
+        "(relative). Active when invoked within a project unless an explicit release is specified. "
+                + "The current project configuration will determine what extensions are listed, "
+                + "with installed (available) extensions listed by default.%n",
+        "(absolute). Active when invoked outside of a project or when an explicit release is specified. "
+                + "All extensions for the specified release will be listed. "
+                + "The CLI release will be used if this command is invoked outside of a project and no other release is specified.%n" })
 public class ProjectExtensionsList extends BaseBuildCommand implements Callable<Integer> {
 
     @CommandLine.Mixin
@@ -59,7 +59,8 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
             BuildTool buildTool = QuarkusProjectHelper.detectExistingBuildTool(projectRoot()); // nullable
             boolean categorySet = category != null && !category.isBlank();
 
-            if (buildTool == null || targetQuarkusVersion.isPlatformSpecified() || targetQuarkusVersion.isStreamSpecified()) {
+            if (buildTool == null || targetQuarkusVersion.isPlatformSpecified()
+                    || targetQuarkusVersion.isStreamSpecified()) {
                 // do not evaluate installables for list of arbitrary version (project-agnostic)
                 installable = false;
                 // check if any format was specified
@@ -84,8 +85,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
                 return exitCode;
             }
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to list extensions: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to list extensions: " + e.getMessage());
         }
     }
 
@@ -93,15 +93,11 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
         Map<String, String> dryRunOutput = new TreeMap<>();
 
         if (buildTool == null) {
-            output.printText(new String[] {
-                    "\nList extensions for specified platform\n",
-                    "\t" + targetQuarkusVersion.dryRun()
-            });
+            output.printText(new String[] { "\nList extensions for specified platform\n",
+                    "\t" + targetQuarkusVersion.dryRun() });
         } else {
-            output.printText(new String[] {
-                    "\nList extensions for current project\n",
-                    "\t" + projectRoot().toString()
-            });
+            output.printText(
+                    new String[] { "\nList extensions for current project\n", "\t" + projectRoot().toString() });
             dryRunOutput.put("Build tool", buildTool.name());
         }
 
@@ -117,17 +113,12 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
     }
 
     Integer listPlatformExtensions() throws QuarkusCommandException, RegistryResolutionException {
-        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
-                BuildTool.MAVEN, output);
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion, BuildTool.MAVEN,
+                output);
 
-        QuarkusCommandOutcome outcome = new ListExtensions(qp, output)
-                .fromCli(true)
-                .all(true)
-                .format(format.getFormatString())
-                .search(searchPattern)
-                .category(category)
-                .batchMode(runMode.isBatchMode())
-                .execute();
+        QuarkusCommandOutcome outcome = new ListExtensions(qp, output).fromCli(true).all(true)
+                .format(format.getFormatString()).search(searchPattern).category(category)
+                .batchMode(runMode.isBatchMode()).execute();
 
         return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
     }
@@ -158,11 +149,7 @@ public class ProjectExtensionsList extends BaseBuildCommand implements Callable<
 
     @Override
     public String toString() {
-        return "ProjectExtensionList [format=" + format
-                + ", installable=" + installable
-                + ", searchPattern=" + searchPattern
-                + ", output=" + output
-                + ", runMode=" + runMode
-                + "]";
+        return "ProjectExtensionList [format=" + format + ", installable=" + installable + ", searchPattern="
+                + searchPattern + ", output=" + output + ", runMode=" + runMode + "]";
     }
 }

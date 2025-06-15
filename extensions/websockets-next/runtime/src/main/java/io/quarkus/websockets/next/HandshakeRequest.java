@@ -12,7 +12,9 @@ public interface HandshakeRequest {
      * The name is case insensitive.
      *
      * @param name
+     *
      * @return the first header value for the given header name, or {@code null}
+     *
      * @see HandshakeRequest#SEC_WEBSOCKET_KEY
      * @see HandshakeRequest#SEC_WEBSOCKET_ACCEPT
      * @see HandshakeRequest#SEC_WEBSOCKET_EXTENSIONS
@@ -25,7 +27,9 @@ public interface HandshakeRequest {
      * The name is case insensitive.
      *
      * @param name
+     *
      * @return an immutable list of header values for the given header name, never {@code null}
+     *
      * @see HandshakeRequest#SEC_WEBSOCKET_KEY
      * @see HandshakeRequest#SEC_WEBSOCKET_ACCEPT
      * @see HandshakeRequest#SEC_WEBSOCKET_EXTENSIONS
@@ -42,31 +46,26 @@ public interface HandshakeRequest {
     Map<String, List<String>> headers();
 
     /**
-     *
      * @return the scheme
      */
     String scheme();
 
     /**
-     *
      * @return the host
      */
     String host();
 
     /**
-     *
      * @return the port
      */
     int port();
 
     /**
-     *
      * @return the path
      */
     String path();
 
     /**
-     *
      * @return the query string
      */
     String query();

@@ -57,7 +57,8 @@ public class ComputedParamContextImpl implements ComputedParamContext {
         }
         List<Object> methodParameterValues = (List<Object>) property;
         if (index > methodParameterValues.size() - 1) {
-            throw new IllegalArgumentException("Invalid parameter index '" + index + "' used when obtaining parameter values");
+            throw new IllegalArgumentException(
+                    "Invalid parameter index '" + index + "' used when obtaining parameter values");
         }
         return methodParameterValues.get(index);
     }

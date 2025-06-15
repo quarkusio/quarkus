@@ -74,8 +74,7 @@ public class ArrayPairsQueryParamTest {
     private void setupServer() throws InterruptedException, ExecutionException {
         CompletableFuture<HttpServer> startResult = new CompletableFuture<>();
         vertx.createHttpServer().requestHandler(request -> request.response().setStatusCode(200).end(request.query()))
-                .listen(8082)
-                .onComplete(server -> {
+                .listen(8082).onComplete(server -> {
                     if (server.failed()) {
                         startResult.completeExceptionally(server.cause());
                     } else {
@@ -86,9 +85,7 @@ public class ArrayPairsQueryParamTest {
     }
 
     private Client createClient() {
-        return QuarkusRestClientBuilder.newBuilder()
-                .queryParamStyle(QueryParamStyle.ARRAY_PAIRS)
-                .baseUri(URI.create("http://localhost:8082"))
-                .build(Client.class);
+        return QuarkusRestClientBuilder.newBuilder().queryParamStyle(QueryParamStyle.ARRAY_PAIRS)
+                .baseUri(URI.create("http://localhost:8082")).build(Client.class);
     }
 }

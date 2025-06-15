@@ -30,8 +30,7 @@ public class RestClientUriParameterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Resource.class, Client.class))
+            .withApplicationRoot(jar -> jar.addClasses(Resource.class, Client.class))
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .overrideConfigKey("quarkus.rest-client.\"client\".url", "http://does-not-exist.io");
 

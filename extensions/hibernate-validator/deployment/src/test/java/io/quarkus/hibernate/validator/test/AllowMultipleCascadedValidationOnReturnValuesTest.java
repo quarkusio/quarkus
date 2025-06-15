@@ -18,8 +18,7 @@ public class AllowMultipleCascadedValidationOnReturnValuesTest {
     static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
             .create(JavaArchive.class)
             .addClasses(SubRealizationWithValidConstraintOnMethodParameter.class,
-                    RealizationWithValidConstraintOnMethodParameter.class,
-                    InterfaceWithNoConstraints.class)
+                    RealizationWithValidConstraintOnMethodParameter.class, InterfaceWithNoConstraints.class)
             .add(new StringAsset(
                     "quarkus.hibernate-validator.method-validation.allow-multiple-cascaded-validation-on-return-values=true"),
                     "application.properties"));
@@ -29,8 +28,7 @@ public class AllowMultipleCascadedValidationOnReturnValuesTest {
 
     @Test
     public void allowValidAddedInSubType() {
-        validator.forExecutables().validateParameters(
-                new SubRealizationWithValidConstraintOnMethodParameter(),
+        validator.forExecutables().validateParameters(new SubRealizationWithValidConstraintOnMethodParameter(),
                 SubRealizationWithValidConstraintOnMethodParameter.class.getDeclaredMethods()[0],
                 new Object[] { "foo" });
     }
@@ -39,8 +37,7 @@ public class AllowMultipleCascadedValidationOnReturnValuesTest {
         String foo(String s);
     }
 
-    private static class RealizationWithValidConstraintOnMethodParameter
-            implements InterfaceWithNoConstraints {
+    private static class RealizationWithValidConstraintOnMethodParameter implements InterfaceWithNoConstraints {
         /**
          * Adds @Valid to an un-constrained method from a super-type, which is not allowed.
          */

@@ -23,7 +23,8 @@ public class TestSCI implements ServletContainerInitializer {
     public void onStartup(Set<Class<?>> c, ServletContext ctx) throws ServletException {
         ServletRegistration.Dynamic info = ctx.addServlet("test", new HttpServlet() {
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws ServletException, IOException {
                 for (Class<?> i : c) {
                     resp.getWriter().println(i.getName());
                 }

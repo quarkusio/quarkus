@@ -11,12 +11,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidTimeZoneTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .assertException(t -> {
-                assertThat(t).cause().isInstanceOf(IllegalStateException.class).hasMessageContaining("Invalid timeZone()");
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().assertException(t -> {
+        assertThat(t).cause().isInstanceOf(IllegalStateException.class).hasMessageContaining("Invalid timeZone()");
+    }).withApplicationRoot((jar) -> jar.addClasses(InvalidBean.class));
 
     @Test
     public void test() throws InterruptedException {

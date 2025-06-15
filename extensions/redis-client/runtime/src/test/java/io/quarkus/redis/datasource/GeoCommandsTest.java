@@ -67,8 +67,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     }
 
     void populate() {
-        geo.geoadd(key,
-                GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE),
+        geo.geoadd(key, GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE),
                 GeoItem.of(Place.grignan, GRIGNAN_LONGITUDE, GRIGNAN_LATITUDE),
                 GeoItem.of(Place.suze, SUZE_LONGITUDE, SUZE_LATITUDE));
     }
@@ -129,8 +128,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
 
     @Test
     void geoaddValue() {
-        int added = geo.geoadd(key,
-                GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE),
+        int added = geo.geoadd(key, GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE),
                 GeoItem.of(Place.grignan, GRIGNAN_LONGITUDE, GRIGNAN_LATITUDE),
                 GeoItem.of(Place.suze, SUZE_LONGITUDE, SUZE_LATITUDE));
         assertThat(added).isEqualTo(3);
@@ -149,7 +147,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
         Assertions.assertThat(geo.geoadd(key, GRIGNAN_LONGITUDE, GRIGNAN_LATITUDE, Place.grignan)).isTrue();
         Assertions.assertThat(geo.geoadd(key, SUZE_LONGITUDE, SUZE_LATITUDE, Place.suze)).isTrue();
 
-        int changed = geo.geoadd(key, new GeoAddArgs().ch(), GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE + 1, CRUSSOL_LATITUDE),
+        int changed = geo.geoadd(key, new GeoAddArgs().ch(),
+                GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE + 1, CRUSSOL_LATITUDE),
                 GeoItem.of(Place.grignan, GRIGNAN_LONGITUDE, GRIGNAN_LATITUDE),
                 GeoItem.of(Place.suze, SUZE_LONGITUDE, SUZE_LATITUDE));
 
@@ -176,8 +175,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     public void geoaddMultiGeoItemsInTransaction() {
         TransactionResult result = ds.withTransaction(tx -> {
             TransactionalGeoCommands<String, Place> geo = tx.geo(Place.class);
-            geo.geoadd(key,
-                    GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE),
+            geo.geoadd(key, GeoItem.of(Place.crussol, CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE),
                     GeoItem.of(Place.grignan, GRIGNAN_LONGITUDE, GRIGNAN_LATITUDE),
                     GeoItem.of(Place.suze, SUZE_LONGITUDE, SUZE_LATITUDE));
         }, key);
@@ -209,8 +207,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
         places = geo.georadius(key, GeoPosition.of(44.9396, CRUSSOL_LATITUDE), 60, GeoUnit.KM);
         assertThat(places).hasSize(2).containsExactlyInAnyOrder(Place.crussol, Place.grignan);
 
-        List<GeoValue<Place>> list = geo.georadius(key, GeoPosition.of(44.9396, CRUSSOL_LATITUDE),
-                60, GeoUnit.KM,
+        List<GeoValue<Place>> list = geo.georadius(key, GeoPosition.of(44.9396, CRUSSOL_LATITUDE), 60, GeoUnit.KM,
                 new GeoRadiusArgs().ascending().withDistance());
         assertThat(list).hasSize(2);
         assertThat(list.get(0).member).isEqualTo(Place.crussol);
@@ -238,8 +235,7 @@ public class GeoCommandsTest extends DatasourceTestBase {
     void georadiusWithCoords() {
         populate();
         List<GeoValue<Place>> georadius = geo.georadius(key, VALENCE_LONGITUDE, VALENCE_LATITUDE, 100, GeoUnit.KM,
-                new GeoRadiusArgs()
-                        .withCoordinates());
+                new GeoRadiusArgs().withCoordinates());
         assertThat(georadius).hasSize(3);
         assertThat(getLongitudeOrDie(georadius, 0)).isEqualTo(44.2, Offset.offset(0.5));
         assertThat(getLatitudeOrDie(georadius, 0)).isEqualTo(4.8, Offset.offset(0.5));
@@ -379,12 +375,12 @@ public class GeoCommandsTest extends DatasourceTestBase {
 
     @Test
     void georadiusWithNullArgs() {
-        assertThatThrownBy(() -> geo.georadius(key, VALENCE_LONGITUDE, VALENCE_LATITUDE, 5, GeoUnit.KM, (GeoRadiusArgs) null))
+        assertThatThrownBy(
+                () -> geo.georadius(key, VALENCE_LONGITUDE, VALENCE_LATITUDE, 5, GeoUnit.KM, (GeoRadiusArgs) null))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(
-                () -> geo.georadius(key, VALENCE_LONGITUDE, VALENCE_LATITUDE, 5, GeoUnit.KM, (GeoRadiusStoreArgs<String>) null))
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> geo.georadius(key, VALENCE_LONGITUDE, VALENCE_LATITUDE, 5, GeoUnit.KM,
+                (GeoRadiusStoreArgs<String>) null)).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
@@ -429,8 +425,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
     void georadiusbymemberWithArgs() {
         populate();
 
-        List<GeoValue<Place>> match = geo.georadiusbymember(key, Place.crussol, 1, GeoUnit.KM, new GeoRadiusArgs()
-                .withHash().withCoordinates().withDistance().descending());
+        List<GeoValue<Place>> match = geo.georadiusbymember(key, Place.crussol, 1, GeoUnit.KM,
+                new GeoRadiusArgs().withHash().withCoordinates().withDistance().descending());
         assertThat(match).isNotEmpty();
 
         List<GeoValue<Place>> withDistanceAndCoordinates = geo.georadiusbymember(key, Place.crussol, 60, GeoUnit.KM,
@@ -451,8 +447,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
         assertThat(p.latitude).isNotEmpty();
         assertThat(p.longitude).isNotEmpty();
 
-        List<GeoValue<Place>> withDistanceAndHash = geo.georadiusbymember(key, Place.crussol,
-                60, GeoUnit.KM, new GeoRadiusArgs().withDistance().withHash().descending());
+        List<GeoValue<Place>> withDistanceAndHash = geo.georadiusbymember(key, Place.crussol, 60, GeoUnit.KM,
+                new GeoRadiusArgs().withDistance().withHash().descending());
         assertThat(withDistanceAndHash).hasSize(2);
 
         p = withDistanceAndHash.get(0);
@@ -486,7 +482,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
         assertThatThrownBy(() -> geo.georadiusbymember(key, Place.crussol, 1, GeoUnit.KM, (GeoRadiusArgs) null))
                 .isInstanceOf(IllegalArgumentException.class);
 
-        assertThatThrownBy(() -> geo.georadiusbymember(key, Place.crussol, 1, GeoUnit.KM, (GeoRadiusStoreArgs<String>) null))
+        assertThatThrownBy(
+                () -> geo.georadiusbymember(key, Place.crussol, 1, GeoUnit.KM, (GeoRadiusStoreArgs<String>) null))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -495,17 +492,17 @@ public class GeoCommandsTest extends DatasourceTestBase {
     void geosearchWithCountAndSort() {
         populate();
 
-        GeoSearchArgs<Place> args = new GeoSearchArgs<Place>().fromMember(Place.crussol)
-                .byRadius(5, GeoUnit.KM);
+        GeoSearchArgs<Place> args = new GeoSearchArgs<Place>().fromMember(Place.crussol).byRadius(5, GeoUnit.KM);
         List<GeoValue<Place>> places = geo.geosearch(key, args);
         assertThat(places).hasSize(1).allSatisfy(gv -> assertThat(gv.member).isEqualTo(Place.crussol));
 
-        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol)
-                .byRadius(60, GeoUnit.KM));
+        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol).byRadius(60, GeoUnit.KM));
         assertThat(places).hasSize(2);
 
-        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol)
-                .byBox(140, 140, GeoUnit.KM)); // grigan but not suze
+        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol).byBox(140, 140, GeoUnit.KM)); // grigan
+                                                                                                                       // but
+                                                                                                                       // not
+                                                                                                                       // suze
         assertThat(places).hasSize(2);
     }
 
@@ -514,8 +511,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
     void geosearchWithArgs() {
         populate();
 
-        GeoSearchArgs<Place> args = new GeoSearchArgs<Place>().fromMember(Place.crussol)
-                .byRadius(5, GeoUnit.KM).withCoordinates().withDistance().descending();
+        GeoSearchArgs<Place> args = new GeoSearchArgs<Place>().fromMember(Place.crussol).byRadius(5, GeoUnit.KM)
+                .withCoordinates().withDistance().descending();
         List<GeoValue<Place>> places = geo.geosearch(key, args);
         assertThat(places).hasSize(1).allSatisfy(gv -> {
             assertThat(gv.member).isEqualTo(Place.crussol);
@@ -525,8 +522,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
             assertThat(gv.geohash).isEmpty();
         });
 
-        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol)
-                .byRadius(60, GeoUnit.KM).withDistance().withCoordinates());
+        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol).byRadius(60, GeoUnit.KM)
+                .withDistance().withCoordinates());
         assertThat(places).hasSize(2).allSatisfy(gv -> {
             assertThat(gv.member).isIn(Place.crussol, Place.grignan);
             assertThat(gv.longitude).isNotEmpty();
@@ -535,8 +532,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
             assertThat(gv.geohash).isEmpty();
         });
 
-        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol)
-                .byBox(140, 140, GeoUnit.KM).withCoordinates().withDistance()); // grigan but not suze
+        places = geo.geosearch(key, new GeoSearchArgs<Place>().fromMember(Place.crussol).byBox(140, 140, GeoUnit.KM)
+                .withCoordinates().withDistance()); // grigan but not suze
         assertThat(places).hasSize(2).allSatisfy(gv -> {
             assertThat(gv.member).isIn(Place.crussol, Place.grignan);
             assertThat(gv.longitude).isNotEmpty();
@@ -545,8 +542,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
             assertThat(gv.geohash).isEmpty();
         });
 
-        args = new GeoSearchArgs<Place>().fromCoordinate(CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE)
-                .byRadius(5, GeoUnit.KM).withCoordinates().withDistance().descending();
+        args = new GeoSearchArgs<Place>().fromCoordinate(CRUSSOL_LONGITUDE, CRUSSOL_LATITUDE).byRadius(5, GeoUnit.KM)
+                .withCoordinates().withDistance().descending();
         places = geo.geosearch(key, args);
         assertThat(places).hasSize(1).allSatisfy(gv -> {
             assertThat(gv.member).isEqualTo(Place.crussol);
@@ -570,8 +567,8 @@ public class GeoCommandsTest extends DatasourceTestBase {
         long count = geo.geosearchstore(resultKey, key, args, true);
         assertThat(count).isEqualTo(2);
 
-        args = new GeoSearchStoreArgs<Place>().fromMember(Place.crussol)
-                .byRadius(200, GeoUnit.KM).count(2).descending();
+        args = new GeoSearchStoreArgs<Place>().fromMember(Place.crussol).byRadius(200, GeoUnit.KM).count(2)
+                .descending();
         count = geo.geosearchstore(resultKey2, key, args, true);
         assertThat(count).isEqualTo(2);
     }

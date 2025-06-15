@@ -69,12 +69,9 @@ public class MailerProcessor {
 
     static final DotName MAIL_TEMPLATE_MAILER_NAME = DotName.createSimple(MailTemplateMailerName.class);
 
-    private static final List<DotName> SUPPORTED_INJECTION_TYPES = List.of(
-            DotName.createSimple(Mailer.class),
-            DotName.createSimple(ReactiveMailer.class),
-            DotName.createSimple(MockMailbox.class),
-            DotName.createSimple(MailClient.class),
-            DotName.createSimple(io.vertx.mutiny.ext.mail.MailClient.class),
+    private static final List<DotName> SUPPORTED_INJECTION_TYPES = List.of(DotName.createSimple(Mailer.class),
+            DotName.createSimple(ReactiveMailer.class), DotName.createSimple(MockMailbox.class),
+            DotName.createSimple(MailClient.class), DotName.createSimple(io.vertx.mutiny.ext.mail.MailClient.class),
             MAIL_TEMPLATE);
 
     public static class CacheAttachmentsEnabled implements BooleanSupplier {
@@ -87,47 +84,32 @@ public class MailerProcessor {
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> beans) {
-        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                .addBeanClasses(Mailers.class)
-                .build());
-        beans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClasses(MailTemplateProducer.class)
-                .build());
+        beans.produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(Mailers.class).build());
+        beans.produce(AdditionalBeanBuildItem.builder().addBeanClasses(MailTemplateProducer.class).build());
         // add the @MailerName class otherwise it won't be registered as a qualifier
-        beans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(MailerName.class)
-                .build());
+        beans.produce(AdditionalBeanBuildItem.builder().addBeanClass(MailerName.class).build());
     }
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    MailersBuildItem generateMailerSupportBean(MailerRecorder recorder,
-            CombinedIndexBuildItem index,
-            BeanDiscoveryFinishedBuildItem beans,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+    MailersBuildItem generateMailerSupportBean(MailerRecorder recorder, CombinedIndexBuildItem index,
+            BeanDiscoveryFinishedBuildItem beans, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         List<InjectionPointInfo> mailerInjectionPoints = beans.getInjectionPoints().stream()
                 .filter(i -> SUPPORTED_INJECTION_TYPES.contains(i.getRequiredType().name()))
                 .collect(Collectors.toList());
 
-        boolean hasDefaultMailer = mailerInjectionPoints.stream()
-                .anyMatch(i -> i.hasDefaultedQualifier() ||
-                // we inject a MailTemplate and it is not named
-                        (MAIL_TEMPLATE.equals(i.getType().name()) && i.getRequiredQualifier(MAILER_NAME) == null))
+        boolean hasDefaultMailer = mailerInjectionPoints.stream().anyMatch(i -> i.hasDefaultedQualifier() ||
+        // we inject a MailTemplate and it is not named
+                (MAIL_TEMPLATE.equals(i.getType().name()) && i.getRequiredQualifier(MAILER_NAME) == null))
                 || isTypeSafeMailTemplateFound(index.getIndex());
 
-        Set<String> namedMailers = mailerInjectionPoints.stream()
-                .map(i -> i.getRequiredQualifier(MAILER_NAME))
-                .filter(ai -> ai != null)
-                .map(ai -> ai.value().asString())
-                .collect(Collectors.toSet());
+        Set<String> namedMailers = mailerInjectionPoints.stream().map(i -> i.getRequiredQualifier(MAILER_NAME))
+                .filter(ai -> ai != null).map(ai -> ai.value().asString()).collect(Collectors.toSet());
 
         MailerSupport mailerSupport = new MailerSupport(hasDefaultMailer, namedMailers);
 
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(MailerSupport.class)
-                .supplier(recorder.mailerSupportSupplier(mailerSupport))
-                .scope(Singleton.class)
-                .unremovable()
-                .done());
+                .supplier(recorder.mailerSupportSupplier(mailerSupport)).scope(Singleton.class).unremovable().done());
 
         return new MailersBuildItem(hasDefaultMailer, namedMailers);
     }
@@ -139,11 +121,12 @@ public class MailerProcessor {
             if (annotation.target().kind() == Kind.CLASS) {
                 ClassInfo target = annotation.target().asClass();
                 if (target.isRecord()) {
-                    //  Java record that most likely implements MailTemplateInstance
+                    // Java record that most likely implements MailTemplateInstance
                     return true;
                 }
                 for (MethodInfo method : target.methods()) {
-                    if (Modifier.isStatic(method.flags()) && method.returnType().name().equals(MAIL_TEMPLATE_INSTANCE)) {
+                    if (Modifier.isStatic(method.flags())
+                            && method.returnType().name().equals(MAIL_TEMPLATE_INSTANCE)) {
                         // Target declares a static method that returns MailTemplateInstance
                         return true;
                     }
@@ -163,10 +146,8 @@ public class MailerProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void generateMailerBeans(MailerRecorder recorder,
-            MailersBuildItem mailers,
-            MailersRuntimeConfig mailersRuntimeConfig,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
+    void generateMailerBeans(MailerRecorder recorder, MailersBuildItem mailers,
+            MailersRuntimeConfig mailersRuntimeConfig, BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             // Just to make sure it is initialized
             TlsRegistryBuildItem tlsRegistryBuildItem) {
         if (mailers.hasDefaultMailer()) {
@@ -183,10 +164,8 @@ public class MailerProcessor {
         return new AnnotationsTransformerBuildItem(new MailTemplateMailerNameTransformer());
     }
 
-    private void generateMailerBeansForName(String name,
-            MailerRecorder recorder,
-            MailersRuntimeConfig mailersRuntimeConfig,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+    private void generateMailerBeansForName(String name, MailerRecorder recorder,
+            MailersRuntimeConfig mailersRuntimeConfig, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
         AnnotationInstance qualifier;
         if (Mailers.DEFAULT_MAILER_NAME.equals(name)) {
             qualifier = AnnotationInstance.builder(Default.class).build();
@@ -194,51 +173,26 @@ public class MailerProcessor {
             qualifier = AnnotationInstance.builder(MAILER_NAME).add("value", name).build();
         }
 
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(MailClient.class)
-                .scope(Singleton.class)
-                .qualifiers(qualifier)
-                .unremovable()
-                .defaultBean()
-                .setRuntimeInit()
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(MailClient.class).scope(Singleton.class)
+                .qualifiers(qualifier).unremovable().defaultBean().setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mailClientFunction(name, mailersRuntimeConfig))
-                .done());
+                .createWith(recorder.mailClientFunction(name, mailersRuntimeConfig)).done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(io.vertx.mutiny.ext.mail.MailClient.class)
-                .scope(Singleton.class)
-                .qualifiers(qualifier)
-                .unremovable()
-                .defaultBean()
-                .setRuntimeInit()
+                .scope(Singleton.class).qualifiers(qualifier).unremovable().defaultBean().setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.reactiveMailClientFunction(name, mailersRuntimeConfig))
-                .done());
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(Mailer.class)
-                .scope(Singleton.class)
-                .qualifiers(qualifier)
-                .unremovable()
-                .defaultBean()
-                .setRuntimeInit()
+                .createWith(recorder.reactiveMailClientFunction(name, mailersRuntimeConfig)).done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(Mailer.class).scope(Singleton.class)
+                .qualifiers(qualifier).unremovable().defaultBean().setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mailerFunction(name, mailersRuntimeConfig))
-                .done());
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(ReactiveMailer.class)
-                .scope(Singleton.class)
-                .qualifiers(qualifier)
-                .unremovable()
-                .defaultBean()
-                .setRuntimeInit()
+                .createWith(recorder.mailerFunction(name, mailersRuntimeConfig)).done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(ReactiveMailer.class).scope(Singleton.class)
+                .qualifiers(qualifier).unremovable().defaultBean().setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.reactiveMailerFunction(name, mailersRuntimeConfig))
-                .done());
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(MockMailbox.class)
-                .scope(Singleton.class)
-                .qualifiers(qualifier)
-                .unremovable()
-                .defaultBean()
-                .setRuntimeInit()
+                .createWith(recorder.reactiveMailerFunction(name, mailersRuntimeConfig)).done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(MockMailbox.class).scope(Singleton.class)
+                .qualifiers(qualifier).unremovable().defaultBean().setRuntimeInit()
                 .addInjectionPoint(ClassType.create(DotName.createSimple(Mailers.class)))
-                .createWith(recorder.mockMailboxFunction(name, mailersRuntimeConfig))
-                .done());
+                .createWith(recorder.mockMailboxFunction(name, mailersRuntimeConfig)).done());
     }
 
     @BuildStep
@@ -256,10 +210,10 @@ public class MailerProcessor {
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
 
         // We must register the auth provider used by the Vert.x mail clients
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.vertx.ext.mail.impl.sasl.AuthCram",
-                "io.vertx.ext.mail.impl.sasl.AuthDigest",
-                "io.vertx.ext.mail.impl.sasl.AuthLogin",
-                "io.vertx.ext.mail.impl.sasl.AuthPlain").methods().fields().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("io.vertx.ext.mail.impl.sasl.AuthCram", "io.vertx.ext.mail.impl.sasl.AuthDigest",
+                        "io.vertx.ext.mail.impl.sasl.AuthLogin", "io.vertx.ext.mail.impl.sasl.AuthPlain")
+                .methods().fields().build());
 
         // Register io.vertx.ext.mail.impl.sasl.NTLMEngineImpl to be initialized at runtime, it uses a static random.
         NativeImageConfigBuildItem.Builder builder = NativeImageConfigBuildItem.builder();
@@ -279,8 +233,7 @@ public class MailerProcessor {
     }
 
     @BuildStep
-    void validateMailTemplates(
-            List<TemplatePathBuildItem> templatePaths, ValidationPhaseBuildItem validationPhase,
+    void validateMailTemplates(List<TemplatePathBuildItem> templatePaths, ValidationPhaseBuildItem validationPhase,
             BuildProducer<ValidationErrorBuildItem> validationErrors) {
 
         Set<String> filePaths = new HashSet<>();
@@ -301,7 +254,8 @@ public class MailerProcessor {
             }
         }
 
-        for (InjectionPointInfo injectionPoint : validationPhase.getContext().get(BuildExtension.Key.INJECTION_POINTS)) {
+        for (InjectionPointInfo injectionPoint : validationPhase.getContext()
+                .get(BuildExtension.Key.INJECTION_POINTS)) {
             if (injectionPoint.getRequiredType().name().equals(MAIL_TEMPLATE)) {
                 AnnotationInstance resourcePath = injectionPoint.getRequiredQualifier(QuteProcessor.LOCATION);
                 String name;
@@ -316,8 +270,8 @@ public class MailerProcessor {
                     // For "@Inject MailTemplate items" we try to match "items"
                     // For "@ResourcePath("github/pulls") MailTemplate pulls" we try to match "github/pulls"
                     if (filePaths.stream().noneMatch(path -> path.endsWith(name))) {
-                        validationErrors.produce(new ValidationErrorBuildItem(
-                                new IllegalStateException("No mail template found for " + injectionPoint.getTargetInfo())));
+                        validationErrors.produce(new ValidationErrorBuildItem(new IllegalStateException(
+                                "No mail template found for " + injectionPoint.getTargetInfo())));
                     }
                 }
             }

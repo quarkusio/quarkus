@@ -63,9 +63,12 @@ public class TestRunResults implements TestRunResultsInterface {
             passedCount += i.getValue().getPassing().stream().filter(TestResultInterface::isTest).count();
             failedCount += i.getValue().getFailing().stream().filter(TestResultInterface::isTest).count();
             skippedCount += i.getValue().getSkipped().stream().filter(TestResultInterface::isTest).count();
-            currentPassedCount += i.getValue().getPassing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
-            currentFailedCount += i.getValue().getFailing().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
-            currentSkippedCount += i.getValue().getSkipped().stream().filter(s -> s.isTest() && s.getRunId() == id).count();
+            currentPassedCount += i.getValue().getPassing().stream().filter(s -> s.isTest() && s.getRunId() == id)
+                    .count();
+            currentFailedCount += i.getValue().getFailing().stream().filter(s -> s.isTest() && s.getRunId() == id)
+                    .count();
+            currentSkippedCount += i.getValue().getSkipped().stream().filter(s -> s.isTest() && s.getRunId() == id)
+                    .count();
             boolean current = i.getValue().getLatestRunId() == id;
             if (current) {
                 if (!i.getValue().getFailing().isEmpty()) {

@@ -23,9 +23,8 @@ public class QuarkusSecurityCommonProcessor {
     }
 
     /**
-     * Graal VM now seems to lose providers registered at static init
-     *
-     * We re-register at runtime (which is a no-op in JVM mode)
+     * Graal VM now seems to lose providers registered at static init We re-register at runtime (which is a no-op in JVM
+     * mode)
      */
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
@@ -36,12 +35,12 @@ public class QuarkusSecurityCommonProcessor {
     /**
      * Register the Elytron-provided password factory SPI implementation
      *
-     * @param classes producer factory for ReflectiveClassBuildItems
+     * @param classes
+     *        producer factory for ReflectiveClassBuildItems
      */
     @BuildStep
     void services(BuildProducer<ReflectiveClassBuildItem> classes) {
         classes.produce(ReflectiveClassBuildItem.builder("org.wildfly.security.password.impl.PasswordFactorySpiImpl")
-                .reason(getClass().getName())
-                .methods().build());
+                .reason(getClass().getName()).methods().build());
     }
 }

@@ -32,8 +32,8 @@ public interface PluginCommand extends Callable<Integer> {
                     getWorkingDirectory().toFile());
         } catch (Exception e) {
             e.printStackTrace();
-            return getOutput().handleCommandException(e, "Unable to run plugin command: [" + String.join(" ", getCommand())
-                    + "] with arguments: [" + String.join(" ", getArguments()) + "]");
+            return getOutput().handleCommandException(e, "Unable to run plugin command: ["
+                    + String.join(" ", getCommand()) + "] with arguments: [" + String.join(" ", getArguments()) + "]");
         }
     }
 }

@@ -25,12 +25,8 @@ public class BlockingSignatureExecutionModeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DumbConnector.class,
-                            ProducerOnC.class,
-                            BlockingConsumerFromConnector.class,
-                            ConsumerFromConnector.class,
-                            ConsumerFromInnerChannel.class))
+            .withApplicationRoot((jar) -> jar.addClasses(DumbConnector.class, ProducerOnC.class,
+                    BlockingConsumerFromConnector.class, ConsumerFromConnector.class, ConsumerFromInnerChannel.class))
             // .overrideConfigKey("mp.messaging.incoming.a.connector", "dummy") // discovered by the extension
             .overrideConfigKey("mp.messaging.incoming.a.values", "bonjour")
             .overrideConfigKey("mp.messaging.incoming.b.connector", "dummy")

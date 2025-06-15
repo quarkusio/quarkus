@@ -15,20 +15,13 @@ class AutoAddSecurityDisabledTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class)
-                    .addAsResource(
-                            new StringAsset("quarkus.smallrye-openapi.auto-add-security=false\n"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class).addAsResource(
+                    new StringAsset("quarkus.smallrye-openapi.auto-add-security=false\n"), "application.properties"));
 
     @Test
     void testAutoSecurityRequirement() {
-        RestAssured.given().header("Accept", "application/json")
-                .when()
-                .get("/q/openapi")
-                .then()
-                .log().ifValidationFails()
-                .body("components", not(hasKey(equalTo("securitySchemes"))));
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then().log()
+                .ifValidationFails().body("components", not(hasKey(equalTo("securitySchemes"))));
     }
 
 }

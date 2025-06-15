@@ -69,15 +69,14 @@ public class MediaTypeNegotiationClientQualityTest {
     private static final String DEP = "MediaTypeNegotiationClientQualityTest";
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter1.class, Resource.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter1.class, Resource.class);
+            return war;
+        }
+    });
 
     @BeforeAll
     public static void setup() {

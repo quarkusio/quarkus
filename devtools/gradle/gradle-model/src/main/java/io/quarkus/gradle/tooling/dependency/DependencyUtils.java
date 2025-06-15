@@ -82,7 +82,8 @@ public class DependencyUtils {
     }
 
     public static String asDependencyNotation(ArtifactCoords artifactCoords) {
-        return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId(), artifactCoords.getVersion());
+        return String.join(":", artifactCoords.getGroupId(), artifactCoords.getArtifactId(),
+                artifactCoords.getVersion());
     }
 
     public static ExtensionDependency<?> getExtensionInfoOrNull(Project project, ResolvedArtifact artifact) {
@@ -91,19 +92,17 @@ public class DependencyUtils {
         ExtensionDependency<?> projectDependency;
 
         if (artifact.getId().getComponentIdentifier() instanceof ProjectComponentIdentifier) {
-            ProjectComponentIdentifier componentId = (ProjectComponentIdentifier) artifact.getId().getComponentIdentifier();
+            ProjectComponentIdentifier componentId = (ProjectComponentIdentifier) artifact.getId()
+                    .getComponentIdentifier();
 
-            projectDependency = getProjectExtensionDependencyOrNull(
-                    project,
-                    componentId.getProjectPath(),
+            projectDependency = getProjectExtensionDependencyOrNull(project, componentId.getProjectPath(),
                     componentId.getBuild().getName());
 
             if (projectDependency != null)
                 return projectDependency;
         }
 
-        Project localExtensionProject = ToolingUtils.findLocalProject(
-                project,
+        Project localExtensionProject = ToolingUtils.findLocalProject(project,
                 ArtifactCoords.of(artifactId.getGroup(), artifactId.getName(), null, null, artifactId.getVersion()));
 
         if (localExtensionProject != null) {
@@ -138,28 +137,23 @@ public class DependencyUtils {
     }
 
     public static ExtensionDependency<?> getExtensionInfoOrNull(Project project, Project extensionProject) {
-        boolean isIncludedBuild = !project.getRootProject().getGradle().equals(extensionProject.getRootProject().getGradle());
+        boolean isIncludedBuild = !project.getRootProject().getGradle()
+                .equals(extensionProject.getRootProject().getGradle());
 
         ModuleVersionIdentifier extensionArtifactId = DefaultModuleVersionIdentifier.newId(
-                extensionProject.getGroup().toString(),
-                extensionProject.getName(),
+                extensionProject.getGroup().toString(), extensionProject.getName(),
                 extensionProject.getVersion().toString());
 
-        Object extensionConfiguration = extensionProject
-                .getExtensions().findByName(ExtensionConstants.EXTENSION_CONFIGURATION_NAME);
+        Object extensionConfiguration = extensionProject.getExtensions()
+                .findByName(ExtensionConstants.EXTENSION_CONFIGURATION_NAME);
 
         // If there's an extension configuration file in the project resources it can override
         // certain settings, so we also look for it here.
         Path descriptorPath = findLocalExtensionDescriptorPath(extensionProject);
 
         if (extensionConfiguration != null || descriptorPath != null) {
-            return createExtensionDependency(
-                    project,
-                    extensionArtifactId,
-                    extensionProject,
-                    extensionConfiguration,
-                    descriptorPath != null ? loadLocalExtensionDescriptor(descriptorPath) : null,
-                    isIncludedBuild);
+            return createExtensionDependency(project, extensionArtifactId, extensionProject, extensionConfiguration,
+                    descriptorPath != null ? loadLocalExtensionDescriptor(descriptorPath) : null, isIncludedBuild);
         } else {
             return null;
         }
@@ -195,16 +189,14 @@ public class DependencyUtils {
     }
 
     @Nullable
-    public static ExtensionDependency<?> getProjectExtensionDependencyOrNull(
-            Project project,
-            String projectPath,
+    public static ExtensionDependency<?> getProjectExtensionDependencyOrNull(Project project, String projectPath,
             @Nullable String buildName) {
         Project extensionProject = project.getRootProject().findProject(projectPath);
         if (extensionProject == null) {
             IncludedBuild extProjIncludedBuild = ToolingUtils.includedBuild(project, buildName);
             if (extProjIncludedBuild instanceof IncludedBuildInternal) {
-                extensionProject = ToolingUtils
-                        .includedBuildProject((IncludedBuildInternal) extProjIncludedBuild, projectPath);
+                extensionProject = ToolingUtils.includedBuildProject((IncludedBuildInternal) extProjIncludedBuild,
+                        projectPath);
             }
         }
 
@@ -215,12 +207,9 @@ public class DependencyUtils {
         return null;
     }
 
-    private static ProjectExtensionDependency createExtensionDependency(
-            Project project,
-            ModuleVersionIdentifier extensionArtifactId,
-            Project extensionProject,
-            @Nullable Object extensionConfiguration,
-            @Nullable Properties extensionDescriptor,
+    private static ProjectExtensionDependency createExtensionDependency(Project project,
+            ModuleVersionIdentifier extensionArtifactId, Project extensionProject,
+            @Nullable Object extensionConfiguration, @Nullable Properties extensionDescriptor,
             boolean isIncludedBuild) {
         if (extensionConfiguration == null && extensionDescriptor == null) {
             throw new IllegalArgumentException("both extensionConfiguration and extensionDescriptor are null");
@@ -233,8 +222,8 @@ public class DependencyUtils {
             deploymentProject = ToolingUtils.findLocalProject(extensionProject, deploymentProjectPath);
 
             if (deploymentProject == null) {
-                throw new GradleException("Cannot find deployment project for extension " + extensionArtifactId + " at path "
-                        + deploymentProjectPath);
+                throw new GradleException("Cannot find deployment project for extension " + extensionArtifactId
+                        + " at path " + deploymentProjectPath);
             }
         } else if (extensionDescriptor.containsKey(BootstrapConstants.PROP_DEPLOYMENT_ARTIFACT)) {
             final ArtifactCoords deploymentArtifact = ArtifactCoords
@@ -282,13 +271,8 @@ public class DependencyUtils {
             dependencyConditions.addAll(Arrays.asList(conditions));
         }
 
-        return new ProjectExtensionDependency(
-                extensionProject,
-                deploymentProject,
-                isIncludedBuild,
-                conditionalDependencies,
-                conditionalDevDependencies,
-                dependencyConditions);
+        return new ProjectExtensionDependency(extensionProject, deploymentProject, isIncludedBuild,
+                conditionalDependencies, conditionalDevDependencies, dependencyConditions);
     }
 
     private static void collectionConditionalDeps(Project project, String conditionalDevDepsStr,
@@ -309,10 +293,8 @@ public class DependencyUtils {
         }
     }
 
-    private static ArtifactExtensionDependency createExtensionDependency(
-            Project project,
-            ModuleVersionIdentifier extensionArtifactId,
-            Path descriptorPath) {
+    private static ArtifactExtensionDependency createExtensionDependency(Project project,
+            ModuleVersionIdentifier extensionArtifactId, Path descriptorPath) {
         final Properties extensionProperties = loadLocalExtensionDescriptor(descriptorPath);
 
         final ArtifactCoords deploymentArtifact = ArtifactCoords
@@ -327,15 +309,14 @@ public class DependencyUtils {
             }
         }
 
-        return new ArtifactExtensionDependency(
-                extensionArtifactId,
-                deploymentArtifact,
+        return new ArtifactExtensionDependency(extensionArtifactId, deploymentArtifact,
                 parseConditionalDeps(project, extensionProperties, BootstrapConstants.CONDITIONAL_DEPENDENCIES),
                 parseConditionalDeps(project, extensionProperties, BootstrapConstants.CONDITIONAL_DEV_DEPENDENCIES),
                 dependencyConditions);
     }
 
-    private static List<Dependency> parseConditionalDeps(Project project, Properties extensionProperties, String propertyName) {
+    private static List<Dependency> parseConditionalDeps(Project project, Properties extensionProperties,
+            String propertyName) {
         var str = extensionProperties.getProperty(propertyName);
         if (str == null) {
             return List.of();
@@ -357,8 +338,7 @@ public class DependencyUtils {
                 dependencyCoords.getVersion()));
     }
 
-    public static Dependency createDeploymentDependency(
-            DependencyHandler dependencyHandler,
+    public static Dependency createDeploymentDependency(DependencyHandler dependencyHandler,
             ExtensionDependency<?> dependency) {
         if (dependency instanceof ProjectExtensionDependency) {
             ProjectExtensionDependency ped = (ProjectExtensionDependency) dependency;
@@ -371,24 +351,24 @@ public class DependencyUtils {
         throw new IllegalArgumentException("Unknown ExtensionDependency type: " + dependency.getClass().getName());
     }
 
-    private static Dependency createDeploymentProjectDependency(DependencyHandler handler, ProjectExtensionDependency ped) {
+    private static Dependency createDeploymentProjectDependency(DependencyHandler handler,
+            ProjectExtensionDependency ped) {
         if (ped.isIncludedBuild()) {
-            return new DefaultExternalModuleDependency(
-                    ped.getDeploymentModule().getGroup().toString(),
-                    ped.getDeploymentModule().getName(),
-                    ped.getDeploymentModule().getVersion().toString());
+            return new DefaultExternalModuleDependency(ped.getDeploymentModule().getGroup().toString(),
+                    ped.getDeploymentModule().getName(), ped.getDeploymentModule().getVersion().toString());
         } else if (ped.getDeploymentModule() instanceof ProjectInternal) {
             return handler.create(new DefaultProjectDependency((ProjectInternal) ped.getDeploymentModule(), true,
                     DefaultTaskDependencyFactory.withNoAssociatedProject()));
         } else {
-            return handler.create(handler.project(Collections.singletonMap("path", ped.getDeploymentModule().getPath())));
+            return handler
+                    .create(handler.project(Collections.singletonMap("path", ped.getDeploymentModule().getPath())));
         }
     }
 
     private static Dependency createArtifactDeploymentDependency(DependencyHandler handler,
             ArtifactExtensionDependency dependency) {
-        return handler.create(dependency.getDeploymentModule().getGroupId() + ":"
-                + dependency.getDeploymentModule().getArtifactId() + ":"
-                + dependency.getDeploymentModule().getVersion());
+        return handler.create(
+                dependency.getDeploymentModule().getGroupId() + ":" + dependency.getDeploymentModule().getArtifactId()
+                        + ":" + dependency.getDeploymentModule().getVersion());
     }
 }

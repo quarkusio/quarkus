@@ -12,10 +12,9 @@ import org.quartz.UnableToInterruptJobException;
 import org.quartz.spi.TriggerFiredBundle;
 
 /**
- * An abstraction allowing proper destruction of Job instances in case they are dependent beans.
- * According to {@link org.quartz.spi.JobFactory#newJob(TriggerFiredBundle, Scheduler)}, a new job instance is created for every
- * trigger.
- * We will therefore create a new dependent bean for every trigger and destroy it afterwards.
+ * An abstraction allowing proper destruction of Job instances in case they are dependent beans. According to
+ * {@link org.quartz.spi.JobFactory#newJob(TriggerFiredBundle, Scheduler)}, a new job instance is created for every
+ * trigger. We will therefore create a new dependent bean for every trigger and destroy it afterwards.
  */
 class CdiAwareJob implements InterruptableJob {
 

@@ -20,9 +20,12 @@ public interface MethodScanner {
     /**
      * Method that allows for customising an endpoints handler chain
      *
-     * @param method The method
+     * @param method
+     *        The method
      * @param actualEndpointClass
-     * @param methodContext Any context discovered by {@link #handleCustomParameter(Type, Map, boolean, Map)}
+     * @param methodContext
+     *        Any context discovered by {@link #handleCustomParameter(Type, Map, boolean, Map)}
+     *
      * @return
      */
     default List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
@@ -33,10 +36,15 @@ public interface MethodScanner {
     /**
      * Method that is called when a parameter of an unknown type is discovered.
      *
-     * @param paramType The parameter type
-     * @param annotations The annotations
-     * @param field If this is field injection
-     * @param methodContext Context that can be used to pass information into {@link #scan(MethodInfo, ClassInfo, Map)}
+     * @param paramType
+     *        The parameter type
+     * @param annotations
+     *        The annotations
+     * @param field
+     *        If this is field injection
+     * @param methodContext
+     *        Context that can be used to pass information into {@link #scan(MethodInfo, ClassInfo, Map)}
+     *
      * @return
      */
     default ParameterExtractor handleCustomParameter(Type paramType, Map<DotName, AnnotationInstance> annotations,

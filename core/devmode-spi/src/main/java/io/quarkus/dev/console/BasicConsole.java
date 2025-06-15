@@ -71,8 +71,8 @@ public class BasicConsole extends QuarkusConsole {
                                 return;
                             }
                             if (readingLine) {
-                                //when doing a read line we want to discard the first \n
-                                //as this was the one that was needed to activate this mode
+                                // when doing a read line we want to discard the first \n
+                                // as this was the one that was needed to activate this mode
                                 if (val == '\n' || val == '\r') {
                                     readingLine = false;
                                     continue;
@@ -156,7 +156,7 @@ public class BasicConsole extends QuarkusConsole {
     @Override
     public void write(boolean errorStream, String s) {
         if (!shouldWrite(errorStream, s)) {
-            //we still test, the output filter may be recording output
+            // we still test, the output filter may be recording output
             if (!DISABLE_FILTER.get()) {
                 return;
             }

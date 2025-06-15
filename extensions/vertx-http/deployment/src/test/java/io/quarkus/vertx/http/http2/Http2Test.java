@@ -42,19 +42,16 @@ public class Http2Test {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.jks")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
 
     @Test
     public void testHttp2EnabledSsl() throws ExecutionException, InterruptedException {
-        WebClientOptions options = new WebClientOptions()
-                .setUseAlpn(true)
-                .setProtocolVersion(HttpVersion.HTTP_2)
-                .setSsl(true)
-                .setTrustOptions(new JksOptions().setPath("target/certs/ssl-test-truststore.jks").setPassword("secret"));
+        WebClientOptions options = new WebClientOptions().setUseAlpn(true).setProtocolVersion(HttpVersion.HTTP_2)
+                .setSsl(true).setTrustOptions(
+                        new JksOptions().setPath("target/certs/ssl-test-truststore.jks").setPassword("secret"));
         WebClient client = WebClient.create(VertxCoreRecorder.getVertx().get(), options);
         int port = sslUrl.getPort();
 
@@ -63,8 +60,7 @@ public class Http2Test {
 
     @Test
     public void testHttp2EnabledPlain() throws ExecutionException, InterruptedException {
-        WebClientOptions options = new WebClientOptions()
-                .setProtocolVersion(HttpVersion.HTTP_2)
+        WebClientOptions options = new WebClientOptions().setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(true);
         WebClient client = WebClient.create(VertxCoreRecorder.getVertx().get(), options);
         runTest(client, plainUrl.getPort());
@@ -72,17 +68,15 @@ public class Http2Test {
 
     private void runTest(WebClient client, int port) throws InterruptedException, ExecutionException {
         CompletableFuture<String> result = new CompletableFuture<>();
-        client
-                .get(port, "localhost", "/ping")
-                .send(ar -> {
-                    if (ar.succeeded()) {
-                        // Obtain response
-                        HttpResponse<Buffer> response = ar.result();
-                        result.complete(response.bodyAsString());
-                    } else {
-                        result.completeExceptionally(ar.cause());
-                    }
-                });
+        client.get(port, "localhost", "/ping").send(ar -> {
+            if (ar.succeeded()) {
+                // Obtain response
+                HttpResponse<Buffer> response = ar.result();
+                result.complete(response.bodyAsString());
+            } else {
+                result.completeExceptionally(ar.cause());
+            }
+        });
         Assertions.assertEquals(PING_DATA, result.get());
     }
 
@@ -90,7 +84,7 @@ public class Http2Test {
     static class MyBean {
 
         public void register(@Observes Router router) {
-            //ping only works on HTTP/2
+            // ping only works on HTTP/2
             router.get("/ping").handler(rc -> {
                 rc.request().connection().ping(Buffer.buffer(PING_DATA), new Handler<AsyncResult<Buffer>>() {
                     @Override

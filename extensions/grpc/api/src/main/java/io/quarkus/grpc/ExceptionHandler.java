@@ -7,8 +7,8 @@ import io.grpc.ServerCall;
 /**
  * Generic exception handler
  */
-public abstract class ExceptionHandler<ReqT, RespT> extends
-        ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
+public abstract class ExceptionHandler<ReqT, RespT>
+        extends ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT> {
 
     private final ServerCall<ReqT, RespT> call;
     private final Metadata metadata;

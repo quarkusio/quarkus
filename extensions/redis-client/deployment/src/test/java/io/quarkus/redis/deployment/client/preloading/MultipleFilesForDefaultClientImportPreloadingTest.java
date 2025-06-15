@@ -24,9 +24,9 @@ public class MultipleFilesForDefaultClientImportPreloadingTest {
     @RegisterExtension
     static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.redis.hosts=${quarkus.redis.tr}\n" +
-                                    "quarkus.redis.load-script=import/my-import.redis, sample.redis"),
+                    .addAsResource(
+                            new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}\n"
+                                    + "quarkus.redis.load-script=import/my-import.redis, sample.redis"),
                             "application.properties")
                     .addAsResource(new File("src/test/resources/imports/import.redis"), "import/my-import.redis")
                     .addAsResource(new File("src/test/resources/imports/sample.redis"), "sample.redis"));
@@ -40,8 +40,8 @@ public class MultipleFilesForDefaultClientImportPreloadingTest {
         var values = ds.value(String.class);
         var hashes = ds.hash(String.class);
 
-        assertThat(keys.keys("*")).containsExactlyInAnyOrder("foo", "bar", "key1", "key2", "key3",
-                "key4", "space:key", "counter", "key");
+        assertThat(keys.keys("*")).containsExactlyInAnyOrder("foo", "bar", "key1", "key2", "key3", "key4", "space:key",
+                "counter", "key");
 
         assertThat(hashes.hgetall("foo")).containsOnly(entry("field1", "abc"), entry("field2", "123"));
         assertThat(hashes.hgetall("bar")).containsOnly(entry("field1", "abc def"), entry("field2", "123 456 "));

@@ -60,7 +60,8 @@ public class EntityClassHelper {
             return setter;
         }
         return MethodDescriptor.ofMethod(entityClass.toString(),
-                EnhancerConstants.PERSISTENT_FIELD_WRITER_PREFIX + field.name(), void.class, field.type().name().toString());
+                EnhancerConstants.PERSISTENT_FIELD_WRITER_PREFIX + field.name(), void.class,
+                field.type().name().toString());
     }
 
     public MethodDescriptor getMethod(ClassInfo entityClass, String name, Type... parameters) {

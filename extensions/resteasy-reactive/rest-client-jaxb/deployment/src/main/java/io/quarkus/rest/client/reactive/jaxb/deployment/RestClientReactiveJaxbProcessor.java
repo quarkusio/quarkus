@@ -29,16 +29,15 @@ public class RestClientReactiveJaxbProcessor {
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
         // make these beans to they can get instantiated with the Quarkus CDI
-        additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(ClientJaxbMessageBodyReader.class.getName())
-                .addBeanClass(ClientMessageBodyWriter.class.getName())
-                .setUnremovable().build());
+        additionalBean
+                .produce(AdditionalBeanBuildItem.builder().addBeanClass(ClientJaxbMessageBodyReader.class.getName())
+                        .addBeanClass(ClientMessageBodyWriter.class.getName()).setUnremovable().build());
 
-        additionalReaders
-                .produce(new MessageBodyReaderBuildItem(ClientJaxbMessageBodyReader.class.getName(), Object.class.getName(),
-                        List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.CLIENT, true, Priorities.USER));
-        additionalWriters
-                .produce(new MessageBodyWriterBuildItem(ClientMessageBodyWriter.class.getName(), Object.class.getName(),
-                        List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.CLIENT, true, Priorities.USER));
+        additionalReaders.produce(new MessageBodyReaderBuildItem(ClientJaxbMessageBodyReader.class.getName(),
+                Object.class.getName(), List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.CLIENT,
+                true, Priorities.USER));
+        additionalWriters.produce(new MessageBodyWriterBuildItem(ClientMessageBodyWriter.class.getName(),
+                Object.class.getName(), List.of(MediaType.APPLICATION_XML, MediaType.TEXT_XML), RuntimeType.CLIENT,
+                true, Priorities.USER));
     }
 }

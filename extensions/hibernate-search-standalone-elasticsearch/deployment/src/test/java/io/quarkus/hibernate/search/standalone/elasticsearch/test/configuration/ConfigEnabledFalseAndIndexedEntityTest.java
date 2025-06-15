@@ -14,15 +14,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigEnabledFalseAndIndexedEntityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-standalone.enabled", "false");
 
     @Test
     public void searchMapping() {
         // The bean is not defined during static init, so it's null.
-        assertThat(Arc.container().instance(SearchMapping.class).get())
-                .isNull();
+        assertThat(Arc.container().instance(SearchMapping.class).get()).isNull();
     }
 }

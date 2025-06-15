@@ -24,8 +24,8 @@ public class BasicTest {
     private static final Object KEY = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -95,7 +95,8 @@ public class BasicTest {
         // STEP 10
         // Action: @CachePut-annotated method call.
         // Expected effect: previous cache entry invalidated and new result added to the cache
-        // Verified by: different objects references between STEPS 9 and 10 results. The addition to the cache is validated by STEP 11
+        // Verified by: different objects references between STEPS 9 and 10 results. The addition to the cache is
+        // validated by STEP 11
         String value10 = cachedService.cachePutMethod(KEY);
         assertNotSame(value10, value9);
 

@@ -22,11 +22,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BlockingStubInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyConsumer.class, GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class,
-                            HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyConsumer.class,
+                    GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class, HelloService.class, HelloRequest.class,
+                    HelloReply.class, HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
@@ -48,13 +47,11 @@ public class BlockingStubInjectionTest {
         GreeterGrpc.GreeterBlockingStub service;
 
         public String invoke(String s) {
-            return service.sayHello(HelloRequest.newBuilder().setName(s).build())
-                    .getMessage();
+            return service.sayHello(HelloRequest.newBuilder().setName(s).build()).getMessage();
         }
 
         public String invokeWeird(String s) {
-            return service.wEIRD(HelloRequest.newBuilder().setName(s).build())
-                    .getMessage();
+            return service.wEIRD(HelloRequest.newBuilder().setName(s).build()).getMessage();
         }
 
     }

@@ -4,8 +4,8 @@ public record ExtensionModule(String groupId, String artifactId, ExtensionModule
         boolean detected) {
 
     public static ExtensionModule createNotDetected() {
-        return new ExtensionModule("not.detected", "not.detected", ExtensionModuleType.UNKNOWN, Extension.createNotDetected(),
-                false);
+        return new ExtensionModule("not.detected", "not.detected", ExtensionModuleType.UNKNOWN,
+                Extension.createNotDetected(), false);
     }
 
     public static ExtensionModule of(String groupId, String artifactId, ExtensionModuleType type, Extension extension) {

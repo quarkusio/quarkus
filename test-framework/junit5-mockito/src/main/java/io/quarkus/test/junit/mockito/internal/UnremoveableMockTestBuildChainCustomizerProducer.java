@@ -27,17 +27,15 @@ public class UnremoveableMockTestBuildChainCustomizerProducer implements TestBui
                     @Override
                     public void execute(BuildContext context) {
                         Set<String> mockTypes = new HashSet<>();
-                        List<AnnotationInstance> instances = new ArrayList<>(testClassesIndex
-                                .getAnnotations(
-                                        SingletonToApplicationScopedTestBuildChainCustomizerProducer.INJECT_MOCK));
+                        List<AnnotationInstance> instances = new ArrayList<>(testClassesIndex.getAnnotations(
+                                SingletonToApplicationScopedTestBuildChainCustomizerProducer.INJECT_MOCK));
                         for (AnnotationInstance instance : instances) {
                             mockTypes.add(instance.target().asField().type().name().toString());
                         }
-                        context.produce(
-                                new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassNamesExclusion(mockTypes)));
+                        context.produce(new UnremovableBeanBuildItem(
+                                new UnremovableBeanBuildItem.BeanClassNamesExclusion(mockTypes)));
                     }
-                }).produces(UnremovableBeanBuildItem.class)
-                        .build();
+                }).produces(UnremovableBeanBuildItem.class).build();
             }
         };
     }

@@ -23,11 +23,14 @@ public class ZRangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * The LIMIT argument can be used to obtain a sub-range from the matching elements.
-     * A negative {@code count} returns all elements from the {@code offset}.
+     * The LIMIT argument can be used to obtain a sub-range from the matching elements. A negative {@code count} returns
+     * all elements from the {@code offset}.
      *
-     * @param offset the offset value
-     * @param count the count value
+     * @param offset
+     *        the offset value
+     * @param count
+     *        the count value
+     *
      * @return the current {@code ZRangeArgs}
      **/
     public ZRangeArgs limit(long offset, int count) {

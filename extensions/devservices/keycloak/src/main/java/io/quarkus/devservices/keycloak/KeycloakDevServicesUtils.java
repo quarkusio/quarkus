@@ -32,15 +32,11 @@ final class KeycloakDevServicesUtils {
         return WebClient.create(new io.vertx.mutiny.core.Vertx(vertx), options);
     }
 
-    static Uni<String> getPasswordAccessToken(WebClient client,
-            String tokenUrl,
-            String clientId,
-            String clientSecret,
-            String userName,
-            String userPassword,
-            Map<String, String> passwordGrantOptions) {
+    static Uni<String> getPasswordAccessToken(WebClient client, String tokenUrl, String clientId, String clientSecret,
+            String userName, String userPassword, Map<String, String> passwordGrantOptions) {
         HttpRequest<Buffer> request = client.postAbs(tokenUrl);
-        request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
+        request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
+                HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
 
         io.vertx.mutiny.core.MultiMap props = new io.vertx.mutiny.core.MultiMap(MultiMap.caseInsensitiveMultiMap());
         props.add("client_id", clientId);
@@ -56,11 +52,8 @@ final class KeycloakDevServicesUtils {
         }
 
         return request.sendBuffer(encodeForm(props)).onItem()
-                .transform(KeycloakDevServicesUtils::getAccessTokenFromJson)
-                .onFailure()
-                .retry()
-                .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2))
-                .expireIn(10 * 1000);
+                .transform(KeycloakDevServicesUtils::getAccessTokenFromJson).onFailure().retry()
+                .withBackOff(Duration.ofSeconds(2), Duration.ofSeconds(2)).expireIn(10 * 1000);
     }
 
     private static String getAccessTokenFromJson(HttpResponse<Buffer> resp) {

@@ -21,18 +21,17 @@ public class TestHandler implements BiConsumer<Object, BuildResult> {
         QuarkusConsole.start();
         TestSupport.instance().get().start();
 
-        //we don't actually start the app
-        //so logging would not be enabled
+        // we don't actually start the app
+        // so logging would not be enabled
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
         BannerConfig banner = config.getConfigMapping(BannerConfig.class);
         LoggingSetupRecorder.handleFailedStart(
-                new BannerProcessor()
-                        .recordBanner(new BannerRecorder(new RuntimeValue<>(new BannerRuntimeConfig() {
-                            @Override
-                            public boolean enabled() {
-                                return config.getOptionalValue("quarkus.banner.enabled", Boolean.class).orElse(true);
-                            }
-                        })), banner).getBannerSupplier());
+                new BannerProcessor().recordBanner(new BannerRecorder(new RuntimeValue<>(new BannerRuntimeConfig() {
+                    @Override
+                    public boolean enabled() {
+                        return config.getOptionalValue("quarkus.banner.enabled", Boolean.class).orElse(true);
+                    }
+                })), banner).getBannerSupplier());
         Logger.getLogger("io.quarkus.test").info("Quarkus continuous testing mode started");
     }
 }

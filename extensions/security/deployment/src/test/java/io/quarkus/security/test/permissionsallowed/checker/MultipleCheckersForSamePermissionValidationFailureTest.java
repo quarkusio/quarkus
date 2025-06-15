@@ -14,12 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultipleCheckersForSamePermissionValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .assertException(t -> {
-                Assertions.assertEquals(IllegalArgumentException.class, t.getClass(), t.getMessage());
-                Assertions.assertTrue(
-                        t.getMessage().contains("Detected two @PermissionChecker annotations with same value 'some-value'"));
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().assertException(t -> {
+        Assertions.assertEquals(IllegalArgumentException.class, t.getClass(), t.getMessage());
+        Assertions.assertTrue(
+                t.getMessage().contains("Detected two @PermissionChecker annotations with same value 'some-value'"));
+    });
 
     @Test
     public void test() {

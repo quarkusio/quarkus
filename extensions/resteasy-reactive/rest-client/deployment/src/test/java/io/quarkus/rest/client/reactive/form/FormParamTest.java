@@ -22,9 +22,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class FormParamTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FormClient.class, SubFormClient.class, Resource.class, Mode.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FormClient.class, SubFormClient.class, Resource.class, Mode.class));
 
     @TestHTTPResource
     URI baseUri;

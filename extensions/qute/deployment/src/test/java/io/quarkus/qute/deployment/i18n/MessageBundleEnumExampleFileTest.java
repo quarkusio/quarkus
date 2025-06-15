@@ -23,14 +23,11 @@ public class MessageBundleEnumExampleFileTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Messages.class, MyEnum.class)
-                    .addAsResource(new StringAsset("""
-                            myEnum_ON=On
-                            myEnum_OFF=Off
-                            myEnum_UNDEFINED=Undefined
-                            """),
-                            "messages/enu.properties"));
+            .withApplicationRoot(root -> root.addClasses(Messages.class, MyEnum.class).addAsResource(new StringAsset("""
+                    myEnum_ON=On
+                    myEnum_OFF=Off
+                    myEnum_UNDEFINED=Undefined
+                    """), "messages/enu.properties"));
 
     @ProdBuildResults
     ProdModeTestResults testResults;
@@ -52,10 +49,10 @@ public class MessageBundleEnumExampleFileTest {
 
         // Replaced with:
         // @Message("{#when myEnum}"
-        //  + "{#is ON}{enu:myEnum_ON}"
-        //  + "{#is OFF}{enu:myEnum_OFF}"
-        //  + "{#is UNDEFINED}{enu:myEnum_UNDEFINED}"
-        //  + "{/when}")
+        // + "{#is ON}{enu:myEnum_ON}"
+        // + "{#is OFF}{enu:myEnum_OFF}"
+        // + "{#is UNDEFINED}{enu:myEnum_UNDEFINED}"
+        // + "{/when}")
         @Message
         String myEnum(MyEnum myEnum);
 

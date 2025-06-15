@@ -38,51 +38,41 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public String getLatestVersion(ArtifactCoords appArtifact, String upToVersion,
-            boolean inclusive)
+    public String getLatestVersion(ArtifactCoords appArtifact, String upToVersion, boolean inclusive)
             throws AppModelResolverException {
         try {
-            return resolveArtifact(
-                    new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
-                            appArtifact.getClassifier(), appArtifact.getType(),
-                            "[" + appArtifact.getVersion() + "," + upToVersion + (inclusive ? "]" : ")")))
-                    .getVersion();
+            return resolveArtifact(new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                    appArtifact.getClassifier(), appArtifact.getType(),
+                    "[" + appArtifact.getVersion() + "," + upToVersion + (inclusive ? "]" : ")"))).getVersion();
         } catch (AppModelResolverException e) {
             return null;
         }
     }
 
     @Override
-    public String getLatestVersionFromRange(ArtifactCoords appArtifact, String range)
-            throws AppModelResolverException {
+    public String getLatestVersionFromRange(ArtifactCoords appArtifact, String range) throws AppModelResolverException {
         try {
-            return resolveArtifact(
-                    new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
-                            appArtifact.getClassifier(), appArtifact.getType(), range))
-                    .getVersion();
+            return resolveArtifact(new GACTV(appArtifact.getGroupId(), appArtifact.getArtifactId(),
+                    appArtifact.getClassifier(), appArtifact.getType(), range)).getVersion();
         } catch (AppModelResolverException e) {
             return null;
         }
     }
 
     @Override
-    public String getNextVersion(ArtifactCoords appArtifact, String fromVersion,
-            boolean fromVersionIncluded, String upToVersion,
-            boolean upToVersionIncluded)
+    public String getNextVersion(ArtifactCoords appArtifact, String fromVersion, boolean fromVersionIncluded,
+            String upToVersion, boolean upToVersionIncluded) throws AppModelResolverException {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<String> listLaterVersions(ArtifactCoords appArtifact, String upToVersion, boolean inclusive)
             throws AppModelResolverException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public List<String> listLaterVersions(ArtifactCoords appArtifact, String upToVersion,
-            boolean inclusive)
-            throws AppModelResolverException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void relink(ArtifactCoords artifact, Path localPath)
-            throws AppModelResolverException {
+    public void relink(ArtifactCoords artifact, Path localPath) throws AppModelResolverException {
 
     }
 
@@ -91,8 +81,7 @@ public class AppModelGradleResolver implements AppModelResolver {
         return resolveArtifact(appArtifact);
     }
 
-    private ResolvedDependency resolveArtifact(
-            ArtifactCoords appArtifact) throws AppModelResolverException {
+    private ResolvedDependency resolveArtifact(ArtifactCoords appArtifact) throws AppModelResolverException {
         if (ResolvedDependency.class.isAssignableFrom(appArtifact.getClass())) {
             final ResolvedDependency resolved = (ResolvedDependency) appArtifact;
             if (resolved.isResolved()) {
@@ -142,8 +131,7 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public ApplicationModel resolveModel(ArtifactCoords appArtifact)
-            throws AppModelResolverException {
+    public ApplicationModel resolveModel(ArtifactCoords appArtifact) throws AppModelResolverException {
         ensureProjectCoords(appArtifact);
         return ToolingUtils.create(project, mode);
     }
@@ -158,11 +146,8 @@ public class AppModelGradleResolver implements AppModelResolver {
     }
 
     @Override
-    public ApplicationModel resolveManagedModel(ArtifactCoords appArtifact,
-            Collection<Dependency> directDeps,
-            ArtifactCoords managingProject,
-            Set<ArtifactKey> localProjects)
-            throws AppModelResolverException {
+    public ApplicationModel resolveManagedModel(ArtifactCoords appArtifact, Collection<Dependency> directDeps,
+            ArtifactCoords managingProject, Set<ArtifactKey> localProjects) throws AppModelResolverException {
         return resolveModel(appArtifact);
     }
 
@@ -172,8 +157,7 @@ public class AppModelGradleResolver implements AppModelResolver {
                 && project.getVersion().toString().equals(appArtifact.getVersion())) {
             return;
         }
-        throw new AppModelResolverException(
-                "Requested artifact " + appArtifact + " does not match project " + project.getGroup() + ":" + project.getName()
-                        + ":" + project.getVersion());
+        throw new AppModelResolverException("Requested artifact " + appArtifact + " does not match project "
+                + project.getGroup() + ":" + project.getName() + ":" + project.getVersion());
     }
 }

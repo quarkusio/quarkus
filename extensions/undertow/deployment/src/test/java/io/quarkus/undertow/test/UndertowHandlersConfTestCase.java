@@ -20,16 +20,12 @@ public class UndertowHandlersConfTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RedirectedServlet.class)
-                    .addAsManifestResource(new StringAsset("path-prefix('/foo') -> rewrite('/bar')"),
-                            "undertow-handlers.conf"));
+            .withApplicationRoot((jar) -> jar.addClasses(RedirectedServlet.class).addAsManifestResource(
+                    new StringAsset("path-prefix('/foo') -> rewrite('/bar')"), "undertow-handlers.conf"));
 
     @Test
     public void testUndertowHandlersRewrite() {
-        when().get("/foo").then()
-                .statusCode(200)
-                .body(is("RedirectedServlet"));
+        when().get("/foo").then().statusCode(200).body(is("RedirectedServlet"));
     }
 
     @WebServlet(urlPatterns = "/bar")

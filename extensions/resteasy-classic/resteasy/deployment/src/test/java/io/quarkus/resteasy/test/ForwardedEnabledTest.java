@@ -15,16 +15,18 @@ public class ForwardedEnabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class)
-                    .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +
-                            "quarkus.http.proxy.enable-forwarded-host=true\n"),
-                            "application.properties"));
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(TestResource.class)
+                            .addAsResource(
+                                    new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n"
+                                            + "quarkus.http.proxy.enable-forwarded-host=true\n"),
+                                    "application.properties"));
 
     @Test
     public void test() {
         RestAssured.get("/test").then().statusCode(200).body(Matchers.equalToIgnoringCase("hello"));
-        RestAssured.given().header("Host", "").get("/test").then().statusCode(200).body(Matchers.equalToIgnoringCase("hello"));
+        RestAssured.given().header("Host", "").get("/test").then().statusCode(200)
+                .body(Matchers.equalToIgnoringCase("hello"));
     }
 
     @Path("/test")

@@ -28,9 +28,10 @@ public final class TokenConfigBuilder {
             Optional<Duration> refreshTokenTimeSkew, Duration forcedJwkRefreshInterval, Optional<String> header,
             String authorizationScheme, Optional<OidcTenantConfig.SignatureAlgorithm> signatureAlgorithm,
             Optional<String> decryptionKeyLocation, Optional<Boolean> decryptIdToken, boolean decryptAccessToken,
-            boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly,
-            boolean allowOpaqueTokenIntrospection, Optional<String> customizerName,
-            Optional<Boolean> verifyAccessTokenWithUserInfo, Binding binding) implements OidcTenantConfig.Token {
+            boolean allowJwtIntrospection, boolean requireJwtIntrospectionOnly, boolean allowOpaqueTokenIntrospection,
+            Optional<String> customizerName, Optional<Boolean> verifyAccessTokenWithUserInfo, Binding binding)
+            implements
+                OidcTenantConfig.Token {
     }
 
     private final OidcTenantConfigBuilder builder;
@@ -104,8 +105,11 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param requiredClaimName {@link OidcTenantConfig.Token#requiredClaims()} name
-     * @param requiredClaimValue {@link OidcTenantConfig.Token#requiredClaims()} value
+     * @param requiredClaimName
+     *        {@link OidcTenantConfig.Token#requiredClaims()} name
+     * @param requiredClaimValue
+     *        {@link OidcTenantConfig.Token#requiredClaims()} value
+     *
      * @return this builder
      */
     public TokenConfigBuilder requiredClaims(String requiredClaimName, String requiredClaimValue) {
@@ -116,8 +120,11 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param requiredClaimName {@link OidcTenantConfig.Token#requiredClaims()} name
-     * @param requiredClaimValues {@link OidcTenantConfig.Token#requiredClaims()} value
+     * @param requiredClaimName
+     *        {@link OidcTenantConfig.Token#requiredClaims()} name
+     * @param requiredClaimValues
+     *        {@link OidcTenantConfig.Token#requiredClaims()} value
+     *
      * @return this builder
      */
     public TokenConfigBuilder requiredClaims(String requiredClaimName, Set<String> requiredClaimValues) {
@@ -128,14 +135,14 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param requiredClaims {@link OidcTenantConfig.Token#requiredClaims()}
+     * @param requiredClaims
+     *        {@link OidcTenantConfig.Token#requiredClaims()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder requiredClaims(Map<String, String> requiredClaims) {
         if (requiredClaims != null) {
-            return this.setRequiredClaims(requiredClaims
-                    .entrySet()
-                    .stream()
+            return this.setRequiredClaims(requiredClaims.entrySet().stream()
                     .collect(Collectors.toMap(new Function<Map.Entry<String, String>, String>() {
                         @Override
                         public String apply(Map.Entry<String, String> stringStringEntry) {
@@ -152,7 +159,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param requiredClaims {@link OidcTenantConfig.Token#requiredClaims()}
+     * @param requiredClaims
+     *        {@link OidcTenantConfig.Token#requiredClaims()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder setRequiredClaims(Map<String, Set<String>> requiredClaims) {
@@ -163,7 +172,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param audience {@link OidcTenantConfig.Token#audience()}
+     * @param audience
+     *        {@link OidcTenantConfig.Token#audience()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder audience(String... audience) {
@@ -174,7 +185,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param audience {@link OidcTenantConfig.Token#audience()}
+     * @param audience
+     *        {@link OidcTenantConfig.Token#audience()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder audience(List<String> audience) {
@@ -185,7 +198,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param issuer {@link OidcTenantConfig.Token#issuer()}
+     * @param issuer
+     *        {@link OidcTenantConfig.Token#issuer()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder issuer(String issuer) {
@@ -203,7 +218,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param subjectRequired {@link OidcTenantConfig.Token#subjectRequired()}
+     * @param subjectRequired
+     *        {@link OidcTenantConfig.Token#subjectRequired()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder subjectRequired(boolean subjectRequired) {
@@ -212,7 +229,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param tokenType {@link OidcTenantConfig.Token#tokenType()}
+     * @param tokenType
+     *        {@link OidcTenantConfig.Token#tokenType()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder tokenType(String tokenType) {
@@ -221,7 +240,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param lifespanGrace {@link OidcTenantConfig.Token#lifespanGrace()}
+     * @param lifespanGrace
+     *        {@link OidcTenantConfig.Token#lifespanGrace()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder lifespanGrace(int lifespanGrace) {
@@ -230,7 +251,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param age {@link OidcTenantConfig.Token#age()}
+     * @param age
+     *        {@link OidcTenantConfig.Token#age()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder age(Duration age) {
@@ -248,7 +271,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param issuedAtRequired {@link OidcTenantConfig.Token#issuedAtRequired()}
+     * @param issuedAtRequired
+     *        {@link OidcTenantConfig.Token#issuedAtRequired()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder issuedAtRequired(boolean issuedAtRequired) {
@@ -257,7 +282,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param principalClaim {@link OidcTenantConfig.Token#principalClaim()}
+     * @param principalClaim
+     *        {@link OidcTenantConfig.Token#principalClaim()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder principalClaim(String principalClaim) {
@@ -275,7 +302,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param refreshExpired {@link OidcTenantConfig.Token#refreshExpired()}
+     * @param refreshExpired
+     *        {@link OidcTenantConfig.Token#refreshExpired()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder refreshExpired(boolean refreshExpired) {
@@ -284,7 +313,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param refreshTokenTimeSkew {@link OidcTenantConfig.Token#refreshTokenTimeSkew()}
+     * @param refreshTokenTimeSkew
+     *        {@link OidcTenantConfig.Token#refreshTokenTimeSkew()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder refreshTokenTimeSkew(Duration refreshTokenTimeSkew) {
@@ -293,7 +324,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param forcedJwkRefreshInterval {@link OidcTenantConfig.Token#forcedJwkRefreshInterval()}
+     * @param forcedJwkRefreshInterval
+     *        {@link OidcTenantConfig.Token#forcedJwkRefreshInterval()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder forcedJwkRefreshInterval(Duration forcedJwkRefreshInterval) {
@@ -302,7 +335,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param header {@link OidcTenantConfig.Token#header()}
+     * @param header
+     *        {@link OidcTenantConfig.Token#header()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder header(String header) {
@@ -311,7 +346,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param authorizationScheme {@link OidcTenantConfig.Token#authorizationScheme()}
+     * @param authorizationScheme
+     *        {@link OidcTenantConfig.Token#authorizationScheme()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder authorizationScheme(String authorizationScheme) {
@@ -320,7 +357,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param signatureAlgorithm {@link OidcTenantConfig.Token#signatureAlgorithm()}
+     * @param signatureAlgorithm
+     *        {@link OidcTenantConfig.Token#signatureAlgorithm()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder signatureAlgorithm(OidcTenantConfig.SignatureAlgorithm signatureAlgorithm) {
@@ -329,7 +368,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param decryptionKeyLocation {@link OidcTenantConfig.Token#decryptionKeyLocation()}
+     * @param decryptionKeyLocation
+     *        {@link OidcTenantConfig.Token#decryptionKeyLocation()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder decryptionKeyLocation(String decryptionKeyLocation) {
@@ -347,7 +388,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param decryptIdToken {@link OidcTenantConfig.Token#decryptIdToken()}
+     * @param decryptIdToken
+     *        {@link OidcTenantConfig.Token#decryptIdToken()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder decryptIdToken(boolean decryptIdToken) {
@@ -365,7 +408,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param decryptAccessToken {@link OidcTenantConfig.Token#decryptAccessToken()}
+     * @param decryptAccessToken
+     *        {@link OidcTenantConfig.Token#decryptAccessToken()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder decryptAccessToken(boolean decryptAccessToken) {
@@ -383,7 +428,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param allowJwtIntrospection {@link OidcTenantConfig.Token#allowJwtIntrospection()}
+     * @param allowJwtIntrospection
+     *        {@link OidcTenantConfig.Token#allowJwtIntrospection()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder allowJwtIntrospection(boolean allowJwtIntrospection) {
@@ -401,7 +448,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param requireJwtIntrospectionOnly {@link OidcTenantConfig.Token#requireJwtIntrospectionOnly()}
+     * @param requireJwtIntrospectionOnly
+     *        {@link OidcTenantConfig.Token#requireJwtIntrospectionOnly()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder requireJwtIntrospectionOnly(boolean requireJwtIntrospectionOnly) {
@@ -419,7 +468,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param allowOpaqueTokenIntrospection {@link OidcTenantConfig.Token#allowOpaqueTokenIntrospection()}
+     * @param allowOpaqueTokenIntrospection
+     *        {@link OidcTenantConfig.Token#allowOpaqueTokenIntrospection()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder allowOpaqueTokenIntrospection(boolean allowOpaqueTokenIntrospection) {
@@ -428,7 +479,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param customizerName {@link OidcTenantConfig.Token#customizerName()}
+     * @param customizerName
+     *        {@link OidcTenantConfig.Token#customizerName()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder customizerName(String customizerName) {
@@ -446,7 +499,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param verifyAccessTokenWithUserInfo {@link OidcTenantConfig.Token#verifyAccessTokenWithUserInfo()}
+     * @param verifyAccessTokenWithUserInfo
+     *        {@link OidcTenantConfig.Token#verifyAccessTokenWithUserInfo()}
+     *
      * @return this builder
      */
     public TokenConfigBuilder verifyAccessTokenWithUserInfo(boolean verifyAccessTokenWithUserInfo) {
@@ -464,7 +519,9 @@ public final class TokenConfigBuilder {
     }
 
     /**
-     * @param binding {@link OidcTenantConfig#)}
+     * @param binding
+     *        {@link OidcTenantConfig#)}
+     *
      * @return this builder
      */
     public TokenConfigBuilder binding(Binding binding) {
@@ -488,10 +545,8 @@ public final class TokenConfigBuilder {
         return new TokenImpl(issuer, optionalAudience, subjectRequired, Map.copyOf(requiredClaims), tokenType,
                 lifespanGrace, age, issuedAtRequired, principalClaim, refreshExpired, refreshTokenTimeSkew,
                 forcedJwkRefreshInterval, header, authorizationScheme, signatureAlgorithm, decryptionKeyLocation,
-                decryptIdToken,
-                decryptAccessToken, allowJwtIntrospection, requireJwtIntrospectionOnly, allowOpaqueTokenIntrospection,
-                customizerName,
-                verifyAccessTokenWithUserInfo, binding);
+                decryptIdToken, decryptAccessToken, allowJwtIntrospection, requireJwtIntrospectionOnly,
+                allowOpaqueTokenIntrospection, customizerName, verifyAccessTokenWithUserInfo, binding);
     }
 
     /**
@@ -532,7 +587,9 @@ public final class TokenConfigBuilder {
         }
 
         /**
-         * @param certificate {@link OidcTenantConfig.Binding#certificate()}
+         * @param certificate
+         *        {@link OidcTenantConfig.Binding#certificate()}
+         *
          * @return this builder
          */
         public BindingConfigBuilder certificate(boolean certificate) {

@@ -17,8 +17,7 @@ public final class FlywayContainerUtil {
     }
 
     public static FlywayContainer getFlywayContainer(String dataSourceName) {
-        return Arc.container().instance(FlywayContainer.class,
-                getFlywayContainerQualifier(dataSourceName)).get();
+        return Arc.container().instance(FlywayContainer.class, getFlywayContainerQualifier(dataSourceName)).get();
     }
 
     public static List<FlywayContainer> getActiveFlywayContainers() {

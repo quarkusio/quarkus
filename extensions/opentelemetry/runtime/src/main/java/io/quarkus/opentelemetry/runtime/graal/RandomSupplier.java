@@ -12,7 +12,8 @@ final class RandomSupplier {
 
     @Substitute
     public static Supplier<Random> platformDefault() {
-        // removed delegation to AndroidFriendlyRandomHolder (which has a Random constant), making it effectively unreachable
+        // removed delegation to AndroidFriendlyRandomHolder (which has a Random constant), making it effectively
+        // unreachable
         return ThreadLocalRandom::current;
     }
 }

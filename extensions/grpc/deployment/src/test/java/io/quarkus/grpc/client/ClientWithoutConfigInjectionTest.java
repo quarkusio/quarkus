@@ -23,12 +23,10 @@ import io.smallrye.mutiny.Uni;
 public class ClientWithoutConfigInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MutinyGreeterGrpc.class, GreeterGrpc.class,
-                            MutinyGreeterGrpc.MutinyGreeterStub.class,
-                            HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MutinyGreeterGrpc.class,
+                    GreeterGrpc.class, MutinyGreeterGrpc.MutinyGreeterStub.class, HelloService.class,
+                    HelloRequest.class, HelloReply.class, HelloReplyOrBuilder.class, HelloRequestOrBuilder.class));
 
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
@@ -48,12 +46,10 @@ public class ClientWithoutConfigInjectionTest {
 
     @Test
     public void testHelloWithMutinyClient() {
-        Uni<HelloReply> reply = mutinyClient
-                .sayHello(HelloRequest.newBuilder().setName("neo").build());
+        Uni<HelloReply> reply = mutinyClient.sayHello(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.await().atMost(TIMEOUT).getMessage()).isEqualTo("Hello neo");
 
-        reply = mutinyClient
-                .wEIRD(HelloRequest.newBuilder().setName("neo").build());
+        reply = mutinyClient.wEIRD(HelloRequest.newBuilder().setName("neo").build());
         assertThat(reply.await().atMost(TIMEOUT).getMessage()).isEqualTo("Hello neo");
     }
 }

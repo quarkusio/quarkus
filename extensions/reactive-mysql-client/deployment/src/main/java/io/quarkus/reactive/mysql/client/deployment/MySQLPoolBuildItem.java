@@ -14,7 +14,8 @@ public final class MySQLPoolBuildItem extends MultiBuildItem {
 
     private final Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> mysqlPool;
 
-    public MySQLPoolBuildItem(String dataSourceName, Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> mysqlPool) {
+    public MySQLPoolBuildItem(String dataSourceName,
+            Function<SyntheticCreationalContext<MySQLPool>, MySQLPool> mysqlPool) {
         this.dataSourceName = dataSourceName;
         this.mysqlPool = mysqlPool;
     }

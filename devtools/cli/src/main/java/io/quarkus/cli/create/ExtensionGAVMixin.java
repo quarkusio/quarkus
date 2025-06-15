@@ -8,18 +8,14 @@ import picocli.CommandLine;
 
 public class ExtensionGAVMixin {
     static final String DEFAULT_EXTENSION_ID = "custom";
-    static final String EXAMPLE_GAV = "io.quarkiverse.custom:"
-            + DEFAULT_EXTENSION_ID;
+    static final String EXAMPLE_GAV = "io.quarkiverse.custom:" + DEFAULT_EXTENSION_ID;
 
     String groupId = null;
     String extensionId = null;
     String version = null;
 
     @CommandLine.Parameters(arity = "0..1", paramLabel = "[GROUP-ID:]EXTENSION-ID[:VERSION]", description = "Quarkus extension project identifiers%n"
-            + "  " + EXAMPLE_GAV + "%n"
-            + "  Examples:%n"
-            + "     my-extension%n"
-            + "     my.group:my-extension%n"
+            + "  " + EXAMPLE_GAV + "%n" + "  Examples:%n" + "     my-extension%n" + "     my.group:my-extension%n"
             + "     my.group:my-extension:0.1%n")
     String gav = null;
 
@@ -30,16 +26,16 @@ public class ExtensionGAVMixin {
                 int firstPos = gav.indexOf(":");
                 int lastPos = gav.lastIndexOf(":");
                 if (firstPos < 0) {
-                    // extension-id  -- use defaults for group id and version (common/demo)
+                    // extension-id -- use defaults for group id and version (common/demo)
                     extensionId = gav;
                 } else {
-                    // g::   -- (uncommon)
-                    // g::v  -- (uncommon)
-                    // g:a   -- COMMON
-                    // g:a:  -- (uncommon alternate)
+                    // g:: -- (uncommon)
+                    // g::v -- (uncommon)
+                    // g:a -- COMMON
+                    // g:a: -- (uncommon alternate)
                     // g:a:v -- COMMON
-                    // :a:   -- (uncommon alternate)
-                    // :a:v  -- (uncommon)
+                    // :a: -- (uncommon alternate)
+                    // :a:v -- (uncommon)
                     if (firstPos != 0) {
                         groupId = gav.substring(0, firstPos);
                     }

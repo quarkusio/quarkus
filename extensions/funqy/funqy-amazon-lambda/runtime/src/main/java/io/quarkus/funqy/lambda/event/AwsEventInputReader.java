@@ -174,9 +174,8 @@ public class AwsEventInputReader implements LambdaInputReader<Object> {
         // https://github.com/cloudevents/spec/blob/v1.0.2/cloudevents/spec.md#required-attributes
         // A more tolerant way to check the type. We do not want the process to fail. We can fall back to
         // the best guess logic.
-        return record.has("specversion") && record.get("specversion").isTextual() &&
-                SpecVersion.V1.toString().equals(record.get("specversion").asText()) &&
-                record.has("type");
+        return record.has("specversion") && record.get("specversion").isTextual()
+                && SpecVersion.V1.toString().equals(record.get("specversion").asText()) && record.has("type");
     }
 
     private String getEventSource(JsonNode record) {

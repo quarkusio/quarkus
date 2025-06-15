@@ -30,11 +30,8 @@ public class OidcClientRegistrationBuildStep {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    public void setup(
-            OidcClientRegistrationsConfig oidcConfig,
-            OidcClientRegistrationRecorder recorder,
-            CoreVertxBuildItem vertxBuildItem,
-            TlsRegistryBuildItem tlsRegistry,
+    public void setup(OidcClientRegistrationsConfig oidcConfig, OidcClientRegistrationRecorder recorder,
+            CoreVertxBuildItem vertxBuildItem, TlsRegistryBuildItem tlsRegistry,
             BuildProducer<SyntheticBeanBuildItem> syntheticBean) {
 
         OidcClientRegistrations oidcClientRegistrations = recorder.setup(oidcConfig, vertxBuildItem.getVertx(),
@@ -42,19 +39,13 @@ public class OidcClientRegistrationBuildStep {
 
         syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClientRegistration.class).unremovable()
                 .types(OidcClientRegistration.class)
-                .supplier(recorder.createOidcClientRegistrationBean(oidcClientRegistrations))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
-                .done());
+                .supplier(recorder.createOidcClientRegistrationBean(oidcClientRegistrations)).scope(Singleton.class)
+                .setRuntimeInit().destroyer(BeanDestroyer.CloseableDestroyer.class).done());
 
         syntheticBean.produce(SyntheticBeanBuildItem.configure(OidcClientRegistrations.class).unremovable()
                 .types(OidcClientRegistrations.class)
-                .supplier(recorder.createOidcClientRegistrationsBean(oidcClientRegistrations))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
-                .done());
+                .supplier(recorder.createOidcClientRegistrationsBean(oidcClientRegistrations)).scope(Singleton.class)
+                .setRuntimeInit().destroyer(BeanDestroyer.CloseableDestroyer.class).done());
     }
 
     public static class IsEnabled implements BooleanSupplier {

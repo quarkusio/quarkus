@@ -30,11 +30,8 @@ public class SubResourceNoDuplicateClassGenerationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(StoreResourceClientV2.class)
-                    .addClass(StoreResourceClient.class)
-                    .addClass(OrderResourceClient.class)
-                    .addClass(PositionResourceClient.class))
+            .withApplicationRoot((jar) -> jar.addClass(StoreResourceClientV2.class).addClass(StoreResourceClient.class)
+                    .addClass(OrderResourceClient.class).addClass(PositionResourceClient.class))
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {
@@ -46,11 +43,14 @@ public class SubResourceNoDuplicateClassGenerationTest {
                                     .consumeMulti(GeneratedClassBuildItem.class);
                             for (GeneratedClassBuildItem generatedClassBuildItem : generatedClassBuildItems) {
                                 Class<?> key = null;
-                                if (generatedClassBuildItem.binaryName().contains(StoreResourceClientV2.class.getName())) {
+                                if (generatedClassBuildItem.binaryName()
+                                        .contains(StoreResourceClientV2.class.getName())) {
                                     key = StoreResourceClientV2.class;
-                                } else if (generatedClassBuildItem.binaryName().contains(StoreResourceClient.class.getName())) {
+                                } else if (generatedClassBuildItem.binaryName()
+                                        .contains(StoreResourceClient.class.getName())) {
                                     key = StoreResourceClient.class;
-                                } else if (generatedClassBuildItem.binaryName().contains(OrderResourceClient.class.getName())) {
+                                } else if (generatedClassBuildItem.binaryName()
+                                        .contains(OrderResourceClient.class.getName())) {
                                     key = OrderResourceClient.class;
                                 } else if (generatedClassBuildItem.binaryName()
                                         .contains(PositionResourceClient.class.getName())) {
@@ -73,13 +73,17 @@ public class SubResourceNoDuplicateClassGenerationTest {
                             // share the same set of not path parameters
 
                             // invoker + client
-                            assertThat(genClientsForInterface, hasEntry(equalTo(StoreResourceClientV2.class), hasSize(2)));
+                            assertThat(genClientsForInterface,
+                                    hasEntry(equalTo(StoreResourceClientV2.class), hasSize(2)));
                             // invoker + client
-                            assertThat(genClientsForInterface, hasEntry(equalTo(StoreResourceClient.class), hasSize(2)));
+                            assertThat(genClientsForInterface,
+                                    hasEntry(equalTo(StoreResourceClient.class), hasSize(2)));
                             // invoker + client + 2 (1 for each store resource)
-                            assertThat(genClientsForInterface, hasEntry(equalTo(OrderResourceClient.class), hasSize(4)));
+                            assertThat(genClientsForInterface,
+                                    hasEntry(equalTo(OrderResourceClient.class), hasSize(4)));
                             // invoker + client + 2 (1 for each store resource)
-                            assertThat(genClientsForInterface, hasEntry(equalTo(PositionResourceClient.class), hasSize(4)));
+                            assertThat(genClientsForInterface,
+                                    hasEntry(equalTo(PositionResourceClient.class), hasSize(4)));
                         }
                         // just claim to produce PreloadClassBuildItem to get this build step to run
                     }).consumes(GeneratedClassBuildItem.class).produces(PreloadClassBuildItem.class).build();
@@ -101,10 +105,13 @@ public class SubResourceNoDuplicateClassGenerationTest {
     @Path("store")
     public interface StoreResourceClient {
 
-        // In this fictive scenario, the Store SAAS decided to remove the customerId from the query params, and instead retrieve it using a jwt
-        // Now image these Client interfaces are part of a store-client module provided by the saas. They could still keep this
+        // In this fictive scenario, the Store SAAS decided to remove the customerId from the query params, and instead
+        // retrieve it using a jwt
+        // Now image these Client interfaces are part of a store-client module provided by the saas. They could still
+        // keep this
         // (now deprecated) client around, as to not break client module consumers.
-        // On the quarkus side, we need to make sure that distinct sub resources for the orderresourceclient (and its subresources) are generated
+        // On the quarkus side, we need to make sure that distinct sub resources for the orderresourceclient (and its
+        // subresources) are generated
         // to make it possible to pass the customerId QueryParam around
         @Path("orders/{orderId}")
         OrderResourceClient orderResource(@RestQuery String customerId, @RestPath String orderId);

@@ -16,7 +16,8 @@ public final class NamedLogHandlersBuildItem extends MultiBuildItem {
     /**
      * Construct a new instance.
      *
-     * @param namedHandlersMap the named handlers to add to the run time configuration
+     * @param namedHandlersMap
+     *        the named handlers to add to the run time configuration
      */
     public NamedLogHandlersBuildItem(final RuntimeValue<Map<String, Handler>> namedHandlersMap) {
         this.namedHandlersMap = Assert.checkNotNullParam("namedHandlersMap", namedHandlersMap);

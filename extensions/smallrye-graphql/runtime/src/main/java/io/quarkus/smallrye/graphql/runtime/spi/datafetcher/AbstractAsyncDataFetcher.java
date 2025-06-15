@@ -30,66 +30,57 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
 
     @Override
     @SuppressWarnings("unchecked")
-    protected <O> O invokeAndTransform(
-            Context c,
-            DataFetchingEnvironment dfe,
-            DataFetcherResult.Builder<Object> resultBuilder,
-            Object[] transformedArguments) throws Exception {
+    protected <O> O invokeAndTransform(Context c, DataFetchingEnvironment dfe,
+            DataFetcherResult.Builder<Object> resultBuilder, Object[] transformedArguments) throws Exception {
         ManagedContext requestContext = Arc.container().requestContext();
 
         try {
             measurementIds.add(metricsEmitter.start(c));
             RequestContextHelper.reactivate(requestContext, dfe);
             Uni<?> uni = handleUserMethodCall(dfe, transformedArguments);
-            return (O) uni
-                    .onItemOrFailure()
-                    .transformToUni((result, throwable, emitter) -> {
+            return (O) uni.onItemOrFailure().transformToUni((result, throwable, emitter) -> {
 
-                        try {
-                            emitter.onTermination(() -> {
-                                deactivate(requestContext);
-                            });
-                            if (throwable != null) {
-                                if (throwable instanceof ExecutionException && throwable.getCause() != null) {
-                                    throwable = throwable.getCause();
-                                }
-                                eventEmitter.fireOnDataFetchError(c, throwable);
-                                if (throwable instanceof GraphQLException) {
-                                    GraphQLException graphQLException = (GraphQLException) throwable;
-                                    errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
-                                } else if (throwable instanceof ConstraintViolationException) {
-                                    BeanValidationUtil.addConstraintViolationsToDataFetcherResult(
-                                            ((ConstraintViolationException) throwable).getConstraintViolations(),
-                                            operationInvoker.getMethod(), resultBuilder, dfe);
-                                } else if (throwable instanceof Exception) {
-                                    emitter.fail(SmallRyeGraphQLServerMessages.msg.dataFetcherException(operation, throwable));
-                                    return;
-                                } else if (throwable instanceof Error) {
-                                    emitter.fail(throwable);
-                                    return;
-                                }
-                            } else {
-                                try {
-                                    resultBuilder.data(fieldHelper.transformOrAdaptResponse(result, dfe));
-                                } catch (AbstractDataFetcherException te) {
-                                    te.appendDataFetcherResult(resultBuilder, dfe);
-                                } finally {
-                                    eventEmitter.fireAfterDataFetch(c);
-                                }
-                            }
-                            emitter.complete(resultBuilder.build());
-                        } finally {
-                            metricsEmitter.end(measurementIds.remove());
+                try {
+                    emitter.onTermination(() -> {
+                        deactivate(requestContext);
+                    });
+                    if (throwable != null) {
+                        if (throwable instanceof ExecutionException && throwable.getCause() != null) {
+                            throwable = throwable.getCause();
                         }
-                    })
-                    .onCancellation().invoke(() -> {
-                        deactivate(requestContext);
-                    })
-                    .onTermination().invoke(() -> {
-                        deactivate(requestContext);
-                    })
-                    .subscribe()
-                    .asCompletionStage();
+                        eventEmitter.fireOnDataFetchError(c, throwable);
+                        if (throwable instanceof GraphQLException) {
+                            GraphQLException graphQLException = (GraphQLException) throwable;
+                            errorResultHelper.appendPartialResult(resultBuilder, dfe, graphQLException);
+                        } else if (throwable instanceof ConstraintViolationException) {
+                            BeanValidationUtil.addConstraintViolationsToDataFetcherResult(
+                                    ((ConstraintViolationException) throwable).getConstraintViolations(),
+                                    operationInvoker.getMethod(), resultBuilder, dfe);
+                        } else if (throwable instanceof Exception) {
+                            emitter.fail(SmallRyeGraphQLServerMessages.msg.dataFetcherException(operation, throwable));
+                            return;
+                        } else if (throwable instanceof Error) {
+                            emitter.fail(throwable);
+                            return;
+                        }
+                    } else {
+                        try {
+                            resultBuilder.data(fieldHelper.transformOrAdaptResponse(result, dfe));
+                        } catch (AbstractDataFetcherException te) {
+                            te.appendDataFetcherResult(resultBuilder, dfe);
+                        } finally {
+                            eventEmitter.fireAfterDataFetch(c);
+                        }
+                    }
+                    emitter.complete(resultBuilder.build());
+                } finally {
+                    metricsEmitter.end(measurementIds.remove());
+                }
+            }).onCancellation().invoke(() -> {
+                deactivate(requestContext);
+            }).onTermination().invoke(() -> {
+                deactivate(requestContext);
+            }).subscribe().asCompletionStage();
         } finally {
             deactivate(requestContext);
         }
@@ -106,10 +97,7 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
     @Override
     @SuppressWarnings("unchecked")
     protected <O> O invokeFailure(DataFetcherResult.Builder<Object> resultBuilder) {
-        return (O) Uni.createFrom()
-                .item(resultBuilder::build)
-                .subscribe()
-                .asCompletionStage();
+        return (O) Uni.createFrom().item(resultBuilder::build).subscribe().asCompletionStage();
     }
 
     @Override
@@ -118,8 +106,7 @@ public abstract class AbstractAsyncDataFetcher<K, T> extends AbstractDataFetcher
         ManagedContext requestContext = Arc.container().requestContext();
         try {
             RequestContextHelper.reactivate(requestContext, dfe);
-            return handleUserBatchLoad(dfe, arguments)
-                    .subscribe().asCompletionStage();
+            return handleUserBatchLoad(dfe, arguments).subscribe().asCompletionStage();
         } catch (Exception ex) {
             throw new RuntimeException(ex);
         } finally {

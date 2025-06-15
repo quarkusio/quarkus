@@ -43,9 +43,8 @@ public class BeanOverridesTest {
         @Produces
         public OpenShiftClient openShiftClient() {
             return new KubernetesClientBuilder()
-                    .withConfig(new ConfigBuilder(Config.empty())
-                            .withMasterUrl("https://example.com/overridden/")
-                            .build())
+                    .withConfig(
+                            new ConfigBuilder(Config.empty()).withMasterUrl("https://example.com/overridden/").build())
                     .build().adapt(OpenShiftClient.class);
         }
     }

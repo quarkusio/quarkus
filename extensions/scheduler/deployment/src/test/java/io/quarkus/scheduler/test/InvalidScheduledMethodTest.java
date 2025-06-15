@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidScheduledMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithInvalidScheduledMethod.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithInvalidScheduledMethod.class));
 
     @Test
     public void test() throws InterruptedException {

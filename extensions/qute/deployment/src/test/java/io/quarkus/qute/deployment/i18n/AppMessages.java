@@ -18,11 +18,8 @@ public interface AppMessages {
     String hello_fullname(String name, String surname);
 
     // key=hello_with_if_section
-    @Message(key = UNDERSCORED_ELEMENT_NAME, value = "{#if count eq 1}"
-            + "{msg:hello_name('you guy')}"
-            + "{#else}"
-            + "{msg:hello_name('you guys')}"
-            + "{/if}")
+    @Message(key = UNDERSCORED_ELEMENT_NAME, value = "{#if count eq 1}" + "{msg:hello_name('you guy')}" + "{#else}"
+            + "{msg:hello_name('you guys')}" + "{/if}")
     String helloWithIfSection(int count);
 
     @Message("Item name: {item.name}, age: {item.age}")
@@ -34,10 +31,7 @@ public interface AppMessages {
     @Message("There {msg:fileStrings(numberOfFiles)} on {disk}.")
     String files(int numberOfFiles, String disk);
 
-    @Message("{#when numberOfFiles}"
-            + "{#is 0}are no files"
-            + "{#is 1}is one file"
-            + "{#else}are {numberOfFiles} files"
+    @Message("{#when numberOfFiles}" + "{#is 0}are no files" + "{#is 1}is one file" + "{#else}are {numberOfFiles} files"
             + "{/when}")
     String fileStrings(int numberOfFiles);
 

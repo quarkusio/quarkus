@@ -14,9 +14,8 @@ import io.restassured.http.ContentType;
 public class WebAuthnTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, TestUtil.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, TestUtil.class));
 
     @TestHTTPResource
     public String url;
@@ -28,14 +27,8 @@ public class WebAuthnTest {
 
     @Test
     public void testLoginRpFromFirstOrigin() {
-        RestAssured
-                .given()
-                .contentType(ContentType.JSON)
-                .queryParam("username", "foo")
-                .get("/q/webauthn/register-options-challenge")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
+        RestAssured.given().contentType(ContentType.JSON).queryParam("username", "foo")
+                .get("/q/webauthn/register-options-challenge").then().statusCode(200).contentType(ContentType.JSON)
                 .body("rp.id", Matchers.equalTo("localhost"));
     }
 
@@ -43,23 +36,12 @@ public class WebAuthnTest {
     public void testRegisterChallengeIsEqualAcrossCalls() {
         CookieFilter cookieFilter = new CookieFilter();
 
-        String challenge = RestAssured
-                .given()
-                .filter(cookieFilter)
-                .contentType(ContentType.URLENC)
-                .queryParam("username", "foo")
-                .get("/q/webauthn/register-options-challenge")
-                .jsonPath().get("challenge");
+        String challenge = RestAssured.given().filter(cookieFilter).contentType(ContentType.URLENC)
+                .queryParam("username", "foo").get("/q/webauthn/register-options-challenge").jsonPath()
+                .get("challenge");
 
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .contentType(ContentType.URLENC)
-                .queryParam("username", "foo")
-                .get("/q/webauthn/register-options-challenge")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
+        RestAssured.given().filter(cookieFilter).contentType(ContentType.URLENC).queryParam("username", "foo")
+                .get("/q/webauthn/register-options-challenge").then().statusCode(200).contentType(ContentType.JSON)
                 .body("challenge", Matchers.equalTo(challenge));
     }
 
@@ -67,21 +49,11 @@ public class WebAuthnTest {
     public void testLoginChallengeIsEqualAcrossCalls() {
         CookieFilter cookieFilter = new CookieFilter();
 
-        String challenge = RestAssured
-                .given()
-                .filter(cookieFilter)
-                .contentType(ContentType.URLENC)
-                .get("/q/webauthn/login-options-challenge")
-                .jsonPath().get("challenge");
+        String challenge = RestAssured.given().filter(cookieFilter).contentType(ContentType.URLENC)
+                .get("/q/webauthn/login-options-challenge").jsonPath().get("challenge");
 
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .contentType(ContentType.URLENC)
-                .get("/q/webauthn/login-options-challenge")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.JSON)
+        RestAssured.given().filter(cookieFilter).contentType(ContentType.URLENC)
+                .get("/q/webauthn/login-options-challenge").then().statusCode(200).contentType(ContentType.JSON)
                 .body("challenge", Matchers.equalTo(challenge));
     }
 
@@ -91,9 +63,7 @@ public class WebAuthnTest {
         if (origin.endsWith("/")) {
             origin = origin.substring(0, origin.length() - 1);
         }
-        RestAssured.get("/.well-known/webauthn").then().statusCode(200)
-                .contentType(ContentType.JSON)
-                .body("origins.size()", Matchers.equalTo(1))
-                .body("origins[0]", Matchers.equalTo(origin));
+        RestAssured.get("/.well-known/webauthn").then().statusCode(200).contentType(ContentType.JSON)
+                .body("origins.size()", Matchers.equalTo(1)).body("origins[0]", Matchers.equalTo(origin));
     }
 }

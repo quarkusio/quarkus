@@ -12,14 +12,11 @@ public class NoMediaTypeTest {
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloNoMediaTypeResource.class, Message.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloNoMediaTypeResource.class, Message.class));
 
     @Test
     public void testJsonDefaultNoProduces() {
-        RestAssured.get("/hello-default").then()
-                .statusCode(200)
-                .body("message", equalTo("Hello"));
+        RestAssured.get("/hello-default").then().statusCode(200).body("message", equalTo("Hello"));
     }
 
 }

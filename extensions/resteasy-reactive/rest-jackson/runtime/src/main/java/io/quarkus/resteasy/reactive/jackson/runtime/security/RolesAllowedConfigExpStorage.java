@@ -15,8 +15,8 @@ public class RolesAllowedConfigExpStorage {
     }
 
     /**
-     * Transforms configuration expressions to configuration values.
-     * Should be called on startup once runtime config is ready.
+     * Transforms configuration expressions to configuration values. Should be called on startup once runtime config is
+     * ready.
      */
     public synchronized void resolveRolesAllowedConfigExp() {
         if (rolesAllowedExpCache.isEmpty()) {

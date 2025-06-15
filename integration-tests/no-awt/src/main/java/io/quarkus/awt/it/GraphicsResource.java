@@ -34,20 +34,16 @@ public class GraphicsResource {
     @GET
     public Response graphics(@QueryParam("entrypoint") String entrypoint) throws IOException {
         if ("IIORegistry".equals(entrypoint)) {
-            IIORegistry.getDefaultInstance()
-                    .getServiceProviders(ImageReaderSpi.class, true)
-                    .forEachRemaining(reader -> LOG.infof("Available image reader: %s",
-                            reader.getDescription(Locale.TAIWAN)));
+            IIORegistry.getDefaultInstance().getServiceProviders(ImageReaderSpi.class, true).forEachRemaining(
+                    reader -> LOG.infof("Available image reader: %s", reader.getDescription(Locale.TAIWAN)));
         } else if ("GraphicsEnvironment".equals(entrypoint)) {
             final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
             for (Font f : ge.getAllFonts()) {
                 LOG.info(f.getFamily());
             }
         } else if ("Color".equals(entrypoint)) {
-            final Color[] colors = new Color[] {
-                    Color.WHITE, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK,
-                    new Color(190, 32, 40, 100),
-                    new Color(Color.HSBtoRGB(20, 200, 30)) };
+            final Color[] colors = new Color[] { Color.WHITE, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK,
+                    new Color(190, 32, 40, 100), new Color(Color.HSBtoRGB(20, 200, 30)) };
             for (Color c : colors) {
                 LOG.infof("Color %s", c.toString());
             }

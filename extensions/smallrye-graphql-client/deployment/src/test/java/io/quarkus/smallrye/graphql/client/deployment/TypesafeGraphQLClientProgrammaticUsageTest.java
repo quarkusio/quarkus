@@ -20,10 +20,9 @@ import io.smallrye.graphql.client.typesafe.api.TypesafeGraphQLClientBuilder;
 public class TypesafeGraphQLClientProgrammaticUsageTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @TestHTTPResource
     URL url;

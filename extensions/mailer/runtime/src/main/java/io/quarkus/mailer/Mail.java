@@ -10,9 +10,8 @@ import java.util.Objects;
 import java.util.concurrent.Flow.Publisher;
 
 /**
- * Represents an e-mail.
- * This class encapsulates the various attributes you want to set on an e-mail you are going to send (to, subject,
- * body...).
+ * Represents an e-mail. This class encapsulates the various attributes you want to set on an e-mail you are going to
+ * send (to, subject, body...).
  * <p>
  * Instances are NOT thread-safe.
  */
@@ -39,12 +38,15 @@ public class Mail {
     }
 
     /**
-     * Creates a new instance of {@link Mail} that contains a "text" body.
-     * The returned instance can be modified.
+     * Creates a new instance of {@link Mail} that contains a "text" body. The returned instance can be modified.
      *
-     * @param to the address of the recipient
-     * @param subject the subject
-     * @param text the body
+     * @param to
+     *        the address of the recipient
+     * @param subject
+     *        the subject
+     * @param text
+     *        the body
+     *
      * @return the new {@link Mail} instance.
      */
     public static Mail withText(String to, String subject, String text) {
@@ -52,12 +54,15 @@ public class Mail {
     }
 
     /**
-     * Creates a new instance of {@link Mail} that contains a "html" body.
-     * The returned instance can be modified.
+     * Creates a new instance of {@link Mail} that contains a "html" body. The returned instance can be modified.
      *
-     * @param to the address of the recipient
-     * @param subject the subject
-     * @param html the body
+     * @param to
+     *        the address of the recipient
+     * @param subject
+     *        the subject
+     * @param html
+     *        the body
+     *
      * @return the new {@link Mail} instance.
      */
     public static Mail withHtml(String to, String subject, String html) {
@@ -67,7 +72,9 @@ public class Mail {
     /**
      * Adds BCC recipients.
      *
-     * @param bcc the recipients, each item must be a valid email address.
+     * @param bcc
+     *        the recipients, each item must be a valid email address.
+     *
      * @return the current {@link Mail}
      */
     public Mail addBcc(String... bcc) {
@@ -80,7 +87,9 @@ public class Mail {
     /**
      * Adds CC recipients.
      *
-     * @param cc the recipients, each item must be a valid email address.
+     * @param cc
+     *        the recipients, each item must be a valid email address.
+     *
      * @return the current {@link Mail}
      */
     public Mail addCc(String... cc) {
@@ -93,7 +102,9 @@ public class Mail {
     /**
      * Adds TO recipients.
      *
-     * @param to the recipients, each item must be a valid email address.
+     * @param to
+     *        the recipients, each item must be a valid email address.
+     *
      * @return the current {@link Mail}
      */
     public Mail addTo(String... to) {
@@ -113,7 +124,9 @@ public class Mail {
     /**
      * Sets the BCC recipients.
      *
-     * @param bcc the list of recipients
+     * @param bcc
+     *        the list of recipients
+     *
      * @return the current {@link Mail}
      */
     public Mail setBcc(List<String> bcc) {
@@ -131,7 +144,9 @@ public class Mail {
     /**
      * Sets the CC recipients.
      *
-     * @param cc the list of recipients
+     * @param cc
+     *        the list of recipients
+     *
      * @return the current {@link Mail}
      */
     public Mail setCc(List<String> cc) {
@@ -147,10 +162,12 @@ public class Mail {
     }
 
     /**
-     * Sets the sender address. Notes that it's not accepted to send an email without a sender address.
-     * A default sender address can be configured in the application properties ( {@code quarkus.mailer.from} )
+     * Sets the sender address. Notes that it's not accepted to send an email without a sender address. A default sender
+     * address can be configured in the application properties ( {@code quarkus.mailer.from} )
      *
-     * @param from the sender address
+     * @param from
+     *        the sender address
+     *
      * @return the current {@link Mail}
      */
     public Mail setFrom(String from) {
@@ -160,8 +177,8 @@ public class Mail {
 
     /**
      * @return the reply-to address. In the case of multiple addresses, the comma-separated list is returned, following
-     *         the https://datatracker.ietf.org/doc/html/rfc5322#section-3.6.2 recommendation. If no reply-to address has been
-     *         set, it returns {@code null}.
+     *         the https://datatracker.ietf.org/doc/html/rfc5322#section-3.6.2 recommendation. If no reply-to address
+     *         has been set, it returns {@code null}.
      */
     public String getReplyTo() {
         if (replyTo == null || replyTo.isEmpty()) {
@@ -173,8 +190,11 @@ public class Mail {
     /**
      * Adds a reply-to address.
      *
-     * @param replyTo the address to use as reply-to. Must be a valid email address.
+     * @param replyTo
+     *        the address to use as reply-to. Must be a valid email address.
+     *
      * @return the current {@link Mail}
+     *
      * @see #setReplyTo(String)
      */
     public Mail addReplyTo(String replyTo) {
@@ -185,8 +205,11 @@ public class Mail {
     /**
      * Sets the reply-to address.
      *
-     * @param replyTo the address to use as reply-to. Must be a valid email address.
+     * @param replyTo
+     *        the address to use as reply-to. Must be a valid email address.
+     *
      * @return the current {@link Mail}
+     *
      * @see #setReplyTo(String[])
      */
     public Mail setReplyTo(String replyTo) {
@@ -198,8 +221,10 @@ public class Mail {
     /**
      * Sets the reply-to addresses.
      *
-     * @param replyTo the addresses to use as reply-to. Must contain valid email addresses, must contain at least
-     *        one address.
+     * @param replyTo
+     *        the addresses to use as reply-to. Must contain valid email addresses, must contain at least one
+     *        address.
+     *
      * @return the current {@link Mail}
      */
     public Mail setReplyTo(String... replyTo) {
@@ -216,10 +241,12 @@ public class Mail {
     }
 
     /**
-     * Sets the bounce address.
-     * A default sender address can be configured in the application properties ( {@code quarkus.mailer.bounceAddress} )
+     * Sets the bounce address. A default sender address can be configured in the application properties (
+     * {@code quarkus.mailer.bounceAddress} )
      *
-     * @param bounceAddress the bounce address, must be a valid email address.
+     * @param bounceAddress
+     *        the bounce address, must be a valid email address.
+     *
      * @return the current {@link Mail}
      */
     public Mail setBounceAddress(String bounceAddress) {
@@ -237,7 +264,9 @@ public class Mail {
     /**
      * Sets the email subject.
      *
-     * @param subject the subject
+     * @param subject
+     *        the subject
+     *
      * @return the current {@link Mail}
      */
     public Mail setSubject(String subject) {
@@ -255,7 +284,9 @@ public class Mail {
     /**
      * Sets the body of the email as plain text.
      *
-     * @param text the content
+     * @param text
+     *        the content
+     *
      * @return the current {@link Mail}
      */
     public Mail setText(String text) {
@@ -273,7 +304,9 @@ public class Mail {
     /**
      * Sets the body of the email as HTML.
      *
-     * @param html the content
+     * @param html
+     *        the content
+     *
      * @return the current {@link Mail}
      */
     public Mail setHtml(String html) {
@@ -291,7 +324,9 @@ public class Mail {
     /**
      * Sets the TO recipients.
      *
-     * @param to the list of recipients
+     * @param to
+     *        the list of recipients
+     *
      * @return the current {@link Mail}
      */
     public Mail setTo(List<String> to) {
@@ -309,8 +344,11 @@ public class Mail {
     /**
      * Adds a header value. If this header already has a value, the value is appended.
      *
-     * @param key the header name, must not be {@code null}
-     * @param values the header values, must not be {@code null}
+     * @param key
+     *        the header name, must not be {@code null}
+     * @param values
+     *        the header values, must not be {@code null}
+     *
      * @return the current {@link Mail}
      */
     public Mail addHeader(String key, String... values) {
@@ -325,7 +363,9 @@ public class Mail {
     /**
      * Removes a header.
      *
-     * @param key the header name, must not be {@code null}.
+     * @param key
+     *        the header name, must not be {@code null}.
+     *
      * @return the current {@link Mail}
      */
     public Mail removeHeader(String key) {
@@ -339,7 +379,9 @@ public class Mail {
     /**
      * Sets the list of headers.
      *
-     * @param headers the headers
+     * @param headers
+     *        the headers
+     *
      * @return the current {@link Mail}
      */
     public Mail setHeaders(Map<String, List<String>> headers) {
@@ -350,11 +392,16 @@ public class Mail {
     /**
      * Adds an inline attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param file the file to be attached. Note that the file will be read asynchronously.
-     * @param contentType the content type
-     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
-     *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param file
+     *        the file to be attached. Note that the file will be read asynchronously.
+     * @param contentType
+     *        the content type
+     * @param contentId
+     *        the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML content can
+     *        reference this attachment using {@code src="cid:some-id@some-domain"}.
+     *
      * @return the current {@link Mail}
      */
     public Mail addInlineAttachment(String name, File file, String contentType, String contentId) {
@@ -365,9 +412,13 @@ public class Mail {
     /**
      * Adds an attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param file the file to be attached. Note that the file will be read asynchronously.
-     * @param contentType the content type.
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param file
+     *        the file to be attached. Note that the file will be read asynchronously.
+     * @param contentType
+     *        the content type.
+     *
      * @return the current {@link Mail}
      */
     public Mail addAttachment(String name, File file, String contentType) {
@@ -378,9 +429,13 @@ public class Mail {
     /**
      * Adds an attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param data the binary data to be attached
-     * @param contentType the content type.
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param data
+     *        the binary data to be attached
+     * @param contentType
+     *        the content type.
+     *
      * @return the current {@link Mail}
      */
     public Mail addAttachment(String name, byte[] data, String contentType) {
@@ -391,9 +446,13 @@ public class Mail {
     /**
      * Adds an attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param data the binary data to be attached
-     * @param contentType the content type.
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param data
+     *        the binary data to be attached
+     * @param contentType
+     *        the content type.
+     *
      * @return the current {@link Mail}
      */
     public Mail addAttachment(String name, Publisher<Byte> data, String contentType) {
@@ -404,11 +463,16 @@ public class Mail {
     /**
      * Adds an inline attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param data the binary data to be attached
-     * @param contentType the content type
-     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
-     *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param data
+     *        the binary data to be attached
+     * @param contentType
+     *        the content type
+     * @param contentId
+     *        the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML content can
+     *        reference this attachment using {@code src="cid:some-id@some-domain"}.
+     *
      * @return the current {@link Mail}
      */
     public Mail addInlineAttachment(String name, byte[] data, String contentType, String contentId) {
@@ -419,11 +483,16 @@ public class Mail {
     /**
      * Adds an inline attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param data the binary data to be attached
-     * @param contentType the content type
-     * @param contentId the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML
-     *        content can reference this attachment using {@code src="cid:some-id@some-domain"}.
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param data
+     *        the binary data to be attached
+     * @param contentType
+     *        the content type
+     * @param contentId
+     *        the content id. It must follow the {@code <some-id@some-domain>} syntax. Then the HTML content can
+     *        reference this attachment using {@code src="cid:some-id@some-domain"}.
+     *
      * @return the current {@link Mail}
      */
     public Mail addInlineAttachment(String name, Publisher<Byte> data, String contentType, String contentId) {
@@ -434,11 +503,17 @@ public class Mail {
     /**
      * Adds an attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param data the binary data to be attached
-     * @param contentType the content type
-     * @param description the description of the attachment
-     * @param disposition the disposition of the attachment
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param data
+     *        the binary data to be attached
+     * @param contentType
+     *        the content type
+     * @param description
+     *        the description of the attachment
+     * @param disposition
+     *        the disposition of the attachment
+     *
      * @return the current {@link Mail}
      */
     public Mail addAttachment(String name, byte[] data, String contentType, String description, String disposition) {
@@ -449,11 +524,17 @@ public class Mail {
     /**
      * Adds an attachment.
      *
-     * @param name the name of the attachment, generally a file name.
-     * @param data the binary data to be attached
-     * @param contentType the content type
-     * @param description the description of the attachment
-     * @param disposition the disposition of the attachment
+     * @param name
+     *        the name of the attachment, generally a file name.
+     * @param data
+     *        the binary data to be attached
+     * @param contentType
+     *        the content type
+     * @param description
+     *        the description of the attachment
+     * @param disposition
+     *        the disposition of the attachment
+     *
      * @return the current {@link Mail}
      */
     public Mail addAttachment(String name, Publisher<Byte> data, String contentType, String description,
@@ -472,7 +553,9 @@ public class Mail {
     /**
      * Sets the attachment list.
      *
-     * @param attachments the attachments.
+     * @param attachments
+     *        the attachments.
+     *
      * @return the current {@link Mail}
      */
     public Mail setAttachments(List<Attachment> attachments) {

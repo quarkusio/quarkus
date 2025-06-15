@@ -13,7 +13,8 @@ public class ExceptionMappersSupplier implements Supplier<List<ExceptionMappersS
         var mappers = RuntimeExceptionMapper.getMappers();
         var result = new ArrayList<Entry>(mappers.size());
         for (var entry : mappers.entrySet()) {
-            result.add(new Entry(entry.getKey().getName(), entry.getValue().getClassName(), entry.getValue().getPriority()));
+            result.add(new Entry(entry.getKey().getName(), entry.getValue().getClassName(),
+                    entry.getValue().getPriority()));
         }
         return result;
     }

@@ -22,25 +22,22 @@ public class MultiSupport {
 
     public static void subscribeVoid(Multi<Void> multi, RoutingContext rc) {
         HttpServerResponse response = rc.response();
-        multi.subscribe().with(
-                new Consumer<Void>() {
-                    @Override
-                    public void accept(Void item) {
-                        // do nothing
-                    }
-                },
-                new Consumer<Throwable>() {
-                    @Override
-                    public void accept(Throwable failure) {
-                        rc.fail(failure);
-                    }
-                },
-                new Runnable() {
-                    @Override
-                    public void run() {
-                        response.setStatusCode(204).end();
-                    }
-                });
+        multi.subscribe().with(new Consumer<Void>() {
+            @Override
+            public void accept(Void item) {
+                // do nothing
+            }
+        }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable failure) {
+                rc.fail(failure);
+            }
+        }, new Runnable() {
+            @Override
+            public void run() {
+                response.setStatusCode(204).end();
+            }
+        });
     }
 
     public static void subscribeString(Multi<String> multi, RoutingContext rc) {

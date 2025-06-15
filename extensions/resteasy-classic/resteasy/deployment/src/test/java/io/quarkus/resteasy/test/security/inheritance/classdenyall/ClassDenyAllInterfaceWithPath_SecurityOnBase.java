@@ -29,7 +29,8 @@ public interface ClassDenyAllInterfaceWithPath_SecurityOnBase {
     String classPathOnInterface_ImplOnBase_InterfaceMethodWithPath_ClassDenyAll(JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
     String classPathOnInterface_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array);
 
     @POST
@@ -39,10 +40,12 @@ public interface ClassDenyAllInterfaceWithPath_SecurityOnBase {
     @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + CLASS_DENY_ALL_PATH)
     ClassDenyAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_ClassDenyAll();
 
-    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE
+            + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
     ClassDenyAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_ClassDenyAllMethodPermitAll();
 
-    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE
+            + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
     ClassDenyAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_ClassDenyAllMethodRolesAllowed();
 
 }

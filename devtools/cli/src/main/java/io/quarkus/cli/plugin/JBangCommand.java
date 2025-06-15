@@ -10,7 +10,7 @@ import picocli.CommandLine.ExitCode;
 @Command
 public class JBangCommand implements PluginCommand {
 
-    private String location; //alias, url, maven coords
+    private String location; // alias, url, maven coords
     private JBangSupport jbang;
     private OutputOptionMixin output;
     private final List<String> arguments = new ArrayList<>();

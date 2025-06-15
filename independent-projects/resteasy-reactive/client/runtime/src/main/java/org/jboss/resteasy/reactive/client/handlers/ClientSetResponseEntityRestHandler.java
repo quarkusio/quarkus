@@ -27,8 +27,10 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
         ClientRequestContextImpl requestContext = context.getOrCreateClientRequestContext();
         if (context.isCheckSuccessfulFamily()) {
             StatusType effectiveResponseStatus = determineEffectiveResponseStatus(context, requestContext);
-            if (Response.Status.Family.familyOf(effectiveResponseStatus.getStatusCode()) != Response.Status.Family.SUCCESSFUL) {
-                Response response = ClientResponseCompleteRestHandler.mapToResponse(context, effectiveResponseStatus, true);
+            if (Response.Status.Family
+                    .familyOf(effectiveResponseStatus.getStatusCode()) != Response.Status.Family.SUCCESSFUL) {
+                Response response = ClientResponseCompleteRestHandler.mapToResponse(context, effectiveResponseStatus,
+                        true);
                 throw new ClientWebApplicationException(response);
             }
         }
@@ -48,7 +50,8 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
 
     private StatusType determineEffectiveResponseStatus(RestClientRequestContext context,
             ClientRequestContextImpl requestContext) {
-        StatusType effectiveResponseStatus = new StatusTypeImpl(context.getResponseStatus(), context.getResponseReasonPhrase());
+        StatusType effectiveResponseStatus = new StatusTypeImpl(context.getResponseStatus(),
+                context.getResponseReasonPhrase());
         if (effectiveResponseStatus.getStatusCode() == 0) {
             if (isAbortedWith(requestContext)) {
                 Response abortedWith = requestContext.getAbortedWith();
@@ -64,7 +67,8 @@ public class ClientSetResponseEntityRestHandler implements ClientRestHandler {
         return requestContext != null && requestContext.getAbortedWith() != null;
     }
 
-    private void propagateAbortedWithEntityToResponse(RestClientRequestContext restClientRequestContext) throws IOException {
+    private void propagateAbortedWithEntityToResponse(RestClientRequestContext restClientRequestContext)
+            throws IOException {
         new ClientResponseContextImpl(restClientRequestContext)
                 .setEntityStream(entityStreamOfAbortedResponseOf(restClientRequestContext));
     }

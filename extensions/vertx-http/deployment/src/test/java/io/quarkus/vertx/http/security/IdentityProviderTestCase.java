@@ -25,11 +25,10 @@ import io.vertx.ext.web.RoutingContext;
 
 public class IdentityProviderTestCase {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.basic=true\n" +
-            "quarkus.http.auth.policy.r1.roles-allowed=test\n" +
-            "quarkus.http.auth.permission.roles1.paths=/secured\n" +
-            "quarkus.http.auth.permission.roles1.policy=r1\n";
+    private static final String APP_PROPS = "" + "quarkus.http.auth.basic=true\n"
+            + "quarkus.http.auth.policy.r1.roles-allowed=test\n"
+            + "quarkus.http.auth.permission.roles1.paths=/secured\n"
+            + "quarkus.http.auth.permission.roles1.policy=r1\n";
     private static final String AUTHENTICATION_FAILED_EXCEPTION = "AuthenticationFailedException";
 
     @RegisterExtension
@@ -37,9 +36,7 @@ public class IdentityProviderTestCase {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(
-                            TestIdentityProvider.class, TestIdentityController.class,
-                            PathHandler.class)
+                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties");
         }
     });
@@ -49,13 +46,7 @@ public class IdentityProviderTestCase {
         // verify that when a matching HttpAuthenticationMechanism requests the request credentials be converted
         // to SecurityIdentity and IdentityProvider returns null then AuthenticationFailedException is thrown;
         // previously an anonymous identity was returned and request continued without exception
-        RestAssured
-                .given()
-                .auth().basic("trix", "1234")
-                .get("/secured")
-                .then()
-                .assertThat()
-                .statusCode(401)
+        RestAssured.given().auth().basic("trix", "1234").get("/secured").then().assertThat().statusCode(401)
                 .body(Matchers.equalTo(AUTHENTICATION_FAILED_EXCEPTION));
     }
 

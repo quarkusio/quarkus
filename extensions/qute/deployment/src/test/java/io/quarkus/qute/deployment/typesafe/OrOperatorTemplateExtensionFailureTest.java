@@ -15,16 +15,12 @@ public class OrOperatorTemplateExtensionFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Item.class, OtherItem.class, ItemWithName.class)
-                    .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.Item item2}\n" +
-                                    "{#for item in item.otherItems}\n" +
-                                    "{@io.quarkus.qute.deployment.typesafe.Item item}\n" +
-                                    "  {data:item.name.or(item2.name).pleaseMakeMyCaseUpper}\n" +
-                                    "  {item.name.or(item2.name).pleaseMakeMyCaseUpper}\n" +
-                                    "  {item.getPrimitiveId().or(item2.getPrimitiveId()).missingMethod()}\n" +
-                                    "{/for}\n"),
+            .withApplicationRoot((jar) -> jar.addClasses(Item.class, OtherItem.class, ItemWithName.class)
+                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Item item2}\n"
+                            + "{#for item in item.otherItems}\n" + "{@io.quarkus.qute.deployment.typesafe.Item item}\n"
+                            + "  {data:item.name.or(item2.name).pleaseMakeMyCaseUpper}\n"
+                            + "  {item.name.or(item2.name).pleaseMakeMyCaseUpper}\n"
+                            + "  {item.getPrimitiveId().or(item2.getPrimitiveId()).missingMethod()}\n" + "{/for}\n"),
                             "templates/item.html"))
             .assertException(t -> {
                 Throwable e = t;

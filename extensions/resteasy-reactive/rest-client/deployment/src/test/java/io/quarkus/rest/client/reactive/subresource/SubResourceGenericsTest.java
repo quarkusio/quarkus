@@ -32,15 +32,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class SubResourceGenericsTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Resource.class)
-                    .addClass(ClientLocator.class)
-                    .addClass(TranslationSubResource.class)
-                    .addClass(EnglishSubResource.class)
-                    .addClass(ShortsSubResource.class)
-                    .addClass(HelloSubResource.class)
-                    .addClass(EachCellAsListElementClientMessageBodyReader.class)
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClass(Resource.class).addClass(ClientLocator.class).addClass(TranslationSubResource.class)
+                    .addClass(EnglishSubResource.class).addClass(ShortsSubResource.class)
+                    .addClass(HelloSubResource.class).addClass(EachCellAsListElementClientMessageBodyReader.class)
                     .addClass(CellsAsMapEntryClientMessageBodyReader.class));
 
     @RestClient
@@ -92,7 +87,8 @@ public class SubResourceGenericsTest {
     void testFailureRestClientMethodWithUnresolvedTypeVariable() {
 
         try {
-            QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8081")).build(HelloSubResource.class);
+            QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8081"))
+                    .build(HelloSubResource.class);
         } catch (Exception e) {
             assertThat(e.getMessage()).endsWith(
                     "Failed to generate client for class interface io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$HelloSubResource : Type variable V of method V get() in class io.quarkus.rest.client.reactive.subresource.SubResourceGenericsTest$HelloSubResource could not be resolved.");
@@ -161,9 +157,9 @@ public class SubResourceGenericsTest {
     public static class EachCellAsListElementClientMessageBodyReader implements ClientMessageBodyReader<List<String>> {
 
         @Override
-        public List<String> readFrom(Class<List<String>> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> httpHeaders, InputStream entityStream, RestClientRequestContext context)
-                throws IOException, WebApplicationException {
+        public List<String> readFrom(Class<List<String>> type, Type genericType, Annotation[] annotations,
+                MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream,
+                RestClientRequestContext context) throws IOException, WebApplicationException {
             return readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);
         }
 
@@ -173,8 +169,8 @@ public class SubResourceGenericsTest {
         }
 
         @Override
-        public List<String> readFrom(Class<List<String>> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+        public List<String> readFrom(Class<List<String>> type, Type genericType, Annotation[] annotations,
+                MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
                 throws IOException, WebApplicationException {
             String body = new String(entityStream.readAllBytes(), StandardCharsets.UTF_8);
             return Arrays.asList(body.split(","));

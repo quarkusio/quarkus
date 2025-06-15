@@ -24,8 +24,7 @@ public class BeanFromConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient.class, HelloResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloClient.class, HelloResource.class))
             .overrideConfigKey("quarkus.rest-client.\"io.quarkus.rest.client.reactive.HelloClient\".scope", "Dependent")
             .overrideRuntimeConfigKey("quarkus.rest-client.\"io.quarkus.rest.client.reactive.HelloClient\".url",
                     "http://localhost:${quarkus.http.test-port:8081}");

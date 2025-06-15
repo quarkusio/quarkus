@@ -23,8 +23,10 @@ public interface AgroalConnectionConfigurer {
         disableSslSupport(databaseKind, dataSourceConfiguration);
     }
 
-    default void setExceptionSorter(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration) {
-        log.warnv("Agroal does not support detecting if a connection is still usable after an exception for database kind: {0}",
+    default void setExceptionSorter(String databaseKind,
+            AgroalDataSourceConfigurationSupplier dataSourceConfiguration) {
+        log.warnv(
+                "Agroal does not support detecting if a connection is still usable after an exception for database kind: {0}",
                 databaseKind);
     }
 

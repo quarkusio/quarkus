@@ -40,10 +40,7 @@ public class EndpointInfoHandler implements Handler<RoutingContext> {
             if (path.startsWith(basePath) && fileName.equals("routes.json")) {
                 VertxRouteInfoService vertxRouteInfoService = CDI.current().select(VertxRouteInfoService.class).get();
                 JsonArray info = vertxRouteInfoService.getInfo();
-                event.response()
-                        .setStatusCode(STATUS)
-                        .setStatusMessage(OK)
-                        .putHeader(CONTENT_TYPE, "application/json")
+                event.response().setStatusCode(STATUS).setStatusMessage(OK).putHeader(CONTENT_TYPE, "application/json")
                         .end(Json.encodePrettily(info));
             } else {
                 event.next();

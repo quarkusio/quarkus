@@ -28,10 +28,9 @@ import io.vertx.core.Vertx;
 public class ServerCloseReasonTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Closing.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Closing.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -44,15 +43,11 @@ public class ServerCloseReasonTest {
         CountDownLatch closedClientLatch = new CountDownLatch(1);
         AtomicReference<Integer> closeStatusCode = new AtomicReference<>();
         AtomicReference<String> closeMessage = new AtomicReference<>();
-        WebSocketClientConnection connection = BasicWebSocketConnector
-                .create()
-                .baseUri(closingUri)
-                .onClose((c, cr) -> {
-                    closeStatusCode.set((int) cr.getCode());
-                    closeMessage.set(cr.getMessage());
-                    closedClientLatch.countDown();
-                })
-                .connectAndAwait();
+        WebSocketClientConnection connection = BasicWebSocketConnector.create().baseUri(closingUri).onClose((c, cr) -> {
+            closeStatusCode.set((int) cr.getCode());
+            closeMessage.set(cr.getMessage());
+            closedClientLatch.countDown();
+        }).connectAndAwait();
         connection.sendTextAndAwait("foo");
         assertTrue(Closing.CLOSED.await(5, TimeUnit.SECONDS));
         assertTrue(closedClientLatch.await(5, TimeUnit.SECONDS));

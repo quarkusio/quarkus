@@ -20,10 +20,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BasicRestClientTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient.class, HelloResource.class, TestBean.class, HelloClient2.class,
-                            HelloNonSimpleClient.class, TestJacksonBasicMessageBodyReader.class,
-                            TestJacksonBasicMessageBodyWriter.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloClient.class, HelloResource.class, TestBean.class,
+                    HelloClient2.class, HelloNonSimpleClient.class, TestJacksonBasicMessageBodyReader.class,
+                    TestJacksonBasicMessageBodyWriter.class))
             .withConfigurationResource("basic-test-application.properties");
 
     @Inject

@@ -30,32 +30,27 @@ import io.restassured.filter.cookie.CookieFilter;
 
 public class FormBasicAuthHttpRootTestCase {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.root-path=/root\n" +
-            "quarkus.http.auth.form.enabled=true\n" +
-            "quarkus.http.auth.form.login-page=login\n" +
-            "quarkus.http.auth.form.cookie-path=/root\n" +
-            "quarkus.http.auth.form.error-page=error\n" +
-            "quarkus.http.auth.form.landing-page=landing\n" +
-            "quarkus.http.auth.policy.r1.roles-allowed=admin\n" +
-            "quarkus.http.auth.permission.roles1.paths=/root/admin\n" +
-            "quarkus.http.auth.permission.roles1.policy=r1\n";
+    private static final String APP_PROPS = "" + "quarkus.http.root-path=/root\n"
+            + "quarkus.http.auth.form.enabled=true\n" + "quarkus.http.auth.form.login-page=login\n"
+            + "quarkus.http.auth.form.cookie-path=/root\n" + "quarkus.http.auth.form.error-page=error\n"
+            + "quarkus.http.auth.form.landing-page=landing\n" + "quarkus.http.auth.policy.r1.roles-allowed=admin\n"
+            + "quarkus.http.auth.permission.roles1.paths=/root/admin\n"
+            + "quarkus.http.auth.permission.roles1.policy=r1\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,
-                            PathHandler.class, FormAuthEventObserver.class)
+                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class,
+                            TestIdentityController.class, PathHandler.class, FormAuthEventObserver.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties");
         }
     });
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin");
     }
 
     @Test
@@ -64,36 +59,17 @@ public class FormBasicAuthHttpRootTestCase {
         Assertions.assertEquals(0, FormAuthEventObserver.asyncEvents.size());
 
         CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location",
+        RestAssured.given().filter(cookies).redirects().follow(false).when().get("/admin").then().assertThat()
+                .statusCode(302).header("location", containsString("/login")).cookie("quarkus-redirect-location",
                         detailedCookie().value(containsString("/root/admin")).path(equalTo("/root")));
 
         Assertions.assertEquals(0, FormAuthEventObserver.syncEvents.size());
         Assertions.assertEquals(0, FormAuthEventObserver.asyncEvents.size());
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("j_username", "admin")
-                .formParam("j_password", "admin")
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(302)
+        RestAssured.given().filter(cookies).redirects().follow(false).when().formParam("j_username", "admin")
+                .formParam("j_password", "admin").post("/j_security_check").then().assertThat().statusCode(302)
                 .header("location", containsString("/root/admin"))
-                .cookie("quarkus-credential",
-                        detailedCookie().value(notNullValue()).path(equalTo("/root")));
+                .cookie("quarkus-credential", detailedCookie().value(notNullValue()).path(equalTo("/root")));
 
         Assertions.assertEquals(1, FormAuthEventObserver.syncEvents.size());
         var event = FormAuthEventObserver.syncEvents.get(0);
@@ -104,16 +80,8 @@ public class FormBasicAuthHttpRootTestCase {
         Assertions.assertEquals(FormAuthenticationEvent.FormEventType.FORM_LOGIN.toString(), eventType);
         Awaitility.await().untilAsserted(() -> Assertions.assertEquals(1, FormAuthEventObserver.asyncEvents.size()));
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("admin:/root/admin"));
+        RestAssured.given().filter(cookies).redirects().follow(false).when().get("/admin").then().assertThat()
+                .statusCode(200).body(equalTo("admin:/root/admin"));
 
         Assertions.assertEquals(1, FormAuthEventObserver.syncEvents.size());
         Assertions.assertEquals(1, FormAuthEventObserver.asyncEvents.size());

@@ -14,33 +14,23 @@ import io.quarkus.test.junit.QuarkusTest;
 @QuarkusTest
 public class AwtJaxbTest {
 
-    public static final String BOOK_WITH_IMAGE = "<book>" +
-            "<cover>iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAIElEQVR4XmNgGCngPxSgi6MAZAU4FeOUQAdEKwQBdKsBOgof4SXid6kAAAAASUVORK5CYII=</cover>"
-            +
-            "<title>Foundation</title>" +
-            "</book>";
+    public static final String BOOK_WITH_IMAGE = "<book>"
+            + "<cover>iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAIElEQVR4XmNgGCngPxSgi6MAZAU4FeOUQAdEKwQBdKsBOgof4SXid6kAAAAASUVORK5CYII=</cover>"
+            + "<title>Foundation</title>" + "</book>";
 
     /**
-     * Smoke tests that we have .so files
-     * copied over from the remote build container.
+     * Smoke tests that we have .so files copied over from the remote build container.
      */
     @Test
     public void book() {
-        given()
-                .when()
-                .header("Content-Type", APPLICATION_XML)
-                .body(BOOK_WITH_IMAGE)
-                .when()
-                .post("/jaxb/book")
-                .then()
+        given().when().header("Content-Type", APPLICATION_XML).body(BOOK_WITH_IMAGE).when().post("/jaxb/book").then()
                 .statusCode(HttpStatus.SC_ACCEPTED)
                 // The height in pixels of the book's cover image.
                 .body(is("10"));
     }
 
     /**
-     * Smoke tests that our Lambda function makes at
-     * least some sense, but it doesn't talk to real AWS API.
+     * Smoke tests that our Lambda function makes at least some sense, but it doesn't talk to real AWS API.
      */
     @Test
     public void testLambdaStream() {

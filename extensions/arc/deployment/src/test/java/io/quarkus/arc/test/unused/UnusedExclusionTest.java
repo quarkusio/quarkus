@@ -30,13 +30,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnusedExclusionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnusedExclusionTest.class, Alpha.class, Beta.class, Charlie.class, Delta.class,
-                            ProducerBean.class, TestRecorder.class, Gama.class, GamaProducer.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.arc.unremovable-types=io.quarkus.arc.test.unused.UnusedExclusionTest$Alpha,io.quarkus.arc.test.unused.subpackage.**,io.quarkus.arc.test.unused.Charlie,Delta"),
-                            "application.properties"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(UnusedExclusionTest.class, Alpha.class, Beta.class, Charlie.class, Delta.class,
+                    ProducerBean.class, TestRecorder.class, Gama.class, GamaProducer.class)
+            .addAsResource(new StringAsset(
+                    "quarkus.arc.unremovable-types=io.quarkus.arc.test.unused.UnusedExclusionTest$Alpha,io.quarkus.arc.test.unused.subpackage.**,io.quarkus.arc.test.unused.Charlie,Delta"),
+                    "application.properties"))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -50,8 +49,8 @@ public class UnusedExclusionTest {
                     public void execute(BuildContext context) {
                         BeanContainer beanContainer = context.consume(BeanContainerBuildItem.class).getValue();
                         BytecodeRecorderImpl bytecodeRecorder = new BytecodeRecorderImpl(true,
-                                TestRecorder.class.getSimpleName(),
-                                "test", "" + TestRecorder.class.hashCode(), true, s -> null);
+                                TestRecorder.class.getSimpleName(), "test", "" + TestRecorder.class.hashCode(), true,
+                                s -> null);
                         // We need to use reflection due to some class loading problems
                         Object recorderProxy = bytecodeRecorder.getRecordingProxy(TestRecorder.class);
                         try {

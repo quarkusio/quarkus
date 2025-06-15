@@ -38,9 +38,7 @@ class TimedInterceptor {
         Timed annotation = context.findIterceptorBinding(Timed.class);
         if (annotation != null) {
             MpMetadata metadata = new MpMetadata(annotation.name().replace("<method>", methodName),
-                    annotation.description().replace("<method>", methodName),
-                    annotation.unit(),
-                    MetricType.TIMER);
+                    annotation.description().replace("<method>", methodName), annotation.unit(), MetricType.TIMER);
             TimerAdapter impl = mpRegistry.interceptorTimer(metadata, annotation.tags());
 
             Timer.Sample sample = impl.start();

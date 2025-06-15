@@ -14,10 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UseNamedDatasourceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addAsResource("application-named-datasource.properties", "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class)
+            .addAsResource("application-named-datasource.properties", "application.properties"));
 
     @Inject
     EntityManager entityManager;

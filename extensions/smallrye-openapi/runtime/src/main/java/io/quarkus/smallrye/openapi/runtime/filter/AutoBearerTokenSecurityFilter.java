@@ -16,9 +16,7 @@ public class AutoBearerTokenSecurityFilter extends AutoSecurityFilter {
     }
 
     public AutoBearerTokenSecurityFilter(String securitySchemeName, String securitySchemeDescription,
-            Map<String, String> securitySchemeExtensions,
-            String securitySchemeValue,
-            String bearerFormat) {
+            Map<String, String> securitySchemeExtensions, String securitySchemeValue, String bearerFormat) {
         super(securitySchemeName, securitySchemeDescription, securitySchemeExtensions);
         this.securitySchemeValue = securitySchemeValue;
         this.bearerFormat = bearerFormat;

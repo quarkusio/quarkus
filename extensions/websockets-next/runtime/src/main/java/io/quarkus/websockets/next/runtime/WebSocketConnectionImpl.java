@@ -33,8 +33,8 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
     private final BroadcastSender defaultBroadcast;
 
     WebSocketConnectionImpl(String generatedEndpointClass, String endpointClass, ServerWebSocket webSocket,
-            ConnectionManager connectionManager, Codecs codecs, RoutingContext ctx,
-            TrafficLogger trafficLogger, SendingInterceptor sendingInterceptor) {
+            ConnectionManager connectionManager, Codecs codecs, RoutingContext ctx, TrafficLogger trafficLogger,
+            SendingInterceptor sendingInterceptor) {
         super(Map.copyOf(ctx.pathParams()), codecs, new HandshakeRequestImpl(webSocket, ctx), trafficLogger,
                 new UserDataImpl(), sendingInterceptor);
         this.generatedEndpointClass = generatedEndpointClass;
@@ -72,7 +72,8 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
 
     @Override
     public String toString() {
-        return "WebSocket connection [endpointId=" + endpointId + ", path=" + webSocket.path() + ", id=" + identifier + "]";
+        return "WebSocket connection [endpointId=" + endpointId + ", path=" + webSocket.path() + ", id=" + identifier
+                + "]";
     }
 
     @Override
@@ -228,12 +229,12 @@ class WebSocketConnectionImpl extends WebSocketConnectionBase implements WebSock
             }
             List<Uni<Void>> unis = new ArrayList<>(connections.size());
             for (WebSocketConnection connection : connections) {
-                if (connection.isOpen()
-                        && (filter == null || filter.test(connection))) {
+                if (connection.isOpen() && (filter == null || filter.test(connection))) {
                     unis.add(sendFunction.apply(connection, message)
                             // Intentionally ignore 'WebSocket is closed' failures
                             // It might happen that the connection is closed in the mean time
-                            .onFailure(t -> Endpoints.isWebSocketIsClosedFailure(t, (WebSocketConnectionBase) connection))
+                            .onFailure(
+                                    t -> Endpoints.isWebSocketIsClosedFailure(t, (WebSocketConnectionBase) connection))
                             .recoverWithNull());
                 }
             }

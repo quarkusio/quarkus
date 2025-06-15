@@ -20,7 +20,7 @@ import io.cloudevents.SpecVersion;
  */
 public class CloudEventV1 implements CloudEvent {
 
-    //private static final Pattern JSON_TYPE_PATTERN = Pattern.compile("^(application|text)/([a-zA-Z]+\\+)?json;?.*$");
+    // private static final Pattern JSON_TYPE_PATTERN = Pattern.compile("^(application|text)/([a-zA-Z]+\\+)?json;?.*$");
 
     private final CloudEventDataV1 data;
     private final SpecVersion specVersion;
@@ -33,17 +33,11 @@ public class CloudEventV1 implements CloudEvent {
     private final OffsetDateTime time;
     private final Map<String, Object> extensions;
 
-    public CloudEventV1(
-            @JsonProperty("specversion") String specVersion,
-            @JsonProperty("id") String id,
-            @JsonProperty("type") String type,
-            @JsonProperty("source") URI source,
-            @JsonProperty("datacontenttype") String dataContentType,
-            @JsonProperty("dataschema") URI dataSchema,
-            @JsonProperty("subject") String subject,
-            @JsonProperty("time") OffsetDateTime time,
-            @JsonProperty("data") JsonNode data,
-            @JsonProperty("data_base64") JsonNode dataBase64) {
+    public CloudEventV1(@JsonProperty("specversion") String specVersion, @JsonProperty("id") String id,
+            @JsonProperty("type") String type, @JsonProperty("source") URI source,
+            @JsonProperty("datacontenttype") String dataContentType, @JsonProperty("dataschema") URI dataSchema,
+            @JsonProperty("subject") String subject, @JsonProperty("time") OffsetDateTime time,
+            @JsonProperty("data") JsonNode data, @JsonProperty("data_base64") JsonNode dataBase64) {
         this.specVersion = SpecVersion.parse(specVersion);
         this.id = id;
         this.type = type;

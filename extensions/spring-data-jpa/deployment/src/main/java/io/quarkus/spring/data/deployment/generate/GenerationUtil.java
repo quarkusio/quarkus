@@ -64,8 +64,8 @@ public final class GenerationUtil {
         for (Type parameter : methodInfo.parameterTypes()) {
             parameterTypesStr.add(parameter.name().toString());
         }
-        return MethodDescriptor.ofMethod(generatedClassName, methodInfo.name(), methodInfo.returnType().name().toString(),
-                parameterTypesStr.toArray(new String[0]));
+        return MethodDescriptor.ofMethod(generatedClassName, methodInfo.name(),
+                methodInfo.returnType().name().toString(), parameterTypesStr.toArray(new String[0]));
     }
 
     static AnnotationInstance getNamedQueryForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
@@ -79,17 +79,20 @@ public final class GenerationUtil {
         return getNamedQueriesAnnotationForMethod(methodInfo, entityClassInfo);
     }
 
-    private static AnnotationInstance getNamedQueryAnnotationForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
+    private static AnnotationInstance getNamedQueryAnnotationForMethod(MethodInfo methodInfo,
+            ClassInfo entityClassInfo) {
         String methodName = methodInfo.name();
         AnnotationInstance namedQueryAnnotation = entityClassInfo.declaredAnnotation(JPA_NAMED_QUERY);
-        if (namedQueryAnnotation != null && isMethodDeclaredInNamedQuery(entityClassInfo, methodName, namedQueryAnnotation)) {
+        if (namedQueryAnnotation != null
+                && isMethodDeclaredInNamedQuery(entityClassInfo, methodName, namedQueryAnnotation)) {
             return namedQueryAnnotation;
         }
 
         return null;
     }
 
-    private static AnnotationInstance getNamedQueriesAnnotationForMethod(MethodInfo methodInfo, ClassInfo entityClassInfo) {
+    private static AnnotationInstance getNamedQueriesAnnotationForMethod(MethodInfo methodInfo,
+            ClassInfo entityClassInfo) {
         String methodName = methodInfo.name();
         AnnotationInstance namedQueriesAnnotation = entityClassInfo.declaredAnnotation(JPA_NAMED_QUERIES);
         if (namedQueriesAnnotation != null) {
@@ -112,7 +115,8 @@ public final class GenerationUtil {
             return false;
         }
 
-        return String.format("%s.%s", entityClassInfo.name().withoutPackagePrefix(), methodName).equals(namedQueryName.value());
+        return String.format("%s.%s", entityClassInfo.name().withoutPackagePrefix(), methodName)
+                .equals(namedQueryName.value());
     }
 
 }

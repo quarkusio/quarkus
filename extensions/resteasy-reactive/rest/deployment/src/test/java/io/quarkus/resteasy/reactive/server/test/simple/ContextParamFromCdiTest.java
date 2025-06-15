@@ -19,13 +19,11 @@ public class ContextParamFromCdiTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ContextFromCdi.class, ContextFromCdiResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ContextFromCdi.class, ContextFromCdiResource.class));
 
     @Test
     public void testParam() {
-        RestAssured.get("/context-from-cdi")
-                .then().statusCode(200).body(Matchers.equalTo("context"));
+        RestAssured.get("/context-from-cdi").then().statusCode(200).body(Matchers.equalTo("context"));
     }
 
     @ApplicationScoped

@@ -10,11 +10,10 @@ public abstract class AbstractJPAQuotedTest {
 
     @Test
     public void testQuotedIdentifiers() {
-        RestAssured.when().post("/jpa-test-quoted").then()
-                .body(containsString("ok"));
+        RestAssured.when().post("/jpa-test-quoted").then().body(containsString("ok"));
 
-        RestAssured.when().get("/jpa-test-quoted").then()
-                .body(containsString("group_name"), containsString("group_value"));
+        RestAssured.when().get("/jpa-test-quoted").then().body(containsString("group_name"),
+                containsString("group_value"));
     }
 
 }

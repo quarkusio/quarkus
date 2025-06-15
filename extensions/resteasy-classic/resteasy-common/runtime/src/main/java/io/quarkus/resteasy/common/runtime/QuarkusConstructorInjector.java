@@ -58,8 +58,7 @@ public class QuarkusConstructorInjector implements ConstructorInjector {
     }
 
     @Override
-    public Object injectableArguments(HttpRequest request, HttpResponse response, boolean unwrapAsync)
-            throws Failure {
+    public Object injectableArguments(HttpRequest request, HttpResponse response, boolean unwrapAsync) throws Failure {
         return this.delegate.injectableArguments(request, response, unwrapAsync);
     }
 }

@@ -20,8 +20,7 @@ public class InputStreamResponseTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RootResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(RootResource.class));
 
     @Test
     public void test() {

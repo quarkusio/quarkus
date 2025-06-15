@@ -45,12 +45,9 @@ public class CertificatesProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public TlsRegistryBuildItem initializeCertificate(TlsConfig config,
-            Optional<VertxBuildItem> vertx,
-            BeanDiscoveryFinishedBuildItem beadDiscovery,
-            CertificateRecorder recorder,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            List<TlsCertificateBuildItem> otherCertificates,
+    public TlsRegistryBuildItem initializeCertificate(TlsConfig config, Optional<VertxBuildItem> vertx,
+            BeanDiscoveryFinishedBuildItem beadDiscovery, CertificateRecorder recorder,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, List<TlsCertificateBuildItem> otherCertificates,
             ShutdownContextBuildItem shutdown) {
 
         if (vertx.isPresent()) {
@@ -65,10 +62,7 @@ public class CertificatesProcessor {
         Supplier<TlsConfigurationRegistry> supplier = recorder.getSupplier();
 
         SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(TlsConfigurationRegistry.class)
-                .supplier(supplier)
-                .scope(Singleton.class)
-                .unremovable()
+                .configure(TlsConfigurationRegistry.class).supplier(supplier).scope(Singleton.class).unremovable()
                 .setRuntimeInit();
 
         syntheticBeans.produce(configurator.done());
@@ -78,8 +72,7 @@ public class CertificatesProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = LetsEncryptEnabled.class)
-    void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
-            LetsEncryptRecorder recorder,
+    void createManagementRoutes(BuildProducer<RouteBuildItem> routes, LetsEncryptRecorder recorder,
             TlsRegistryBuildItem registryBuildItem) {
 
         // Check if Vert.x Web is present
@@ -91,19 +84,16 @@ public class CertificatesProcessor {
 
         // Route to handle the Let's Encrypt challenge - primary HTTP server
         routes.produce(RouteBuildItem.newAbsoluteRoute("/.well-known/acme-challenge/:token")
-                .withRequestHandler(recorder.challengeHandler())
-                .build());
+                .withRequestHandler(recorder.challengeHandler()).build());
 
         // Route to configure the Let's Encrypt challenge - management server
         routes.produce(RouteBuildItem.newManagementRoute("lets-encrypt/challenge")
-                .withRequestHandler(recorder.chalengeAdminHandler())
-                .withRouteCustomizer(recorder.setupCustomizer())
+                .withRequestHandler(recorder.chalengeAdminHandler()).withRouteCustomizer(recorder.setupCustomizer())
                 .build());
 
         // Route to refresh the certificates - management server
-        routes.produce(RouteBuildItem.newManagementRoute("lets-encrypt/certs")
-                .withRequestHandler(recorder.reload())
-                .build());
+        routes.produce(
+                RouteBuildItem.newManagementRoute("lets-encrypt/certs").withRequestHandler(recorder.reload()).build());
     }
 
     static Set<String> getProviderBucketNames(BeanDiscoveryFinishedBuildItem beanDiscovery) {

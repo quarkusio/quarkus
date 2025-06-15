@@ -27,8 +27,7 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     List<String> hosts();
 
     /**
-     * The protocol to use when contacting Elasticsearch servers.
-     * Set to "https" to enable SSL/TLS.
+     * The protocol to use when contacting Elasticsearch servers. Set to "https" to enable SSL/TLS.
      */
     @WithDefault("http")
     ElasticsearchClientProtocol protocol();
@@ -56,10 +55,8 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     Duration readTimeout();
 
     /**
-     * The timeout when executing a request to an Elasticsearch server.
-     *
-     * This includes the time needed to wait for a connection to be available,
-     * send the request and read the response.
+     * The timeout when executing a request to an Elasticsearch server. This includes the time needed to wait for a
+     * connection to be available, send the request and read the response.
      *
      * @asciidoclet
      */
@@ -126,16 +123,11 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
         HTTPS("https");
 
         public static ElasticsearchClientProtocol of(String value) {
-            return ParseUtils.parseDiscreteValues(
-                    values(),
-                    ElasticsearchClientProtocol::getHibernateSearchString,
-                    (invalidValue, validValues) -> new SearchException(
-                            String.format(
-                                    Locale.ROOT,
-                                    "Invalid protocol: '%1$s'. Valid protocols are: %2$s.",
-                                    invalidValue,
-                                    validValues)),
-                    value);
+            return ParseUtils
+                    .parseDiscreteValues(values(), ElasticsearchClientProtocol::getHibernateSearchString,
+                            (invalidValue, validValues) -> new SearchException(String.format(Locale.ROOT,
+                                    "Invalid protocol: '%1$s'. Valid protocols are: %2$s.", invalidValue, validValues)),
+                            value);
         }
 
         private final String hibernateSearchString;
@@ -152,9 +144,8 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     @ConfigGroup
     interface VersionCheckConfig {
         /**
-         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup.
-         *
-         * Set to `false` if the Elasticsearch cluster may not be available on startup.
+         * Whether Hibernate Search should check the version of the Elasticsearch cluster on startup. Set to `false` if
+         * the Elasticsearch cluster may not be available on startup.
          *
          * @asciidoclet
          */
@@ -195,20 +186,13 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     @ConfigGroup
     interface ThreadPoolConfig {
         /**
-         * The size of the thread pool assigned to the backend.
-         *
-         * Note that number is **per backend**, not per index.
-         * Adding more indexes will not add more threads.
-         *
-         * As all operations happening in this thread-pool are non-blocking,
-         * raising its size above the number of processor cores available to the JVM will not bring noticeable performance
-         * benefit.
-         * The only reason to alter this setting would be to reduce the number of threads;
-         * for example, in an application with a single index with a single indexing queue,
-         * running on a machine with 64 processor cores,
-         * you might want to bring down the number of threads.
-         *
-         * Defaults to the number of processor cores available to the JVM on startup.
+         * The size of the thread pool assigned to the backend. Note that number is **per backend**, not per index.
+         * Adding more indexes will not add more threads. As all operations happening in this thread-pool are
+         * non-blocking, raising its size above the number of processor cores available to the JVM will not bring
+         * noticeable performance benefit. The only reason to alter this setting would be to reduce the number of
+         * threads; for example, in an application with a single index with a single indexing queue, running on a
+         * machine with 64 processor cores, you might want to bring down the number of threads. Defaults to the number
+         * of processor cores available to the JVM on startup.
          *
          * @asciidoclet
          */
@@ -227,8 +211,8 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     @ConfigGroup
     interface QueryShardFailureConfig {
         /**
-         * Whether partial shard failures are ignored (`true`)
-         * or lead to Hibernate Search throwing an exception (`false`).
+         * Whether partial shard failures are ignored (`true`) or lead to Hibernate Search throwing an exception
+         * (`false`).
          */
         @WithDefault("false")
         boolean ignore();
@@ -239,8 +223,8 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     @ConfigGroup
     interface SchemaManagementConfig {
         /**
-         * The minimal https://www.elastic.co/guide/en/elasticsearch/reference/7.17/cluster-health.html[Elasticsearch cluster
-         * status] required on startup.
+         * The minimal https://www.elastic.co/guide/en/elasticsearch/reference/7.17/cluster-health.html[Elasticsearch
+         * cluster status] required on startup.
          *
          * @asciidoclet
          */
@@ -261,14 +245,11 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     @ConfigGroup
     interface IndexingConfig {
         /**
-         * The number of indexing queues assigned to each index.
-         *
-         * Higher values will lead to more connections being used in parallel,
-         * which may lead to higher indexing throughput,
-         * but incurs a risk of overloading Elasticsearch,
+         * The number of indexing queues assigned to each index. Higher values will lead to more connections being used
+         * in parallel, which may lead to higher indexing throughput, but incurs a risk of overloading Elasticsearch,
          * i.e. of overflowing its HTTP request buffers and tripping
-         * https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers],
-         * leading to Elasticsearch giving up on some request and resulting in indexing failures.
+         * https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers], leading
+         * to Elasticsearch giving up on some request and resulting in indexing failures.
          *
          * @asciidoclet
          */
@@ -277,12 +258,10 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
         OptionalInt queueCount();
 
         /**
-         * The size of indexing queues.
-         *
-         * Lower values may lead to lower memory usage, especially if there are many queues,
-         * but values that are too low will reduce the likeliness of reaching the max bulk size
-         * and increase the likeliness of application threads blocking because the queue is full,
-         * which may lead to lower indexing throughput.
+         * The size of indexing queues. Lower values may lead to lower memory usage, especially if there are many
+         * queues, but values that are too low will reduce the likeliness of reaching the max bulk size and increase the
+         * likeliness of application threads blocking because the queue is full, which may lead to lower indexing
+         * throughput.
          *
          * @asciidoclet
          */
@@ -291,17 +270,13 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
         OptionalInt queueSize();
 
         /**
-         * The maximum size of bulk requests created when processing indexing queues.
-         *
-         * Higher values will lead to more documents being sent in each HTTP request sent to Elasticsearch,
-         * which may lead to higher indexing throughput,
-         * but incurs a risk of overloading Elasticsearch,
-         * i.e. of overflowing its HTTP request buffers and tripping
-         * https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers],
-         * leading to Elasticsearch giving up on some request and resulting in indexing failures.
-         *
-         * Note that raising this number above the queue size has no effect,
-         * as bulks cannot include more requests than are contained in the queue.
+         * The maximum size of bulk requests created when processing indexing queues. Higher values will lead to more
+         * documents being sent in each HTTP request sent to Elasticsearch, which may lead to higher indexing
+         * throughput, but incurs a risk of overloading Elasticsearch, i.e. of overflowing its HTTP request buffers and
+         * tripping https://www.elastic.co/guide/en/elasticsearch/reference/7.9/circuit-breaker.html[circuit breakers],
+         * leading to Elasticsearch giving up on some request and resulting in indexing failures. Note that raising this
+         * number above the queue size has no effect, as bulks cannot include more requests than are contained in the
+         * queue.
          *
          * @asciidoclet
          */
@@ -313,36 +288,19 @@ public interface HibernateSearchBackendElasticsearchRuntimeConfig {
     @ConfigGroup
     interface LayoutConfig {
         /**
-         * A xref:#bean-reference-note-anchor[bean reference] to the component
-         * used to configure the Elasticsearch layout: index names, index aliases, ...
-         *
-         * The referenced bean must implement `IndexLayoutStrategy`.
-         *
-         * Available built-in implementations:
-         *
-         * `simple`::
-         * The default, future-proof strategy: if the index name in Hibernate Search is `myIndex`,
-         * this strategy will create an index named `myindex-000001`, an alias for write operations named `myindex-write`,
-         * and an alias for read operations named `myindex-read`.
-         * `no-alias`::
-         * A strategy without index aliases, mostly useful on legacy clusters:
-         * if the index name in Hibernate Search is `myIndex`,
-         * this strategy will create an index named `myindex`, and will not use any alias.
-         *
-         * See
-         * link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference documentation]
-         * for more information.
-         *
-         * [NOTE]
-         * ====
-         * Instead of setting this configuration property,
-         * you can simply annotate your custom `IndexLayoutStrategy` implementation with `@SearchExtension`
-         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
-         * See xref:#plugging-in-custom-components[this section]
-         * for more information.
-         *
-         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
-         * ====
+         * A xref:#bean-reference-note-anchor[bean reference] to the component used to configure the Elasticsearch
+         * layout: index names, index aliases, ... The referenced bean must implement `IndexLayoutStrategy`. Available
+         * built-in implementations: `simple`:: The default, future-proof strategy: if the index name in Hibernate
+         * Search is `myIndex`, this strategy will create an index named `myindex-000001`, an alias for write operations
+         * named `myindex-write`, and an alias for read operations named `myindex-read`. `no-alias`:: A strategy without
+         * index aliases, mostly useful on legacy clusters: if the index name in Hibernate Search is `myIndex`, this
+         * strategy will create an index named `myindex`, and will not use any alias. See
+         * link:{hibernate-search-docs-url}#backend-elasticsearch-indexlayout[this section of the reference
+         * documentation] for more information. [NOTE] ==== Instead of setting this configuration property, you can
+         * simply annotate your custom `IndexLayoutStrategy` implementation with `@SearchExtension` and leave the
+         * configuration property unset: Hibernate Search will use the annotated implementation automatically. See
+         * xref:#plugging-in-custom-components[this section] for more information. If this configuration property is
+         * set, it takes precedence over any `@SearchExtension` annotation. ====
          *
          * @asciidoclet
          */

@@ -23,8 +23,7 @@ public class JsonArrayDeserializer extends StdDelegatingDeserializer<JsonArray> 
 
     @Override
     protected StdDelegatingDeserializer<JsonArray> withDelegate(Converter<Object, JsonArray> converter,
-            JavaType delegateType,
-            JsonDeserializer<?> delegateDeserializer) {
+            JavaType delegateType, JsonDeserializer<?> delegateDeserializer) {
         return new StdDelegatingDeserializer<>(converter, delegateType, delegateDeserializer);
     }
 }

@@ -16,12 +16,11 @@ import io.quarkus.deployment.pkg.builditem.NativeImageSourceJarBuildItem;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 
 /**
- * This configuration step looks for native configuration folder generated
- * with the native image agent running inside Quarkus integration tests.
- * If the folder is detected and {@link NativeConfig#agentConfigurationApply()} is enabled,
- * the folder's path is passed onto the {@link io.quarkus.deployment.pkg.steps.NativeImageBuildStep},
- * wrapped inside a {@link NativeImageAgentConfigDirectoryBuildItem},
- * so that the folder is added as a configuration folder for the native image process execution.
+ * This configuration step looks for native configuration folder generated with the native image agent running inside
+ * Quarkus integration tests. If the folder is detected and {@link NativeConfig#agentConfigurationApply()} is enabled,
+ * the folder's path is passed onto the {@link io.quarkus.deployment.pkg.steps.NativeImageBuildStep}, wrapped inside a
+ * {@link NativeImageAgentConfigDirectoryBuildItem}, so that the folder is added as a configuration folder for the
+ * native image process execution.
  */
 public class ApplyNativeImageAgentConfigStep {
     private static final Logger log = Logger.getLogger(ApplyNativeImageAgentConfigStep.class);
@@ -52,7 +51,8 @@ public class ApplyNativeImageAgentConfigStep {
                     StandardCopyOption.REPLACE_EXISTING);
 
             log.info("Applying native image agent generated files to current native executable build");
-            nativeImageAgentConfigDirectoryProducer.produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));
+            nativeImageAgentConfigDirectoryProducer
+                    .produce(new NativeImageAgentConfigDirectoryBuildItem(targetDirName));
         }
     }
 }

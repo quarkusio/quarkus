@@ -44,8 +44,7 @@ public final class ContainerImageInfoBuildItem extends SimpleBuildItem {
     }
 
     public ContainerImageInfoBuildItem(Optional<String> registry, Optional<String> username, Optional<String> password,
-            Optional<String> group, String name, String tag,
-            List<String> additionalTags) {
+            Optional<String> group, String name, String tag, List<String> additionalTags) {
         this.registry = registry;
         this.username = username;
         this.password = password;

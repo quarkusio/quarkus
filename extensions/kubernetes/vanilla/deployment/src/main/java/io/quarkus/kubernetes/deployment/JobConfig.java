@@ -29,14 +29,14 @@ public interface JobConfig {
     Optional<Integer> backoffLimit();
 
     /**
-     * Specifies the duration in seconds relative to the startTime that the job may be continuously active before the system
-     * tries to terminate it; value must be positive integer.
+     * Specifies the duration in seconds relative to the startTime that the job may be continuously active before the
+     * system tries to terminate it; value must be positive integer.
      */
     Optional<Long> activeDeadlineSeconds();
 
     /**
-     * Limits the lifetime of a Job that has finished execution (either Complete or Failed). If this
-     * field is set, ttlSecondsAfterFinished after the Job finishes, it is eligible to be automatically deleted.
+     * Limits the lifetime of a Job that has finished execution (either Complete or Failed). If this field is set,
+     * ttlSecondsAfterFinished after the Job finishes, it is eligible to be automatically deleted.
      */
     Optional<Integer> ttlSecondsAfterFinished();
 

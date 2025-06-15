@@ -43,8 +43,10 @@ class TimeWindowMin {
     /**
      * For use by timer implementations.
      *
-     * @param sample The value to record.
-     * @param timeUnit The unit of time of the incoming sample.
+     * @param sample
+     *        The value to record.
+     * @param timeUnit
+     *        The unit of time of the incoming sample.
      */
     public void record(double sample, TimeUnit timeUnit) {
         record(() -> (long) TimeUtils.convert(sample, timeUnit, TimeUnit.NANOSECONDS));

@@ -50,8 +50,7 @@ public class ResponseWriterHandler implements ServerRestHandler {
 
     // set the content type header to what the resource method uses as a final fallback
     private void setContentTypeIfNecessary(ResteasyReactiveRequestContext requestContext) {
-        if (hasBody(requestContext)
-                && requestContext.getTarget() != null
+        if (hasBody(requestContext) && requestContext.getTarget() != null
                 && requestContext.getTarget().getProduces() != null
                 && requestContext.getResponseContentType() == null) {
             ServerMediaType serverMediaType = requestContext.getTarget().getProduces();

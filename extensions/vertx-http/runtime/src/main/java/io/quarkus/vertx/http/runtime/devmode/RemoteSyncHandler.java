@@ -33,24 +33,24 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     public static final String QUARKUS_SESSION_COUNT = "X-Quarkus-Count";
     public static final String CONNECT = "/connect";
     public static final String DEV = "/dev";
-    public static final String PROBE = "/probe"; //used to check that the server is back up after restart
+    public static final String PROBE = "/probe"; // used to check that the server is back up after restart
 
     final String password;
     final Handler<HttpServerRequest> next;
     final HotReplacementContext hotReplacementContext;
     final String rootPath;
 
-    //all these are static to allow the handler to be recreated on hot reload
-    //which makes lifecycle management a lot easier
+    // all these are static to allow the handler to be recreated on hot reload
+    // which makes lifecycle management a lot easier
     static volatile String currentSession;
-    //incrementing counter to prevent replay attacks
+    // incrementing counter to prevent replay attacks
     static volatile int currentSessionCounter;
     static volatile long currentSessionTimeout;
     static volatile Throwable remoteProblem;
     static volatile boolean checkForChanges;
 
-    public RemoteSyncHandler(String password, Handler<HttpServerRequest> next, HotReplacementContext hotReplacementContext,
-            String rootPath) {
+    public RemoteSyncHandler(String password, Handler<HttpServerRequest> next,
+            HotReplacementContext hotReplacementContext, String rootPath) {
         this.password = password;
         this.next = next;
         this.hotReplacementContext = hotReplacementContext;
@@ -63,7 +63,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         }
         synchronized (RemoteSyncHandler.class) {
             checkForChanges = true;
-            //if there is a current dev request this will unblock it
+            // if there is a current dev request this will unblock it
             RemoteSyncHandler.class.notifyAll();
             try {
                 RemoteSyncHandler.class.wait(30000);
@@ -114,7 +114,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
             }
         } else {
             event.response()
-                    .putHeader(QUARKUS_ERROR, "Unknown method " + event.method() + " this is not a valid remote dev request")
+                    .putHeader(QUARKUS_ERROR,
+                            "Unknown method " + event.method() + " this is not a valid remote dev request")
                     .setStatusCode(405).end();
         }
 
@@ -131,9 +132,9 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     @Override
                     public Void call() {
                         try {
-                            Throwable problem = (Throwable) new ObjectInputStream(new ByteArrayInputStream(b.getBytes()))
-                                    .readObject();
-                            //update the problem if it has changed
+                            Throwable problem = (Throwable) new ObjectInputStream(
+                                    new ByteArrayInputStream(b.getBytes())).readObject();
+                            // update the problem if it has changed
                             if (problem != null || remoteProblem != null) {
                                 remoteProblem = problem;
                                 hotReplacementContext.setRemoteProblem(problem);
@@ -151,8 +152,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                                 event.response().end();
                             }
                         } catch (RejectedExecutionException e) {
-                            //everything is shut down
-                            //likely in the middle of a restart
+                            // everything is shut down
+                            // likely in the middle of a restart
                             event.connection().close();
                         } catch (Exception e) {
                             log.error("Connect failed", e);
@@ -190,8 +191,8 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
                     r.nextBytes(sessionId);
                     currentSession = Base64.getEncoder().encodeToString(sessionId);
                     currentSessionCounter = 0;
-                    RemoteDevState state = (RemoteDevState) new ObjectInputStream(new ByteArrayInputStream(b.getBytes()))
-                            .readObject();
+                    RemoteDevState state = (RemoteDevState) new ObjectInputStream(
+                            new ByteArrayInputStream(b.getBytes())).readObject();
                     remoteProblem = state.getAugmentProblem();
                     if (state.getAugmentProblem() != null) {
                         hotReplacementContext.setRemoteProblem(state.getAugmentProblem());
@@ -241,9 +242,7 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
     }
 
     private String stripRootPath(String path) {
-        return path.startsWith(rootPath)
-                ? path.substring(rootPath.length())
-                : path;
+        return path.startsWith(rootPath) ? path.substring(rootPath.length()) : path;
     }
 
     private void handleDelete(HttpServerRequest event) {
@@ -258,17 +257,16 @@ public class RemoteSyncHandler implements Handler<HttpServerRequest> {
         String sessionCount = event.headers().get(QUARKUS_SESSION_COUNT);
         if (sessionCount == null) {
             log.error("No session count provided");
-            //not really sure what status code makes sense here
-            //Non-Authoritative Information seems as good as any
+            // not really sure what status code makes sense here
+            // Non-Authoritative Information seems as good as any
             event.response().setStatusCode(203).end();
             return true;
         }
         int sc = Integer.parseInt(sessionCount);
-        if (!Objects.equals(ses, currentSession) ||
-                sc <= currentSessionCounter) {
+        if (!Objects.equals(ses, currentSession) || sc <= currentSessionCounter) {
             log.error("Invalid session");
-            //not really sure what status code makes sense here
-            //Non-Authoritative Information seems as good as any
+            // not really sure what status code makes sense here
+            // Non-Authoritative Information seems as good as any
             event.response().setStatusCode(203).end();
             return true;
         }

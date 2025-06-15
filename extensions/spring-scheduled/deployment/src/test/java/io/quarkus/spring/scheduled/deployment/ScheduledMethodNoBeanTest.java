@@ -15,8 +15,7 @@ public class ScheduledMethodNoBeanTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NoBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NoBean.class));
 
     @Test
     public void test() throws InterruptedException {

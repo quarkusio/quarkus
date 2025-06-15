@@ -15,8 +15,7 @@ public class EmitterWithOverflowAndBroadcastTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ChannelEmitterWithOverflowAndBroadcast.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ChannelEmitterWithOverflowAndBroadcast.class));
 
     @Inject
     ChannelEmitterWithOverflowAndBroadcast bean;

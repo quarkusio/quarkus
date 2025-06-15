@@ -13,9 +13,8 @@ public class BlockingOperationControlBuildStep {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    public void blockingOP(List<IOThreadDetectorBuildItem> threadDetectors,
-            BlockingOperationRecorder recorder) {
-        recorder
-                .control(threadDetectors.stream().map(IOThreadDetectorBuildItem::getDetector).collect(Collectors.toList()));
+    public void blockingOP(List<IOThreadDetectorBuildItem> threadDetectors, BlockingOperationRecorder recorder) {
+        recorder.control(
+                threadDetectors.stream().map(IOThreadDetectorBuildItem::getDetector).collect(Collectors.toList()));
     }
 }

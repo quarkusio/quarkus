@@ -5,7 +5,8 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class InterceptedStaticMethodsRecorder {
 
-    // This class is generated and calls all generated static interceptor initializers to register metadata in the InterceptedStaticMethods class
+    // This class is generated and calls all generated static interceptor initializers to register metadata in the
+    // InterceptedStaticMethods class
     public static final String INITIALIZER_CLASS_NAME = "io.quarkus.arc.runtime.InterceptedStaticMethodsInitializer";
 
     public void callInitializer() {

@@ -24,8 +24,8 @@ public class TestResult implements TestResultInterface {
     final boolean reportable;
 
     public TestResult(String displayName, String testClass, List<String> tags, UniqueId uniqueId,
-            TestExecutionResult testExecutionResult,
-            List<String> logOutput, boolean test, long runId, long time, boolean reportable) {
+            TestExecutionResult testExecutionResult, List<String> logOutput, boolean test, long runId, long time,
+            boolean reportable) {
         this.displayName = displayName;
         this.testClass = testClass;
         this.tags = tags;

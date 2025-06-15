@@ -11,8 +11,8 @@ public class CustomCountPanacheQuery<Entity> extends PanacheQueryImpl<Entity> {
 
     public CustomCountPanacheQuery(Session session, SelectionQuery hibernateQuery, String customCountQuery,
             Object paramsArrayOrMap) {
-        super(new CommonPanacheQueryImpl<>(session, CommonPanacheQueryImpl.getQueryString(hibernateQuery),
-                null, null, paramsArrayOrMap) {
+        super(new CommonPanacheQueryImpl<>(session, CommonPanacheQueryImpl.getQueryString(hibernateQuery), null, null,
+                paramsArrayOrMap) {
             {
                 this.customCountQueryForSpring = customCountQuery;
             }

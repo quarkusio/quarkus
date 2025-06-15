@@ -31,9 +31,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ProviderClientRegistrationTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ProviderClientRegistrationTest.class, ClientBean.class, HelloFooProvider.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(ProviderClientRegistrationTest.class, ClientBean.class, HelloFooProvider.class));
 
     static HttpServer server;
 
@@ -87,7 +86,8 @@ public class ProviderClientRegistrationTest {
 
         @PostConstruct
         void init() {
-            webTarget = ClientBuilder.newClient().target("http://localhost:" + server.getAddress().getPort()).path("/hello");
+            webTarget = ClientBuilder.newClient().target("http://localhost:" + server.getAddress().getPort())
+                    .path("/hello");
             ;
         }
 

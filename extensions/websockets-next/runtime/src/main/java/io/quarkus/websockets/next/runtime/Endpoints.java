@@ -35,9 +35,9 @@ class Endpoints {
 
     static void initialize(Vertx vertx, ArcContainer container, Codecs codecs, WebSocketConnectionBase connection,
             WebSocketBase ws, String generatedEndpointClass, Optional<Duration> autoPingInterval,
-            SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy, TrafficLogger trafficLogger,
-            Runnable onClose, boolean activateRequestContext, boolean activateSessionContext,
-            TelemetrySupport telemetrySupport) {
+            SecuritySupport securitySupport, UnhandledFailureStrategy unhandledFailureStrategy,
+            TrafficLogger trafficLogger, Runnable onClose, boolean activateRequestContext,
+            boolean activateSessionContext, TelemetrySupport telemetrySupport) {
 
         Context context = vertx.getOrCreateContext();
 
@@ -49,8 +49,8 @@ class Endpoints {
             sessionContext = container.sessionContext();
             sessionContextState = sessionContext.initializeState();
         }
-        ContextSupport contextSupport = new ContextSupport(connection, sessionContextState,
-                sessionContext, activateRequestContext ? container.requestContext() : null);
+        ContextSupport contextSupport = new ContextSupport(connection, sessionContextState, sessionContext,
+                activateRequestContext ? container.requestContext() : null);
 
         // Create an endpoint that delegates callbacks to the endpoint bean
         WebSocketEndpoint endpoint = createEndpoint(generatedEndpointClass, context, connection, codecs, contextSupport,
@@ -116,7 +116,8 @@ class Endpoints {
                         if (telemetrySupport != null) {
                             telemetrySupport.connectionOpeningFailed(r.cause());
                         }
-                        handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnOpen callback", connection);
+                        handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnOpen callback",
+                                connection);
                     }
                 });
             }
@@ -133,8 +134,7 @@ class Endpoints {
                         LOG.debugf("@OnTextMessage callback consumed text message: %s", connection);
                     } else {
                         handleFailure(unhandledFailureStrategy, r.cause(),
-                                "Unable to consume text message in @OnTextMessage callback",
-                                connection);
+                                "Unable to consume text message in @OnTextMessage callback", connection);
                     }
                 });
             }, true);
@@ -170,8 +170,7 @@ class Endpoints {
                         LOG.debugf("@OnBinaryMessage callback consumed binary message: %s", connection);
                     } else {
                         handleFailure(unhandledFailureStrategy, r.cause(),
-                                "Unable to consume binary message in @OnBinaryMessage callback",
-                                connection);
+                                "Unable to consume binary message in @OnBinaryMessage callback", connection);
                     }
                 });
             }, true);
@@ -249,8 +248,8 @@ class Endpoints {
                                 if (r.succeeded()) {
                                     LOG.debugf("@OnClose callback completed: %s", connection);
                                 } else {
-                                    handleFailure(unhandledFailureStrategy, r.cause(), "Unable to complete @OnClose callback",
-                                            connection);
+                                    handleFailure(unhandledFailureStrategy, r.cause(),
+                                            "Unable to complete @OnClose callback", connection);
                                 }
                                 securitySupport.onClose();
                                 onClose.run();
@@ -274,7 +273,8 @@ class Endpoints {
                     public void handle(Void event) {
                         endpoint.doOnError(t).subscribe().with(
                                 v -> LOG.debugf("Error [%s] processed: %s", t.getClass(), connection),
-                                t -> handleFailure(unhandledFailureStrategy, t, "Unhandled error occurred", connection));
+                                t -> handleFailure(unhandledFailureStrategy, t, "Unhandled error occurred",
+                                        connection));
                     }
                 });
             }
@@ -306,7 +306,8 @@ class Endpoints {
         if (isSecurityFailure(cause)) {
             statusCode = WebSocketCloseStatus.POLICY_VIOLATION.code();
         } else {
-            statusCode = connection instanceof WebSocketClientConnectionImpl ? WebSocketCloseStatus.INVALID_MESSAGE_TYPE.code()
+            statusCode = connection instanceof WebSocketClientConnectionImpl
+                    ? WebSocketCloseStatus.INVALID_MESSAGE_TYPE.code()
                     : WebSocketCloseStatus.INTERNAL_SERVER_ERROR.code();
         }
         if (LaunchMode.current().isDevOrTest()) {
@@ -316,28 +317,23 @@ class Endpoints {
         }
         connection.close(closeReason).subscribe().with(
                 v -> LOG.debugf("Connection closed due to unhandled failure %s: %s", cause, connection),
-                t -> LOG.errorf("Unable to close connection [%s] due to unhandled failure [%s]: %s", connection.id(), cause,
-                        t));
+                t -> LOG.errorf("Unable to close connection [%s] due to unhandled failure [%s]: %s", connection.id(),
+                        cause, t));
     }
 
     private static void logFailure(Throwable throwable, String message, WebSocketConnectionBase connection) {
         if (isWebSocketIsClosedFailure(throwable, connection)) {
-            LOG.debugf(throwable,
-                    message + ": %s",
-                    connection);
+            LOG.debugf(throwable, message + ": %s", connection);
         } else if (isSecurityFailure(throwable)) {
             // Avoid excessive logging for security failures
             LOG.errorf("Security failure: %s", throwable.toString());
         } else {
-            LOG.errorf(throwable,
-                    message + ": %s",
-                    connection);
+            LOG.errorf(throwable, message + ": %s", connection);
         }
     }
 
     private static boolean isSecurityFailure(Throwable throwable) {
-        return throwable instanceof UnauthorizedException
-                || throwable instanceof AuthenticationException
+        return throwable instanceof UnauthorizedException || throwable instanceof AuthenticationException
                 || throwable instanceof ForbiddenException;
     }
 
@@ -355,8 +351,8 @@ class Endpoints {
         return message.contains("WebSocket is closed");
     }
 
-    private static void textMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<String> textAction, boolean newDuplicatedContext) {
+    private static void textMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint,
+            WebSocketBase ws, Context context, Consumer<String> textAction, boolean newDuplicatedContext) {
         ws.textMessageHandler(new Handler<String>() {
             @Override
             public void handle(String message) {
@@ -373,8 +369,8 @@ class Endpoints {
         });
     }
 
-    private static void binaryMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<Buffer> binaryAction, boolean newDuplicatedContext) {
+    private static void binaryMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint,
+            WebSocketBase ws, Context context, Consumer<Buffer> binaryAction, boolean newDuplicatedContext) {
         ws.binaryMessageHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer message) {
@@ -391,8 +387,8 @@ class Endpoints {
         });
     }
 
-    private static void pingMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<Buffer> pingAction) {
+    private static void pingMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint,
+            WebSocketBase ws, Context context, Consumer<Buffer> pingAction) {
         ws.frameHandler(new Handler<WebSocketFrame>() {
             @Override
             public void handle(WebSocketFrame frame) {
@@ -409,8 +405,8 @@ class Endpoints {
         });
     }
 
-    private static void pongMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint, WebSocketBase ws,
-            Context context, Consumer<Buffer> pongAction) {
+    private static void pongMessageHandler(WebSocketConnectionBase connection, WebSocketEndpoint endpoint,
+            WebSocketBase ws, Context context, Consumer<Buffer> pongAction) {
         ws.pongHandler(new Handler<Buffer>() {
             @Override
             public void handle(Buffer message) {
@@ -426,8 +422,8 @@ class Endpoints {
     }
 
     private static WebSocketEndpoint createEndpoint(String endpointClassName, Context context,
-            WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport, SecuritySupport securitySupport,
-            TelemetrySupport telemetrySupport) {
+            WebSocketConnectionBase connection, Codecs codecs, ContextSupport contextSupport,
+            SecuritySupport securitySupport, TelemetrySupport telemetrySupport) {
         try {
             ClassLoader cl = Thread.currentThread().getContextClassLoader();
             if (cl == null) {
@@ -437,7 +433,8 @@ class Endpoints {
             Class<? extends WebSocketEndpoint> endpointClazz = (Class<? extends WebSocketEndpoint>) cl
                     .loadClass(endpointClassName);
 
-            ErrorInterceptor errorInterceptor = telemetrySupport == null ? null : telemetrySupport.getErrorInterceptor();
+            ErrorInterceptor errorInterceptor = telemetrySupport == null ? null
+                    : telemetrySupport.getErrorInterceptor();
             WebSocketEndpoint endpoint = (WebSocketEndpoint) endpointClazz
                     .getDeclaredConstructor(WebSocketConnectionBase.class, Codecs.class, ContextSupport.class,
                             SecuritySupport.class, ErrorInterceptor.class)

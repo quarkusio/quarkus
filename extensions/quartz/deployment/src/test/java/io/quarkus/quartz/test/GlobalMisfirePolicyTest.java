@@ -21,12 +21,10 @@ public class GlobalMisfirePolicyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.cron-trigger.misfire-policy=fire-now\n" +
-                                    "quarkus.quartz.simple-trigger.misfire-policy=smart-policy\n"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Jobs.class).addAsResource(
+                    new StringAsset("quarkus.quartz.cron-trigger.misfire-policy=fire-now\n"
+                            + "quarkus.quartz.simple-trigger.misfire-policy=smart-policy\n"),
+                    "application.properties"));
 
     @Inject
     org.quartz.Scheduler quartz;
@@ -41,8 +39,7 @@ public class GlobalMisfirePolicyTest {
 
     @Test
     public void testGlobalSimpleMisfirePolicy() throws SchedulerException {
-        Trigger smartPolicy = quartz
-                .getTrigger(new TriggerKey("simple_trigger_policy", Scheduler.class.getName()));
+        Trigger smartPolicy = quartz.getTrigger(new TriggerKey("simple_trigger_policy", Scheduler.class.getName()));
         assertNotNull(smartPolicy);
         assertEquals(SimpleTrigger.MISFIRE_INSTRUCTION_SMART_POLICY, smartPolicy.getMisfireInstruction());
     }

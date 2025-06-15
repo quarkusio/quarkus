@@ -6,8 +6,8 @@ import io.quarkus.bootstrap.app.SbomResult;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Aggregates SBOMs generated for packaged applications.
- * The API around this is still in development and will likely change in the near future.
+ * Aggregates SBOMs generated for packaged applications. The API around this is still in development and will likely
+ * change in the near future.
  */
 public final class SbomBuildItem extends MultiBuildItem {
 

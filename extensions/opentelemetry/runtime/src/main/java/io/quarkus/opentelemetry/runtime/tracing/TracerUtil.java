@@ -19,9 +19,7 @@ public class TracerUtil {
         final AttributesBuilder attributesBuilder = Attributes.builder();
 
         if (!resourceAttributes.isEmpty()) {
-            OpenTelemetryUtil
-                    .convertKeyValueListToMap(resourceAttributes)
-                    .forEach(attributesBuilder::put);
+            OpenTelemetryUtil.convertKeyValueListToMap(resourceAttributes).forEach(attributesBuilder::put);
         }
 
         if (serviceName != null) {

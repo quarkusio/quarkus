@@ -19,12 +19,13 @@ final class AsciidocFormatter extends AbstractFormatter {
     private static final String SOURCE_BLOCK_PREFIX = "[source";
     private static final String SOURCE_BLOCK_DELIMITER = "--";
     private static final Pattern XREF_PATTERN = Pattern.compile("xref:([^\\[]+)\\[");
-    private static final Pattern ANGLE_BRACKETS_WITHOUT_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?)>>",
-            Pattern.CASE_INSENSITIVE);
-    private static final Pattern ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN = Pattern.compile("<<([a-z0-9_\\-#\\.]+?),([^>]+?)>>",
-            Pattern.CASE_INSENSITIVE);
+    private static final Pattern ANGLE_BRACKETS_WITHOUT_DESCRIPTION_PATTERN = Pattern
+            .compile("<<([a-z0-9_\\-#\\.]+?)>>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern ANGLE_BRACKETS_WITH_DESCRIPTION_PATTERN = Pattern
+            .compile("<<([a-z0-9_\\-#\\.]+?),([^>]+?)>>", Pattern.CASE_INSENSITIVE);
 
-    AsciidocFormatter(GenerationReport generationReport, JavadocRepository javadocRepository, boolean enableEnumTooltips) {
+    AsciidocFormatter(GenerationReport generationReport, JavadocRepository javadocRepository,
+            boolean enableEnumTooltips) {
         super(generationReport, javadocRepository, enableEnumTooltips);
     }
 
@@ -34,8 +35,8 @@ final class AsciidocFormatter extends AbstractFormatter {
     }
 
     protected String moreInformationAboutType(Context context, String anchorRoot, String type) {
-        return String.format(MORE_INFO_ABOUT_TYPE_FORMAT, anchorRoot + "-" + (context != null ? context.summaryTableId() : ""),
-                type);
+        return String.format(MORE_INFO_ABOUT_TYPE_FORMAT,
+                anchorRoot + "-" + (context != null ? context.summaryTableId() : ""), type);
     }
 
     protected String tooltip(String value, String javadocDescription) {
@@ -43,8 +44,8 @@ final class AsciidocFormatter extends AbstractFormatter {
     }
 
     /**
-     * Note that this is extremely brittle. Apparently, colons breaks the tooltips but if escaped with \, the \ appears in the
-     * output.
+     * Note that this is extremely brittle. Apparently, colons breaks the tooltips but if escaped with \, the \ appears
+     * in the output.
      * <p>
      * We should probably have some warnings/errors as to what is accepted in enum Javadoc.
      */
@@ -61,8 +62,8 @@ final class AsciidocFormatter extends AbstractFormatter {
     public String formatDescription(ConfigProperty configProperty, Extension extension, Context context) {
         String description = formatDescription(configProperty);
 
-        if (description == null || extension == null || extension.guideUrl() == null || context == null ||
-                !context.allConfig()) {
+        if (description == null || extension == null || extension.guideUrl() == null || context == null
+                || !context.allConfig()) {
             return description;
         }
 
@@ -120,7 +121,8 @@ final class AsciidocFormatter extends AbstractFormatter {
                 findDelimiter = true;
 
                 if (currentBuffer.length() > 0) {
-                    rewrittenGuide.append(rewriteAnchors(currentBuffer.toString(), baseGuideUrl, configPropertyAnchorPrefix));
+                    rewrittenGuide
+                            .append(rewriteAnchors(currentBuffer.toString(), baseGuideUrl, configPropertyAnchorPrefix));
                     currentBuffer.setLength(0);
                 }
                 rewrittenGuide.append(line + "\n");
@@ -156,7 +158,8 @@ final class AsciidocFormatter extends AbstractFormatter {
         return content;
     }
 
-    private static String getQualifiedReference(String reference, String baseGuideUrl, String configPropertyAnchorPrefix) {
+    private static String getQualifiedReference(String reference, String baseGuideUrl,
+            String configPropertyAnchorPrefix) {
         if (reference.contains(ADOC_SUFFIX)) {
             return reference;
         }

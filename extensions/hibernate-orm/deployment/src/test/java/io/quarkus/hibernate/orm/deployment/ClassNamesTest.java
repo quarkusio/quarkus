@@ -58,8 +58,7 @@ public class ClassNamesTest {
     @ParameterizedTest
     @MethodSource("provideConstantsToTest")
     void testClassNameRefersToExistingClass(DotName constant) {
-        assertThatCode(() -> getClass().getClassLoader().loadClass(constant.toString()))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> getClass().getClassLoader().loadClass(constant.toString())).doesNotThrowAnyException();
     }
 
     private static Set<DotName> provideConstantsToTest() {
@@ -68,10 +67,10 @@ public class ClassNamesTest {
 
     @Test
     public void testNoMissingGeneratorClass() {
-        Set<DotName> generatorImplementors = findConcreteNamedImplementors(hibernateIndex, "org.hibernate.generator.Generator");
+        Set<DotName> generatorImplementors = findConcreteNamedImplementors(hibernateIndex,
+                "org.hibernate.generator.Generator");
 
-        assertThat(ClassNames.GENERATORS)
-                .containsExactlyInAnyOrderElementsOf(generatorImplementors);
+        assertThat(ClassNames.GENERATORS).containsExactlyInAnyOrderElementsOf(generatorImplementors);
     }
 
     @Test
@@ -79,8 +78,7 @@ public class ClassNamesTest {
         Set<DotName> generatorImplementors = findConcreteNamedImplementors(hibernateIndex,
                 "org.hibernate.id.enhanced.Optimizer");
 
-        assertThat(ClassNames.OPTIMIZERS)
-                .containsExactlyInAnyOrderElementsOf(generatorImplementors);
+        assertThat(ClassNames.OPTIMIZERS).containsExactlyInAnyOrderElementsOf(generatorImplementors);
     }
 
     @Test
@@ -88,8 +86,7 @@ public class ClassNamesTest {
         Set<DotName> jpaMappingAnnotations = findRuntimeAnnotations(jpaIndex);
         jpaMappingAnnotations.removeIf(name -> name.toString().startsWith("jakarta.persistence.metamodel."));
 
-        assertThat(ClassNames.JPA_MAPPING_ANNOTATIONS)
-                .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
+        assertThat(ClassNames.JPA_MAPPING_ANNOTATIONS).containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 
     @Test
@@ -100,8 +97,7 @@ public class ClassNamesTest {
                 .filter(name -> listenerAnnotationNamePattern.matcher(name.toString()).matches())
                 .collect(Collectors.toSet());
 
-        assertThat(ClassNames.JPA_LISTENER_ANNOTATIONS)
-                .containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
+        assertThat(ClassNames.JPA_LISTENER_ANNOTATIONS).containsExactlyInAnyOrderElementsOf(jpaMappingAnnotations);
     }
 
     @Test
@@ -126,8 +122,10 @@ public class ClassNamesTest {
 
     @Test
     public void testNoMissingPackageLevelAnnotation() {
-        Set<DotName> packageLevelHibernateAnnotations = findRuntimeAnnotationsByTargetType(jpaIndex, ElementType.PACKAGE);
-        packageLevelHibernateAnnotations.addAll(findRuntimeAnnotationsByTargetType(hibernateIndex, ElementType.PACKAGE));
+        Set<DotName> packageLevelHibernateAnnotations = findRuntimeAnnotationsByTargetType(jpaIndex,
+                ElementType.PACKAGE);
+        packageLevelHibernateAnnotations
+                .addAll(findRuntimeAnnotationsByTargetType(hibernateIndex, ElementType.PACKAGE));
         packageLevelHibernateAnnotations.removeIf(name -> name.toString().contains(".internal."));
         ignoreInternalAnnotations(packageLevelHibernateAnnotations);
 
@@ -148,8 +146,8 @@ public class ClassNamesTest {
     public void testNoMissingJdbcJavaTypeClass() {
         Set<DotName> jdbcJavaTypeNames = new TreeSet<>();
         DotName basicJavaTypeName = DotName.createSimple("org.hibernate.type.descriptor.java.BasicJavaType");
-        IndexView hibernateAndJdkIndex = new IndexWrapper(hibernateIndex, Thread.currentThread().getContextClassLoader(),
-                new PersistentClassIndex());
+        IndexView hibernateAndJdkIndex = new IndexWrapper(hibernateIndex,
+                Thread.currentThread().getContextClassLoader(), new PersistentClassIndex());
 
         for (ClassInfo basicJavaTypeImplInfo : hibernateIndex.getAllKnownImplementors(basicJavaTypeName)) {
             if (Modifier.isAbstract(basicJavaTypeImplInfo.flags())) {
@@ -163,8 +161,7 @@ public class ClassNamesTest {
             }
         }
 
-        assertThat(ClassNames.JDBC_JAVA_TYPES)
-                .containsExactlyInAnyOrderElementsOf(jdbcJavaTypeNames);
+        assertThat(ClassNames.JDBC_JAVA_TYPES).containsExactlyInAnyOrderElementsOf(jdbcJavaTypeNames);
     }
 
     private Set<DotName> findRuntimeAnnotations(Index index) {
@@ -213,12 +210,9 @@ public class ClassNamesTest {
     private Set<DotName> findConcreteNamedImplementors(Index index, String interfaceName) {
         var interfaceDotName = DotName.createSimple(interfaceName);
         assertThat(index.getClassByName(interfaceDotName)).isNotNull();
-        return index.getAllKnownImplementors(interfaceDotName).stream()
-                .filter(c -> !c.isInterface() && !c.isAbstract()
-                // Ignore anonymous classes
-                        && c.simpleName() != null)
-                .map(ClassInfo::name)
-                .collect(Collectors.toSet());
+        return index.getAllKnownImplementors(interfaceDotName).stream().filter(c -> !c.isInterface() && !c.isAbstract()
+        // Ignore anonymous classes
+                && c.simpleName() != null).map(ClassInfo::name).collect(Collectors.toSet());
     }
 
     private static File determineJpaJarLocation() {

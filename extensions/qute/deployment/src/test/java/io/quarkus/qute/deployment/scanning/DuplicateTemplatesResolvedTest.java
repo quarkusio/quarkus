@@ -16,8 +16,7 @@ public class DuplicateTemplatesResolvedTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(root -> root.addAsResource(new StringAsset("Hello!"), "templates/hello.html"))
-            .withAdditionalDependency(
-                    d -> d.addAsResource(new StringAsset("Hi!"), "templates/hello.html"));
+            .withAdditionalDependency(d -> d.addAsResource(new StringAsset("Hi!"), "templates/hello.html"));
 
     @Inject
     Template hello;

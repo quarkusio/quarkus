@@ -28,11 +28,8 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
 
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        StatefulSetBuilder builder = list.buildItems().stream()
-                .filter(this::containsStatefulSetResource)
-                .map(replaceExistingStatefulSetResource(list))
-                .findAny()
-                .orElseGet(this::createStatefulSetResource)
+        StatefulSetBuilder builder = list.buildItems().stream().filter(this::containsStatefulSetResource)
+                .map(replaceExistingStatefulSetResource(list)).findAny().orElseGet(this::createStatefulSetResource)
                 .accept(StatefulSetBuilder.class, this::initStatefulSetResourceWithDefaults);
 
         list.addToItems(builder.build());
@@ -45,14 +42,8 @@ public class AddStatefulSetResourceDecorator extends ResourceProvidingDecorator<
     private void initStatefulSetResourceWithDefaults(StatefulSetBuilder builder) {
         StatefulSetFluent<?>.SpecNested<StatefulSetBuilder> spec = builder.editOrNewSpec();
 
-        spec.editOrNewSelector()
-                .endSelector()
-                .editOrNewTemplate()
-                .editOrNewSpec()
-                .endSpec()
-                .editOrNewMetadata()
-                .endMetadata()
-                .endTemplate();
+        spec.editOrNewSelector().endSelector().editOrNewTemplate().editOrNewSpec().endSpec().editOrNewMetadata()
+                .endMetadata().endTemplate();
 
         // defaults for:
         // - replicas

@@ -17,8 +17,7 @@ public class SpelTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(SomeService.class))
-            .assertException(e -> {
+            .withApplicationRoot((jar) -> jar.addClasses(SomeService.class)).assertException(e -> {
                 assertEquals(IllegalArgumentException.class, e.getClass());
                 assertTrue(e.getMessage().contains("#{'${values.list}'.split(',')}"));
             });

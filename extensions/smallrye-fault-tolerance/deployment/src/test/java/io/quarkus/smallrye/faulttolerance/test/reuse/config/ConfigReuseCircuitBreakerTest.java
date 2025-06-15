@@ -72,8 +72,7 @@ public class ConfigReuseCircuitBreakerTest {
         // 1. closed -> open
         assertThat(helloStateChanges).hasValue(1);
 
-        await().atMost(NEW_DELAY * 2, TimeUnit.MILLISECONDS)
-                .ignoreException(CircuitBreakerOpenException.class)
+        await().atMost(NEW_DELAY * 2, TimeUnit.MILLISECONDS).ignoreException(CircuitBreakerOpenException.class)
                 .untilAsserted(() -> {
                     assertThat(helloService.hello(null)).isEqualTo(HelloService.OK);
                 });

@@ -17,7 +17,8 @@ import io.vertx.core.impl.NoStackTraceException;
 public class UniReturnTypeWithFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

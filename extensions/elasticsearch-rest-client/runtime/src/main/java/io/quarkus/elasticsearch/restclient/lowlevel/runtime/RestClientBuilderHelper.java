@@ -44,10 +44,20 @@ public final class RestClientBuilderHelper {
         builder.setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
             @Override
             public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder requestConfigBuilder) {
-                return requestConfigBuilder
-                        .setConnectTimeout((int) config.connectionTimeout().toMillis())
-                        .setSocketTimeout((int) config.socketTimeout().toMillis())
-                        .setConnectionRequestTimeout(0); // Avoid requests being flagged as timed out even when they didn't time out.
+                return requestConfigBuilder.setConnectTimeout((int) config.connectionTimeout().toMillis())
+                        .setSocketTimeout((int) config.socketTimeout().toMillis()).setConnectionRequestTimeout(0); // Avoid
+                                                                                                                                                                                                             // requests
+                                                                                                                                                                                                             // being
+                                                                                                                                                                                                             // flagged
+                                                                                                                                                                                                             // as
+                                                                                                                                                                                                             // timed
+                                                                                                                                                                                                             // out
+                                                                                                                                                                                                             // even
+                                                                                                                                                                                                             // when
+                                                                                                                                                                                                             // they
+                                                                                                                                                                                                             // didn't
+                                                                                                                                                                                                             // time
+                                                                                                                                                                                                             // out.
             }
         });
 
@@ -56,8 +66,9 @@ public final class RestClientBuilderHelper {
             public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpClientBuilder) {
                 if (config.username().isPresent()) {
                     if (!"https".equalsIgnoreCase(config.protocol())) {
-                        LOG.warn("Using Basic authentication in HTTP implies sending plain text passwords over the wire, " +
-                                "use the HTTPS protocol instead.");
+                        LOG.warn(
+                                "Using Basic authentication in HTTP implies sending plain text passwords over the wire, "
+                                        + "use the HTTPS protocol instead.");
                     }
                     CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
                     credentialsProvider.setCredentials(AuthScope.ANY,
@@ -67,8 +78,7 @@ public final class RestClientBuilderHelper {
 
                 if (config.ioThreadCounts().isPresent()) {
                     IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
-                            .setIoThreadCount(config.ioThreadCounts().get())
-                            .build();
+                            .setIoThreadCount(config.ioThreadCounts().get()).build();
                     httpClientBuilder.setDefaultIOReactorConfig(ioReactorConfig);
                 }
 
@@ -81,10 +91,12 @@ public final class RestClientBuilderHelper {
                     httpClientBuilder.setSSLStrategy(NoopIOSessionStrategy.INSTANCE);
                 }
 
-                // Apply configuration from RestClientBuilder.HttpClientConfigCallback implementations annotated with ElasticsearchClientConfig
+                // Apply configuration from RestClientBuilder.HttpClientConfigCallback implementations annotated with
+                // ElasticsearchClientConfig
                 HttpAsyncClientBuilder result = httpClientBuilder;
                 Iterable<InstanceHandle<RestClientBuilder.HttpClientConfigCallback>> handles = Arc.container()
-                        .select(RestClientBuilder.HttpClientConfigCallback.class, new ElasticsearchClientConfig.Literal())
+                        .select(RestClientBuilder.HttpClientConfigCallback.class,
+                                new ElasticsearchClientConfig.Literal())
                         .handles();
                 for (InstanceHandle<RestClientBuilder.HttpClientConfigCallback> handle : handles) {
                     result = handle.get().customizeHttpClient(result);
@@ -103,8 +115,7 @@ public final class RestClientBuilderHelper {
 
         // https discovery support
         if ("https".equalsIgnoreCase(config.protocol())) {
-            NodesSniffer hostsSniffer = new ElasticsearchNodesSniffer(
-                    client,
+            NodesSniffer hostsSniffer = new ElasticsearchNodesSniffer(client,
                     ElasticsearchNodesSniffer.DEFAULT_SNIFF_REQUEST_TIMEOUT, // 1sec
                     ElasticsearchNodesSniffer.Scheme.HTTPS);
             builder.setNodesSniffer(hostsSniffer);

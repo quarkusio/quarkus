@@ -71,8 +71,8 @@ public interface OTelRuntimeConfig {
     Optional<List<String>> resourceAttributes();
 
     /**
-     * Specify logical service name. Takes precedence over service.name defined with otel.resource.attributes
-     * and from quarkus.application.name.
+     * Specify logical service name. Takes precedence over service.name defined with otel.resource.attributes and from
+     * quarkus.application.name.
      * <p>
      * Defaults to <code>quarkus.application.name</code>.
      */

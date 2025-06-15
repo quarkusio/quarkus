@@ -79,7 +79,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zadd(key, ScoredValue.of(Place.crussol, 1.0))).isEqualTo(0);
 
         assertThat(setOfPlaces.zrange(key, 0, -1)).isEqualTo(List.of(Place.crussol));
-        assertThat(setOfPlaces.zadd(key, ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.suze, 3.0))).isEqualTo(2);
+        assertThat(setOfPlaces.zadd(key, ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.suze, 3.0)))
+                .isEqualTo(2);
         assertThat(setOfPlaces.zrange(key, 0, -1)).isEqualTo(List.of(Place.crussol, Place.grignan, Place.suze));
     }
 
@@ -89,10 +90,10 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zadd(key, new ZAddArgs().nx(), ScoredValue.of(Place.crussol, 2.0))).isEqualTo(0);
         assertThat(setOfPlaces.zadd(key, new ZAddArgs().nx(), ScoredValue.of(Place.grignan, 2.0))).isEqualTo(1);
 
-        assertThat(setOfPlaces.zadd(key, new ZAddArgs().nx(), Map.of(Place.grignan, 2.0, Place.suze, 3.0))).isEqualTo(1);
+        assertThat(setOfPlaces.zadd(key, new ZAddArgs().nx(), Map.of(Place.grignan, 2.0, Place.suze, 3.0)))
+                .isEqualTo(1);
         assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0),
-                ScoredValue.of(Place.grignan, 2.0),
-                ScoredValue.of(Place.suze, 3.0)));
+                ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.suze, 3.0)));
     }
 
     @Test
@@ -155,8 +156,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
         // add new element
         assertThat(setOfPlaces.zadd(key, new ZAddArgs().gt(), 0.0, Place.grignan)).isTrue();
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(ScoredValue.of(Place.grignan, 0.0), ScoredValue.of(Place.crussol, 2.0)));
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1))
+                .isEqualTo(List.of(ScoredValue.of(Place.grignan, 0.0), ScoredValue.of(Place.crussol, 2.0)));
     }
 
     @Test
@@ -173,8 +174,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
 
         // add new element
         assertThat(setOfPlaces.zadd(key, new ZAddArgs().lt(), 0.0, Place.grignan)).isTrue();
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(ScoredValue.of(Place.grignan, 0.0), ScoredValue.of(Place.crussol, 1.0)));
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1))
+                .isEqualTo(List.of(ScoredValue.of(Place.grignan, 0.0), ScoredValue.of(Place.crussol, 1.0)));
     }
 
     @Test
@@ -189,8 +190,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zcount(key, ScoreRange.from(0, 0))).isEqualTo(0);
 
         assertThat(setOfPlaces.zadd(key, new ScoredValue<>(Place.crussol, 1.0), new ScoredValue<>(Place.grignan, 2.0),
-                new ScoredValue<>(Place.suze, 2.1)))
-                .isEqualTo(3);
+                new ScoredValue<>(Place.suze, 2.1))).isEqualTo(3);
 
         assertThat(setOfPlaces.zcount(key, ScoreRange.from(1.0, 3.0))).isEqualTo(3);
         assertThat(setOfPlaces.zcount(key, ScoreRange.from(1.0, 2.0))).isEqualTo(2);
@@ -314,11 +314,13 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     void zrandmember() {
         setOfPlaces.zadd("zset", Map.of(Place.crussol, 2.0, Place.grignan, 3.0, Place.suze, 4.0));
         assertThat(setOfPlaces.zrandmember("zset")).isIn(Place.crussol, Place.grignan, Place.suze);
-        assertThat(setOfPlaces.zrandmember("zset", 2)).hasSize(2).containsAnyOf(Place.crussol, Place.grignan, Place.suze);
+        assertThat(setOfPlaces.zrandmember("zset", 2)).hasSize(2).containsAnyOf(Place.crussol, Place.grignan,
+                Place.suze);
         assertThat(setOfPlaces.zrandmemberWithScores("zset")).isIn(ScoredValue.of(Place.crussol, 2.0),
                 ScoredValue.of(Place.grignan, 3.0), ScoredValue.of(Place.suze, 4.0));
-        assertThat(setOfPlaces.zrandmemberWithScores("zset", 2)).hasSize(2).containsAnyOf(ScoredValue.of(Place.crussol, 2.0),
-                ScoredValue.of(Place.grignan, 3.0), ScoredValue.of(Place.suze, 4.0));
+        assertThat(setOfPlaces.zrandmemberWithScores("zset", 2)).hasSize(2).containsAnyOf(
+                ScoredValue.of(Place.crussol, 2.0), ScoredValue.of(Place.grignan, 3.0),
+                ScoredValue.of(Place.suze, 4.0));
     }
 
     @Test
@@ -330,9 +332,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @Test
     void zrangeWithScores() {
         populate();
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0),
-                        ScoredValue.of(Place.suze, 3.0)));
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0),
+                ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.suze, 3.0)));
     }
 
     @Test
@@ -340,7 +341,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     void zrangebyscore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
 
-        assertThat(setOfPlaces.zrangebyscore(key, new ScoreRange<>(2.0, 3.0))).isEqualTo(List.of(Place.grignan, Place.suze));
+        assertThat(setOfPlaces.zrangebyscore(key, new ScoreRange<>(2.0, 3.0)))
+                .isEqualTo(List.of(Place.grignan, Place.suze));
         assertThat(setOfPlaces.zrangebyscore(key, new ScoreRange<>(1.0, false, 4.0, false)))
                 .isEqualTo(List.of(Place.grignan, Place.suze));
         assertThat(setOfPlaces.zrangebyscore(key, new ScoreRange<>(NEGATIVE_INFINITY, POSITIVE_INFINITY)))
@@ -364,12 +366,10 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
                 .isEqualTo(List.of(ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.suze, 3.0)));
         assertThat(setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(NEGATIVE_INFINITY, POSITIVE_INFINITY)))
                 .isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0),
-                        ScoredValue.of(Place.suze, 3.0),
-                        ScoredValue.of(Place.adhemar, 4.0)));
+                        ScoredValue.of(Place.suze, 3.0), ScoredValue.of(Place.adhemar, 4.0)));
         assertThat(setOfPlaces.zrangebyscoreWithScores(key, ScoreRange.unbounded()))
                 .isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0),
-                        ScoredValue.of(Place.suze, 3.0),
-                        ScoredValue.of(Place.adhemar, 4.0)));
+                        ScoredValue.of(Place.suze, 3.0), ScoredValue.of(Place.adhemar, 4.0)));
         assertThat(setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(0.0, 4.0), new ZRangeArgs().limit(1, 3)))
                 .isEqualTo(List.of(ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.suze, 3.0),
                         ScoredValue.of(Place.adhemar, 4.0)));
@@ -401,8 +401,9 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @RequiresRedis6OrHigher
     void zrangestorebyscore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
-        assertThat(setOfPlaces.zrangestorebyscore("key1", key, new ScoreRange<>(0.0, 2.0),
-                new ZRangeArgs().limit(0, 2))).isEqualTo(2);
+        assertThat(
+                setOfPlaces.zrangestorebyscore("key1", key, new ScoreRange<>(0.0, 2.0), new ZRangeArgs().limit(0, 2)))
+                .isEqualTo(2);
         assertThat(setOfPlaces.zrange("key1", 0, 2)).isEqualTo(List.of(Place.crussol, Place.grignan));
 
         assertThat(setOfPlaces.zrangestorebyscore("key1", key, new ScoreRange<>(0.0, 2.0))).isEqualTo(2);
@@ -446,8 +447,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zrange(key, 0, -1)).isEqualTo(List.of(Place.suze));
 
         populate();
-        assertThat(setOfPlaces.zremrangebyscore(key, new ScoreRange<>(1.0, false, 3.0, false)))
-                .isEqualTo(1);
+        assertThat(setOfPlaces.zremrangebyscore(key, new ScoreRange<>(1.0, false, 3.0, false))).isEqualTo(1);
         assertThat(setOfPlaces.zrange(key, 0, -1)).isEqualTo(List.of(Place.crussol, Place.suze));
     }
 
@@ -492,9 +492,10 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         populateManyStringEntriesForLex();
         assertThat(setOfStrings.zrangebylex(key, Range.unbounded(), new ZRangeArgs().rev())).hasSize(100);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("value", "zzz"), new ZRangeArgs().rev())).hasSize(100);
-        assertThat(setOfStrings.zrangebylex(key, new Range<>("value98", true, "value99", true),
-                new ZRangeArgs().rev())).containsSequence("value99", "value98");
-        assertThat(setOfStrings.zrangebylex(key, new Range<>("value99", true, null, true), new ZRangeArgs().rev())).hasSize(1);
+        assertThat(setOfStrings.zrangebylex(key, new Range<>("value98", true, "value99", true), new ZRangeArgs().rev()))
+                .containsSequence("value99", "value98");
+        assertThat(setOfStrings.zrangebylex(key, new Range<>("value99", true, null, true), new ZRangeArgs().rev()))
+                .hasSize(1);
         assertThat(setOfStrings.zrangebylex(key, new Range<>("value99", false, null, false), new ZRangeArgs().rev()))
                 .hasSize(0);
     }
@@ -527,15 +528,15 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
                 .isEqualTo(List.of(ScoredValue.of(Place.suze, 3.0), ScoredValue.of(Place.grignan, 2.0)));
         assertThat(setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(4.0, false, 1.0, false), rev))
                 .isEqualTo(List.of(ScoredValue.of(Place.suze, 3.0), ScoredValue.of(Place.grignan, 2.0)));
-        assertThat(setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(POSITIVE_INFINITY, NEGATIVE_INFINITY), rev))
+        assertThat(
+                setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(POSITIVE_INFINITY, NEGATIVE_INFINITY), rev))
                 .isEqualTo(List.of(ScoredValue.of(Place.adhemar, 4.0), ScoredValue.of(Place.suze, 3.0),
-                        ScoredValue.of(Place.grignan, 2.0),
-                        ScoredValue.of(Place.crussol, 1.0)));
+                        ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0)));
         assertThat(setOfPlaces.zrangebyscoreWithScores(key, ScoreRange.unbounded(), rev))
                 .isEqualTo(List.of(ScoredValue.of(Place.adhemar, 4.0), ScoredValue.of(Place.suze, 3.0),
-                        ScoredValue.of(Place.grignan, 2.0),
-                        ScoredValue.of(Place.crussol, 1.0)));
-        assertThat(setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(4.0, 0.0), new ZRangeArgs().rev().limit(1, 3)))
+                        ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0)));
+        assertThat(setOfPlaces.zrangebyscoreWithScores(key, new ScoreRange<>(4.0, 0.0),
+                new ZRangeArgs().rev().limit(1, 3)))
                 .isEqualTo(List.of(ScoredValue.of(Place.suze, 3.0), ScoredValue.of(Place.grignan, 2.0),
                         ScoredValue.of(Place.crussol, 1.0)));
         assertThat(setOfPlaces.zrangebyscoreWithScores(key, ScoreRange.unbounded(), new ZRangeArgs().rev().limit(2, 2)))
@@ -554,8 +555,9 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @RequiresRedis6OrHigher
     void zrevrangestorebylex() {
         setOfStrings.zadd(key, Map.of("a", 1.0, "b", 2.0, "c", 3.0, "d", 4.0));
-        assertThat(setOfStrings.zrangestorebylex("key1", key, new Range<>("c", "-"),
-                new ZRangeArgs().rev().limit(0, 4))).isEqualTo(3);
+        assertThat(
+                setOfStrings.zrangestorebylex("key1", key, new Range<>("c", "-"), new ZRangeArgs().rev().limit(0, 4)))
+                .isEqualTo(3);
         assertThat(setOfStrings.zrange("key1", 0, 2)).isEqualTo(List.of("a", "b", "c"));
     }
 
@@ -563,10 +565,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @RequiresRedis6OrHigher
     void zrevrangestorebyscore() {
         setOfPlaces.zadd(key, Map.of(Place.crussol, 1.0, Place.grignan, 2.0, Place.suze, 3.0, Place.adhemar, 4.0));
-        assertThat(
-                setOfPlaces.zrangestorebyscore("key1", key, new ScoreRange<>(2.0, true, 1.0, false),
-                        new ZRangeArgs().rev().limit(0, 2)))
-                .isEqualTo(1);
+        assertThat(setOfPlaces.zrangestorebyscore("key1", key, new ScoreRange<>(2.0, true, 1.0, false),
+                new ZRangeArgs().rev().limit(0, 2))).isEqualTo(1);
         assertThat(setOfPlaces.zrange("key1", 0, 2)).isEqualTo(List.of(Place.grignan));
     }
 
@@ -586,34 +586,31 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zunionstore(key + "2", new ZAggregateArgs().max(), "zset1", "zset2")).isEqualTo(3);
 
         assertThat(setOfPlaces.zrange(key, 0, -1)).isEqualTo(List.of(Place.crussol, Place.suze, Place.grignan));
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1))
-                .isEqualTo(List.of(ScoredValue.of(Place.crussol, 3.0), new ScoredValue<>(Place.suze, 4.0),
-                        ScoredValue.of(Place.grignan, 5.0)));
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(ScoredValue.of(Place.crussol, 3.0),
+                new ScoredValue<>(Place.suze, 4.0), ScoredValue.of(Place.grignan, 5.0)));
 
         assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().weights(2.0, 3.0), "zset1", "zset2")).isEqualTo(3);
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(new ScoredValue<>(Place.crussol, 8.0), new ScoredValue<>(Place.suze, 12.0),
-                        new ScoredValue<>(Place.grignan, 13.0)));
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(new ScoredValue<>(Place.crussol, 8.0),
+                new ScoredValue<>(Place.suze, 12.0), new ScoredValue<>(Place.grignan, 13.0)));
 
-        assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().weights(2.0, 3.0).sum(), "zset1", "zset2")).isEqualTo(3);
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(new ScoredValue<>(Place.crussol, 8.0), new ScoredValue<>(Place.suze, 12.0),
-                        new ScoredValue<>(Place.grignan, 13.0)));
+        assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().weights(2.0, 3.0).sum(), "zset1", "zset2"))
+                .isEqualTo(3);
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(new ScoredValue<>(Place.crussol, 8.0),
+                new ScoredValue<>(Place.suze, 12.0), new ScoredValue<>(Place.grignan, 13.0)));
 
         assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().min(), "zset1", "zset2")).isEqualTo(3);
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(ScoredValue.of(Place.crussol, 1.0), new ScoredValue<>(Place.grignan, 2.0),
-                        new ScoredValue<>(Place.suze, 4.0)));
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0),
+                new ScoredValue<>(Place.grignan, 2.0), new ScoredValue<>(Place.suze, 4.0)));
 
-        assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().weights(2.0, 3.0).min(), "zset1", "zset2")).isEqualTo(3);
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(ScoredValue.of(Place.crussol, 2.0), new ScoredValue<>(Place.grignan, 4.0),
-                        new ScoredValue<>(Place.suze, 12.0)));
+        assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().weights(2.0, 3.0).min(), "zset1", "zset2"))
+                .isEqualTo(3);
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(ScoredValue.of(Place.crussol, 2.0),
+                new ScoredValue<>(Place.grignan, 4.0), new ScoredValue<>(Place.suze, 12.0)));
 
-        assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().weights(2.0, 3.0).max(), "zset1", "zset2")).isEqualTo(3);
-        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(
-                List.of(new ScoredValue<>(Place.crussol, 6.0), new ScoredValue<>(Place.grignan, 9.0),
-                        new ScoredValue<>(Place.suze, 12.0)));
+        assertThat(setOfPlaces.zunionstore(key, new ZAggregateArgs().weights(2.0, 3.0).max(), "zset1", "zset2"))
+                .isEqualTo(3);
+        assertThat(setOfPlaces.zrangeWithScores(key, 0, -1)).isEqualTo(List.of(new ScoredValue<>(Place.crussol, 6.0),
+                new ScoredValue<>(Place.grignan, 9.0), new ScoredValue<>(Place.suze, 12.0)));
     }
 
     @Test
@@ -637,15 +634,18 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zrangeWithScores(key, 0, -1))
                 .isEqualTo(List.of(new ScoredValue<>(Place.crussol, 8.0), new ScoredValue<>(Place.grignan, 13.0)));
 
-        assertThat(setOfPlaces.zinterstore(key, new ZAggregateArgs().weights(2, 3).sum(), "zset1", "zset2")).isEqualTo(2);
+        assertThat(setOfPlaces.zinterstore(key, new ZAggregateArgs().weights(2, 3).sum(), "zset1", "zset2"))
+                .isEqualTo(2);
         assertThat(setOfPlaces.zrangeWithScores(key, 0, -1))
                 .isEqualTo(List.of(new ScoredValue<>(Place.crussol, 8.0), new ScoredValue<>(Place.grignan, 13.0)));
 
-        assertThat(setOfPlaces.zinterstore(key, new ZAggregateArgs().weights(2, 3).min(), "zset1", "zset2")).isEqualTo(2);
+        assertThat(setOfPlaces.zinterstore(key, new ZAggregateArgs().weights(2, 3).min(), "zset1", "zset2"))
+                .isEqualTo(2);
         assertThat(setOfPlaces.zrangeWithScores(key, 0, -1))
                 .isEqualTo(List.of(ScoredValue.of(Place.crussol, 2.0), new ScoredValue<>(Place.grignan, 4.0)));
 
-        assertThat(setOfPlaces.zinterstore(key, new ZAggregateArgs().weights(2, 3).max(), "zset1", "zset2")).isEqualTo(2);
+        assertThat(setOfPlaces.zinterstore(key, new ZAggregateArgs().weights(2, 3).max(), "zset1", "zset2"))
+                .isEqualTo(2);
         assertThat(setOfPlaces.zrangeWithScores(key, 0, -1))
                 .isEqualTo(List.of(new ScoredValue<>(Place.crussol, 6.0), new ScoredValue<>(Place.grignan, 9.0)));
     }
@@ -797,12 +797,12 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zmpopMax("zset1")).isNull();
 
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
-        assertThat(setOfPlaces.zmpopMax(2, "zset1")).containsExactly(
-                ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0));
+        assertThat(setOfPlaces.zmpopMax(2, "zset1")).containsExactly(ScoredValue.of(Place.grignan, 2.0),
+                ScoredValue.of(Place.crussol, 1.0));
 
         setOfPlaces.zadd("zset1", Map.of(Place.grignan, 2.0, Place.crussol, 1.0));
-        assertThat(setOfPlaces.zmpopMax(3, "zset1")).containsExactly(
-                ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0));
+        assertThat(setOfPlaces.zmpopMax(3, "zset1")).containsExactly(ScoredValue.of(Place.grignan, 2.0),
+                ScoredValue.of(Place.crussol, 1.0));
 
         assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(1), 3, "zset1")).isEmpty();
     }
@@ -813,19 +813,19 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(1), "zset1")).isEqualTo(null);
 
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
-        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), "zset1")).isEqualTo(ScoredValue.of(Place.crussol, 1.0));
-        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), "zset1")).isEqualTo(ScoredValue.of(Place.grignan, 2.0));
+        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), "zset1"))
+                .isEqualTo(ScoredValue.of(Place.crussol, 1.0));
+        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), "zset1"))
+                .isEqualTo(ScoredValue.of(Place.grignan, 2.0));
         assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(1), "zset1")).isNull();
 
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
-        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), 2, "zset1")).containsExactly(
-                ScoredValue.of(Place.crussol, 1.0),
-                ScoredValue.of(Place.grignan, 2.0));
+        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), 2, "zset1"))
+                .containsExactly(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0));
 
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
-        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), 3, "zset1")).containsExactly(
-                ScoredValue.of(Place.crussol, 1.0),
-                ScoredValue.of(Place.grignan, 2.0));
+        assertThat(setOfPlaces.bzmpopMin(Duration.ofSeconds(10), 3, "zset1"))
+                .containsExactly(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0));
 
         assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(1), 3, "zset1")).isEmpty();
     }
@@ -836,17 +836,19 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(1), "zset1")).isEqualTo(null);
 
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
-        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), "zset1")).isEqualTo(ScoredValue.of(Place.grignan, 2.0));
-        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), "zset1")).isEqualTo(ScoredValue.of(Place.crussol, 1.0));
+        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), "zset1"))
+                .isEqualTo(ScoredValue.of(Place.grignan, 2.0));
+        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), "zset1"))
+                .isEqualTo(ScoredValue.of(Place.crussol, 1.0));
         assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(1), "zset1")).isNull();
 
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
-        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), 2, "zset1")).containsExactly(
-                ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0));
+        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), 2, "zset1"))
+                .containsExactly(ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0));
 
         setOfPlaces.zadd("zset1", Map.of(Place.crussol, 1.0, Place.grignan, 2.0));
-        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), 3, "zset1")).containsExactly(
-                ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0));
+        assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(10), 3, "zset1"))
+                .containsExactly(ScoredValue.of(Place.grignan, 2.0), ScoredValue.of(Place.crussol, 1.0));
 
         assertThat(setOfPlaces.bzmpopMax(Duration.ofSeconds(1), 3, "zset1")).isEmpty();
     }
@@ -890,14 +892,13 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zadd(zset2, 3.0, Place.suze)).isTrue();
 
         assertThat(setOfPlaces.zunion(zset1, zset2)).isEqualTo(List.of(Place.crussol, Place.suze, Place.grignan));
-        assertThat(setOfPlaces.zunionWithScores(zset1, zset2)).isEqualTo(
-                List.of(ScoredValue.of(Place.crussol, 2.0), ScoredValue.of(Place.suze, 3.0),
-                        ScoredValue.of(Place.grignan, 4.0)));
+        assertThat(setOfPlaces.zunionWithScores(zset1, zset2)).isEqualTo(List.of(ScoredValue.of(Place.crussol, 2.0),
+                ScoredValue.of(Place.suze, 3.0), ScoredValue.of(Place.grignan, 4.0)));
 
         assertThat(setOfPlaces.zunion(new ZAggregateArgs().max(), zset1, zset2))
                 .isEqualTo(List.of(Place.crussol, Place.grignan, Place.suze));
-        assertThat(setOfPlaces.zunionWithScores(new ZAggregateArgs().max(), zset1, zset2)).isEqualTo(
-                List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0),
+        assertThat(setOfPlaces.zunionWithScores(new ZAggregateArgs().max(), zset1, zset2))
+                .isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0),
                         ScoredValue.of(Place.suze, 3.0)));
     }
 
@@ -933,8 +934,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zadd(zset2, 2.0, Place.grignan)).isTrue();
         assertThat(setOfPlaces.zadd(zset2, 3.0, Place.suze)).isTrue();
 
-        assertThat(setOfPlaces.zinterWithScores(zset1, zset2)).isEqualTo(List.of(ScoredValue.of(Place.crussol, 2.0),
-                ScoredValue.of(Place.grignan, 4.0)));
+        assertThat(setOfPlaces.zinterWithScores(zset1, zset2))
+                .isEqualTo(List.of(ScoredValue.of(Place.crussol, 2.0), ScoredValue.of(Place.grignan, 4.0)));
         assertThat(setOfPlaces.zinterWithScores(new ZAggregateArgs().max(), zset1, zset2))
                 .isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0)));
     }
@@ -954,8 +955,7 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(setOfPlaces.zinter(new ZAggregateArgs().min(), zset1, zset2))
                 .isEqualTo(List.of(Place.crussol, Place.grignan));
         List<ScoredValue<Place>> actual = setOfPlaces.zinterWithScores(new ZAggregateArgs().max(), zset1, zset2);
-        assertThat(actual)
-                .isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0)));
+        assertThat(actual).isEqualTo(List.of(ScoredValue.of(Place.crussol, 1.0), ScoredValue.of(Place.grignan, 2.0)));
     }
 
     String value = "value";
@@ -978,13 +978,13 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
     @RequiresRedis6OrHigher
     void sort() {
         SortedSetCommands<String, String> commands = ds.sortedSet(String.class, String.class);
-        commands.zadd(key, Map.of("9", 9.0, "1", 1.0, "3", 3.0, "5", 5.0,
-                "8", 8.0, "7", 7.0, "6", 6.0, "2", 2.0, "4", 4.0));
+        commands.zadd(key,
+                Map.of("9", 9.0, "1", 1.0, "3", 3.0, "5", 5.0, "8", 8.0, "7", 7.0, "6", 6.0, "2", 2.0, "4", 4.0));
 
         assertThat(commands.sort(key)).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
 
-        assertThat(commands.sort(key, new SortArgs().descending())).containsExactly("9", "8", "7", "6", "5", "4", "3", "2",
-                "1");
+        assertThat(commands.sort(key, new SortArgs().descending())).containsExactly("9", "8", "7", "6", "5", "4", "3",
+                "2", "1");
 
         String k = key + "-alpha";
         Map<String, Double> items = Map.of("a", 1.0, "e", 5.0, "f", 6.0, "b", 2.0);
@@ -1009,8 +1009,8 @@ public class SortedSetCommandsTest extends DatasourceTestBase {
         assertThat(set.zadd(key, 1.0, List.of(Place.crussol, Place.suze))).isFalse();
 
         assertThat(set.zrange(key, 0, -1)).isEqualTo(List.of(List.of(Place.crussol, Place.suze)));
-        assertThat(set.zadd(key, new ScoredValue<>(List.of(Place.grignan), 2.0), new ScoredValue<>(List.of(Place.suze), 3.0)))
-                .isEqualTo(2);
+        assertThat(set.zadd(key, new ScoredValue<>(List.of(Place.grignan), 2.0),
+                new ScoredValue<>(List.of(Place.suze), 3.0))).isEqualTo(2);
         assertThat(set.zrange(key, 0, -1)).hasSize(3);
     }
 }

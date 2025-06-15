@@ -15,8 +15,7 @@ public class WrongTargetTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(CustomSection.class))
-            .assertException(t -> {
+            .withApplicationRoot(root -> root.addClasses(CustomSection.class)).assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof TemplateException) {
                     assertTrue(rootCause.getMessage().contains(

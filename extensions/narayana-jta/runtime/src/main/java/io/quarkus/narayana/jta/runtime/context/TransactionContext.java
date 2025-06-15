@@ -45,12 +45,13 @@ public class TransactionContext implements InjectableContext {
                     return new TransactionSynchronizationRegistryImple();
                 }
             });
-    private final LazyValue<TransactionManager> transactionManager = new LazyValue<>(new Supplier<TransactionManager>() {
-        @Override
-        public TransactionManager get() {
-            return com.arjuna.ats.jta.TransactionManager.transactionManager();
-        }
-    });
+    private final LazyValue<TransactionManager> transactionManager = new LazyValue<>(
+            new Supplier<TransactionManager>() {
+                @Override
+                public TransactionManager get() {
+                    return com.arjuna.ats.jta.TransactionManager.transactionManager();
+                }
+            });
 
     @Override
     public void destroy() {
@@ -172,13 +173,10 @@ public class TransactionContext implements InjectableContext {
 
         try {
             int currentStatus = transaction.getStatus();
-            return currentStatus == Status.STATUS_ACTIVE ||
-                    currentStatus == Status.STATUS_MARKED_ROLLBACK ||
-                    currentStatus == Status.STATUS_PREPARED ||
-                    currentStatus == Status.STATUS_UNKNOWN ||
-                    currentStatus == Status.STATUS_PREPARING ||
-                    currentStatus == Status.STATUS_COMMITTING ||
-                    currentStatus == Status.STATUS_ROLLING_BACK;
+            return currentStatus == Status.STATUS_ACTIVE || currentStatus == Status.STATUS_MARKED_ROLLBACK
+                    || currentStatus == Status.STATUS_PREPARED || currentStatus == Status.STATUS_UNKNOWN
+                    || currentStatus == Status.STATUS_PREPARING || currentStatus == Status.STATUS_COMMITTING
+                    || currentStatus == Status.STATUS_ROLLING_BACK;
         } catch (SystemException e) {
             throw new RuntimeException("Error getting the status of the current transaction", e);
         }
@@ -193,8 +191,8 @@ public class TransactionContext implements InjectableContext {
     }
 
     /**
-     * Representing of the context state. It's a container for all available beans in the context.
-     * It's filled during bean usage and cleared on destroy.
+     * Representing of the context state. It's a container for all available beans in the context. It's filled during
+     * bean usage and cleared on destroy.
      */
     private static class TransactionContextState implements ContextState, Synchronization {
 
@@ -213,8 +211,10 @@ public class TransactionContext implements InjectableContext {
         /**
          * Put the contextual bean and its handle to the container.
          *
-         * @param bean bean to be added
-         * @param handle handle for the bean which incorporates the bean, contextual instance and the context
+         * @param bean
+         *        bean to be added
+         * @param handle
+         *        handle for the bean which incorporates the bean, contextual instance and the context
          */
         <T> void put(Contextual<T> bean, ContextInstanceHandle<T> handle) {
             mapBeanToInstanceHandle.put(bean, handle);
@@ -223,7 +223,8 @@ public class TransactionContext implements InjectableContext {
         /**
          * Remove the bean from the container.
          *
-         * @param bean contextual bean instance
+         * @param bean
+         *        contextual bean instance
          */
         <T> void remove(Contextual<T> bean) {
             ContextInstanceHandle<?> instance = mapBeanToInstanceHandle.remove(bean);
@@ -235,7 +236,8 @@ public class TransactionContext implements InjectableContext {
         /**
          * Retrieve the bean saved in the container.
          *
-         * @param bean retrieving the bean from the container, otherwise {@code null} is returned
+         * @param bean
+         *        retrieving the bean from the container, otherwise {@code null} is returned
          */
         <T> ContextInstanceHandle<T> get(Contextual<T> bean) {
             return (ContextInstanceHandle<T>) mapBeanToInstanceHandle.get(bean);
@@ -252,8 +254,8 @@ public class TransactionContext implements InjectableContext {
         }
 
         /**
-         * Method required by the {@link io.quarkus.arc.InjectableContext.ContextState} interface
-         * which is then used to get state of the scope in method {@link InjectableContext#getState()}
+         * Method required by the {@link io.quarkus.arc.InjectableContext.ContextState} interface which is then used to
+         * get state of the scope in method {@link InjectableContext#getState()}
          *
          * @return list of context bean and the bean instances which are available in the container
          */

@@ -46,26 +46,22 @@ public class ModuleTestRunner {
                 if (runner != null) {
                     throw new IllegalStateException("Tests already in progress");
                 }
-                JunitTestRunner.Builder builder = new JunitTestRunner.Builder()
-                        .setClassScanResult(classScanResult)
-                        .setRunId(runId)
-                        .setTestState(testState)
-                        .setTestClassUsages(testClassUsages)
-                        .setTestApplication(testApplication)
-                        .setIncludeTags(testSupport.includeTags)
-                        .setExcludeTags(testSupport.excludeTags)
-                        .setInclude(testSupport.include)
-                        .setExclude(testSupport.exclude)
-                        .setSpecificSelection(testSupport.specificSelection)
-                        .setIncludeEngines(testSupport.includeEngines)
-                        .setExcludeEngines(testSupport.excludeEngines)
-                        .setTestType(testSupport.testType)
-                        .setModuleInfo(moduleInfo)
-                        .addListener(listener)
-                        .setFailingTestsOnly(classScanResult != null && testSupport.brokenOnlyMode); //broken only mode is only when changes are made, not for forced runs
+                JunitTestRunner.Builder builder = new JunitTestRunner.Builder().setClassScanResult(classScanResult)
+                        .setRunId(runId).setTestState(testState).setTestClassUsages(testClassUsages)
+                        .setTestApplication(testApplication).setIncludeTags(testSupport.includeTags)
+                        .setExcludeTags(testSupport.excludeTags).setInclude(testSupport.include)
+                        .setExclude(testSupport.exclude).setSpecificSelection(testSupport.specificSelection)
+                        .setIncludeEngines(testSupport.includeEngines).setExcludeEngines(testSupport.excludeEngines)
+                        .setTestType(testSupport.testType).setModuleInfo(moduleInfo).addListener(listener)
+                        .setFailingTestsOnly(classScanResult != null && testSupport.brokenOnlyMode); // broken only mode
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // is only when
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // changes are
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // made, not for
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          // forced runs
                 if (reRunFailures) {
                     Set<UniqueId> ids = new HashSet<>();
-                    for (Map.Entry<String, TestClassResult> e : testSupport.testRunResults.getCurrentFailing().entrySet()) {
+                    for (Map.Entry<String, TestClassResult> e : testSupport.testRunResults.getCurrentFailing()
+                            .entrySet()) {
                         for (TestResult test : e.getValue().getFailing()) {
                             ids.add(test.uniqueId);
                         }
@@ -77,8 +73,7 @@ public class ModuleTestRunner {
                         }
                     });
                 }
-                runner = builder
-                        .build();
+                runner = builder.build();
             }
             var prepared = runner.prepare();
             return new Runnable() {

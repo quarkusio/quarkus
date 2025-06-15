@@ -27,8 +27,7 @@ public class LiquibaseExtensionMigrateAtStartNamedDataSourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("migrate-at-start-config-named-datasource.properties", "application.properties"));
 
     @Test

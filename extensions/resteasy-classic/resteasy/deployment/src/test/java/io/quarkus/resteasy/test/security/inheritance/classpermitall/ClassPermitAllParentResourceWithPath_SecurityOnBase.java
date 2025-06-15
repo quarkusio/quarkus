@@ -29,13 +29,15 @@ public abstract class ClassPermitAllParentResourceWithPath_SecurityOnBase
     public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassPermitAll(JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH
+            + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
     public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_ClassPermitAllMethodPermitAll(
             JsonObject array);
 
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_BASE + CLASS_PERMIT_ALL_PATH)
     public abstract ClassPermitAllSubResourceWithoutPath classPathOnParentResource_SubDeclaredOnParent_SubImplOnBase_ClassPermitAll();
 
-    @Path(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_BASE + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_BASE
+            + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
     public abstract ClassPermitAllSubResourceWithoutPath classPathOnParentResource_SubDeclaredOnParent_SubImplOnBase_ClassPermitAllMethodPermitAll();
 }

@@ -30,26 +30,24 @@ import io.restassured.http.ContentType;
 public class CustomJsonProviderTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(GreetingResource.class, Greeting.class, Greeting2.class, BaseCustomWriter.class,
-                                    CustomWriter.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class, Greeting.class,
+                    Greeting2.class, BaseCustomWriter.class, CustomWriter.class);
+        }
+    });
 
     @Test
     public void customWriter() {
-        RestAssured.with().accept(ContentType.JSON).get("/greeting/custom")
-                .then().statusCode(200).body("message", equalTo("canned"));
+        RestAssured.with().accept(ContentType.JSON).get("/greeting/custom").then().statusCode(200).body("message",
+                equalTo("canned"));
     }
 
     @Test
     public void standardWriter() {
-        RestAssured.with().accept(ContentType.JSON).get("/greeting/standard")
-                .then().statusCode(200).body("message", equalTo("test"));
+        RestAssured.with().accept(ContentType.JSON).get("/greeting/standard").then().statusCode(200).body("message",
+                equalTo("test"));
     }
 
     @Path("greeting")

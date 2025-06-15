@@ -24,34 +24,28 @@ public class FlywayExtensionBaselineOnMigrateNamedDataSourcesInactiveTest {
     Flyway flywayLaptops;
 
     static final FlywayH2TestCustomizer customizerUsers = FlywayH2TestCustomizer
-            .withDbName("quarkus-flyway-baseline-on-named-ds-users")
-            .withPort(11302)
+            .withDbName("quarkus-flyway-baseline-on-named-ds-users").withPort(11302)
             .withInitSqlFile("src/test/resources/h2-init-data.sql");
 
     static final FlywayH2TestCustomizer customizerLaptops = FlywayH2TestCustomizer
-            .withDbName("quarkus-flyway-baseline-on-named-ds-laptops")
-            .withPort(11303)
+            .withDbName("quarkus-flyway-baseline-on-named-ds-laptops").withPort(11303)
             .withInitSqlFile("src/test/resources/h2-init-data.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setBeforeAllCustomizer(new Runnable() {
-                @Override
-                public void run() {
-                    customizerUsers.startH2();
-                    customizerLaptops.startH2();
-                }
-            })
-            .setAfterAllCustomizer(new Runnable() {
-                @Override
-                public void run() {
-                    customizerUsers.stopH2();
-                    customizerLaptops.stopH2();
-                }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClass(FlywayH2TestCustomizer.class)
-                    .addAsResource("baseline-on-migrate-named-datasources-inactive.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setBeforeAllCustomizer(new Runnable() {
+        @Override
+        public void run() {
+            customizerUsers.startH2();
+            customizerLaptops.startH2();
+        }
+    }).setAfterAllCustomizer(new Runnable() {
+        @Override
+        public void run() {
+            customizerUsers.stopH2();
+            customizerLaptops.stopH2();
+        }
+    }).withApplicationRoot((jar) -> jar.addClass(FlywayH2TestCustomizer.class)
+            .addAsResource("baseline-on-migrate-named-datasources-inactive.properties", "application.properties"));
 
     @Test
     @DisplayName("Create history table correctly")

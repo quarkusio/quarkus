@@ -32,8 +32,7 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
 
             return removePlugin();
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to remove extension(s): " + e.getMessage());
+            return output.handleCommandException(e, "Unable to remove extension(s): " + e.getMessage());
         }
     }
 
@@ -63,10 +62,7 @@ public class CliPluginsRemove extends CliPluginsBase implements Callable<Integer
     }
 
     void dryRunRemove(CommandLine.Help help) {
-        output.printText(new String[] {
-                "\nRemove plugin from the CLI\n",
-                "\t" + projectRoot().toString()
-        });
+        output.printText(new String[] { "\nRemove plugin from the CLI\n", "\t" + projectRoot().toString() });
         Map<String, String> dryRunOutput = new TreeMap<>();
         dryRunOutput.put("Plugin to remove", name);
         output.info(help.createTextTable(dryRunOutput).toString());

@@ -16,11 +16,8 @@ public class TemplateEnumValidationSuccessTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(TransactionType.class)
-                    .addAsResource(new StringAsset(
-                            "{TransactionType:FOO}::{TransactionType:BAR.score}"),
-                            "templates/foo.txt"));
+            .withApplicationRoot(root -> root.addClasses(TransactionType.class).addAsResource(
+                    new StringAsset("{TransactionType:FOO}::{TransactionType:BAR.score}"), "templates/foo.txt"));
 
     @Inject
     Template foo;

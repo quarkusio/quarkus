@@ -6,9 +6,8 @@ import java.io.IOException;
 import org.jboss.logging.Logger;
 
 /**
- * A context that can be passed into runtime recorders that allows for shutdown tasks to be added.
- *
- * Tasks are executed in the reverse order that they are added.
+ * A context that can be passed into runtime recorders that allows for shutdown tasks to be added. Tasks are executed in
+ * the reverse order that they are added.
  */
 public interface ShutdownContext {
 

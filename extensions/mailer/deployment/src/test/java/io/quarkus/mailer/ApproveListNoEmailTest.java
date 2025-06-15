@@ -17,12 +17,10 @@ public class ApproveListNoEmailTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.mailer.approved-recipients=.*@approved1.com\nquarkus.mailer.log-rejected-recipients=true"),
-                            "application.properties"))
-            .setLogRecordPredicate(record -> record.getLevel().equals(Level.WARNING))
-            .assertLogRecords(lrs -> {
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(
+                    "quarkus.mailer.approved-recipients=.*@approved1.com\nquarkus.mailer.log-rejected-recipients=true"),
+                    "application.properties"))
+            .setLogRecordPredicate(record -> record.getLevel().equals(Level.WARNING)).assertLogRecords(lrs -> {
                 assertTrue(lrs.stream().anyMatch(lr -> lr.getMessage().equals(
                         "Email 'A subject' was not sent because all recipients were rejected by the configuration: [email1@rejected.com, email2@rejected.com, email3@rejected.com, email4@rejected.com, email5@rejected.com]")));
             });

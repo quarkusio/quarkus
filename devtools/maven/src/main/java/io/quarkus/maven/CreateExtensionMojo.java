@@ -31,31 +31,26 @@ import io.quarkus.maven.components.Prompter;
 import io.quarkus.maven.utilities.MojoUtils;
 
 /**
- * Creates the base of a
- * <a href="https://quarkus.io/guides/writing-extensions">Quarkus Extension</a> in different layout depending on the options and
- * environment.
+ * Creates the base of a <a href="https://quarkus.io/guides/writing-extensions">Quarkus Extension</a> in different
+ * layout depending on the options and environment. <br />
  * <br />
- * <br />
- * <h2>Create in the quarkus-parent project directory (or the extensions parent dir)</h2>
- * <br />
+ * <h2>Create in the quarkus-parent project directory (or the extensions parent dir)</h2> <br />
  * It will:
  * <ul>
- * <li>generate the new Quarkus extension in the extensions parent as a module (parent, runtime and deployment), with unit test
- * and devmode test on option.</li>
+ * <li>generate the new Quarkus extension in the extensions parent as a module (parent, runtime and deployment), with
+ * unit test and devmode test on option.</li>
  * <li>On option, generate the new integration test in the integration tests parent as a module.</li>
  * <li>add the dependencies to the bom/application/pom.xml.</li>
  * </ul>
  * <br />
- * <h2>Creating a Quarkiverse extension</h2>
- * <br />
+ * <h2>Creating a Quarkiverse extension</h2> <br />
  * When using <code>-DgroupId=io.quarkiverse.[featureId]</code>, the new extension will use the Quarkiverse layout.
  * <br />
  * <br />
- * <h2>Creating a standalone extension</h2>
- * <br />
+ * <h2>Creating a standalone extension</h2> <br />
  * <ul>
- * <li>generate the new Quarkus extension in the current directory (parent, runtime and deployment), with unit test and devmode
- * test on option.</li>
+ * <li>generate the new Quarkus extension in the current directory (parent, runtime and deployment), with unit test and
+ * devmode test on option.</li>
  * <li>On option, generate the new integration test module in the current directory.</li>
  * </ul>
  */
@@ -65,8 +60,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     private static final Logger log = Logger.getLogger(CreateExtensionMojo.class);
 
     /**
-     * Directory where the changes should be performed.
-     * <br />
+     * Directory where the changes should be performed. <br />
      * <br />
      * Default: the current directory of the current Java process.
      */
@@ -74,12 +68,11 @@ public class CreateExtensionMojo extends AbstractMojo {
     File basedir;
 
     /**
-     * {@code extensionId} of this extension (REQUIRED).
-     * <br />
+     * {@code extensionId} of this extension (REQUIRED). <br />
      * <br />
      * It will be used to generate the different extension modules artifactIds
-     * (<code>[namespaceId][extensionId]-parent</code>), runtime (<code>[namespaceId][extensionId]</code>) and deployment
-     * (<code>[namespaceId][extensionId]-deployment</code>).
+     * (<code>[namespaceId][extensionId]-parent</code>), runtime (<code>[namespaceId][extensionId]</code>) and
+     * deployment (<code>[namespaceId][extensionId]-deployment</code>).
      */
     @Parameter(property = "extensionId")
     String extensionId;
@@ -97,8 +90,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String quarkusVersion;
 
     /**
-     * A prefix common to all extension artifactIds in the current source tree.
-     * <br />
+     * A prefix common to all extension artifactIds in the current source tree. <br />
      * <br />
      * Default: "quarkus-" in quarkus Quarkus Core and Quarkiverse else ""
      */
@@ -106,8 +98,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String namespaceId;
 
     /**
-     * The {@code version} for the newly created Maven modules.
-     * <br />
+     * The {@code version} for the newly created Maven modules. <br />
      * <br />
      * Default: automatic in Quarkus Core else {@link CreateExtension#DEFAULT_VERSION}
      */
@@ -115,10 +106,8 @@ public class CreateExtensionMojo extends AbstractMojo {
     String version;
 
     /**
-     * The {@code extensionName} of the runtime module. The {@code extensionName}s of the extension parent and deployment
-     * modules will be
-     * based on this {@code name} too.
-     * <br />
+     * The {@code extensionName} of the runtime module. The {@code extensionName}s of the extension parent and
+     * deployment modules will be based on this {@code name} too. <br />
      * <br />
      * Default: the formatted {@code extensionId}
      */
@@ -126,8 +115,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String extensionName;
 
     /**
-     * The {@code extensionDescription} of the runtime module.
-     * <br />
+     * The {@code extensionDescription} of the runtime module. <br />
      * <br />
      * This description is used on https://code.quarkus.io/.
      */
@@ -135,8 +123,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String extensionDescription;
 
     /**
-     * A prefix common to all extension names in the current source tree.
-     * <br />
+     * A prefix common to all extension names in the current source tree. <br />
      * <br />
      * Default: "quarkus-" in Quarkus Core and Quarkiverse else ""
      */
@@ -144,8 +131,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String namespaceName;
 
     /**
-     * Base package under which classes should be created in Runtime and Deployment modules.
-     * <br />
+     * Base package under which classes should be created in Runtime and Deployment modules. <br />
      * <br />
      * Default: auto-generated out of {@link #groupId}, {@link #namespaceId} and {@link #extensionId}
      */
@@ -153,8 +139,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String packageName;
 
     /**
-     * The {@code groupId} of the Quarkus platform BOM.
-     * <br />
+     * The {@code groupId} of the Quarkus platform BOM. <br />
      * <br />
      * Default: {@link CreateExtension#DEFAULT_BOM_GROUP_ID}
      */
@@ -162,8 +147,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String quarkusBomGroupId;
 
     /**
-     * The {@code artifactId} of the Quarkus platform BOM.
-     * <br />
+     * The {@code artifactId} of the Quarkus platform BOM. <br />
      * <br />
      * Default: {@link CreateExtension#DEFAULT_BOM_ARTIFACT_ID}
      */
@@ -171,8 +155,7 @@ public class CreateExtensionMojo extends AbstractMojo {
     String quarkusBomArtifactId;
 
     /**
-     * The {@code version} of the Quarkus platform BOM.
-     * <br />
+     * The {@code version} of the Quarkus platform BOM. <br />
      * <br />
      * Default: {@link CreateExtension#DEFAULT_BOM_VERSION}
      */
@@ -262,35 +245,22 @@ public class CreateExtensionMojo extends AbstractMojo {
         autoComputeQuarkiverseExtensionId();
 
         try {
-            final MavenArtifactResolver resolver = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
+            final MavenArtifactResolver resolver = MavenArtifactResolver.builder().setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(
                             getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
-                    .setRemoteRepositories(repos)
-                    .setRemoteRepositoryManager(remoteRepoManager)
-                    .build();
+                    .setRemoteRepositories(repos).setRemoteRepositoryManager(remoteRepoManager).build();
             // there should be a better way to pass the resolver
             QuarkusProjectHelper.setArtifactResolver(resolver);
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
 
-        final CreateExtension createExtension = new CreateExtension(basedir.toPath())
-                .extensionId(extensionId)
-                .extensionName(extensionName)
-                .extensionDescription(extensionDescription)
-                .groupId(groupId)
-                .version(version)
-                .packageName(packageName)
-                .namespaceId(namespaceId)
-                .namespaceName(namespaceName)
-                .quarkusVersion(quarkusVersion)
-                .quarkusBomGroupId(quarkusBomGroupId)
-                .quarkusBomArtifactId(quarkusBomArtifactId)
-                .quarkusBomVersion(quarkusBomVersion)
-                .javaVersion(javaVersion)
-                .withCodestart(withCodestart)
-                .withoutUnitTest(withoutTests || withoutUnitTest)
+        final CreateExtension createExtension = new CreateExtension(basedir.toPath()).extensionId(extensionId)
+                .extensionName(extensionName).extensionDescription(extensionDescription).groupId(groupId)
+                .version(version).packageName(packageName).namespaceId(namespaceId).namespaceName(namespaceName)
+                .quarkusVersion(quarkusVersion).quarkusBomGroupId(quarkusBomGroupId)
+                .quarkusBomArtifactId(quarkusBomArtifactId).quarkusBomVersion(quarkusBomVersion)
+                .javaVersion(javaVersion).withCodestart(withCodestart).withoutUnitTest(withoutTests || withoutUnitTest)
                 .withoutDevModeTest(withoutTests || withoutDevModeTest)
                 .withoutIntegrationTests(withoutTests || withoutIntegrationTests);
 

@@ -28,8 +28,7 @@ public class VertxWebRecorder {
     final RuntimeValue<VertxHttpConfig> httpConfig;
     final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
-    public VertxWebRecorder(RuntimeValue<VertxHttpConfig> httpConfig,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+    public VertxWebRecorder(RuntimeValue<VertxHttpConfig> httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         this.httpConfig = httpConfig;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
@@ -55,7 +54,8 @@ public class VertxWebRecorder {
         return new VirtualThreadsRouteHandler(routeHandler);
     }
 
-    public Handler<RoutingContext> compressRouteHandler(Handler<RoutingContext> routeHandler, HttpCompression compression) {
+    public Handler<RoutingContext> compressRouteHandler(Handler<RoutingContext> routeHandler,
+            HttpCompression compression) {
         if (httpBuildTimeConfig.enableCompression()) {
             return new HttpCompressionHandler(routeHandler, compression,
                     compression == HttpCompression.UNDEFINED
@@ -101,7 +101,8 @@ public class VertxWebRecorder {
                     route = route.handler(routingContext -> {
                         // check auth haven't happened further up the handler chain
                         if (routingContext.user() == null) {
-                            // authenticate -> on deferred identity (Uni's) termination user is set to the routing context,
+                            // authenticate -> on deferred identity (Uni's) termination user is set to the routing
+                            // context,
                             // so SecurityIdentity will be accessible in a synchronous manner
                             routingContext.<Uni<SecurityIdentity>> get(QuarkusHttpUser.DEFERRED_IDENTITY_KEY)
                                     .subscribe().withSubscriber(new UniSubscriber<Object>() {

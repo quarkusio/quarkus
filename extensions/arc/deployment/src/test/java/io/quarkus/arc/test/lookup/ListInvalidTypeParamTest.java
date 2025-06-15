@@ -21,13 +21,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ListInvalidTypeParamTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Foo.class)).assertException(t -> {
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Foo.class))
+            .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertTrue(rootCause instanceof DeploymentException);
                 String suppressedMessage = Arrays.stream(rootCause.getSuppressed()).map(Throwable::getMessage)
                         .collect(Collectors.joining("::"));
-                assertTrue(suppressedMessage.contains("Type variable is not a legal type argument"), rootCause.toString());
+                assertTrue(suppressedMessage.contains("Type variable is not a legal type argument"),
+                        rootCause.toString());
                 assertTrue(suppressedMessage.contains("Wildcard is not a legal type argument"), rootCause.toString());
             });
 

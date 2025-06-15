@@ -40,8 +40,7 @@ import io.quarkus.runtime.LaunchMode;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
- * Starts a Pulsar broker as dev service if needed.
- * It uses https://hub.docker.com/r/apachepulsar/pulsar as image.
+ * Starts a Pulsar broker as dev service if needed. It uses https://hub.docker.com/r/apachepulsar/pulsar as image.
  */
 @BuildSteps(onlyIfNot = IsNormal.class, onlyIf = DevServicesConfig.Enabled.class)
 public class PulsarDevServicesProcessor {
@@ -49,13 +48,13 @@ public class PulsarDevServicesProcessor {
     private static final Logger log = Logger.getLogger(PulsarDevServicesProcessor.class);
 
     /**
-     * Label to add to shared Dev Service for pulsar running in containers.
-     * This allows other applications to discover the running service and use it instead of starting a new instance.
+     * Label to add to shared Dev Service for pulsar running in containers. This allows other applications to discover
+     * the running service and use it instead of starting a new instance.
      */
     private static final String DEV_SERVICE_LABEL = "quarkus-dev-service-pulsar";
 
-    private static final ContainerLocator pulsarContainerLocator = locateContainerWithLabels(PulsarContainer.BROKER_PORT,
-            DEV_SERVICE_LABEL);
+    private static final ContainerLocator pulsarContainerLocator = locateContainerWithLabels(
+            PulsarContainer.BROKER_PORT, DEV_SERVICE_LABEL);
 
     private static final String PULSAR_CLIENT_SERVICE_URL = "pulsar.client.serviceUrl";
     private static final String PULSAR_ADMIN_SERVICE_URL = "pulsar.admin.serviceUrl";
@@ -65,15 +64,12 @@ public class PulsarDevServicesProcessor {
     static volatile boolean first = true;
 
     @BuildStep
-    public DevServicesResultBuildItem startPulsarDevService(
-            DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            LaunchModeBuildItem launchMode,
+    public DevServicesResultBuildItem startPulsarDevService(DockerStatusBuildItem dockerStatusBuildItem,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, LaunchModeBuildItem launchMode,
             PulsarBuildTimeConfig pulsarClientBuildTimeConfig,
             List<DevServicesSharedNetworkBuildItem> devServicesSharedNetworkBuildItem,
             Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
+            CuratedApplicationShutdownBuildItem closeBuildItem, LoggingSetupBuildItem loggingSetupBuildItem,
             DevServicesConfig devServicesConfig) {
 
         PulsarDevServiceCfg configuration = getConfiguration(pulsarClientBuildTimeConfig);
@@ -94,8 +90,7 @@ public class PulsarDevServicesProcessor {
                 loggingSetupBuildItem);
         try {
             RunningDevService newDevService = startPulsarContainer(dockerStatusBuildItem, composeProjectBuildItem,
-                    configuration, launchMode,
-                    useSharedNetwork, devServicesConfig.timeout());
+                    configuration, launchMode, useSharedNetwork, devServicesConfig.timeout());
             if (newDevService != null) {
                 devService = newDevService;
                 Map<String, String> config = devService.getConfig();
@@ -153,10 +148,8 @@ public class PulsarDevServicesProcessor {
     }
 
     private RunningDevService startPulsarContainer(DockerStatusBuildItem dockerStatusBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            PulsarDevServiceCfg config,
-            LaunchModeBuildItem launchMode,
-            boolean useSharedNetwork, Optional<Duration> timeout) {
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, PulsarDevServiceCfg config,
+            LaunchModeBuildItem launchMode, boolean useSharedNetwork, Optional<Duration> timeout) {
         if (!config.devServicesEnabled) {
             // explicitly disabled
             log.debug("Not starting Dev Services for Pulsar, as it has been disabled in the config.");
@@ -182,10 +175,9 @@ public class PulsarDevServicesProcessor {
 
         final Supplier<RunningDevService> defaultPulsarBrokerSupplier = () -> {
             // Starting the broker
-            PulsarContainer container = new PulsarContainer(DockerImageName.parse(config.imageName)
-                    .asCompatibleSubstituteFor("apachepulsar/pulsar"),
-                    composeProjectBuildItem.getDefaultNetworkId(),
-                    useSharedNetwork);
+            PulsarContainer container = new PulsarContainer(
+                    DockerImageName.parse(config.imageName).asCompatibleSubstituteFor("apachepulsar/pulsar"),
+                    composeProjectBuildItem.getDefaultNetworkId(), useSharedNetwork);
             config.brokerConfig.forEach((key, value) -> container.addEnv("PULSAR_PREFIX_" + key, value));
             if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT) { // Only adds the label in dev mode.
                 container.withLabel(DEV_SERVICE_LABEL, config.serviceName);
@@ -207,8 +199,9 @@ public class PulsarDevServicesProcessor {
                         getHttpServiceUrl(containerAddress.getHost(),
                                 pulsarContainerLocator.locatePublicPort(config.serviceName, config.shared,
                                         launchMode.getLaunchMode(), PulsarContainer.BROKER_HTTP_PORT).orElse(8080))))
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem, List.of(config.imageName, "pulsar"),
-                        PulsarContainer.BROKER_PORT, launchMode.getLaunchMode(), useSharedNetwork)
+                .or(() -> ComposeLocator
+                        .locateContainer(composeProjectBuildItem, List.of(config.imageName, "pulsar"),
+                                PulsarContainer.BROKER_PORT, launchMode.getLaunchMode(), useSharedNetwork)
                         .map(this::getRunningService))
                 .orElseGet(defaultPulsarBrokerSupplier);
     }
@@ -227,8 +220,7 @@ public class PulsarDevServicesProcessor {
             return null;
         }
         int httpPort = container.getPortMapping(PulsarContainer.BROKER_HTTP_PORT).orElse(8080);
-        return getRunningService(address.getId(), null,
-                getServiceUrl(address.getHost(), address.getPort()),
+        return getRunningService(address.getId(), null, getServiceUrl(address.getHost(), address.getPort()),
                 getHttpServiceUrl(address.getHost(), httpPort));
     }
 

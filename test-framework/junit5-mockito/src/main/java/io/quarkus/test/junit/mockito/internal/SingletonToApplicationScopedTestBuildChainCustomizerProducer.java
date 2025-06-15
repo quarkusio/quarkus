@@ -77,8 +77,8 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                         }
 
                         // TODO: this annotation transformer is too simplistic and should be replaced
-                        //  by whatever build item comes out of the implementation
-                        //  of https://github.com/quarkusio/quarkus/issues/16572
+                        // by whatever build item comes out of the implementation
+                        // of https://github.com/quarkusio/quarkus/issues/16572
                         context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
                             @Override
                             public boolean appliesTo(AnnotationTarget.Kind kind) {
@@ -99,7 +99,8 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 if (target.kind() == AnnotationTarget.Kind.CLASS) { // scope on bean case
                                     ClassInfo classInfo = target.asClass();
                                     if (isMatchingBean(classInfo)) {
-                                        if (Annotations.contains(transformationContext.getAnnotations(), DotNames.SINGLETON)
+                                        if (Annotations.contains(transformationContext.getAnnotations(),
+                                                DotNames.SINGLETON)
                                                 || hasSingletonBeanDefiningAnnotation(transformationContext)) {
                                             replaceSingletonWithApplicationScoped(transformationContext);
                                         }
@@ -107,7 +108,8 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 } else if (target.kind() == AnnotationTarget.Kind.METHOD) { // CDI producer case
                                     MethodInfo methodInfo = target.asMethod();
                                     if (Annotations.contains(transformationContext.getAnnotations(), DotNames.PRODUCES)
-                                            && (Annotations.contains(transformationContext.getAnnotations(), DotNames.SINGLETON)
+                                            && (Annotations.contains(transformationContext.getAnnotations(),
+                                                    DotNames.SINGLETON)
                                                     || hasSingletonBeanDefiningAnnotation(transformationContext))) {
                                         DotName returnType = methodInfo.returnType().name();
                                         if (mockTypes.contains(returnType)) {
@@ -117,7 +119,8 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 }
                             }
 
-                            private void replaceSingletonWithApplicationScoped(TransformationContext transformationContext) {
+                            private void replaceSingletonWithApplicationScoped(
+                                    TransformationContext transformationContext) {
                                 transformationContext.transform().remove(new IsSingletonPredicate())
                                         .add(DotNames.APPLICATION_SCOPED).done();
                             }
@@ -140,7 +143,8 @@ public class SingletonToApplicationScopedTestBuildChainCustomizerProducer implem
                                 return false;
                             }
 
-                            private boolean hasSingletonBeanDefiningAnnotation(TransformationContext transformationContext) {
+                            private boolean hasSingletonBeanDefiningAnnotation(
+                                    TransformationContext transformationContext) {
                                 if (singletonBeanDefiningAnnotations.isEmpty()
                                         || scopes.isScopeIn(transformationContext.getAnnotations())) {
                                     return false;

@@ -31,8 +31,7 @@ public class ReportIssuesJsonRPCService {
     public JsonObject reportBug() {
         URLBuilder urlBuilder = new URLBuilder(reportURL);
         gatherInfo(urlBuilder);
-        return new JsonObject(
-                Map.of("url", urlBuilder.toString()));
+        return new JsonObject(Map.of("url", urlBuilder.toString()));
     }
 
     String run(String... command) {
@@ -43,7 +42,8 @@ public class ReportIssuesJsonRPCService {
 
             process = processBuilder.start();
             try (InputStream inputStream = process.getInputStream()) {
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                try (BufferedReader reader = new BufferedReader(
+                        new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                     for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                         responseBuilder.append(line);
                     }
@@ -82,9 +82,9 @@ public class ReportIssuesJsonRPCService {
     }
 
     void gatherInfo(URLBuilder builder) {
-        builder.addQueryParameter("java_version", System.getProperty("java.version"))
-                .addQueryParameter("quarkus_version",
-                        Objects.toString(getClass().getPackage().getImplementationVersion(), "999-SNAPSHOT"));
+        builder.addQueryParameter("java_version", System.getProperty("java.version")).addQueryParameter(
+                "quarkus_version",
+                Objects.toString(getClass().getPackage().getImplementationVersion(), "999-SNAPSHOT"));
         if (OS.WINDOWS.isCurrent()) {
             builder.addQueryParameter("uname", run("cmd.exe", "/C", "ver"));
             if (isMavenProject()) {

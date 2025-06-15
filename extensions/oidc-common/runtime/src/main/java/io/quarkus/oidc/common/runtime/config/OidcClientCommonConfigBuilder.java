@@ -76,7 +76,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param tokenPath {@link OidcClientCommonConfig#tokenPath()}
+     * @param tokenPath
+     *        {@link OidcClientCommonConfig#tokenPath()}
+     *
      * @return T builder
      */
     public T tokenPath(String tokenPath) {
@@ -85,7 +87,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param revokePath {@link OidcClientCommonConfig#revokePath()}
+     * @param revokePath
+     *        {@link OidcClientCommonConfig#revokePath()}
+     *
      * @return T builder
      */
     public T revokePath(String revokePath) {
@@ -94,7 +98,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param clientId {@link OidcClientCommonConfig#clientId()}
+     * @param clientId
+     *        {@link OidcClientCommonConfig#clientId()}
+     *
      * @return T builder
      */
     public T clientId(String clientId) {
@@ -103,7 +109,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param clientName {@link OidcClientCommonConfig#clientName()}
+     * @param clientName
+     *        {@link OidcClientCommonConfig#clientName()}
+     *
      * @return T builder
      */
     public T clientName(String clientName) {
@@ -112,8 +120,10 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param credentials {@link OidcClientCommonConfig#credentials()} created with {@link CredentialsBuilder} or SmallRye
+     * @param credentials
+     *        {@link OidcClientCommonConfig#credentials()} created with {@link CredentialsBuilder} or SmallRye
      *        Config
+     *
      * @return T builder
      */
     public T credentials(Credentials credentials) {
@@ -131,7 +141,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param secret {@link Credentials#secret()}
+     * @param secret
+     *        {@link Credentials#secret()}
+     *
      * @return T builder
      */
     public T credentials(String secret) {
@@ -139,7 +151,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param clientSecret {@link Credentials#clientSecret()} created with {@link SecretBuilder} or SmallRye Config
+     * @param clientSecret
+     *        {@link Credentials#clientSecret()} created with {@link SecretBuilder} or SmallRye Config
+     *
      * @return T builder
      */
     public T credentials(Secret clientSecret) {
@@ -148,7 +162,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
     }
 
     /**
-     * @param jwt {@link Credentials#jwt()} created with {@link JwtBuilder} or SmallRye Config
+     * @param jwt
+     *        {@link Credentials#jwt()} created with {@link JwtBuilder} or SmallRye Config
+     *
      * @return T builder
      */
     public T credentials(Jwt jwt) {
@@ -181,7 +197,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param secret {@link Credentials#secret()}
+         * @param secret
+         *        {@link Credentials#secret()}
+         *
          * @return this builder
          */
         public CredentialsBuilder<T> secret(String secret) {
@@ -190,7 +208,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param clientSecret {@link Credentials#clientSecret()} created with the {@link SecretBuilder} or SmallRye Config
+         * @param clientSecret
+         *        {@link Credentials#clientSecret()} created with the {@link SecretBuilder} or SmallRye Config
+         *
          * @return this builder
          */
         public CredentialsBuilder<T> clientSecret(Secret clientSecret) {
@@ -208,7 +228,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param value {@link Secret#value()}
+         * @param value
+         *        {@link Secret#value()}
+         *
          * @return this builder
          */
         public CredentialsBuilder<T> clientSecret(String value) {
@@ -216,7 +238,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param provider {@link Secret#provider()}
+         * @param provider
+         *        {@link Secret#provider()}
+         *
          * @return this builder
          */
         public CredentialsBuilder<T> clientSecret(Provider provider) {
@@ -224,8 +248,11 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param value {@link Secret#value()}
-         * @param method {@link Secret#method()}
+         * @param value
+         *        {@link Secret#value()}
+         * @param method
+         *        {@link Secret#method()}
+         *
          * @return this builder
          */
         public CredentialsBuilder<T> clientSecret(String value, Method method) {
@@ -233,7 +260,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param jwt {@link Credentials#jwt()} created with the {@link JwtBuilder} or SmallRye Config
+         * @param jwt
+         *        {@link Credentials#jwt()} created with the {@link JwtBuilder} or SmallRye Config
+         *
          * @return this builder
          */
         public CredentialsBuilder<T> jwt(Jwt jwt) {
@@ -268,11 +297,8 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         private static <T> OidcClientCommonConfigBuilder<T> getConfigBuilderWithDefaults() {
-            final OidcClientCommonConfig clientCommonConfig = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withMapping(OidcClientCommonConfig.class)
-                    .build()
-                    .getConfigMapping(OidcClientCommonConfig.class);
+            final OidcClientCommonConfig clientCommonConfig = new SmallRyeConfigBuilder().addDiscoveredConverters()
+                    .withMapping(OidcClientCommonConfig.class).build().getConfigMapping(OidcClientCommonConfig.class);
             return new OidcClientCommonConfigBuilder<>(clientCommonConfig) {
                 @Override
                 protected T getBuilder() {
@@ -288,7 +314,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
      */
     public static final class SecretBuilder<T> {
 
-        private record SecretImpl(Optional<String> value, Optional<Method> method, Provider provider) implements Secret {
+        private record SecretImpl(Optional<String> value, Optional<Method> method, Provider provider)
+                implements
+                    Secret {
         }
 
         private final CredentialsBuilder<T> builder;
@@ -312,7 +340,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param method {@link Secret#method()}
+         * @param method
+         *        {@link Secret#method()}
+         *
          * @return this builder
          */
         public SecretBuilder<T> method(Method method) {
@@ -321,7 +351,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param value {@link Secret#value()}
+         * @param value
+         *        {@link Secret#value()}
+         *
          * @return this builder
          */
         public SecretBuilder<T> value(String value) {
@@ -330,7 +362,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param provider {@link Secret#provider()} created with the {@link ProviderBuilder} or SmallRye Config
+         * @param provider
+         *        {@link Secret#provider()} created with the {@link ProviderBuilder} or SmallRye Config
+         *
          * @return this builder
          */
         public SecretBuilder<T> provider(Provider provider) {
@@ -341,7 +375,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         /**
          * Adds {@link Secret#provider()}.
          *
-         * @param key {@link Provider#key()}
+         * @param key
+         *        {@link Provider#key()}
+         *
          * @return this builder
          */
         public SecretBuilder<T> provider(String key) {
@@ -351,8 +387,11 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         /**
          * Adds {@link Secret#provider()}.
          *
-         * @param key {@link Provider#key()}
-         * @param name {@link Provider#name()}
+         * @param key
+         *        {@link Provider#key()}
+         * @param name
+         *        {@link Provider#name()}
+         *
          * @return this builder
          */
         public SecretBuilder<T> provider(String key, String name) {
@@ -362,9 +401,13 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         /**
          * Adds {@link Secret#provider()}.
          *
-         * @param key {@link Provider#key()}
-         * @param name {@link Provider#name()}
-         * @param keyringName {@link Provider#keyringName()}
+         * @param key
+         *        {@link Provider#key()}
+         * @param name
+         *        {@link Provider#name()}
+         * @param keyringName
+         *        {@link Provider#keyringName()}
+         *
          * @return this builder
          */
         public SecretBuilder<T> provider(String key, String name, String keyringName) {
@@ -409,8 +452,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
      */
     public static final class ProviderBuilder<T> {
 
-        private record ProviderImpl(Optional<String> name, Optional<String> keyringName,
-                Optional<String> key) implements Provider {
+        private record ProviderImpl(Optional<String> name, Optional<String> keyringName, Optional<String> key)
+                implements
+                    Provider {
         }
 
         private final Function<Provider, T> providerSetter;
@@ -433,7 +477,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param name {@link Provider#name()}
+         * @param name
+         *        {@link Provider#name()}
+         *
          * @return this builder
          */
         public ProviderBuilder<T> name(String name) {
@@ -442,7 +488,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param keyringName {@link Provider#keyringName()}
+         * @param keyringName
+         *        {@link Provider#keyringName()}
+         *
          * @return this builder
          */
         public ProviderBuilder<T> keyringName(String keyringName) {
@@ -451,7 +499,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param key {@link Provider#key()}
+         * @param key
+         *        {@link Provider#key()}
+         *
          * @return this builder
          */
         public ProviderBuilder<T> key(String key) {
@@ -484,9 +534,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
 
         private record JwtImpl(Source source, Optional<String> secret, Provider secretProvider, Optional<String> key,
                 Optional<String> keyFile, Optional<String> keyStoreFile, Optional<String> keyStorePassword,
-                Optional<String> keyId, Optional<String> keyPassword, Optional<String> audience, Optional<String> tokenKeyId,
-                Optional<String> issuer, Optional<String> subject, Map<String, String> claims,
-                Optional<String> signatureAlgorithm, int lifespan, boolean assertion,
+                Optional<String> keyId, Optional<String> keyPassword, Optional<String> audience,
+                Optional<String> tokenKeyId, Optional<String> issuer, Optional<String> subject,
+                Map<String, String> claims, Optional<String> signatureAlgorithm, int lifespan, boolean assertion,
                 Optional<Path> tokenPath) implements Jwt {
 
         }
@@ -559,7 +609,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param tokenPath {@link Jwt#tokenPath()}
+         * @param tokenPath
+         *        {@link Jwt#tokenPath()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> tokenPath(Path tokenPath) {
@@ -575,7 +627,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param secretProvider {@link Jwt#secretProvider()} created by {@link ProviderBuilder} or SmallRye Config
+         * @param secretProvider
+         *        {@link Jwt#secretProvider()} created by {@link ProviderBuilder} or SmallRye Config
+         *
          * @return this builder
          */
         public JwtBuilder<T> secretProvider(Provider secretProvider) {
@@ -585,7 +639,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param source {@link Jwt#source()}
+         * @param source
+         *        {@link Jwt#source()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> source(Source source) {
@@ -595,7 +651,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param secret {@link Jwt#secret()}
+         * @param secret
+         *        {@link Jwt#secret()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> secret(String secret) {
@@ -604,7 +662,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param key {@link Jwt#key()}
+         * @param key
+         *        {@link Jwt#key()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> key(String key) {
@@ -613,7 +673,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param keyFile {@link Jwt#keyFile()}
+         * @param keyFile
+         *        {@link Jwt#keyFile()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> keyFile(String keyFile) {
@@ -622,7 +684,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param keyStoreFile {@link Jwt#keyStoreFile()}
+         * @param keyStoreFile
+         *        {@link Jwt#keyStoreFile()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> keyStoreFile(String keyStoreFile) {
@@ -631,7 +695,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param keyStorePassword {@link Jwt#keyStorePassword()}
+         * @param keyStorePassword
+         *        {@link Jwt#keyStorePassword()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> keyStorePassword(String keyStorePassword) {
@@ -640,7 +706,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param keyId {@link Jwt#keyId()}
+         * @param keyId
+         *        {@link Jwt#keyId()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> keyId(String keyId) {
@@ -649,7 +717,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param keyPassword {@link Jwt#keyPassword()}
+         * @param keyPassword
+         *        {@link Jwt#keyPassword()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> keyPassword(String keyPassword) {
@@ -658,7 +728,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param audience {@link Jwt#audience()}
+         * @param audience
+         *        {@link Jwt#audience()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> audience(String audience) {
@@ -667,7 +739,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param tokenKeyId {@link Jwt#tokenKeyId()}
+         * @param tokenKeyId
+         *        {@link Jwt#tokenKeyId()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> tokenKeyId(String tokenKeyId) {
@@ -676,7 +750,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param issuer {@link Jwt#issuer()}
+         * @param issuer
+         *        {@link Jwt#issuer()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> issuer(String issuer) {
@@ -685,7 +761,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param subject {@link Jwt#subject()}
+         * @param subject
+         *        {@link Jwt#subject()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> subject(String subject) {
@@ -694,8 +772,11 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param claimName {@link Jwt#claims()} map entry key
-         * @param claimValue {@link Jwt#claims()} map entry value
+         * @param claimName
+         *        {@link Jwt#claims()} map entry key
+         * @param claimValue
+         *        {@link Jwt#claims()} map entry value
+         *
          * @return this builder
          */
         public JwtBuilder<T> claim(String claimName, String claimValue) {
@@ -706,7 +787,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param claims {@link Jwt#claims()}
+         * @param claims
+         *        {@link Jwt#claims()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> claims(Map<String, String> claims) {
@@ -716,7 +799,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param signatureAlgorithm {@link Jwt#signatureAlgorithm()}
+         * @param signatureAlgorithm
+         *        {@link Jwt#signatureAlgorithm()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> signatureAlgorithm(String signatureAlgorithm) {
@@ -725,7 +810,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param lifespan {@link Jwt#lifespan()}
+         * @param lifespan
+         *        {@link Jwt#lifespan()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> lifespan(int lifespan) {
@@ -734,7 +821,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
         }
 
         /**
-         * @param assertion {@link Jwt#assertion()}
+         * @param assertion
+         *        {@link Jwt#assertion()}
+         *
          * @return this builder
          */
         public JwtBuilder<T> assertion(boolean assertion) {
@@ -767,9 +856,9 @@ public abstract class OidcClientCommonConfigBuilder<T> extends OidcCommonConfigB
          * @return Jwt
          */
         public Jwt build() {
-            return new JwtImpl(source, secret, secretProvider, key, keyFile, keyStoreFile, keyStorePassword, keyId, keyPassword,
-                    audience, tokenKeyId, issuer, subject, Map.copyOf(claims), signatureAlgorithm, lifespan, assertion,
-                    tokenPath);
+            return new JwtImpl(source, secret, secretProvider, key, keyFile, keyStoreFile, keyStorePassword, keyId,
+                    keyPassword, audience, tokenKeyId, issuer, subject, Map.copyOf(claims), signatureAlgorithm,
+                    lifespan, assertion, tokenPath);
         }
     }
 }

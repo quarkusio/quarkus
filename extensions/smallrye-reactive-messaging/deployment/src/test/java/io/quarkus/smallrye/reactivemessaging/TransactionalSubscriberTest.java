@@ -21,12 +21,9 @@ import io.smallrye.mutiny.Multi;
 
 public class TransactionalSubscriberTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ProduceIn.class, IncomingUsingTransactional.class)
-                    .addAsResource(
-                            new File("src/test/resources/config/worker-config.properties"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(ProduceIn.class, IncomingUsingTransactional.class).addAsResource(
+                    new File("src/test/resources/config/worker-config.properties"), "application.properties"));
 
     @Inject
     IncomingUsingTransactional incoming;
@@ -36,8 +33,7 @@ public class TransactionalSubscriberTest {
         await().until(() -> incoming.list().size() == 6);
         assertThat(incoming.list()).contains("a", "b", "c", "d", "e", "f");
 
-        List<String> threadNames = incoming.threads().stream().distinct()
-                .collect(Collectors.toList());
+        List<String> threadNames = incoming.threads().stream().distinct().collect(Collectors.toList());
         assertThat(threadNames.contains(Thread.currentThread().getName())).isFalse();
         for (String name : threadNames) {
             assertThat(name.startsWith("executor-thread-")).isTrue();

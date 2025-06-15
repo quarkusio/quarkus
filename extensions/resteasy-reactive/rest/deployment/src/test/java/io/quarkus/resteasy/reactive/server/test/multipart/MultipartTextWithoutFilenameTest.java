@@ -20,24 +20,18 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultipartTextWithoutFilenameTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class);
+        }
+    });
 
     @Test
     public void test() throws IOException {
-        given()
-                .contentType("multipart/form-data")
-                .multiPart("firstParam", "{\"id\":\"myId\",\"name\":\"myName\"}", "application/json")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200);
+        given().contentType("multipart/form-data")
+                .multiPart("firstParam", "{\"id\":\"myId\",\"name\":\"myName\"}", "application/json").when()
+                .post("/test").then().statusCode(200);
     }
 
     @Path("/test")

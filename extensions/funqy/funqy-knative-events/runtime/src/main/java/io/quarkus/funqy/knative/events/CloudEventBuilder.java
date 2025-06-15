@@ -66,42 +66,17 @@ public class CloudEventBuilder {
 
     public CloudEvent<byte[]> build(byte[] data, String dataContentType) {
 
-        return new SimpleCloudEvent(specVersion,
-                id,
-                type,
-                source,
-                subject,
-                time,
-                extensions,
-                dataSchema,
-                dataContentType,
-                data);
+        return new SimpleCloudEvent(specVersion, id, type, source, subject, time, extensions, dataSchema,
+                dataContentType, data);
     }
 
     public <T> CloudEvent<T> build(T data) {
-        return new SimpleCloudEvent(specVersion,
-                id,
-                type,
-                source,
-                subject,
-                time,
-                extensions,
-                dataSchema,
-                "application/json",
-                data);
+        return new SimpleCloudEvent(specVersion, id, type, source, subject, time, extensions, dataSchema,
+                "application/json", data);
     }
 
     public CloudEvent<Void> build() {
-        return new SimpleCloudEvent(specVersion,
-                id,
-                type,
-                source,
-                subject,
-                time,
-                extensions,
-                dataSchema,
-                null,
-                null);
+        return new SimpleCloudEvent(specVersion, id, type, source, subject, time, extensions, dataSchema, null, null);
     }
 
     private static final class SimpleCloudEvent<T> extends AbstractCloudEvent<T> implements CloudEvent<T> {
@@ -116,16 +91,8 @@ public class CloudEventBuilder {
         private final String dataContentType;
         private final T data;
 
-        SimpleCloudEvent(String specVersion,
-                String id,
-                String type,
-                String source,
-                String subject,
-                OffsetDateTime time,
-                Map<String, String> extensions,
-                String dataSchema,
-                String dataContentType,
-                T data) {
+        SimpleCloudEvent(String specVersion, String id, String type, String source, String subject, OffsetDateTime time,
+                Map<String, String> extensions, String dataSchema, String dataContentType, T data) {
 
             if (extensions == null) {
                 this.extensions = Collections.emptyMap();

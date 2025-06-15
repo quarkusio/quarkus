@@ -9,7 +9,6 @@ import java.lang.annotation.Target;
 /**
  * Used to make calls requiring HTTP Basic Auth.
  * <p>
- *
  * An example method could look like the following:
  *
  * <pre>

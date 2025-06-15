@@ -80,24 +80,20 @@ public class RedisClientRecorder {
             // - if not found -> ConfigurationException
             Optional<RedisClientConfig> maybe = getConfigForName(config, name);
             if (!RedisConfig.isDefaultClient(name)) {
-                RedisClientConfig actualConfig = maybe
-                        .orElseThrow(new Supplier<ConfigurationException>() {
-                            @Override
-                            public ConfigurationException get() {
-                                return new ConfigurationException("The application contains a " +
-                                        "@RedisClientName(\"" + name
-                                        + "\"), but the application configuration does not configure this " +
-                                        "redis client configuration with that name. " +
-                                        "You must at least configure `quarkus.redis." + name + ".hosts`.");
-                            }
-                        });
-                clients.computeIfAbsent(name,
-                        x -> new RedisClientAndApi(name, VertxRedisClientFactory.create(name, vertx, actualConfig, tlsRegistry),
-                                metrics));
+                RedisClientConfig actualConfig = maybe.orElseThrow(new Supplier<ConfigurationException>() {
+                    @Override
+                    public ConfigurationException get() {
+                        return new ConfigurationException("The application contains a " + "@RedisClientName(\"" + name
+                                + "\"), but the application configuration does not configure this "
+                                + "redis client configuration with that name. "
+                                + "You must at least configure `quarkus.redis." + name + ".hosts`.");
+                    }
+                });
+                clients.computeIfAbsent(name, x -> new RedisClientAndApi(name,
+                        VertxRedisClientFactory.create(name, vertx, actualConfig, tlsRegistry), metrics));
             } else if (DEFAULT_CLIENT_NAME.equalsIgnoreCase(name) && maybe.isPresent()) {
-                clients.computeIfAbsent(name,
-                        x -> new RedisClientAndApi(name,
-                                VertxRedisClientFactory.create(DEFAULT_CLIENT_NAME, vertx, maybe.get(), tlsRegistry), metrics));
+                clients.computeIfAbsent(name, x -> new RedisClientAndApi(name,
+                        VertxRedisClientFactory.create(DEFAULT_CLIENT_NAME, vertx, maybe.get(), tlsRegistry), metrics));
             }
             // Do not throw an error. We would need to check if the default redis client is used.
         }
@@ -173,7 +169,8 @@ public class RedisClientRecorder {
             public RedisDataSource get() {
                 Duration timeout = RedisClientRecorder.this.getTimeoutForClient(name);
                 return new BlockingRedisDataSourceImpl(
-                        (ReactiveRedisDataSourceImpl) RedisClientRecorder.this.getReactiveDataSource(name).get(), timeout);
+                        (ReactiveRedisDataSourceImpl) RedisClientRecorder.this.getReactiveDataSource(name).get(),
+                        timeout);
             }
         };
     }
@@ -184,10 +181,8 @@ public class RedisClientRecorder {
             @Override
             public RedisClient get() {
                 Duration timeout = getTimeoutForClient(name);
-                return new RedisClientImpl(
-                        RedisClientRecorder.this.getRedisClient(name).get(),
-                        RedisClientRecorder.this.getRedisAPI(name).get(),
-                        timeout);
+                return new RedisClientImpl(RedisClientRecorder.this.getRedisClient(name).get(),
+                        RedisClientRecorder.this.getRedisAPI(name).get(), timeout);
             }
         };
     }
@@ -225,7 +220,8 @@ public class RedisClientRecorder {
         });
     }
 
-    public void preload(String name, List<String> loadScriptPaths, boolean redisFlushBeforeLoad, boolean redisLoadOnlyIfEmpty) {
+    public void preload(String name, List<String> loadScriptPaths, boolean redisFlushBeforeLoad,
+            boolean redisLoadOnlyIfEmpty) {
         var tuple = clients.get(name);
         if (tuple == null) {
             throw new IllegalArgumentException("Unable import data into Redis - cannot find the Redis client " + name
@@ -238,7 +234,8 @@ public class RedisClientRecorder {
             var list = tuple.redis.send(Request.cmd(Command.KEYS).arg("*")).await().indefinitely();
             if (list.size() != 0) {
                 RedisDataLoader.LOGGER.debugf(
-                        "Skipping the Redis data loading because the database is not empty: %d keys found", list.size());
+                        "Skipping the Redis data loading because the database is not empty: %d keys found",
+                        list.size());
                 return;
             }
         }

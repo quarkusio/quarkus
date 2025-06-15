@@ -19,65 +19,35 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class RegexPathTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(EndingSlashTest.TestResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(EndingSlashTest.TestResource.class);
+        }
+    });
 
     @Test
     public void test() {
 
-        get("/hello/world/1")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello World! 1"));
+        get("/hello/world/1").then().statusCode(200).body(equalTo("Hello World! 1"));
 
-        get("/hello/world/1/")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello World! 1"));
+        get("/hello/world/1/").then().statusCode(200).body(equalTo("Hello World! 1"));
 
-        get("/hello/")
-                .then()
-                .statusCode(404);
+        get("/hello/").then().statusCode(404);
 
-        get("/hello/1")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello! 1"));
+        get("/hello/1").then().statusCode(200).body(equalTo("Hello! 1"));
 
-        get("/hello/1/")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello! 1"));
+        get("/hello/1/").then().statusCode(200).body(equalTo("Hello! 1"));
 
-        get("/hello/again/")
-                .then()
-                .statusCode(404);
+        get("/hello/again/").then().statusCode(404);
 
-        get("/hello/again/1")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello Again! 1"));
+        get("/hello/again/1").then().statusCode(200).body(equalTo("Hello Again! 1"));
 
-        get("/hello/again/1/")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello Again! 1"));
+        get("/hello/again/1/").then().statusCode(200).body(equalTo("Hello Again! 1"));
 
-        get("/hello/again/2/surprise")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello Again Surprise! 2"));
+        get("/hello/again/2/surprise").then().statusCode(200).body(equalTo("Hello Again Surprise! 2"));
 
-        get("/hello/again/2/surprise/")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello Again Surprise! 2"));
+        get("/hello/again/2/surprise/").then().statusCode(200).body(equalTo("Hello Again Surprise! 2"));
     }
 
     @Path("/hello")

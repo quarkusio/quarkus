@@ -14,9 +14,7 @@ public class NoExtensionMethodsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Extensions.class))
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(Extensions.class)).assertException(t -> {
                 Throwable ise = t;
                 while (ise != null) {
                     if (ise instanceof IllegalStateException) {

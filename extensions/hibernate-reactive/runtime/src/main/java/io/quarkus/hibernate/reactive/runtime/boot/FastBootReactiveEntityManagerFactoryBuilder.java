@@ -17,12 +17,11 @@ import io.quarkus.hibernate.orm.runtime.recording.PrevalidatedQuarkusMetadata;
 public final class FastBootReactiveEntityManagerFactoryBuilder extends FastBootEntityManagerFactoryBuilder {
 
     public FastBootReactiveEntityManagerFactoryBuilder(QuarkusPersistenceUnitDescriptor puDescriptor,
-            PrevalidatedQuarkusMetadata metadata,
-            StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager, MultiTenancyStrategy strategy,
-            boolean shouldApplySchemaMigration) {
-        super(puDescriptor, metadata, standardServiceRegistry, runtimeSettings, validatorFactory,
-                cdiBeanManager, strategy, shouldApplySchemaMigration);
+            PrevalidatedQuarkusMetadata metadata, StandardServiceRegistry standardServiceRegistry,
+            RuntimeSettings runtimeSettings, Object validatorFactory, Object cdiBeanManager,
+            MultiTenancyStrategy strategy, boolean shouldApplySchemaMigration) {
+        super(puDescriptor, metadata, standardServiceRegistry, runtimeSettings, validatorFactory, cdiBeanManager,
+                strategy, shouldApplySchemaMigration);
     }
 
     @Override

@@ -20,9 +20,9 @@ public class FieldExtractor extends ValueExtractor {
 
     @Override
     ResultHandle extract(BytecodeCreator bytecodeCreator, ResultHandle containingObject) {
-        MethodDescriptor readField = MethodDescriptor.ofMethod(ReflectionUtil.class, "readField", Object.class, Object.class,
-                Class.class, String.class);
-        return bytecodeCreator.invokeStaticMethod(readField, containingObject, bytecodeCreator.loadClassFromTCCL(className),
-                bytecodeCreator.load(fieldName));
+        MethodDescriptor readField = MethodDescriptor.ofMethod(ReflectionUtil.class, "readField", Object.class,
+                Object.class, Class.class, String.class);
+        return bytecodeCreator.invokeStaticMethod(readField, containingObject,
+                bytecodeCreator.loadClassFromTCCL(className), bytecodeCreator.load(fieldName));
     }
 }

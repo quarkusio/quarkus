@@ -13,11 +13,9 @@ import io.quarkus.websockets.next.WebSocketServerException;
 public class AmbiguousEndpointIdTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint1.class, Endpoint2.class);
-            })
-            .setExpectedException(WebSocketServerException.class);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint1.class, Endpoint2.class);
+    }).setExpectedException(WebSocketServerException.class);
 
     @Test
     public void testEndpointIds() {

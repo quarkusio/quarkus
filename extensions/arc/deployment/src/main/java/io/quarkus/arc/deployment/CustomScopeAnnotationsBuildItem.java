@@ -12,8 +12,8 @@ import io.quarkus.arc.processor.BuiltinScope;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Holds information about all known custom scopes in the deployment and has utility methods allowing to check
- * whether given class has some scope annotation.
+ * Holds information about all known custom scopes in the deployment and has utility methods allowing to check whether
+ * given class has some scope annotation.
  */
 public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
 
@@ -33,12 +33,14 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Returns true if the given class has some of the custom scope annotations, false otherwise.
-     * List of known custom scopes can be seen via {@link CustomScopeAnnotationsBuildItem#getCustomScopeNames()}.
-     * In order to check for presence of any scope annotation (including built-in ones),
-     * see {@link CustomScopeAnnotationsBuildItem#isScopeDeclaredOn(ClassInfo)}.
+     * Returns true if the given class has some of the custom scope annotations, false otherwise. List of known custom
+     * scopes can be seen via {@link CustomScopeAnnotationsBuildItem#getCustomScopeNames()}. In order to check for
+     * presence of any scope annotation (including built-in ones), see
+     * {@link CustomScopeAnnotationsBuildItem#isScopeDeclaredOn(ClassInfo)}.
      *
-     * @param clazz Class to check for annotations
+     * @param clazz
+     *        Class to check for annotations
+     *
      * @return true if the clazz contains some of the custom scope annotations, false otherwise
      */
     public boolean isCustomScopeDeclaredOn(ClassInfo clazz) {
@@ -51,8 +53,8 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @param annotations
+     *
      * @return {@code true} if the collection contains a custom scope annotation, {@code false} otherwise
      */
     public boolean isCustomScopeIn(Collection<AnnotationInstance> annotations) {
@@ -65,11 +67,13 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Returns true if the given class has some scope annotations, false otherwise.
-     * This method check for all scope annotations, including built-in ones as well as custom scopes.
-     * List of known custom scopes can be seen via {@link CustomScopeAnnotationsBuildItem#getCustomScopeNames()}.
+     * Returns true if the given class has some scope annotations, false otherwise. This method check for all scope
+     * annotations, including built-in ones as well as custom scopes. List of known custom scopes can be seen via
+     * {@link CustomScopeAnnotationsBuildItem#getCustomScopeNames()}.
      *
-     * @param clazz Class to check for annotations
+     * @param clazz
+     *        Class to check for annotations
+     *
      * @return true if the clazz contains any scope annotation, false otherwise
      */
     public boolean isScopeDeclaredOn(ClassInfo clazz) {
@@ -77,9 +81,10 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @param annotations
+     *
      * @return {@code true} if the collection contains any scope annotation, {@code false} otherwise
+     *
      * @see #isCustomScopeIn(Collection)
      */
     public boolean isScopeIn(Collection<AnnotationInstance> annotations) {
@@ -87,8 +92,8 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @param annotations
+     *
      * @return the scope or empty optional
      */
     public Optional<AnnotationInstance> getScope(Collection<AnnotationInstance> annotations) {
@@ -96,7 +101,8 @@ public final class CustomScopeAnnotationsBuildItem extends SimpleBuildItem {
             return Optional.empty();
         }
         for (AnnotationInstance annotationInstance : annotations) {
-            if (BuiltinScope.from(annotationInstance.name()) != null || customScopeNames.contains(annotationInstance.name())) {
+            if (BuiltinScope.from(annotationInstance.name()) != null
+                    || customScopeNames.contains(annotationInstance.name())) {
                 return Optional.of(annotationInstance);
             }
         }

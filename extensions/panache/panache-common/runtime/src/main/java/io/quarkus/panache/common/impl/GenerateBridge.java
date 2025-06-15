@@ -12,14 +12,14 @@ import java.lang.annotation.Target;
 public @interface GenerateBridge {
 
     /**
-     * Set to true if the corresponding JpaOperations method returns Object
-     * but the bridge should return a more specific type.
+     * Set to true if the corresponding JpaOperations method returns Object but the bridge should return a more specific
+     * type.
      */
     boolean targetReturnTypeErased() default false;
 
     /**
-     * Set to true to delegate to the super method instead of JpaOperations. This is useful to
-     * still inject interceptor calls and mock stubs.
+     * Set to true to delegate to the super method instead of JpaOperations. This is useful to still inject interceptor
+     * calls and mock stubs.
      */
     boolean callSuperMethod() default false;
 

@@ -17,10 +17,15 @@ public class BodyDeserializer {
     /**
      * Allows to deserialize the response provided by RestAssured to the specified class.
      *
-     * @param response RestAssured response
-     * @param clazz class to deserialize to
+     * @param response
+     *        RestAssured response
+     * @param clazz
+     *        class to deserialize to
+     *
      * @return the deserialized class
-     * @param <T> type of the class to deserialize to
+     *
+     * @param <T>
+     *        type of the class to deserialize to
      */
     public <T> T getBodyAs(ValidatableResponse response, Class<T> clazz) {
         try {

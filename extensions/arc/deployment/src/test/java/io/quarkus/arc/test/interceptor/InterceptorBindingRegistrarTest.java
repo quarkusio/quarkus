@@ -29,8 +29,8 @@ public class InterceptorBindingRegistrarTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NotAnInterceptorBinding.class, SimpleBean.class, SimpleInterceptor.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(NotAnInterceptorBinding.class, SimpleBean.class, SimpleInterceptor.class))
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {
                     @Override

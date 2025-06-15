@@ -12,18 +12,8 @@ public class PostgresTest {
 
     @Test
     public void testConfig() {
-        given()
-                .when()
-                .get("/postgres/name")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("my_config"));
+        given().when().get("/postgres/name").then().statusCode(200).body(Matchers.equalTo("my_config"));
 
-        given()
-                .when()
-                .get("/postgres/port")
-                .then()
-                .statusCode(200)
-                .body(Matchers.not(Matchers.emptyOrNullString()));
+        given().when().get("/postgres/port").then().statusCode(200).body(Matchers.not(Matchers.emptyOrNullString()));
     }
 }

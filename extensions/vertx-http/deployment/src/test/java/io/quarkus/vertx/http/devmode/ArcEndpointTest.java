@@ -23,8 +23,7 @@ public class ArcEndpointTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Foo.class));
 
     @Test
     public void testBeans() {
@@ -68,7 +67,8 @@ public class ArcEndpointTest {
         }
 
         void addConfigRoute(@Observes Router router) {
-            router.route("/console-path").handler(rc -> rc.response().end(httpBuildTimeConfig.nonApplicationRootPath()));
+            router.route("/console-path")
+                    .handler(rc -> rc.response().end(httpBuildTimeConfig.nonApplicationRootPath()));
         }
 
     }

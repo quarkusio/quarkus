@@ -5,8 +5,7 @@ import io.grpc.ForwardingClientCallListener;
 import io.grpc.Metadata;
 import io.grpc.Status;
 
-class StorkMeasuringCallListener<RespT>
-        extends ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT> {
+class StorkMeasuringCallListener<RespT> extends ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT> {
     final StorkMeasuringCollector collector;
 
     public StorkMeasuringCallListener(ClientCall.Listener<RespT> responseListener, StorkMeasuringCollector collector) {

@@ -35,14 +35,8 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
         }
 
         ServiceBindingSpecBuilder spec = new ServiceBindingSpecBuilder();
-        spec.withNewApplication()
-                .withGroup(group)
-                .withVersion(version)
-                .withKind(kind)
-                .withName(name)
-                .endApplication()
-                .withBindAsFiles(config.bindAsFiles())
-                .withDetectBindingResources(config.detectBindingResources())
+        spec.withNewApplication().withGroup(group).withVersion(version).withKind(kind).withName(name).endApplication()
+                .withBindAsFiles(config.bindAsFiles()).withDetectBindingResources(config.detectBindingResources())
                 .withMountPath(config.mountPath().orElse(null));
 
         String group = service.getApiVersion().contains("/")
@@ -52,18 +46,11 @@ public class AddServiceBindingResourceDecorator extends ResourceProvidingDecorat
                 ? Optional.ofNullable(service.getApiVersion()).map(a -> a.split("/")[1]).orElse(null)
                 : service.getApiVersion();
 
-        spec = spec.addNewService()
-                .withGroup(group)
-                .withVersion(version)
-                .withKind(service.getKind())
-                .withName(service.getName())
-                .endService();
+        spec = spec.addNewService().withGroup(group).withVersion(version).withKind(service.getKind())
+                .withName(service.getName()).endService();
 
-        ServiceBindingBuilder binding = new ServiceBindingBuilder()
-                .withNewMetadata()
-                .withName(service.getBinding())
-                .endMetadata()
-                .withSpec(spec.build());
+        ServiceBindingBuilder binding = new ServiceBindingBuilder().withNewMetadata().withName(service.getBinding())
+                .endMetadata().withSpec(spec.build());
 
         list.addToItems(binding.build());
     }

@@ -26,7 +26,6 @@ import io.quarkus.runtime.annotations.Recorder;
 
 /**
  * Used for Amazon Lambda java runtime
- *
  */
 @Recorder
 public class AmazonLambdaRecorder {
@@ -77,6 +76,7 @@ public class AmazonLambdaRecorder {
      * @param inputStream
      * @param outputStream
      * @param context
+     *
      * @throws IOException
      */
     public static void handle(InputStream inputStream, OutputStream outputStream, Context context) throws IOException {
@@ -108,7 +108,8 @@ public class AmazonLambdaRecorder {
             method = methods[0];
         }
         if (method == null) {
-            throw new RuntimeException("Unable to find a method which handles request on handler class " + handlerClass);
+            throw new RuntimeException(
+                    "Unable to find a method which handles request on handler class " + handlerClass);
         }
         return method;
     }
@@ -140,7 +141,8 @@ public class AmazonLambdaRecorder {
                 throw new RuntimeException(errorMessage);
             } else if (unnamedTotal == 0 && namedTotal == 0) {
                 String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
-                        + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
+                        + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName()
+                        + " implementation";
                 throw new RuntimeException(errorMessage);
             } else if ((unnamedTotal + namedTotal) == 1) {
                 if (!unnamedHandlerClasses.isEmpty()) {

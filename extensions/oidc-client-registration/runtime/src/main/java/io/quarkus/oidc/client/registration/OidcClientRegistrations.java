@@ -20,7 +20,9 @@ public interface OidcClientRegistrations extends Closeable {
     /**
      * Return a named OIDC client registration
      *
-     * @param id OIDC client registration id.
+     * @param id
+     *        OIDC client registration id.
+     *
      * @return {@link OidcClientRegistration}, null if no named OIDC client registration configuration is available.
      */
     OidcClientRegistration getClientRegistration(String id);
@@ -35,7 +37,9 @@ public interface OidcClientRegistrations extends Closeable {
     /**
      * Create a new OIDC client registration
      *
-     * @param oidcConfig OIDC client registration configuration
+     * @param oidcConfig
+     *        OIDC client registration configuration
+     *
      * @return Uni<OidcClientRegistration>
      */
     Uni<OidcClientRegistration> newClientRegistration(OidcClientRegistrationConfig oidcConfig);

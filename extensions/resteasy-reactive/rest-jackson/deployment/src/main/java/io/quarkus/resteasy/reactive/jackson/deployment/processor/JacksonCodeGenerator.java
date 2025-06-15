@@ -92,13 +92,13 @@ public abstract class JacksonCodeGenerator {
 
     private void createConstructor(ClassCreator classCreator, String beanClassName) {
         MethodCreator constructor = classCreator.getConstructorCreator(new String[0]);
-        constructor.invokeSpecialMethod(
-                MethodDescriptor.ofConstructor(getSuperClassName(), "java.lang.Class"),
+        constructor.invokeSpecialMethod(MethodDescriptor.ofConstructor(getSuperClassName(), "java.lang.Class"),
                 constructor.getThis(), constructor.loadClass(beanClassName));
         constructor.returnVoid();
     }
 
-    protected abstract boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator, String beanClassName);
+    protected abstract boolean createSerializationMethod(ClassInfo classInfo, ClassCreator classCreator,
+            String beanClassName);
 
     protected Collection<FieldInfo> classFields(ClassInfo classInfo) {
         Collection<FieldInfo> fields = new ArrayList<>();
@@ -154,7 +154,8 @@ public abstract class JacksonCodeGenerator {
     }
 
     private static boolean vetoedClassName(String className) {
-        return className.startsWith("java.") || className.startsWith("jakarta.") || className.startsWith("io.vertx.core.json.");
+        return className.startsWith("java.") || className.startsWith("jakarta.")
+                || className.startsWith("io.vertx.core.json.");
     }
 
     protected enum FieldKind {
@@ -226,20 +227,18 @@ public abstract class JacksonCodeGenerator {
         if (namedAccessor != null) {
             return namedAccessor;
         }
-        String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get") + ucFirst(fieldInfo.name());
+        String methodName = (fieldInfo.type().name().toString().equals("boolean") ? "is" : "get")
+                + ucFirst(fieldInfo.name());
         return findMethod(classInfo, methodName);
     }
 
     protected Optional<MethodInfo> findConstructor(ClassInfo classInfo) {
         Optional<MethodInfo> ctorOpt = classInfo.constructors().stream()
-                .filter(ctor -> Modifier.isPublic(ctor.flags()) && ctor.hasAnnotation(JsonCreator.class))
-                .findFirst();
+                .filter(ctor -> Modifier.isPublic(ctor.flags()) && ctor.hasAnnotation(JsonCreator.class)).findFirst();
 
         if (ctorOpt.isEmpty()) {
             if (classInfo.hasNoArgsConstructor() && !classInfo.isRecord()) {
-                return classInfo.constructors().stream()
-                        .filter(ctor -> ctor.parametersCount() == 0)
-                        .findFirst();
+                return classInfo.constructors().stream().filter(ctor -> ctor.parametersCount() == 0).findFirst();
             }
             ctorOpt = classInfo.isRecord() ? Optional.of(classInfo.canonicalRecordConstructor())
                     : classInfo.constructors().stream().filter(ctor -> Modifier.isPublic(ctor.flags())).findFirst();
@@ -326,10 +325,8 @@ public abstract class JacksonCodeGenerator {
         private String jsonName(MethodInfo constructor) {
             AnnotationInstance jsonProperty = annotations.get(JsonProperty.class.getName());
             if (jsonProperty == null && constructor != null) {
-                jsonProperty = constructor.parameters().stream()
-                        .filter(parameter -> parameter.name().equals(fieldName)).findFirst()
-                        .map(parameter -> parameter.annotation(JsonProperty.class.getName()))
-                        .orElse(null);
+                jsonProperty = constructor.parameters().stream().filter(parameter -> parameter.name().equals(fieldName))
+                        .findFirst().map(parameter -> parameter.annotation(JsonProperty.class.getName())).orElse(null);
             }
 
             if (jsonProperty != null) {
@@ -369,18 +366,19 @@ public abstract class JacksonCodeGenerator {
 
         private static boolean isUnknownAnnotation(String ann) {
             if (ann.startsWith("com.fasterxml.jackson.")) {
-                return !ann.equals(JsonProperty.class.getName()) &&
-                        !ann.equals(JsonIgnore.class.getName()) &&
-                        !ann.equals(JsonCreator.class.getName());
+                return !ann.equals(JsonProperty.class.getName()) && !ann.equals(JsonIgnore.class.getName())
+                        && !ann.equals(JsonCreator.class.getName());
             }
             return false;
         }
 
         ResultHandle toValueWriterHandle(BytecodeCreator bytecode, ResultHandle valueHandle) {
             return switch (fieldType.name().toString()) {
-                case "char", "java.lang.Character" -> bytecode.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(String.class, "charAt", char.class, int.class), valueHandle,
-                        bytecode.load(0));
+                case "char",
+                        "java.lang.Character" ->
+                    bytecode.invokeVirtualMethod(
+                            MethodDescriptor.ofMethod(String.class, "charAt", char.class, int.class), valueHandle,
+                            bytecode.load(0));
                 default -> valueHandle;
             };
         }

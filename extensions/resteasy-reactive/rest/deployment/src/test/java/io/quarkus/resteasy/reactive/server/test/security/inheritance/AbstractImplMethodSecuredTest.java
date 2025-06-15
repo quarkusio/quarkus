@@ -42,8 +42,8 @@ import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 
 /**
- * Tests that implementation method is always secured when a standard security annotation is on a class
- * or on a class method or when additional method security (like the default JAX-RS security) is in place.
+ * Tests that implementation method is always secured when a standard security annotation is on a class or on a class
+ * method or when additional method security (like the default JAX-RS security) is in place.
  */
 public abstract class AbstractImplMethodSecuredTest {
 
@@ -52,27 +52,22 @@ public abstract class AbstractImplMethodSecuredTest {
     }
 
     protected static QuarkusUnitTest getRunner(String applicationProperties) {
-        return new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.noclassannotation")
-                        .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.classrolesallowed")
-                        .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.classdenyall")
-                        .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.classpermitall")
-                        .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.multiple.pathonbase")
-                        .addClasses(TestIdentityProvider.class, TestIdentityController.class, SecurityAnnotation.class,
-                                SubPaths.class, JsonObjectReader.class)
-                        .addAsResource(
-                                new StringAsset(applicationProperties + System.lineSeparator()
-                                        + "quarkus.log.category.\"io.quarkus.vertx.http.runtime.QuarkusErrorHandler\".level=OFF"
-                                        + System.lineSeparator()),
-                                "application.properties"));
+        return new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+                .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.noclassannotation")
+                .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.classrolesallowed")
+                .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.classdenyall")
+                .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.classpermitall")
+                .addPackage("io.quarkus.resteasy.reactive.server.test.security.inheritance.multiple.pathonbase")
+                .addClasses(TestIdentityProvider.class, TestIdentityController.class, SecurityAnnotation.class,
+                        SubPaths.class, JsonObjectReader.class)
+                .addAsResource(new StringAsset(applicationProperties + System.lineSeparator()
+                        + "quarkus.log.category.\"io.quarkus.vertx.http.runtime.QuarkusErrorHandler\".level=OFF"
+                        + System.lineSeparator()), "application.properties"));
     }
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     protected boolean denyAllUnannotated() {
@@ -99,7 +94,8 @@ public abstract class AbstractImplMethodSecuredTest {
             // subresource locator is not secured, therefore default JAX-RS security wins
             securityAnnotation = NONE;
         } else {
-            // sub resource endpoint itself has RolesAllowed, e.g. @RolesAllowed @Path("endpoint") String endpoint() { ... }
+            // sub resource endpoint itself has RolesAllowed, e.g. @RolesAllowed @Path("endpoint") String endpoint() {
+            // ... }
             securityAnnotation = METHOD_ROLES_ALLOWED;
         }
 
@@ -130,28 +126,29 @@ public abstract class AbstractImplMethodSecuredTest {
         if (endpointSecured) {
             given().contentType(ContentType.JSON).body(invalidPayload).post(path).then().statusCode(401);
         } else {
-            given().contentType(ContentType.JSON).body(validPayload).post(path).then().statusCode(200).body(is(methodSubPath));
+            given().contentType(ContentType.JSON).body(validPayload).post(path).then().statusCode(200)
+                    .body(is(methodSubPath));
         }
 
         // test user - for secured endpoints: unauthorized
         if (endpointSecured) {
-            given().contentType(ContentType.JSON).body(invalidPayload).auth().preemptive().basic("user", "user").post(path)
-                    .then().statusCode(403);
+            given().contentType(ContentType.JSON).body(invalidPayload).auth().preemptive().basic("user", "user")
+                    .post(path).then().statusCode(403);
         } else {
-            given().contentType(ContentType.JSON).body(validPayload).auth().preemptive().basic("user", "user").post(path).then()
-                    .statusCode(200).body(is(methodSubPath));
+            given().contentType(ContentType.JSON).body(validPayload).auth().preemptive().basic("user", "user")
+                    .post(path).then().statusCode(200).body(is(methodSubPath));
         }
 
         // test admin - for secured endpoints: authorized
         boolean denyAccess = securityAnnotation.denyAll() || (endpointSecuredWithDefJaxRsSec && denyAllUnannotated());
         if (denyAccess) {
-            given().contentType(ContentType.JSON).body(invalidPayload).auth().preemptive().basic("admin", "admin").post(path)
-                    .then().statusCode(403);
+            given().contentType(ContentType.JSON).body(invalidPayload).auth().preemptive().basic("admin", "admin")
+                    .post(path).then().statusCode(403);
         } else {
-            given().contentType(ContentType.JSON).body(invalidPayload).auth().preemptive().basic("admin", "admin").post(path)
-                    .then().statusCode(500);
-            given().contentType(ContentType.JSON).body(validPayload).auth().preemptive().basic("admin", "admin").post(path)
-                    .then().statusCode(200).body(is(methodSubPath));
+            given().contentType(ContentType.JSON).body(invalidPayload).auth().preemptive().basic("admin", "admin")
+                    .post(path).then().statusCode(500);
+            given().contentType(ContentType.JSON).body(validPayload).auth().preemptive().basic("admin", "admin")
+                    .post(path).then().statusCode(200).body(is(methodSubPath));
         }
     }
 
@@ -185,8 +182,8 @@ public abstract class AbstractImplMethodSecuredTest {
 
     @Test
     public void test_ClassPathOnParentResource_ImplOnBaseResource_ImplMetWithPath() {
-        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE
-                + IMPL_METHOD_WITH_PATH;
+        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE
+                + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH;
         assertNotFound(resourceSubPath);
     }
 
@@ -209,8 +206,8 @@ public abstract class AbstractImplMethodSecuredTest {
     @EnumSource(SecurityAnnotation.class)
     @ParameterizedTest
     public void test_ClassPathOnParentResource_ImplOnBaseResource_InterfaceMetWithPath(Object securityAnnotationObj) {
-        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE
-                + INTERFACE_METHOD_WITH_PATH;
+        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE
+                + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH;
         assertPath(resourceSubPath, securityAnnotationObj, CLASS_SECURITY_ON_BASE);
     }
 
@@ -233,8 +230,8 @@ public abstract class AbstractImplMethodSecuredTest {
     @EnumSource(SecurityAnnotation.class)
     @ParameterizedTest
     public void test_ClassPathOnParentResource_ImplOnBaseResource_ParentMetWithPath(Object securityAnnotationObj) {
-        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE
-                + PARENT_METHOD_WITH_PATH;
+        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE
+                + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH;
         assertPath(resourceSubPath, securityAnnotationObj, CLASS_SECURITY_ON_BASE);
     }
 
@@ -244,11 +241,11 @@ public abstract class AbstractImplMethodSecuredTest {
         // test subresource locator defined on an interface
         // @Path("i")
         // public interface I {
-        //    @Path("sub")
-        //    @RolesAllowed("admin")
-        //    default SubResource subResource() {
-        //      return new SubResource();
-        //    }
+        // @Path("sub")
+        // @RolesAllowed("admin")
+        // default SubResource subResource() {
+        // return new SubResource();
+        // }
         // }
 
         var resourceSubPath = CLASS_PATH_ON_INTERFACE + PATH_SEPARATOR + CLASS_PATH_ON_INTERFACE
@@ -278,8 +275,8 @@ public abstract class AbstractImplMethodSecuredTest {
     @ParameterizedTest
     public void test_ClassPathOnResource_SubDeclaredOnBase_SubImplOnBase(Object securityAnnotationObj) {
         // HINT: test security for '@Path("sub") SubResource subResource' but not inside endpoints 'SubResource' itself
-        var resourceSubPath = CLASS_PATH_ON_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_RESOURCE
-                + SUB_DECLARED_ON_BASE + SUB_IMPL_ON_BASE;
+        var resourceSubPath = CLASS_PATH_ON_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_RESOURCE + SUB_DECLARED_ON_BASE
+                + SUB_IMPL_ON_BASE;
         assertPath(resourceSubPath, securityAnnotationObj, CLASS_SECURITY_ON_BASE);
     }
 
@@ -303,8 +300,8 @@ public abstract class AbstractImplMethodSecuredTest {
 
     @Test
     public void test_ClassPathOnInterface_ImplOnParentResource_ImplMetWithPath() {
-        var resourceSubPath = CLASS_PATH_ON_INTERFACE + PATH_SEPARATOR + CLASS_PATH_ON_INTERFACE
-                + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH;
+        var resourceSubPath = CLASS_PATH_ON_INTERFACE + PATH_SEPARATOR + CLASS_PATH_ON_INTERFACE + IMPL_ON_PARENT
+                + IMPL_METHOD_WITH_PATH;
         assertNotFound(resourceSubPath);
     }
 
@@ -319,8 +316,8 @@ public abstract class AbstractImplMethodSecuredTest {
     @EnumSource(SecurityAnnotation.class)
     @ParameterizedTest
     public void test_ClassPathOnParentResource_ImplOnParentResource_ImplMetWithPath(Object securityAnnotationObj) {
-        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT
-                + IMPL_METHOD_WITH_PATH;
+        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE
+                + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH;
         assertPath(resourceSubPath, securityAnnotationObj, CLASS_SECURITY_ON_PARENT);
     }
 
@@ -343,8 +340,8 @@ public abstract class AbstractImplMethodSecuredTest {
     @EnumSource(SecurityAnnotation.class)
     @ParameterizedTest
     public void test_ClassPathOnParentResource_ImplOnParentResource_InterfaceMetWithPath(Object securityAnnotationObj) {
-        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT
-                + INTERFACE_METHOD_WITH_PATH;
+        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE
+                + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH;
         assertPath(resourceSubPath, securityAnnotationObj, CLASS_SECURITY_ON_PARENT);
     }
 
@@ -367,8 +364,8 @@ public abstract class AbstractImplMethodSecuredTest {
     @EnumSource(SecurityAnnotation.class)
     @ParameterizedTest
     public void test_ClassPathOnParentResource_ImplOnInterface_ImplMetWithPath(Object securityAnnotationObj) {
-        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_INTERFACE
-                + IMPL_METHOD_WITH_PATH;
+        var resourceSubPath = CLASS_PATH_ON_PARENT_RESOURCE + PATH_SEPARATOR + CLASS_PATH_ON_PARENT_RESOURCE
+                + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH;
         assertPath(resourceSubPath, securityAnnotationObj, CLASS_SECURITY_ON_INTERFACE);
     }
 

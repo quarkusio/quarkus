@@ -29,8 +29,7 @@ import io.smallrye.metrics.ExtendedMetadataBuilder;
 import io.smallrye.metrics.MetricRegistries;
 
 /**
- * Mimics GC metrics from Micrometer. Most of the logic here is basically copied from
- * {@link <a href=
+ * Mimics GC metrics from Micrometer. Most of the logic here is basically copied from {@link <a href=
  * "https://github.com/micrometer-metrics/micrometer/tree/master/micrometer-core/src/main/java/io/micrometer/core/instrument/binder/jvm">Micrometer
  * JVM metrics</a>}.
  */
@@ -62,7 +61,8 @@ class MicrometerGCMetrics {
     // Mimicking the jvm.gc.pause timer. We don't have an exact equivalent of Micrometer's timer, so emulate
     // it with one gauge and two counters.
     // We use a wrapper class to wrap the 'cause' and 'action' fields of GC event descriptors into one class
-    // We defer registering these metrics to runtime, because we don't assume we know in advance the full set of causes and actions
+    // We defer registering these metrics to runtime, because we don't assume we know in advance the full set of causes
+    // and actions
 
     static class CauseAndActionWrapper {
         private String cause;
@@ -82,8 +82,7 @@ class MicrometerGCMetrics {
                 return false;
             }
             CauseAndActionWrapper that = (CauseAndActionWrapper) o;
-            return Objects.equals(cause, that.cause) &&
-                    Objects.equals(action, that.action);
+            return Objects.equals(cause, that.cause) && Objects.equals(action, that.action);
         }
 
         @Override
@@ -149,14 +148,10 @@ class MicrometerGCMetrics {
                     gcPauseMaxValue.set(duration); // update the maximum GC length if needed
                 }
                 if (!registry.getGauges().containsKey(pauseSecondsMaxMetricID)) {
-                    registry.register(new ExtendedMetadataBuilder()
-                            .withName(metricName + ".seconds.max")
-                            .withType(MetricType.GAUGE)
-                            .withUnit(MetricUnits.NONE)
-                            .withDescription("Time spent in GC pause")
-                            .skipsScopeInOpenMetricsExportCompletely(true)
-                            .build(),
-                            new Gauge() {
+                    registry.register(new ExtendedMetadataBuilder().withName(metricName + ".seconds.max")
+                            .withType(MetricType.GAUGE).withUnit(MetricUnits.NONE)
+                            .withDescription("Time spent in GC pause").skipsScopeInOpenMetricsExportCompletely(true)
+                            .build(), new Gauge() {
                                 @Override
                                 public Number getValue() {
                                     return mapForStoringMax.get(causeAndAction).doubleValue() / 1000.0;
@@ -164,24 +159,18 @@ class MicrometerGCMetrics {
                             }, tags);
                 }
 
-                ExtendedMetadata countMetadata = new ExtendedMetadataBuilder()
-                        .withName(metricName + ".seconds.count")
-                        .withType(MetricType.COUNTER)
-                        .withUnit(MetricUnits.NONE)
-                        .withDescription("Time spent in GC pause")
-                        .skipsScopeInOpenMetricsExportCompletely(true)
-                        .withOpenMetricsKeyOverride(metricName.replace(".", "_") + "_seconds_count")
-                        .build();
+                ExtendedMetadata countMetadata = new ExtendedMetadataBuilder().withName(metricName + ".seconds.count")
+                        .withType(MetricType.COUNTER).withUnit(MetricUnits.NONE)
+                        .withDescription("Time spent in GC pause").skipsScopeInOpenMetricsExportCompletely(true)
+                        .withOpenMetricsKeyOverride(metricName.replace(".", "_") + "_seconds_count").build();
                 registry.counter(countMetadata, tags).inc();
 
-                registry.counter(new ExtendedMetadataBuilder()
-                        .withName(metricName + ".seconds.sum")
-                        .withType(MetricType.COUNTER)
-                        .withUnit(MetricUnits.MILLISECONDS)
-                        .withDescription("Time spent in GC pause")
-                        .skipsScopeInOpenMetricsExportCompletely(true)
-                        .withOpenMetricsKeyOverride(metricName.replace(".", "_") + "_seconds_sum")
-                        .build(), tags).inc(duration);
+                registry.counter(
+                        new ExtendedMetadataBuilder().withName(metricName + ".seconds.sum").withType(MetricType.COUNTER)
+                                .withUnit(MetricUnits.MILLISECONDS).withDescription("Time spent in GC pause")
+                                .skipsScopeInOpenMetricsExportCompletely(true)
+                                .withOpenMetricsKeyOverride(metricName.replace(".", "_") + "_seconds_sum").build(),
+                        tags).inc(duration);
 
                 // Update promotion and allocation counters
                 final Map<String, MemoryUsage> before = gcInfo.getMemoryUsageBeforeGc();
@@ -195,10 +184,12 @@ class MicrometerGCMetrics {
                         promotedBytes.addAndGet(delta);
                     }
 
-                    // Some GC implementations such as G1 can reduce the old gen size as part of a minor GC. To track the
+                    // Some GC implementations such as G1 can reduce the old gen size as part of a minor GC. To track
+                    // the
                     // live data size we record the value if we see a reduction in the old gen heap size or
                     // after a major GC.
-                    if (oldAfter < oldBefore || GcGenerationAge.fromName(notificationInfo.getGcName()) == GcGenerationAge.OLD) {
+                    if (oldAfter < oldBefore
+                            || GcGenerationAge.fromName(notificationInfo.getGcName()) == GcGenerationAge.OLD) {
                         liveDataSize.set(oldAfter);
                         final long oldMaxAfter = after.get(oldGenPoolName).getMax();
                         maxDataSize.set(oldMaxAfter);

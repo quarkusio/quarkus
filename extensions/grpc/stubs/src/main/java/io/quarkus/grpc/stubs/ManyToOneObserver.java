@@ -62,7 +62,8 @@ public class ManyToOneObserver<I, O> extends AbstractUni<O> implements StreamObs
                 items.cancel();
             } else {
                 downstream.onSubscribe(this);
-                // TODO At some point we will need to improve the flow control with the max concurrent call per connection.
+                // TODO At some point we will need to improve the flow control with the max concurrent call per
+                // connection.
                 items.request(Long.MAX_VALUE);
             }
         }

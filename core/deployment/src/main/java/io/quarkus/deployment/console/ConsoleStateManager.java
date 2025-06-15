@@ -100,11 +100,8 @@ public class ConsoleStateManager {
     }
 
     void installBuiltins(DevModeType devModeType) {
-        final String editPromptFormat = "to edit command line args (currently '"
-                + MessageFormat.GREEN
-                + "%s"
-                + MessageFormat.RESET
-                + "')";
+        final String editPromptFormat = "to edit command line args (currently '" + MessageFormat.GREEN + "%s"
+                + MessageFormat.RESET + "')";
         ConsoleContext context = createContext("System");
         List<ConsoleCommand> commands = new ArrayList<>();
         if (devModeType != DevModeType.TEST_ONLY) {
@@ -112,31 +109,34 @@ public class ConsoleStateManager {
                 forceRestart();
             }));
             commands.add(new ConsoleCommand('e', "Edits the command line parameters and restarts",
-                    editPromptFormat.formatted(String.join(" ",
-                            RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),
-                    100, new ConsoleCommand.HelpState(() -> BLUE,
+                    editPromptFormat.formatted(String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),
+                    100,
+                    new ConsoleCommand.HelpState(() -> BLUE,
                             () -> String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs())),
                     new Consumer<String>() {
                         @Override
                         public void accept(String args) {
                             try {
-                                RuntimeUpdatesProcessor.INSTANCE.setCommandLineArgs(
-                                        CommandLineUtil.translateCommandline(args));
+                                RuntimeUpdatesProcessor.INSTANCE
+                                        .setCommandLineArgs(CommandLineUtil.translateCommandline(args));
                             } catch (Exception e) {
-                                Logger.getLogger(ConsoleStateManager.class).errorf(e, "Failed to parse command line %s", args);
+                                Logger.getLogger(ConsoleStateManager.class).errorf(e, "Failed to parse command line %s",
+                                        args);
                                 return;
                             }
                             // Reload command prompt string
-                            context.reset(ConsoleCommand.duplicateCommandWithNewPromptString(context.getCommandByKey('e'),
-                                    editPromptFormat.formatted(String.join(" ",
-                                            RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs()))));
+                            context.reset(ConsoleCommand.duplicateCommandWithNewPromptString(
+                                    context.getCommandByKey('e'), editPromptFormat.formatted(
+                                            String.join(" ", RuntimeUpdatesProcessor.INSTANCE.getCommandLineArgs()))));
                             RuntimeUpdatesProcessor.INSTANCE.doScan(true, true);
                         }
                     }));
 
             commands.add(new ConsoleCommand('i', "Toggle instrumentation based reload",
-                    new ConsoleCommand.HelpState(() -> RuntimeUpdatesProcessor.INSTANCE.instrumentationEnabled()), () -> {
-                        //TODO: this is a bit yuck, needed for the websocket listener which is tied to the test listeners
+                    new ConsoleCommand.HelpState(() -> RuntimeUpdatesProcessor.INSTANCE.instrumentationEnabled()),
+                    () -> {
+                        // TODO: this is a bit yuck, needed for the websocket listener which is tied to the test
+                        // listeners
                         if (TestSupport.instance().isPresent()) {
                             TestSupport.instance().get().toggleInstrumentation();
                         } else {
@@ -176,8 +176,8 @@ public class ConsoleStateManager {
     }
 
     private void exitQuarkus() {
-        //we don't call Quarkus.exit() here as that would just result
-        //in a 'press any key to restart' prompt
+        // we don't call Quarkus.exit() here as that would just result
+        // in a 'press any key to restart' prompt
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -251,17 +251,19 @@ public class ConsoleStateManager {
                     if (i.getHelpState() == null) {
                         System.out.println(helpOption(i.getKey(), i.getDescription()));
                     } else if (i.getHelpState().toggleState != null) {
-                        System.out.println(helpOption(i.getKey(), i.getDescription(), i.getHelpState().toggleState.get()));
+                        System.out.println(
+                                helpOption(i.getKey(), i.getDescription(), i.getHelpState().toggleState.get()));
                     } else {
-                        System.out.println(helpOption(i.getKey(), i.getDescription(), i.getHelpState().stateSupplier.get(),
-                                i.getHelpState().colorSupplier.get()));
+                        System.out.println(helpOption(i.getKey(), i.getDescription(),
+                                i.getHelpState().stateSupplier.get(), i.getHelpState().colorSupplier.get()));
                     }
                 }
             }
         }
         Map<Character, String> aliases = QuarkusConsole.INSTANCE.singleLetterAliases();
         if (!aliases.isEmpty()) {
-            System.out.println("\n" + RED + "==" + RESET + " " + UNDERLINE + "User Defined Aliases" + NO_UNDERLINE + "\n");
+            System.out.println(
+                    "\n" + RED + "==" + RESET + " " + UNDERLINE + "User Defined Aliases" + NO_UNDERLINE + "\n");
             for (Map.Entry<Character, String> entry : aliases.entrySet()) {
                 if (!seen.contains(entry.getKey())) {
                     System.out.println(helpOption(entry.getKey(), entry.getValue()));
@@ -288,8 +290,7 @@ public class ConsoleStateManager {
 
         List<ConsoleCommand> sorted = commands.values().stream().map(s -> s.consoleCommand)
                 .filter(s -> s.getPromptString() != null)
-                .sorted(Comparator.comparingInt(ConsoleCommand::getPromptPriority))
-                .toList();
+                .sorted(Comparator.comparingInt(ConsoleCommand::getPromptPriority)).toList();
         if (sorted.isEmpty()) {
             QuarkusConsole.INSTANCE.setPromptMessage(null);
             oldPrompt = null;
@@ -302,12 +303,8 @@ public class ConsoleStateManager {
                 } else {
                     sb.append(",");
                 }
-                sb.append(" [")
-                        .append(BLUE)
-                        .append(i.getKey() == ' ' ? "space" : (i.getKey() + ""))
-                        .append(RESET)
-                        .append("] ")
-                        .append(i.getPromptString());
+                sb.append(" [").append(BLUE).append(i.getKey() == ' ' ? "space" : (i.getKey() + "")).append(RESET)
+                        .append("] ").append(i.getPromptString());
             }
             sb.append(">");
             String newPrompt = sb.toString();

@@ -24,8 +24,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigActiveFalseAndIndexedEntityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-orm.active", "false");
 
@@ -42,16 +42,13 @@ public class ConfigActiveFalseAndIndexedEntityTest {
         assertThat(searchMapping).isNotNull();
         // However, any attempt to use it at runtime will fail.
         CreationException e = assertThrows(CreationException.class, () -> searchMapping.allIndexedEntities());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
-                        "Cannot retrieve the SearchMapping for persistence unit <default>",
-                        "Hibernate Search was deactivated through configuration properties");
+        assertThat(e.getCause()).isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
+                "Cannot retrieve the SearchMapping for persistence unit <default>",
+                "Hibernate Search was deactivated through configuration properties");
 
         // Hibernate Search APIs also throw exceptions,
         // even if the messages are less explicit (we can't really do better).
-        assertThatThrownBy(() -> Search.mapping(sessionFactory))
-                .isInstanceOf(SearchException.class)
+        assertThatThrownBy(() -> Search.mapping(sessionFactory)).isInstanceOf(SearchException.class)
                 .hasMessageContaining("Hibernate Search was not initialized");
     }
 
@@ -65,18 +62,15 @@ public class ConfigActiveFalseAndIndexedEntityTest {
         assertThat(searchSession).isNotNull();
         // However, any attempt to use it at runtime will fail.
         CreationException e = assertThrows(CreationException.class, () -> searchSession.search(IndexedEntity.class));
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
-                        "Cannot retrieve the SearchSession for persistence unit <default>",
-                        "Hibernate Search was deactivated through configuration properties");
+        assertThat(e.getCause()).isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
+                "Cannot retrieve the SearchSession for persistence unit <default>",
+                "Hibernate Search was deactivated through configuration properties");
 
         // Hibernate Search APIs also throw exceptions,
         // even if the messages are less explicit (we can't really do better).
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))
-                    .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Hibernate Search was not initialized");
+                    .isInstanceOf(SearchException.class).hasMessageContaining("Hibernate Search was not initialized");
         }
     }
 }

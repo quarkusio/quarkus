@@ -7,8 +7,8 @@ import io.quarkus.deployment.annotations.ExecutionTime;
 import io.quarkus.runtime.metrics.MetricsFactory;
 
 /**
- * A metrics provider will iterate over all MetricsFactory consumers,
- * allowing them to register metrics via bytecode recording
+ * A metrics provider will iterate over all MetricsFactory consumers, allowing them to register metrics via bytecode
+ * recording
  */
 public final class MetricsFactoryConsumerBuildItem extends MultiBuildItem {
     private final Consumer<MetricsFactory> factoryConsumer;

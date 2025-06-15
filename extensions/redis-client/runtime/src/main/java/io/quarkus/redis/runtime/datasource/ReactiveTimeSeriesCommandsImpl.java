@@ -47,86 +47,73 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
 
     @Override
     public Uni<Void> tsCreate(K key, CreateArgs args) {
-        return super._tsCreate(key, args)
-                .replaceWithVoid();
+        return super._tsCreate(key, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsCreate(K key) {
-        return super._tsCreate(key)
-                .replaceWithVoid();
+        return super._tsCreate(key).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsAdd(K key, long timestamp, double value, AddArgs args) {
-        return super._tsAdd(key, timestamp, value, args)
-                .replaceWithVoid();
+        return super._tsAdd(key, timestamp, value, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsAdd(K key, double value, AddArgs args) {
-        return super._tsAdd(key, value, args)
-                .replaceWithVoid();
+        return super._tsAdd(key, value, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsAdd(K key, long timestamp, double value) {
-        return super._tsAdd(key, timestamp, value)
-                .replaceWithVoid();
+        return super._tsAdd(key, timestamp, value).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsAdd(K key, double value) {
-        return super._tsAdd(key, value)
-                .replaceWithVoid();
+        return super._tsAdd(key, value).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsAlter(K key, AlterArgs args) {
-        return super._tsAlter(key, args)
-                .replaceWithVoid();
+        return super._tsAlter(key, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsCreateRule(K key, K destKey, Aggregation aggregation, Duration bucketDuration) {
-        return super._tsCreateRule(key, destKey, aggregation, bucketDuration)
-                .replaceWithVoid();
+        return super._tsCreateRule(key, destKey, aggregation, bucketDuration).replaceWithVoid();
     }
 
     @Override
-    public Uni<Void> tsCreateRule(K key, K destKey, Aggregation aggregation, Duration bucketDuration, long alignTimestamp) {
-        return super._tsCreateRule(key, destKey, aggregation, bucketDuration, alignTimestamp)
-                .replaceWithVoid();
+    public Uni<Void> tsCreateRule(K key, K destKey, Aggregation aggregation, Duration bucketDuration,
+            long alignTimestamp) {
+        return super._tsCreateRule(key, destKey, aggregation, bucketDuration, alignTimestamp).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsDecrBy(K key, double value) {
-        return super._tsDecrBy(key, value)
-                .replaceWithVoid();
+        return super._tsDecrBy(key, value).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsDecrBy(K key, double value, IncrementArgs args) {
-        return super._tsDecrBy(key, value, args)
-                .replaceWithVoid();
+        return super._tsDecrBy(key, value, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsDel(K key, long fromTimestamp, long toTimestamp) {
-        return super._tsDel(key, fromTimestamp, toTimestamp)
-                .replaceWithVoid();
+        return super._tsDel(key, fromTimestamp, toTimestamp).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsDeleteRule(K key, K destKey) {
-        return super._tsDeleteRule(key, destKey)
-                .replaceWithVoid();
+        return super._tsDeleteRule(key, destKey).replaceWithVoid();
     }
 
     @Override
     public Uni<Sample> tsGet(K key) {
-        return super._tsGet(key)
-                .map(this::decodeSample);
+        return super._tsGet(key).map(this::decodeSample);
     }
 
     Sample decodeSample(Response response) {
@@ -138,38 +125,32 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
 
     @Override
     public Uni<Sample> tsGet(K key, boolean latest) {
-        return super._tsGet(key, latest)
-                .map(this::decodeSample);
+        return super._tsGet(key, latest).map(this::decodeSample);
     }
 
     @Override
     public Uni<Void> tsIncrBy(K key, double value) {
-        return super._tsIncrBy(key, value)
-                .replaceWithVoid();
+        return super._tsIncrBy(key, value).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsIncrBy(K key, double value, IncrementArgs args) {
-        return super._tsIncrBy(key, value, args)
-                .replaceWithVoid();
+        return super._tsIncrBy(key, value, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> tsMAdd(SeriesSample<K>... samples) {
-        return super._tsMAdd(samples)
-                .replaceWithVoid();
+        return super._tsMAdd(samples).replaceWithVoid();
     }
 
     @Override
     public Uni<Map<String, SampleGroup>> tsMGet(MGetArgs args, Filter... filters) {
-        return super._tsMGet(args, filters)
-                .map(this::decodeGroup);
+        return super._tsMGet(args, filters).map(this::decodeGroup);
     }
 
     @Override
     public Uni<Map<String, SampleGroup>> tsMGet(Filter... filters) {
-        return super._tsMGet(filters)
-                .map(this::decodeGroup);
+        return super._tsMGet(filters).map(this::decodeGroup);
     }
 
     Map<String, SampleGroup> decodeGroup(Response response) {
@@ -230,55 +211,46 @@ public class ReactiveTimeSeriesCommandsImpl<K> extends AbstractTimeSeriesCommand
 
     @Override
     public Uni<Map<String, SampleGroup>> tsMRange(TimeSeriesRange range, Filter... filters) {
-        return super._tsMRange(range, filters)
-                .map(this::decodeGroup);
+        return super._tsMRange(range, filters).map(this::decodeGroup);
     }
 
     @Override
     public Uni<Map<String, SampleGroup>> tsMRange(TimeSeriesRange range, MRangeArgs args, Filter... filters) {
-        return super._tsMRange(range, args, filters)
-                .map(this::decodeGroup);
+        return super._tsMRange(range, args, filters).map(this::decodeGroup);
     }
 
     @Override
     public Uni<Map<String, SampleGroup>> tsMRevRange(TimeSeriesRange range, Filter... filters) {
-        return super._tsMRevRange(range, filters)
-                .map(this::decodeGroup);
+        return super._tsMRevRange(range, filters).map(this::decodeGroup);
     }
 
     @Override
     public Uni<Map<String, SampleGroup>> tsMRevRange(TimeSeriesRange range, MRangeArgs args, Filter... filters) {
-        return super._tsMRevRange(range, args, filters)
-                .map(this::decodeGroup);
+        return super._tsMRevRange(range, args, filters).map(this::decodeGroup);
     }
 
     @Override
     public Uni<List<K>> tsQueryIndex(Filter... filters) {
-        return super._tsQueryIndex(filters)
-                .map(r -> marshaller.decodeAsList(r, keyType));
+        return super._tsQueryIndex(filters).map(r -> marshaller.decodeAsList(r, keyType));
     }
 
     @Override
     public Uni<List<Sample>> tsRange(K key, TimeSeriesRange range) {
-        return super._tsRange(key, range)
-                .map(r -> marshaller.decodeAsList(r, this::decodeSample));
+        return super._tsRange(key, range).map(r -> marshaller.decodeAsList(r, this::decodeSample));
     }
 
     @Override
     public Uni<List<Sample>> tsRange(K key, TimeSeriesRange range, RangeArgs args) {
-        return super._tsRange(key, range, args)
-                .map(r -> marshaller.decodeAsList(r, this::decodeSample));
+        return super._tsRange(key, range, args).map(r -> marshaller.decodeAsList(r, this::decodeSample));
     }
 
     @Override
     public Uni<List<Sample>> tsRevRange(K key, TimeSeriesRange range) {
-        return super._tsRevRange(key, range)
-                .map(r -> marshaller.decodeAsList(r, this::decodeSample));
+        return super._tsRevRange(key, range).map(r -> marshaller.decodeAsList(r, this::decodeSample));
     }
 
     @Override
     public Uni<List<Sample>> tsRevRange(K key, TimeSeriesRange range, RangeArgs args) {
-        return super._tsRevRange(key, range, args)
-                .map(r -> marshaller.decodeAsList(r, this::decodeSample));
+        return super._tsRevRange(key, range, args).map(r -> marshaller.decodeAsList(r, this::decodeSample));
     }
 }

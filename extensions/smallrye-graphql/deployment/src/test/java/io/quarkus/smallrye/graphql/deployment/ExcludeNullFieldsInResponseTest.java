@@ -16,14 +16,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ExcludeNullFieldsInResponseTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestApi.class, Book.class, Author.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.smallrye-graphql.exclude-null-fields-in-responses=true"),
-                            "application.properties"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestApi.class, Book.class, Author.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+            .addAsResource(new StringAsset("quarkus.smallrye-graphql.exclude-null-fields-in-responses=true"),
+                    "application.properties"));
 
     @Test
     void testExcludeNullFieldsInResponse() {
@@ -38,43 +34,22 @@ public class ExcludeNullFieldsInResponseTest extends AbstractGraphQLTest {
                     }
                   }
                 }""");
-        given()
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(OK)
-                .and()
-                .body(containsString("{\"data\":{" +
-                        "\"books\":[{" +
-                        "\"name\":\"The Hobbit\"," +
+        given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql").then()
+                .assertThat().statusCode(OK).and()
+                .body(containsString("{\"data\":{" + "\"books\":[{" + "\"name\":\"The Hobbit\"," +
+                // missing null field
+                        "\"author\":{" + "\"firstName\":\"J.R.R.\"" +
                         // missing null field
-                        "\"author\":{" +
-                        "\"firstName\":\"J.R.R.\"" +
-                        // missing null field
-                        "}" +
-                        "},{" +
-                        "\"name\":\"The Lord of the Rings\"," +
-                        "\"pages\":1178," +
-                        "\"author\":{" +
-                        "\"firstName\":\"J.R.R.\"," +
-                        "\"lastName\":\"Tolkien\"" +
-                        "}" +
-                        "}]" +
-                        "}}"));
+                        "}" + "},{" + "\"name\":\"The Lord of the Rings\"," + "\"pages\":1178," + "\"author\":{"
+                        + "\"firstName\":\"J.R.R.\"," + "\"lastName\":\"Tolkien\"" + "}" + "}]" + "}}"));
     }
 
     @GraphQLApi
     public static class TestApi {
         @Query
         public Book[] getBooks() {
-            return new Book[] {
-                    new Book("The Hobbit", null, new Author("J.R.R.", null)),
-                    new Book("The Lord of the Rings", 1178, new Author("J.R.R.", "Tolkien"))
-            };
+            return new Book[] { new Book("The Hobbit", null, new Author("J.R.R.", null)),
+                    new Book("The Lord of the Rings", 1178, new Author("J.R.R.", "Tolkien")) };
         }
     }
 

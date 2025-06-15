@@ -74,9 +74,8 @@ import io.vertx.core.buffer.impl.VertxByteBufAllocator;
 /**
  * This class is sort of a producer for {@link MongoClient} and {@link ReactiveMongoClient}.
  * <p>
- * It isn't a CDI producer in the literal sense, but it is marked as a bean
- * and its {@code createMongoClient} and {@code createReactiveMongoClient} methods are called at runtime in order to produce
- * the actual client objects.
+ * It isn't a CDI producer in the literal sense, but it is marked as a bean and its {@code createMongoClient} and
+ * {@code createReactiveMongoClient} methods are called at runtime in order to produce the actual client objects.
  */
 @Singleton
 public class MongoClients {
@@ -97,13 +96,10 @@ public class MongoClients {
     private final Vertx vertx;
 
     public MongoClients(MongodbConfig mongodbConfig, MongoClientSupport mongoClientSupport,
-            Instance<CodecProvider> codecProviders,
-            TlsConfigurationRegistry tlsConfigurationRegistry,
-            Instance<PropertyCodecProvider> propertyCodecProviders,
-            Instance<CommandListener> commandListeners,
+            Instance<CodecProvider> codecProviders, TlsConfigurationRegistry tlsConfigurationRegistry,
+            Instance<PropertyCodecProvider> propertyCodecProviders, Instance<CommandListener> commandListeners,
             Instance<ReactiveContextProvider> reactiveContextProviders,
-            @Any Instance<MongoClientCustomizer> customizers,
-            Vertx vertx) {
+            @Any Instance<MongoClientCustomizer> customizers, Vertx vertx) {
         this.mongodbConfig = mongodbConfig;
         this.mongoClientSupport = mongoClientSupport;
         this.codecProviders = codecProviders;
@@ -115,26 +111,25 @@ public class MongoClients {
         this.vertx = vertx;
 
         try {
-            //JDK bug workaround
-            //https://github.com/quarkusio/quarkus/issues/14424
-            //force class init to prevent possible deadlock when done by mongo threads
+            // JDK bug workaround
+            // https://github.com/quarkusio/quarkus/issues/14424
+            // force class init to prevent possible deadlock when done by mongo threads
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException ignored) {
         }
     }
 
     public MongoClient createMongoClient(String clientName) throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
-                false);
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName,
+                getMatchingMongoClientConfig(clientName), false);
         MongoClient client = com.mongodb.client.MongoClients.create(mongoConfiguration);
         mongoclients.put(clientName, client);
         return client;
     }
 
-    public ReactiveMongoClient createReactiveMongoClient(String clientName)
-            throws MongoException {
-        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName, getMatchingMongoClientConfig(clientName),
-                true);
+    public ReactiveMongoClient createReactiveMongoClient(String clientName) throws MongoException {
+        MongoClientSettings mongoConfiguration = createMongoConfiguration(clientName,
+                getMatchingMongoClientConfig(clientName), true);
         com.mongodb.reactivestreams.client.MongoClient client = com.mongodb.reactivestreams.client.MongoClients
                 .create(mongoConfiguration);
         ReactiveMongoClientImpl reactive = new ReactiveMongoClientImpl(client);
@@ -181,7 +176,8 @@ public class MongoClients {
     }
 
     private static class ConnectionPoolSettingsBuilder implements Block<ConnectionPoolSettings.Builder> {
-        public ConnectionPoolSettingsBuilder(MongoClientConfig config, List<ConnectionPoolListener> connectionPoolListeners) {
+        public ConnectionPoolSettingsBuilder(MongoClientConfig config,
+                List<ConnectionPoolListener> connectionPoolListeners) {
             this.config = config;
             this.connectionPoolListeners = connectionPoolListeners;
         }
@@ -203,7 +199,8 @@ public class MongoClients {
                 builder.maintenanceFrequency(config.maintenanceFrequency().get().toMillis(), TimeUnit.MILLISECONDS);
             }
             if (config.maintenanceInitialDelay().isPresent()) {
-                builder.maintenanceInitialDelay(config.maintenanceInitialDelay().get().toMillis(), TimeUnit.MILLISECONDS);
+                builder.maintenanceInitialDelay(config.maintenanceInitialDelay().get().toMillis(),
+                        TimeUnit.MILLISECONDS);
             }
             for (ConnectionPoolListener connectionPoolListener : connectionPoolListeners) {
                 builder.addConnectionPoolListener(connectionPoolListener);
@@ -217,8 +214,7 @@ public class MongoClients {
         private final MongoClientConfig config;
         private final boolean disableSslSupport;
 
-        public SslSettingsBuilder(MongoClientConfig config,
-                TlsConfigurationRegistry tlsConfigurationRegistry,
+        public SslSettingsBuilder(MongoClientConfig config, TlsConfigurationRegistry tlsConfigurationRegistry,
                 boolean disableSslSupport) {
             this.config = config;
             this.disableSslSupport = disableSslSupport;
@@ -235,7 +231,8 @@ public class MongoClients {
                     try {
                         builder.context(tlsConfig.get().createSSLContext());
                     } catch (Exception e) {
-                        throw new MongoConfigurationException("Could not configure MongoDB client with TLS registry", e);
+                        throw new MongoConfigurationException("Could not configure MongoDB client with TLS registry",
+                                e);
                     }
                 }
             }
@@ -345,9 +342,8 @@ public class MongoClients {
             settings.retryWrites(wc.retryWrites());
         }
         if (config.tls() || config.tlsConfigurationName().isPresent()) {
-            settings.applyToSslSettings(new SslSettingsBuilder(config,
-                    tlsConfigurationRegistry,
-                    mongoClientSupport.isDisableSslSupport()));
+            settings.applyToSslSettings(
+                    new SslSettingsBuilder(config, tlsConfigurationRegistry, mongoClientSupport.isDisableSslSupport()));
         }
         settings.applyToClusterSettings(new ClusterSettingBuilder(config));
         settings.applyToConnectionPoolSettings(
@@ -372,10 +368,8 @@ public class MongoClients {
     }
 
     private void configureNettyTransport(MongoClientSettings.Builder settings) {
-        var nettyStreaming = TransportSettings.nettyBuilder()
-                .allocator(VertxByteBufAllocator.POOLED_ALLOCATOR)
-                .eventLoopGroup(vertx.nettyEventLoopGroup())
-                .socketChannelClass(NioSocketChannel.class).build();
+        var nettyStreaming = TransportSettings.nettyBuilder().allocator(VertxByteBufAllocator.POOLED_ALLOCATOR)
+                .eventLoopGroup(vertx.nettyEventLoopGroup()).socketChannelClass(NioSocketChannel.class).build();
         settings.transportSettings(nettyStreaming);
     }
 
@@ -391,10 +385,10 @@ public class MongoClients {
     private MongoClientSettings.Builder customize(String name, MongoClientSettings.Builder settings) {
         // If the client name is the default one, we use a customizer that does not have the MongoClientName qualifier.
         // Otherwise, we use the one that has the qualifier.
-        // Note that at build time, we check that we have at most one customizer per client, including for the default one.
+        // Note that at build time, we check that we have at most one customizer per client, including for the default
+        // one.
         if (MongoClientBeanUtil.isDefault(name)) {
-            var maybe = customizers.handlesStream()
-                    .filter(h -> doesNotHaveClientNameQualifier(h.getBean()))
+            var maybe = customizers.handlesStream().filter(h -> doesNotHaveClientNameQualifier(h.getBean()))
                     .findFirst(); // We have at most one customizer without the qualifier.
             if (maybe.isEmpty()) {
                 return settings;
@@ -418,8 +412,7 @@ public class MongoClients {
 
         // add pojo codec provider with automatic capabilities
         // it always needs to be the last codec provided
-        PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder()
-                .automatic(true)
+        PojoCodecProvider.Builder pojoCodecProviderBuilder = PojoCodecProvider.builder().automatic(true)
                 .conventions(Conventions.DEFAULT_CONVENTIONS);
         // register bson discriminators
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -437,20 +430,20 @@ public class MongoClients {
             pojoCodecProviderBuilder.register(propertyCodecProvider);
         }
 
-        CodecRegistry registry = !providers.isEmpty() ? fromRegistries(fromProviders(providers), defaultCodecRegistry,
-                fromProviders(pojoCodecProviderBuilder.build()))
+        CodecRegistry registry = !providers.isEmpty()
+                ? fromRegistries(fromProviders(providers), defaultCodecRegistry,
+                        fromProviders(pojoCodecProviderBuilder.build()))
                 : fromRegistries(defaultCodecRegistry, fromProviders(pojoCodecProviderBuilder.build()));
         settings.codecRegistry(registry);
     }
 
     private static List<ServerAddress> parseHosts(List<String> addresses) {
         if (addresses.isEmpty()) {
-            return Collections.singletonList(new ServerAddress(ServerAddress.defaultHost(), ServerAddress.defaultPort()));
+            return Collections
+                    .singletonList(new ServerAddress(ServerAddress.defaultHost(), ServerAddress.defaultPort()));
         }
 
-        return addresses.stream()
-                .map(String::trim)
-                .map(new addressParser()).collect(Collectors.toList());
+        return addresses.stream().map(String::trim).map(new addressParser()).collect(Collectors.toList());
     }
 
     private static class addressParser implements Function<String, ServerAddress> {
@@ -510,7 +503,7 @@ public class MongoClients {
             throw new IllegalArgumentException("Unsupported authentication mechanism " + mechanism);
         }
 
-        //add the properties
+        // add the properties
         if (!config.credentials().authMechanismProperties().isEmpty()) {
             for (Map.Entry<String, String> entry : config.credentials().authMechanismProperties().entrySet()) {
                 credential = credential.withMechanismProperty(entry.getKey(), entry.getValue());

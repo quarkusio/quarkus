@@ -17,8 +17,7 @@ class DefaultHealthGroupTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BasicHealthCheck.class, HealthGroupCheck.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BasicHealthCheck.class, HealthGroupCheck.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
             .overrideConfigKey("quarkus.smallrye-health.default-health-group", "my-default-health-group");
 
@@ -26,23 +25,15 @@ class DefaultHealthGroupTest {
     void testDefaultHealthGroup() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            RestAssured.when().get("/q/health/group/my-default-health-group").then()
-                    .body("status", is("UP"),
-                            "checks.size()", is(1),
-                            "checks.status", contains("UP"),
-                            "checks.name", contains("basic"));
+            RestAssured.when().get("/q/health/group/my-default-health-group").then().body("status", is("UP"),
+                    "checks.size()", is(1), "checks.status", contains("UP"), "checks.name", contains("basic"));
 
-            RestAssured.when().get("/q/health/group/test-group").then()
-                    .body("status", is("UP"),
-                            "checks.size()", is(1),
-                            "checks.status", contains("UP"),
-                            "checks.name", contains(HealthGroupCheck.class.getName()));
+            RestAssured.when().get("/q/health/group/test-group").then().body("status", is("UP"), "checks.size()", is(1),
+                    "checks.status", contains("UP"), "checks.name", contains(HealthGroupCheck.class.getName()));
 
-            RestAssured.when().get("/q/health/group").then()
-                    .body("status", is("UP"),
-                            "checks.size()", is(2),
-                            "checks.status", hasItems("UP", "UP"),
-                            "checks.name", hasItems("basic", HealthGroupCheck.class.getName()));
+            RestAssured.when().get("/q/health/group").then().body("status", is("UP"), "checks.size()", is(2),
+                    "checks.status", hasItems("UP", "UP"), "checks.name",
+                    hasItems("basic", HealthGroupCheck.class.getName()));
         } finally {
             RestAssured.reset();
         }

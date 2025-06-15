@@ -34,8 +34,8 @@ class HibernateSearchBackendElasticsearchProcessor {
             return;
         }
         // Some user-injectable beans are retrieved programmatically and shouldn't be removed
-        unremovableBean.produce(UnremovableBeanBuildItem.beanTypes(ElasticsearchAnalysisConfigurer.class,
-                IndexLayoutStrategy.class));
+        unremovableBean.produce(
+                UnremovableBeanBuildItem.beanTypes(ElasticsearchAnalysisConfigurer.class, IndexLayoutStrategy.class));
     }
 
     @BuildStep
@@ -45,8 +45,7 @@ class HibernateSearchBackendElasticsearchProcessor {
             return;
         }
         String[] reflectiveClasses = GsonClasses.typesRequiringReflection().toArray(String[]::new);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses)
-                .reason(getClass().getName())
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(reflectiveClasses).reason(getClass().getName())
                 .methods().fields().build());
     }
 
@@ -89,10 +88,8 @@ class HibernateSearchBackendElasticsearchProcessor {
                     applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
         }
         if (!propertyKeysWithNoVersion.isEmpty()) {
-            throw new ConfigurationException(
-                    "The Elasticsearch version needs to be defined via properties: "
-                            + String.join(", ", propertyKeysWithNoVersion) + ".",
-                    propertyKeysWithNoVersion);
+            throw new ConfigurationException("The Elasticsearch version needs to be defined via properties: "
+                    + String.join(", ", propertyKeysWithNoVersion) + ".", propertyKeysWithNoVersion);
         }
     }
 
@@ -103,8 +100,8 @@ class HibernateSearchBackendElasticsearchProcessor {
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
         registerClasspathFilesFromIndexConfig(mapperContext, backendName, null, backendConfig.indexDefaults(),
                 applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
-        for (Entry<String, HibernateSearchBackendElasticsearchBuildTimeConfig.IndexConfig> entry : backendConfig.indexes()
-                .entrySet()) {
+        for (Entry<String, HibernateSearchBackendElasticsearchBuildTimeConfig.IndexConfig> entry : backendConfig
+                .indexes().entrySet()) {
             String indexName = entry.getKey();
             HibernateSearchBackendElasticsearchBuildTimeConfig.IndexConfig indexConfig = entry.getValue();
             registerClasspathFilesFromIndexConfig(mapperContext, backendName, indexName, indexConfig,
@@ -112,22 +109,21 @@ class HibernateSearchBackendElasticsearchProcessor {
         }
     }
 
-    private static void registerClasspathFilesFromIndexConfig(MapperContext mapperContext, String backendName, String indexName,
-            HibernateSearchBackendElasticsearchBuildTimeConfig.IndexConfig indexConfig,
+    private static void registerClasspathFilesFromIndexConfig(MapperContext mapperContext, String backendName,
+            String indexName, HibernateSearchBackendElasticsearchBuildTimeConfig.IndexConfig indexConfig,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
         registerClasspathFileFromConfig(mapperContext, backendName, indexName, "schema-management.settings-file",
-                indexConfig.schemaManagement().settingsFile(),
-                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+                indexConfig.schemaManagement().settingsFile(), applicationArchivesBuildItem, nativeImageResources,
+                hotDeploymentWatchedFiles);
         registerClasspathFileFromConfig(mapperContext, backendName, indexName, "schema-management.mapping-file",
-                indexConfig.schemaManagement().mappingFile(),
-                applicationArchivesBuildItem, nativeImageResources, hotDeploymentWatchedFiles);
+                indexConfig.schemaManagement().mappingFile(), applicationArchivesBuildItem, nativeImageResources,
+                hotDeploymentWatchedFiles);
     }
 
-    private static void registerClasspathFileFromConfig(MapperContext mapperContext, String backendName, String indexName,
-            String propertyKeyRadical,
-            Optional<String> classpathFileOptional,
+    private static void registerClasspathFileFromConfig(MapperContext mapperContext, String backendName,
+            String indexName, String propertyKeyRadical, Optional<String> classpathFileOptional,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<NativeImageResourceBuildItem> nativeImageResources,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeploymentWatchedFiles) {
@@ -139,12 +135,10 @@ class HibernateSearchBackendElasticsearchProcessor {
         Path existingPath = applicationArchivesBuildItem.getRootArchive().getChildPath(classpathFile);
 
         if (existingPath == null || Files.isDirectory(existingPath)) {
-            //raise exception if explicit file is not present (i.e. not the default)
-            throw new ConfigurationException(
-                    "Unable to find file referenced in '"
-                            + mapperContext.backendPropertyKey(backendName, indexName, propertyKeyRadical) + "="
-                            + classpathFile
-                            + "'. Remove property or add file to your path.");
+            // raise exception if explicit file is not present (i.e. not the default)
+            throw new ConfigurationException("Unable to find file referenced in '"
+                    + mapperContext.backendPropertyKey(backendName, indexName, propertyKeyRadical) + "=" + classpathFile
+                    + "'. Remove property or add file to your path.");
         }
         nativeImageResources.produce(new NativeImageResourceBuildItem(classpathFile));
         hotDeploymentWatchedFiles.produce(new HotDeploymentWatchedFileBuildItem(classpathFile));

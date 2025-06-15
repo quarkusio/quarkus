@@ -67,30 +67,29 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("""
-                            quarkus.tls.key-store.p12.path=keystore.p12
-                            quarkus.tls.key-store.p12.password=secret
-                            quarkus.tls.trust-store.p12.path=server-truststore.p12
-                            quarkus.tls.trust-store.p12.password=secret
-                            quarkus.tls.ws-client.trust-store.p12.path=client-truststore.p12
-                            quarkus.tls.ws-client.trust-store.p12.password=secret
-                            quarkus.tls.ws-client.key-store.p12.path=client-keystore.p12
-                            quarkus.tls.ws-client.key-store.p12.password=secret
-                            quarkus.websockets-next.client.tls-configuration-name=ws-client
-                            quarkus.http.auth.proactive=false
-                            quarkus.http.ssl.client-auth=request
-                            quarkus.http.insecure-requests=enabled
-                            quarkus.http.auth.basic=true
-                            """), "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("""
+                    quarkus.tls.key-store.p12.path=keystore.p12
+                    quarkus.tls.key-store.p12.password=secret
+                    quarkus.tls.trust-store.p12.path=server-truststore.p12
+                    quarkus.tls.trust-store.p12.password=secret
+                    quarkus.tls.ws-client.trust-store.p12.path=client-truststore.p12
+                    quarkus.tls.ws-client.trust-store.p12.password=secret
+                    quarkus.tls.ws-client.key-store.p12.path=client-keystore.p12
+                    quarkus.tls.ws-client.key-store.p12.password=secret
+                    quarkus.websockets-next.client.tls-configuration-name=ws-client
+                    quarkus.http.auth.proactive=false
+                    quarkus.http.ssl.client-auth=request
+                    quarkus.http.insecure-requests=enabled
+                    quarkus.http.auth.basic=true
+                    """), "application.properties")
                     .addAsResource(new File("target/certs/mtls-test-client-keystore.p12"), "client-keystore.p12")
                     .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "keystore.p12")
                     .addAsResource(new File("target/certs/mtls-test-server-truststore.p12"), "server-truststore.p12")
                     .addAsResource(new File("target/certs/mtls-test-client-truststore.p12"), "client-truststore.p12")
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            PublicEndpoint.class, PublicEndpoint.SubEndpoint.class, CustomAuthEndpoint.class,
-                            CustomAuthenticationRequest.class, CustomAuthMechanism.class, CustomIdentityProvider.class,
-                            RolesAndCustomAuthEndpoint.class, UnknownAuthEndpoint.class));
+                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class,
+                            TestIdentityController.class, PublicEndpoint.class, PublicEndpoint.SubEndpoint.class,
+                            CustomAuthEndpoint.class, CustomAuthenticationRequest.class, CustomAuthMechanism.class,
+                            CustomIdentityProvider.class, RolesAndCustomAuthEndpoint.class, UnknownAuthEndpoint.class));
 
     @Inject
     WebSocketConnector<TlsClientEndpoint> connector;
@@ -167,7 +166,8 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
     public void testCustomAuthenticationEndpoint() {
         // no credentials - deny access
         try (WSClient client = new WSClient(vertx)) {
-            CompletionException ce = assertThrows(CompletionException.class, () -> client.connect(customAuthEndointUri));
+            CompletionException ce = assertThrows(CompletionException.class,
+                    () -> client.connect(customAuthEndointUri));
             Throwable root = ExceptionUtil.getRootCause(ce);
             assertInstanceOf(UpgradeRejectedException.class, root);
             assertTrue(root.getMessage().contains("401"));
@@ -183,8 +183,8 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
         }
         // basic auth - correct credentials - fail as wrong mechanism
         try (WSClient client = new WSClient(vertx)) {
-            CompletionException ce = assertThrows(CompletionException.class, () -> client
-                    .connect(basicAuth("admin", "admin"), customAuthEndointUri));
+            CompletionException ce = assertThrows(CompletionException.class,
+                    () -> client.connect(basicAuth("admin", "admin"), customAuthEndointUri));
             Throwable root = ExceptionUtil.getRootCause(ce);
             assertInstanceOf(UpgradeRejectedException.class, root);
             assertTrue(root.getMessage().contains("401"), root.getMessage());
@@ -198,15 +198,16 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
 
         // no credentials - deny access
         try (WSClient client = new WSClient(vertx)) {
-            CompletionException ce = assertThrows(CompletionException.class, () -> client.connect(unknownAuthEndpointUri));
+            CompletionException ce = assertThrows(CompletionException.class,
+                    () -> client.connect(unknownAuthEndpointUri));
             Throwable root = ExceptionUtil.getRootCause(ce);
             assertInstanceOf(UpgradeRejectedException.class, root);
             assertTrue(root.getMessage().contains("401"));
         }
         // basic auth - correct credentials - fail as wrong mechanism
         try (WSClient client = new WSClient(vertx)) {
-            CompletionException ce = assertThrows(CompletionException.class, () -> client
-                    .connect(basicAuth("admin", "admin"), unknownAuthEndpointUri));
+            CompletionException ce = assertThrows(CompletionException.class,
+                    () -> client.connect(basicAuth("admin", "admin"), unknownAuthEndpointUri));
             Throwable root = ExceptionUtil.getRootCause(ce);
             assertInstanceOf(UpgradeRejectedException.class, root);
             assertTrue(root.getMessage().contains("401"), root.getMessage());
@@ -226,16 +227,16 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
         }
         // custom auth - correct credentials - fails as no admin role
         try (WSClient client = new WSClient(vertx)) {
-            CompletionException ce = assertThrows(CompletionException.class, () -> client
-                    .connect(customAuth("user"), rolesAndCustomAuthEndpointUri));
+            CompletionException ce = assertThrows(CompletionException.class,
+                    () -> client.connect(customAuth("user"), rolesAndCustomAuthEndpointUri));
             Throwable root = ExceptionUtil.getRootCause(ce);
             assertInstanceOf(UpgradeRejectedException.class, root);
             assertTrue(root.getMessage().contains("403"), root.getMessage());
         }
         // basic auth - correct credentials - fails as wrong authentication mechanism
         try (WSClient client = new WSClient(vertx)) {
-            CompletionException ce = assertThrows(CompletionException.class, () -> client
-                    .connect(basicAuth("admin", "admin"), rolesAndCustomAuthEndpointUri));
+            CompletionException ce = assertThrows(CompletionException.class,
+                    () -> client.connect(basicAuth("admin", "admin"), rolesAndCustomAuthEndpointUri));
             Throwable root = ExceptionUtil.getRootCause(ce);
             assertInstanceOf(UpgradeRejectedException.class, root);
             assertTrue(root.getMessage().contains("401"), root.getMessage());
@@ -247,12 +248,13 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
         // no TLS, no credentials
         Assertions.assertThrows(UpgradeRejectedException.class, () -> assertTlsClient(tlsEndpointUnsecuredUri, null));
         // no TLS, admin basic auth credentials
-        Assertions.assertThrows(UpgradeRejectedException.class, () -> assertTlsClient(tlsEndpointUnsecuredUri, "admin"));
+        Assertions.assertThrows(UpgradeRejectedException.class,
+                () -> assertTlsClient(tlsEndpointUnsecuredUri, "admin"));
         // authenticated as communication is opening WebSockets handshake request
         assertTlsClient(tlsEndpointUri, null);
         // authenticated using mTLS with explicit 'wss'
-        URI wssUri = new URI("wss", tlsEndpointUri.getUserInfo(), tlsEndpointUri.getHost(),
-                tlsEndpointUri.getPort(), tlsEndpointUri.getPath(), tlsEndpointUri.getQuery(), tlsEndpointUri.getFragment());
+        URI wssUri = new URI("wss", tlsEndpointUri.getUserInfo(), tlsEndpointUri.getHost(), tlsEndpointUri.getPort(),
+                tlsEndpointUri.getPath(), tlsEndpointUri.getQuery(), tlsEndpointUri.getFragment());
         assertTlsClient(wssUri, null);
     }
 
@@ -260,8 +262,7 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
         TlsServerEndpoint.reset();
         TlsClientEndpoint.reset();
 
-        var connectorBuilder = connector
-                .baseUri(uri)
+        var connectorBuilder = connector.baseUri(uri)
                 // The value will be encoded automatically
                 .pathParam("name", "Lu=");
         if (basicAuthCred != null) {
@@ -422,10 +423,12 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
     }
 
     @ApplicationScoped
-    public static class CustomAuthMechanism implements io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism {
+    public static class CustomAuthMechanism
+            implements io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism {
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             String role = context.request().getHeader("CustomAuthorization");
             if (role != null && !role.isEmpty()) {
                 return identityProviderManager.authenticate(new CustomAuthenticationRequest(role));
@@ -440,8 +443,8 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
 
         @Override
         public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-            return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION,
-                    "custom", "custom"));
+            return Uni.createFrom()
+                    .item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, "custom", "custom"));
         }
     }
 
@@ -456,11 +459,8 @@ public class HttpUpgradeSelectAuthMechWithAnnotationTest extends SecurityTestBas
         @Override
         public Uni<SecurityIdentity> authenticate(CustomAuthenticationRequest customAuthenticationRequest,
                 AuthenticationRequestContext authenticationRequestContext) {
-            return Uni.createFrom().item(QuarkusSecurityIdentity.builder()
-                    .setPrincipal(new QuarkusPrincipal("who"))
-                    .setAnonymous(false)
-                    .addRole(customAuthenticationRequest.role)
-                    .build());
+            return Uni.createFrom().item(QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("who"))
+                    .setAnonymous(false).addRole(customAuthenticationRequest.role).build());
         }
     }
 

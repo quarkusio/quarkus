@@ -23,62 +23,48 @@ public final class WebSocketMetricsInterceptorProducerImpl implements WebSocketM
 
     @Override
     public WebSocketMetricsInterceptor createServerMetricsInterceptor() {
-        final Meter.MeterProvider<Counter> messagesCounter = Counter
-                .builder(WebSocketMetricConstants.SERVER_COUNT)
-                .description("Number of messages sent and received by server endpoints.")
-                .withRegistry(meterRegistry);
-        final Meter.MeterProvider<Counter> bytesCounter = Counter
-                .builder(WebSocketMetricConstants.SERVER_BYTES)
-                .description("Number of bytes sent and received by server endpoints.")
-                .withRegistry(meterRegistry);
+        final Meter.MeterProvider<Counter> messagesCounter = Counter.builder(WebSocketMetricConstants.SERVER_COUNT)
+                .description("Number of messages sent and received by server endpoints.").withRegistry(meterRegistry);
+        final Meter.MeterProvider<Counter> bytesCounter = Counter.builder(WebSocketMetricConstants.SERVER_BYTES)
+                .description("Number of bytes sent and received by server endpoints.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> closedConnectionCounter = Counter
                 .builder(WebSocketMetricConstants.SERVER_CONNECTION_CLOSED)
-                .description("Number of closed server WebSocket connections.")
-                .withRegistry(meterRegistry);
+                .description("Number of closed server WebSocket connections.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> serverErrorsCounter = Counter
                 .builder(WebSocketMetricConstants.SERVER_ENDPOINT_COUNT_ERRORS)
-                .description("Counts all the WebSockets server endpoint errors.")
-                .withRegistry(meterRegistry);
+                .description("Counts all the WebSockets server endpoint errors.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> connectionOpenCounter = Counter
                 .builder(WebSocketMetricConstants.SERVER_CONNECTION_OPENED)
-                .description("Number of opened server connections.")
-                .withRegistry(meterRegistry);
+                .description("Number of opened server connections.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> connectionOpeningFailedCounter = Counter
                 .builder(WebSocketMetricConstants.SERVER_CONNECTION_ON_OPEN_ERROR)
                 .description("Number of failures occurred when opening server connection failed.")
                 .withRegistry(meterRegistry);
-        return new WebSocketMetricsInterceptorImpl(messagesCounter, bytesCounter, closedConnectionCounter, serverErrorsCounter,
-                connectionOpenCounter, connectionOpeningFailedCounter);
+        return new WebSocketMetricsInterceptorImpl(messagesCounter, bytesCounter, closedConnectionCounter,
+                serverErrorsCounter, connectionOpenCounter, connectionOpeningFailedCounter);
     }
 
     @Override
     public WebSocketMetricsInterceptor createClientMetricsInterceptor() {
-        final Meter.MeterProvider<Counter> messagesCounter = Counter
-                .builder(WebSocketMetricConstants.CLIENT_COUNT)
-                .description("Number of messages sent and received by client endpoints.")
-                .withRegistry(meterRegistry);
-        final Meter.MeterProvider<Counter> bytesCounter = Counter
-                .builder(WebSocketMetricConstants.CLIENT_BYTES)
-                .description("Number of bytes sent and received by client endpoints.")
-                .withRegistry(meterRegistry);
+        final Meter.MeterProvider<Counter> messagesCounter = Counter.builder(WebSocketMetricConstants.CLIENT_COUNT)
+                .description("Number of messages sent and received by client endpoints.").withRegistry(meterRegistry);
+        final Meter.MeterProvider<Counter> bytesCounter = Counter.builder(WebSocketMetricConstants.CLIENT_BYTES)
+                .description("Number of bytes sent and received by client endpoints.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> closedConnectionCounter = Counter
                 .builder(WebSocketMetricConstants.CLIENT_CONNECTION_CLOSED)
-                .description("Number of closed client WebSocket connections.")
-                .withRegistry(meterRegistry);
+                .description("Number of closed client WebSocket connections.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> clientErrorsCounter = Counter
                 .builder(WebSocketMetricConstants.CLIENT_ENDPOINT_COUNT_ERRORS)
-                .description("Counts all the WebSockets client endpoint errors.")
-                .withRegistry(meterRegistry);
+                .description("Counts all the WebSockets client endpoint errors.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> connectionOpenCounter = Counter
                 .builder(WebSocketMetricConstants.CLIENT_CONNECTION_OPENED)
-                .description("Number of opened client connections.")
-                .withRegistry(meterRegistry);
+                .description("Number of opened client connections.").withRegistry(meterRegistry);
         final Meter.MeterProvider<Counter> connectionOpeningFailedCounter = Counter
                 .builder(WebSocketMetricConstants.CLIENT_CONNECTION_OPENED_ERROR)
                 .description("Number of failures occurred when opening client connection failed.")
                 .withRegistry(meterRegistry);
-        return new WebSocketMetricsInterceptorImpl(messagesCounter, bytesCounter, closedConnectionCounter, clientErrorsCounter,
-                connectionOpenCounter, connectionOpeningFailedCounter);
+        return new WebSocketMetricsInterceptorImpl(messagesCounter, bytesCounter, closedConnectionCounter,
+                clientErrorsCounter, connectionOpenCounter, connectionOpeningFailedCounter);
     }
 
     private static final class WebSocketMetricsInterceptorImpl implements WebSocketMetricsInterceptor {

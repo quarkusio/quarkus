@@ -21,20 +21,19 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     private final DatabaseVersion buildTimeDbVersion;
     private final boolean versionCheckEnabled;
 
-    public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName,
-            boolean isFromPersistenceXml, Dialect dialect,
-            RecordedConfig recordedConfig,
-            HibernateOrmRuntimeConfigPersistenceUnit runtimePuConfig) {
+    public QuarkusRuntimeInitDialectFactoryInitiator(String persistenceUnitName, boolean isFromPersistenceXml,
+            Dialect dialect, RecordedConfig recordedConfig, HibernateOrmRuntimeConfigPersistenceUnit runtimePuConfig) {
         this.persistenceUnitName = persistenceUnitName;
         this.isFromPersistenceXml = isFromPersistenceXml;
         this.dialect = dialect;
         this.datasourceName = recordedConfig.getDataSource();
-        // We set the version from the dialect since if it wasn't provided explicitly through the `recordedConfig.getDbVersion()`
+        // We set the version from the dialect since if it wasn't provided explicitly through the
+        // `recordedConfig.getDbVersion()`
         // then the version from `DialectVersions.Defaults` will be used:
         this.buildTimeDbVersion = dialect.getVersion();
         this.versionCheckEnabled = runtimePuConfig.database().versionCheckEnabled()
                 // TODO disable the check by default when offline startup is opted in
-                //   See https://github.com/quarkusio/quarkus/issues/13522
+                // See https://github.com/quarkusio/quarkus/issues/13522
                 .orElse(true);
     }
 
@@ -44,7 +43,8 @@ public class QuarkusRuntimeInitDialectFactoryInitiator implements StandardServic
     }
 
     @Override
-    public DialectFactory initiateService(Map<String, Object> configurationValues, ServiceRegistryImplementor registry) {
+    public DialectFactory initiateService(Map<String, Object> configurationValues,
+            ServiceRegistryImplementor registry) {
         return new QuarkusRuntimeInitDialectFactory(persistenceUnitName, isFromPersistenceXml, dialect, datasourceName,
                 buildTimeDbVersion, versionCheckEnabled);
     }

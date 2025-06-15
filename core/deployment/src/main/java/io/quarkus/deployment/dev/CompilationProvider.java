@@ -70,23 +70,11 @@ public interface CompilationProvider extends Closeable {
         private final Set<File> annotationProcessorPaths;
         private final List<String> annotationProcessors;
 
-        public Context(
-                String name,
-                Set<File> classpath,
-                Set<File> reloadableClasspath,
-                File projectDirectory,
-                File sourceDirectory,
-                File outputDirectory,
-                String sourceEncoding,
-                Map<String, Set<String>> compilerOptions,
-                String releaseJavaVersion,
-                String sourceJavaVersion,
-                String targetJvmVersion,
-                List<String> compilePluginArtifacts,
-                List<String> compilerPluginOptions,
-                File generatedSourcesDirectory,
-                Set<File> annotationProcessorPaths,
-                List<String> annotationProcessors,
+        public Context(String name, Set<File> classpath, Set<File> reloadableClasspath, File projectDirectory,
+                File sourceDirectory, File outputDirectory, String sourceEncoding,
+                Map<String, Set<String>> compilerOptions, String releaseJavaVersion, String sourceJavaVersion,
+                String targetJvmVersion, List<String> compilePluginArtifacts, List<String> compilerPluginOptions,
+                File generatedSourcesDirectory, Set<File> annotationProcessorPaths, List<String> annotationProcessors,
                 String ignoreModuleInfo) {
             this.name = name;
             this.classpath = classpath;

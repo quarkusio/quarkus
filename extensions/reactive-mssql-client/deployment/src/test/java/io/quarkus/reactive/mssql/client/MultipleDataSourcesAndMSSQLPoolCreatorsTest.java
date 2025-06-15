@@ -21,10 +21,8 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-multiple-datasources-with-erroneous-url.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingDefaultDataSource.class)
-                    .addClass(BeanUsingHibernateDataSource.class)
-                    .addClass(DefaultMSSQLPoolCreator.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BeanUsingDefaultDataSource.class)
+                    .addClass(BeanUsingHibernateDataSource.class).addClass(DefaultMSSQLPoolCreator.class)
                     .addClass(HibernateMSSQLPoolCreator.class));
 
     @Inject
@@ -35,10 +33,8 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
 
     @Test
     public void testMultipleDataSources() {
-        beanUsingDefaultDataSource.verify()
-                .thenCompose(v -> beanUsingHibernateDataSource.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingDefaultDataSource.verify().thenCompose(v -> beanUsingHibernateDataSource.verify())
+                .toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -85,7 +81,8 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(12345, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
+            assertEquals(12345, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for
+                                                                        // the proper datasource
             return Pool.pool(input.vertx(), input.msSQLConnectOptions().setHost("localhost").setPort(1435),
                     input.poolOptions());
         }
@@ -97,7 +94,8 @@ public class MultipleDataSourcesAndMSSQLPoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(55555, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
+            assertEquals(55555, input.msSQLConnectOptions().getPort()); // validate that the bean has been called for
+                                                                        // the proper datasource
             return Pool.pool(input.vertx(), input.msSQLConnectOptions().setHost("localhost").setPort(1435),
                     input.poolOptions());
         }

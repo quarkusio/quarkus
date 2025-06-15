@@ -29,18 +29,15 @@ public class SslServerWithP12Test {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.p12"), "server-keystore.pkcs12"))
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", "server-keystore.pkcs12")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "secret");
 
     @Test
     public void testSslServerWithPkcs12() {
-        RestAssured
-                .given()
-                .trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret")
-                .get(url).then().statusCode(200).body(is("ssl"));
+        RestAssured.given().trustStore(new File("target/certs/ssl-test-truststore.jks"), "secret").get(url).then()
+                .statusCode(200).body(is("ssl"));
     }
 
     @ApplicationScoped

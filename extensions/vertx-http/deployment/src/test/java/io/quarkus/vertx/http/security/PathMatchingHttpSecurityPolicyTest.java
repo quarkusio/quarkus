@@ -89,21 +89,16 @@ public class PathMatchingHttpSecurityPolicyTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-            .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class,
-                    RouteHandler.class, CustomNamedPolicy.class)
+            .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class, RouteHandler.class,
+                    CustomNamedPolicy.class)
             .addAsResource("static-file.html", "META-INF/resources/static-file.html")
             .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("test", "test", "test")
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user")
-                .add("admin1", "admin1", "admin1")
-                .add("root1", "root1", "root1")
-                .add("root", "root", "root")
-                .add("public1", "public1", "public1");
+        TestIdentityController.resetRoles().add("test", "test", "test").add("admin", "admin", "admin")
+                .add("user", "user", "user").add("admin1", "admin1", "admin1").add("root1", "root1", "root1")
+                .add("root", "root", "root").add("public1", "public1", "public1");
     }
 
     @AfterAll
@@ -158,28 +153,23 @@ public class PathMatchingHttpSecurityPolicyTest {
             // zero length path
             "", "/?one=two",
             // empty segments only are match with path policy for '/'
-            "/", "///", "////", "/////"
-    })
+            "/", "///", "////", "/////" })
     public void testEmptyPathSegments(String path) {
         assurePath(path, 401);
         assurePathAuthenticated(path);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "/api/foo/./bar", "/../api/foo///bar", "/api/./foo/.///bar", "/api/foo/./////bar", "/api/fubar/baz/.",
-            "/..///api/foo/bar", "////../../api/foo/bar", "/./api//foo//bar", "//api/foo/./bar",
-            "/.", "/..", "/./", "/..//", "/.///", "/..////", "/./////"
-    })
+    @ValueSource(strings = { "/api/foo/./bar", "/../api/foo///bar", "/api/./foo/.///bar", "/api/foo/./////bar",
+            "/api/fubar/baz/.", "/..///api/foo/bar", "////../../api/foo/bar", "/./api//foo//bar", "//api/foo/./bar",
+            "/.", "/..", "/./", "/..//", "/.///", "/..////", "/./////" })
     public void testDotPathSegments(String path) {
         assurePath(path, 401);
         assurePathAuthenticated(path);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "/static-file.html", "//static-file.html", "///static-file.html"
-    })
+    @ValueSource(strings = { "/static-file.html", "//static-file.html", "///static-file.html" })
     public void testStaticResource(String path) {
         assurePath(path, 401);
         assurePathAuthenticated(path);
@@ -189,7 +179,8 @@ public class PathMatchingHttpSecurityPolicyTest {
     public void testMiscellaneousPaths() {
         // /api/baz with segment indicating version shouldn't match /api/baz path policy
         assurePath("/api/baz;v=1.1", 200);
-        // /api/baz/ is different resource than secured /api/baz, but we secure both when there is not more specific exact path pattern
+        // /api/baz/ is different resource than secured /api/baz, but we secure both when there is not more specific
+        // exact path pattern
         assurePath("/api/baz/", 401);
     }
 

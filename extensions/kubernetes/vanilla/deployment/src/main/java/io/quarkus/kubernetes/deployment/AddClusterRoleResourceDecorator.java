@@ -34,15 +34,9 @@ class AddClusterRoleResourceDecorator extends ResourceProvidingDecorator<Kuberne
 
         Map<String, String> roleLabels = new HashMap<>();
         roleLabels.putAll(labels);
-        getDeploymentMetadata(list, deploymentName)
-                .map(ObjectMeta::getLabels)
-                .ifPresent(roleLabels::putAll);
+        getDeploymentMetadata(list, deploymentName).map(ObjectMeta::getLabels).ifPresent(roleLabels::putAll);
 
-        list.addToItems(new ClusterRoleBuilder()
-                .withNewMetadata()
-                .withName(name)
-                .withLabels(roleLabels)
-                .endMetadata()
+        list.addToItems(new ClusterRoleBuilder().withNewMetadata().withName(name).withLabels(roleLabels).endMetadata()
                 .withRules(rules));
     }
 }

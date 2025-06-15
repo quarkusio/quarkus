@@ -25,13 +25,13 @@ public final class ScheduledBusinessMethodItem extends MultiBuildItem {
         this.bean = bean;
         this.method = method;
         this.schedules = schedules;
-        this.nonBlocking = hasNonBlockingAnnotation || SchedulerDotNames.COMPLETION_STAGE.equals(method.returnType().name())
+        this.nonBlocking = hasNonBlockingAnnotation
+                || SchedulerDotNames.COMPLETION_STAGE.equals(method.returnType().name())
                 || SchedulerDotNames.UNI.equals(method.returnType().name()) || KotlinUtil.isSuspendMethod(method);
         this.runOnVirtualThread = hasRunOnVirtualThreadAnnotation;
     }
 
     /**
-     *
      * @return the bean or {@code null} for a static method
      */
     public BeanInfo getBean() {

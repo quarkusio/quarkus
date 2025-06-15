@@ -75,8 +75,8 @@ public class ClientEndpointIndexer
             warnForUnsupportedAnnotations(classInfo);
             return MaybeRestClientInterface.success(clazz);
         } catch (Exception e) {
-            //kinda bogus, but we just ignore failed interfaces for now
-            //they can have methods that are not valid until they are actually extended by a concrete type
+            // kinda bogus, but we just ignore failed interfaces for now
+            // they can have methods that are not valid until they are actually extended by a concrete type
 
             log.warn("Ignoring interface for creating client proxy" + classInfo.name(), e);
             return MaybeRestClientInterface.failure(e.getMessage());
@@ -86,7 +86,8 @@ public class ClientEndpointIndexer
     private void warnForUnsupportedAnnotations(ClassInfo classInfo) {
         List<AnnotationInstance> offendingBlockingAnnotations = new ArrayList<>();
 
-        List<AnnotationInstance> blockingAnnotations = classInfo.annotationsMap().get(ResteasyReactiveDotNames.BLOCKING);
+        List<AnnotationInstance> blockingAnnotations = classInfo.annotationsMap()
+                .get(ResteasyReactiveDotNames.BLOCKING);
         if (blockingAnnotations != null) {
             for (AnnotationInstance blockingAnnotation : blockingAnnotations) {
                 // If the `@Blocking` annotation is used along with the `@ClientExceptionMapper`, we support it.
@@ -108,12 +109,12 @@ public class ClientEndpointIndexer
     protected void handleClientSubResource(ResourceMethod resourceMethod, MethodInfo method, IndexView index) {
         ClassInfo subResourceClass = index.getClassByName(method.returnType().name());
         if (subResourceClass == null) {
-            throw new IllegalStateException("Subresource method returns an invalid type: " + method.returnType().name());
+            throw new IllegalStateException(
+                    "Subresource method returns an invalid type: " + method.returnType().name());
         }
 
-        List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass,
-                new HashSet<>(), new HashSet<>(), new HashSet<>(),
-                "", false);
+        List<ResourceMethod> endpoints = createEndpoints(subResourceClass, subResourceClass, new HashSet<>(),
+                new HashSet<>(), new HashSet<>(), "", false);
         resourceMethod.setSubResourceMethods(endpoints);
     }
 
@@ -125,13 +126,14 @@ public class ClientEndpointIndexer
     }
 
     @Override
-    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i,
-            Set<String> fileFormNames) {
+    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,
+            int i, Set<String> fileFormNames) {
         ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
         if (methodParameters[i] != null) {
             // TODO: we might want to make this smarter
             List<Item> items = BeanParamParser.parse(beanParamClassInfo, index);
-            ClientBeanParamInfo clientBeanParamInfo = new ClientBeanParamInfo(items, beanParamClassInfo.name().toString());
+            ClientBeanParamInfo clientBeanParamInfo = new ClientBeanParamInfo(items,
+                    beanParamClassInfo.name().toString());
             clientBeanParamInfo.setDeclaredType(methodParameters[i].getDeclaredType());
             methodParameters[i] = clientBeanParamInfo;
 
@@ -155,18 +157,16 @@ public class ClientEndpointIndexer
     }
 
     @Override
-    protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
-            Type paramType, ClientIndexedParam parameterResult, String name, String defaultValue, ParameterType type,
-            String elementType, boolean single, String signature,
-            Set<String> fileFormNames) {
+    protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+            boolean encoded, Type paramType, ClientIndexedParam parameterResult, String name, String defaultValue,
+            ParameterType type, String elementType, boolean single, String signature, Set<String> fileFormNames) {
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         String mimePart = getPartMime(parameterResult.getAnns());
         String partFileName = getPartFileName(parameterResult.getAnns());
-        return new MethodParameter(name,
-                elementType, declaredTypes.getDeclaredType(), declaredTypes.getDeclaredUnresolvedType(), signature, type,
-                single,
-                defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                mimePart, partFileName, null);
+        return new MethodParameter(name, elementType, declaredTypes.getDeclaredType(),
+                declaredTypes.getDeclaredUnresolvedType(), signature, type, single, defaultValue,
+                parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded, mimePart, partFileName,
+                null);
     }
 
     private String getPartFileName(Map<DotName, AnnotationInstance> annotations) {
@@ -178,8 +178,8 @@ public class ClientEndpointIndexer
     }
 
     @Override
-    protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ClientIndexedParam builder, Type paramType,
-            boolean field, Map<String, Object> methodContext) {
+    protected boolean handleCustomParameter(Map<DotName, AnnotationInstance> anns, ClientIndexedParam builder,
+            Type paramType, boolean field, Map<String, Object> methodContext) {
         if (paramType.name().equals(CONTINUATION)) {
             builder.setType(ParameterType.CUSTOM);
             return true;
@@ -210,8 +210,7 @@ public class ClientEndpointIndexer
 
     private void addReaderWriterForType(AdditionalReaderWriter additionalReaderWriter, Type paramType) {
         DotName dotName = paramType.name();
-        if (dotName.equals(JSONP_JSON_NUMBER)
-                || dotName.equals(JSONP_JSON_VALUE)
+        if (dotName.equals(JSONP_JSON_NUMBER) || dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_STRING)) {
             additionalReaderWriter.add(JsonValueHandler.class, APPLICATION_JSON, jakarta.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_ARRAY)) {

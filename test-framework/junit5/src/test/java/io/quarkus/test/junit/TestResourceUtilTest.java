@@ -23,14 +23,17 @@ public class TestResourceUtilTest {
 
     @Test
     public void testReloadGroupIdentifierIsEqualForTestsWithIdenticalResources() {
-        String identifier1 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class, ProfileClassWithResources.class);
-        String identifier2 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class, AnotherProfileClassWithResources.class);
+        String identifier1 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class,
+                ProfileClassWithResources.class);
+        String identifier2 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class,
+                AnotherProfileClassWithResources.class);
         assertEquals(identifier2, identifier1);
     }
 
     @Test
     public void testReloadGroupIdentifierIsEqualForTestsWithDifferentResources() {
-        String identifier1 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class, ProfileClassWithResources.class);
+        String identifier1 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class,
+                ProfileClassWithResources.class);
         String identifier2 = TestResourceUtil.getReloadGroupIdentifier(TestClass.class, ProfileClass.class);
         assertNotEquals(identifier2, identifier1);
     }
@@ -59,9 +62,7 @@ class ProfileClassWithResources implements QuarkusTestProfile {
 
     @Override
     public List<TestResourceEntry> testResources() {
-        return Collections.singletonList(
-                new TestResourceEntry(
-                        Dummy.class, Map.of()));
+        return Collections.singletonList(new TestResourceEntry(Dummy.class, Map.of()));
     }
 }
 
@@ -72,9 +73,7 @@ class AnotherProfileClassWithResources implements QuarkusTestProfile {
 
     @Override
     public List<TestResourceEntry> testResources() {
-        return Collections.singletonList(
-                new TestResourceEntry(
-                        Dummy.class, Map.of()));
+        return Collections.singletonList(new TestResourceEntry(Dummy.class, Map.of()));
     }
 }
 

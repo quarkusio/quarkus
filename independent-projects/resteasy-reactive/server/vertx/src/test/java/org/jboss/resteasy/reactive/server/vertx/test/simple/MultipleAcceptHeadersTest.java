@@ -24,8 +24,7 @@ public class MultipleAcceptHeadersTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class));
 
     @Test
     public void matchingHeaderIsFirst() throws Exception {

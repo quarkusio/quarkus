@@ -12,8 +12,7 @@ public class DevModeServerStartTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IsUpEndpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IsUpEndpoint.class));
 
     @Test
     public void test() {

@@ -21,9 +21,8 @@ public class RecordedConfig {
     private final DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion;
 
     @RecordableConstructor
-    public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind,
-            Optional<String> dbVersion, Optional<String> explicitDialect,
-            MultiTenancyStrategy multiTenancyStrategy,
+    public RecordedConfig(Optional<String> dataSource, Optional<String> dbKind, Optional<String> dbVersion,
+            Optional<String> explicitDialect, MultiTenancyStrategy multiTenancyStrategy,
             DatabaseOrmCompatibilityVersion databaseOrmCompatibilityVersion,
             Map<String, String> quarkusConfigUnsupportedProperties) {
         Objects.requireNonNull(dataSource);

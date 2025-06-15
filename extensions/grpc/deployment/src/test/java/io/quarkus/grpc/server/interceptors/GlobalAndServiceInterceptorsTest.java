@@ -40,11 +40,9 @@ import io.smallrye.mutiny.Uni;
 public class GlobalAndServiceInterceptorsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
-                    .addPackage(Greeter3Grpc.class.getPackage())
-                    .addPackage(FarewellGrpc.class.getPackage())
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
+                    .addPackage(Greeter3Grpc.class.getPackage()).addPackage(FarewellGrpc.class.getPackage())
                     .addClasses(MyFirstInterceptor.class, GreeterBean.class, HelloRequest.class));
 
     protected ManagedChannel channel;

@@ -23,14 +23,14 @@ public class DisabledTransactionDataSourceConfigTest {
     AgroalDataSource defaultDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("base.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("base.properties")
             .overrideConfigKey("quarkus.datasource.jdbc.transactions", "DISABLED")
             .overrideConfigKey("quarkus.datasource.jdbc.detect-statement-leaks", "false");
 
     @Test
     public void testNonTransactionalDataSourceInjection() throws SQLException {
-        AgroalConnectionPoolConfiguration configuration = defaultDataSource.getConfiguration().connectionPoolConfiguration();
+        AgroalConnectionPoolConfiguration configuration = defaultDataSource.getConfiguration()
+                .connectionPoolConfiguration();
 
         assertFalse(configuration.transactionIntegration() instanceof NarayanaTransactionIntegration);
         Class<? extends TransactionIntegration> nonTxIntegrator = TransactionIntegration.none().getClass();

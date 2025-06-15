@@ -20,10 +20,11 @@ public class FilterFeature implements FeatureScanner {
     final Set<String> additionalBeanAnnotations;
 
     /**
-     *
-     * @param unwrappableTypes Types that can be unwrapped using
+     * @param unwrappableTypes
+     *        Types that can be unwrapped using
      *        {@link org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext#unwrap(Class)}
-     * @param additionalBeanAnnotations Annotations that should be added to generated beans
+     * @param additionalBeanAnnotations
+     *        Annotations that should be added to generated beans
      */
     public FilterFeature(Set<DotName> unwrappableTypes, Set<String> additionalBeanAnnotations) {
         this.unwrappableTypes = unwrappableTypes;
@@ -45,7 +46,8 @@ public class FilterFeature implements FeatureScanner {
                 request.setNonBlockingRequired(i.nonBlocking);
                 request.setNameBindingNames(i.nameBindingNames);
                 if (i.isPreMatching()) {
-                    scannedApplication.getResourceInterceptors().getContainerRequestFilters().addPreMatchInterceptor(request);
+                    scannedApplication.getResourceInterceptors().getContainerRequestFilters()
+                            .addPreMatchInterceptor(request);
                 } else if (!i.getNameBindingNames().isEmpty()) {
                     scannedApplication.getResourceInterceptors().getContainerRequestFilters()
                             .addNameRequestInterceptor(request);

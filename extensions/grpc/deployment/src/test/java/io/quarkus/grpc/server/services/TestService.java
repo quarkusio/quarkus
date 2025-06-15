@@ -27,8 +27,7 @@ public class TestService extends TestServiceGrpc.TestServiceImplBase {
     }
 
     @Override
-    public void unaryCall(Messages.SimpleRequest request,
-            StreamObserver<Messages.SimpleResponse> responseObserver) {
+    public void unaryCall(Messages.SimpleRequest request, StreamObserver<Messages.SimpleResponse> responseObserver) {
         assertThatTheRequestScopeIsActive();
         assertThat(request).isNotNull();
         responseObserver.onNext(Messages.SimpleResponse.newBuilder().build());

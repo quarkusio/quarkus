@@ -34,8 +34,8 @@ public class ClientAssertionProviderTest {
             String secondJwtBearerToken = createJwtBearerToken();
             storeNewJwtBearerToken(jwtBearerTokenPath, secondJwtBearerToken);
 
-            Awaitility.await().atMost(Duration.ofSeconds(10))
-                    .untilAsserted(() -> assertEquals(secondJwtBearerToken, clientAssertionProvider.getClientAssertion()));
+            Awaitility.await().atMost(Duration.ofSeconds(10)).untilAsserted(
+                    () -> assertEquals(secondJwtBearerToken, clientAssertionProvider.getClientAssertion()));
         } finally {
             vertx.close().toCompletionStage().toCompletableFuture().join();
         }
@@ -69,10 +69,8 @@ public class ClientAssertionProviderTest {
     }
 
     private static String createJwtBearerToken() {
-        return Jwt.preferredUserName("Arnold")
-                .issuer("https://server.example.com")
-                .audience("https://service.example.com")
-                .expiresIn(Duration.ofSeconds(4))
+        return Jwt.preferredUserName("Arnold").issuer("https://server.example.com")
+                .audience("https://service.example.com").expiresIn(Duration.ofSeconds(4))
                 .signWithSecret("43".repeat(20));
     }
 

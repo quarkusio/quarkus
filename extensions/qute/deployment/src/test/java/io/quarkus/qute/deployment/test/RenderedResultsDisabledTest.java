@@ -18,11 +18,11 @@ public class RenderedResultsDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleBean.class)
-                    .addAsResource(new StringAsset("quarkus.qute.test-mode.record-rendered-results=false"),
-                            "application.properties")
-                    .addAsResource(new StringAsset("{name}"), "templates/foo.txt"));
+            .withApplicationRoot(
+                    root -> root.addClasses(SimpleBean.class)
+                            .addAsResource(new StringAsset("quarkus.qute.test-mode.record-rendered-results=false"),
+                                    "application.properties")
+                            .addAsResource(new StringAsset("{name}"), "templates/foo.txt"));
 
     @Inject
     Instance<RenderedResults> renderedResults;

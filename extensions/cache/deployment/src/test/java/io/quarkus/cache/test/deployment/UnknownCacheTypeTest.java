@@ -16,9 +16,9 @@ public class UnknownCacheTypeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.cache.type=i_am_an_unknown_cache_type"), "application.properties")
-                    .addClass(CachedService.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addAsResource(new StringAsset("quarkus.cache.type=i_am_an_unknown_cache_type"),
+                            "application.properties").addClass(CachedService.class))
             .setExpectedException(DeploymentException.class);
 
     @Test

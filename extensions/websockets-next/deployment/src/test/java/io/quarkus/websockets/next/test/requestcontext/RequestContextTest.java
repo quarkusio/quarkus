@@ -25,10 +25,9 @@ import io.vertx.core.Vertx;
 public class RequestContextTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(AppendBlocking.class, WSClient.class, RequestScopedBean.class, RequestContextListener.class);
-            })
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(AppendBlocking.class, WSClient.class, RequestScopedBean.class, RequestContextListener.class);
+    })
             // Disable SR Context Propagation for ArC, otherwise there could be a mess in context lifecycle events
             .overrideConfigKey("quarkus.arc.context-propagation.enabled", "false");
 

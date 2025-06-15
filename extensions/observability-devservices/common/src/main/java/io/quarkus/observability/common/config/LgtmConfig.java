@@ -30,8 +30,8 @@ public interface LgtmConfig extends GrafanaConfig {
     String label();
 
     /**
-     * The value of the {@code quarkus-dev-service} label attached to the started container.
-     * This property is used when {@code shared} is set to {@code true}.
+     * The value of the {@code quarkus-dev-service} label attached to the started container. This property is used when
+     * {@code shared} is set to {@code true}.
      */
     @WithDefault("lgtm")
     String serviceName();
@@ -41,8 +41,7 @@ public interface LgtmConfig extends GrafanaConfig {
     // where we want http as a default with LGTM
 
     /**
-     * Set of components to log.
-     * Comma separated set of components whose container log we want to output.
+     * Set of components to log. Comma separated set of components whose container log we want to output.
      *
      * @return set of components to log
      */

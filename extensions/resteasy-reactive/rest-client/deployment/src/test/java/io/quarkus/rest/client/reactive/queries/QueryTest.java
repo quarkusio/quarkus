@@ -108,8 +108,7 @@ public class QueryTest {
             return uriInfo.getQueryParameters().entrySet().stream()
                     .flatMap(entry -> entry.getValue().stream()
                             .map(value -> new AbstractMap.SimpleEntry(entry.getKey(), value)))
-                    .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue()))
-                    .sorted()
+                    .map(entry -> String.format("%s=%s", entry.getKey(), entry.getValue())).sorted()
                     .collect(Collectors.joining(","));
         }
 

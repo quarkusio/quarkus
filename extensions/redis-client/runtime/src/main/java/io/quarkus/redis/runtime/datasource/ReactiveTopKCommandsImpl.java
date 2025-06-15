@@ -31,26 +31,22 @@ public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
 
     @Override
     public Uni<V> topkAdd(K key, V item) {
-        return super._topkAdd(key, item)
-                .map(r -> marshaller.<V> decodeAsList(r, typeOfValue).get(0));
+        return super._topkAdd(key, item).map(r -> marshaller.<V> decodeAsList(r, typeOfValue).get(0));
     }
 
     @Override
     public Uni<List<V>> topkAdd(K key, V... items) {
-        return super._topkAdd(key, items)
-                .map(r -> marshaller.decodeAsList(r, typeOfValue));
+        return super._topkAdd(key, items).map(r -> marshaller.decodeAsList(r, typeOfValue));
     }
 
     @Override
     public Uni<V> topkIncrBy(K key, V item, int increment) {
-        return super._topkIncrBy(key, item, increment)
-                .map(r -> marshaller.<V> decodeAsList(r, typeOfValue).get(0));
+        return super._topkIncrBy(key, item, increment).map(r -> marshaller.<V> decodeAsList(r, typeOfValue).get(0));
     }
 
     @Override
     public Uni<Map<V, V>> topkIncrBy(K key, Map<V, Integer> couples) {
-        return super._topkIncrBy(key, couples)
-                .map(r -> decodeAsMapVV(couples, r));
+        return super._topkIncrBy(key, couples).map(r -> decodeAsMapVV(couples, r));
     }
 
     Map<V, V> decodeAsMapVV(Map<V, Integer> couples, Response r) {
@@ -64,14 +60,12 @@ public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
 
     @Override
     public Uni<List<V>> topkList(K key) {
-        return super._topkList(key)
-                .map(r -> marshaller.decodeAsList(r, typeOfValue));
+        return super._topkList(key).map(r -> marshaller.decodeAsList(r, typeOfValue));
     }
 
     @Override
     public Uni<Map<V, Integer>> topkListWithCount(K key) {
-        return super._topkListWithCount(key)
-                .map(this::decodeAsMapVInt);
+        return super._topkListWithCount(key).map(this::decodeAsMapVInt);
     }
 
     Map<V, Integer> decodeAsMapVInt(Response r) {
@@ -90,26 +84,22 @@ public class ReactiveTopKCommandsImpl<K, V> extends AbstractTopKCommands<K, V>
 
     @Override
     public Uni<Boolean> topkQuery(K key, V item) {
-        return super._topkQuery(key, item)
-                .map(r -> marshaller.decodeAsList(r, Response::toBoolean).get(0));
+        return super._topkQuery(key, item).map(r -> marshaller.decodeAsList(r, Response::toBoolean).get(0));
     }
 
     @Override
     public Uni<List<Boolean>> topkQuery(K key, V... items) {
-        return super._topkQuery(key, items)
-                .map(r -> marshaller.decodeAsList(r, Response::toBoolean));
+        return super._topkQuery(key, items).map(r -> marshaller.decodeAsList(r, Response::toBoolean));
     }
 
     @Override
     public Uni<Void> topkReserve(K key, int topk) {
-        return super._topkReserve(key, topk)
-                .replaceWithVoid();
+        return super._topkReserve(key, topk).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> topkReserve(K key, int topk, int width, int depth, double decay) {
-        return super._topkReserve(key, topk, width, depth, decay)
-                .replaceWithVoid();
+        return super._topkReserve(key, topk, width, depth, decay).replaceWithVoid();
     }
 
     V decodeV(Response r) {

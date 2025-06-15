@@ -46,8 +46,7 @@ public class ConfiguredAndSharedBeansTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Utils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Utils.class));
 
     @Inject
     SomeBean bean;
@@ -57,15 +56,18 @@ public class ConfiguredAndSharedBeansTest {
         bean.ping();
 
         // firstly, assert that all beans are injectable with their respective names
-        Assertions.assertTrue(Arc.container().select(ManagedExecutor.class, NamedInstance.Literal.of(
-                SomeBean.class.getName() + "/configuredExecutor"))
-                .isResolvable());
-        Assertions.assertTrue(Arc.container().select(ManagedExecutor.class, NamedInstance.Literal.of("sharedDefaultExecutor"))
-                .isResolvable());
+        Assertions
+                .assertTrue(Arc.container()
+                        .select(ManagedExecutor.class,
+                                NamedInstance.Literal.of(SomeBean.class.getName() + "/configuredExecutor"))
+                        .isResolvable());
+        Assertions.assertTrue(Arc.container()
+                .select(ManagedExecutor.class, NamedInstance.Literal.of("sharedDefaultExecutor")).isResolvable());
         Assertions.assertTrue(Arc.container()
                 .select(ManagedExecutor.class, NamedInstance.Literal.of("sharedConfiguredExecutor")).isResolvable());
-        Assertions.assertTrue(Arc.container().select(ThreadContext.class, NamedInstance.Literal.of(
-                SomeBean.class.getName() + "/configuredThreadContext"))
+        Assertions.assertTrue(Arc.container()
+                .select(ThreadContext.class,
+                        NamedInstance.Literal.of(SomeBean.class.getName() + "/configuredThreadContext"))
                 .isResolvable());
         Assertions.assertTrue(Arc.container()
                 .select(ThreadContext.class, NamedInstance.Literal.of("sharedDefaultThreadContext")).isResolvable());
@@ -92,7 +94,7 @@ public class ConfiguredAndSharedBeansTest {
     @interface MyQualifier {
     }
 
-    //no proxy bean just so that we can access fields directly
+    // no proxy bean just so that we can access fields directly
     @Singleton
     static class SomeBean {
 
@@ -200,7 +202,7 @@ public class ConfiguredAndSharedBeansTest {
         }
 
         public void assertSharedThreadContextsAreTheSame() {
-            //unwrap and compare references
+            // unwrap and compare references
             SmallRyeThreadContext shared1 = unwrapThreadContext(sharedDefaultThreadContext1);
             SmallRyeThreadContext shared2 = unwrapThreadContext(sharedDefaultThreadContext2);
             assertSame(shared1, shared2);
@@ -286,7 +288,7 @@ public class ConfiguredAndSharedBeansTest {
         @ApplicationScoped
         @NamedInstance("userProduced")
         ManagedExecutor produceEM() {
-            //create any non-default
+            // create any non-default
             return ManagedExecutor.builder().maxAsync(2).build();
         }
 
@@ -294,7 +296,7 @@ public class ConfiguredAndSharedBeansTest {
         @ApplicationScoped
         @NamedInstance("userProduced")
         ThreadContext produceTC() {
-            //create any non-default
+            // create any non-default
             return ThreadContext.builder().propagated().build();
         }
 
@@ -302,7 +304,7 @@ public class ConfiguredAndSharedBeansTest {
         @ApplicationScoped
         @MyQualifier
         ManagedExecutor produceQualifiedEM() {
-            //create any non-default
+            // create any non-default
             return ManagedExecutor.builder().maxAsync(2).build();
         }
 
@@ -310,7 +312,7 @@ public class ConfiguredAndSharedBeansTest {
         @ApplicationScoped
         @MyQualifier
         ThreadContext produceQualifiedTC() {
-            //create any non-default
+            // create any non-default
             return ThreadContext.builder().propagated().build();
         }
     }

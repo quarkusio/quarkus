@@ -14,14 +14,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InterfaceValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InterfaceValidationSuccessTest.Metrics.class, InterfaceValidationSuccessTest.Count.class,
-                            InterfaceValidationSuccessTest.Wrapper.class)
-                    .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.InterfaceValidationSuccessTest$Metrics metrics}"
-                                    + "{metrics.responses.values}"),
-                            "templates/metrics.html"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(InterfaceValidationSuccessTest.Metrics.class, InterfaceValidationSuccessTest.Count.class,
+                    InterfaceValidationSuccessTest.Wrapper.class)
+            .addAsResource(new StringAsset(
+                    "{@io.quarkus.qute.deployment.typesafe.InterfaceValidationSuccessTest$Metrics metrics}"
+                            + "{metrics.responses.values}"),
+                    "templates/metrics.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

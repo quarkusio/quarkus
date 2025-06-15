@@ -10,11 +10,11 @@ import java.sql.SQLException;
 public class QuarkusDBv8Delegate extends org.quartz.impl.jdbcjobstore.DB2v8Delegate {
     /**
      * See the javadoc in {@link QuarkusObjectInputStream#resolveClass(ObjectStreamClass)} and
-     * {@link DBDelegateUtils#getObjectFromInput(InputStream)}
-     * on why this is needed
+     * {@link DBDelegateUtils#getObjectFromInput(InputStream)} on why this is needed
      */
     @Override
-    protected Object getObjectFromBlob(ResultSet rs, String colName) throws ClassNotFoundException, IOException, SQLException {
+    protected Object getObjectFromBlob(ResultSet rs, String colName)
+            throws ClassNotFoundException, IOException, SQLException {
         Blob blobLocator = rs.getBlob(colName);
         if (blobLocator == null || blobLocator.length() == 0) {
             return null;

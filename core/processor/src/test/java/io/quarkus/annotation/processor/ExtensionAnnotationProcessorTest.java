@@ -34,22 +34,17 @@ class ExtensionAnnotationProcessorTest {
     void shouldGenerateABscFile(Results results) throws IOException {
         assertNoErrors(results);
         List<JavaFileObject> sources = results.generatedSources;
-        JavaFileObject bscFile = sources.stream()
-                .filter(source -> source.getName()
-                        .endsWith(".bsc"))
-                .findAny()
+        JavaFileObject bscFile = sources.stream().filter(source -> source.getName().endsWith(".bsc")).findAny()
                 .orElse(null);
         assertNotNull(bscFile);
 
-        String contents = removeLineBreaks(new String(bscFile
-                .openInputStream()
-                .readAllBytes(), StandardCharsets.UTF_8));
+        String contents = removeLineBreaks(
+                new String(bscFile.openInputStream().readAllBytes(), StandardCharsets.UTF_8));
         assertEquals("org.acme.examples.ClassWithBuildStep", contents);
     }
 
     private String removeLineBreaks(String s) {
-        return s.replace(System.getProperty("line.separator"), "")
-                .replace("\n", "");
+        return s.replace(System.getProperty("line.separator"), "").replace("\n", "");
     }
 
     @Test
@@ -59,11 +54,6 @@ class ExtensionAnnotationProcessorTest {
     }
 
     private static void assertNoErrors(Results results) {
-        assertEquals(0, results.find()
-                .errors()
-                .count(),
-                "Errors were: " + results.find()
-                        .errors()
-                        .diagnostics());
+        assertEquals(0, results.find().errors().count(), "Errors were: " + results.find().errors().diagnostics());
     }
 }

@@ -4,7 +4,6 @@ import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
  * Handler provided by another extension i.e. AWS Lambda HTTP
- *
  */
 public final class ProvidedAmazonLambdaHandlerBuildItem extends SimpleBuildItem {
 

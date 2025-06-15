@@ -19,10 +19,9 @@ import io.quarkus.jdbc.oracle.runtime.OracleServiceBindingConverter;
 import io.quarkus.jdbc.oracle.runtime.RollbackOnConnectionClosePoolInterceptor;
 
 /**
- * N.B. this processor is relatively simple as we rely on the /META-INF/native-image/
- * resources provided by the driver.
- * This should probably change, as we could probably generate better optimised
- * code by bypassing the static definitions coming with the driver.
+ * N.B. this processor is relatively simple as we rely on the /META-INF/native-image/ resources provided by the driver.
+ * This should probably change, as we could probably generate better optimised code by bypassing the static definitions
+ * coming with the driver.
  */
 public class OracleProcessor {
 
@@ -43,30 +42,25 @@ public class OracleProcessor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(OracleAgroalConnectionConfigurer.class)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                    .setUnremovable()
-                    .build());
-
             additionalBeans
-                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(RollbackOnConnectionClosePoolInterceptor.class)
-                            .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                            .setUnremovable()
-                            .build());
+                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(OracleAgroalConnectionConfigurer.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
+
+            additionalBeans.produce(
+                    new AdditionalBeanBuildItem.Builder().addBeanClass(RollbackOnConnectionClosePoolInterceptor.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider,
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            OracleServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    OracleServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.ORACLE));
     }

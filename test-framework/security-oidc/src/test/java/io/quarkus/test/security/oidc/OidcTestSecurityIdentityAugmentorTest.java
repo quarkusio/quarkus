@@ -24,33 +24,27 @@ import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 public class OidcTestSecurityIdentityAugmentorTest {
 
     @Test
-    @OidcSecurity(claims = {
-            @Claim(key = "exp", value = "123456789"),
-            @Claim(key = "iat", value = "123456788"),
-            @Claim(key = "nbf", value = "123456787"),
-            @Claim(key = "auth_time", value = "123456786"),
+    @OidcSecurity(claims = { @Claim(key = "exp", value = "123456789"), @Claim(key = "iat", value = "123456788"),
+            @Claim(key = "nbf", value = "123456787"), @Claim(key = "auth_time", value = "123456786"),
             @Claim(key = "customlong", value = "123456785", type = ClaimType.LONG),
-            @Claim(key = "email", value = "user@gmail.com"),
-            @Claim(key = "email_verified", value = "true"),
+            @Claim(key = "email", value = "user@gmail.com"), @Claim(key = "email_verified", value = "true"),
             @Claim(key = "email_checked", value = "false", type = ClaimType.BOOLEAN),
             @Claim(key = "jsonarray_claim", value = "[\"1\", \"2\"]", type = ClaimType.JSON_ARRAY),
-            @Claim(key = "jsonobject_claim", value = "{\"a\":\"1\", \"b\":\"2\"}", type = ClaimType.JSON_OBJECT)
-    })
+            @Claim(key = "jsonobject_claim", value = "{\"a\":\"1\", \"b\":\"2\"}", type = ClaimType.JSON_OBJECT) })
     public void testClaimValues() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new Principal() {
-                    @Override
-                    public String getName() {
-                        return "alice";
-                    }
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new Principal() {
+            @Override
+            public String getName() {
+                return "alice";
+            }
 
-                })
-                .addRole("user")
-                .build();
+        }).addRole("user").build();
 
-        OidcTestSecurityIdentityAugmentor augmentor = new OidcTestSecurityIdentityAugmentor(Optional.of("https://issuer.org"));
+        OidcTestSecurityIdentityAugmentor augmentor = new OidcTestSecurityIdentityAugmentor(
+                Optional.of("https://issuer.org"));
 
-        Annotation[] annotations = OidcTestSecurityIdentityAugmentorTest.class.getMethod("testClaimValues").getAnnotations();
+        Annotation[] annotations = OidcTestSecurityIdentityAugmentorTest.class.getMethod("testClaimValues")
+                .getAnnotations();
         JsonWebToken jwt = (JsonWebToken) augmentor.augment(identity, annotations).getPrincipal();
 
         assertEquals("alice", jwt.getName());
@@ -75,23 +69,21 @@ public class OidcTestSecurityIdentityAugmentorTest {
     }
 
     @Test
-    @OidcSecurity(userinfo = {
-            @UserInfo(key = "sub", value = "subject")
-    })
+    @OidcSecurity(userinfo = { @UserInfo(key = "sub", value = "subject") })
     public void testUserInfo() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new Principal() {
-                    @Override
-                    public String getName() {
-                        return "alice";
-                    }
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new Principal() {
+            @Override
+            public String getName() {
+                return "alice";
+            }
 
-                })
-                .build();
+        }).build();
 
-        OidcTestSecurityIdentityAugmentor augmentor = new OidcTestSecurityIdentityAugmentor(Optional.of("https://issuer.org"));
+        OidcTestSecurityIdentityAugmentor augmentor = new OidcTestSecurityIdentityAugmentor(
+                Optional.of("https://issuer.org"));
 
-        Annotation[] annotations = OidcTestSecurityIdentityAugmentorTest.class.getMethod("testUserInfo").getAnnotations();
+        Annotation[] annotations = OidcTestSecurityIdentityAugmentorTest.class.getMethod("testUserInfo")
+                .getAnnotations();
         SecurityIdentity augmentedIdentity = augmentor.augment(identity, annotations);
         JsonWebToken jwt = (JsonWebToken) augmentedIdentity.getPrincipal();
         assertEquals("alice", jwt.getName());

@@ -15,29 +15,19 @@ import io.restassured.RestAssured;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Make sure that it is possible to inject and use the RoutingContext
- * when processing GraphQL queries.
+ * Make sure that it is possible to inject and use the RoutingContext when processing GraphQL queries.
  */
 public class InjectRoutingContextTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(InjectRoutingContext.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClass(InjectRoutingContext.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void verifyRoutingContextCanBeInjected() {
         String query = getPayload("{ foo }");
-        RestAssured.given()
-                .body(query)
-                .header("Tenant-Id", "123456")
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(containsString("123456"));
+        RestAssured.given().body(query).header("Tenant-Id", "123456").contentType(MEDIATYPE_JSON).post("/graphql")
+                .then().assertThat().statusCode(200).body(containsString("123456"));
     }
 
     @GraphQLApi

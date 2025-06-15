@@ -26,11 +26,8 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
 
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        JobBuilder builder = list.buildItems().stream()
-                .filter(this::containsJobResource)
-                .map(replaceExistingJobResource(list))
-                .findAny()
-                .orElseGet(this::createJobResource)
+        JobBuilder builder = list.buildItems().stream().filter(this::containsJobResource)
+                .map(replaceExistingJobResource(list)).findAny().orElseGet(this::createJobResource)
                 .accept(JobBuilder.class, this::initJobResourceWithDefaults);
 
         list.addToItems(builder.build());
@@ -43,12 +40,7 @@ public class AddJobResourceDecorator extends ResourceProvidingDecorator<Kubernet
     private void initJobResourceWithDefaults(JobBuilder builder) {
         JobFluent<?>.SpecNested<JobBuilder> spec = builder.editOrNewSpec();
 
-        spec.editOrNewSelector()
-                .endSelector()
-                .editOrNewTemplate()
-                .editOrNewSpec()
-                .endSpec()
-                .endTemplate();
+        spec.editOrNewSelector().endSelector().editOrNewTemplate().editOrNewSpec().endSpec().endTemplate();
 
         // defaults for:
         // - match labels

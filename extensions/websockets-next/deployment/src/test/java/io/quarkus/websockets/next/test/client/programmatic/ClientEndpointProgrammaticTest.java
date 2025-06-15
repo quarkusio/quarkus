@@ -34,10 +34,9 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class ClientEndpointProgrammaticTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    });
 
     @Inject
     Instance<WebSocketConnector<ClientEndpoint>> connector;
@@ -47,14 +46,9 @@ public class ClientEndpointProgrammaticTest {
 
     @Test
     void testClient() throws InterruptedException {
-        WebSocketClientConnection connection1 = connector
-                .get()
-                .baseUri(uri)
-                .addHeader("Foo", "Lu")
-                .userData(TypedKey.forBoolean("boolean"), true)
-                .userData(TypedKey.forInt("int"), Integer.MAX_VALUE)
-                .userData(TypedKey.forLong("long"), Long.MAX_VALUE)
-                .userData(TypedKey.forString("string"), "Lu")
+        WebSocketClientConnection connection1 = connector.get().baseUri(uri).addHeader("Foo", "Lu")
+                .userData(TypedKey.forBoolean("boolean"), true).userData(TypedKey.forInt("int"), Integer.MAX_VALUE)
+                .userData(TypedKey.forLong("long"), Long.MAX_VALUE).userData(TypedKey.forString("string"), "Lu")
                 .connectAndAwait();
         assertTrue(connection1.userData().get(TypedKey.forBoolean("boolean")));
         assertEquals(Integer.MAX_VALUE, connection1.userData().get(TypedKey.forInt("int")));
@@ -62,14 +56,9 @@ public class ClientEndpointProgrammaticTest {
         assertEquals("Lu", connection1.userData().get(TypedKey.forString("string")));
         connection1.sendTextAndAwait("Hi!");
 
-        WebSocketClientConnection connection2 = connector
-                .get()
-                .baseUri(uri)
-                .addHeader("Foo", "Ma")
-                .userData(TypedKey.forBoolean("boolean"), false)
-                .userData(TypedKey.forInt("int"), Integer.MIN_VALUE)
-                .userData(TypedKey.forLong("long"), Long.MIN_VALUE)
-                .userData(TypedKey.forString("string"), "Ma")
+        WebSocketClientConnection connection2 = connector.get().baseUri(uri).addHeader("Foo", "Ma")
+                .userData(TypedKey.forBoolean("boolean"), false).userData(TypedKey.forInt("int"), Integer.MIN_VALUE)
+                .userData(TypedKey.forLong("long"), Long.MIN_VALUE).userData(TypedKey.forString("string"), "Ma")
                 .connectAndAwait();
         assertFalse(connection2.userData().get(TypedKey.forBoolean("boolean")));
         assertEquals(Integer.MIN_VALUE, connection2.userData().get(TypedKey.forInt("int")));
@@ -80,12 +69,16 @@ public class ClientEndpointProgrammaticTest {
         assertTrue(ClientEndpoint.OPEN_LATCH.await(5, TimeUnit.SECONDS));
         assertTrue(ClientEndpoint.CONNECTION_USER_DATA.containsKey(connection1.id()));
         assertTrue(ClientEndpoint.CONNECTION_USER_DATA.get(connection1.id()).get(TypedKey.forBoolean("boolean")));
-        assertEquals(Integer.MAX_VALUE, ClientEndpoint.CONNECTION_USER_DATA.get(connection1.id()).get(TypedKey.forInt("int")));
-        assertEquals(Long.MAX_VALUE, ClientEndpoint.CONNECTION_USER_DATA.get(connection1.id()).get(TypedKey.forLong("long")));
+        assertEquals(Integer.MAX_VALUE,
+                ClientEndpoint.CONNECTION_USER_DATA.get(connection1.id()).get(TypedKey.forInt("int")));
+        assertEquals(Long.MAX_VALUE,
+                ClientEndpoint.CONNECTION_USER_DATA.get(connection1.id()).get(TypedKey.forLong("long")));
         assertEquals("Lu", ClientEndpoint.CONNECTION_USER_DATA.get(connection1.id()).get(TypedKey.forString("string")));
         assertFalse(ClientEndpoint.CONNECTION_USER_DATA.get(connection2.id()).get(TypedKey.forBoolean("boolean")));
-        assertEquals(Integer.MIN_VALUE, ClientEndpoint.CONNECTION_USER_DATA.get(connection2.id()).get(TypedKey.forInt("int")));
-        assertEquals(Long.MIN_VALUE, ClientEndpoint.CONNECTION_USER_DATA.get(connection2.id()).get(TypedKey.forLong("long")));
+        assertEquals(Integer.MIN_VALUE,
+                ClientEndpoint.CONNECTION_USER_DATA.get(connection2.id()).get(TypedKey.forInt("int")));
+        assertEquals(Long.MIN_VALUE,
+                ClientEndpoint.CONNECTION_USER_DATA.get(connection2.id()).get(TypedKey.forLong("long")));
         assertEquals("Ma", ClientEndpoint.CONNECTION_USER_DATA.get(connection2.id()).get(TypedKey.forString("string")));
 
         assertTrue(ClientEndpoint.MESSAGE_LATCH.await(5, TimeUnit.SECONDS));

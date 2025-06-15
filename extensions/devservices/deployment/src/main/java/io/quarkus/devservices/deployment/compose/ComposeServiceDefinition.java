@@ -35,9 +35,7 @@ public class ComposeServiceDefinition {
         if (ports == null) {
             return Collections.emptyList();
         }
-        return ports.stream().map(PortBinding::parse)
-                .map(PortBinding::getExposedPort)
-                .collect(Collectors.toList());
+        return ports.stream().map(PortBinding::parse).map(PortBinding::getExposedPort).collect(Collectors.toList());
     }
 
     public boolean hasHealthCheck() {

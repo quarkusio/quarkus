@@ -22,28 +22,20 @@ import io.restassured.RestAssured;
 public class ImplClassExceptionMapperTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(CustomResourceImpl.class,
-                                    CustomResource.class,
-                                    GlobalCustomResourceImpl.class,
-                                    GlobalCustomResource.class,
-                                    DefaultCustomResource.class,
-                                    ExceptionUtil.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(CustomResourceImpl.class, CustomResource.class,
+                    GlobalCustomResourceImpl.class, GlobalCustomResource.class, DefaultCustomResource.class,
+                    ExceptionUtil.class);
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.get("/custom/error")
-                .then().statusCode(416);
-        RestAssured.get("/stock/error")
-                .then().statusCode(500);
-        RestAssured.get("/default/error")
-                .then().statusCode(417);
+        RestAssured.get("/custom/error").then().statusCode(416);
+        RestAssured.get("/stock/error").then().statusCode(500);
+        RestAssured.get("/default/error").then().statusCode(417);
     }
 
     @Path("default")

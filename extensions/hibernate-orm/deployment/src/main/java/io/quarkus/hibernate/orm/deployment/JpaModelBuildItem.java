@@ -15,8 +15,7 @@ import io.quarkus.builder.item.SimpleBuildItem;
 import io.quarkus.hibernate.orm.runtime.boot.xml.RecordableXmlMapping;
 
 /**
- * Internal model to represent which objects are likely needing enhancement
- * via HibernateEntityEnhancer.
+ * Internal model to represent which objects are likely needing enhancement via HibernateEntityEnhancer.
  */
 public final class JpaModelBuildItem extends SimpleBuildItem {
 
@@ -65,15 +64,16 @@ public final class JpaModelBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * @return the list of classes that might be retrieved by Hibernate ORM as CDI beans,
-     *         e.g. converters, listeners, ...
+     * @return the list of classes that might be retrieved by Hibernate ORM as CDI beans, e.g. converters, listeners,
+     *         ...
      */
     public Set<DotName> getPotentialCdiBeanClassNames() {
         return potentialCdiBeanClassNames;
     }
 
     /**
-     * @return the list of all model class names: entities, mapped super classes, {@link #getPotentialCdiBeanClassNames()}...
+     * @return the list of all model class names: entities, mapped super classes,
+     *         {@link #getPotentialCdiBeanClassNames()}...
      */
     public Set<String> getAllModelClassNames() {
         return allModelClassNames;

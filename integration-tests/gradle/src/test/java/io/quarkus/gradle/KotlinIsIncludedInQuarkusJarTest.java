@@ -25,7 +25,8 @@ public class KotlinIsIncludedInQuarkusJarTest extends QuarkusGradleWrapperTestBa
         Path jar = quarkusApp.resolve("code-with-quarkus-unspecified.jar");
         assertThat(jar).exists();
         try (JarFile jarFile = new JarFile(jar.toFile())) {
-            assertJarContainsEntry(jarFile, "basic-kotlin-application-project/src/main/kotlin/org/acme/MyMainClass.class");
+            assertJarContainsEntry(jarFile,
+                    "basic-kotlin-application-project/src/main/kotlin/org/acme/MyMainClass.class");
             assertJarContainsEntry(jarFile, "org/acme/GreetingResource.class");
             assertJarContainsEntry(jarFile, "META-INF/code-with-quarkus.kotlin_module");
         }

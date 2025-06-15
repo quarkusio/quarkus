@@ -41,10 +41,9 @@ class SpringCloudConfigClientGatewayTest {
     void testBasicExchange() throws Exception {
         final String applicationName = "foo";
         final String profile = "dev";
-        final String springCloudConfigUrl = String.format(
-                "/%s/%s/%s", applicationName, profile, config.label().get());
-        wireMockServer.stubFor(WireMock.get(springCloudConfigUrl).willReturn(WireMock
-                .okJson(getJsonStringForApplicationAndProfile(applicationName, profile))));
+        final String springCloudConfigUrl = String.format("/%s/%s/%s", applicationName, profile, config.label().get());
+        wireMockServer.stubFor(WireMock.get(springCloudConfigUrl)
+                .willReturn(WireMock.okJson(getJsonStringForApplicationAndProfile(applicationName, profile))));
 
         Response response = sut.exchange(applicationName, profile).await().indefinitely();
 
@@ -70,7 +69,8 @@ class SpringCloudConfigClientGatewayTest {
     }
 
     private String getJsonStringForApplicationAndProfile(String applicationName, String profile) throws IOException {
-        return IOUtils.toString(this.getClass().getResourceAsStream(String.format("/%s-%s.json", applicationName, profile)),
+        return IOUtils.toString(
+                this.getClass().getResourceAsStream(String.format("/%s-%s.json", applicationName, profile)),
                 Charset.defaultCharset());
     }
 

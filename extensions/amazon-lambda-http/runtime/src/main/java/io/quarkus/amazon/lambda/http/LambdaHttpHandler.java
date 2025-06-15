@@ -95,7 +95,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         @Override
         public void handleMessage(Object msg) {
             try {
-                //log.info("Got message: " + msg.getClass().getName());
+                // log.info("Got message: " + msg.getClass().getName());
 
                 if (msg instanceof HttpResponse) {
                     HttpResponse res = (HttpResponse) msg;
@@ -116,8 +116,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                         final StringBuilder sb = new StringBuilder();
                         for (Iterator<String> valueIterator = allForName.iterator(); valueIterator.hasNext();) {
                             String val = valueIterator.next();
-                            if (name.equalsIgnoreCase("Transfer-Encoding")
-                                    && val.equals("chunked")) {
+                            if (name.equalsIgnoreCase("Transfer-Encoding") && val.equals("chunked")) {
                                 continue; // ignore transfer encoding, chunked screws up message and response
                             }
                             sb.append(val);
@@ -176,8 +175,7 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
     }
 
     private APIGatewayV2HTTPResponse nettyDispatch(InetSocketAddress clientAddress, APIGatewayV2HTTPEvent request,
-            Context context)
-            throws Exception {
+            Context context) throws Exception {
         QuarkusHttpHeaders quarkusHeaders = new QuarkusHttpHeaders();
         quarkusHeaders.setContextObject(Context.class, context);
         quarkusHeaders.setContextObject(APIGatewayV2HTTPEvent.class, request);
@@ -190,11 +188,11 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
         if (httpMethod == null) {
             throw new IllegalStateException("Missing HTTP method in request event");
         }
-        DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
-                httpMethod, ofNullable(request.getRawQueryString())
-                        .filter(q -> !q.isEmpty()).map(q -> request.getRawPath() + '?' + q).orElse(request.getRawPath()),
+        DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1, httpMethod,
+                ofNullable(request.getRawQueryString()).filter(q -> !q.isEmpty())
+                        .map(q -> request.getRawPath() + '?' + q).orElse(request.getRawPath()),
                 quarkusHeaders);
-        if (request.getHeaders() != null) { //apparently this can be null if no headers are sent
+        if (request.getHeaders() != null) { // apparently this can be null if no headers are sent
             for (Map.Entry<String, String> header : request.getHeaders().entrySet()) {
                 if (header.getValue() != null) {
                     // Some header values have commas in them and we don't want to
@@ -224,25 +222,24 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
                 ByteBuf body = Unpooled.wrappedBuffer(Base64.getDecoder().decode(request.getBody()));
                 requestContent = new DefaultLastHttpContent(body);
             } else {
-                ByteBuf body = Unpooled.copiedBuffer(request.getBody(), StandardCharsets.UTF_8); //TODO: do we need to look at the request encoding?
+                ByteBuf body = Unpooled.copiedBuffer(request.getBody(), StandardCharsets.UTF_8); // TODO: do we need to
+                                                                                                 // look at the request
+                                                                                                 // encoding?
                 requestContent = new DefaultLastHttpContent(body);
             }
         }
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
-        if (request.getRequestContext() != null
-                && request.getRequestContext().getHttp() != null
+        if (request.getRequestContext() != null && request.getRequestContext().getHttp() != null
                 && request.getRequestContext().getHttp().getSourceIp() != null
                 && request.getRequestContext().getHttp().getSourceIp().length() > 0) {
             int port = 443; // todo, may be bad to assume 443?
-            if (request.getHeaders() != null &&
-                    request.getHeaders().get("X-Forwarded-Port") != null) {
+            if (request.getHeaders() != null && request.getHeaders().get("X-Forwarded-Port") != null) {
                 port = Integer.parseInt(request.getHeaders().get("X-Forwarded-Port"));
             }
-            connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
-                    SocketAddress.inetSocketAddress(port,
-                            request.getRequestContext().getHttp().getSourceIp()));
+            connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE)
+                    .set(SocketAddress.inetSocketAddress(port, request.getRequestContext().getHttp().getSourceIp()));
         }
         connection.sendMessage(nettyRequest);
         connection.sendMessage(requestContent);
@@ -262,8 +259,8 @@ public class LambdaHttpHandler implements RequestHandler<APIGatewayV2HTTPEvent, 
     private boolean isText(String contentType) {
         if (contentType != null) {
             String ct = contentType.toLowerCase(Locale.ROOT);
-            return (ct.startsWith("text") || ct.contains("json") || (ct.contains("xml") && !ct.contains("openxmlformats"))
-                    || ct.contains("yaml"));
+            return (ct.startsWith("text") || ct.contains("json")
+                    || (ct.contains("xml") && !ct.contains("openxmlformats")) || ct.contains("yaml"));
         }
         return false;
     }

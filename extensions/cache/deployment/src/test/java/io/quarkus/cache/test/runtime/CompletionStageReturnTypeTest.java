@@ -29,7 +29,8 @@ public class CompletionStageReturnTypeTest {
     private static final String KEY_2 = "key-2";
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -38,14 +39,16 @@ public class CompletionStageReturnTypeTest {
     void testCacheResult() throws ExecutionException, InterruptedException {
         // STEP 1
         // Action: a method annotated with @CacheResult and returning a CompletableFuture is called.
-        // Expected effect: the method is invoked and its result is cached asynchronously, as CompletableFuture is eager.
+        // Expected effect: the method is invoked and its result is cached asynchronously, as CompletableFuture is
+        // eager.
         // Verified by: invocations counter.
         CompletableFuture<String> cf1 = cachedService.cacheResult1(KEY_1);
         assertEquals(1, cachedService.getCacheResultInvocations());
 
         // STEP 2
         // Action: same call as STEP 1.
-        // Expected effect: the method is not invoked and a new CompletableFuture instance is returned (because of the cache interceptor implementation).
+        // Expected effect: the method is not invoked and a new CompletableFuture instance is returned (because of the
+        // cache interceptor implementation).
         // Verified by: invocations counter and different objects references between STEPS 1 AND 2 results.
         CompletableFuture<String> cf2 = cachedService.cacheResult1(KEY_1);
         assertEquals(1, cachedService.getCacheResultInvocations());

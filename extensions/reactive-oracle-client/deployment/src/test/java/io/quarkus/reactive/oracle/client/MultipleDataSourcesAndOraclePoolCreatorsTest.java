@@ -21,10 +21,8 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withConfigurationResource("application-multiple-datasources-with-erroneous-url.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingDefaultDataSource.class)
-                    .addClass(BeanUsingHibernateDataSource.class)
-                    .addClass(DefaultOraclePoolCreator.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BeanUsingDefaultDataSource.class)
+                    .addClass(BeanUsingHibernateDataSource.class).addClass(DefaultOraclePoolCreator.class)
                     .addClass(HibernateOraclePoolCreator.class));
 
     @Inject
@@ -35,10 +33,8 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
 
     @Test
     public void testMultipleDataSources() {
-        beanUsingDefaultDataSource.verify()
-                .thenCompose(v -> beanUsingHibernateDataSource.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingDefaultDataSource.verify().thenCompose(v -> beanUsingHibernateDataSource.verify())
+                .toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -85,7 +81,8 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(12345, input.oracleConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
+            assertEquals(12345, input.oracleConnectOptions().getPort()); // validate that the bean has been called for
+                                                                         // the proper datasource
             return Pool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
                     input.poolOptions());
         }
@@ -97,7 +94,8 @@ public class MultipleDataSourcesAndOraclePoolCreatorsTest {
 
         @Override
         public Pool create(Input input) {
-            assertEquals(55555, input.oracleConnectOptions().getPort()); // validate that the bean has been called for the proper datasource
+            assertEquals(55555, input.oracleConnectOptions().getPort()); // validate that the bean has been called for
+                                                                         // the proper datasource
             return Pool.pool(input.vertx(), input.oracleConnectOptions().setHost("localhost").setPort(1521),
                     input.poolOptions());
         }

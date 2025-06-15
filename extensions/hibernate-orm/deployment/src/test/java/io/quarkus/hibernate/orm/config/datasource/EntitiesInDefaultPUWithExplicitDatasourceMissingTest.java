@@ -13,18 +13,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EntitiesInDefaultPUWithExplicitDatasourceMissingTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEntity.class))
             .overrideConfigKey("quarkus.hibernate-orm.datasource", "ds-1")
             .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "drop-and-create")
-            .assertException(t -> assertThat(t)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContainingAll(
-                            "Unable to find datasource 'ds-1' for persistence unit '<default>'",
-                            "Datasource 'ds-1' is not configured.",
-                            "To solve this, configure datasource 'ds-1'.",
-                            "Refer to https://quarkus.io/guides/datasource for guidance."));
+            .assertException(t -> assertThat(t).isInstanceOf(ConfigurationException.class).hasMessageContainingAll(
+                    "Unable to find datasource 'ds-1' for persistence unit '<default>'",
+                    "Datasource 'ds-1' is not configured.", "To solve this, configure datasource 'ds-1'.",
+                    "Refer to https://quarkus.io/guides/datasource for guidance."));
 
     @Test
     public void testInvalidConfiguration() {

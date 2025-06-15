@@ -72,8 +72,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     Consumer<Throwable> asyncWriteHandler;
     protected Consumer<ResteasyReactiveRequestContext> preCommitTask;
 
-    public ServletRequestContext(Deployment deployment,
-            HttpServletRequest request, HttpServletResponse response,
+    public ServletRequestContext(Deployment deployment, HttpServletRequest request, HttpServletResponse response,
             ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain,
             RoutingContext context, HttpServerExchange exchange) {
         super(deployment, requestContext, handlerChain, abortHandlerChain);
@@ -249,7 +248,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         try {
             response.getOutputStream().close();
         } catch (IOException e) {
-            //ignore
+            // ignore
         }
         context.request().connection().close();
     }
@@ -268,19 +267,14 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
     }
 
     /**
-     * Retrieves the parameters from the current HTTP request as a
-     * {@link Map<String, List<String>>}, where the keys are parameter names
-     * and the values are lists of parameter values. This allows parameters
-     * to be extracted from the URL without knowing their names in advance.
+     * Retrieves the parameters from the current HTTP request as a {@link Map<String, List<String>>}, where the keys are
+     * parameter names and the values are lists of parameter values. This allows parameters to be extracted from the URL
+     * without knowing their names in advance. The method is used by {@link ParameterExtractor}, which works with
+     * characteristics such as parameter name, single/multiple values, and encoding. Since it's not always possible to
+     * distinguish between {@link Map} and {@link MultivaluedMap}, the method returns a unified {@link Map<String,
+     * List<String>>} for handling both cases downstream by {@link ParameterHandler}.
      *
-     * The method is used by {@link ParameterExtractor}, which works with characteristics
-     * such as parameter name, single/multiple values, and encoding. Since it's
-     * not always possible to distinguish between {@link Map} and {@link MultivaluedMap},
-     * the method returns a unified {@link Map<String, List<String>>} for handling
-     * both cases downstream by {@link ParameterHandler}.
-     *
-     * @return a {@link Map<String, List<String>>} containing the parameters and
-     *         their corresponding values.
+     * @return a {@link Map<String, List<String>>} containing the parameters and their corresponding values.
      */
     @Override
     public Map<String, List<String>> getQueryParamsMap() {
@@ -326,7 +320,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public ServerHttpResponse pauseRequestInput() {
-        //TODO
+        // TODO
         return this;
     }
 
@@ -368,7 +362,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
 
     @Override
     public boolean isOnIoThread() {
-        //does not really apply to Servlet
+        // does not really apply to Servlet
         return true;
     }
 
@@ -383,7 +377,7 @@ public class ServletRequestContext extends ResteasyReactiveRequestContext
         try {
             response.getOutputStream().close();
         } catch (IOException e) {
-            //ignore
+            // ignore
         }
         return this;
     }

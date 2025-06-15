@@ -38,11 +38,8 @@ public class DependencyConditionMatchesConditionalDependencyTest extends Bootstr
         addToExpectedLib(extC.getRuntime());
         addToExpectedLib(extD.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extC)
-                .addDependency(extA);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extC).addDependency(extA);
     }
 
     @Override
@@ -78,11 +75,6 @@ public class DependencyConditionMatchesConditionalDependencyTest extends Bootstr
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[] {
-                "ext-a",
-                "ext-b",
-                "ext-c",
-                "ext-d"
-        };
+        return new String[] { "ext-a", "ext-b", "ext-c", "ext-d" };
     }
 }

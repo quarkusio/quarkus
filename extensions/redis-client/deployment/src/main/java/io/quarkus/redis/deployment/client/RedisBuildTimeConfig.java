@@ -25,8 +25,7 @@ public interface RedisBuildTimeConfig {
     /**
      * Configures additional (named) Redis clients.
      * <p>
-     * Each client has a unique name which must be identified to select the right client.
-     * For example:
+     * Each client has a unique name which must be identified to select the right client. For example:
      * <p>
      *
      * <pre>
@@ -35,9 +34,8 @@ public interface RedisBuildTimeConfig {
      * </pre>
      * <p>
      * And then use the {@link io.quarkus.redis.client.RedisClientName} annotation to select the
-     * {@link io.vertx.mutiny.redis.client.Redis},
-     * {@link io.vertx.redis.client.Redis}, {@link io.vertx.mutiny.redis.client.RedisAPI} and
-     * {@link io.vertx.redis.client.RedisAPI} beans.
+     * {@link io.vertx.mutiny.redis.client.Redis}, {@link io.vertx.redis.client.Redis},
+     * {@link io.vertx.mutiny.redis.client.RedisAPI} and {@link io.vertx.redis.client.RedisAPI} beans.
      * <p>
      *
      * <pre>

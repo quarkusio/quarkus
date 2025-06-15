@@ -11,8 +11,8 @@ abstract class BasicDependencyTreeTestBase extends DependencyTreeMojoTestBase {
 
         final TsQuarkusExt coreExt = new TsQuarkusExt("test-core-ext");
         app = TsArtifact.jar("test-app")
-                .addDependency(new TsArtifact(TsArtifact.DEFAULT_GROUP_ID, "artifact-with-classifier", "classifier", "jar",
-                        TsArtifact.DEFAULT_VERSION))
+                .addDependency(new TsArtifact(TsArtifact.DEFAULT_GROUP_ID, "artifact-with-classifier", "classifier",
+                        "jar", TsArtifact.DEFAULT_VERSION))
                 .addDependency(new TsQuarkusExt("test-ext2")
                         .addDependency(new TsQuarkusExt("test-ext1").addDependency(coreExt)))
                 .addDependency(new TsDependency(TsArtifact.jar("optional"), true))

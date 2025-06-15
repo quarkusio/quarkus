@@ -20,8 +20,8 @@ public class MGetArgs implements RedisCommandExtraArguments {
 
     /**
      * With LATEST, TS.MGET also reports the compacted value of the latest possibly partial bucket, given that this
-     * bucket's start time falls within [fromTimestamp, toTimestamp]. Without LATEST, TS.MGET does not report the
-     * latest possibly partial bucket. When a time series is not a compaction, LATEST is ignored.
+     * bucket's start time falls within [fromTimestamp, toTimestamp]. Without LATEST, TS.MGET does not report the latest
+     * possibly partial bucket. When a time series is not a compaction, LATEST is ignored.
      *
      * @return the current {@code MGetArgs}
      */
@@ -31,8 +31,8 @@ public class MGetArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * includes in the reply all label-value pairs representing metadata labels of the time series.
-     * If WITHLABELS or SELECTED_LABELS are not specified, by default, an empty list is reported as label-value pairs.
+     * includes in the reply all label-value pairs representing metadata labels of the time series. If WITHLABELS or
+     * SELECTED_LABELS are not specified, by default, an empty list is reported as label-value pairs.
      *
      * @return the current {@code MGetArgs}
      */
@@ -42,12 +42,14 @@ public class MGetArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Add a label to the list of selected label.
-     * Returns a subset of the label-value pairs that represent metadata labels of the time series.
-     * Use when a large number of labels exists per series, but only the values of some of the labels are required.
-     * If WITHLABELS or SELECTED_LABELS are not specified, by default, an empty list is reported as label-value pairs.
+     * Add a label to the list of selected label. Returns a subset of the label-value pairs that represent metadata
+     * labels of the time series. Use when a large number of labels exists per series, but only the values of some of
+     * the labels are required. If WITHLABELS or SELECTED_LABELS are not specified, by default, an empty list is
+     * reported as label-value pairs.
      *
-     * @param label the label to select
+     * @param label
+     *        the label to select
+     *
      * @return the current {@code MGetArgs}
      */
     public MGetArgs selectedLabel(String label) {

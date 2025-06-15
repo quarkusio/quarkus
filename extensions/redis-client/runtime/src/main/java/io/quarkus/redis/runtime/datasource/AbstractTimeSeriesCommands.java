@@ -48,7 +48,8 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         positive(timestamp, "timestamp");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.TS_ADD).put(marshaller.encode(key)).put(timestamp).put(value).putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.TS_ADD).put(marshaller.encode(key)).put(timestamp).put(value)
+                .putArgs(args);
 
         return execute(cmd);
     }
@@ -71,7 +72,8 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
     Uni<Response> _tsAdd(K key, double value, AddArgs args) {
         nonNull(key, "key");
         nonNull(args, "args");
-        RedisCommand cmd = RedisCommand.of(Command.TS_ADD).put(marshaller.encode(key)).put("*").put(value).putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.TS_ADD).put(marshaller.encode(key)).put("*").put(value)
+                .putArgs(args);
         return execute(cmd);
     }
 
@@ -89,24 +91,23 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         nonNull(aggregation, "aggregation");
         nonNull(bucketDuration, "bucketDuration");
 
-        RedisCommand cmd = RedisCommand.of(Command.TS_CREATERULE).put(marshaller.encode(key)).put(marshaller.encode(destKey))
-                .put("AGGREGATION").put(aggregation.toString()).put(bucketDuration.toMillis());
+        RedisCommand cmd = RedisCommand.of(Command.TS_CREATERULE).put(marshaller.encode(key))
+                .put(marshaller.encode(destKey)).put("AGGREGATION").put(aggregation.toString())
+                .put(bucketDuration.toMillis());
         return execute(cmd);
     }
 
-    Uni<Response> _tsCreateRule(K key, K destKey, Aggregation aggregation, Duration bucketDuration, long alignTimestamp) {
+    Uni<Response> _tsCreateRule(K key, K destKey, Aggregation aggregation, Duration bucketDuration,
+            long alignTimestamp) {
         nonNull(key, "key");
         nonNull(destKey, "destKey");
         nonNull(aggregation, "aggregation");
         nonNull(bucketDuration, "bucketDuration");
         positive(alignTimestamp, "alignTimestamp");
 
-        RedisCommand cmd = RedisCommand.of(Command.TS_CREATERULE)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(destKey))
-                .put("AGGREGATION")
-                .put(aggregation.toString()).put(bucketDuration.toMillis())
-                .put(alignTimestamp);
+        RedisCommand cmd = RedisCommand.of(Command.TS_CREATERULE).put(marshaller.encode(key))
+                .put(marshaller.encode(destKey)).put("AGGREGATION").put(aggregation.toString())
+                .put(bucketDuration.toMillis()).put(alignTimestamp);
         return execute(cmd);
     }
 
@@ -131,7 +132,8 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         positive(fromTimestamp, "fromTimestamp");
         positive(toTimestamp, "toTimestamp");
 
-        RedisCommand cmd = RedisCommand.of(Command.TS_DEL).put(marshaller.encode(key)).put(fromTimestamp).put(toTimestamp);
+        RedisCommand cmd = RedisCommand.of(Command.TS_DEL).put(marshaller.encode(key)).put(fromTimestamp)
+                .put(toTimestamp);
         return execute(cmd);
     }
 
@@ -139,7 +141,8 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(destKey, "destKey");
 
-        RedisCommand cmd = RedisCommand.of(Command.TS_DELETERULE).put(marshaller.encode(key)).put(marshaller.encode(destKey));
+        RedisCommand cmd = RedisCommand.of(Command.TS_DELETERULE).put(marshaller.encode(key))
+                .put(marshaller.encode(destKey));
         return execute(cmd);
     }
 
@@ -319,7 +322,8 @@ public class AbstractTimeSeriesCommands<K> extends AbstractRedisCommands {
         nonNull(range, "range");
         nonNull(args, "args");
 
-        RedisCommand cmd = RedisCommand.of(Command.TS_RANGE).put(marshaller.encode(key)).putAll(range.toArgs()).putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.TS_RANGE).put(marshaller.encode(key)).putAll(range.toArgs())
+                .putArgs(args);
         return execute(cmd);
     }
 

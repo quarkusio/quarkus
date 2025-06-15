@@ -5,9 +5,8 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.deployment.pkg.NativeConfig;
 
 /**
- * Supplier that can be used to only run build steps in the
- * native or native sources builds.
- * Most build steps that need to be run conditionally should use this instead of {@link NativeBuild}.
+ * Supplier that can be used to only run build steps in the native or native sources builds. Most build steps that need
+ * to be run conditionally should use this instead of {@link NativeBuild}.
  *
  * @deprecated In the future, it will be possible to request multiple output types.
  */

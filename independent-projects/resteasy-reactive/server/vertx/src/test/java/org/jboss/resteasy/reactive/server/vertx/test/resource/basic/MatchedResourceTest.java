@@ -22,8 +22,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Regression tests for RESTEASY-549 and RESTEASY-537
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Matched Resource Test")
@@ -32,15 +35,14 @@ public class MatchedResourceTest {
     static Client client;
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(MatchedResource.class, PortProviderUtil.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(MatchedResource.class, PortProviderUtil.class);
+            return war;
+        }
+    });
 
     @BeforeAll
     public static void init() {
@@ -58,6 +60,7 @@ public class MatchedResourceTest {
 
     /**
      * @tpTestDetails Regression test for RESTEASY-549
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
@@ -79,14 +82,15 @@ public class MatchedResourceTest {
 
     /**
      * @tpTestDetails Regression test for RESTEASY-537
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test
     @DisplayName("Test Match")
     public void testMatch() throws Exception {
         WebTarget base = client.target(generateURL("/match"));
-        Response response = base.request().header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
-                .get();
+        Response response = base.request()
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8").get();
         Assertions.assertEquals("text/html;charset=UTF-8", response.getHeaders().getFirst("Content-Type"));
         String res = response.readEntity(String.class);
         Assertions.assertEquals("*/*", res, "Wrong response content");
@@ -98,8 +102,7 @@ public class MatchedResourceTest {
     public void testInvalidQValue() throws Exception {
         WebTarget base = client.target(generateURL("/match"));
         Response response = base.request()
-                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=malformed")
-                .get();
+                .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=malformed").get();
         Assertions.assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
         response.close();
     }
@@ -113,6 +116,7 @@ public class MatchedResourceTest {
 
     /**
      * @tpTestDetails Check post request on resource with @GET annotation
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

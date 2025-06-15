@@ -23,7 +23,8 @@ public class KeycloakContainer extends GenericContainer<KeycloakContainer> {
         } else if (KEYCLOAK_VERSION != null) {
             return "quay.io/keycloak/keycloak:" + KEYCLOAK_VERSION;
         } else {
-            throw new ConfigurationException("Please set either 'keycloak.docker.image' or 'keycloak.version' system property");
+            throw new ConfigurationException(
+                    "Please set either 'keycloak.docker.image' or 'keycloak.version' system property");
         }
     }
 
@@ -87,12 +88,11 @@ public class KeycloakContainer extends GenericContainer<KeycloakContainer> {
     }
 
     public String getServerUrl() {
-        return String.format("%s://%s:%d" + getAuthPath(),
-                useHttps ? "https" : "http", this.getHost(), this.getMappedPort(getPort()));
+        return String.format("%s://%s:%d" + getAuthPath(), useHttps ? "https" : "http", this.getHost(),
+                this.getMappedPort(getPort()));
     }
 
     public String getInternalUrl() {
-        return String.format("%s://keycloak:%d" + getAuthPath(),
-                useHttps ? "https" : "http", getPort());
+        return String.format("%s://keycloak:%d" + getAuthPath(), useHttps ? "https" : "http", getPort());
     }
 }

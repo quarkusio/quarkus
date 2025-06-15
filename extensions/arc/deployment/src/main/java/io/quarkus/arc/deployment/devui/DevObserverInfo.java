@@ -21,12 +21,14 @@ public class DevObserverInfo implements Comparable<DevObserverInfo> {
         }
         if (observer.getDeclaringBean() != null) {
             return new DevObserverInfo(predicate.test(observer.getObserverMethod().declaringClass().name()),
-                    Name.from(observer.getObserverMethod().declaringClass().name()), observer.getObserverMethod().name(),
-                    Name.from(observer.getObservedType()), qualifiers, observer.getPriority(), observer.isAsync(),
-                    observer.getReception(), observer.getTransactionPhase());
+                    Name.from(observer.getObserverMethod().declaringClass().name()),
+                    observer.getObserverMethod().name(), Name.from(observer.getObservedType()), qualifiers,
+                    observer.getPriority(), observer.isAsync(), observer.getReception(),
+                    observer.getTransactionPhase());
         } else {
             return new DevObserverInfo(false, null, null, Name.from(observer.getObservedType()), qualifiers,
-                    observer.getPriority(), observer.isAsync(), observer.getReception(), observer.getTransactionPhase());
+                    observer.getPriority(), observer.isAsync(), observer.getReception(),
+                    observer.getTransactionPhase());
         }
     }
 
@@ -41,7 +43,8 @@ public class DevObserverInfo implements Comparable<DevObserverInfo> {
     private final TransactionPhase transactionPhase;
 
     public DevObserverInfo(boolean isApplicationObserver, Name declaringClass, String methodName, Name observedType,
-            List<Name> qualifiers, int priority, boolean isAsync, Reception reception, TransactionPhase transactionPhase) {
+            List<Name> qualifiers, int priority, boolean isAsync, Reception reception,
+            TransactionPhase transactionPhase) {
         this.isApplicationObserver = isApplicationObserver;
         this.declaringClass = declaringClass;
         this.methodName = methodName;

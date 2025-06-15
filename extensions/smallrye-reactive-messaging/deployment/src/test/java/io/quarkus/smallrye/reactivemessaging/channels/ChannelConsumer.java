@@ -21,10 +21,7 @@ public class ChannelConsumer {
     Multi<Message<String>> sourceStream;
 
     public List<String> consume() {
-        return sourceStream
-                .onItem().transform(Message::getPayload)
-                .collect().asList()
-                .await().indefinitely();
+        return sourceStream.onItem().transform(Message::getPayload).collect().asList().await().indefinitely();
     }
 
     @Outgoing("source-channel")

@@ -49,12 +49,13 @@ public class SseParser implements Handler<Buffer> {
      */
     private String eventType;
     /**
-     * The content type we're reading. Defaults to the X-Sse-Element-Type header and changes with the "content-type" fields
+     * The content type we're reading. Defaults to the X-Sse-Element-Type header and changes with the "content-type"
+     * fields
      */
     private String contentType;
     /**
-     * The content type we're reading. If the X-Sse-Element-Type header is not set, then it defaults to the declared @Produces
-     * (if any)
+     * The content type we're reading. If the X-Sse-Element-Type header is not set, then it defaults to the
+     * declared @Produces (if any)
      */
     private String contentTypeHeader;
     /**
@@ -136,8 +137,7 @@ public class SseParser implements Handler<Buffer> {
     private void parseEvent() {
         // optional BOM
         if (firstByte && i == 0 && 1 < bytes.length) {
-            if (bytes[0] == (byte) 0xFE
-                    && bytes[1] == (byte) 0xFF) {
+            if (bytes[0] == (byte) 0xFE && bytes[1] == (byte) 0xFF) {
                 i = 2;
             }
         }
@@ -165,8 +165,7 @@ public class SseParser implements Handler<Buffer> {
         InboundSseEventImpl event;
         // tests don't set a web target, and we don't want them to end up starting vertx just to test parsing
         if (webTarget != null)
-            event = new InboundSseEventImpl(webTarget.getConfiguration(),
-                    webTarget.getSerialisers());
+            event = new InboundSseEventImpl(webTarget.getConfiguration(), webTarget.getSerialisers());
         else
             event = new InboundSseEventImpl(null, null);
         // SSE spec says empty string is the default, but JAX-RS says null if not specified
@@ -198,7 +197,7 @@ public class SseParser implements Handler<Buffer> {
     }
 
     private void parseComment() {
-        // comment       = colon *any-char end-of-line
+        // comment = colon *any-char end-of-line
         while (true) {
             int c = readChar();
             if (isAnyChar(c)) {
@@ -215,7 +214,7 @@ public class SseParser implements Handler<Buffer> {
     private void parseField(int c) {
         boolean readingName = true;
         nameBuffer.appendCodePoint(c);
-        // field         = 1*name-char [ colon [ space ] *any-char ] end-of-line
+        // field = 1*name-char [ colon [ space ] *any-char ] end-of-line
         while (true) {
             c = readChar();
             if (isEofWithSideEffect(c)) {
@@ -289,15 +288,11 @@ public class SseParser implements Handler<Buffer> {
     }
 
     private boolean isAnyChar(int c) {
-        return (c >= 0x0000 && c <= 0x0009)
-                || (c >= 0x000B && c <= 0x000C)
-                || (c >= 0x000E && c <= 0x10_FFFF);
+        return (c >= 0x0000 && c <= 0x0009) || (c >= 0x000B && c <= 0x000C) || (c >= 0x000E && c <= 0x10_FFFF);
     }
 
     private boolean isNameChar(int c) {
-        return (c >= 0x0000 && c <= 0x0009)
-                || (c >= 0x000B && c <= 0x000C)
-                || (c >= 0x000E && c <= 0x0039)
+        return (c >= 0x0000 && c <= 0x0009) || (c >= 0x000B && c <= 0x000C) || (c >= 0x000E && c <= 0x0039)
                 || (c >= 0x003B && c <= 0x10_FFFF);
     }
 
@@ -313,8 +308,7 @@ public class SseParser implements Handler<Buffer> {
             if ((b1 & 0b1100_0000) != 0b1000_0000) {
                 throw utf8Exception();
             }
-            return ((b0 & 0b0001_1111) << 6)
-                    | (b1 & 0b0011_1111);
+            return ((b0 & 0b0001_1111) << 6) | (b1 & 0b0011_1111);
         }
         // three bytes
         if ((b0 & 0b1111_0000) == 0b1110_0000) {
@@ -326,9 +320,7 @@ public class SseParser implements Handler<Buffer> {
             if ((b2 & 0b1100_0000) != 0b1000_0000) {
                 throw utf8Exception();
             }
-            return ((b0 & 0b0000_1111) << 12)
-                    | ((b1 & 0b0011_1111) << 6)
-                    | (b2 & 0b0011_1111);
+            return ((b0 & 0b0000_1111) << 12) | ((b1 & 0b0011_1111) << 6) | (b2 & 0b0011_1111);
         }
         // four bytes
         if ((b0 & 0b1111_1000) == 0b1111_0000) {
@@ -344,9 +336,7 @@ public class SseParser implements Handler<Buffer> {
             if ((b3 & 0b1100_0000) != 0b1000_0000) {
                 throw utf8Exception();
             }
-            return ((b0 & 0b0000_0111) << 18)
-                    | ((b1 & 0b0011_1111) << 12)
-                    | ((b2 & 0b0011_1111) << 6)
+            return ((b0 & 0b0000_0111) << 18) | ((b1 & 0b0011_1111) << 12) | ((b2 & 0b0011_1111) << 6)
                     | (b3 & 0b0011_1111);
         }
         throw utf8Exception();

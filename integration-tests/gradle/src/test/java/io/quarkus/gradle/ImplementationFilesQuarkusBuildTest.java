@@ -30,7 +30,8 @@ public class ImplementationFilesQuarkusBuildTest extends QuarkusGradleWrapperTes
         Path commonJar = commonLibs.resolve("common.jar");
         soft.assertThat(commonJar).isNotEmptyFile();
 
-        soft.assertThat(runGradleWrapper(projectDir, ":application-files:build", "--no-build-cache").unsuccessfulTasks())
+        soft.assertThat(
+                runGradleWrapper(projectDir, ":application-files:build", "--no-build-cache").unsuccessfulTasks())
                 .isEmpty();
         Path applicationLib = projectDir.toPath().resolve("application-files").resolve("build").resolve("quarkus-app")
                 .resolve("lib").resolve("main");

@@ -34,11 +34,13 @@ public class ImageTasksWithConfigurationCacheTest extends QuarkusGradleWrapperTe
 
         runGradleWrapper(projectDir, "addExtension", "--extensions=quarkus-container-image-docker");
 
-        BuildResult buildResult = runGradleWrapper(projectDir, "imageBuild", "-Dorg.gradle.unsafe.isolated-projects=true");
+        BuildResult buildResult = runGradleWrapper(projectDir, "imageBuild",
+                "-Dorg.gradle.unsafe.isolated-projects=true");
         assertThat(BuildResult.isSuccessful(buildResult.getTasks().get(":imageBuild"))).isTrue();
 
         assertTrue(buildResult.getOutput().contains("Configuration cache entry stored"));
-        BuildResult buildResult3 = runGradleWrapper(projectDir, "imageBuild", "-Dorg.gradle.unsafe.isolated-projects=true");
+        BuildResult buildResult3 = runGradleWrapper(projectDir, "imageBuild",
+                "-Dorg.gradle.unsafe.isolated-projects=true");
         assertTrue(buildResult3.getOutput().contains("Reusing configuration cache."));
 
     }
@@ -46,7 +48,8 @@ public class ImageTasksWithConfigurationCacheTest extends QuarkusGradleWrapperTe
     @Test
     public void shouldFailIfExtensionIsNotDefinedInTheBuild() throws Exception {
         File projectDir = getProjectDir("it-test-basic-project");
-        BuildResult buildResultImageBuild = runGradleWrapper(true, projectDir, "clean", "imageBuild", "--no-build-cache");
+        BuildResult buildResultImageBuild = runGradleWrapper(true, projectDir, "clean", "imageBuild",
+                "--no-build-cache");
         assertTrue(buildResultImageBuild.getOutput()
                 .contains("Task: quarkusImageExtensionChecks requires extensions: quarkus-container-image-docker"));
 

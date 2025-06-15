@@ -52,9 +52,8 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
 
     private static Instrumenter<Message, Message> getConsumerInstrumenter(final OpenTelemetry openTelemetry,
             final OTelRuntimeConfig runtimeConfig) {
-        InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(
-                openTelemetry,
-                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, RECEIVE));
+        InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(openTelemetry, INSTRUMENTATION_NAME,
+                MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, RECEIVE));
 
         serverBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
@@ -78,9 +77,8 @@ public class EventBusInstrumenterVertxTracer implements InstrumenterVertxTracer<
 
     private static Instrumenter<Message, Message> getProducerInstrumenter(final OpenTelemetry openTelemetry,
             final OTelRuntimeConfig runtimeConfig) {
-        InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(
-                openTelemetry,
-                INSTRUMENTATION_NAME, MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, PUBLISH));
+        InstrumenterBuilder<Message, Message> serverBuilder = Instrumenter.builder(openTelemetry, INSTRUMENTATION_NAME,
+                MessagingSpanNameExtractor.create(EventBusAttributesGetter.INSTANCE, PUBLISH));
 
         serverBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 

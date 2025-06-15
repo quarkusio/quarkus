@@ -37,7 +37,8 @@ public final class ErrorReplacingProcessReader implements Runnable {
         try {
             Deque<String> fullBuffer = new ArrayDeque<>();
             boolean buffering = false;
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                     if (line.startsWith(LINE_START)) {
                         buffering = true;
@@ -100,13 +101,20 @@ public final class ErrorReplacingProcessReader implements Runnable {
             }
         }
 
-        System.err.println("--------------------------------------------------------------------------------------------");
-        System.err.println("-- WARNING: The above stack trace is not a real stack trace, it is a theoretical call tree---");
-        System.err.println("-- If an interface has multiple implementations SVM will just display one potential call  ---");
-        System.err.println("-- path to the interface. This is often meaningless, and what you actually need to know is---");
-        System.err.println("-- the path to the constructor of the object that implements this interface.              ---");
-        System.err.println("-- Quarkus has attempted to generate a more meaningful call flow analysis below          ---");
-        System.err.println("---------------------------------------------------------------------------------------------\n");
+        System.err.println(
+                "--------------------------------------------------------------------------------------------");
+        System.err.println(
+                "-- WARNING: The above stack trace is not a real stack trace, it is a theoretical call tree---");
+        System.err.println(
+                "-- If an interface has multiple implementations SVM will just display one potential call  ---");
+        System.err.println(
+                "-- path to the interface. This is often meaningless, and what you actually need to know is---");
+        System.err.println(
+                "-- the path to the constructor of the object that implements this interface.              ---");
+        System.err.println(
+                "-- Quarkus has attempted to generate a more meaningful call flow analysis below          ---");
+        System.err.println(
+                "---------------------------------------------------------------------------------------------\n");
         try {
             String fullName = m.group(1);
 

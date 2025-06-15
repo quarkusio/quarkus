@@ -3,7 +3,8 @@ package io.quarkus.devui.runtime.comms;
 /**
  * Allows JSON RPC methods to response with more finer grade message types
  *
- * @param <T> The type of the response object
+ * @param <T>
+ *        The type of the response object
  */
 public class JsonRpcMessage<T> {
     private T response;

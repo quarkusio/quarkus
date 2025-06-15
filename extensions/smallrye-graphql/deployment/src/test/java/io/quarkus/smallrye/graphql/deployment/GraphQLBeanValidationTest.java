@@ -20,10 +20,8 @@ import io.smallrye.mutiny.Uni;
 public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(ApiWithValidation.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClass(ApiWithValidation.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @GraphQLApi
     public static class ApiWithValidation {
@@ -56,15 +54,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
     @Test
     public void testNonBlocking() {
         String query = getPayload("{nonBlocking(input:\"TOO LONG\")}");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .prettyPeek()
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body("errors[0].message", containsString("Message too long"))
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql").prettyPeek().then().assertThat()
+                .statusCode(200).body("errors[0].message", containsString("Message too long"))
                 .body("errors[0].path", hasItems("nonBlocking"))
                 .body("errors[0].extensions.violations[0].propertyPath", hasItems("nonBlocking", "input"))
                 .body("data.nonBlocking", nullValue());
@@ -73,15 +64,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
     @Test
     public void testBlocking() {
         String query = getPayload("{blocking(input:\"TOO LONG\")}");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .prettyPeek()
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body("errors[0].message", containsString("Message too long"))
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql").prettyPeek().then().assertThat()
+                .statusCode(200).body("errors[0].message", containsString("Message too long"))
                 .body("errors[0].path", hasItems("blocking"))
                 .body("errors[0].extensions.violations[0].propertyPath", hasItems("blocking", "input"))
                 .body("data.blocking", nullValue());
@@ -90,15 +74,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
     @Test
     public void testUniNonBlocking() {
         String query = getPayload("{uniNonBlocking(input:\"TOO LONG\")}");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .prettyPeek()
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body("errors[0].message", containsString("Message too long"))
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql").prettyPeek().then().assertThat()
+                .statusCode(200).body("errors[0].message", containsString("Message too long"))
                 .body("errors[0].path", hasItems("uniNonBlocking"))
                 .body("errors[0].extensions.violations[0].propertyPath", hasItems("uniNonBlocking", "input"))
                 .body("data.uniNonBlocking", nullValue());
@@ -107,15 +84,8 @@ public class GraphQLBeanValidationTest extends AbstractGraphQLTest {
     @Test
     public void testUniBlocking() {
         String query = getPayload("{uniBlocking(input:\"TOO LONG\")}");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .prettyPeek()
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body("errors[0].message", containsString("Message too long"))
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql").prettyPeek().then().assertThat()
+                .statusCode(200).body("errors[0].message", containsString("Message too long"))
                 .body("errors[0].path", hasItems("uniBlocking"))
                 .body("errors[0].extensions.violations[0].propertyPath", hasItems("uniBlocking", "input"))
                 .body("data.uniBlocking", nullValue());

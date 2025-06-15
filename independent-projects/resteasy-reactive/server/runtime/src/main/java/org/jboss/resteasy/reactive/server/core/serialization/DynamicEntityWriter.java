@@ -51,16 +51,18 @@ public class DynamicEntityWriter implements EntityWriter {
                         break;
                     }
                 }
-                if (negotiatedMediaType == null) { // fallback to ensure that MessageBodyWriter is passed the proper media type
+                if (negotiatedMediaType == null) { // fallback to ensure that MessageBodyWriter is passed the proper
+                                                   // media type
                     negotiatedMediaType = producesServerMediaType
                             .negotiateProduces(vertxRequest.getRequestHeader(HttpHeaders.ACCEPT)).getKey();
                 }
 
-                List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(), negotiatedMediaType,
-                        RuntimeType.SERVER);
+                List<MessageBodyWriter<?>> writersList = serialisers.findWriters(null, entity.getClass(),
+                        negotiatedMediaType, RuntimeType.SERVER);
                 if (!writersList.isEmpty()) {
                     writers = writersList.toArray(EMPTY_ARRAY);
-                    // use the actual type the method declares as this is what the spec expects despite the fact that we might
+                    // use the actual type the method declares as this is what the spec expects despite the fact that we
+                    // might
                     // have used the suffix of the subtype to determine a MessageBodyWriter
                     MediaType[] sortedOriginalMediaTypes = producesServerMediaType.getSortedOriginalMediaTypes();
                     for (MediaType methodMediaType : sortedOriginalMediaTypes) {
@@ -83,20 +85,31 @@ public class DynamicEntityWriter implements EntityWriter {
                 if (!bestMatchingServerWriterResult.isEmpty()) {
                     selectedMediaType = bestMatchingServerWriterResult.getSelectedMediaType();
                     mediaTypeComesFromClient = true;
-                    writers = bestMatchingServerWriterResult.getMessageBodyWriters().toArray(ServerSerialisers.NO_WRITER);
+                    writers = bestMatchingServerWriterResult.getMessageBodyWriters()
+                            .toArray(ServerSerialisers.NO_WRITER);
                 }
             }
             // try to find a Writer based on the entity type
             if (writers == null) {
-                ServerSerialisers.NoMediaTypeResult writerNoMediaType = serialisers.findWriterNoMediaType(context, entity,
-                        serialisers, RuntimeType.SERVER);
+                ServerSerialisers.NoMediaTypeResult writerNoMediaType = serialisers.findWriterNoMediaType(context,
+                        entity, serialisers, RuntimeType.SERVER);
                 writers = writerNoMediaType.getWriters();
                 selectedMediaType = writerNoMediaType.getMediaType();
             }
             if (selectedMediaType != null) {
-                if (MediaTypeHelper.isUnsupportedWildcardSubtype(selectedMediaType) && !mediaTypeComesFromClient) { // spec says the acceptable wildcard subtypes are */* or application/*
+                if (MediaTypeHelper.isUnsupportedWildcardSubtype(selectedMediaType) && !mediaTypeComesFromClient) { // spec
+                                                                                                                    // says
+                                                                                                                    // the
+                                                                                                                    // acceptable
+                                                                                                                    // wildcard
+                                                                                                                    // subtypes
+                                                                                                                    // are
+                                                                                                                    // */*
+                                                                                                                    // or
+                                                                                                                    // application/*
                     ServerSerialisers.encodeResponseHeaders(context);
-                    // set the response header AFTER encodeResponseHeaders in order to override what Response has as we want this to be the final result
+                    // set the response header AFTER encodeResponseHeaders in order to override what Response has as we
+                    // want this to be the final result
                     ServerHttpResponse httpServerResponse = context.serverResponse();
                     httpServerResponse.setStatusCode(Response.Status.NOT_ACCEPTABLE.getStatusCode());
                     // spec says the response doesn't have a body so we just end the response here and return

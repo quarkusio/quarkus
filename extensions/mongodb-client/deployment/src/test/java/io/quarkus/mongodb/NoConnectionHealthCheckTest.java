@@ -36,9 +36,7 @@ public class NoConnectionHealthCheckTest {
     @Order(1) // done to ensure the health check runs before any application code touches the database
     @Test
     public void healthCheck() {
-        when().get("/q/health/ready")
-                .then()
-                .body("status", CoreMatchers.equalTo("DOWN"));
+        when().get("/q/health/ready").then().body("status", CoreMatchers.equalTo("DOWN"));
     }
 
     @Order(2)

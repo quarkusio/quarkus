@@ -24,8 +24,7 @@ public class DevUIDatasourceProcessor {
         Collections.sort(names);
         card.addBuildTimeData("datasources", names);
 
-        card.addPage(Page.webComponentPageBuilder().title("Reset")
-                .componentLink("qwc-datasources-reset.js")
+        card.addPage(Page.webComponentPageBuilder().title("Reset").componentLink("qwc-datasources-reset.js")
                 .icon("font-awesome-solid:broom"));
         return card;
     }

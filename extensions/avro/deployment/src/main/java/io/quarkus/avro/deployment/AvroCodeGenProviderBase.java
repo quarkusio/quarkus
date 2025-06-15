@@ -27,8 +27,7 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
     private static final Logger log = Logger.getLogger(AvroCodeGenProviderBase.class);
 
     /**
-     * The directory (within the java classpath) that contains the velocity
-     * templates to use for code generation.
+     * The directory (within the java classpath) that contains the velocity templates to use for code generation.
      */
     static final String templateDirectory = "/org/apache/avro/compiler/specific/templates/java/classic/";
 
@@ -85,11 +84,11 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
             return Collections.emptySet();
         }
         try {
-            return Files.find(importPath, 20,
-                    (path, ignored) -> Files.isRegularFile(path)
-                            && Arrays.stream(inputExtensions()).anyMatch(ext -> path.toString().endsWith("." + ext)))
-                    .map(Path::toAbsolutePath)
-                    .collect(Collectors.toList());
+            return Files
+                    .find(importPath, 20,
+                            (path, ignored) -> Files.isRegularFile(path) && Arrays.stream(inputExtensions())
+                                    .anyMatch(ext -> path.toString().endsWith("." + ext)))
+                    .map(Path::toAbsolutePath).collect(Collectors.toList());
         } catch (IOException e) {
             throw new CodeGenException("Failed to list matching files in " + importPath, e);
         }
@@ -102,9 +101,8 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
         private final Config config;
 
         /**
-         * A list of files or directories that should be compiled first thus making them
-         * importable by subsequently compiled schemas. Note that imported files should
-         * not reference each other.
+         * A list of files or directories that should be compiled first thus making them importable by subsequently
+         * compiled schemas. Note that imported files should not reference each other.
          * <p>
          * All paths should be relative to the src/[main|test]/avro directory
          * <p>
@@ -113,14 +111,13 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
         final String[] imports;
 
         /**
-         * The Java type to use for Avro strings. May be one of CharSequence, String or
-         * Utf8. CharSequence by default.
+         * The Java type to use for Avro strings. May be one of CharSequence, String or Utf8. CharSequence by default.
          */
         final GenericData.StringType stringType;
 
         /**
-         * The createOptionalGetters parameter enables generating the getOptional...
-         * methods that return an Optional of the requested type.
+         * The createOptionalGetters parameter enables generating the getOptional... methods that return an Optional of
+         * the requested type.
          */
         final boolean createOptionalGetters;
 
@@ -130,28 +127,26 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
         final boolean enableDecimalLogicalType;
 
         /**
-         * Determines whether or not to create setters for the fields of the record. The
-         * default is to create setters.
+         * Determines whether or not to create setters for the fields of the record. The default is to create setters.
          */
         final boolean createSetters;
 
         /**
-         * The gettersReturnOptional parameter enables generating get... methods that
-         * return an Optional of the requested type.
+         * The gettersReturnOptional parameter enables generating get... methods that return an Optional of the
+         * requested type.
          */
         final boolean gettersReturnOptional;
 
         /**
-         * The optionalGettersForNullableFieldsOnly parameter works in conjunction with
-         * gettersReturnOptional option. If it is set, Optional getters will be
-         * generated only for fields that are nullable. If the field is mandatory,
+         * The optionalGettersForNullableFieldsOnly parameter works in conjunction with gettersReturnOptional option. If
+         * it is set, Optional getters will be generated only for fields that are nullable. If the field is mandatory,
          * regular getter will be generated.
          */
         final boolean optionalGettersForNullableFieldsOnly;
 
         /**
-         * A list of custom converter classes to register on the avro compiler. <code>Conversions.UUIDConversion</code> is
-         * registered by default.
+         * A list of custom converter classes to register on the avro compiler. <code>Conversions.UUIDConversion</code>
+         * is registered by default.
          * <p>
          * Passed as a comma-separated list.
          */
@@ -166,8 +161,8 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
             enableDecimalLogicalType = getBooleanProperty("avro.codegen.enableDecimalLogicalType", false);
             createSetters = getBooleanProperty("avro.codegen.createSetters", true);
             gettersReturnOptional = getBooleanProperty("avro.codegen.gettersReturnOptional", false);
-            optionalGettersForNullableFieldsOnly = getBooleanProperty("avro.codegen.optionalGettersForNullableFieldsOnly",
-                    false);
+            optionalGettersForNullableFieldsOnly = getBooleanProperty(
+                    "avro.codegen.optionalGettersForNullableFieldsOnly", false);
             String conversions = prop("avro.codegen.customConversions", "");
             if (!"".equals(conversions)) {
                 for (String conversion : conversions.split(",")) {
@@ -196,8 +191,7 @@ public abstract class AvroCodeGenProviderBase implements CodeGenProvider {
         return Arrays.stream(inputExtensions())
                 .flatMap(ext -> config.getOptionalValue("avro.codegen." + ext + ".imports", String.class)
                         .map(i -> Arrays.stream(i.split(","))).stream())
-                .reduce(Stream.empty(), Stream::concat)
-                .toArray(String[]::new);
+                .reduce(Stream.empty(), Stream::concat).toArray(String[]::new);
     }
 
     @Override

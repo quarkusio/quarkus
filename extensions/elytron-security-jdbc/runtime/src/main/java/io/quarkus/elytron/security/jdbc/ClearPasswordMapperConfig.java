@@ -27,10 +27,7 @@ public interface ClearPasswordMapperConfig {
     int passwordIndex();
 
     default PasswordKeyMapper toPasswordKeyMapper() {
-        return PasswordKeyMapper.builder()
-                .setDefaultAlgorithm(CLEAR)
-                .setHashColumn(passwordIndex())
-                .build();
+        return PasswordKeyMapper.builder().setDefaultAlgorithm(CLEAR).setHashColumn(passwordIndex()).build();
     }
 
     String toString();

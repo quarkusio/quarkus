@@ -7,18 +7,10 @@ public abstract class AbstractCloudEvent<T> implements CloudEvent<T> {
 
     @Override
     public String toString() {
-        return "CloudEvent{" +
-                "specVersion='" + specVersion() + '\'' +
-                ", id='" + id() + '\'' +
-                ", type='" + type() + '\'' +
-                ", source='" + source() + '\'' +
-                ", subject='" + subject() + '\'' +
-                ", time=" + time() +
-                ", extensions=" + extensions() +
-                ", dataSchema=" + dataSchema() +
-                ", dataContentType='" + dataContentType() + '\'' +
-                ", data=" + data() +
-                '}';
+        return "CloudEvent{" + "specVersion='" + specVersion() + '\'' + ", id='" + id() + '\'' + ", type='" + type()
+                + '\'' + ", source='" + source() + '\'' + ", subject='" + subject() + '\'' + ", time=" + time()
+                + ", extensions=" + extensions() + ", dataSchema=" + dataSchema() + ", dataContentType='"
+                + dataContentType() + '\'' + ", data=" + data() + '}';
     }
 
     private static final Pattern VERSION_REGEX = Pattern.compile("^(\\d+)\\.(\\d+)$");

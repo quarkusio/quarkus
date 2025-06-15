@@ -18,8 +18,7 @@ public final class LiquibaseFactoryUtil {
     }
 
     public static InstanceHandle<LiquibaseFactory> getLiquibaseFactory(String dataSourceName) {
-        return Arc.container().instance(LiquibaseFactory.class,
-                getLiquibaseFactoryQualifier(dataSourceName));
+        return Arc.container().instance(LiquibaseFactory.class, getLiquibaseFactoryQualifier(dataSourceName));
     }
 
     public static List<InstanceHandle<LiquibaseFactory>> getActiveLiquibaseFactories() {

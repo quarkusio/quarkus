@@ -14,8 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BlockingNonBlockingOnClassTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BlockingNonBlockingOnClassService.class))
+            .withApplicationRoot((jar) -> jar.addClasses(BlockingNonBlockingOnClassService.class))
             .assertException(e -> {
                 assertEquals(DefinitionException.class, e.getClass());
                 assertTrue(e.getMessage().contains("Both @Blocking and @NonBlocking present"));

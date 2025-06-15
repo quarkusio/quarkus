@@ -20,8 +20,7 @@ public class MultipleAddMissingNoargsConstructorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, MyBeanProducer.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, MyBeanProducer.class));
 
     @Inject
     Instance<MyBean> myBeanInstances;

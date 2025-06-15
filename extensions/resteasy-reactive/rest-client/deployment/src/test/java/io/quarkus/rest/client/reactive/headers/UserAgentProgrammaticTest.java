@@ -27,10 +27,12 @@ public class UserAgentProgrammaticTest {
 
     @Test
     void test() {
-        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).userAgent("programmatic").build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).userAgent("programmatic")
+                .build(Client.class);
         assertThat(client.call()).isEqualTo("programmatic");
 
-        Client client2 = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).userAgent("programmatic2").build(Client.class);
+        Client client2 = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).userAgent("programmatic2")
+                .build(Client.class);
         assertThat(client2.call()).isEqualTo("programmatic2");
 
         Client client3 = QuarkusRestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);

@@ -14,8 +14,7 @@ public class IdeRecorder {
             @Override
             public void handle(RoutingContext rc) {
                 DevConsoleManager.invoke("devui-ide-interaction.open", rc.pathParams());
-                rc.response()
-                        .setStatusCode(HttpResponseStatus.ACCEPTED.code()).end();
+                rc.response().setStatusCode(HttpResponseStatus.ACCEPTED.code()).end();
             }
         };
     }

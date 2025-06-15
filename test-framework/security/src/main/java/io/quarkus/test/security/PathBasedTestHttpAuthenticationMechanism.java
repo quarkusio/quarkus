@@ -11,15 +11,15 @@ import io.vertx.core.http.Cookie;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * When authentication mechanism is selected with the {@link TestSecurity#authMechanism()} annotation attribute,
- * we must be sure that the test mechanism is primary identity provider for that authentication type.
+ * When authentication mechanism is selected with the {@link TestSecurity#authMechanism()} annotation attribute, we must
+ * be sure that the test mechanism is primary identity provider for that authentication type.
  * <p>
- * For example when a test method is annotated with `@TestSecurity(authMechanism = "basic")`,
- * we want to be the ones providing basic authentication when no authorization headers are present,
- * and not the {@link io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism} mechanism.
- * This test mechanism must exist because when a path-specific authentication mechanism is selected,
- * for example via {@link io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication},
- * it is also required and therefore exactly one mechanism is enforced.
+ * For example when a test method is annotated with `@TestSecurity(authMechanism = "basic")`, we want to be the ones
+ * providing basic authentication when no authorization headers are present, and not the
+ * {@link io.quarkus.vertx.http.runtime.security.BasicAuthenticationMechanism} mechanism. This test mechanism must exist
+ * because when a path-specific authentication mechanism is selected, for example via
+ * {@link io.quarkus.vertx.http.runtime.security.annotation.BasicAuthentication}, it is also required and therefore
+ * exactly one mechanism is enforced.
  */
 @ApplicationScoped
 public class PathBasedTestHttpAuthenticationMechanism extends AbstractTestHttpAuthenticationMechanism {
@@ -41,8 +41,7 @@ public class PathBasedTestHttpAuthenticationMechanism extends AbstractTestHttpAu
 
     private static boolean requestNotAuthenticated(RoutingContext context) {
         // on a best-effort basis try to guess whether incoming request is authorized
-        return context.request().getHeader(AUTHORIZATION) == null
-                && !hasOidcSessionCookieCandidate(context);
+        return context.request().getHeader(AUTHORIZATION) == null && !hasOidcSessionCookieCandidate(context);
     }
 
     private static boolean hasOidcSessionCookieCandidate(RoutingContext context) {

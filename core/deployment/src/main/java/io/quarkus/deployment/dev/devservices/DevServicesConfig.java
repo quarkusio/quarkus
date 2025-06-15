@@ -17,7 +17,8 @@ import io.smallrye.config.WithDefault;
 public interface DevServicesConfig {
 
     /**
-     * Global flag that can be used to disable all Dev Services. If this is set to false then Dev Services will not be used.
+     * Global flag that can be used to disable all Dev Services. If this is set to false then Dev Services will not be
+     * used.
      */
     @WithDefault("true")
     boolean enabled();

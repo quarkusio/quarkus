@@ -43,43 +43,36 @@ public class MtlsRequestBasicAuthTest {
     URL url;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class)
-                    .addAsResource(new StringAsset(configuration), "application.properties")
-                    .addAsResource(new File("target/certs/mtls-test-keystore.jks"), "server-keystore.jks")
-                    .addAsResource(new File("target/certs/mtls-test-server-truststore.jks"), "server-truststore.jks"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBean.class)
+            .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class)
+            .addAsResource(new StringAsset(configuration), "application.properties")
+            .addAsResource(new File("target/certs/mtls-test-keystore.jks"), "server-keystore.jks")
+            .addAsResource(new File("target/certs/mtls-test-server-truststore.jks"), "server-truststore.jks"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin");
     }
 
     @Test
     public void testClientAuthentication() {
-        RestAssured.given()
-                .keyStore("target/certs/mtls-test-client-keystore.jks", "secret")
-                .trustStore("target/certs/mtls-test-client-truststore.jks", "secret")
-                .get(url).then().statusCode(200).body(is("CN=localhost"));
+        RestAssured.given().keyStore("target/certs/mtls-test-client-keystore.jks", "secret")
+                .trustStore("target/certs/mtls-test-client-truststore.jks", "secret").get(url).then().statusCode(200)
+                .body(is("CN=localhost"));
     }
 
     @Test
     public void testNoClientCert() {
-        RestAssured.given()
-                .trustStore("target/certs/mtls-test-client-truststore.jks", "secret")
-                .get(url).then().statusCode(200).body(is(""));
+        RestAssured.given().trustStore("target/certs/mtls-test-client-truststore.jks", "secret").get(url).then()
+                .statusCode(200).body(is(""));
     }
 
     @Test
     public void testNoClientCertBasicAuth() {
-        RestAssured.given()
-                .auth()
-                .preemptive()
-                .basic("admin", "admin")
-                .trustStore("target/certs/mtls-test-client-truststore.jks", "secret")
-                .get(url).then().statusCode(200).body(is("admin"));
+        RestAssured.given().auth().preemptive().basic("admin", "admin")
+                .trustStore("target/certs/mtls-test-client-truststore.jks", "secret").get(url).then().statusCode(200)
+                .body(is("admin"));
     }
 
     @ApplicationScoped

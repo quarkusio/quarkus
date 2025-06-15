@@ -5,9 +5,12 @@ import java.util.Map;
 /**
  * Represents a message received from a stream
  *
- * @param <K> the type of the key
- * @param <F> the field type for the payload
- * @param <V> the value type for the payload
+ * @param <K>
+ *        the type of the key
+ * @param <F>
+ *        the field type for the payload
+ * @param <V>
+ *        the value type for the payload
  */
 public class StreamMessage<K, F, V> {
 

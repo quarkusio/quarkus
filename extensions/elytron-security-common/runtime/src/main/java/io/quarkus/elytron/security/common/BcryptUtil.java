@@ -25,23 +25,33 @@ public class BcryptUtil {
     /**
      * Produces a Modular Crypt Format bcrypt hash of the given password, using a generated salt and 10 iterations.
      *
-     * @param password the password to hash
+     * @param password
+     *        the password to hash
+     *
      * @return the Modular Crypt Format bcrypt hash of the given password
-     * @throws NullPointerException if the password is null
+     *
+     * @throws NullPointerException
+     *         if the password is null
      */
     public static String bcryptHash(String password) {
         return bcryptHash(password, 10);
     }
 
     /**
-     * Produces a Modular Crypt Format bcrypt hash of the given password, using a generated salt and the specified iteration
-     * count.
+     * Produces a Modular Crypt Format bcrypt hash of the given password, using a generated salt and the specified
+     * iteration count.
      *
-     * @param password the password to hash
-     * @param iterationCount the number of iterations to use while hashing
+     * @param password
+     *        the password to hash
+     * @param iterationCount
+     *        the number of iterations to use while hashing
+     *
      * @return the Modular Crypt Format bcrypt hash of the given password
-     * @throws NullPointerException if the password is null
-     * @throws IllegalArgumentException if the iterationCount parameter is negative or zero
+     *
+     * @throws NullPointerException
+     *         if the password is null
+     * @throws IllegalArgumentException
+     *         if the iterationCount parameter is negative or zero
      */
     public static String bcryptHash(String password, int iterationCount) {
         byte[] salt = new byte[BCryptPassword.BCRYPT_SALT_SIZE];
@@ -50,16 +60,22 @@ public class BcryptUtil {
     }
 
     /**
-     * Produces a Modular Crypt Format bcrypt hash of the given password, using the specified salt and the specified iteration
-     * count.
+     * Produces a Modular Crypt Format bcrypt hash of the given password, using the specified salt and the specified
+     * iteration count.
      *
-     * @param password the password to hash
-     * @param iterationCount the number of iterations to use while hashing
-     * @param salt the salt to use while hashing
+     * @param password
+     *        the password to hash
+     * @param iterationCount
+     *        the number of iterations to use while hashing
+     * @param salt
+     *        the salt to use while hashing
+     *
      * @return the Modular Crypt Format bcrypt hash of the given password
-     * @throws NullPointerException if the password or salt are null
-     * @throws IllegalArgumentException if the iterationCount parameter is negative or zero, or if the salt length is not equal
-     *         to 16
+     *
+     * @throws NullPointerException
+     *         if the password or salt are null
+     * @throws IllegalArgumentException
+     *         if the iterationCount parameter is negative or zero, or if the salt length is not equal to 16
      */
     public static String bcryptHash(String password, int iterationCount, byte[] salt) {
         if (iterationCount <= 0) {
@@ -68,7 +84,8 @@ public class BcryptUtil {
         Objects.requireNonNull(password, "password is required");
         Objects.requireNonNull(salt, "salt is required");
         if (salt.length != BCryptPassword.BCRYPT_SALT_SIZE) {
-            throw new IllegalArgumentException("Salt length must be exactly " + BCryptPassword.BCRYPT_SALT_SIZE + " bytes");
+            throw new IllegalArgumentException(
+                    "Salt length must be exactly " + BCryptPassword.BCRYPT_SALT_SIZE + " bytes");
         }
 
         PasswordFactory passwordFactory;
@@ -79,9 +96,10 @@ public class BcryptUtil {
             throw new RuntimeException(e);
         }
 
-        IteratedSaltedPasswordAlgorithmSpec iteratedAlgorithmSpec = new IteratedSaltedPasswordAlgorithmSpec(iterationCount,
-                salt);
-        EncryptablePasswordSpec encryptableSpec = new EncryptablePasswordSpec(password.toCharArray(), iteratedAlgorithmSpec);
+        IteratedSaltedPasswordAlgorithmSpec iteratedAlgorithmSpec = new IteratedSaltedPasswordAlgorithmSpec(
+                iterationCount, salt);
+        EncryptablePasswordSpec encryptableSpec = new EncryptablePasswordSpec(password.toCharArray(),
+                iteratedAlgorithmSpec);
 
         try {
             BCryptPassword original = (BCryptPassword) passwordFactory.generatePassword(encryptableSpec);
@@ -95,10 +113,15 @@ public class BcryptUtil {
     /**
      * Matches a plain text string against an existing Modular Crypt Format bcrypt hash
      *
-     * @param plainText the plain text string to check
-     * @param passwordHash the Modular Crypt Format bcrypt hash to compare against
+     * @param plainText
+     *        the plain text string to check
+     * @param passwordHash
+     *        the Modular Crypt Format bcrypt hash to compare against
+     *
      * @return the boolean result of whether the plain text matches the decoded Modular Crypt Format bcrypt hash
-     * @throws NullPointerException if the plainText password or passwordHash is null
+     *
+     * @throws NullPointerException
+     *         if the plainText password or passwordHash is null
      */
     public static boolean matches(String plainText, String passwordHash) {
         Objects.requireNonNull(plainText, "plainText password is required");

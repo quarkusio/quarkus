@@ -34,8 +34,7 @@ public class ResteasyReactiveServletProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public void build(ResteasyReactiveServletRecorder restRecorder,
-            ResteasyReactiveDeploymentBuildItem deploymentBuildItem,
-            BuildProducer<FilterBuildItem> filter,
+            ResteasyReactiveDeploymentBuildItem deploymentBuildItem, BuildProducer<FilterBuildItem> filter,
             BuildProducer<ServletBuildItem> servlet) throws Exception {
 
         if (deploymentBuildItem == null) {
@@ -44,21 +43,20 @@ public class ResteasyReactiveServletProcessor {
 
         String path = deploymentBuildItem.getApplicationPath();
 
-        //if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the whole mapped path
+        // if JAX-RS is installed at the root location we use a filter, otherwise we use a Servlet and take over the
+        // whole mapped path
         if (path.equals("/") || path.isEmpty()) {
-            filter.produce(
-                    FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyReactiveFilter.class.getName()).setLoadOnStartup(1)
-                            .addFilterServletNameMapping("default", DispatcherType.REQUEST)
-                            .addFilterServletNameMapping("default", DispatcherType.FORWARD)
-                            .addFilterServletNameMapping("default", DispatcherType.INCLUDE)
-                            .setInstanceFactory(restRecorder.filter(deploymentBuildItem.getDeployment()))
-                            .setAsyncSupported(true)
-                            .build());
+            filter.produce(FilterBuildItem.builder(JAX_RS_FILTER_NAME, ResteasyReactiveFilter.class.getName())
+                    .setLoadOnStartup(1).addFilterServletNameMapping("default", DispatcherType.REQUEST)
+                    .addFilterServletNameMapping("default", DispatcherType.FORWARD)
+                    .addFilterServletNameMapping("default", DispatcherType.INCLUDE)
+                    .setInstanceFactory(restRecorder.filter(deploymentBuildItem.getDeployment()))
+                    .setAsyncSupported(true).build());
         } else {
             String mappingPath = deploymentBuildItem.getApplicationPath();
             servlet.produce(ServletBuildItem.builder(JAX_RS_SERVLET_NAME, ResteasyReactiveServlet.class.getName())
-                    .setInstanceFactory(restRecorder.servlet(deploymentBuildItem.getDeployment()))
-                    .setLoadOnStartup(1).addMapping(mappingPath + "/*").setAsyncSupported(true).build());
+                    .setInstanceFactory(restRecorder.servlet(deploymentBuildItem.getDeployment())).setLoadOnStartup(1)
+                    .addMapping(mappingPath + "/*").setAsyncSupported(true).build());
         }
 
     }

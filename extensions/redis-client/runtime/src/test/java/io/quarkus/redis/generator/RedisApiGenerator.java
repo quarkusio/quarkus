@@ -77,7 +77,8 @@ public class RedisApiGenerator {
         // Generate APIs
         ClassOrInterfaceDeclaration blockingAPI = generateBlockingInterface(cu, reactiveAPI, out);
         ClassOrInterfaceDeclaration txBlockingAPI = generateBlockingTransactionalInterface(cu, reactiveAPI, out);
-        ClassOrInterfaceDeclaration txReactiveAPI = generateBlockingReactiveTransactionalInterface(cu, reactiveAPI, out);
+        ClassOrInterfaceDeclaration txReactiveAPI = generateBlockingReactiveTransactionalInterface(cu, reactiveAPI,
+                out);
 
         // Generate Implementations
         generateBlockingImplementation(cu, reactiveAPI, blockingAPI, out);
@@ -95,7 +96,8 @@ public class RedisApiGenerator {
         CompilationUnit cu = new CompilationUnit();
         cu.setPackageDeclaration("io.quarkus.redis.runtime.datasource");
         copyImports(unit, cu);
-        cu.addImport(unit.getPackageDeclaration().orElseThrow().getNameAsString() + "." + reactiveAPI.getNameAsString());
+        cu.addImport(
+                unit.getPackageDeclaration().orElseThrow().getNameAsString() + "." + reactiveAPI.getNameAsString());
         cu.addImport(Response.class);
         cu.addImport(unit.getPackageDeclaration().orElseThrow().getNameAsString(), false, true);
 
@@ -112,16 +114,10 @@ public class RedisApiGenerator {
             ac += ">";
         }
 
-        ClassOrInterfaceDeclaration clazz = cu
-                .addClass(classname)
-                .addExtendedType(ac)
-                .addImplementedType(itf)
-                .addImplementedType(ReactiveRedisCommands.class)
-                .setTypeParameters(reactiveAPI.getTypeParameters());
+        ClassOrInterfaceDeclaration clazz = cu.addClass(classname).addExtendedType(ac).addImplementedType(itf)
+                .addImplementedType(ReactiveRedisCommands.class).setTypeParameters(reactiveAPI.getTypeParameters());
 
-        clazz.addField(ReactiveRedisDataSource.class, "reactive")
-                .setPrivate(true)
-                .setFinal(true);
+        clazz.addField(ReactiveRedisDataSource.class, "reactive").setPrivate(true).setFinal(true);
         ConstructorDeclaration cst = clazz.addConstructor(Modifier.Keyword.PUBLIC)
                 .addParameter(ReactiveRedisDataSourceImpl.class, "redis");
         for (TypeParameter tp : reactiveAPI.getTypeParameters()) {
@@ -132,35 +128,25 @@ public class RedisApiGenerator {
         String cstLine2 = "this.reactive = redis;";
         cst.getBody().addStatement(cstLine1).addStatement(cstLine2);
 
-        clazz.addMethod("getDataSource")
-                .addMarkerAnnotation(Override.class)
-                .setType(ReactiveRedisDataSource.class)
-                .setPublic(true)
-                .getBody().get().addStatement("return reactive;");
+        clazz.addMethod("getDataSource").addMarkerAnnotation(Override.class).setType(ReactiveRedisDataSource.class)
+                .setPublic(true).getBody().get().addStatement("return reactive;");
 
         for (MethodDeclaration method : reactiveAPI.getMethods()) {
             MethodDeclaration declaration = clazz.addMethod(method.getNameAsString())
-                    .setModifiers(method.getModifiers())
-                    .setParameters(method.getParameters())
-                    .setPublic(true)
-                    .setType(method.getType())
-                    .addMarkerAnnotation(Override.class);
+                    .setModifiers(method.getModifiers()).setParameters(method.getParameters()).setPublic(true)
+                    .setType(method.getType()).addMarkerAnnotation(Override.class);
 
-            String block = "{" + "// TODO IMPLEMENT ME\n" +
-                    "// return super._" +
-                    method.getNameAsString() +
-                    "("
-                    + method.getParameters().stream().map(NodeWithSimpleName::getNameAsString).collect(Collectors.joining(","))
-                    + ")\n" +
-                    "// .map(r -> decode(r));\n" +
-                    "return null;" +
-                    "\n}";
+            String block = "{" + "// TODO IMPLEMENT ME\n" + "// return super._" + method.getNameAsString() + "("
+                    + method.getParameters().stream().map(NodeWithSimpleName::getNameAsString).collect(
+                            Collectors.joining(","))
+                    + ")\n" + "// .map(r -> decode(r));\n" + "return null;" + "\n}";
             declaration.setBody(new JavaParser().parseBlock(block).getResult().get());
         }
 
         try {
             File file = new File(dir, classname + ".java");
-            LOGGER.infof("Generating reactive implementation for %s into %s", reactiveAPI.getName(), file.getAbsolutePath());
+            LOGGER.infof("Generating reactive implementation for %s into %s", reactiveAPI.getName(),
+                    file.getAbsolutePath());
             Files.writeString(file.toPath(), cu.toString());
         } catch (IOException e) {
             LOGGER.errorf("Unable to write reactive implementation %s", classname, e);
@@ -168,14 +154,15 @@ public class RedisApiGenerator {
 
     }
 
-    private static void generateReactiveTransactionalImplSkeleton(CompilationUnit unit, ClassOrInterfaceDeclaration reactiveAPI,
-            ClassOrInterfaceDeclaration reactiveTxAPI, File dir) {
+    private static void generateReactiveTransactionalImplSkeleton(CompilationUnit unit,
+            ClassOrInterfaceDeclaration reactiveAPI, ClassOrInterfaceDeclaration reactiveTxAPI, File dir) {
         String classname = reactiveTxAPI.getNameAsString() + "Impl";
         String impl = reactiveAPI.getNameAsString() + "Impl";
         CompilationUnit cu = new CompilationUnit();
         cu.setPackageDeclaration("io.quarkus.redis.runtime.datasource");
         copyImports(unit, cu);
-        cu.addImport(unit.getPackageDeclaration().orElseThrow().getNameAsString() + "." + reactiveTxAPI.getNameAsString());
+        cu.addImport(
+                unit.getPackageDeclaration().orElseThrow().getNameAsString() + "." + reactiveTxAPI.getNameAsString());
         cu.addImport(Response.class);
         cu.addImport(unit.getPackageDeclaration().orElseThrow().getNameAsString(), false, true);
 
@@ -187,16 +174,12 @@ public class RedisApiGenerator {
                     .collect(Collectors.joining(",")) + ">";
         }
 
-        ClassOrInterfaceDeclaration clazz = cu
-                .addClass(classname)
-                .addExtendedType(AbstractTransactionalCommands.class)
-                .addImplementedType(rx)
-                .setTypeParameters(reactiveTxAPI.getTypeParameters());
+        ClassOrInterfaceDeclaration clazz = cu.addClass(classname).addExtendedType(AbstractTransactionalCommands.class)
+                .addImplementedType(rx).setTypeParameters(reactiveTxAPI.getTypeParameters());
 
         clazz.addField(impl, "reactive").setPrivate(true).setFinal(true);
         ConstructorDeclaration cst = clazz.addConstructor(Modifier.Keyword.PUBLIC)
-                .addParameter(ReactiveTransactionalRedisDataSource.class, "ds")
-                .addParameter(impl, "reactive")
+                .addParameter(ReactiveTransactionalRedisDataSource.class, "ds").addParameter(impl, "reactive")
                 .addParameter(TransactionHolder.class, "tx");
         String cstLine1 = "super(ds, tx);";
         String cstLine2 = "this.reactive = reactive;";
@@ -205,24 +188,18 @@ public class RedisApiGenerator {
         for (MethodDeclaration method : reactiveTxAPI.getMethods()) {
             MethodDeclaration rxDecl = findMethod(reactiveAPI, method);
             MethodDeclaration declaration = clazz.addMethod(method.getNameAsString())
-                    .setModifiers(method.getModifiers())
-                    .setPublic(true)
-                    .setParameters(method.getParameters())
-                    .setType(method.getType())
-                    .addMarkerAnnotation(Override.class);
+                    .setModifiers(method.getModifiers()).setPublic(true).setParameters(method.getParameters())
+                    .setType(method.getType()).addMarkerAnnotation(Override.class);
 
             String expectedType = "";
             if (rxDecl != null) {
                 expectedType = rxDecl.getType().asClassOrInterfaceType().asString();
             }
-            String block = "{" + "// TODO IMPLEMENT ME\n" +
-                    "// this.tx.enqueue(decoding); // " + expectedType + "\n" +
-                    "return this.reactive._" + method.getNameAsString() +
-                    "("
-                    + method.getParameters().stream().map(NodeWithSimpleName::getNameAsString).collect(Collectors.joining(","))
-                    + ")\n" +
-                    "    .invoke(this::queuedOrDiscard).replaceWithVoid();\n" +
-                    "\n}";
+            String block = "{" + "// TODO IMPLEMENT ME\n" + "// this.tx.enqueue(decoding); // " + expectedType + "\n"
+                    + "return this.reactive._" + method.getNameAsString() + "("
+                    + method.getParameters().stream().map(NodeWithSimpleName::getNameAsString)
+                            .collect(Collectors.joining(","))
+                    + ")\n" + "    .invoke(this::queuedOrDiscard).replaceWithVoid();\n" + "\n}";
             declaration.setBody(new JavaParser().parseBlock(block).getResult().get());
         }
 
@@ -253,20 +230,18 @@ public class RedisApiGenerator {
         CompilationUnit cu = new CompilationUnit();
         cu.setPackageDeclaration("io.quarkus.redis.runtime.datasource");
         copyImports(unit, cu);
-        cu.addImport(unit.getPackageDeclaration().orElseThrow().getNameAsString() + "." + reactiveAPI.getNameAsString());
+        cu.addImport(
+                unit.getPackageDeclaration().orElseThrow().getNameAsString() + "." + reactiveAPI.getNameAsString());
         cu.addImport(Response.class);
         cu.addImport(Command.class);
         cu.addImport(unit.getPackageDeclaration().orElseThrow().getNameAsString(), false, true);
         cu.addImport("io.smallrye.mutiny.helpers.ParameterValidation.nonNull", true, false);
 
-        ClassOrInterfaceDeclaration clazz = cu
-                .addClass(classname)
-                .addExtendedType(AbstractRedisCommands.class)
+        ClassOrInterfaceDeclaration clazz = cu.addClass(classname).addExtendedType(AbstractRedisCommands.class)
                 .setTypeParameters(reactiveAPI.getTypeParameters());
 
         // Constructor
-        ConstructorDeclaration cst = clazz.addConstructor()
-                .addParameter(RedisCommandExecutor.class, "redis");
+        ConstructorDeclaration cst = clazz.addConstructor().addParameter(RedisCommandExecutor.class, "redis");
         for (TypeParameter tp : reactiveAPI.getTypeParameters()) {
             cst.addParameter("Class<" + tp.getNameAsString() + ">", tp.getNameAsString().toLowerCase());
         }
@@ -276,8 +251,7 @@ public class RedisApiGenerator {
 
         for (MethodDeclaration method : reactiveAPI.getMethods()) {
             MethodDeclaration declaration = clazz.addMethod("_" + method.getNameAsString())
-                    .setParameters(method.getParameters())
-                    .setType(getUniOfResponse());
+                    .setParameters(method.getParameters()).setType(getUniOfResponse());
 
             StringBuilder block = new StringBuilder("{");
             block.append("// Validation\n");
@@ -304,7 +278,8 @@ public class RedisApiGenerator {
 
         try {
             File file = new File(dir, classname + ".java");
-            LOGGER.infof("Generating abstract implementation for %s into %s", reactiveAPI.getName(), file.getAbsolutePath());
+            LOGGER.infof("Generating abstract implementation for %s into %s", reactiveAPI.getName(),
+                    file.getAbsolutePath());
             Files.writeString(file.toPath(), cu.toString());
         } catch (IOException e) {
             LOGGER.errorf("Unable to write abstract implementation %s", classname, e);
@@ -331,24 +306,17 @@ public class RedisApiGenerator {
                     .collect(Collectors.joining(",")) + ">";
         }
 
-        ClassOrInterfaceDeclaration impl = cu
-                .addClass(classname)
-                .addExtendedType(AbstractRedisCommandGroup.class)
-                .addImplementedType(itf)
-                .setTypeParameters(reactiveAPI.getTypeParameters())
-                .setPublic(true);
+        ClassOrInterfaceDeclaration impl = cu.addClass(classname).addExtendedType(AbstractRedisCommandGroup.class)
+                .addImplementedType(itf).setTypeParameters(reactiveAPI.getTypeParameters()).setPublic(true);
 
         // reactive field
         impl.addField(rx, "reactive", Modifier.Keyword.PRIVATE, Modifier.Keyword.FINAL);
 
         // constructor
         ConstructorDeclaration cst = impl.addConstructor(Modifier.Keyword.PUBLIC)
-                .addParameter(RedisDataSource.class, "ds")
-                .addParameter(rx, "reactive")
+                .addParameter(RedisDataSource.class, "ds").addParameter(rx, "reactive")
                 .addParameter(Duration.class, "timeout");
-        cst.getBody()
-                .addStatement("super(ds, timeout);")
-                .addStatement("this.reactive = reactive;");
+        cst.getBody().addStatement("super(ds, timeout);").addStatement("this.reactive = reactive;");
 
         // For each method, implement
         for (MethodDeclaration method : blockingApi.getMethods()) {
@@ -365,7 +333,8 @@ public class RedisApiGenerator {
 
         try {
             File file = new File(dir, classname + ".java");
-            LOGGER.infof("Generating blocking implementation for %s into %s", reactiveAPI.getName(), file.getAbsolutePath());
+            LOGGER.infof("Generating blocking implementation for %s into %s", reactiveAPI.getName(),
+                    file.getAbsolutePath());
             Files.writeString(file.toPath(), cu.toString());
         } catch (IOException e) {
             LOGGER.errorf("Unable to write blocking implementation %s", classname, e);
@@ -392,24 +361,18 @@ public class RedisApiGenerator {
                     .collect(Collectors.joining(",")) + ">";
         }
 
-        ClassOrInterfaceDeclaration impl = cu
-                .addClass(classname)
-                .addExtendedType(AbstractTransactionalRedisCommandGroup.class)
-                .addImplementedType(itf)
-                .setTypeParameters(reactiveTxAPI.getTypeParameters())
-                .setPublic(true);
+        ClassOrInterfaceDeclaration impl = cu.addClass(classname)
+                .addExtendedType(AbstractTransactionalRedisCommandGroup.class).addImplementedType(itf)
+                .setTypeParameters(reactiveTxAPI.getTypeParameters()).setPublic(true);
 
         // reactive field
         impl.addField(rx, "reactive", Modifier.Keyword.PRIVATE, Modifier.Keyword.FINAL);
 
         // constructor
         ConstructorDeclaration cst = impl.addConstructor(Modifier.Keyword.PUBLIC)
-                .addParameter(TransactionalRedisDataSource.class, "ds")
-                .addParameter(rx, "reactive")
+                .addParameter(TransactionalRedisDataSource.class, "ds").addParameter(rx, "reactive")
                 .addParameter(Duration.class, "timeout");
-        cst.getBody()
-                .addStatement("super(ds, timeout);")
-                .addStatement("this.reactive = reactive;");
+        cst.getBody().addStatement("super(ds, timeout);").addStatement("this.reactive = reactive;");
 
         // For each method, implement
         for (MethodDeclaration method : txblockingApi.getMethods()) {
@@ -457,10 +420,8 @@ public class RedisApiGenerator {
         setPackage(unit, cu);
         copyImportsExceptUni(unit, cu);
 
-        ClassOrInterfaceDeclaration blockingTxApi = cu
-                .addInterface(blockingTxApiName)
-                .addExtendedType(TransactionalRedisCommands.class)
-                .setTypeParameters(api.getTypeParameters())
+        ClassOrInterfaceDeclaration blockingTxApi = cu.addInterface(blockingTxApiName)
+                .addExtendedType(TransactionalRedisCommands.class).setTypeParameters(api.getTypeParameters())
                 .setPublic(true);
         copyClassJavadocAndAppendContent(api, blockingTxApi,
                 "This API is intended to be used in a Redis transaction ({@code MULTI}), thus, all command methods return {@code void}.");
@@ -504,11 +465,8 @@ public class RedisApiGenerator {
         setPackage(unit, cu);
         copyImports(unit, cu);
 
-        ClassOrInterfaceDeclaration gen = cu
-                .addInterface(name)
-                .setTypeParameters(api.getTypeParameters())
-                .addExtendedType(ReactiveTransactionalRedisCommands.class)
-                .setPublic(true);
+        ClassOrInterfaceDeclaration gen = cu.addInterface(name).setTypeParameters(api.getTypeParameters())
+                .addExtendedType(ReactiveTransactionalRedisCommands.class).setPublic(true);
         copyClassJavadocAndAppendContent(api, gen,
                 "This API is intended to be used in a Redis transaction ({@code MULTI}), thus, all command methods return {@code Uni<Void>}.");
 
@@ -530,8 +488,8 @@ public class RedisApiGenerator {
                     copy.addBlockTag(tag);
                 } else {
                     copy.addBlockTag(new JavadocBlockTag(JavadocBlockTag.Type.RETURN,
-                            " A {@code Uni} emitting {@code null} when the command has been enqueued" +
-                                    " successfully in the transaction, a failure otherwise. In the case of failure, the transaction is discarded."));
+                            " A {@code Uni} emitting {@code null} when the command has been enqueued"
+                                    + " successfully in the transaction, a failure otherwise. In the case of failure, the transaction is discarded."));
                 }
             }
             declaration.setJavadocComment(copy);
@@ -548,17 +506,14 @@ public class RedisApiGenerator {
         return gen;
     }
 
-    private static ClassOrInterfaceDeclaration generateBlockingInterface(CompilationUnit unit, ClassOrInterfaceDeclaration api,
-            File dir) {
+    private static ClassOrInterfaceDeclaration generateBlockingInterface(CompilationUnit unit,
+            ClassOrInterfaceDeclaration api, File dir) {
         String blockingApiName = api.getNameAsString().replace("Reactive", "");
         CompilationUnit cu = new CompilationUnit();
         setPackage(unit, cu);
         copyImportsExceptUni(unit, cu);
-        ClassOrInterfaceDeclaration blockingApi = cu
-                .addInterface(blockingApiName)
-                .addExtendedType(RedisCommands.class)
-                .setJavadocComment(api.getJavadocComment().orElseThrow())
-                .setTypeParameters(api.getTypeParameters())
+        ClassOrInterfaceDeclaration blockingApi = cu.addInterface(blockingApiName).addExtendedType(RedisCommands.class)
+                .setJavadocComment(api.getJavadocComment().orElseThrow()).setTypeParameters(api.getTypeParameters())
                 .setPublic(true);
 
         // For each method, produce the "blocking" variant

@@ -22,8 +22,7 @@ public final class InfinispanClientUtil {
             return List.of(INFINISPAN_CLIENT_CONFIG_MAPPING_PREFIX + "." + radical);
         } else {
             // Two possible syntaxes: with or without quotes
-            return List.of(
-                    INFINISPAN_CLIENT_CONFIG_MAPPING_PREFIX + ".\"" + infinispanClientName + "\"." + radical,
+            return List.of(INFINISPAN_CLIENT_CONFIG_MAPPING_PREFIX + ".\"" + infinispanClientName + "\"." + radical,
                     INFINISPAN_CLIENT_CONFIG_MAPPING_PREFIX + "." + infinispanClientName + "." + radical);
         }
     }

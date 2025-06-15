@@ -29,11 +29,6 @@ public interface Patterns {
     public static final Pattern YAML = Pattern.compile(".*\\.(yaml|yml)$");
 
     public static final Pattern ANY_KNOWN_TEXT = Pattern.compile(
-            ".*(" +
-                    "README\\.md" + "|" +
-                    "pom\\.xml" + "|" +
-                    "application\\.properties" + "|" +
-                    "Dockerfile(\\..*)?" + "|" +
-                    "\\.(java|sh|bash|zsh|ksh|html|htm|css|js|json|xml|wsdl|properties|yaml|yml)" +
-                    ")$");
+            ".*(" + "README\\.md" + "|" + "pom\\.xml" + "|" + "application\\.properties" + "|" + "Dockerfile(\\..*)?"
+                    + "|" + "\\.(java|sh|bash|zsh|ksh|html|htm|css|js|json|xml|wsdl|properties|yaml|yml)" + ")$");
 }

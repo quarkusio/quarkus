@@ -10,11 +10,9 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class DuplicateIdWithParentTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(BuildException.class)
-            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DuplicateIdWithParentEntity.class, DuplicateIdParentEntity.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(BuildException.class)
+            .overrideConfigKey("quarkus.datasource.devservices.enabled", "false").withApplicationRoot(
+                    (jar) -> jar.addClasses(DuplicateIdWithParentEntity.class, DuplicateIdParentEntity.class));
 
     @Test
     void shouldThrow() {

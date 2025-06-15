@@ -15,8 +15,6 @@ public class MyBeanVerticle extends AbstractVerticle {
 
     @Override
     public Uni<Void> asyncStart() {
-        return vertx.eventBus().consumer(address)
-                .handler(m -> m.reply("hello"))
-                .completionHandler();
+        return vertx.eventBus().consumer(address).handler(m -> m.reply("hello")).completionHandler();
     }
 }

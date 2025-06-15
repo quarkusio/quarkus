@@ -16,25 +16,16 @@ public class ExistingValueResolversDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withApplicationRoot(root -> root
-                    .addClass(TestRoute.class)
-                    .addAsResource(new StringAsset(
-                            "{#let a = 3}{#let b = a.minus(2)}b={b}{/}{/}"),
-                            "templates/test.html"));
+            .withApplicationRoot(root -> root.addClass(TestRoute.class).addAsResource(
+                    new StringAsset("{#let a = 3}{#let b = a.minus(2)}b={b}{/}{/}"), "templates/test.html"));
 
     @Test
     public void testExistingValueResolvers() {
-        given().get("test")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("b=1"));
+        given().get("test").then().statusCode(200).body(Matchers.equalTo("b=1"));
 
         config.modifyResourceFile("templates/test.html", t -> t.concat("::MODIFIED"));
 
-        given().get("test")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("b=1::MODIFIED"));
+        given().get("test").then().statusCode(200).body(Matchers.equalTo("b=1::MODIFIED"));
     }
 
 }

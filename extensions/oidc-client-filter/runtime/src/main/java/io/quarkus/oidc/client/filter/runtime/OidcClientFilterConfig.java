@@ -11,8 +11,8 @@ import io.smallrye.config.WithDefault;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface OidcClientFilterConfig {
     /**
-     * Enable OidcClientRequestFilter for all the injected MP RestClient implementations.
-     * If this property is disabled then OidcClientRequestFilter has to be registered as an MP RestClient provider.
+     * Enable OidcClientRequestFilter for all the injected MP RestClient implementations. If this property is disabled
+     * then OidcClientRequestFilter has to be registered as an MP RestClient provider.
      */
     @WithDefault("false")
     boolean registerFilter();

@@ -32,8 +32,7 @@ public class DevServicesLambdaProcessor {
 
     @BuildStep(onlyIfNot = IsNormal.class)
     @Record(STATIC_INIT)
-    public void enableHotReplacementChecker(LaunchModeBuildItem launchMode,
-            LambdaHotReplacementRecorder recorder,
+    public void enableHotReplacementChecker(LaunchModeBuildItem launchMode, LambdaHotReplacementRecorder recorder,
             LambdaObjectMapperInitializedBuildItem dependency) {
         if (launchMode.getLaunchMode().isDevOrTest()) {
             if (!legacyTestingEnabled()) {
@@ -53,12 +52,10 @@ public class DevServicesLambdaProcessor {
 
     @Produce(ServiceStartBuildItem.class)
     @BuildStep(onlyIfNot = IsNormal.class) // This is required for testing so run it even if devservices.enabled=false
-    public void startEventServer(LaunchModeBuildItem launchMode,
-            LambdaConfig config,
+    public void startEventServer(LaunchModeBuildItem launchMode, LambdaConfig config,
             Optional<EventServerOverrideBuildItem> override,
             BuildProducer<DevServicesResultBuildItem> devServicePropertiesProducer,
-            CuratedApplicationShutdownBuildItem closeBuildItem)
-            throws Exception {
+            CuratedApplicationShutdownBuildItem closeBuildItem) throws Exception {
         if (!launchMode.getLaunchMode().isDevOrTest())
             return;
         if (legacyTestingEnabled())
@@ -93,8 +90,8 @@ public class DevServicesLambdaProcessor {
             System.setProperty(propName, portPropertyValue);
         }
 
-        devServicePropertiesProducer.produce(
-                new DevServicesResultBuildItem(Feature.AMAZON_LAMBDA.getName(), null, properties));
+        devServicePropertiesProducer
+                .produce(new DevServicesResultBuildItem(Feature.AMAZON_LAMBDA.getName(), null, properties));
         Runnable closeTask = () -> {
             if (server != null) {
                 try {

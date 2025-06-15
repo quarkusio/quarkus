@@ -43,9 +43,10 @@ public class QuarkusComponentTestExtensionBuilder {
      * The initial set of components under test is derived from the test class. The types of all fields annotated with
      * {@link jakarta.inject.Inject} are considered the component types.
      *
-     *
      * @param componentClasses
+     *
      * @return self
+     *
      * @see #ignoreNestedClasses()
      */
     public QuarkusComponentTestExtensionBuilder addComponentClasses(Class<?>... componentClasses) {
@@ -58,6 +59,7 @@ public class QuarkusComponentTestExtensionBuilder {
      *
      * @param key
      * @param value
+     *
      * @return self
      */
     public QuarkusComponentTestExtensionBuilder configProperty(String key, String value) {
@@ -81,8 +83,8 @@ public class QuarkusComponentTestExtensionBuilder {
     /**
      * Ignore the static nested classes declared on the test class.
      * <p>
-     * By default, all static nested classes declared on the test class are added to the set of additional components under
-     * test.
+     * By default, all static nested classes declared on the test class are added to the set of additional components
+     * under test.
      *
      * @return self
      */
@@ -96,6 +98,7 @@ public class QuarkusComponentTestExtensionBuilder {
      * {@value #DEFAULT_CONFIG_SOURCE_ORDINAL} is used.
      *
      * @param val
+     *
      * @return self
      */
     public QuarkusComponentTestExtensionBuilder setConfigSourceOrdinal(int val) {
@@ -107,6 +110,7 @@ public class QuarkusComponentTestExtensionBuilder {
      * Add an additional {@link AnnotationsTransformer}.
      *
      * @param transformer
+     *
      * @return self
      */
     public QuarkusComponentTestExtensionBuilder addAnnotationsTransformer(AnnotationsTransformer transformer) {
@@ -118,7 +122,9 @@ public class QuarkusComponentTestExtensionBuilder {
      * Add an additional {@link Converter}. By default, the Quarkus-specific converters are registered.
      *
      * @param converter
+     *
      * @return self
+     *
      * @see #setConfigBuilderCustomizer(Consumer)
      */
     public QuarkusComponentTestExtensionBuilder addConverter(Converter<?> converter) {
@@ -132,6 +138,7 @@ public class QuarkusComponentTestExtensionBuilder {
      * The customizer can affect the configuration of a test method and should be used with caution.
      *
      * @param customizer
+     *
      * @return self
      */
     public QuarkusComponentTestExtensionBuilder setConfigBuilderCustomizer(Consumer<SmallRyeConfigBuilder> customizer) {
@@ -142,11 +149,13 @@ public class QuarkusComponentTestExtensionBuilder {
     /**
      * Configure a new mock of a bean.
      * <p>
-     * Note that a mock is created automatically for all unsatisfied dependencies in the test. This API provides full control
-     * over the bean attributes. The default values are derived from the bean class.
+     * Note that a mock is created automatically for all unsatisfied dependencies in the test. This API provides full
+     * control over the bean attributes. The default values are derived from the bean class.
      *
      * @param beanClass
+     *
      * @return a new mock bean configurator
+     *
      * @see MockBeanConfigurator#create(Function)
      */
     public <T> MockBeanConfigurator<T> mock(Class<T> beanClass) {
@@ -159,7 +168,6 @@ public class QuarkusComponentTestExtensionBuilder {
     }
 
     /**
-     *
      * @return a new extension instance
      */
     public QuarkusComponentTestExtension build() {
@@ -171,10 +179,11 @@ public class QuarkusComponentTestExtensionBuilder {
             converters.addAll(configConverters);
             converters = List.copyOf(converters);
         }
-        return new QuarkusComponentTestExtension(new QuarkusComponentTestConfiguration(Map.copyOf(configProperties),
-                Set.copyOf(componentClasses), List.copyOf(mockConfigurators), useDefaultConfigProperties,
-                addNestedClassesAsComponents, configSourceOrdinal,
-                List.copyOf(annotationsTransformers), converters, configBuilderCustomizer), buildShouldFail);
+        return new QuarkusComponentTestExtension(
+                new QuarkusComponentTestConfiguration(Map.copyOf(configProperties), Set.copyOf(componentClasses),
+                        List.copyOf(mockConfigurators), useDefaultConfigProperties, addNestedClassesAsComponents,
+                        configSourceOrdinal, List.copyOf(annotationsTransformers), converters, configBuilderCustomizer),
+                buildShouldFail);
     }
 
     void registerMockBean(MockBeanConfiguratorImpl<?> mock) {

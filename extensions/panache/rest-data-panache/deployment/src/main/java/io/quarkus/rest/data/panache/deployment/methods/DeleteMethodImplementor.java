@@ -36,10 +36,8 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
     }
 
     /**
-     * Generate JAX-RS DELETE method.
-     *
-     * The RESTEasy Classic version exposes {@link RestDataResource#delete(Object)}
-     * and the generated code looks more or less like this:
+     * Generate JAX-RS DELETE method. The RESTEasy Classic version exposes {@link RestDataResource#delete(Object)} and
+     * the generated code looks more or less like this:
      *
      * <pre>
      * {@code
@@ -61,8 +59,9 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
      * }
      * </pre>
      *
-     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#delete(Object)}
-     * and the generated code looks more or less like this:
+     * The RESTEasy Reactive version exposes
+     * {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#delete(Object)} and the generated code looks more or
+     * less like this:
      *
      * <pre>
      * {@code
@@ -117,8 +116,8 @@ public final class DeleteMethodImplementor extends StandardMethodImplementor {
                     ofMethod(resourceMetadata.getResourceClass(), RESOURCE_METHOD_NAME, Uni.class, Object.class),
                     resource, id);
 
-            methodCreator.returnValue(UniImplementor.map(methodCreator, uniDeleted, EXCEPTION_MESSAGE,
-                    (body, entity) -> {
+            methodCreator
+                    .returnValue(UniImplementor.map(methodCreator, uniDeleted, EXCEPTION_MESSAGE, (body, entity) -> {
                         ResultHandle deleted = body.checkCast(entity, Boolean.class);
                         // Workaround to have boolean type, otherwise it's an integer.
                         ResultHandle falseDefault = body.invokeStaticMethod(

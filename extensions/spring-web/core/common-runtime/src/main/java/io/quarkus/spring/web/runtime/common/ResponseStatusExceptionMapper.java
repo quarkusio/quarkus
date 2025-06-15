@@ -16,8 +16,7 @@ public class ResponseStatusExceptionMapper implements ExceptionMapper<ResponseSt
     public Response toResponse(ResponseStatusException exception) {
         Response.ResponseBuilder responseBuilder = Response.status(exception.getStatusCode().value());
         addHeaders(responseBuilder, exception.getHeaders());
-        return responseBuilder.entity(exception.getMessage())
-                .type(MediaType.TEXT_PLAIN).build();
+        return responseBuilder.entity(exception.getMessage()).type(MediaType.TEXT_PLAIN).build();
     }
 
     private void addHeaders(Response.ResponseBuilder responseBuilder, HttpHeaders springHeaders) {

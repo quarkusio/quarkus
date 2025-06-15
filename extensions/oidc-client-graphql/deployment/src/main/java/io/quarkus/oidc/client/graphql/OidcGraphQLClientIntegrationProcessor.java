@@ -35,10 +35,8 @@ public class OidcGraphQLClientIntegrationProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void initialize(BeanContainerBuildItem containerBuildItem,
-            OidcGraphQLClientIntegrationRecorder recorder,
-            OidcClientGraphQLConfig config,
-            BeanArchiveIndexBuildItem index,
+    void initialize(BeanContainerBuildItem containerBuildItem, OidcGraphQLClientIntegrationRecorder recorder,
+            OidcClientGraphQLConfig config, BeanArchiveIndexBuildItem index,
             GraphQLClientConfigInitializedBuildItem configInitialized) {
         Map<String, String> configKeysToOidcClients = new HashMap<>();
         for (AnnotationInstance annotation : index.getIndex().getAnnotations(GRAPHQL_CLIENT_API)) {
@@ -48,7 +46,8 @@ public class OidcGraphQLClientIntegrationProcessor {
                 String oidcClientName = oidcClient.valueWithDefault(index.getIndex(), "value").asString();
                 AnnotationValue configKeyValue = annotation.value("configKey");
                 String configKey = configKeyValue != null ? configKeyValue.asString() : null;
-                String actualConfigKey = (configKey != null && !configKey.equals("")) ? configKey : clazz.name().toString();
+                String actualConfigKey = (configKey != null && !configKey.equals("")) ? configKey
+                        : clazz.name().toString();
                 if (oidcClientName != null && !oidcClientName.isEmpty()) {
                     configKeysToOidcClients.put(actualConfigKey, oidcClientName);
                 }

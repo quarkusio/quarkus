@@ -25,7 +25,8 @@ public final class OracleDatabaseTypeSubstitution {
     public static final class OracleDriverUnavailable implements BooleanSupplier {
         @Override
         public boolean getAsBoolean() {
-            return !ClassUtils.isPresent("oracle.jdbc.OracleConnection", Thread.currentThread().getContextClassLoader());
+            return !ClassUtils.isPresent("oracle.jdbc.OracleConnection",
+                    Thread.currentThread().getContextClassLoader());
         }
     }
 

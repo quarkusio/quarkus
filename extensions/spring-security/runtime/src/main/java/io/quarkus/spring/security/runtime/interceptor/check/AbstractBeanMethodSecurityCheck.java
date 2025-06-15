@@ -9,8 +9,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
- * Implementations of this class are generated for expressions in @PreAuthorize that
- * invoke a method of a bean
+ * Implementations of this class are generated for expressions in @PreAuthorize that invoke a method of a bean
  */
 public abstract class AbstractBeanMethodSecurityCheck implements SecurityCheck {
 

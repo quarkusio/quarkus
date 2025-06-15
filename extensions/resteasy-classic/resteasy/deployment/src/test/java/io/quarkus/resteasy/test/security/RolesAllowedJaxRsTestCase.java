@@ -14,17 +14,12 @@ import io.restassured.RestAssured;
 public class RolesAllowedJaxRsTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RolesAllowedResource.class, UserResource.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class,
-                            UnsecuredSubResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(RolesAllowedResource.class, UserResource.class,
+                    TestIdentityProvider.class, TestIdentityController.class, UnsecuredSubResource.class));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test

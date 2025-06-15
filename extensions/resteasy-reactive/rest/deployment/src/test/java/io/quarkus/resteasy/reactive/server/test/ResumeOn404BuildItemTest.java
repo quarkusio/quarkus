@@ -25,15 +25,12 @@ import io.vertx.ext.web.Router;
 public class ResumeOn404BuildItemTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, CustomRoute.class);
-                }
-            })
-            .addBuildChainCustomizer(buildCustomizer());
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, CustomRoute.class);
+        }
+    }).addBuildChainCustomizer(buildCustomizer());
 
     protected static Consumer<BuildChainBuilder> buildCustomizer() {
         return new Consumer<>() {
@@ -42,32 +39,24 @@ public class ResumeOn404BuildItemTest {
             public void accept(BuildChainBuilder builder) {
                 builder.addBuildStep(context -> {
                     context.produce(new ResumeOn404BuildItem());
-                })
-                        .produces(ResumeOn404BuildItem.class)
-                        .build();
+                }).produces(ResumeOn404BuildItem.class).build();
             }
         };
     }
 
     @Test
     public void matchingFromResteasyReactive() {
-        get("/test")
-                .then()
-                .statusCode(200);
+        get("/test").then().statusCode(200);
     }
 
     @Test
     public void matchingFromCustomRoute() {
-        get("/main")
-                .then()
-                .statusCode(200);
+        get("/main").then().statusCode(200);
     }
 
     @Test
     public void missing() {
-        get("/dummy")
-                .then()
-                .statusCode(404);
+        get("/dummy").then().statusCode(404);
     }
 
     @Path("/test")

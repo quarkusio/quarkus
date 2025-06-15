@@ -37,7 +37,8 @@ public class CaffeineCacheManagerBuilder {
                 if (cacheInfos.isEmpty()) {
                     return new CacheManagerImpl(Collections.emptyMap());
                 } else {
-                    // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor for the caches map.
+                    // The number of caches is known at build time so we can use fixed initialCapacity and loadFactor
+                    // for the caches map.
                     Map<String, Cache> caches = new HashMap<>(cacheInfos.size() + 1, 1.0F);
                     for (CaffeineCacheInfo cacheInfo : cacheInfos) {
                         if (LOGGER.isDebugEnabled()) {
@@ -48,9 +49,9 @@ public class CaffeineCacheManagerBuilder {
                                     cacheInfo.expireAfterWrite, cacheInfo.expireAfterAccess, cacheInfo.metricsEnabled);
                         }
                         /*
-                         * Metrics will be recorded for the current cache if:
-                         * - the application depends on a quarkus-micrometer-registry-* extension
-                         * - the metrics are enabled for this cache from the Quarkus configuration
+                         * Metrics will be recorded for the current cache if: - the application depends on a
+                         * quarkus-micrometer-registry-* extension - the metrics are enabled for this cache from the
+                         * Quarkus configuration
                          */
                         boolean recordMetrics = metricsInitializer.metricsEnabled() && cacheInfo.metricsEnabled;
                         CaffeineCacheImpl cache = new CaffeineCacheImpl(cacheInfo, recordMetrics);

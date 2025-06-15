@@ -38,38 +38,25 @@ import io.smallrye.common.annotation.NonBlocking;
 public class SimpleXmlTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withConfigurationResource("exclude-model-from-jaxb.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Person.class, ModelWithoutAnnotation.class, SimpleXmlResource.class,
-                            io.quarkus.resteasy.reactive.jaxb.deployment.test.one.Model.class,
-                            io.quarkus.resteasy.reactive.jaxb.deployment.test.two.Model.class,
-                            ResourceWithModelSameName.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withConfigurationResource("exclude-model-from-jaxb.properties")
+            .withApplicationRoot((jar) -> jar.addClasses(Person.class, ModelWithoutAnnotation.class,
+                    SimpleXmlResource.class, io.quarkus.resteasy.reactive.jaxb.deployment.test.one.Model.class,
+                    io.quarkus.resteasy.reactive.jaxb.deployment.test.two.Model.class,
+                    ResourceWithModelSameName.class));
 
     @Test
     public void testXml() {
-        Person person = RestAssured.get("/simple/person")
-                .then()
-                .statusCode(200)
-                .contentType("application/xml")
-                .header("transfer-encoding", nullValue())
-                .header("content-length", notNullValue())
-                .extract().as(Person.class);
+        Person person = RestAssured.get("/simple/person").then().statusCode(200).contentType("application/xml")
+                .header("transfer-encoding", nullValue()).header("content-length", notNullValue()).extract()
+                .as(Person.class);
 
         assertEquals("Bob", person.getFirst());
         assertEquals("Builder", person.getLast());
 
-        Person secondPerson = RestAssured
-                .with()
-                .body(toXml(person))
-                .contentType("application/xml; charset=utf-8")
-                .post("/simple/person")
-                .then()
-                .statusCode(200)
-                .contentType("application/xml")
-                .header("content-length", notNullValue())
-                .header("transfer-encoding", nullValue())
-                .extract().as(Person.class);
+        Person secondPerson = RestAssured.with().body(toXml(person)).contentType("application/xml; charset=utf-8")
+                .post("/simple/person").then().statusCode(200).contentType("application/xml")
+                .header("content-length", notNullValue()).header("transfer-encoding", nullValue()).extract()
+                .as(Person.class);
 
         assertEquals(person.getFirst(), secondPerson.getFirst());
         assertEquals(person.getLast(), secondPerson.getLast());
@@ -77,13 +64,8 @@ public class SimpleXmlTest {
 
     @Test
     public void testInvalidXml() {
-        RestAssured
-                .with()
-                .body("<person><first>Bob</first></invalid>")
-                .contentType("application/xml")
-                .post("/simple/person")
-                .then()
-                .statusCode(400);
+        RestAssured.with().body("<person><first>Bob</first></invalid>").contentType("application/xml")
+                .post("/simple/person").then().statusCode(400);
     }
 
     @Test
@@ -94,15 +76,9 @@ public class SimpleXmlTest {
         }
 
         String longString = sb.toString();
-        Person actual = RestAssured
-                .with()
-                .body(toXml(new Person(longString, longString)))
-                .contentType("application/xml; charset=utf-8")
-                .post("/simple/person-large")
-                .then()
-                .statusCode(200)
-                .contentType("application/xml")
-                .extract().as(Person.class);
+        Person actual = RestAssured.with().body(toXml(new Person(longString, longString)))
+                .contentType("application/xml; charset=utf-8").post("/simple/person-large").then().statusCode(200)
+                .contentType("application/xml").extract().as(Person.class);
 
         assertEquals(longString, actual.getFirst());
         assertEquals(longString, actual.getLast());
@@ -111,47 +87,26 @@ public class SimpleXmlTest {
     @Test
     public void testValidatedXml() {
         String person = toXml(new Person("Bob", "Builder"));
-        RestAssured
-                .with()
-                .body(person)
-                .contentType("application/xml")
-                .post("/simple/person-validated")
-                .then()
+        RestAssured.with().body(person).contentType("application/xml").post("/simple/person-validated").then()
                 .statusCode(200);
 
-        RestAssured
-                .with()
-                .body(person)
-                .contentType("application/xml")
-                .post("/simple/person-invalid-result")
-                .then()
+        RestAssured.with().body(person).contentType("application/xml").post("/simple/person-invalid-result").then()
                 .statusCode(500);
 
-        RestAssured
-                .with()
-                .body(toXml(new Person("Bob", null)))
-                .accept("application/xml")
-                .contentType("application/xml")
-                .post("/simple/person-validated")
-                .then()
-                .statusCode(400)
-                .contentType("application/xml");
+        RestAssured.with().body(toXml(new Person("Bob", null))).accept("application/xml").contentType("application/xml")
+                .post("/simple/person-validated").then().statusCode(400).contentType("application/xml");
     }
 
     @Test
     public void testAsyncXml() {
-        RestAssured.get("/simple/async-person")
-                .then()
-                .body("person.first", Matchers.equalTo("Bob"))
-                .body("person.last", Matchers.equalTo("Builder"));
+        RestAssured.get("/simple/async-person").then().body("person.first", Matchers.equalTo("Bob")).body("person.last",
+                Matchers.equalTo("Builder"));
     }
 
     @Test
     public void testModelWithoutAnnotationAtRead() {
         ModelWithoutAnnotation actual = RestAssured.with().contentType(ContentType.XML)
-                .get("/simple/model-without-annotation")
-                .then()
-                .extract().as(ModelWithoutAnnotation.class);
+                .get("/simple/model-without-annotation").then().extract().as(ModelWithoutAnnotation.class);
 
         assertEquals("My Message", actual.getMessage());
     }
@@ -163,10 +118,8 @@ public class SimpleXmlTest {
         request.setMessage(expectedMessage);
 
         ModelWithoutAnnotation response = RestAssured.with().contentType(ContentType.XML).accept(ContentType.XML)
-                .body(toXml(request))
-                .post("/simple/model-without-annotation")
-                .then()
-                .extract().as(ModelWithoutAnnotation.class);
+                .body(toXml(request)).post("/simple/model-without-annotation").then().extract()
+                .as(ModelWithoutAnnotation.class);
 
         assertEquals(expectedMessage, response.getMessage());
     }
@@ -179,27 +132,17 @@ public class SimpleXmlTest {
         var two = new io.quarkus.resteasy.reactive.jaxb.deployment.test.two.Model();
         two.setName2("bb");
 
-        RestAssured.with().contentType(ContentType.XML).accept(ContentType.TEXT)
-                .body(toXml(one))
-                .post("/same-name/model-1")
-                .then()
-                .body(is("aa"));
+        RestAssured.with().contentType(ContentType.XML).accept(ContentType.TEXT).body(toXml(one))
+                .post("/same-name/model-1").then().body(is("aa"));
 
-        RestAssured.with().contentType(ContentType.XML).accept(ContentType.TEXT)
-                .body(toXml(two))
-                .post("/same-name/model-2")
-                .then()
-                .body(is("bb"));
+        RestAssured.with().contentType(ContentType.XML).accept(ContentType.TEXT).body(toXml(two))
+                .post("/same-name/model-2").then().body(is("bb"));
     }
 
     @Test
     public void testSupportReturningJaxbElement() {
-        Person response = RestAssured
-                .get("/simple/person-as-jaxb-element")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.XML)
-                .extract().as(Person.class);
+        Person response = RestAssured.get("/simple/person-as-jaxb-element").then().statusCode(200)
+                .contentType(ContentType.XML).extract().as(Person.class);
 
         assertEquals("Bob", response.getFirst());
         assertEquals("Builder", response.getLast());

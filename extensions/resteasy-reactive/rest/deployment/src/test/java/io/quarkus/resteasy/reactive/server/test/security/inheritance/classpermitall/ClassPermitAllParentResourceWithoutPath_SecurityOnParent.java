@@ -18,8 +18,8 @@ public abstract class ClassPermitAllParentResourceWithoutPath_SecurityOnParent
 
     @Override
     public ClassPermitAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnParent_ClassPermitAll() {
-        return new ClassPermitAllSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_PARENT + CLASS_PERMIT_ALL_PATH);
+        return new ClassPermitAllSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_PARENT + CLASS_PERMIT_ALL_PATH);
     }
 
     @PermitAll
@@ -36,7 +36,9 @@ public abstract class ClassPermitAllParentResourceWithoutPath_SecurityOnParent
 
     @PermitAll
     @Override
-    public String classPathOnInterface_ImplOnParent_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_INTERFACE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    public String classPathOnInterface_ImplOnParent_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_INTERFACE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 }

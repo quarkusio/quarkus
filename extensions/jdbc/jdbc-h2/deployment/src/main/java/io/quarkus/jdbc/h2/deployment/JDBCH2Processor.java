@@ -31,8 +31,7 @@ public class JDBCH2Processor {
     @BuildStep
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
-        jdbcDriver
-                .produce(new JdbcDriverBuildItem(DatabaseKind.H2, "org.h2.Driver", "org.h2.jdbcx.JdbcDataSource"));
+        jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.H2, "org.h2.Driver", "org.h2.jdbcx.JdbcDataSource"));
     }
 
     @BuildStep
@@ -41,13 +40,11 @@ public class JDBCH2Processor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(H2AgroalConnectionConfigurer.class)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                    .setUnremovable()
-                    .build());
+            additionalBeans
+                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(H2AgroalConnectionConfigurer.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
@@ -58,12 +55,13 @@ public class JDBCH2Processor {
 
     @BuildStep
     void runtimeInitializedClasses(BuildProducer<RuntimeInitializedClassBuildItem> runtimeInitializedClasses) {
-        runtimeInitializedClasses.produce(new RuntimeInitializedClassBuildItem("org.h2.store.fs.niomem.FileNioMemData"));
+        runtimeInitializedClasses
+                .produce(new RuntimeInitializedClassBuildItem("org.h2.store.fs.niomem.FileNioMemData"));
     }
 
     @BuildStep
     NativeImageEnableModule registerNetModuleForNative() {
-        //Compiling H2 to native requires activating the jdk.net module of the JDK
+        // Compiling H2 to native requires activating the jdk.net module of the JDK
         return new NativeImageEnableModule("jdk.net");
     }
 

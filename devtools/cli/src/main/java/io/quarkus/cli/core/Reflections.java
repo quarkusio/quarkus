@@ -2,14 +2,11 @@ package io.quarkus.cli.core;
 
 import io.quarkus.runtime.annotations.RegisterForReflection;
 
-@RegisterForReflection(targets = {
-        io.quarkus.devtools.codestarts.core.CodestartSpec.class,
+@RegisterForReflection(targets = { io.quarkus.devtools.codestarts.core.CodestartSpec.class,
         io.quarkus.devtools.codestarts.core.CodestartSpec.LanguageSpec.class,
         io.quarkus.devtools.codestarts.core.CodestartSpec.CodestartDep.class,
-        io.quarkus.registry.catalog.Category.class,
-        io.quarkus.registry.catalog.Extension.class,
-        io.quarkus.registry.catalog.ExtensionCatalog.class,
-        io.quarkus.registry.catalog.ExtensionOrigin.class,
+        io.quarkus.registry.catalog.Category.class, io.quarkus.registry.catalog.Extension.class,
+        io.quarkus.registry.catalog.ExtensionCatalog.class, io.quarkus.registry.catalog.ExtensionOrigin.class,
         org.apache.maven.repository.internal.DefaultArtifactDescriptorReader.class,
         org.apache.maven.repository.internal.DefaultVersionRangeResolver.class,
         org.apache.maven.repository.internal.DefaultVersionResolver.class,
@@ -38,7 +35,6 @@ import io.quarkus.runtime.annotations.RegisterForReflection;
         org.eclipse.aether.internal.impl.Maven2RepositoryLayoutFactory.class,
         org.eclipse.aether.internal.impl.SimpleLocalRepositoryManagerFactory.class,
         org.eclipse.aether.internal.impl.collect.DefaultDependencyCollector.class,
-        org.eclipse.aether.transport.wagon.WagonTransporterFactory.class
-}, ignoreNested = true)
+        org.eclipse.aether.transport.wagon.WagonTransporterFactory.class }, ignoreNested = true)
 public class Reflections {
 }

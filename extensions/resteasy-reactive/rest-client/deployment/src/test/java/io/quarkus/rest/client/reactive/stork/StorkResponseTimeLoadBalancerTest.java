@@ -25,16 +25,14 @@ public class StorkResponseTimeLoadBalancerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient.class, HelloResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloClient.class, HelloResource.class))
             .withConfigurationResource("stork-stat-lb.properties");
 
     @BeforeAll
     public static void setUp() {
         server = new WireMockServer(options().port(8766));
         server.stubFor(WireMock.post("/hello/")
-                .willReturn(aResponse().withFixedDelay(1000)
-                        .withBody(SLOW_RESPONSE).withStatus(200)));
+                .willReturn(aResponse().withFixedDelay(1000).withBody(SLOW_RESPONSE).withStatus(200)));
         server.start();
     }
 

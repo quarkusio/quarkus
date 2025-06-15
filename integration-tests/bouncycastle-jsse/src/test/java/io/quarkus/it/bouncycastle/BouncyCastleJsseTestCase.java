@@ -42,24 +42,16 @@ public class BouncyCastleJsseTestCase {
 
     protected void doTestListProviders() {
         RequestSpecification spec = new RequestSpecBuilder()
-                .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost()))
-                .setPort(url.getPort())
-                .setKeyStore("client-keystore.jks", "password")
-                .setTrustStore("client-truststore.jks", "secret")
+                .setBaseUri(String.format("%s://%s", url.getProtocol(), url.getHost())).setPort(url.getPort())
+                .setKeyStore("client-keystore.jks", "password").setTrustStore("client-truststore.jks", "secret")
                 .build();
-        RestAssured.given()
-                .spec(spec)
-                .when()
-                .get("/jsse/listProviders")
-                .then()
-                .statusCode(200)
+        RestAssured.given().spec(spec).when().get("/jsse/listProviders").then().statusCode(200)
                 .body(startsWith("Identity: CN=client"), containsString("BC,BCJSSE,SunJSSE"));
     }
 
     protected void checkLog(boolean serverOnly) {
         final Path logDirectory = Paths.get(".", "target");
-        given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+        given().pollInterval(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

@@ -18,21 +18,18 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(BrokenOnlyResource.class)
-                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties()),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(SimpleET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(BrokenOnlyResource.class)
+                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties()), "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(SimpleET.class);
+        }
+    });
 
     public TestBrokenOnlyTestCase() {
         super("devui-continuous-testing");
@@ -47,7 +44,7 @@ public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        //start broken only mode
+        // start broken only mode
         super.executeJsonRPCMethod("toggleBrokenOnly");
 
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
@@ -59,7 +56,7 @@ public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
         ts = utils.waitForNextCompletion();
 
         Assertions.assertEquals(1L, ts.getTestsFailed());
-        Assertions.assertEquals(0L, ts.getTestsPassed()); //passing test should not have been run
+        Assertions.assertEquals(0L, ts.getTestsPassed()); // passing test should not have been run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
         test.modifySourceFile(BrokenOnlyResource.class, new Function<String, String>() {
@@ -74,7 +71,7 @@ public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(1L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        //now add a new failing test
+        // now add a new failing test
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -87,7 +84,7 @@ public class TestBrokenOnlyTestCase extends DevUIJsonRPCTest {
         Assertions.assertEquals(0L, ts.getTestsPassed());
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
-        //now make it pass
+        // now make it pass
         test.modifyTestSourceFile(SimpleET.class, new Function<String, String>() {
             @Override
             public String apply(String s) {

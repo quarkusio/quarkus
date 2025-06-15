@@ -18,7 +18,8 @@ public class ClassicRestClientBuilderFactory implements RestClientBuilderFactory
         }
 
         RestClientBuilder restClientBuilder = RestClientBuilder.newBuilder();
-        RestClientBase restClientBase = new RestClientBase(proxyType, baseUri, configKey, new Class[0], restClientsConfigRoot);
+        RestClientBase restClientBase = new RestClientBase(proxyType, baseUri, configKey, new Class[0],
+                restClientsConfigRoot);
         restClientBase.configureBuilder(restClientBuilder);
 
         return restClientBuilder;

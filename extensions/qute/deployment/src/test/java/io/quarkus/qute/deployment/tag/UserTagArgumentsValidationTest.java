@@ -15,18 +15,15 @@ public class UserTagArgumentsValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "{_args.sizes}"),
-                            "templates/tags/hello.txt")
-                    .addAsResource(new StringAsset("{#hello name=val /}"), "templates/foo.txt"))
+            .withApplicationRoot(
+                    (jar) -> jar.addAsResource(new StringAsset("{_args.sizes}"), "templates/tags/hello.txt")
+                            .addAsResource(new StringAsset("{#hello name=val /}"), "templates/foo.txt"))
             .assertException(t -> {
                 Throwable root = Throwables.getRootCause(t);
                 if (root == null) {
                     root = t;
                 }
-                assertThat(root)
-                        .isInstanceOf(TemplateException.class)
+                assertThat(root).isInstanceOf(TemplateException.class)
                         .hasMessageContaining("Found incorrect expressions (1)").hasMessageContaining("{_args.sizes}");
             });
 

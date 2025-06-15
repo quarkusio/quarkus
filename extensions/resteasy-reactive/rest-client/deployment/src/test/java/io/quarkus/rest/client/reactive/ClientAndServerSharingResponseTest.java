@@ -34,15 +34,11 @@ public class ClientAndServerSharingResponseTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class, HeadersService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class, HeadersService.class));
 
     @Test
     public void test() {
-        when().get("/test/client")
-                .then()
-                .statusCode(200)
-                .body(containsString("{\"Accept\":\"application/json\"}"));
+        when().get("/test/client").then().statusCode(200).body(containsString("{\"Accept\":\"application/json\"}"));
     }
 
     @RegisterRestClient
@@ -65,8 +61,7 @@ public class ClientAndServerSharingResponseTest {
                 throws MalformedURLException {
             this.mapper = mapper;
             this.headersService = QuarkusRestClientBuilder.newBuilder()
-                    .baseUrl(new URL(String.format("http://localhost:%d", testPort)))
-                    .readTimeout(1, TimeUnit.SECONDS)
+                    .baseUrl(new URL(String.format("http://localhost:%d", testPort))).readTimeout(1, TimeUnit.SECONDS)
                     .build(HeadersService.class);
         }
 

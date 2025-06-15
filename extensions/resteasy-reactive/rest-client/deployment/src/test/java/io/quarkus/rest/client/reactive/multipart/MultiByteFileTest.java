@@ -50,9 +50,8 @@ public class MultiByteFileTest {
     Vertx vertx;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Resource.class, FormData.class, Client.class, ClientForm.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Resource.class, FormData.class, Client.class, ClientForm.class));
 
     @Test
     void shouldUploadBiggishFile() {
@@ -60,22 +59,19 @@ public class MultiByteFileTest {
 
         ClientForm form = new ClientForm();
         AtomicLong i = new AtomicLong();
-        form.file = Multi.createBy().repeating().supplier(
-                () -> (byte) ((i.getAndIncrement() + 1) % 123)).atMost(BYTES_SENT);
+        form.file = Multi.createBy().repeating().supplier(() -> (byte) ((i.getAndIncrement() + 1) % 123))
+                .atMost(BYTES_SENT);
         String result = client.postMultipart(form);
         assertThat(result).isEqualTo("myFile");
     }
 
     @Test
     void shouldChunkRequest() {
-        Client client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .property("io.quarkus.rest.client.max-chunk-size", 2)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
+                .property("io.quarkus.rest.client.max-chunk-size", 2).build(Client.class);
 
         ClientForm form = new ClientForm();
-        form.file = Multi.createBy().repeating().supplier(
-                () -> (byte) 'A').atMost(10);
+        form.file = Multi.createBy().repeating().supplier(() -> (byte) 'A').atMost(10);
 
         String result = client.chunked(form);
         assertThat(result).isEqualTo("myFile/-1/chunked");
@@ -133,14 +129,13 @@ public class MultiByteFileTest {
 
         ClientForm form = new ClientForm();
         AtomicLong i = new AtomicLong();
-        form.file = Multi.createBy().repeating().supplier(
-                () -> {
-                    long iteration = i.getAndIncrement();
-                    if (iteration > BYTES_SENT / 2) {
-                        throw new RuntimeException("forced");
-                    }
-                    return (byte) ((iteration + 1) % 123);
-                }).atMost(BYTES_SENT);
+        form.file = Multi.createBy().repeating().supplier(() -> {
+            long iteration = i.getAndIncrement();
+            if (iteration > BYTES_SENT / 2) {
+                throw new RuntimeException("forced");
+            }
+            return (byte) ((iteration + 1) % 123);
+        }).atMost(BYTES_SENT);
         assertThatThrownBy(() -> client.postMultipart(form)).isInstanceOf(Exception.class);
     }
 
@@ -151,9 +146,8 @@ public class MultiByteFileTest {
         ClientForm form = new ClientForm();
         AtomicLong i = new AtomicLong();
         ExecutorService executor = Executors.newSingleThreadExecutor();
-        form.file = Multi.createBy().repeating().supplier(
-                () -> (byte) ((i.getAndIncrement() + 1) % 123)).atMost(BYTES_SENT)
-                .emitOn(executor);
+        form.file = Multi.createBy().repeating().supplier(() -> (byte) ((i.getAndIncrement() + 1) % 123))
+                .atMost(BYTES_SENT).emitOn(executor);
         String result = client.postMultipart(form);
         assertThat(result).isEqualTo("myFile");
     }

@@ -13,9 +13,8 @@ import io.smallrye.config.WithDefault;
 public interface KubernetesServiceBindingConfig {
 
     /**
-     * A list of explicitly configured services.
-     * The configured value will be used in order to generate the `ServiceBinding` resource (in case that kubernetes resource
-     * generation is enabled).
+     * A list of explicitly configured services. The configured value will be used in order to generate the
+     * `ServiceBinding` resource (in case that kubernetes resource generation is enabled).
      */
     Map<String, ServiceConfig> services();
 
@@ -25,8 +24,8 @@ public interface KubernetesServiceBindingConfig {
     Optional<String> mountPath();
 
     /**
-     * Determines if binding should be created as files or env vars.
-     * Set this value to {@code false} to bind as env vars.`
+     * Determines if binding should be created as files or env vars. Set this value to {@code false} to bind as env
+     * vars.`
      */
     @WithDefault("true")
     Boolean bindAsFiles();

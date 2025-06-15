@@ -19,19 +19,16 @@ import io.restassured.RestAssured;
 public class ApplicationPathTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestApplication.class, HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestApplication.class, HelloResource.class);
+        }
+    });
 
     @Test
     public void helloTest() {
-        RestAssured.get("/app/hello")
-                .then().body(Matchers.equalTo("hello"));
+        RestAssured.get("/app/hello").then().body(Matchers.equalTo("hello"));
     }
 
     @ApplicationPath("app")

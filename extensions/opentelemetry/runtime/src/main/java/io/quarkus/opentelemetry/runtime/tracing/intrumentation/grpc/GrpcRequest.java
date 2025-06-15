@@ -10,17 +10,11 @@ import io.grpc.MethodDescriptor;
 
 public class GrpcRequest {
 
-    public static GrpcRequest server(
-            final MethodDescriptor<?, ?> methodDescriptor,
-            final Metadata metadata,
-            final Attributes attributes,
-            final String authority) {
+    public static GrpcRequest server(final MethodDescriptor<?, ?> methodDescriptor, final Metadata metadata,
+            final Attributes attributes, final String authority) {
 
-        return new GrpcRequest(methodDescriptor,
-                metadata,
-                attributes,
-                attributes == null ? null : attributes.get(TRANSPORT_ATTR_REMOTE_ADDR),
-                authority);
+        return new GrpcRequest(methodDescriptor, metadata, attributes,
+                attributes == null ? null : attributes.get(TRANSPORT_ATTR_REMOTE_ADDR), authority);
     }
 
     public static GrpcRequest client(final MethodDescriptor<?, ?> methodDescriptor, String authority) {
@@ -39,12 +33,8 @@ public class GrpcRequest {
     private volatile int logicalPort = -1;
     private volatile SocketAddress peerSocketAddress;
 
-    private GrpcRequest(
-            final MethodDescriptor<?, ?> methodDescriptor,
-            final Metadata metadata,
-            final Attributes attributes,
-            final SocketAddress peerSocketAddress,
-            final String authority) {
+    private GrpcRequest(final MethodDescriptor<?, ?> methodDescriptor, final Metadata metadata,
+            final Attributes attributes, final SocketAddress peerSocketAddress, final String authority) {
         this.methodDescriptor = methodDescriptor;
         this.metadata = metadata;
         this.attributes = attributes;

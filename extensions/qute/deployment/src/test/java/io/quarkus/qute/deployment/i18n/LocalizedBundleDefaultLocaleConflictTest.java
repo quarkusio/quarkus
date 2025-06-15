@@ -17,10 +17,8 @@ public class LocalizedBundleDefaultLocaleConflictTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Messages.class, EnMessages.class))
-            .overrideConfigKey("quarkus.default-locale", "en")
-            .assertException(t -> {
+            .withApplicationRoot(root -> root.addClasses(Messages.class, EnMessages.class))
+            .overrideConfigKey("quarkus.default-locale", "en").assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof MessageBundleException) {
                     assertEquals(

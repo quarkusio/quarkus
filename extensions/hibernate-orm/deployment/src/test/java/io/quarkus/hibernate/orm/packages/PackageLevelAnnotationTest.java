@@ -18,10 +18,8 @@ public class PackageLevelAnnotationTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
-                    .addPackage(PackageLevelAnnotationTest.class.getPackage())
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(TransactionTestUtils.class)
+                    .addPackage(PackageLevelAnnotationTest.class.getPackage()).addAsResource("application.properties"));
 
     @Inject
     EntityManager entityManager;
@@ -38,8 +36,7 @@ public class PackageLevelAnnotationTest {
         });
 
         inTransaction(() -> {
-            final List<ParentEntity> list = entityManager.createNamedQuery("test", ParentEntity.class)
-                    .getResultList();
+            final List<ParentEntity> list = entityManager.createNamedQuery("test", ParentEntity.class).getResultList();
             assertThat(list.size()).isEqualTo(1);
         });
     }

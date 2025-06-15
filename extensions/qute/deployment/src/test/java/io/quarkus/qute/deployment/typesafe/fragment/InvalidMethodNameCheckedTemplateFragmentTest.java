@@ -19,10 +19,9 @@ public class InvalidMethodNameCheckedTemplateFragmentTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Templates.class, Item.class)
-                    .addAsResource(new StringAsset("{#each items}{#fragment id='item'}{it.name}{/fragment}{/each}"),
-                            "templates/InvalidMethodNameCheckedTemplateFragmentTest/items.html"))
+            .withApplicationRoot(root -> root.addClasses(Templates.class, Item.class).addAsResource(
+                    new StringAsset("{#each items}{#fragment id='item'}{it.name}{/fragment}{/each}"),
+                    "templates/InvalidMethodNameCheckedTemplateFragmentTest/items.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

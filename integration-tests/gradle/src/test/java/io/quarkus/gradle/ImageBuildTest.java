@@ -22,8 +22,8 @@ public class ImageBuildTest extends QuarkusGradleWrapperTestBase {
         final File buildDir = new File(projectDir, "build");
         final Path mainLib = buildDir.toPath().resolve("quarkus-app").resolve("lib").resolve("main");
 
-        boolean hasContainerImageExtension = Arrays.stream(mainLib.toFile().list()).filter(l -> l.startsWith("io.quarkus"))
-                .anyMatch(l -> l.contains("container-image-jib"));
+        boolean hasContainerImageExtension = Arrays.stream(mainLib.toFile().list())
+                .filter(l -> l.startsWith("io.quarkus")).anyMatch(l -> l.contains("container-image-jib"));
         assertTrue(hasContainerImageExtension);
     }
 }

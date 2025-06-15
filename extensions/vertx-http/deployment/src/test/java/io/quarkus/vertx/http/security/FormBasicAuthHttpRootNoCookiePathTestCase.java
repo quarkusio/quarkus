@@ -23,75 +23,43 @@ import io.restassured.filter.cookie.CookieFilter;
 
 public class FormBasicAuthHttpRootNoCookiePathTestCase {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.root-path=/root\n" +
-            "quarkus.http.auth.form.enabled=true\n" +
-            "quarkus.http.auth.form.login-page=login\n" +
-            "quarkus.http.auth.form.cookie-path=\n" +
-            "quarkus.http.auth.form.error-page=error\n" +
-            "quarkus.http.auth.form.landing-page=landing\n" +
-            "quarkus.http.auth.policy.r1.roles-allowed=admin\n" +
-            "quarkus.http.auth.permission.roles1.paths=/root/admin\n" +
-            "quarkus.http.auth.permission.roles1.policy=r1\n";
+    private static final String APP_PROPS = "" + "quarkus.http.root-path=/root\n"
+            + "quarkus.http.auth.form.enabled=true\n" + "quarkus.http.auth.form.login-page=login\n"
+            + "quarkus.http.auth.form.cookie-path=\n" + "quarkus.http.auth.form.error-page=error\n"
+            + "quarkus.http.auth.form.landing-page=landing\n" + "quarkus.http.auth.policy.r1.roles-allowed=admin\n"
+            + "quarkus.http.auth.permission.roles1.paths=/root/admin\n"
+            + "quarkus.http.auth.permission.roles1.policy=r1\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,
-                            PathHandler.class)
+                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class,
+                            TestIdentityController.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties");
         }
     });
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin");
     }
 
     @Test
     public void testFormBasedAuthSuccess() {
         CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(302)
-                .header("location", containsString("/login"))
-                .cookie("quarkus-redirect-location",
+        RestAssured.given().filter(cookies).redirects().follow(false).when().get("/admin").then().assertThat()
+                .statusCode(302).header("location", containsString("/login")).cookie("quarkus-redirect-location",
                         detailedCookie().value(containsString("/root/admin")).path(nullValue()));
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .formParam("j_username", "admin")
-                .formParam("j_password", "admin")
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(302)
+        RestAssured.given().filter(cookies).redirects().follow(false).when().formParam("j_username", "admin")
+                .formParam("j_password", "admin").post("/j_security_check").then().assertThat().statusCode(302)
                 .header("location", containsString("/root/admin"))
-                .cookie("quarkus-credential",
-                        detailedCookie().value(notNullValue()).path(nullValue()));
+                .cookie("quarkus-credential", detailedCookie().value(notNullValue()).path(nullValue()));
 
-        RestAssured
-                .given()
-                .filter(cookies)
-                .redirects().follow(false)
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("admin:/root/admin"));
+        RestAssured.given().filter(cookies).redirects().follow(false).when().get("/admin").then().assertThat()
+                .statusCode(200).body(equalTo("admin:/root/admin"));
 
     }
 }

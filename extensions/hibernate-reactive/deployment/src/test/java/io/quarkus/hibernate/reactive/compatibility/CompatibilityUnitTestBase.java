@@ -23,9 +23,10 @@ public abstract class CompatibilityUnitTestBase {
     public void testReactiveWorks(UniAsserter asserter) {
         Mutiny.SessionFactory mutinySessionFactory = Arc.container().instance(Mutiny.SessionFactory.class).get();
 
-        asserter.assertThat(() -> mutinySessionFactory.withSession(s -> s.createQuery(
-                "from Hero h where h.name = :name", Hero.class)
-                .setParameter("name", "Galadriel").getResultList()),
+        asserter.assertThat(
+                () -> mutinySessionFactory
+                        .withSession(s -> s.createQuery("from Hero h where h.name = :name", Hero.class)
+                                .setParameter("name", "Galadriel").getResultList()),
                 list -> assertThat(list).hasSize(1));
     }
 
@@ -41,9 +42,7 @@ public abstract class CompatibilityUnitTestBase {
 
         EntityManager entityManager = hibernateSessionFactory.createEntityManager();
 
-        List<Hero> entities = entityManager
-                .createQuery("select e from Hero e", Hero.class)
-                .getResultList();
+        List<Hero> entities = entityManager.createQuery("select e from Hero e", Hero.class).getResultList();
 
         assertThat(entities).isNotEmpty();
         assertThat(entities).hasSize(4);

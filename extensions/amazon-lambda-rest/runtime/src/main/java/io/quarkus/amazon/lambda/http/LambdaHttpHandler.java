@@ -86,7 +86,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         @Override
         public void handleMessage(Object msg) {
             try {
-                //log.info("Got message: " + msg.getClass().getName());
+                // log.info("Got message: " + msg.getClass().getName());
 
                 if (msg instanceof HttpResponse) {
                     HttpResponse res = (HttpResponse) msg;
@@ -155,12 +155,12 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         }
     }
 
-    private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request,
-            Context context)
+    private AwsProxyResponse nettyDispatch(InetSocketAddress clientAddress, AwsProxyRequest request, Context context)
             throws Exception {
         String path = request.getPath();
-        //log.info("---- Got lambda request: " + path);
-        if (request.getMultiValueQueryStringParameters() != null && !request.getMultiValueQueryStringParameters().isEmpty()) {
+        // log.info("---- Got lambda request: " + path);
+        if (request.getMultiValueQueryStringParameters() != null
+                && !request.getMultiValueQueryStringParameters().isEmpty()) {
             StringBuilder sb = new StringBuilder(path);
             sb.append("?");
             boolean first = true;
@@ -190,7 +190,7 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
         quarkusHeaders.setContextObject(AwsProxyRequest.class, request);
         DefaultHttpRequest nettyRequest = new DefaultHttpRequest(HttpVersion.HTTP_1_1,
                 HttpMethod.valueOf(request.getHttpMethod()), path, quarkusHeaders);
-        if (request.getMultiValueHeaders() != null) { //apparently this can be null if no headers are sent
+        if (request.getMultiValueHeaders() != null) { // apparently this can be null if no headers are sent
             for (Map.Entry<String, List<String>> header : request.getMultiValueHeaders().entrySet()) {
                 nettyRequest.headers().add(header.getKey(), header.getValue());
             }
@@ -207,20 +207,21 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
                 ByteBuf body = Unpooled.wrappedBuffer(Base64.getDecoder().decode(request.getBody()));
                 requestContent = new DefaultLastHttpContent(body);
             } else {
-                ByteBuf body = Unpooled.copiedBuffer(request.getBody(), StandardCharsets.UTF_8); //TODO: do we need to look at the request encoding?
+                ByteBuf body = Unpooled.copiedBuffer(request.getBody(), StandardCharsets.UTF_8); // TODO: do we need to
+                                                                                                 // look at the request
+                                                                                                 // encoding?
                 requestContent = new DefaultLastHttpContent(body);
             }
         }
         NettyResponseHandler handler = new NettyResponseHandler(request);
         VirtualClientConnection connection = VirtualClientConnection.connect(handler, VertxHttpRecorder.VIRTUAL_HTTP,
                 clientAddress);
-        if (request.getRequestContext() != null
-                && request.getRequestContext().getIdentity() != null
+        if (request.getRequestContext() != null && request.getRequestContext().getIdentity() != null
                 && request.getRequestContext().getIdentity().getSourceIp() != null
                 && request.getRequestContext().getIdentity().getSourceIp().length() > 0) {
             int port = 443; // todo, may be bad to assume 443?
-            if (request.getMultiValueHeaders() != null &&
-                    request.getMultiValueHeaders().getFirst("X-Forwarded-Port") != null) {
+            if (request.getMultiValueHeaders() != null
+                    && request.getMultiValueHeaders().getFirst("X-Forwarded-Port") != null) {
                 port = Integer.parseInt(request.getMultiValueHeaders().getFirst("X-Forwarded-Port"));
             }
             connection.peer().attr(ConnectionBase.REMOTE_ADDRESS_OVERRIDE).set(
@@ -245,8 +246,8 @@ public class LambdaHttpHandler implements RequestHandler<AwsProxyRequest, AwsPro
     private boolean isText(String contentType) {
         if (contentType != null) {
             String ct = contentType.toLowerCase(Locale.ROOT);
-            return (ct.startsWith("text") || ct.contains("json") || (ct.contains("xml") && !ct.contains("openxmlformats"))
-                    || ct.contains("yaml"));
+            return (ct.startsWith("text") || ct.contains("json")
+                    || (ct.contains("xml") && !ct.contains("openxmlformats")) || ct.contains("yaml"));
         }
         return false;
     }

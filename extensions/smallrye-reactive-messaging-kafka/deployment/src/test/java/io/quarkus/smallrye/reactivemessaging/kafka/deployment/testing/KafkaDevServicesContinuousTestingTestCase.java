@@ -19,28 +19,25 @@ public class KafkaDevServicesContinuousTestingTestCase {
             "mp.messaging.outgoing.generated-price.topic=prices",
             "mp.messaging.outgoing.generated-price.value.serializer=org.apache.kafka.common.serialization.IntegerSerializer",
             "mp.messaging.incoming.prices.connector=smallrye-kafka",
-            "mp.messaging.incoming.prices.health-readiness-enabled=false",
-            "mp.messaging.incoming.prices.topic=prices",
+            "mp.messaging.incoming.prices.health-readiness-enabled=false", "mp.messaging.incoming.prices.topic=prices",
             "mp.messaging.incoming.prices.value.deserializer=org.apache.kafka.common.serialization.IntegerDeserializer");
 
     @RegisterExtension
-    public static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(PriceConverter.class, PriceResource.class, PriceGenerator.class)
-                            .addAsResource(new StringAsset(ContinuousTestingTestUtils.appProperties("")),
-                                    "application.properties");
-                }
-            }).setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(PriceResourceET.class);
-                }
-            });
+    public static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(PriceConverter.class, PriceResource.class, PriceGenerator.class).addAsResource(
+                            new StringAsset(ContinuousTestingTestUtils.appProperties("")), "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(PriceResourceET.class);
+        }
+    });
 
-    //see https://github.com/quarkusio/quarkus/issues/19180
+    // see https://github.com/quarkusio/quarkus/issues/19180
     @Test
     public void testContinuousTestingScenario1() {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();

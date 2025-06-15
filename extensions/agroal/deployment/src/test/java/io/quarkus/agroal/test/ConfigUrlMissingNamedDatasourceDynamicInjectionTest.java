@@ -50,11 +50,10 @@ public class ConfigUrlMissingNamedDatasourceDynamicInjectionTest {
         var ds = instance.get();
         assertThat(ds).isNotNull();
         // However, any attempt to use it at runtime will fail.
-        assertThatThrownBy(() -> ds.getConnection())
-                .isInstanceOf(InactiveBeanException.class)
-                .hasMessageContainingAll("Datasource 'users' was deactivated automatically because its URL is not set.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                        "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'",
-                        "Refer to https://quarkus.io/guides/datasource for guidance.");
+        assertThatThrownBy(() -> ds.getConnection()).isInstanceOf(InactiveBeanException.class).hasMessageContainingAll(
+                "Datasource 'users' was deactivated automatically because its URL is not set.",
+                "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'",
+                "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

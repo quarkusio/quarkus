@@ -11,13 +11,9 @@ public class ForkJoinClassLoading {
     private static final Logger log = Logger.getLogger(ForkJoinClassLoading.class.getName());
 
     /**
-     * A yucky hack, basically attempt to make sure every thread in the common pool has
-     * the correct CL.
-     *
-     * It's not perfect, but as this only affects test and dev mode and not production it is better
-     * than nothing.
-     *
-     * Really we should just not use the common pool at all.
+     * A yucky hack, basically attempt to make sure every thread in the common pool has the correct CL. It's not
+     * perfect, but as this only affects test and dev mode and not production it is better than nothing. Really we
+     * should just not use the common pool at all.
      */
     public static void setForkJoinClassLoader(ClassLoader classLoader) {
         CountDownLatch allDone = new CountDownLatch(ForkJoinPool.getCommonPoolParallelism());

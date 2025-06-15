@@ -9,8 +9,7 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 /**
- * An entity writer that will delegate based on the actual type of the
- * returned entity.
+ * An entity writer that will delegate based on the actual type of the returned entity.
  */
 public class TypeDelegatingEntityWriter implements EntityWriter {
 

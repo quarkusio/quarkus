@@ -35,13 +35,13 @@ final public class DefaultLambdaIdentityProvider implements IdentityProvider<Def
     }
 
     /**
-     * Create a SecurityIdentity with a principal derived from APIGatewayV2HTTPEvent.
-     * Looks for Cognito JWT, IAM, or Custom Lambda metadata for principal name
-     *
-     * Cognito JWTs will automatically add Cognito groups as Quarkus roles
+     * Create a SecurityIdentity with a principal derived from APIGatewayV2HTTPEvent. Looks for Cognito JWT, IAM, or
+     * Custom Lambda metadata for principal name Cognito JWTs will automatically add Cognito groups as Quarkus roles
      *
      * @param event
-     * @param groups add "cognito:groups" to SecurityIdentity roles
+     * @param groups
+     *        add "cognito:groups" to SecurityIdentity roles
+     *
      * @return
      */
     public static SecurityIdentity authenticate(APIGatewayV2HTTPEvent event, boolean groups) {

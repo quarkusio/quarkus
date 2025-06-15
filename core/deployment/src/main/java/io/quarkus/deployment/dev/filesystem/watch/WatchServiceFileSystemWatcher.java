@@ -33,10 +33,8 @@ import org.jboss.logging.Logger;
 
 /**
  * File system watcher service based on JDK7 {@link WatchService}. Instantiating this class will create a new thread,
- * that will run until {@link #close()} is called.
- *
- * NOTE: this was copied from Xnio, it provides more functionality than we currently need.
- *
+ * that will run until {@link #close()} is called. NOTE: this was copied from Xnio, it provides more functionality than
+ * we currently need.
  */
 public class WatchServiceFileSystemWatcher implements Runnable {
 
@@ -46,8 +44,7 @@ public class WatchServiceFileSystemWatcher implements Runnable {
 
     private WatchService watchService;
     private final Map<Path, PathData> monitoredDirectories = Collections.synchronizedMap(new HashMap<>());
-    private final Map<WatchKey, PathData> pathDataByKey = Collections
-            .synchronizedMap(new IdentityHashMap<>());
+    private final Map<WatchKey, PathData> pathDataByKey = Collections.synchronizedMap(new IdentityHashMap<>());
 
     private volatile boolean stopped = false;
     private final Thread watchThread;
@@ -103,9 +100,9 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                             }
                             key.pollEvents().clear();
 
-                            //now we need to prune the results, to remove duplicates
-                            //e.g. if the file is modified after creation we only want to
-                            //show the create event
+                            // now we need to prune the results, to remove duplicates
+                            // e.g. if the file is modified after creation we only want to
+                            // show the create event
                             Iterator<FileChangeEvent> it = results.iterator();
                             while (it.hasNext()) {
                                 FileChangeEvent event = it.next();
@@ -116,8 +113,8 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                                 }
 
                                 if (event.getType() == FileChangeEvent.Type.MODIFIED) {
-                                    if (addedFiles.contains(event.getFile()) &&
-                                            deletedFiles.contains(event.getFile())) {
+                                    if (addedFiles.contains(event.getFile())
+                                            && deletedFiles.contains(event.getFile())) {
                                         // XNIO-344
                                         // All file change events (ADDED, REMOVED and MODIFIED) occurred here.
                                         // This happens when an updated file is moved from the different
@@ -126,8 +123,8 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                                         // So, this MODIFIED event needs to be kept for the file change notification.
                                         continue;
                                     }
-                                    if (addedFiles.contains(event.getFile()) ||
-                                            deletedFiles.contains(event.getFile())) {
+                                    if (addedFiles.contains(event.getFile())
+                                            || deletedFiles.contains(event.getFile())) {
                                         it.remove();
                                     }
                                 } else if (event.getType() == FileChangeEvent.Type.ADDED) {
@@ -148,14 +145,14 @@ public class WatchServiceFileSystemWatcher implements Runnable {
                             }
                         }
                     } finally {
-                        //if the key is no longer valid remove it from the files list
+                        // if the key is no longer valid remove it from the files list
                         if (!key.reset()) {
                             monitoredDirectories.remove(key.watchable());
                         }
                     }
                 }
             } catch (InterruptedException e) {
-                //ignore
+                // ignore
             } catch (ClosedWatchServiceException cwse) {
                 // the watcher service is closed, so no more waiting on events
                 // @see https://developer.jboss.org/message/911519
@@ -184,9 +181,12 @@ public class WatchServiceFileSystemWatcher implements Runnable {
     }
 
     /**
-     * @param directory a directory that will be watched
-     * @param monitoredFiles list of monitored files relative to directory. An empty list will monitor all files.
-     * @param callback callback called when a file is changed
+     * @param directory
+     *        a directory that will be watched
+     * @param monitoredFiles
+     *        list of monitored files relative to directory. An empty list will monitor all files.
+     * @param callback
+     *        callback called when a file is changed
      */
     public synchronized void watchFiles(Path directory, List<Path> monitoredFiles, FileChangeCallback callback) {
         try {

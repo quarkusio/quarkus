@@ -39,13 +39,11 @@ public class GlobalHttpUpgradeCheckTest extends AbstractHttpUpgradeCheckTestBase
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Opening.class, Responding.class, OpeningHttpUpgradeCheck.class,
-                            RejectingHttpUpgradeCheck.class, WSClient.class, OpeningHttpUpgradeCheckBean.class,
-                            RejectingHttpUpgradeCheckBean.class, ChainHttpUpgradeCheckBase.class,
-                            ChainHttpUpgradeCheck4.class, ChainHttpUpgradeCheck3.class, ChainHttpUpgradeCheck2.class,
-                            ChainHttpUpgradeCheck1.class, NullCheckResultCheck.class, Rejecting.class,
-                            ResponseHeadersObserver.class));
+            .withApplicationRoot(root -> root.addClasses(Opening.class, Responding.class, OpeningHttpUpgradeCheck.class,
+                    RejectingHttpUpgradeCheck.class, WSClient.class, OpeningHttpUpgradeCheckBean.class,
+                    RejectingHttpUpgradeCheckBean.class, ChainHttpUpgradeCheckBase.class, ChainHttpUpgradeCheck4.class,
+                    ChainHttpUpgradeCheck3.class, ChainHttpUpgradeCheck2.class, ChainHttpUpgradeCheck1.class,
+                    NullCheckResultCheck.class, Rejecting.class, ResponseHeadersObserver.class));
 
     @Test
     public void testNullCheckResultNotAllowed() {
@@ -67,28 +65,20 @@ public class GlobalHttpUpgradeCheckTest extends AbstractHttpUpgradeCheckTestBase
 
         // expect the checks are ordered by @Priority
         try (WSClient client = new WSClient(vertx)) {
-            CompletionException ce = assertThrows(CompletionException.class,
-                    () -> client.connect(
-                            new WebSocketConnectOptions().addHeader(TEST_CHECK_CHAIN, "ignored"),
-                            openingUri));
+            CompletionException ce = assertThrows(CompletionException.class, () -> client
+                    .connect(new WebSocketConnectOptions().addHeader(TEST_CHECK_CHAIN, "ignored"), openingUri));
             Throwable root = ExceptionUtil.getRootCause(ce);
             assertInstanceOf(UpgradeRejectedException.class, root);
             assertTrue(root.getMessage().contains("401"), root.getMessage());
 
-            Awaitility.await()
-                    .atMost(Duration.ofSeconds(2))
-                    .until(() -> ResponseHeadersObserver.responseHeaders != null
-                            && !ResponseHeadersObserver.responseHeaders.isEmpty());
+            Awaitility.await().atMost(Duration.ofSeconds(2)).until(() -> ResponseHeadersObserver.responseHeaders != null
+                    && !ResponseHeadersObserver.responseHeaders.isEmpty());
             var headers = ResponseHeadersObserver.responseHeaders;
-            var orderedPriorities = headers
-                    .entries()
-                    .stream()
+            var orderedPriorities = headers.entries().stream()
                     .filter(e -> "1".equals(e.getKey()) || "2".equals(e.getKey()) || "3".equals(e.getKey())
                             || "4".equals(e.getKey()))
-                    .sorted(Comparator.comparingInt(o -> Integer.parseInt(o.getKey())))
-                    .map(Map.Entry::getValue)
-                    .map(Integer::parseInt)
-                    .toList();
+                    .sorted(Comparator.comparingInt(o -> Integer.parseInt(o.getKey()))).map(Map.Entry::getValue)
+                    .map(Integer::parseInt).toList();
             assertEquals(4, orderedPriorities.size());
 
             int prev = 1000000;

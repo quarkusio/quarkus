@@ -37,10 +37,11 @@ public class PanacheStubber {
      * <p>
      * {@link Mockito#doReturn(Object)}
      * <p>
-     *
      * See examples in javadoc for {@link Mockito}
      *
-     * @param mock The mock
+     * @param mock
+     *        The mock
+     *
      * @return select method for stubbing
      */
     public <T> T when(Class<T> mock) {

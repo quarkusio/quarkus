@@ -17,7 +17,7 @@ import io.quarkus.jsonp.JsonProviderHolder;
 public class JsonbProducer {
 
     @Produces
-    @Dependent //JsonbConfig is not thread safe so it must not be made singleton.
+    @Dependent // JsonbConfig is not thread safe so it must not be made singleton.
     @DefaultBean
     public JsonbConfig jsonbConfig(@All List<JsonbConfigCustomizer> customizers) {
         JsonbConfig jsonbConfig = new JsonbConfig();
@@ -31,6 +31,7 @@ public class JsonbProducer {
     @Singleton
     @DefaultBean
     public Jsonb jsonb(JsonbConfig jsonbConfig) {
-        return JsonbBuilder.newBuilder().withProvider(JsonProviderHolder.jsonProvider()).withConfig(jsonbConfig).build();
+        return JsonbBuilder.newBuilder().withProvider(JsonProviderHolder.jsonProvider()).withConfig(jsonbConfig)
+                .build();
     }
 }

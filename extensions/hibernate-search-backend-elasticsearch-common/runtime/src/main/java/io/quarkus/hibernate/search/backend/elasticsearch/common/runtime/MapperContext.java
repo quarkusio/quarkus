@@ -21,6 +21,5 @@ public interface MapperContext {
             String backendName, String indexName);
 
     <T> Optional<List<BeanReference<T>>> multiExtensionBeanReferencesFor(Optional<List<String>> override,
-            Class<T> beanType,
-            String backendName, String indexName);
+            Class<T> beanType, String backendName, String indexName);
 }

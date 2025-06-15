@@ -31,7 +31,9 @@ class PathMatcher<T> implements Dumpable {
     /**
      * Matches a path against the registered handlers.
      *
-     * @param path The relative path to match
+     * @param path
+     *        The relative path to match
+     *
      * @return The match match. This will never be null, however if none matched its value field will be
      */
     PathMatch<T> match(String path) {
@@ -66,16 +68,18 @@ class PathMatcher<T> implements Dumpable {
         private final SubstringMap.Builder<T> pathsBuilder = new SubstringMap.Builder<>();
 
         /**
-         * Adds a path prefix and a handler for that path. If the path does not start
-         * with a / then one will be prepended.
+         * Adds a path prefix and a handler for that path. If the path does not start with a / then one will be
+         * prepended.
          * <p>
-         * The match is done on a prefix bases, so registering /foo will also match /bar. Exact
-         * path matches are taken into account first.
+         * The match is done on a prefix bases, so registering /foo will also match /bar. Exact path matches are taken
+         * into account first.
          * <p>
          * If / is specified as the path then it will replace the default handler.
          *
-         * @param path The path
-         * @param handler The handler
+         * @param path
+         *        The path
+         * @param handler
+         *        The handler
          */
         void addPrefixPath(final String path, final T handler) {
             if (path.isEmpty()) {

@@ -78,39 +78,30 @@ public class FunctionScannerBuildStep {
                 functionName = null;
             functions.produce(new FunctionBuildItem(className, methodName, method.descriptor(), functionName));
 
-            String source = FunctionScannerBuildStep.class.getSimpleName() + " > " + method.declaringClass() + "[" + method
-                    + "]";
+            String source = FunctionScannerBuildStep.class.getSimpleName() + " > " + method.declaringClass() + "["
+                    + method + "]";
 
             Type returnType = method.returnType();
             if (returnType.kind() != Type.Kind.VOID) {
-                reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                        .builder(returnType)
-                        .index(index)
+                reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(returnType).index(index)
                         .ignoreTypePredicate(IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                         .ignoreFieldPredicate(IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                        .ignoreMethodPredicate(IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                        .source(source)
-                        .build());
+                        .ignoreMethodPredicate(IGNORE_METHOD_FOR_REFLECTION_PREDICATE).source(source).build());
             }
             for (short i = 0; i < method.parametersCount(); i++) {
                 Type parameterType = method.parameterType(i);
                 if (!hasAnnotation(method, i, CONTEXT)) {
-                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                            .builder(parameterType)
-                            .index(index)
+                    reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(parameterType).index(index)
                             .ignoreTypePredicate(IGNORE_TYPE_FOR_REFLECTION_PREDICATE)
                             .ignoreFieldPredicate(IGNORE_FIELD_FOR_REFLECTION_PREDICATE)
-                            .ignoreMethodPredicate(IGNORE_METHOD_FOR_REFLECTION_PREDICATE)
-                            .source(source)
-                            .build());
+                            .ignoreMethodPredicate(IGNORE_METHOD_FOR_REFLECTION_PREDICATE).source(source).build());
                 }
             }
         }
         Set<ClassInfo> withoutDefaultCtor = new HashSet<>();
         for (ClassInfo clazz : classes) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(clazz.name().toString())
-                    .reason(getClass().getName())
-                    .methods().fields().build());
+                    .reason(getClass().getName()).methods().fields().build());
             if (!clazz.hasNoArgsConstructor()) {
                 withoutDefaultCtor.add(clazz);
             }
@@ -194,22 +185,22 @@ public class FunctionScannerBuildStep {
             }
 
             final String name = classInfo.name().toString();
-            transformers
-                    .produce(new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
+            transformers.produce(
+                    new BytecodeTransformerBuildItem(name, new BiFunction<String, ClassVisitor, ClassVisitor>() {
                         @Override
                         public ClassVisitor apply(String className, ClassVisitor classVisitor) {
                             ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
 
                                 @Override
-                                public void visit(int version, int access, String name, String signature, String superName,
-                                        String[] interfaces) {
+                                public void visit(int version, int access, String name, String signature,
+                                        String superName, String[] interfaces) {
                                     super.visit(version, access, name, signature, superName, interfaces);
-                                    MethodVisitor ctor = visitMethod(Modifier.PUBLIC | Opcodes.ACC_SYNTHETIC, "<init>", "()V",
-                                            null,
-                                            null);
+                                    MethodVisitor ctor = visitMethod(Modifier.PUBLIC | Opcodes.ACC_SYNTHETIC, "<init>",
+                                            "()V", null, null);
                                     ctor.visitCode();
                                     ctor.visitVarInsn(Opcodes.ALOAD, 0);
-                                    ctor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V", false);
+                                    ctor.visitMethodInsn(Opcodes.INVOKESPECIAL, "java/lang/Object", "<init>", "()V",
+                                            false);
                                     ctor.visitInsn(Opcodes.RETURN);
                                     ctor.visitMaxs(1, 1);
                                     ctor.visitEnd();

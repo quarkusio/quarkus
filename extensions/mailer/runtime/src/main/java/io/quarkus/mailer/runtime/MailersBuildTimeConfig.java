@@ -10,8 +10,7 @@ import io.smallrye.config.WithDefault;
 public interface MailersBuildTimeConfig {
 
     /**
-     * Caches data from attachment's Stream to a temporary file.
-     * It tries to delete it after sending email.
+     * Caches data from attachment's Stream to a temporary file. It tries to delete it after sending email.
      */
     @WithDefault("false")
     boolean cacheAttachments();

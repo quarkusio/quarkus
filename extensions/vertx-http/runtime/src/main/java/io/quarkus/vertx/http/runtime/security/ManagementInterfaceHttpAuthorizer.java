@@ -28,15 +28,14 @@ public class ManagementInterfaceHttpAuthorizer extends AbstractHttpAuthorizer {
             BlockingSecurityExecutor blockingExecutor, Event<AuthorizationFailureEvent> authZFailureEvent,
             Event<AuthorizationSuccessEvent> authZSuccessEvent, BeanManager beanManager,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
-        super(identityProviderManager, controller,
-                List.of(new HttpSecurityPolicy() {
+        super(identityProviderManager, controller, List.of(new HttpSecurityPolicy() {
 
-                    @Override
-                    public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
-                            AuthorizationRequestContext requestContext) {
-                        return installedPolicy.checkPermission(request, identity, requestContext);
-                    }
+            @Override
+            public Uni<CheckResult> checkPermission(RoutingContext request, Uni<SecurityIdentity> identity,
+                    AuthorizationRequestContext requestContext) {
+                return installedPolicy.checkPermission(request, identity, requestContext);
+            }
 
-                }), beanManager, blockingExecutor, authZFailureEvent, authZSuccessEvent, securityEventsEnabled);
+        }), beanManager, blockingExecutor, authZFailureEvent, authZSuccessEvent, securityEventsEnabled);
     }
 }

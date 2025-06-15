@@ -21,31 +21,23 @@ import io.restassured.RestAssured;
 public class QuarkusDefaultExceptionHandlingTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class);
-                }
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class);
+        }
 
-            });
+    });
 
     @Test
     public void testDefaultErrorHandler() {
-        RestAssured.given().accept("text/html")
-                .get("/test/exception")
-                .then()
-                .statusCode(500)
+        RestAssured.given().accept("text/html").get("/test/exception").then().statusCode(500)
                 .body(containsString("Internal Server Error"), containsString("dummy exception"));
     }
 
     @Test
     public void testNotFoundErrorHandler() {
-        RestAssured.given().accept("text/html")
-                .get("/test/exception2")
-                .then()
-                .statusCode(404)
+        RestAssured.given().accept("text/html").get("/test/exception2").then().statusCode(404)
                 .body(containsString("404 - Resource Not Found"));
     }
 

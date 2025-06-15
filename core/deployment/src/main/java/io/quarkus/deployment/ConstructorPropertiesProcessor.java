@@ -12,8 +12,8 @@ import io.quarkus.deployment.builditem.CombinedIndexBuildItem;
 import io.quarkus.deployment.builditem.nativeimage.ReflectiveClassBuildItem;
 
 /**
- * Registers all classes for reflection,
- * that contain a constructor annotated with <code>@java.beans.ConstructorProperties</code>.
+ * Registers all classes for reflection, that contain a constructor annotated with
+ * <code>@java.beans.ConstructorProperties</code>.
  */
 public class ConstructorPropertiesProcessor {
 
@@ -27,7 +27,8 @@ public class ConstructorPropertiesProcessor {
         }
     }
 
-    private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass, AnnotationInstance instance) {
+    private void registerInstance(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            AnnotationInstance instance) {
         AnnotationTarget annotationTarget = instance.target();
         if (annotationTarget instanceof MethodInfo) {
             MethodInfo methodInfo = (MethodInfo) annotationTarget;

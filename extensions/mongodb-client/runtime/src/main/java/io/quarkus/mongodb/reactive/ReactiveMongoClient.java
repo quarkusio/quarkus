@@ -17,10 +17,9 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 /**
- * A reactive Mongo client.
- * Instances can represent either a standalone MongoDB instance, a replica set, or a sharded cluster. Instance of this
- * class are responsible for maintaining an up-to-date state of the cluster, and possibly cache resources related to
- * this, including background threads for monitoring, and connection pools.
+ * A reactive Mongo client. Instances can represent either a standalone MongoDB instance, a replica set, or a sharded
+ * cluster. Instance of this class are responsible for maintaining an up-to-date state of the cluster, and possibly
+ * cache resources related to this, including background threads for monitoring, and connection pools.
  * <p>
  * Instance of this class server as factories for {@code ReactiveMongoDatabase} instances.
  * </p>
@@ -30,14 +29,16 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Retrieves a {@link ReactiveMongoDatabase} with the given name.
      *
-     * @param name the name, must not be {@code null}
+     * @param name
+     *        the name, must not be {@code null}
+     *
      * @return the {@link ReactiveMongoDatabase}
      */
     ReactiveMongoDatabase getDatabase(String name);
 
     /**
-     * Closes the client, which will close all underlying cached resources, including, for example,
-     * sockets and background monitoring threads.
+     * Closes the client, which will close all underlying cached resources, including, for example, sockets and
+     * background monitoring threads.
      */
     @Override
     void close();
@@ -52,7 +53,9 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets a list of the database names.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return a stream containing the database names, empty is none.
      */
     Multi<String> listDatabaseNames(ClientSession clientSession);
@@ -67,7 +70,9 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets the list of database descriptors.
      *
-     * @param options the stream options (max time, filter, name only...), may be {@code null}
+     * @param options
+     *        the stream options (max time, filter, name only...), may be {@code null}
+     *
      * @return a stream of the database, empty if none.
      */
     Multi<Document> listDatabases(DatabaseListOptions options);
@@ -75,8 +80,11 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets the list of databases.
      *
-     * @param clazz the class to cast the database documents to
-     * @param <T> the type of the class to use instead of {@code Document}.
+     * @param clazz
+     *        the class to cast the database documents to
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     *
      * @return the stream of database descriptors
      */
     <T> Multi<T> listDatabases(Class<T> clazz);
@@ -84,9 +92,13 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets the list of databases.
      *
-     * @param clazz the class to cast the database documents to
-     * @param <T> the type of the class to use instead of {@code Document}.
-     * @param options the stream options
+     * @param clazz
+     *        the class to cast the database documents to
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of database descriptors
      */
     <T> Multi<T> listDatabases(Class<T> clazz, DatabaseListOptions options);
@@ -94,7 +106,9 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets the list of databases as a stream.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return the stream of database descriptors, empty if none.
      */
     Multi<Document> listDatabases(ClientSession clientSession);
@@ -102,8 +116,11 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets the list of databases as a stream.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param options
+     *        the stream options
+     *
      * @return the stream of database descriptors, empty if none.
      */
     Multi<Document> listDatabases(ClientSession clientSession, DatabaseListOptions options);
@@ -111,9 +128,13 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets the list of databases.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to cast the database documents to
-     * @param <T> the type of the class to use instead of {@code Document}.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to cast the database documents to
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     *
      * @return the stream of database descriptors
      */
     <T> Multi<T> listDatabases(ClientSession clientSession, Class<T> clazz);
@@ -121,10 +142,15 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Gets the list of databases.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to cast the database documents to
-     * @param <T> the type of the class to use instead of {@code Document}.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to cast the database documents to
+     * @param <T>
+     *        the type of the class to use instead of {@code Document}.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of database descriptors
      */
     <T> Multi<T> listDatabases(ClientSession clientSession, Class<T> clazz, DatabaseListOptions options);
@@ -139,7 +165,9 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param options the stream options
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
     Multi<ChangeStreamDocument<Document>> watch(ChangeStreamOptions options);
@@ -147,8 +175,11 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     *
      * @return the stream of change stream.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(Class<T> clazz);
@@ -156,9 +187,13 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
-     * @param options the stream options
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(Class<T> clazz, ChangeStreamOptions options);
@@ -166,7 +201,9 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     *
      * @return the stream of change stream.
      */
     Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline);
@@ -174,8 +211,11 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
     Multi<ChangeStreamDocument<Document>> watch(List<? extends Bson> pipeline, ChangeStreamOptions options);
@@ -183,9 +223,13 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     *
      * @return the stream of change stream.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz);
@@ -193,10 +237,15 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
-     * @param options the stream options
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(List<? extends Bson> pipeline, Class<T> clazz,
@@ -205,7 +254,9 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
+     * @param clientSession
+     *        the client session with which to associate this operation
+     *
      * @return the stream of change stream.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession);
@@ -213,8 +264,11 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, ChangeStreamOptions options);
@@ -222,9 +276,13 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     *
      * @return the stream of change stream.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz);
@@ -232,20 +290,27 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
-    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz,
-            ChangeStreamOptions options);
+    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, Class<T> clazz, ChangeStreamOptions options);
 
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     *
      * @return the stream of change stream.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline);
@@ -253,9 +318,13 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
     Multi<ChangeStreamDocument<Document>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
@@ -264,10 +333,15 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     *
      * @return the stream of change stream.
      */
     <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
@@ -276,15 +350,21 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a change stream for this client.
      *
-     * @param clientSession the client session with which to associate this operation
-     * @param pipeline the aggregation pipeline to apply to the change stream
-     * @param clazz the class to decode each document into
-     * @param <T> the target document type of the iterable.
-     * @param options the stream options
+     * @param clientSession
+     *        the client session with which to associate this operation
+     * @param pipeline
+     *        the aggregation pipeline to apply to the change stream
+     * @param clazz
+     *        the class to decode each document into
+     * @param <T>
+     *        the target document type of the iterable.
+     * @param options
+     *        the stream options
+     *
      * @return the stream of change stream.
      */
-    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline,
-            Class<T> clazz, ChangeStreamOptions options);
+    <T> Multi<ChangeStreamDocument<T>> watch(ClientSession clientSession, List<? extends Bson> pipeline, Class<T> clazz,
+            ChangeStreamOptions options);
 
     /**
      * Creates a client session.
@@ -296,7 +376,9 @@ public interface ReactiveMongoClient extends Closeable {
     /**
      * Creates a client session.
      *
-     * @param options the options for the client session
+     * @param options
+     *        the options for the client session
+     *
      * @return a {@link Uni} completed when the session is ready to be used.
      */
     Uni<ClientSession> startSession(ClientSessionOptions options);

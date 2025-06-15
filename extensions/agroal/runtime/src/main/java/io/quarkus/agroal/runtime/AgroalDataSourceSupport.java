@@ -23,8 +23,7 @@ public class AgroalDataSourceSupport {
         public final boolean isDefault;
 
         public Entry(String dataSourceName, String resolvedDbKind, Optional<String> dbVersion,
-                String resolvedDriverClass,
-                boolean isDefault) {
+                String resolvedDriverClass, boolean isDefault) {
             this.dataSourceName = dataSourceName;
             this.resolvedDbKind = resolvedDbKind;
             this.dbVersion = dbVersion;

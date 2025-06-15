@@ -21,10 +21,7 @@ abstract class MergeSchemaExamplesTestCases {
 
     @Schema(name = "Bean")
     static class Bean {
-        @Schema(example = "Deprecated example", examples = {
-                "New example 1",
-                "New example 2"
-        })
+        @Schema(example = "Deprecated example", examples = { "New example 1", "New example 2" })
         private String field;
 
         public String getField() {
@@ -51,21 +48,15 @@ abstract class MergeSchemaExamplesTestCases {
 
     @Test
     void testExamples() {
-        RestAssured.given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/q/openapi")
-                .then()
-                .log().ifValidationFails()
-                .body("components.schemas.Bean.properties.field.example", is(exampleValue))
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then().log()
+                .ifValidationFails().body("components.schemas.Bean.properties.field.example", is(exampleValue))
                 .body("components.schemas.Bean.properties.field.examples", contains(examplesValue));
     }
 
     static class MergeSchemaExamplesDefaultTestCase extends MergeSchemaExamplesTestCases {
         @RegisterExtension
         static QuarkusUnitTest runner = new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addClasses(Resource.class, Bean.class));
+                .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Bean.class));
 
         MergeSchemaExamplesDefaultTestCase() {
             super(null, new String[] { "New example 1", "New example 2", "Deprecated example" });
@@ -75,10 +66,9 @@ abstract class MergeSchemaExamplesTestCases {
     static class MergeSchemaExamplesQuarkusFalseTestCase extends MergeSchemaExamplesTestCases {
         @RegisterExtension
         static QuarkusUnitTest runner = new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addClasses(Resource.class, Bean.class)
-                        .addAsResource(new StringAsset("quarkus.smallrye-openapi.merge-schema-examples=false\n"),
-                                "application.properties"));
+                .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Bean.class).addAsResource(
+                        new StringAsset("quarkus.smallrye-openapi.merge-schema-examples=false\n"),
+                        "application.properties"));
 
         MergeSchemaExamplesQuarkusFalseTestCase() {
             super("Deprecated example", new String[] { "New example 1", "New example 2" });
@@ -88,10 +78,9 @@ abstract class MergeSchemaExamplesTestCases {
     static class MergeSchemaExamplesSmallRyeFalseTestCase extends MergeSchemaExamplesTestCases {
         @RegisterExtension
         static QuarkusUnitTest runner = new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addClasses(Resource.class, Bean.class)
-                        .addAsResource(new StringAsset(SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES + "=false\n"),
-                                "application.properties"));
+                .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Bean.class).addAsResource(
+                        new StringAsset(SmallRyeOASConfig.SMALLRYE_MERGE_SCHEMA_EXAMPLES + "=false\n"),
+                        "application.properties"));
 
         MergeSchemaExamplesSmallRyeFalseTestCase() {
             super("Deprecated example", new String[] { "New example 1", "New example 2" });

@@ -19,8 +19,7 @@ public class MultipartEncodingTest {
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FeedbackBody.class, FeedbackResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(FeedbackBody.class, FeedbackResource.class));
 
     @Test
     public void testMultipartEncoding() throws URISyntaxException {
@@ -28,16 +27,9 @@ public class MultipartEncodingTest {
                 .controlName("content")
                 // we need to force the content-type to avoid having the charset included
                 // as we are testing the default behavior when no charset is defined
-                .header("Content-Type", "text/plain")
-                .charset(StandardCharsets.UTF_8)
-                .build();
+                .header("Content-Type", "text/plain").charset(StandardCharsets.UTF_8).build();
 
-        RestAssured
-                .given()
-                .multiPart(multiPartSpecification)
-                .post("/test/multipart-encoding")
-                .then()
-                .statusCode(200)
+        RestAssured.given().multiPart(multiPartSpecification).post("/test/multipart-encoding").then().statusCode(200)
                 .body(is(TEXT_WITH_ACCENTED_CHARACTERS));
     }
 

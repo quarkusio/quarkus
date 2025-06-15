@@ -46,9 +46,12 @@ class ForwardedParser {
     private static final AsciiString X_FORWARDED_FOR = AsciiString.cached("X-Forwarded-For");
     private static final AsciiString X_FORWARDED_TRUSTED_PROXY = AsciiString.cached("X-Forwarded-Trusted-Proxy");
 
-    private static final Pattern FORWARDED_HOST_PATTERN = Pattern.compile("host=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
-    private static final Pattern FORWARDED_PROTO_PATTERN = Pattern.compile("proto=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
-    private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?", Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORWARDED_HOST_PATTERN = Pattern.compile("host=\"?([^;,\"]+)\"?",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORWARDED_PROTO_PATTERN = Pattern.compile("proto=\"?([^;,\"]+)\"?",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern FORWARDED_FOR_PATTERN = Pattern.compile("for=\"?([^;,\"]+)\"?",
+            Pattern.CASE_INSENSITIVE);
 
     private final static int PORT_MIN_VALID_VALUE = 0;
     private final static int PORT_MAX_VALID_VALUE = 65535;
@@ -262,8 +265,8 @@ class ForwardedParser {
         if (forwardingProxyOptions.enableForwardedPrefix) {
             String prefixHeader = delegate.getHeader(forwardingProxyOptions.forwardedPrefixHeader);
             if (prefixHeader != null) {
-                log.debugf("Using %s to prefix URI %s with prefix %s", forwardingProxyOptions.forwardedPrefixHeader, uri,
-                        prefixHeader);
+                log.debugf("Using %s to prefix URI %s with prefix %s", forwardingProxyOptions.forwardedPrefixHeader,
+                        uri, prefixHeader);
                 uri = appendPrefixToUri(prefixHeader, uri);
             }
         }
@@ -342,7 +345,8 @@ class ForwardedParser {
                 }
                 return port;
             } catch (NumberFormatException ignored) {
-                log.errorf("Failed to parse a port from \"forwarded\"-type headers, using the default port %d", defaultPort);
+                log.errorf("Failed to parse a port from \"forwarded\"-type headers, using the default port %d",
+                        defaultPort);
             }
         }
         return defaultPort;

@@ -18,18 +18,18 @@ import org.jboss.resteasy.reactive.server.spi.StreamingResponse;
 public interface HandlerChainCustomizer {
 
     /**
-     *
-     * @param phase The phase
-     * @param resourceMethod The method, will be null if this has not been matched yet
+     * @param phase
+     *        The phase
+     * @param resourceMethod
+     *        The method, will be null if this has not been matched yet
      */
-    default List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+    default List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+            ServerResourceMethod resourceMethod) {
         return Collections.emptyList();
     }
 
     /**
-     * Returns an alternate invocation handler for this method.
-     *
-     * This is only considered for method level customizers
+     * Returns an alternate invocation handler for this method. This is only considered for method level customizers
      *
      * @param invoker
      */
@@ -38,9 +38,7 @@ public interface HandlerChainCustomizer {
     }
 
     /**
-     * Returns an alternate endpoint invoker for this method.
-     *
-     * This is only considered for method level customizers
+     * Returns an alternate endpoint invoker for this method. This is only considered for method level customizers
      *
      * @param method
      */
@@ -49,9 +47,8 @@ public interface HandlerChainCustomizer {
     }
 
     /**
-     * Returns a customizer for {@link ResponseBuilder}.
-     * This will be used when the method invoker was called successfully and the result of the method was
-     * not a {@link Response} or a {@link RestResponse}
+     * Returns a customizer for {@link ResponseBuilder}. This will be used when the method invoker was called
+     * successfully and the result of the method was not a {@link Response} or a {@link RestResponse}
      *
      * @param method
      */
@@ -61,9 +58,8 @@ public interface HandlerChainCustomizer {
     }
 
     /**
-     * Returns a customizer for {@link StreamingResponse}.
-     * This will be used when a handler chain contains {@link PublisherResponseHandler} and the customizer
-     * will be added to the list of customizers of that handler.
+     * Returns a customizer for {@link StreamingResponse}. This will be used when a handler chain contains
+     * {@link PublisherResponseHandler} and the customizer will be added to the list of customizers of that handler.
      *
      * @param method
      */
@@ -74,14 +70,13 @@ public interface HandlerChainCustomizer {
 
     enum Phase {
         /**
-         * handlers are added right at the start of the pre match handler chain
-         * this can only be applied globally, not on a per method basis
+         * handlers are added right at the start of the pre match handler chain this can only be applied globally, not
+         * on a per method basis
          */
         BEFORE_PRE_MATCH,
         /**
-         * handlers are added at the end of the pre match handler chain, before
-         * the next chain is determined and matched (i.e. after pre match filters)
-         * this can only be applied globally, not on a per method basis
+         * handlers are added at the end of the pre match handler chain, before the next chain is determined and matched
+         * (i.e. after pre match filters) this can only be applied globally, not on a per method basis
          */
         AFTER_PRE_MATCH,
         /**

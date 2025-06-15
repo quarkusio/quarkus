@@ -46,13 +46,11 @@ public class RolesAllowedServiceResource {
     }
 
     void observeStartup(@Observes StartupEvent startupEvent, EventBus eventBus, Vertx vertx) {
-        permitAllConsumer = eventBus
-                .<String> consumer("permit-all-message")
+        permitAllConsumer = eventBus.<String> consumer("permit-all-message")
                 .handler(msg -> rolesAllowedService.receivePermitAllMessage(msg.body()));
 
         // this must always fail because the authorization is happening in a blank CDI request context
-        rolesAllowedConsumer = eventBus
-                .<String> consumer("roles-allowed-message")
+        rolesAllowedConsumer = eventBus.<String> consumer("roles-allowed-message")
                 .handler(msg -> vertx.executeBlocking(() -> {
                     // make sure authentication is attempted on a worker thread to prevent blocking event loop
                     rolesAllowedService.receiveRolesAllowedMessage(msg.body());

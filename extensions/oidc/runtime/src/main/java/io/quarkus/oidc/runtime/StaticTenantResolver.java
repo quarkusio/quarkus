@@ -46,8 +46,8 @@ final class StaticTenantResolver {
         }
 
         // 2. path-matching tenant resolver
-        var pathMatchingTenantResolver = PathMatchingTenantResolver.of(tenantConfigBean.getStaticTenantsConfig(), rootPath,
-                tenantConfigBean.getDefaultTenant());
+        var pathMatchingTenantResolver = PathMatchingTenantResolver.of(tenantConfigBean.getStaticTenantsConfig(),
+                rootPath, tenantConfigBean.getDefaultTenant());
         if (pathMatchingTenantResolver != null) {
             staticTenantResolvers.add(pathMatchingTenantResolver);
         }
@@ -61,8 +61,8 @@ final class StaticTenantResolver {
 
         // 4. issuer-based tenant resolver
         if (resolveTenantsWithIssuer) {
-            this.issuerBasedTenantResolver = IssuerBasedTenantResolver.of(
-                    tenantConfigBean.getStaticTenantsConfig(), tenantConfigBean.getDefaultTenant());
+            this.issuerBasedTenantResolver = IssuerBasedTenantResolver.of(tenantConfigBean.getStaticTenantsConfig(),
+                    tenantConfigBean.getDefaultTenant());
         } else {
             this.issuerBasedTenantResolver = null;
         }
@@ -96,8 +96,8 @@ final class StaticTenantResolver {
             String[] pathSegments = context.request().path().split(PATH_SEPARATOR);
             for (String segment : pathSegments) {
                 if (tenantConfigBean.getStaticTenant(segment) != null) {
-                    LOG.debugf(
-                            "Tenant id '%s' is selected on the '%s' request path", segment, context.normalizedPath());
+                    LOG.debugf("Tenant id '%s' is selected on the '%s' request path", segment,
+                            context.normalizedPath());
                     return segment;
                 }
             }
@@ -113,8 +113,8 @@ final class StaticTenantResolver {
             this.staticTenantPaths = staticTenantPaths;
         }
 
-        private static PathMatchingTenantResolver of(Map<String, TenantConfigContext> staticTenantsConfig, String rootPath,
-                TenantConfigContext defaultTenant) {
+        private static PathMatchingTenantResolver of(Map<String, TenantConfigContext> staticTenantsConfig,
+                String rootPath, TenantConfigContext defaultTenant) {
             final var builder = ImmutablePathMatcher.<String> builder().rootPath(rootPath);
             addPath(DEFAULT_TENANT, defaultTenant.oidcConfig(), builder);
             for (Map.Entry<String, TenantConfigContext> e : staticTenantsConfig.entrySet()) {
@@ -127,15 +127,14 @@ final class StaticTenantResolver {
         public String resolve(RoutingContext context) {
             String tenantId = staticTenantPaths.match(context.normalizedPath()).getValue();
             if (tenantId != null) {
-                LOG.debugf(
-                        "Tenant id '%s' is selected on the '%s' request path", tenantId, context.normalizedPath());
+                LOG.debugf("Tenant id '%s' is selected on the '%s' request path", tenantId, context.normalizedPath());
                 return tenantId;
             }
             return null;
         }
 
-        private static ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> addPath(String tenant, OidcTenantConfig config,
-                ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> builder) {
+        private static ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> addPath(String tenant,
+                OidcTenantConfig config, ImmutablePathMatcher.ImmutablePathMatcherBuilder<String> builder) {
             if (config != null && config.tenantPaths().isPresent()) {
                 for (String path : config.tenantPaths().get()) {
                     builder.addPath(path, tenant);
@@ -151,8 +150,8 @@ final class StaticTenantResolver {
         private final boolean detectedTenantWithoutMetadata;
         private final Map<String, AtomicBoolean> tenantToRetry;
 
-        private IssuerBasedTenantResolver(TenantConfigContext[] tenantConfigContexts, boolean detectedTenantWithoutMetadata,
-                Map<String, AtomicBoolean> tenantToRetry) {
+        private IssuerBasedTenantResolver(TenantConfigContext[] tenantConfigContexts,
+                boolean detectedTenantWithoutMetadata, Map<String, AtomicBoolean> tenantToRetry) {
             this.tenantConfigContexts = tenantConfigContexts;
             this.detectedTenantWithoutMetadata = detectedTenantWithoutMetadata;
             this.tenantToRetry = tenantToRetry;
@@ -179,8 +178,7 @@ final class StaticTenantResolver {
                         return resolveTenant(context, index + 1);
                     }
 
-                    return tenantContext.initialize()
-                            .onItemOrFailure()
+                    return tenantContext.initialize().onItemOrFailure()
                             .transformToUni(new BiFunction<TenantConfigContext, Throwable, Uni<? extends String>>() {
                                 @Override
                                 public Uni<String> apply(TenantConfigContext newContext, Throwable throwable) {
@@ -212,8 +210,8 @@ final class StaticTenantResolver {
         }
 
         /**
-         * When static tenant couldn't be initialized on Quarkus application startup,
-         * this strategy permits one more attempt on the first request when the issuer-based tenant resolver is applied.
+         * When static tenant couldn't be initialized on Quarkus application startup, this strategy permits one more
+         * attempt on the first request when the issuer-based tenant resolver is applied.
          */
         private boolean tryToInitialize(TenantConfigContext context) {
             var tenantId = context.oidcConfig().tenantId().get();

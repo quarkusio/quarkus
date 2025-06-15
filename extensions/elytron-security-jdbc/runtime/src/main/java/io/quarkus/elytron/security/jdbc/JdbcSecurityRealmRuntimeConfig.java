@@ -18,7 +18,7 @@ public interface JdbcSecurityRealmRuntimeConfig {
      */
     @WithName("principal-query")
     PrincipalQueriesConfig principalQueries();
-    //  https://github.com/wildfly/wildfly-core/blob/main/elytron/src/test/resources/org/wildfly/extension/elytron/security-realms.xml#L18
+    // https://github.com/wildfly/wildfly-core/blob/main/elytron/src/test/resources/org/wildfly/extension/elytron/security-realms.xml#L18
 
     String toString();
 }

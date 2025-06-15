@@ -46,7 +46,8 @@ public class ResteasyReactiveParamConverterScanner {
         for (ClassInfo converterClass : paramConverterProviders) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = result.keepProvider(converterClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
-                AnnotationInstance priorityInstance = converterClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                AnnotationInstance priorityInstance = converterClass
+                        .declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
                 int priority = priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER;
                 ResourceParamConverterProvider provider = new ResourceParamConverterProvider();
                 provider.setPriority(priority);

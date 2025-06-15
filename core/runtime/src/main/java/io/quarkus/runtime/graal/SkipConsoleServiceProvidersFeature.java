@@ -10,8 +10,8 @@ import java.util.Set;
 import org.graalvm.nativeimage.hosted.Feature;
 
 /**
- * Removes {@code jdk.internal.io.JdkConsoleProvider} service providers from the {@code ServiceCatalog} in a similar way to
- * GraalVM's {@code ServiceLoaderFeature} which Quarkus disables by default.
+ * Removes {@code jdk.internal.io.JdkConsoleProvider} service providers from the {@code ServiceCatalog} in a similar way
+ * to GraalVM's {@code ServiceLoaderFeature} which Quarkus disables by default.
  */
 public class SkipConsoleServiceProvidersFeature implements Feature {
     static final HashMap<String, Set<String>> omittedServiceProviders;
@@ -46,7 +46,8 @@ public class SkipConsoleServiceProvidersFeature implements Feature {
                     throw new RuntimeException(e);
                 }
             });
-        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+        } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException
+                | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }

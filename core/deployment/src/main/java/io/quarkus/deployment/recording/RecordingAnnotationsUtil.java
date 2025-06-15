@@ -47,8 +47,7 @@ final class RecordingAnnotationsUtil {
         return annotationsMatch(ctor.getDeclaredAnnotations(), RECORDABLE_CONSTRUCTOR_ANNOTATIONS);
     }
 
-    private static boolean annotationsMatch(
-            final Annotation[] declaredAnnotations,
+    private static boolean annotationsMatch(final Annotation[] declaredAnnotations,
             final Class<? extends Annotation>[] typesToCheck) {
         for (Class<? extends Annotation> annotation : typesToCheck) {
             for (Annotation declaredAnnotation : declaredAnnotations) {

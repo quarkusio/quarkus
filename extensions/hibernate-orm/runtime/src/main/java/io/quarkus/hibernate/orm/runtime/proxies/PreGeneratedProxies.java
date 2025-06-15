@@ -6,15 +6,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A holder class for proxies that were generated at build time,
- * where possible these are re-used rather than generating new ones
- * at static init time.
- *
- * In most circumstances these will be used for every entity, however
- * in some corner cases it may still be necessary to generate proxies
- * at static init time.
- *
- * This class is bytecode recordable.
+ * A holder class for proxies that were generated at build time, where possible these are re-used rather than generating
+ * new ones at static init time. In most circumstances these will be used for every entity, however in some corner cases
+ * it may still be necessary to generate proxies at static init time. This class is bytecode recordable.
  */
 public class PreGeneratedProxies {
 

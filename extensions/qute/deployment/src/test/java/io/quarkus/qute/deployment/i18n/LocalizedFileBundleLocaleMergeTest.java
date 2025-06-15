@@ -16,8 +16,7 @@ public class LocalizedFileBundleLocaleMergeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class, EnMessages.class, DeMessages.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Messages.class, EnMessages.class, DeMessages.class)
                     .addAsResource(new StringAsset("hello_world=Hi!\ngoodbye=Bye"), "messages/msg_en.properties")
                     .addAsResource(new StringAsset("farewell=Abschied"), "messages/msg_de.properties")
                     .addAsResource(new StringAsset("goodbye=Mej se!\nfarewell=Sbohem!"), "messages/msg_cs.properties"))

@@ -21,9 +21,7 @@ import io.smallrye.certs.junit5.Certificates;
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-sni-p12", password = "sni", formats = { PKCS12 }, aliases = {
                 @Alias(name = "sni-1", password = "sni", cn = "acme.org"),
-                @Alias(name = "sni-2", password = "sni", cn = "example.com"),
-        })
-})
+                @Alias(name = "sni-2", password = "sni", cn = "example.com"), }) })
 public class P12KeyStoreWithSniTest {
 
     private static final String configuration = """
@@ -35,8 +33,7 @@ public class P12KeyStoreWithSniTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry registry;

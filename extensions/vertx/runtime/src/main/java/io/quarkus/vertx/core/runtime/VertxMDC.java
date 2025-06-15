@@ -34,13 +34,13 @@ public enum VertxMDC implements MDCProvider {
     };
 
     /**
-     * Get the value for a key, or {@code null} if there is no mapping.
+     * Get the value for a key, or {@code null} if there is no mapping. Tries to use the current Vert.x Context, if the
+     * context is non-existent meaning that it was called out of a Vert.x thread it will fall back to the thread local
+     * context map.
      *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * @param key
+     *        the key
      *
-     * @param key the key
      * @return the value
      */
     @Override
@@ -49,13 +49,13 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Get the value for a key, or {@code null} if there is no mapping.
+     * Get the value for a key, or {@code null} if there is no mapping. Tries to use the current Vert.x Context, if the
+     * context is non-existent meaning that it was called out of a Vert.x thread it will fall back to the thread local
+     * context map.
      *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * @param key
+     *        the key
      *
-     * @param key the key
      * @return the value
      */
     @Override
@@ -64,11 +64,14 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Get the value for a key the in specified Context, or {@code null} if there is no mapping.
-     * If the informed context is null it falls back to the thread local context map.
+     * Get the value for a key the in specified Context, or {@code null} if there is no mapping. If the informed context
+     * is null it falls back to the thread local context map.
      *
-     * @param key the key
-     * @param vertxContext the context
+     * @param key
+     *        the key
+     * @param vertxContext
+     *        the context
+     *
      * @return the value
      */
     public String get(String key, Context vertxContext) {
@@ -77,11 +80,14 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Get the value for a key the in specified Context, or {@code null} if there is no mapping.
-     * If the context is null it falls back to the thread local context map.
+     * Get the value for a key the in specified Context, or {@code null} if there is no mapping. If the context is null
+     * it falls back to the thread local context map.
      *
-     * @param key the key
-     * @param vertxContext the context
+     * @param key
+     *        the key
+     * @param vertxContext
+     *        the context
+     *
      * @return the value
      */
     public Object getObject(String key, Context vertxContext) {
@@ -90,14 +96,15 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Set the value of a key, returning the old value (if any) or {@code null} if there was none.
+     * Set the value of a key, returning the old value (if any) or {@code null} if there was none. Tries to use the
+     * current Vert.x Context, if the context is non-existent meaning that it was called out of a Vert.x thread it will
+     * fall back to the thread local context map.
      *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * @param key
+     *        the key
+     * @param value
+     *        the new value
      *
-     * @param key the key
-     * @param value the new value
      * @return the old value or {@code null} if there was none
      */
     @Override
@@ -106,14 +113,15 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Set the value of a key, returning the old value (if any) or {@code null} if there was none.
+     * Set the value of a key, returning the old value (if any) or {@code null} if there was none. Tries to use the
+     * current Vert.x Context, if the context is non-existent meaning that it was called out of a Vert.x thread it will
+     * fall back to the thread local context map.
      *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * @param key
+     *        the key
+     * @param value
+     *        the new value
      *
-     * @param key the key
-     * @param value the new value
      * @return the old value or {@code null} if there was none
      */
     @Override
@@ -122,11 +130,14 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Set the value of a key, returning the old value (if any) or {@code null} if there was none.
-     * If the informed context is null it falls back to the thread local context map.
+     * Set the value of a key, returning the old value (if any) or {@code null} if there was none. If the informed
+     * context is null it falls back to the thread local context map.
      *
-     * @param key the key
-     * @param value the new value
+     * @param key
+     *        the key
+     * @param value
+     *        the new value
+     *
      * @return the old value or {@code null} if there was none
      */
     public String put(String key, String value, Context vertxContext) {
@@ -135,11 +146,14 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Set the value of a key, returning the old value (if any) or {@code null} if there was none.
-     * If the informed context is null it falls back to the thread local context map.
+     * Set the value of a key, returning the old value (if any) or {@code null} if there was none. If the informed
+     * context is null it falls back to the thread local context map.
      *
-     * @param key the key
-     * @param value the new value
+     * @param key
+     *        the key
+     * @param value
+     *        the new value
+     *
      * @return the old value or {@code null} if there was none
      */
     public Object putObject(String key, Object value, Context vertxContext) {
@@ -149,13 +163,12 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Removes a key.
+     * Removes a key. Tries to use the current Vert.x Context, if the context is non-existent meaning that it was called
+     * out of a Vert.x thread it will fall back to the thread local context map.
      *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * @param key
+     *        the key
      *
-     * @param key the key
      * @return the old value or {@code null} if there was none
      */
     @Override
@@ -164,13 +177,12 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Removes a key.
+     * Removes a key. Tries to use the current Vert.x Context, if the context is non-existent meaning that it was called
+     * out of a Vert.x thread it will fall back to the thread local context map.
      *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * @param key
+     *        the key
      *
-     * @param key the key
      * @return the old value or {@code null} if there was none
      */
     @Override
@@ -179,10 +191,11 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Removes a key.
-     * If the informed context is null it falls back to the thread local context map.
+     * Removes a key. If the informed context is null it falls back to the thread local context map.
      *
-     * @param key the key
+     * @param key
+     *        the key
+     *
      * @return the old value or {@code null} if there was none
      */
     public String remove(String key, Context vertxContext) {
@@ -191,10 +204,11 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Removes a key.
-     * If the informed context is null it falls back to the thread local context map.
+     * Removes a key. If the informed context is null it falls back to the thread local context map.
      *
-     * @param key the key
+     * @param key
+     *        the key
+     *
      * @return the old value or {@code null} if there was none
      */
     public Object removeObject(String key, Context vertxContext) {
@@ -203,11 +217,9 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Get a copy of the MDC map. This is a relatively expensive operation.
-     *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * Get a copy of the MDC map. This is a relatively expensive operation. Tries to use the current Vert.x Context, if
+     * the context is non-existent meaning that it was called out of a Vert.x thread it will fall back to the thread
+     * local context map.
      *
      * @return a copy of the map
      */
@@ -217,11 +229,9 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Get a copy of the MDC map. This is a relatively expensive operation.
-     *
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * Get a copy of the MDC map. This is a relatively expensive operation. Tries to use the current Vert.x Context, if
+     * the context is non-existent meaning that it was called out of a Vert.x thread it will fall back to the thread
+     * local context map.
      *
      * @return a copy of the map
      */
@@ -240,8 +250,8 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Get a copy of the MDC map. This is a relatively expensive operation.
-     * If the informed context is null it falls back to the thread local context map.
+     * Get a copy of the MDC map. This is a relatively expensive operation. If the informed context is null it falls
+     * back to the thread local context map.
      *
      * @return a copy of the map
      */
@@ -255,8 +265,8 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Get a copy of the MDC map. This is a relatively expensive operation.
-     * If the informed context is null it falls back to the thread local context map.
+     * Get a copy of the MDC map. This is a relatively expensive operation. If the informed context is null it falls
+     * back to the thread local context map.
      *
      * @return a copy of the map
      */
@@ -265,10 +275,8 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Clear the current MDC map.
-     * Tries to use the current Vert.x Context, if the context is non-existent
-     * meaning that it was called out of a Vert.x thread it will fall back to
-     * the thread local context map.
+     * Clear the current MDC map. Tries to use the current Vert.x Context, if the context is non-existent meaning that
+     * it was called out of a Vert.x thread it will fall back to the thread local context map.
      */
     @Override
     public void clear() {
@@ -276,8 +284,7 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Clear the current MDC map.
-     * If the informed context is null it falls back to the thread local context map.
+     * Clear the current MDC map. If the informed context is null it falls back to the thread local context map.
      */
     public void clear(Context vertxContext) {
         contextualDataMap(vertxContext).clear();
@@ -302,8 +309,8 @@ public enum VertxMDC implements MDCProvider {
     }
 
     /**
-     * Gets the current Contextual Data Map from the current Vert.x Context if it is not null or the default
-     * ThreadLocal Data Map for use in non Vert.x Threads.
+     * Gets the current Contextual Data Map from the current Vert.x Context if it is not null or the default ThreadLocal
+     * Data Map for use in non Vert.x Threads.
      *
      * @return the current Contextual Data Map.
      */

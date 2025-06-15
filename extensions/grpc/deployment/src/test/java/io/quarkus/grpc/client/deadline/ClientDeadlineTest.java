@@ -26,10 +26,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ClientDeadlineTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage()).addClasses(MyConsumer.class,
-                            HelloService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
+                    .addClasses(MyConsumer.class, HelloService.class))
             .withConfigurationResource("hello-config-deadline.properties");
 
     @Inject
@@ -41,7 +40,8 @@ public class ClientDeadlineTest {
         Deadline deadline = client.getStub().getCallOptions().getDeadline();
         assertNotNull(deadline);
         HelloReply reply = client.sayHello(HelloRequest.newBuilder().setName("Scaladar").build()).onFailure()
-                .recoverWithItem(HelloReply.newBuilder().setMessage("ERROR!").build()).await().atMost(Duration.ofSeconds(5));
+                .recoverWithItem(HelloReply.newBuilder().setMessage("ERROR!").build()).await()
+                .atMost(Duration.ofSeconds(5));
         assertEquals("ERROR!", reply.getMessage());
     }
 

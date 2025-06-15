@@ -25,8 +25,7 @@ import io.quarkus.runtime.util.ClassPathUtils;
  * This reloadable file manager handle the class-paths and file locations of separated file manager instances. <br>
  * It is required for applications that depends on hot-deployed classes of external sources.
  *
- * @see io.quarkus.deployment.configuration.ClassLoadingConfig#reloadableArtifacts
- *      Quarkus Class Loading Reference
+ * @see io.quarkus.deployment.configuration.ClassLoadingConfig#reloadableArtifacts Quarkus Class Loading Reference
  */
 public class ReloadableFileManager extends QuarkusFileManager {
 
@@ -36,8 +35,8 @@ public class ReloadableFileManager extends QuarkusFileManager {
         this(supplier.get(), supplier.get(), context);
     }
 
-    protected ReloadableFileManager(StandardJavaFileManager fileManager,
-            StandardJavaFileManager reloadableFileManager, Context context) {
+    protected ReloadableFileManager(StandardJavaFileManager fileManager, StandardJavaFileManager reloadableFileManager,
+            Context context) {
         super(fileManager, context);
         this.reloadableFileManager = reloadableFileManager;
         try {
@@ -64,8 +63,8 @@ public class ReloadableFileManager extends QuarkusFileManager {
     }
 
     @Override
-    public Iterable<JavaFileObject> list(Location location, String packageName,
-            Set<JavaFileObject.Kind> kinds, boolean recurse) throws IOException {
+    public Iterable<JavaFileObject> list(Location location, String packageName, Set<JavaFileObject.Kind> kinds,
+            boolean recurse) throws IOException {
         return combinedIterable(() -> {
             try {
                 return super.list(location, packageName, kinds, recurse);
@@ -101,8 +100,8 @@ public class ReloadableFileManager extends QuarkusFileManager {
 
     @Override
     public boolean hasLocation(Location location) {
-        return super.hasLocation(location) || (this.reloadableFileManager != null
-                && this.reloadableFileManager.hasLocation(location));
+        return super.hasLocation(location)
+                || (this.reloadableFileManager != null && this.reloadableFileManager.hasLocation(location));
     }
 
     @Override
@@ -117,8 +116,7 @@ public class ReloadableFileManager extends QuarkusFileManager {
 
     @Override
     public JavaFileObject getJavaFileForOutput(Location location, String className, JavaFileObject.Kind kind,
-            FileObject sibling)
-            throws IOException {
+            FileObject sibling) throws IOException {
         JavaFileObject result = super.getJavaFileForOutput(location, className, kind, sibling);
         if (result == null && this.reloadableFileManager != null) {
             result = this.reloadableFileManager.getJavaFileForOutput(location, className, kind, sibling);
@@ -251,8 +249,8 @@ public class ReloadableFileManager extends QuarkusFileManager {
 
     @Override
     public boolean contains(Location location, FileObject fo) throws IOException {
-        return super.contains(location, fo) || (this.reloadableFileManager != null
-                && this.reloadableFileManager.contains(location, fo));
+        return super.contains(location, fo)
+                || (this.reloadableFileManager != null && this.reloadableFileManager.contains(location, fo));
     }
 
     @Override
@@ -279,8 +277,8 @@ public class ReloadableFileManager extends QuarkusFileManager {
 
     /**
      * A class loader that combines multiple class loaders into one.<br>
-     * The classes loaded by this class loader are associated with this class loader,
-     * i.e. Class.getClassLoader() points to this class loader.
+     * The classes loaded by this class loader are associated with this class loader, i.e. Class.getClassLoader() points
+     * to this class loader.
      */
     public static class JoinClassLoader extends ClassLoader {
 

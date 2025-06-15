@@ -157,10 +157,10 @@ public class InfoRecorder {
             for (InfoContributor contributor : knownContributors) {
                 String key = contributor.name();
                 if (finalBuildInfo.containsKey(key)) {
-                    log.warn(
-                            "Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+                    log.warn("Info key " + key
+                            + " contains duplicate values. This can lead to unpredictable values being used");
                 }
-                //TODO: we might want this to be done lazily
+                // TODO: we might want this to be done lazily
                 // also, do we want to merge information or simply replace like we are doing here?
                 finalBuildInfo.put(key, contributor.data());
             }
@@ -168,8 +168,8 @@ public class InfoRecorder {
                 InfoContributor contributor = handler.get();
                 String key = contributor.name();
                 if (finalBuildInfo.containsKey(key)) {
-                    log.warn(
-                            "Info key " + key + " contains duplicate values. This can lead to unpredictable values being used");
+                    log.warn("Info key " + key
+                            + " contains duplicate values. This can lead to unpredictable values being used");
                 }
                 finalBuildInfo.put(key, contributor.data());
             }

@@ -47,7 +47,8 @@ import io.vertx.core.net.TrustOptions;
 @SuppressWarnings("OptionalIsPresent")
 public class HttpServerOptionsUtils {
 
-    private static final boolean JDK_SSL_BUFFER_POOLING = Boolean.getBoolean("quarkus.http.server.ssl.jdk.bufferPooling");
+    private static final boolean JDK_SSL_BUFFER_POOLING = Boolean
+            .getBoolean("quarkus.http.server.ssl.jdk.bufferPooling");
 
     /**
      * When the http port is set to 0, replace it by this value to let Vert.x choose a random port
@@ -67,11 +68,8 @@ public class HttpServerOptionsUtils {
     /**
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
-    public static HttpServerOptions createSslOptions(
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            VertxHttpConfig httpConfig,
-            LaunchMode launchMode,
-            List<String> websocketSubProtocols,
+    public static HttpServerOptions createSslOptions(VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            VertxHttpConfig httpConfig, LaunchMode launchMode, List<String> websocketSubProtocols,
             TlsConfigurationRegistry registry) throws IOException {
 
         if (!httpConfig.hostEnabled()) {
@@ -80,7 +78,8 @@ public class HttpServerOptionsUtils {
 
         final HttpServerOptions serverOptions = new HttpServerOptions();
         int sslPort = httpConfig.determineSslPort(launchMode);
-        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be random
+        // -2 instead of -1 (see http) to have vert.x assign two different random ports if both http and https shall be
+        // random
         serverOptions.setPort(sslPort == 0 ? RANDOM_PORT_MAIN_TLS : sslPort);
         serverOptions.setClientAuth(httpBuildTimeConfig.tlsClientAuth());
 
@@ -113,13 +112,14 @@ public class HttpServerOptionsUtils {
             var maybeTlsConfig = registry.get(tlsConfigurationName.get());
             if (maybeTlsConfig.isEmpty()) {
                 throw new ConfigurationException("No TLS configuration named " + tlsConfigurationName.get()
-                        + " found in the TLS registry. Configure `quarkus.tls."
-                        + tlsConfigurationName.get() + "` in your application.properties.");
+                        + " found in the TLS registry. Configure `quarkus.tls." + tlsConfigurationName.get()
+                        + "` in your application.properties.");
             }
             bucket = maybeTlsConfig.get();
         } else if (registry != null && registry.getDefault().isPresent()
                 && registry.getDefault().get().getKeyStoreOptions() != null) {
-            // Verify that default is present and a key store has been configured, otherwise we get the default configuration.
+            // Verify that default is present and a key store has been configured, otherwise we get the default
+            // configuration.
             bucket = registry.getDefault().get();
         }
         return bucket;
@@ -156,12 +156,12 @@ public class HttpServerOptionsUtils {
             }
             keyStoreAliasPassword = getCredential(
                     or(sslConfig.certificate().keyStoreAliasPassword(), sslConfig.certificate().keyStoreKeyPassword()),
-                    credentials,
-                    or(sslConfig.certificate().keyStoreAliasPasswordKey(), sslConfig.certificate().keyStoreKeyPasswordKey()));
+                    credentials, or(sslConfig.certificate().keyStoreAliasPasswordKey(),
+                            sslConfig.certificate().keyStoreKeyPasswordKey()));
         }
 
-        final Optional<String> trustStorePassword = getCredential(sslConfig.certificate().trustStorePassword(), credentials,
-                sslConfig.certificate().trustStorePasswordKey());
+        final Optional<String> trustStorePassword = getCredential(sslConfig.certificate().trustStorePassword(),
+                credentials, sslConfig.certificate().trustStorePasswordKey());
 
         var kso = computeKeyStoreOptions(sslConfig.certificate(), keyStorePassword, keyStoreAliasPassword);
         if (kso != null) {
@@ -187,8 +187,7 @@ public class HttpServerOptionsUtils {
      * Get an {@code HttpServerOptions} for this server configuration, or null if SSL should not be enabled
      */
     public static HttpServerOptions createSslOptionsForManagementInterface(
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            ManagementConfig managementConfig,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, ManagementConfig managementConfig,
             LaunchMode launchMode, List<String> websocketSubProtocols, TlsConfigurationRegistry registry)
             throws IOException {
         if (!managementConfig.hostEnabled()) {
@@ -224,7 +223,8 @@ public class HttpServerOptionsUtils {
         return serverOptions;
     }
 
-    public static void applyTlsConfigurationToHttpServerOptions(TlsConfiguration bucket, HttpServerOptions serverOptions) {
+    public static void applyTlsConfigurationToHttpServerOptions(TlsConfiguration bucket,
+            HttpServerOptions serverOptions) {
         serverOptions.setSsl(true);
         setJdkHeapBufferPooling(serverOptions);
 
@@ -280,16 +280,15 @@ public class HttpServerOptionsUtils {
         }
     }
 
-    public static void applyCommonOptions(
-            HttpServerOptions httpServerOptions,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            VertxHttpConfig httpConfig,
+    public static void applyCommonOptions(HttpServerOptions httpServerOptions,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, VertxHttpConfig httpConfig,
             List<String> websocketSubProtocols) {
         httpServerOptions.setHost(httpConfig.host());
         setIdleTimeout(httpConfig, httpServerOptions);
         httpServerOptions.setMaxHeaderSize(httpConfig.limits().maxHeaderSize().asBigInteger().intValueExact());
         httpServerOptions.setMaxChunkSize(httpConfig.limits().maxChunkSize().asBigInteger().intValueExact());
-        httpServerOptions.setMaxFormAttributeSize(httpConfig.limits().maxFormAttributeSize().asBigInteger().intValueExact());
+        httpServerOptions
+                .setMaxFormAttributeSize(httpConfig.limits().maxFormAttributeSize().asBigInteger().intValueExact());
         httpServerOptions.setMaxFormFields(httpConfig.limits().maxFormFields());
         httpServerOptions.setMaxFormBufferedBytes(httpConfig.limits().maxFormBufferedBytes().asBigInteger().intValue());
         httpServerOptions.setWebSocketSubProtocols(websocketSubProtocols);
@@ -314,13 +313,13 @@ public class HttpServerOptionsUtils {
                     // GZip's default compression level is 6 in Netty Codec 4.1, the same
                     // as the default compression level in Vert.x Core 4.5.7's HttpServerOptions.
                     final GzipOptions defaultOps = StandardCompressionOptions.gzip();
-                    httpServerOptions.addCompressor(StandardCompressionOptions
-                            .gzip(httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
+                    httpServerOptions.addCompressor(StandardCompressionOptions.gzip(
+                            httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
                 } else if ("deflate".equalsIgnoreCase(compressor)) {
                     // Deflate's default compression level defaults the same as with GZip.
                     final DeflateOptions defaultOps = StandardCompressionOptions.deflate();
-                    httpServerOptions.addCompressor(StandardCompressionOptions
-                            .deflate(httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
+                    httpServerOptions.addCompressor(StandardCompressionOptions.deflate(
+                            httpServerOptions.getCompressionLevel(), defaultOps.windowBits(), defaultOps.memLevel()));
                 } else if ("br".equalsIgnoreCase(compressor)) {
                     final BrotliOptions o = StandardCompressionOptions.brotli();
                     // The default compression level for brotli as of Netty Codec 4.1 is 4,
@@ -357,8 +356,8 @@ public class HttpServerOptionsUtils {
 
             // RST attack protection - https://github.com/netty/netty/security/advisories/GHSA-xpw8-rcwv-8f8p
             if (httpConfig.limits().rstFloodMaxRstFramePerWindow().isPresent()) {
-                httpServerOptions
-                        .setHttp2RstFloodMaxRstFramePerWindow(httpConfig.limits().rstFloodMaxRstFramePerWindow().getAsInt());
+                httpServerOptions.setHttp2RstFloodMaxRstFramePerWindow(
+                        httpConfig.limits().rstFloodMaxRstFramePerWindow().getAsInt());
             }
             if (httpConfig.limits().rstFloodWindowDuration().isPresent()) {
                 httpServerOptions.setHttp2RstFloodWindowDuration(
@@ -385,7 +384,8 @@ public class HttpServerOptionsUtils {
                 options.setMaxDelayToWaitUnit(TimeUnit.SECONDS);
             }
             if (httpConfig.trafficShaping().inboundGlobalBandwidth().isPresent()) {
-                options.setInboundGlobalBandwidth(httpConfig.trafficShaping().inboundGlobalBandwidth().get().asLongValue());
+                options.setInboundGlobalBandwidth(
+                        httpConfig.trafficShaping().inboundGlobalBandwidth().get().asLongValue());
             }
             if (httpConfig.trafficShaping().outboundGlobalBandwidth().isPresent()) {
                 options.setOutboundGlobalBandwidth(
@@ -399,10 +399,8 @@ public class HttpServerOptionsUtils {
         }
     }
 
-    public static void applyCommonOptionsForManagementInterface(
-            HttpServerOptions options,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            ManagementConfig managementConfig,
+    public static void applyCommonOptionsForManagementInterface(HttpServerOptions options,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, ManagementConfig managementConfig,
             List<String> websocketSubProtocols) {
         options.setHost(managementConfig.host());
 
@@ -412,7 +410,8 @@ public class HttpServerOptionsUtils {
 
         options.setMaxHeaderSize(managementConfig.limits().maxHeaderSize().asBigInteger().intValueExact());
         options.setMaxChunkSize(managementConfig.limits().maxChunkSize().asBigInteger().intValueExact());
-        options.setMaxFormAttributeSize(managementConfig.limits().maxFormAttributeSize().asBigInteger().intValueExact());
+        options.setMaxFormAttributeSize(
+                managementConfig.limits().maxFormAttributeSize().asBigInteger().intValueExact());
         options.setMaxFormFields(managementConfig.limits().maxFormFields());
         options.setMaxFormBufferedBytes(managementConfig.limits().maxFormBufferedBytes().asBigInteger().intValue());
         options.setMaxInitialLineLength(managementConfig.limits().maxInitialLineLength());
@@ -461,15 +460,14 @@ public class HttpServerOptionsUtils {
             if (httpBuildTimeConfig.tlsClientAuth() == ClientAuth.REQUIRED && value == InsecureRequests.ENABLED) {
                 Logger.getLogger(HttpServerOptionsUtils.class).warn(
                         "When configuring TLS client authentication to be required, it is recommended to **NOT** set `quarkus.http.insecure-requests` to `enabled`. "
-                                +
-                                "You can switch to `redirect` by setting `quarkus.http.insecure-requests=redirect`.");
+                                + "You can switch to `redirect` by setting `quarkus.http.insecure-requests=redirect`.");
             }
             return value;
         }
         if (httpBuildTimeConfig.tlsClientAuth() == ClientAuth.REQUIRED) {
-            Logger.getLogger(HttpServerOptionsUtils.class).info(
-                    "TLS client authentication is required, thus disabling insecure requests. " +
-                            "You can switch to `redirect` by setting `quarkus.http.insecure-requests=redirect`.");
+            Logger.getLogger(HttpServerOptionsUtils.class)
+                    .info("TLS client authentication is required, thus disabling insecure requests. "
+                            + "You can switch to `redirect` by setting `quarkus.http.insecure-requests=redirect`.");
             return InsecureRequests.DISABLED;
         }
         return InsecureRequests.ENABLED;

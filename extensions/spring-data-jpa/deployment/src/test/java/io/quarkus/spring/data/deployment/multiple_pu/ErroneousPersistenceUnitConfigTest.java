@@ -13,13 +13,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ErroneousPersistenceUnitConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(IllegalStateException.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(IllegalStateException.class)
             .withApplicationRoot((jar) -> jar
-                    .addClasses(FirstEntity.class, SecondEntity.class,
-                            FirstEntityRepository.class, SecondEntityRepository.class,
-                            PanacheTestResource.class)
-                    .addAsResource("application-erroneous-multiple-persistence-units.properties", "application.properties"));
+                    .addClasses(FirstEntity.class, SecondEntity.class, FirstEntityRepository.class,
+                            SecondEntityRepository.class, PanacheTestResource.class)
+                    .addAsResource("application-erroneous-multiple-persistence-units.properties",
+                            "application.properties"));
 
     @Test
     public void shouldNotReachHere() {

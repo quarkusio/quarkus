@@ -10,9 +10,9 @@ public final class KubernetesPortBuildItem extends MultiBuildItem {
     private final int port;
     private final String name;
     /**
-     * Indicates when the port is enabled vs simply configured.
-     * For example the presence `quarkus.http.ssl-port` also is not enought to tell us if enabled.
-     * Still, we need to communicate its value and let `quarkus-kubernetes` extension decide.
+     * Indicates when the port is enabled vs simply configured. For example the presence `quarkus.http.ssl-port` also is
+     * not enought to tell us if enabled. Still, we need to communicate its value and let `quarkus-kubernetes` extension
+     * decide.
      **/
     private final boolean enabled;
     private final Optional<Property<Integer>> source;
@@ -32,14 +32,15 @@ public final class KubernetesPortBuildItem extends MultiBuildItem {
         this.enabled = enabled;
     }
 
-    public static KubernetesPortBuildItem fromRuntimeConfiguration(String name, String propertyName, Integer defaultValue,
-            boolean enabled) {
+    public static KubernetesPortBuildItem fromRuntimeConfiguration(String name, String propertyName,
+            Integer defaultValue, boolean enabled) {
         Property<Integer> origin = Property.fromRuntimeConfiguration(propertyName, Integer.class, defaultValue);
         Integer port = origin.getValue().orElse(defaultValue);
         return new KubernetesPortBuildItem(port, name, enabled, Optional.of(origin));
     }
 
-    public static KubernetesPortBuildItem fromRuntimeConfiguration(String name, String propertyName, Integer defaultValue) {
+    public static KubernetesPortBuildItem fromRuntimeConfiguration(String name, String propertyName,
+            Integer defaultValue) {
         Property<Integer> origin = Property.fromRuntimeConfiguration(propertyName, Integer.class, defaultValue);
         Integer port = origin.getValue().orElse(defaultValue);
         return new KubernetesPortBuildItem(port, name, origin.getValue().isPresent(), Optional.of(origin));

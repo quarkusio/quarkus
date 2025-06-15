@@ -3,8 +3,8 @@ package io.quarkus.kubernetes.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A build item that wraps around ConfigurationSupplier objects.
- * The purpose of those build items is influence the configuration that will be feed to the generator process.
+ * A build item that wraps around ConfigurationSupplier objects. The purpose of those build items is influence the
+ * configuration that will be feed to the generator process.
  */
 public final class ConfigurationSupplierBuildItem extends MultiBuildItem {
 

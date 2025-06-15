@@ -12,8 +12,8 @@ import io.quarkus.vertx.runtime.VertxCurrentContextFactory;
 public class VertxCurrentContextFactoryDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.vertx.customize-arc-context", "false");
+    static final QuarkusUnitTest config = new QuarkusUnitTest().overrideConfigKey("quarkus.vertx.customize-arc-context",
+            "false");
 
     @Test
     public void testCustomizedFactoryNotUsed() {

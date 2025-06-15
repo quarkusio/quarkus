@@ -15,11 +15,9 @@ public class ApplicationManifestMutableJarTest extends ApplicationManifestTestBa
 
         var acmeTransitive = TsArtifact.jar("acme-transitive");
 
-        var acmeCommon = TsArtifact.jar("acme-common")
-                .addDependency(acmeTransitive);
+        var acmeCommon = TsArtifact.jar("acme-common").addDependency(acmeTransitive);
 
-        var acmeLib = TsArtifact.jar("acme-lib")
-                .addDependency(acmeCommon);
+        var acmeLib = TsArtifact.jar("acme-lib").addDependency(acmeCommon);
 
         var otherLib = TsArtifact.jar("other-lib");
         otherLib.addDependency(acmeCommon);
@@ -31,11 +29,8 @@ public class ApplicationManifestMutableJarTest extends ApplicationManifestTestBa
         myExt.getRuntime().addDependency(myLib);
         myExt.getDeployment().addDependency(otherLib);
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(acmeLib)
-                .addDependency(otherLib)
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(acmeLib).addDependency(otherLib)
                 .addDependency(myExt);
     }
 
@@ -50,10 +45,7 @@ public class ApplicationManifestMutableJarTest extends ApplicationManifestTestBa
     public void initExpectedComponents() {
         expectMavenComponent(artifactCoords("app"), comp -> {
             assertDistributionPath(comp, "app/quarkus-application.jar");
-            assertDependencies(comp,
-                    artifactCoords("acme-lib"),
-                    artifactCoords("other-lib"),
-                    artifactCoords("my-ext"),
+            assertDependencies(comp, artifactCoords("acme-lib"), artifactCoords("other-lib"), artifactCoords("my-ext"),
                     artifactCoords("my-ext-deployment"));
             assertDependencyScope(comp, ApplicationComponent.SCOPE_RUNTIME);
         });
@@ -122,9 +114,7 @@ public class ApplicationManifestMutableJarTest extends ApplicationManifestTestBa
         expectMavenComponent(artifactCoords("my-ext-deployment"), comp -> {
             assertDistributionPath(comp, "lib/deployment/io.quarkus.bootstrap.test.my-ext-deployment-1.jar");
             assertDependencyScope(comp, ApplicationComponent.SCOPE_DEVELOPMENT);
-            assertDependencies(comp,
-                    artifactCoords("my-ext"),
-                    artifactCoords("other-lib"));
+            assertDependencies(comp, artifactCoords("my-ext"), artifactCoords("other-lib"));
         });
 
         expectFileComponent("lib/deployment/appmodel.dat", comp -> {

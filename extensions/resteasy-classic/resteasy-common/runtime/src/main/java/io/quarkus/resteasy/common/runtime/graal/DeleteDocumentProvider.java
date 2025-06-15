@@ -18,12 +18,11 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * Manipulating {@link Document}s in REST services is very unlikely to be needed
- * and this provider contributes a significant amount of code to the native
- * image due to its dependency to Xerces and Xalan.
+ * Manipulating {@link Document}s in REST services is very unlikely to be needed and this provider contributes a
+ * significant amount of code to the native image due to its dependency to Xerces and Xalan.
  * <p>
- * Let's remove it for now and see if people complain about it. If so, we
- * will need a more advanced strategy to disable/enable it.
+ * Let's remove it for now and see if people complain about it. If so, we will need a more advanced strategy to
+ * disable/enable it.
  */
 @TargetClass(className = "org.jboss.resteasy.plugins.providers.DocumentProvider")
 final class DeleteDocumentProvider {
@@ -39,8 +38,7 @@ final class DeleteDocumentProvider {
 
     @Substitute
     public Document readFrom(Class<Document> clazz, Type type, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> headers,
-            InputStream input) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> headers, InputStream input) throws IOException, WebApplicationException {
         return null;
     }
 
@@ -51,8 +49,7 @@ final class DeleteDocumentProvider {
 
     @Substitute
     public void writeTo(Document document, Class<?> clazz, Type type, Annotation[] annotation, MediaType mediaType,
-            MultivaluedMap<String, Object> headers,
-            OutputStream output) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> headers, OutputStream output) throws IOException, WebApplicationException {
 
     }
 }

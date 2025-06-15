@@ -20,8 +20,7 @@ public class MergedModel {
     private final Map<Extension, List<ConfigSection>> generatedConfigSections;
 
     MergedModel(Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRoots,
-            Map<String, ConfigRoot> configRootsInSpecificFile,
-            Map<Extension, List<ConfigSection>> configSections) {
+            Map<String, ConfigRoot> configRootsInSpecificFile, Map<Extension, List<ConfigSection>> configSections) {
         this.configRoots = Collections.unmodifiableMap(configRoots);
         this.configRootsInSpecificFile = Collections.unmodifiableMap(configRootsInSpecificFile);
         this.generatedConfigSections = Collections.unmodifiableMap(configSections);

@@ -16,8 +16,8 @@ public class ReactiveTransactionalKeyCommandsImpl<K> extends AbstractTransaction
 
     private final ReactiveKeyCommandsImpl<K> reactive;
 
-    public ReactiveTransactionalKeyCommandsImpl(ReactiveTransactionalRedisDataSource ds, ReactiveKeyCommandsImpl<K> reactive,
-            TransactionHolder tx) {
+    public ReactiveTransactionalKeyCommandsImpl(ReactiveTransactionalRedisDataSource ds,
+            ReactiveKeyCommandsImpl<K> reactive, TransactionHolder tx) {
         super(ds, tx);
         this.reactive = reactive;
     }

@@ -55,8 +55,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
                 public void accept(Map<String, List> accepted) {
                     cmds.putAll(accepted);
                 }
-            },
-                    RunCommandActionResultBuildItem.class.getName());
+            }, RunCommandActionResultBuildItem.class.getName());
         } catch (BootstrapException ex) {
             throw new RuntimeException(ex);
         }
@@ -117,20 +116,14 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
             Files.deleteIfExists(logFile);
             Files.createDirectories(logFile.getParent());
             FileOutputStream logOutputStream = new FileOutputStream(logFile.toFile(), true);
-            quarkusProcess = new ProcessBuilder(args)
-                    .directory(workingDir.toFile())
-                    .redirectError(PIPE)
-                    .redirectOutput(PIPE)
-                    .start();
+            quarkusProcess = new ProcessBuilder(args).directory(workingDir.toFile()).redirectError(PIPE)
+                    .redirectOutput(PIPE).start();
             InputStream teo = new TeeInputStream(quarkusProcess.getInputStream(), System.out);
             executorService.submit(() -> teo.transferTo(logOutputStream));
             InputStream tee = new TeeInputStream(quarkusProcess.getErrorStream(), System.err);
             executorService.submit(() -> tee.transferTo(logOutputStream));
         } else {
-            quarkusProcess = new ProcessBuilder(args)
-                    .directory(workingDir.toFile())
-                    .inheritIO()
-                    .start();
+            quarkusProcess = new ProcessBuilder(args).directory(workingDir.toFile()).inheritIO().start();
         }
         CountDownLatch signal = new CountDownLatch(1);
         WaitForStartReader reader = new WaitForStartReader(logFile, Duration.ofSeconds(waitTimeSeconds), signal,
@@ -138,7 +131,8 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
         executorService.submit(reader);
 
         try {
-            signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the capturing thread
+            signal.await(waitTimeSeconds + 2, TimeUnit.SECONDS); // wait enough for the signal to be given by the
+                                                                 // capturing thread
         } catch (Exception e) {
             // ignore
         }
@@ -165,8 +159,8 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
     }
 
     /**
-     * Thread that reads a process output file looking for the line that indicates the address the application
-     * is listening on.
+     * Thread that reads a process output file looking for the line that indicates the address the application is
+     * listening on.
      */
     private static class WaitForStartReader implements Runnable {
 
@@ -193,7 +187,8 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
             long bailoutTime = System.currentTimeMillis() + waitTime.toMillis();
             try (BufferedReader reader = new BufferedReader(new FileReader(processOutput.toFile()))) {
                 while (true) {
-                    if (reader.ready()) { // avoid blocking as the input is a file which continually gets more data added
+                    if (reader.ready()) { // avoid blocking as the input is a file which continually gets more data
+                                          // added
                         String line = reader.readLine();
                         if (startedRegex.matcher(line).find()) {
                             started = true;
@@ -201,7 +196,7 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
                             return;
                         }
                     } else {
-                        //wait until there is more of the file for us to read
+                        // wait until there is more of the file for us to read
 
                         long now = System.currentTimeMillis();
                         if (now > bailoutTime) {

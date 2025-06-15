@@ -20,16 +20,14 @@ import io.quarkus.test.common.http.TestHTTPResource;
 
 public class SimpleJsonbTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
 
     @TestHTTPResource
     URI uri;
 
     @Test
     void shouldConsumeJsonEntity() {
-        var resultList = RestClientBuilder.newBuilder().baseUri(uri).build(JsonClient.class)
-                .listDtos();
+        var resultList = RestClientBuilder.newBuilder().baseUri(uri).build(JsonClient.class).listDtos();
         assertThat(resultList).containsExactly(new Dto("foo", "bar"), new Dto("chocolate", "bar"));
     }
 

@@ -19,68 +19,43 @@ import io.vertx.core.json.JsonObject;
 public class RepeatedPermissionsAllowedTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, HelloResource.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.log.category.\"io.quarkus.vertx.http.runtime.QuarkusErrorHandler\".level=OFF"
-                                            + System.lineSeparator()),
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestIdentityProvider.class, TestIdentityController.class, HelloResource.class)
+                    .addAsResource(new StringAsset(
+                            "quarkus.log.category.\"io.quarkus.vertx.http.runtime.QuarkusErrorHandler\".level=OFF"
+                                    + System.lineSeparator()),
                             "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("user", "user", new StringPermission("read"))
-                .add("admin", "admin", new StringPermission("read"), new StringPermission("write"));
+        TestIdentityController.resetRoles().add("user", "user", new StringPermission("read")).add("admin", "admin",
+                new StringPermission("read"), new StringPermission("write"));
     }
 
     @Test
     public void testRepeatedPermissionsAllowedOnClass() {
         // anonymous user
-        RestAssured.given()
-                .body("{%$$#!#@") // assures checks are eager
-                .post("/hello")
-                .then()
-                .statusCode(401);
+        RestAssured.given().body("{%$$#!#@") // assures checks are eager
+                .post("/hello").then().statusCode(401);
         // authenticated user, insufficient rights
-        RestAssured.given()
-                .auth().preemptive().basic("user", "user")
-                .body("{%$$#!#@") // assures checks are eager
-                .post("/hello")
-                .then()
-                .statusCode(403);
+        RestAssured.given().auth().preemptive().basic("user", "user").body("{%$$#!#@") // assures checks are eager
+                .post("/hello").then().statusCode(403);
         // authorized user, invalid payload
-        RestAssured.given()
-                .auth().preemptive().basic("admin", "admin")
-                .body("{%$$#!#@") // assures checks are eager
-                .post("/hello")
-                .then()
-                .statusCode(500);
+        RestAssured.given().auth().preemptive().basic("admin", "admin").body("{%$$#!#@") // assures checks are eager
+                .post("/hello").then().statusCode(500);
     }
 
     @Test
     public void testRepeatedPermissionsAllowedOnInterface() {
         // anonymous user
-        RestAssured.given()
-                .body("{%$$#!#@") // assures checks are eager
-                .post("/hello-interface")
-                .then()
-                .statusCode(401);
+        RestAssured.given().body("{%$$#!#@") // assures checks are eager
+                .post("/hello-interface").then().statusCode(401);
         // authenticated user, insufficient rights
-        RestAssured.given()
-                .auth().preemptive().basic("user", "user")
-                .body("{%$$#!#@") // assures checks are eager
-                .post("/hello-interface")
-                .then()
-                .statusCode(403);
+        RestAssured.given().auth().preemptive().basic("user", "user").body("{%$$#!#@") // assures checks are eager
+                .post("/hello-interface").then().statusCode(403);
         // authorized user, invalid payload
-        RestAssured.given()
-                .auth().preemptive().basic("admin", "admin")
-                .body("{%$$#!#@") // assures checks are eager
-                .post("/hello-interface")
-                .then()
-                .statusCode(500);
+        RestAssured.given().auth().preemptive().basic("admin", "admin").body("{%$$#!#@") // assures checks are eager
+                .post("/hello-interface").then().statusCode(500);
     }
 
     @Path("/hello")

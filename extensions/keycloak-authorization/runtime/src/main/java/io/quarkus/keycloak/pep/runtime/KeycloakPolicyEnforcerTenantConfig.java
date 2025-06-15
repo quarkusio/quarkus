@@ -42,32 +42,28 @@ public interface KeycloakPolicyEnforcerTenantConfig {
         Map<String, PathConfig> paths();
 
         /**
-         * Defines how the policy enforcer should track associations between paths in your application and resources defined in
-         * Keycloak.
-         * The cache is needed to avoid unnecessary requests to a Keycloak server by caching associations between paths and
-         * protected resources
+         * Defines how the policy enforcer should track associations between paths in your application and resources
+         * defined in Keycloak. The cache is needed to avoid unnecessary requests to a Keycloak server by caching
+         * associations between paths and protected resources
          */
         PathCacheConfig pathCache();
 
         /**
-         * Specifies how the adapter should fetch the server for resources associated with paths in your application. If true,
-         * the
-         * policy
-         * enforcer is going to fetch resources on-demand accordingly with the path being requested
+         * Specifies how the adapter should fetch the server for resources associated with paths in your application. If
+         * true, the policy enforcer is going to fetch resources on-demand accordingly with the path being requested
          */
         @WithDefault("true")
         boolean lazyLoadPaths();
 
         /**
-         * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make these
-         * claims available to policies
+         * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make
+         * these claims available to policies
          */
         ClaimInformationPointConfig claimInformationPoint();
 
         /**
-         * Specifies how scopes should be mapped to HTTP methods. If set to true, the policy enforcer will use the HTTP method
-         * from
-         * the current request to check whether access should be granted
+         * Specifies how scopes should be mapped to HTTP methods. If set to true, the policy enforcer will use the HTTP
+         * method from the current request to check whether access should be granted
          */
         @WithDefault("false")
         boolean httpMethodAsScope();
@@ -92,9 +88,8 @@ public interface KeycloakPolicyEnforcerTenantConfig {
             Optional<List<String>> paths();
 
             /**
-             * The HTTP methods (for example, GET, POST, PATCH) to protect and how they are associated with the scopes for a
-             * given
-             * resource in the server
+             * The HTTP methods (for example, GET, POST, PATCH) to protect and how they are associated with the scopes
+             * for a given resource in the server
              */
             Map<String, MethodConfig> methods();
 
@@ -105,9 +100,8 @@ public interface KeycloakPolicyEnforcerTenantConfig {
             EnforcementMode enforcementMode();
 
             /**
-             * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to make
-             * these
-             * claims available to policies
+             * Defines a set of one or more claims that must be resolved and pushed to the Keycloak server in order to
+             * make these claims available to policies
              */
             ClaimInformationPointConfig claimInformationPoint();
         }
@@ -171,18 +165,16 @@ public interface KeycloakPolicyEnforcerTenantConfig {
      * @return KeycloakPolicyEnforcerTenantConfigBuilder builder
      */
     static KeycloakPolicyEnforcerTenantConfigBuilder builder() {
-        var defaultTenantConfig = new SmallRyeConfigBuilder()
-                .withMapping(KeycloakPolicyEnforcerConfig.class)
-                .build()
-                .getConfigMapping(KeycloakPolicyEnforcerConfig.class)
-                .defaultTenant();
+        var defaultTenantConfig = new SmallRyeConfigBuilder().withMapping(KeycloakPolicyEnforcerConfig.class).build()
+                .getConfigMapping(KeycloakPolicyEnforcerConfig.class).defaultTenant();
         return new KeycloakPolicyEnforcerTenantConfigBuilder(defaultTenantConfig);
     }
 
     /**
      * Creates {@link KeycloakPolicyEnforcerTenantConfig} builder populated with {@code tenantConfig} values.
      *
-     * @param tenantConfig tenant config; must not be null
+     * @param tenantConfig
+     *        tenant config; must not be null
      *
      * @return KeycloakPolicyEnforcerTenantConfigBuilder builder
      */

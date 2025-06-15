@@ -10,14 +10,13 @@ import oracle.jdbc.OracleConnection;
 
 /**
  * Oracle has the weird behavior that it performs an implicit commit on normal connection closure (even with auto-commit
- * disabled),
- * which happens on application shutdown. To prevent whatever intermittent state we have during shutdown from being committed,
- * we add an explicit rollback to each connection closure. If the connection has already received a COMMIT, the rollback will
- * not work, which is fine.
+ * disabled), which happens on application shutdown. To prevent whatever intermittent state we have during shutdown from
+ * being committed, we add an explicit rollback to each connection closure. If the connection has already received a
+ * COMMIT, the rollback will not work, which is fine.
  * <p>
- * The code unwraps the {@link Connection} so that we perform the rollback directly on the underlying database connection,
- * and not on e.g. Agroal's {@link ConnectionWrapper} which can prevent the rollback from actually being executed due to some
- * safeguards.
+ * The code unwraps the {@link Connection} so that we perform the rollback directly on the underlying database
+ * connection, and not on e.g. Agroal's {@link ConnectionWrapper} which can prevent the rollback from actually being
+ * executed due to some safeguards.
  *
  * @see https://github.com/quarkusio/quarkus/issues/36265
  */

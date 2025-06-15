@@ -10,8 +10,7 @@ public class FlywayExtensionValidateAtStartTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("validate-at-start-config.properties", "application.properties"))
             .setExpectedException(FlywayValidateException.class);
 

@@ -6,7 +6,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * A cookie
- *
  */
 public class CookieAttribute implements ExchangeAttribute {
 

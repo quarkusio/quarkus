@@ -12,8 +12,8 @@ import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
 @CommandLine.Command(name = "image", sortOptions = false, mixinStandardHelpOptions = false, header = "Build or push project container image.", subcommands = {
-        Build.class, Push.class
-}, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
+        Build.class,
+        Push.class }, headerHeading = "%n", commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "%nOptions:%n")
 public class Image implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")
@@ -31,6 +31,7 @@ public class Image implements Callable<Integer> {
     public Integer call() throws Exception {
         ParseResult result = spec.commandLine().getParseResult();
         CommandLine buildCommand = spec.subcommands().get("build");
-        return buildCommand.execute(result.originalArgs().stream().filter(x -> !"image".equals(x)).toArray(String[]::new));
+        return buildCommand
+                .execute(result.originalArgs().stream().filter(x -> !"image".equals(x)).toArray(String[]::new));
     }
 }

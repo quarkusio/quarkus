@@ -29,21 +29,24 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
     }
 
     @Override
-    public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+    public void handleAfterEachMethodExecutionException(ExtensionContext context, Throwable throwable)
+            throws Throwable {
         markTestAsFailed(context, throwable);
 
         throw throwable;
     }
 
     @Override
-    public void handleBeforeAllMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+    public void handleBeforeAllMethodExecutionException(ExtensionContext context, Throwable throwable)
+            throws Throwable {
         markTestAsFailed(context, throwable);
 
         throw throwable;
     }
 
     @Override
-    public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable throwable) throws Throwable {
+    public void handleBeforeEachMethodExecutionException(ExtensionContext context, Throwable throwable)
+            throws Throwable {
         markTestAsFailed(context, throwable);
 
         throw throwable;
@@ -61,7 +64,8 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
             QuarkusTestExtensionState state;
 
-            // It's quite possible the state was created in another classloader, and if so, we will need to clone it across into this classloader
+            // It's quite possible the state was created in another classloader, and if so, we will need to clone it
+            // across into this classloader
             if (o instanceof QuarkusTestExtensionState) {
                 state = (QuarkusTestExtensionState) o;
             } else {
@@ -70,7 +74,8 @@ public abstract class AbstractQuarkusTestWithContextExtension extends AbstractTe
 
             Class<?> testingTypeOfState = store.get(IO_QUARKUS_TESTING_TYPE, Class.class);
             if (!this.getTestingType().equals(testingTypeOfState)) {
-                // The current state was created by a different testing type, so we need to renew it, so the new state is
+                // The current state was created by a different testing type, so we need to renew it, so the new state
+                // is
                 // compatible with the current testing type.
                 try {
                     state.close();

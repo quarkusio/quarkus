@@ -14,26 +14,10 @@ public class AddDeploymentResourceDecorator extends ResourceProvidingDecorator<K
 
     @Override
     public void visit(KubernetesListFluent<?> list) {
-        list.addToItems(new DeploymentBuilder()
-                .withNewMetadata()
-                .withName(name)
-                .endMetadata()
-                .withNewSpec()
-                .withReplicas(1)
-                .withNewSelector()
-                .withMatchLabels(new HashMap<String, String>())
-                .endSelector()
-                .withNewTemplate()
-                .withNewMetadata()
-                .endMetadata()
-                .withNewSpec()
-                .addNewContainer()
-                .withName(name)
-                .endContainer()
-                .endSpec()
-                .endTemplate()
-                .endSpec()
-                .build());
+        list.addToItems(new DeploymentBuilder().withNewMetadata().withName(name).endMetadata().withNewSpec()
+                .withReplicas(1).withNewSelector().withMatchLabels(new HashMap<String, String>()).endSelector()
+                .withNewTemplate().withNewMetadata().endMetadata().withNewSpec().addNewContainer().withName(name)
+                .endContainer().endSpec().endTemplate().endSpec().build());
     }
 
     public AddDeploymentResourceDecorator(String name, PlatformConfiguration config) {

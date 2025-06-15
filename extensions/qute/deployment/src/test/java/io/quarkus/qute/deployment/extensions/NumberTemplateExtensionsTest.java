@@ -15,13 +15,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NumberTemplateExtensionsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("{num.mod(4)}"),
-                            "templates/foo.txt")
-                    .addAsResource(
-                            new StringAsset("{@java.lang.Integer val}{val.plus(1l).longValue}"),
-                            "templates/intPlusLong.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addAsResource(new StringAsset("{num.mod(4)}"), "templates/foo.txt").addAsResource(
+                    new StringAsset("{@java.lang.Integer val}{val.plus(1l).longValue}"), "templates/intPlusLong.txt"));
 
     @Inject
     Template foo;

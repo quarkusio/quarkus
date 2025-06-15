@@ -30,21 +30,16 @@ import io.restassured.http.Header;
 public class StringMessageBodyWriterTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class);
+        }
+    });
 
     @Test
     void testHelloEndpoint() {
-        given()
-                .when().get("/hello")
-                .then()
-                .statusCode(200)
-                .body(is("Greeting response: Hello from Quarkus REST"));
+        given().when().get("/hello").then().statusCode(200).body(is("Greeting response: Hello from Quarkus REST"));
     }
 
     @Test
@@ -52,12 +47,7 @@ public class StringMessageBodyWriterTest {
         // Prevent RestAssured from setting any Accept header
         final var header = new Header("Accept", null);
 
-        given()
-                .when()
-                .header(header)
-                .get("/hello")
-                .then()
-                .statusCode(200)
+        given().when().header(header).get("/hello").then().statusCode(200)
                 .body(is("Greeting response: Hello from Quarkus REST"));
     }
 
@@ -82,9 +72,8 @@ public class StringMessageBodyWriterTest {
 
         @Override
         public void writeTo(final String s, final Class<?> aClass, final Type type, final Annotation[] annotations,
-                final MediaType mediaType,
-                final MultivaluedMap<String, Object> multivaluedMap, final OutputStream outputStream)
-                throws IOException, WebApplicationException {
+                final MediaType mediaType, final MultivaluedMap<String, Object> multivaluedMap,
+                final OutputStream outputStream) throws IOException, WebApplicationException {
 
             final var content = "Greeting response: " + s;
             outputStream.write(content.getBytes());

@@ -82,13 +82,10 @@ public final class EntityTypeUtils {
     }
 
     public static List<ClassInfo> getListenersByEntityType(IndexView index,
-            List<ResourceMethodListenerBuildItem> resourceMethodListeners,
-            String entityTypeName) {
+            List<ResourceMethodListenerBuildItem> resourceMethodListeners, String entityTypeName) {
         ClassInfo entityClass = index.getClassByName(entityTypeName);
-        return resourceMethodListeners.stream()
-                .filter(isCompatibleWithEntityType(index, entityClass))
-                .map(e -> e.getClassInfo())
-                .collect(Collectors.toList());
+        return resourceMethodListeners.stream().filter(isCompatibleWithEntityType(index, entityClass))
+                .map(e -> e.getClassInfo()).collect(Collectors.toList());
     }
 
     private static Predicate<ResourceMethodListenerBuildItem> isCompatibleWithEntityType(IndexView index,

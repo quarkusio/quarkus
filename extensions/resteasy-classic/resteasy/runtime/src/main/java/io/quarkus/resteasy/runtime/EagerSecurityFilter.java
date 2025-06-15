@@ -68,8 +68,8 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
             if (interceptorStorage != null) {
                 applyEagerSecurityInterceptors(description);
             }
-            var authZPolicyMethod = jaxRsPermissionChecker.getMethodSecuredWithAuthZPolicy(description.invokedMethodDesc(),
-                    description.fallbackMethodDesc());
+            var authZPolicyMethod = jaxRsPermissionChecker
+                    .getMethodSecuredWithAuthZPolicy(description.invokedMethodDesc(), description.fallbackMethodDesc());
             if (jaxRsPermissionChecker.shouldRunPermissionChecks()) {
                 jaxRsPermissionChecker.applyPermissionChecks(authZPolicyMethod);
             }
@@ -134,9 +134,10 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
     }
 
     private void fireEventOnAuthZFailure(Exception exception, SecurityCheck check, MethodDescription description) {
-        jaxRsPermissionChecker.getEventHelper().fireFailureEvent(new AuthorizationFailureEvent(
-                identityAssociation.getIdentity(), exception, check.getClass().getName(),
-                Map.of(RoutingContext.class.getName(), routingContext()), description));
+        jaxRsPermissionChecker.getEventHelper()
+                .fireFailureEvent(new AuthorizationFailureEvent(identityAssociation.getIdentity(), exception,
+                        check.getClass().getName(), Map.of(RoutingContext.class.getName(), routingContext()),
+                        description));
     }
 
     private void fireEventOnAuthZSuccess(SecurityCheck check, SecurityIdentity securityIdentity,
@@ -197,10 +198,13 @@ public class EagerSecurityFilter implements ContainerRequestFilter {
     static native ResourceFactory getResourceFactory(ResourceMethodInvoker invoker);
 
     /**
-     * @param invokedMethodDesc description of actually invoked method (method on which CDI interceptors are applied)
-     * @param fallbackMethodDesc description that we used in the past; not null when different to {@code invokedMethodDesc}
+     * @param invokedMethodDesc
+     *        description of actually invoked method (method on which CDI interceptors are applied)
+     * @param fallbackMethodDesc
+     *        description that we used in the past; not null when different to {@code invokedMethodDesc}
      */
-    private record ResourceMethodDescription(MethodDescription invokedMethodDesc, MethodDescription fallbackMethodDesc) {
+    private record ResourceMethodDescription(MethodDescription invokedMethodDesc,
+            MethodDescription fallbackMethodDesc) {
 
     }
 }

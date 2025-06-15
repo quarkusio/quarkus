@@ -29,18 +29,15 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
         this.actions.add(buildTimeAction);
     }
 
-    public <T> void addAction(String methodName,
-            Function<Map<String, String>, T> action) {
+    public <T> void addAction(String methodName, Function<Map<String, String>, T> action) {
         this.addAction(new BuildTimeAction(methodName, action));
     }
 
-    public <T> void addAssistantAction(String methodName,
-            BiFunction<Object, Map<String, String>, T> action) {
+    public <T> void addAssistantAction(String methodName, BiFunction<Object, Map<String, String>, T> action) {
         this.addAction(new BuildTimeAction(methodName, action));
     }
 
-    public <T> void addAction(String methodName,
-            RuntimeValue runtimeValue) {
+    public <T> void addAction(String methodName, RuntimeValue runtimeValue) {
         this.addAction(new BuildTimeAction(methodName, runtimeValue));
     }
 
@@ -52,13 +49,11 @@ public final class BuildTimeActionBuildItem extends AbstractDevUIBuildItem {
         this.subscriptions.add(buildTimeAction);
     }
 
-    public <T> void addSubscription(String methodName,
-            Function<Map<String, String>, T> action) {
+    public <T> void addSubscription(String methodName, Function<Map<String, String>, T> action) {
         this.addSubscription(new BuildTimeAction(methodName, action));
     }
 
-    public <T> void addSubscription(String methodName,
-            RuntimeValue runtimeValue) {
+    public <T> void addSubscription(String methodName, RuntimeValue runtimeValue) {
         this.addSubscription(new BuildTimeAction(methodName, runtimeValue));
     }
 

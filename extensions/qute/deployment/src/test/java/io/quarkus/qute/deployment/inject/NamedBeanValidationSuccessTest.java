@@ -20,11 +20,9 @@ public class NamedBeanValidationSuccessTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(NamedFoo.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "{inject:foo.getList(true).size}::{#each inject:foo.getList('foo')}{it.length}{/each}"),
+            .withApplicationRoot((jar) -> jar.addClass(NamedFoo.class)
+                    .addAsResource(new StringAsset(
+                            "{inject:foo.getList(true).size}::{#each inject:foo.getList('foo')}{it.length}{/each}"),
                             "templates/fooping.html"));
 
     @Inject

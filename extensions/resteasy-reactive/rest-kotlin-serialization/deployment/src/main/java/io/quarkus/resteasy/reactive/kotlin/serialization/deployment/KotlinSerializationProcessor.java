@@ -25,26 +25,22 @@ import io.quarkus.resteasy.reactive.spi.MessageBodyWriterBuildItem;
 public class KotlinSerializationProcessor {
 
     @BuildStep
-    public void additionalProviders(
-            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+    public void additionalProviders(BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
-            BuildProducer<MessageBodyWriterBuildItem> additionalWriters,
-            Capabilities capabilities) {
-        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder()
-                .addBeanClasses(KotlinSerializationMessageBodyReader.class.getName(),
-                        KotlinSerializationMessageBodyWriter.class.getName());
+            BuildProducer<MessageBodyWriterBuildItem> additionalWriters, Capabilities capabilities) {
+        AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().addBeanClasses(
+                KotlinSerializationMessageBodyReader.class.getName(),
+                KotlinSerializationMessageBodyWriter.class.getName());
         if (capabilities.isPresent(Capability.HIBERNATE_VALIDATOR)) {
             builder.addBeanClass(ValidationJsonBuilderCustomizer.class.getName());
         }
         additionalBean.produce(builder.setUnremovable().build());
-        additionalReaders.produce(new MessageBodyReaderBuildItem(
-                KotlinSerializationMessageBodyReader.class.getName(), Object.class.getName(), List.of(
-                        MediaType.APPLICATION_JSON),
-                RuntimeType.SERVER, true, Priorities.USER));
-        additionalWriters.produce(new MessageBodyWriterBuildItem(
-                KotlinSerializationMessageBodyWriter.class.getName(), Object.class.getName(), List.of(
-                        MediaType.APPLICATION_JSON),
-                RuntimeType.SERVER, true, Priorities.USER));
+        additionalReaders.produce(new MessageBodyReaderBuildItem(KotlinSerializationMessageBodyReader.class.getName(),
+                Object.class.getName(), List.of(MediaType.APPLICATION_JSON), RuntimeType.SERVER, true,
+                Priorities.USER));
+        additionalWriters.produce(new MessageBodyWriterBuildItem(KotlinSerializationMessageBodyWriter.class.getName(),
+                Object.class.getName(), List.of(MediaType.APPLICATION_JSON), RuntimeType.SERVER, true,
+                Priorities.USER));
     }
 
     @BuildStep

@@ -19,9 +19,7 @@ public interface OidcTokenPropagationReactiveConfig {
     boolean exchangeToken();
 
     /**
-     * Name of the configured OidcClient.
-     *
-     * Note this property is only used if the `exchangeToken` property is enabled.
+     * Name of the configured OidcClient. Note this property is only used if the `exchangeToken` property is enabled.
      */
     Optional<String> clientName();
 }

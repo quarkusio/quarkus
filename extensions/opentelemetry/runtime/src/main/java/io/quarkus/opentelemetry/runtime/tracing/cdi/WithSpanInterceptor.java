@@ -44,21 +44,16 @@ public class WithSpanInterceptor {
     private final Instrumenter<MethodRequest, Void> instrumenter;
 
     public WithSpanInterceptor(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
-        InstrumenterBuilder<MethodRequest, Void> builder = Instrumenter.builder(
-                openTelemetry,
-                INSTRUMENTATION_NAME,
+        InstrumenterBuilder<MethodRequest, Void> builder = Instrumenter.builder(openTelemetry, INSTRUMENTATION_NAME,
                 new MethodRequestSpanNameExtractor());
 
         builder.setEnabled(!runtimeConfig.sdkDisabled());
 
         MethodSpanAttributesExtractor<MethodRequest, Void> attributesExtractor = MethodSpanAttributesExtractor.create(
-                MethodRequest::getMethod,
-                new WithSpanParameterAttributeNamesExtractor(),
-                MethodRequest::getArgs);
+                MethodRequest::getMethod, new WithSpanParameterAttributeNamesExtractor(), MethodRequest::getArgs);
 
         this.instrumenter = builder.addAttributesExtractor(ClassMethodNameAttributesExtractor.INSTANCE)
-                .addAttributesExtractor(attributesExtractor)
-                .buildInstrumenter(new SpanKindExtractor<MethodRequest>() {
+                .addAttributesExtractor(attributesExtractor).buildInstrumenter(new SpanKindExtractor<MethodRequest>() {
                     @Override
                     public SpanKind extract(MethodRequest methodRequest) {
                         return spanKindFromMethod(methodRequest.getAnnotationBindings());
@@ -68,10 +63,8 @@ public class WithSpanInterceptor {
 
     @AroundInvoke
     public Object span(final ArcInvocationContext invocationContext) throws Exception {
-        MethodRequest methodRequest = new MethodRequest(
-                invocationContext.getMethod(),
-                invocationContext.getParameters(),
-                invocationContext.getInterceptorBindings());
+        MethodRequest methodRequest = new MethodRequest(invocationContext.getMethod(),
+                invocationContext.getParameters(), invocationContext.getInterceptorBindings());
 
         final Class<?> returnType = invocationContext.getMethod().getReturnType();
         Context parentContext = Context.current();
@@ -108,24 +101,26 @@ public class WithSpanInterceptor {
             final Context currentSpanContext = instrumenter.start(parentContext, methodRequest);
             final Scope currentScope = currentSpanContext.makeCurrent();
 
-            return ((Multi<Object>) invocationContext.proceed()).onTermination().invoke(new BiConsumer<Throwable, Boolean>() {
-                @Override
-                public void accept(Throwable throwable, Boolean isCancelled) {
-                    try {
-                        if (isCancelled) {
-                            instrumenter.end(currentSpanContext, methodRequest, null, new CancellationException());
-                        } else if (throwable != null) {
-                            instrumenter.end(currentSpanContext, methodRequest, null, throwable);
-                        } else {
-                            instrumenter.end(currentSpanContext, methodRequest, null, null);
+            return ((Multi<Object>) invocationContext.proceed()).onTermination()
+                    .invoke(new BiConsumer<Throwable, Boolean>() {
+                        @Override
+                        public void accept(Throwable throwable, Boolean isCancelled) {
+                            try {
+                                if (isCancelled) {
+                                    instrumenter.end(currentSpanContext, methodRequest, null,
+                                            new CancellationException());
+                                } else if (throwable != null) {
+                                    instrumenter.end(currentSpanContext, methodRequest, null, throwable);
+                                } else {
+                                    instrumenter.end(currentSpanContext, methodRequest, null, null);
+                                }
+                            } finally {
+                                if (currentScope != null) {
+                                    currentScope.close();
+                                }
+                            }
                         }
-                    } finally {
-                        if (currentScope != null) {
-                            currentScope.close();
-                        }
-                    }
-                }
-            });
+                    });
         } else if (isCompletionStage(returnType)) {
             final Context currentSpanContext = instrumenter.start(parentContext, methodRequest);
             final Scope currentScope = currentSpanContext.makeCurrent();
@@ -167,7 +162,7 @@ public class WithSpanInterceptor {
         private static final ClassMethodNameAttributesExtractor INSTANCE = new ClassMethodNameAttributesExtractor();
 
         private ClassMethodNameAttributesExtractor() {
-            //no-op
+            // no-op
         }
 
         @Override
@@ -177,8 +172,8 @@ public class WithSpanInterceptor {
         }
 
         @Override
-        public void onEnd(AttributesBuilder attributesBuilder, Context context, MethodRequest methodRequest, Void unused,
-                Throwable throwable) {
+        public void onEnd(AttributesBuilder attributesBuilder, Context context, MethodRequest methodRequest,
+                Void unused, Throwable throwable) {
             // no-op
         }
     }

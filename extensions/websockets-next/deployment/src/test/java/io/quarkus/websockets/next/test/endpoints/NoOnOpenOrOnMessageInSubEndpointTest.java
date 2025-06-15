@@ -12,11 +12,9 @@ import io.quarkus.websockets.next.WebSocketServerException;
 public class NoOnOpenOrOnMessageInSubEndpointTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ParentEndpoint.class, ParentEndpoint.SubEndpointWithoutOnOpenAndOnMessage.class);
-            })
-            .setExpectedException(WebSocketServerException.class);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ParentEndpoint.class, ParentEndpoint.SubEndpointWithoutOnOpenAndOnMessage.class);
+    }).setExpectedException(WebSocketServerException.class);
 
     @Test
     void verifyThatSubEndpointWithoutOnOpenOrOnMessageFailsToDeploy() {

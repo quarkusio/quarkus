@@ -42,8 +42,8 @@ public class HttpSecPolicyGrantingRolesTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-            .addClasses(TestIdentityController.class, TestIdentityProvider.class, RolesPathHandler.class,
-                    CDIBean.class, CustomPermission.class, CustomPermissionWithActions.class, AuthenticatedUser.class,
+            .addClasses(TestIdentityController.class, TestIdentityProvider.class, RolesPathHandler.class, CDIBean.class,
+                    CustomPermission.class, CustomPermissionWithActions.class, AuthenticatedUser.class,
                     AuthenticatedUserImpl.class)
             .addAsResource("conf/http-roles-grant-config.properties", "application.properties"));
 
@@ -130,8 +130,7 @@ public class HttpSecPolicyGrantingRolesTest {
             Arc.container().instance(SecurityIdentityAssociation.class).get().setIdentity(user.getSecurityIdentity());
 
             callService.get().subscribe().with(unused -> {
-                String ret = user.getSecurityIdentity().getPrincipal().getName() +
-                        ":" + event.normalizedPath();
+                String ret = user.getSecurityIdentity().getPrincipal().getName() + ":" + event.normalizedPath();
                 event.response().end(ret);
             }, throwable -> {
                 if (throwable instanceof UnauthorizedException) {
@@ -149,13 +148,7 @@ public class HttpSecPolicyGrantingRolesTest {
     private void assertSuccess(AuthenticatedUser user, String... paths) {
         user.authenticate();
         for (var path : paths) {
-            RestAssured
-                    .given()
-                    .auth()
-                    .basic(user.role(), user.role())
-                    .get(path)
-                    .then()
-                    .statusCode(200)
+            RestAssured.given().auth().basic(user.role(), user.role()).get(path).then().statusCode(200)
                     .body(Matchers.is(user.role() + ":" + path));
         }
     }
@@ -163,13 +156,7 @@ public class HttpSecPolicyGrantingRolesTest {
     private void assertForbidden(AuthenticatedUser user, String... paths) {
         user.authenticate();
         for (var path : paths) {
-            RestAssured
-                    .given()
-                    .auth()
-                    .basic(user.role(), user.role())
-                    .get(path)
-                    .then()
-                    .statusCode(403);
+            RestAssured.given().auth().basic(user.role(), user.role()).get(path).then().statusCode(403);
         }
     }
 

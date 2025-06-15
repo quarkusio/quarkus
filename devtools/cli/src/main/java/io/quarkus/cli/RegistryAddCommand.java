@@ -17,9 +17,7 @@ import picocli.CommandLine;
 public class RegistryAddCommand extends BaseRegistryCommand {
 
     @CommandLine.Parameters(arity = "1..*", split = ",", paramLabel = "REGISTRY-ID[,REGISTRY-ID]", description = "Registry ID to add to the registry client configuration%n"
-            + "  Example:%n"
-            + "    registry.quarkus.io%n"
-            + "    registry.quarkus.acme.com,registry.quarkus.io%n")
+            + "  Example:%n" + "    registry.quarkus.io%n" + "    registry.quarkus.acme.com,registry.quarkus.io%n")
     List<String> registryIds;
 
     @Override
@@ -50,12 +48,9 @@ public class RegistryAddCommand extends BaseRegistryCommand {
         if (persist) {
             output.printText("Configured registries:");
             for (RegistryConfig rc : config.getRegistries()) {
-                if (!existingConfig && config.getRegistries().size() == 1
-                        && !rc.getId().equals(DEFAULT_REGISTRY_ID)) {
-                    output.warn(
-                            rc.getId() + " is the only registry configured in the config file.\n" + rc.getId()
-                                    + " replaced the Default registry: "
-                                    + DEFAULT_REGISTRY_ID);
+                if (!existingConfig && config.getRegistries().size() == 1 && !rc.getId().equals(DEFAULT_REGISTRY_ID)) {
+                    output.warn(rc.getId() + " is the only registry configured in the config file.\n" + rc.getId()
+                            + " replaced the Default registry: " + DEFAULT_REGISTRY_ID);
                 } else {
                     output.printText("- " + rc.getId());
                 }

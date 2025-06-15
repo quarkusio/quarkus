@@ -18,21 +18,18 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class TestParameterizedTestCase extends DevUIJsonRPCTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(OddResource.class, Setup.class, HelloResource.class)
-                            .add(new StringAsset(ContinuousTestingTestUtils.appProperties()),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(ParamET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(OddResource.class, Setup.class, HelloResource.class)
+                    .add(new StringAsset(ContinuousTestingTestUtils.appProperties()), "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(ParamET.class);
+        }
+    });
 
     public TestParameterizedTestCase() {
         super("devui-continuous-testing");
@@ -52,7 +49,7 @@ public class TestParameterizedTestCase extends DevUIJsonRPCTest {
         ts = utils.waitForNextCompletion();
 
         Assertions.assertEquals(1L, ts.getTestsFailed());
-        Assertions.assertEquals(3L, ts.getTestsPassed()); //they are all re-run
+        Assertions.assertEquals(3L, ts.getTestsPassed()); // they are all re-run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
         test.modifyTestSourceFile(ParamET.class, new Function<String, String>() {
             @Override
@@ -62,7 +59,7 @@ public class TestParameterizedTestCase extends DevUIJsonRPCTest {
         });
         ts = utils.waitForNextCompletion();
         Assertions.assertEquals(0L, ts.getTestsFailed());
-        Assertions.assertEquals(5L, ts.getTestsPassed()); //passing test should not have been run
+        Assertions.assertEquals(5L, ts.getTestsPassed()); // passing test should not have been run
         Assertions.assertEquals(0L, ts.getTestsSkipped());
 
         Assertions.assertEquals(5L, ts.getTotalTestsPassed());

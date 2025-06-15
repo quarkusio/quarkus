@@ -41,8 +41,7 @@ import io.vertx.ext.web.Router;
 
 @Certificates(baseDir = "target/certificates", certificates = {
         @Certificate(name = "reload-A", formats = Format.PKCS12, password = "password"),
-        @Certificate(name = "reload-B", formats = Format.PKCS12, password = "password", duration = 365),
-})
+        @Certificate(name = "reload-B", formats = Format.PKCS12, password = "password", duration = 365), })
 @DisabledOnOs(OS.WINDOWS)
 public class MainHttpServerTlsPKCS12CertificateReloadTest {
 
@@ -59,8 +58,7 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-file", temp.getAbsolutePath() + "/tls.p12")
             .overrideConfigKey("quarkus.http.ssl.certificate.key-store-password", "password")
 
-            .overrideConfigKey("loc", temp.getAbsolutePath())
-            .setBeforeAllCustomizer(() -> {
+            .overrideConfigKey("loc", temp.getAbsolutePath()).setBeforeAllCustomizer(() -> {
                 try {
                     // Prepare a random directory to store the certificates.
                     temp.mkdirs();
@@ -69,8 +67,7 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            })
-            .setAfterAllCustomizer(() -> {
+            }).setAfterAllCustomizer(() -> {
                 try {
                     Files.deleteIfExists(new File(temp, "/tls.p12").toPath());
                     Files.deleteIfExists(temp.toPath());
@@ -87,44 +84,31 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
 
     @Test
     void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        var options = new HttpClientOptions()
-                .setSsl(true)
-                .setDefaultPort(url.getPort())
-                .setDefaultHost(url.getHost())
-                .setTrustOptions(
-                        new PfxOptions().setPath("target/certificates/reload-A-truststore.p12").setPassword("password"));
+        var options = new HttpClientOptions().setSsl(true).setDefaultPort(url.getPort()).setDefaultHost(url.getHost())
+                .setTrustOptions(new PfxOptions().setPath("target/certificates/reload-A-truststore.p12")
+                        .setPassword("password"));
 
-        String response1 = vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        String response1 = vertx.createHttpClient(options).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         // Update certs
-        Files.copy(new File("target/certificates/reload-B-keystore.p12").toPath(),
-                new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-B-keystore.p12").toPath(), new File(certs, "/tls.p12").toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Trigger the reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         // The client truststore is not updated, thus it should fail.
-        assertThatThrownBy(() -> vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        assertThatThrownBy(() -> vertx.createHttpClient(options).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
 
-        var options2 = new HttpClientOptions(options)
-                .setTrustOptions(
-                        new PfxOptions().setPath("target/certificates/reload-B-truststore.p12").setPassword("password"));
+        var options2 = new HttpClientOptions(options).setTrustOptions(
+                new PfxOptions().setPath("target/certificates/reload-B-truststore.p12").setPassword("password"));
 
-        var response2 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        var response2 = vertx.createHttpClient(options2).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.
@@ -132,11 +116,8 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
         // Trigger another reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
-        var response3 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        var response3 = vertx.createHttpClient(options2).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         assertThat(response2).isEqualTo(response3);
@@ -146,8 +127,8 @@ public class MainHttpServerTlsPKCS12CertificateReloadTest {
 
         public void onStart(@Observes Router router) {
             router.get("/hello").handler(rc -> {
-                var exp = ((X509Certificate) rc.request().connection().sslSession().getLocalCertificates()[0]).getNotAfter()
-                        .toInstant().toEpochMilli();
+                var exp = ((X509Certificate) rc.request().connection().sslSession().getLocalCertificates()[0])
+                        .getNotAfter().toInstant().toEpochMilli();
                 rc.response().end("Hello " + exp);
             });
         }

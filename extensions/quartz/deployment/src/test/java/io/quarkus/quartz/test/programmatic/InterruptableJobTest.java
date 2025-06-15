@@ -30,11 +30,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InterruptableJobTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyJob.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyJob.class)
+            .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"), "application.properties"));
 
     @Inject
     Scheduler scheduler;
@@ -51,13 +48,9 @@ public class InterruptableJobTest {
 
         String jobKey = "myJob";
         JobKey key = new JobKey(jobKey);
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .startNow()
-                .build();
+        Trigger trigger = TriggerBuilder.newTrigger().startNow().build();
 
-        JobDetail job = JobBuilder.newJob(MyJob.class)
-                .withIdentity(key)
-                .build();
+        JobDetail job = JobBuilder.newJob(MyJob.class).withIdentity(key).build();
 
         try {
             scheduler.scheduleJob(job, trigger);
@@ -78,13 +71,9 @@ public class InterruptableJobTest {
 
         String jobKey = "myNonInterruptableJob";
         JobKey key = new JobKey(jobKey);
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .startNow()
-                .build();
+        Trigger trigger = TriggerBuilder.newTrigger().startNow().build();
 
-        JobDetail job = JobBuilder.newJob(MyNonInterruptableJob.class)
-                .withIdentity(key)
-                .build();
+        JobDetail job = JobBuilder.newJob(MyNonInterruptableJob.class).withIdentity(key).build();
 
         try {
             scheduler.scheduleJob(job, trigger);

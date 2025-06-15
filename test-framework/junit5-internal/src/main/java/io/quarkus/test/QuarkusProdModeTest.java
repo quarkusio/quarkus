@@ -63,8 +63,8 @@ import io.quarkus.test.common.TestResourceManager;
 import io.quarkus.utilities.JavaBinFinder;
 
 /**
- * A test extension for producing a prod-mode jar. This is meant to be used by extension authors, it's not intended for end user
- * consumption
+ * A test extension for producing a prod-mode jar. This is meant to be used by extension authors, it's not intended for
+ * end user consumption
  */
 public class QuarkusProdModeTest
         implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, TestWatcher, InvocationInterceptor {
@@ -136,7 +136,8 @@ public class QuarkusProdModeTest
     public QuarkusProdModeTest() {
         // If there is an application.properties resource available then load the properties
         // unless a custom config resource name is used or an application.properties asset was added to the test archive
-        this.defaultConfigResource = Thread.currentThread().getContextClassLoader().getResource(APPLICATION_PROPERTIES) != null;
+        this.defaultConfigResource = Thread.currentThread().getContextClassLoader()
+                .getResource(APPLICATION_PROPERTIES) != null;
     }
 
     public Supplier<JavaArchive> getArchiveProducer() {
@@ -153,6 +154,7 @@ public class QuarkusProdModeTest
      * Customize the application root.
      *
      * @param applicationRootConsumer
+     *
      * @return self
      */
     public QuarkusProdModeTest withApplicationRoot(Consumer<JavaArchive> applicationRootConsumer) {
@@ -192,8 +194,8 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * Effectively sets the quarkus.application.name property.
-     * This value will override quarkus.application.name if that has been set in the configuration properties
+     * Effectively sets the quarkus.application.name property. This value will override quarkus.application.name if that
+     * has been set in the configuration properties
      */
     public QuarkusProdModeTest setApplicationName(String applicationName) {
         this.applicationName = applicationName;
@@ -201,8 +203,8 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * Effectively sets the quarkus.application.version property.
-     * This value will override quarkus.application.version if that has been set in the configuration properties
+     * Effectively sets the quarkus.application.version property. This value will override quarkus.application.version
+     * if that has been set in the configuration properties
      */
     public QuarkusProdModeTest setApplicationVersion(String applicationVersion) {
         this.applicationVersion = applicationVersion;
@@ -210,8 +212,8 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * Effectively sets the quarkus.packaging.type property.
-     * This value will override quarkus.packaging.type if that has been set in the configuration properties
+     * Effectively sets the quarkus.packaging.type property. This value will override quarkus.packaging.type if that has
+     * been set in the configuration properties
      */
     public QuarkusProdModeTest setBuildNative(boolean buildNative) {
         this.buildNative = buildNative;
@@ -227,9 +229,9 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * File where the running application logs its output
-     * This property effectively sets the quarkus.log.file.path runtime configuration property
-     * and will override that value if it has been set in the configuration properties of the test
+     * File where the running application logs its output This property effectively sets the quarkus.log.file.path
+     * runtime configuration property and will override that value if it has been set in the configuration properties of
+     * the test
      */
     public QuarkusProdModeTest setLogFileName(String logFileName) {
         this.logFileName = logFileName;
@@ -258,8 +260,8 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain a
-     * dependency), or override a version (if the dependency already exists)
+     * Provides a convenient way to either add additional dependencies to the application (if it doesn't already contain
+     * a dependency), or override a version (if the dependency already exists)
      */
     public QuarkusProdModeTest setForcedDependencies(List<Dependency> forcedDependencies) {
         this.forcedDependencies = forcedDependencies;
@@ -277,8 +279,8 @@ public class QuarkusProdModeTest
 
     public QuarkusProdModeTest assertBuildException(Consumer<Throwable> assertException) {
         if (this.assertBuildException != null) {
-            throw new IllegalStateException("Don't set the asserted or excepted exception twice"
-                    + " to avoid shadowing out the first call.");
+            throw new IllegalStateException(
+                    "Don't set the asserted or excepted exception twice" + " to avoid shadowing out the first call.");
         }
         this.assertBuildException = assertException;
         return this;
@@ -301,16 +303,15 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * Returns the console output from startup. If {@link #expectExit} is true then this will contain
-     * all the console output.
+     * Returns the console output from startup. If {@link #expectExit} is true then this will contain all the console
+     * output.
      */
     public String getStartupConsoleOutput() {
         return startupConsoleOutput;
     }
 
     /**
-     * Returns the process exit code, this can only be used if {@link #expectExit} is true.
-     * Null if the app is running.
+     * Returns the process exit code, this can only be used if {@link #expectExit} is true. Null if the app is running.
      */
     public Integer getExitCode() {
         return exitCode;
@@ -381,11 +382,12 @@ public class QuarkusProdModeTest
         Class<?> testClass = extensionContext.getRequiredTestClass();
 
         try {
-            Optional<Path> projectBuildDir = Optional.ofNullable(System.getProperty("project.build.directory")) //maven
-                    .or(() -> Optional.ofNullable(System.getProperty("buildDir"))) //gradle
+            Optional<Path> projectBuildDir = Optional.ofNullable(System.getProperty("project.build.directory")) // maven
+                    .or(() -> Optional.ofNullable(System.getProperty("buildDir"))) // gradle
                     .map(Path::of);
 
-            outputDir = projectBuildDir.isPresent() ? Files.createTempDirectory(projectBuildDir.get(), "quarkus-prod-mode-test")
+            outputDir = projectBuildDir.isPresent()
+                    ? Files.createTempDirectory(projectBuildDir.get(), "quarkus-prod-mode-test")
                     : Files.createTempDirectory("quarkus-prod-mode-test");
             Path deploymentDir = outputDir.resolve("deployment-result");
             buildDir = outputDir.resolve("build-result");
@@ -414,14 +416,9 @@ public class QuarkusProdModeTest
                     Files.createDirectories(projectClassesDir);
                 }
             }
-            QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder()
-                    .setApplicationRoot(deploymentDir)
-                    .setMode(QuarkusBootstrap.Mode.PROD)
-                    .setLocalProjectDiscovery(true)
-                    .setIsolateDeployment(true)
-                    .addExcludedPath(testLocation)
-                    .setProjectRoot(testLocation)
-                    .setTargetDirectory(buildDir)
+            QuarkusBootstrap.Builder builder = QuarkusBootstrap.builder().setApplicationRoot(deploymentDir)
+                    .setMode(QuarkusBootstrap.Mode.PROD).setLocalProjectDiscovery(true).setIsolateDeployment(true)
+                    .addExcludedPath(testLocation).setProjectRoot(testLocation).setTargetDirectory(buildDir)
                     .setForcedDependencies(forcedDependencies);
             builder.setBaseName(applicationName != null ? applicationName
                     : extensionContext.getDisplayName() + " (QuarkusProdModeTest)");
@@ -430,14 +427,16 @@ public class QuarkusProdModeTest
             buildContext.put(BUILD_CONTEXT_CUSTOM_SOURCES_PATH_KEY, customSourcesDir);
 
             if (!buildChainCustomizerEntries.isEmpty()) {
-                // we need to make sure all the classes needed to support the customizer flow are available at bootstrap time
+                // we need to make sure all the classes needed to support the customizer flow are available at bootstrap
+                // time
                 // for that purpose we add them to a new archive that is then added to Quarkus bootstrap
                 Path additionalDeploymentDir = Files.createDirectories(outputDir.resolve("additional-deployment"));
-                JavaArchive additionalDeploymentArchive = ShrinkWrap.create(JavaArchive.class)
-                        .addClasses(ProdModeTestBuildChainCustomizerProducer.class, ProdModeTestBuildChainBuilderConsumer.class,
-                                ProdModeTestBuildStep.class);
+                JavaArchive additionalDeploymentArchive = ShrinkWrap.create(JavaArchive.class).addClasses(
+                        ProdModeTestBuildChainCustomizerProducer.class, ProdModeTestBuildChainBuilderConsumer.class,
+                        ProdModeTestBuildStep.class);
 
-                // we push data from the test extension down to the customizers via JDK classes only because this data needs to be
+                // we push data from the test extension down to the customizers via JDK classes only because this data
+                // needs to be
                 // accessible by different classloaders
                 Map<Object, Object> entriesMap = new HashMap<>();
                 buildContext.put(BUILD_CONTEXT_BUILD_STEP_ENTRIES, entriesMap);
@@ -486,8 +485,8 @@ public class QuarkusProdModeTest
                 start();
 
                 if (logfilePath != null) {
-                    logfileField = Arrays.stream(testClass.getDeclaredFields()).filter(
-                            f -> f.isAnnotationPresent(LogFile.class) && Path.class.equals(f.getType()))
+                    logfileField = Arrays.stream(testClass.getDeclaredFields())
+                            .filter(f -> f.isAnnotationPresent(LogFile.class) && Path.class.equals(f.getType()))
                             .findAny();
                     logfileField.ifPresent(f -> f.setAccessible(true));
                 }
@@ -508,8 +507,7 @@ public class QuarkusProdModeTest
                 if (injectAnnotation != null) {
                     throw new JUnitException(
                             "@Inject is not supported in QuarkusProdModeTest tests. Offending field is "
-                                    + field.getDeclaringClass().getTypeName() + "."
-                                    + field.getName());
+                                    + field.getDeclaringClass().getTypeName() + "." + field.getName());
                 }
             }
             current = current.getSuperclass();
@@ -560,8 +558,10 @@ public class QuarkusProdModeTest
      * Start the Quarkus application. If the application is already started, it raises an {@link IllegalStateException}
      * exception.
      *
-     * @throws RuntimeException when application errors at startup.
-     * @throws IllegalStateException if the application is already started.
+     * @throws RuntimeException
+     *         when application errors at startup.
+     * @throws IllegalStateException
+     *         if the application is already started.
      */
     public void start() {
         if (process != null && process.isAlive()) {
@@ -610,10 +610,8 @@ public class QuarkusProdModeTest
         command.addAll(Arrays.asList(commandLineParameters));
 
         try {
-            process = new ProcessBuilder(command)
-                    .redirectErrorStream(true)
-                    .directory(builtResultArtifactParent.toFile())
-                    .start();
+            process = new ProcessBuilder(command).redirectErrorStream(true)
+                    .directory(builtResultArtifactParent.toFile()).start();
             ensureApplicationStartupOrFailure();
             if (!expectExit) { // no point in setting an URL for an app that exits right away
                 setupRestAssured();
@@ -648,11 +646,11 @@ public class QuarkusProdModeTest
     }
 
     private void setupRestAssured() {
-        Integer httpPort = Optional.ofNullable(runtimeProperties.get(QUARKUS_HTTP_PORT_PROPERTY))
-                .map(Integer::parseInt)
+        Integer httpPort = Optional.ofNullable(runtimeProperties.get(QUARKUS_HTTP_PORT_PROPERTY)).map(Integer::parseInt)
                 .orElse(DEFAULT_HTTP_PORT_INT);
 
-        // If http port is 0, then we need to set the port to null in order to use the `quarkus.http.test-ssl-port` property
+        // If http port is 0, then we need to set the port to null in order to use the `quarkus.http.test-ssl-port`
+        // property
         // which is done in `RestAssuredURLManager.setURL`.
         if (httpPort == 0) {
             httpPort = null;
@@ -676,7 +674,7 @@ public class QuarkusProdModeTest
                     break;
                 }
             } else {
-                //process has exited
+                // process has exited
                 this.startupConsoleOutput = sb.toString();
                 in.close();
                 try {
@@ -695,14 +693,14 @@ public class QuarkusProdModeTest
     }
 
     @Override
-    public void interceptBeforeAllMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-            ExtensionContext extensionContext) throws Throwable {
+    public void interceptBeforeAllMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
         doIntercept(invocation);
     }
 
     @Override
-    public void interceptBeforeEachMethod(Invocation<Void> invocation, ReflectiveInvocationContext<Method> invocationContext,
-            ExtensionContext extensionContext) throws Throwable {
+    public void interceptBeforeEachMethod(Invocation<Void> invocation,
+            ReflectiveInvocationContext<Method> invocationContext, ExtensionContext extensionContext) throws Throwable {
         doIntercept(invocation);
     }
 
@@ -780,15 +778,18 @@ public class QuarkusProdModeTest
     }
 
     /**
-     * Add an {@code application.properties} asset loaded from the specified resource file in the test {@link JavaArchive}.
+     * Add an {@code application.properties} asset loaded from the specified resource file in the test
+     * {@link JavaArchive}.
      * <p>
      * If an {@code application.properties} asset was already added explicitly to the archive (for instance through
-     * {@link JavaArchive#addAsResource(String)}), this formet asset is removed and completely replaced by the one given here.
+     * {@link JavaArchive#addAsResource(String)}), this formet asset is removed and completely replaced by the one given
+     * here.
      * <p>
-     * Configuration properties added with {@link #overrideConfigKey(String, String)} take precedence over the properties from
-     * the specified resource file.
+     * Configuration properties added with {@link #overrideConfigKey(String, String)} take precedence over the
+     * properties from the specified resource file.
      *
      * @param resourceName
+     *
      * @return the test configuration
      */
     public QuarkusProdModeTest withConfigurationResource(String resourceName) {
@@ -802,6 +803,7 @@ public class QuarkusProdModeTest
      *
      * @param propertyKey
      * @param propertyValue
+     *
      * @return the test configuration
      */
     public QuarkusProdModeTest overrideConfigKey(final String propertyKey, final String propertyValue) {
@@ -832,7 +834,8 @@ public class QuarkusProdModeTest
         }
     }
 
-    // the reason for using is this class is that we need to be able to copy the BuildStep into a new deployment archive that
+    // the reason for using is this class is that we need to be able to copy the BuildStep into a new deployment archive
+    // that
     // is then added to the build
     public static class BuildChainCustomizerEntry {
         private final Class<? extends ProdModeTestBuildStep> buildStepClass;
@@ -840,8 +843,7 @@ public class QuarkusProdModeTest
         private final List<Class<? extends BuildItem>> consumes;
 
         public BuildChainCustomizerEntry(Class<? extends ProdModeTestBuildStep> buildStepClass,
-                List<Class<? extends BuildItem>> produces,
-                List<Class<? extends BuildItem>> consumes) {
+                List<Class<? extends BuildItem>> produces, List<Class<? extends BuildItem>> consumes) {
             this.buildStepClass = Objects.requireNonNull(buildStepClass);
             this.produces = produces == null ? Collections.emptyList() : produces;
             this.consumes = consumes == null ? Collections.emptyList() : consumes;

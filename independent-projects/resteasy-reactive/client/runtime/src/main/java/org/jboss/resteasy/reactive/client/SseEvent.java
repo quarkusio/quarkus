@@ -28,8 +28,8 @@ public interface SseEvent<T> {
     /**
      * Get a comment string that accompanies the event.
      * <p>
-     * Contains value of the comment associated with SSE event. This field is optional. Method may return {@code null}, if
-     * the event comment is not specified.
+     * Contains value of the comment associated with SSE event. This field is optional. Method may return {@code null},
+     * if the event comment is not specified.
      *
      * @return comment associated with the event.
      */

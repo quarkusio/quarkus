@@ -23,23 +23,15 @@ public class InstrumentationTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FooApi.class, Foo.class)
+            .withApplicationRoot((jar) -> jar.addClasses(FooApi.class, Foo.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testQueryDepth() {
         String query = getPayload("{ foo { nestedFoo { nestedFoo { message}}}}");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .log().all()
-                .assertThat()
-                .body("errors[0].message", equalTo("maximum query depth exceeded 4 > 1"))
-                .body("data", nullValue());
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql/").then().log().all().assertThat()
+                .body("errors[0].message", equalTo("maximum query depth exceeded 4 > 1")).body("data", nullValue());
     }
 
     private static Map<String, String> configuration() {

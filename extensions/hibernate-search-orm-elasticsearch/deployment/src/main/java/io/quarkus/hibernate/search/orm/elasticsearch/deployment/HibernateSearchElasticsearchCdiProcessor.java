@@ -36,30 +36,22 @@ public class HibernateSearchElasticsearchCdiProcessor {
             String persistenceUnitName = persistenceUnit.getPersistenceUnitName();
 
             boolean isDefaultPersistenceUnit = PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName);
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createSyntheticBean(persistenceUnitName,
-                            isDefaultPersistenceUnit,
-                            SearchMapping.class,
-                            recorder.searchMappingSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
+            syntheticBeanBuildItemBuildProducer.produce(createSyntheticBean(persistenceUnitName,
+                    isDefaultPersistenceUnit, SearchMapping.class,
+                    recorder.searchMappingSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
 
-            syntheticBeanBuildItemBuildProducer
-                    .produce(createSyntheticBean(persistenceUnitName,
-                            PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName),
-                            SearchSession.class,
-                            recorder.searchSessionSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
+            syntheticBeanBuildItemBuildProducer.produce(createSyntheticBean(persistenceUnitName,
+                    PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName), SearchSession.class,
+                    recorder.searchSessionSupplier(runtimeConfig, persistenceUnitName, isDefaultPersistenceUnit)));
         }
     }
 
-    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName, boolean isDefaultPersistenceUnit,
-            Class<T> type, Supplier<T> supplier) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(type)
+    private static <T> SyntheticBeanBuildItem createSyntheticBean(String persistenceUnitName,
+            boolean isDefaultPersistenceUnit, Class<T> type, Supplier<T> supplier) {
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(type)
                 // NOTE: this is using ApplicationScoped and not Singleton, by design, in order to be mockable
                 // See https://github.com/quarkusio/quarkus/issues/16437
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .supplier(supplier)
-                .setRuntimeInit();
+                .scope(ApplicationScoped.class).unremovable().supplier(supplier).setRuntimeInit();
 
         if (isDefaultPersistenceUnit) {
             configurator.addQualifier(Default.class);
@@ -76,15 +68,13 @@ public class HibernateSearchElasticsearchCdiProcessor {
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         // add the @SearchExtension class
         // otherwise it won't be registered as qualifier
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClasses(ClassNames.SEARCH_EXTENSION.toString())
-                .build());
+        additionalBeans.produce(
+                AdditionalBeanBuildItem.builder().addBeanClasses(ClassNames.SEARCH_EXTENSION.toString()).build());
 
         // Register the default scope for @SearchExtension and make such beans unremovable by default
         // TODO make @SearchExtension beans unremovable only if the corresponding PU actually exists and is enabled
-        //   (I think there's a feature request for a configuration property to disable a PU at runtime?)
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ClassNames.SEARCH_EXTENSION, DotNames.APPLICATION_SCOPED,
-                        false));
+        // (I think there's a feature request for a configuration property to disable a PU at runtime?)
+        beanDefiningAnnotations.produce(
+                new BeanDefiningAnnotationBuildItem(ClassNames.SEARCH_EXTENSION, DotNames.APPLICATION_SCOPED, false));
     }
 }

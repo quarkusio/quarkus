@@ -19,9 +19,7 @@ public class ConfigActiveFalseDefaultDatasourceHealthCheckTest {
 
     @Test
     public void testDataSourceHealthCheckExclusion() {
-        RestAssured.when().get("/q/health/ready")
-                .then()
-                .body("status", CoreMatchers.equalTo("UP"))
+        RestAssured.when().get("/q/health/ready").then().body("status", CoreMatchers.equalTo("UP"))
                 // If the datasource is inactive, there should not be a health check
                 .body("checks[0].data.\"<default>\"", CoreMatchers.nullValue());
     }

@@ -29,11 +29,9 @@ class PathParamCallbackArgument implements CallbackArgument {
             }
             List<String> pathParams = getPathParamNames(context.endpointPath());
             if (!pathParams.contains(name)) {
-                throw new WebSocketException(
-                        String.format(
-                                "@PathParam name [%s] must be used in the endpoint path [%s]: %s", name,
-                                context.endpointPath(),
-                                WebSocketProcessor.methodToString(context.parameter().method())));
+                throw new WebSocketException(String.format(
+                        "@PathParam name [%s] must be used in the endpoint path [%s]: %s", name, context.endpointPath(),
+                        WebSocketProcessor.methodToString(context.parameter().method())));
             }
             return true;
         }
@@ -45,12 +43,12 @@ class PathParamCallbackArgument implements CallbackArgument {
         String paramName = getParamName(context);
         return context.bytecode().invokeVirtualMethod(
                 MethodDescriptor.ofMethod(WebSocketConnectionBase.class, "pathParam", String.class, String.class),
-                context.getConnection(),
-                context.bytecode().load(paramName));
+                context.getConnection(), context.bytecode().load(paramName));
     }
 
     private String getParamName(ParameterContext context) {
-        AnnotationInstance pathParamAnnotation = Annotations.find(context.parameterAnnotations(), WebSocketDotNames.PATH_PARAM);
+        AnnotationInstance pathParamAnnotation = Annotations.find(context.parameterAnnotations(),
+                WebSocketDotNames.PATH_PARAM);
         if (pathParamAnnotation != null) {
             String name;
             AnnotationValue nameVal = pathParamAnnotation.value();

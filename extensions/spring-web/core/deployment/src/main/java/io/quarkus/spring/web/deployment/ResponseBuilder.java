@@ -20,8 +20,8 @@ final class ResponseBuilder {
     }
 
     public ResultHandle build() {
-        return methodCreator.invokeVirtualMethod(
-                ofMethod(Response.ResponseBuilder.class, "build", Response.class), delegate);
+        return methodCreator.invokeVirtualMethod(ofMethod(Response.ResponseBuilder.class, "build", Response.class),
+                delegate);
     }
 
     public ResponseBuilder withType(ResultHandle type) {

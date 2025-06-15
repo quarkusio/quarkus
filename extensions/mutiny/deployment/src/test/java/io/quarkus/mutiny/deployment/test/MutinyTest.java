@@ -29,8 +29,7 @@ public class MutinyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingMutiny.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanUsingMutiny.class));
 
     @Inject
     BeanUsingMutiny bean;
@@ -123,27 +122,21 @@ public class MutinyTest {
     public static class BeanUsingMutiny {
 
         public Uni<String> greeting() {
-            return Uni.createFrom().item(() -> "hello")
-                    .emitOn(Infrastructure.getDefaultExecutor());
+            return Uni.createFrom().item(() -> "hello").emitOn(Infrastructure.getDefaultExecutor());
         }
 
         public Multi<String> stream() {
-            return Multi.createFrom().items("hello", "world")
-                    .emitOn(Infrastructure.getDefaultExecutor());
+            return Multi.createFrom().items("hello", "world").emitOn(Infrastructure.getDefaultExecutor());
         }
 
         public Uni<String> droppedException() {
-            return Uni.createFrom()
-                    .<String> emitter(uniEmitter -> {
-                        // Do not emit anything
-                    })
-                    .onCancellation().call(() -> Uni.createFrom().failure(new IOException("boom")));
+            return Uni.createFrom().<String> emitter(uniEmitter -> {
+                // Do not emit anything
+            }).onCancellation().call(() -> Uni.createFrom().failure(new IOException("boom")));
         }
 
         public Uni<String> loggingOperator() {
-            return Uni.createFrom().item("hello")
-                    .onItem().transform(String::toUpperCase)
-                    .log("check");
+            return Uni.createFrom().item("hello").onItem().transform(String::toUpperCase).log("check");
         }
     }
 

@@ -54,8 +54,7 @@ public class AmazonLambdaHttpProcessor {
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
 
-        builder.addBeanClass(LambdaHttpAuthenticationMechanism.class)
-                .addBeanClass(DefaultLambdaIdentityProvider.class);
+        builder.addBeanClass(LambdaHttpAuthenticationMechanism.class).addBeanClass(DefaultLambdaIdentityProvider.class);
         additionalBeans.produce(builder.build());
     }
 
@@ -76,20 +75,13 @@ public class AmazonLambdaHttpProcessor {
     }
 
     @BuildStep
-    public void registerReflectionClasses(BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
-        reflectiveClassBuildItemBuildProducer
-                .produce(ReflectiveClassBuildItem.builder(AlbContext.class,
-                        ApiGatewayAuthorizerContext.class,
-                        ApiGatewayRequestIdentity.class,
-                        AwsProxyRequest.class,
-                        AwsProxyRequestContext.class,
-                        AwsProxyResponse.class,
-                        CognitoAuthorizerClaims.class,
-                        ErrorModel.class,
-                        Headers.class,
-                        MultiValuedTreeMap.class)
-                        .reason(getClass().getName())
-                        .methods().fields().build());
+    public void registerReflectionClasses(
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) {
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem
+                .builder(AlbContext.class, ApiGatewayAuthorizerContext.class, ApiGatewayRequestIdentity.class,
+                        AwsProxyRequest.class, AwsProxyRequestContext.class, AwsProxyResponse.class,
+                        CognitoAuthorizerClaims.class, ErrorModel.class, Headers.class, MultiValuedTreeMap.class)
+                .reason(getClass().getName()).methods().fields().build());
     }
 
     /**
@@ -108,12 +100,10 @@ public class AmazonLambdaHttpProcessor {
         String output = LambdaUtil.copyResource("lambda/bootstrap-example.sh");
         LambdaUtil.writeFile(target, "bootstrap-example.sh", output);
 
-        output = LambdaUtil.copyResource("http/sam.jvm.yaml")
-                .replace("${lambdaName}", lambdaName);
+        output = LambdaUtil.copyResource("http/sam.jvm.yaml").replace("${lambdaName}", lambdaName);
         LambdaUtil.writeFile(target, "sam.jvm.yaml", output);
 
-        output = LambdaUtil.copyResource("http/sam.native.yaml")
-                .replace("${lambdaName}", lambdaName);
+        output = LambdaUtil.copyResource("http/sam.native.yaml").replace("${lambdaName}", lambdaName);
         LambdaUtil.writeFile(target, "sam.native.yaml", output);
     }
 

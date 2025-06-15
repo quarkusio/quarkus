@@ -57,7 +57,8 @@ public class ReactivePanacheUpdateImpl implements ReactivePanacheUpdate {
 
     private Uni<Long> executeUpdate(Bson query) {
         if (Panache.getCurrentSession() != null) {
-            return collection.updateMany(Panache.getCurrentSession(), query, update).map(result -> result.getModifiedCount());
+            return collection.updateMany(Panache.getCurrentSession(), query, update)
+                    .map(result -> result.getModifiedCount());
         }
         return collection.updateMany(query, update).map(result -> result.getModifiedCount());
     }

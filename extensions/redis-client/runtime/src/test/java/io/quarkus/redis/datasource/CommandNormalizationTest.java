@@ -15,8 +15,8 @@ import io.vertx.redis.client.impl.RequestImpl;
 public class CommandNormalizationTest {
     @Test
     void test() {
-        RequestImpl req = (RequestImpl) RedisCommand.of(io.vertx.mutiny.redis.client.Command.create("hset"))
-                .put("key").put("field").put("value").toRequest().getDelegate();
+        RequestImpl req = (RequestImpl) RedisCommand.of(io.vertx.mutiny.redis.client.Command.create("hset")).put("key")
+                .put("field").put("value").toRequest().getDelegate();
         CommandImpl cmd = (CommandImpl) req.command();
         assertEquals("hset", cmd.toString());
         assertNotEquals(-1, cmd.getArity());

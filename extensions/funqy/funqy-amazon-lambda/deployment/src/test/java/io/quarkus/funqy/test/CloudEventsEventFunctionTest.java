@@ -26,12 +26,10 @@ public class CloudEventsEventFunctionTest {
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
             .overrideRuntimeConfigKey("quarkus.funqy.export", "cloudevents-function")
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("item-function.properties", "application.properties")
-                    .addAsResource("events/cloudevents", "events")
-                    .addClasses(TestFunctions.class, Item.class,
-                            BatchItemFailures.class, ItemFailure.class,
-                            EventDataProvider.class, BodyDeserializer.class));
+            .withApplicationRoot((jar) -> jar.addAsResource("item-function.properties", "application.properties")
+                    .addAsResource("events/cloudevents", "events").addClasses(TestFunctions.class, Item.class,
+                            BatchItemFailures.class, ItemFailure.class, EventDataProvider.class,
+                            BodyDeserializer.class));
 
     @Inject
     BodyDeserializer deserializer;
@@ -42,9 +40,7 @@ public class CloudEventsEventFunctionTest {
         var body = getData("ok.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         var respBody = deserializer.getBodyAs(response.then().statusCode(200), BatchItemFailures.class);
@@ -57,9 +53,7 @@ public class CloudEventsEventFunctionTest {
         var body = getData("fail.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         var respBody = deserializer.getBodyAs(response.then().statusCode(200), BatchItemFailures.class);

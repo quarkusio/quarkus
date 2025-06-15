@@ -17,9 +17,7 @@ public class ObserverInjectingMockTest {
 
     @RegisterExtension
     static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
-            .addComponentClasses(MyComponent.class)
-            .useDefaultConfigProperties()
-            .build();
+            .addComponentClasses(MyComponent.class).useDefaultConfigProperties().build();
 
     @Inject
     Event<Boolean> event;

@@ -23,15 +23,12 @@ import io.restassured.RestAssured;
 public class NestedBeanParamInSubResourcesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, SearchResource.class, City.class, Country.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .addClasses(TestResource.class, SearchResource.class, City.class, Country.class));
 
     @Test
     void shouldParseNestedBeanParams() {
-        RestAssured.get("/test/city/search?name=Malaga&country=Spain")
-                .then()
-                .statusCode(200)
+        RestAssured.get("/test/city/search?name=Malaga&country=Spain").then().statusCode(200)
                 .body(equalTo("Got: Malaga, Spain"));
     }
 

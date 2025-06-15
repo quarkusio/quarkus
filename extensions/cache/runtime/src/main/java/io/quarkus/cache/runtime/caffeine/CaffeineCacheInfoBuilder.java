@@ -16,7 +16,8 @@ public class CaffeineCacheInfoBuilder {
         } else {
             CaffeineCacheConfig defaultConfig = cacheConfig.caffeine().defaultConfig();
 
-            Set<CaffeineCacheInfo> cacheInfos = HashSetFactory.<CaffeineCacheInfo> getInstance().apply(cacheNames.size());
+            Set<CaffeineCacheInfo> cacheInfos = HashSetFactory.<CaffeineCacheInfo> getInstance()
+                    .apply(cacheNames.size());
             for (String cacheName : cacheNames) {
 
                 CaffeineCacheInfo cacheInfo = new CaffeineCacheInfo();

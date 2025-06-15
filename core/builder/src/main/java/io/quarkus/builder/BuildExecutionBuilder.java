@@ -28,8 +28,8 @@ public final class BuildExecutionBuilder {
     }
 
     /**
-     * Get the name of this build target. The resultant string is useful for diagnostic messages and does not have
-     * any other significance.
+     * Get the name of this build target. The resultant string is useful for diagnostic messages and does not have any
+     * other significance.
      *
      * @return the name of this build target (not {@code null})
      */
@@ -40,10 +40,14 @@ public final class BuildExecutionBuilder {
     /**
      * Provide an initial item.
      *
-     * @param item the item value
+     * @param item
+     *        the item value
+     *
      * @return this builder
-     * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *         or if the item does not allow multiplicity but this method is called more than one time
+     *
+     * @throws IllegalArgumentException
+     *         if this deployer chain was not declared to initially produce {@code type}, or if the item does not
+     *         allow multiplicity but this method is called more than one time
      */
     public <T extends BuildItem> BuildExecutionBuilder produce(T item) {
         Assert.checkNotNullParam("item", item);
@@ -54,12 +58,16 @@ public final class BuildExecutionBuilder {
     /**
      * Provide an initial item.
      *
-     * @param type the item type (must not be {@code null})
-     * @param item the item value
+     * @param type
+     *        the item type (must not be {@code null})
+     * @param item
+     *        the item value
+     *
      * @return this builder
-     * @throws IllegalArgumentException if this deployer chain was not declared to initially produce {@code type},
-     *         or if {@code type} is {@code null}, or if the item does not allow multiplicity but this method is called
-     *         more than one time
+     *
+     * @throws IllegalArgumentException
+     *         if this deployer chain was not declared to initially produce {@code type}, or if {@code type} is
+     *         {@code null}, or if the item does not allow multiplicity but this method is called more than one time
      */
     public <T extends BuildItem> BuildExecutionBuilder produce(Class<T> type, T item) {
         Assert.checkNotNullParam("type", type);
@@ -72,7 +80,9 @@ public final class BuildExecutionBuilder {
      * Run the build. The chain may run in one or many threads.
      *
      * @return the build result (not {@code null})
-     * @throws BuildException if build failed
+     *
+     * @throws BuildException
+     *         if build failed
      */
     public BuildResult execute() throws BuildException {
         return new Execution(this, buildChain.getFinalIds()).run();

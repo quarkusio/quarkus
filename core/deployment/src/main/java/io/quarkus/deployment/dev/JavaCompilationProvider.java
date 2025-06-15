@@ -51,11 +51,8 @@ public class JavaCompilationProvider implements CompilationProvider {
     public void compile(Set<File> filesToCompile, CompilationProvider.Context context) {
         if (this.compiler == null) {
             this.compiler = ToolProvider.getSystemJavaCompiler();
-            this.compilerFlags = new CompilerFlags(COMPILER_OPTIONS,
-                    context.getCompilerOptions(PROVIDER_KEY),
-                    context.getReleaseJavaVersion(),
-                    context.getSourceJavaVersion(),
-                    context.getTargetJvmVersion(),
+            this.compilerFlags = new CompilerFlags(COMPILER_OPTIONS, context.getCompilerOptions(PROVIDER_KEY),
+                    context.getReleaseJavaVersion(), context.getSourceJavaVersion(), context.getTargetJvmVersion(),
                     context.getAnnotationProcessors()).toList();
         }
 
@@ -65,12 +62,9 @@ public class JavaCompilationProvider implements CompilationProvider {
             throw new RuntimeException("No system java compiler provided");
         }
 
-        final QuarkusFileManager.Context sourcesContext = new QuarkusFileManager.Context(
-                context.getClasspath(), context.getReloadableClasspath(),
-                context.getOutputDirectory(), context.getGeneratedSourcesDirectory(),
-                context.getAnnotationProcessorPaths(),
-                context.getSourceEncoding(),
-                context.ignoreModuleInfo());
+        final QuarkusFileManager.Context sourcesContext = new QuarkusFileManager.Context(context.getClasspath(),
+                context.getReloadableClasspath(), context.getOutputDirectory(), context.getGeneratedSourcesDirectory(),
+                context.getAnnotationProcessorPaths(), context.getSourceEncoding(), context.ignoreModuleInfo());
 
         if (this.fileManager == null) {
             final Supplier<StandardJavaFileManager> supplier = () -> {
@@ -90,15 +84,16 @@ public class JavaCompilationProvider implements CompilationProvider {
         final DiagnosticCollector<JavaFileObject> diagnosticsCollector = new DiagnosticCollector<>();
 
         final Iterable<? extends JavaFileObject> sources = this.fileManager.getJavaSources(filesToCompile);
-        final JavaCompiler.CompilationTask task = this.compiler.getTask(null, this.fileManager,
-                diagnosticsCollector, this.compilerFlags, null, sources);
+        final JavaCompiler.CompilationTask task = this.compiler.getTask(null, this.fileManager, diagnosticsCollector,
+                this.compilerFlags, null, sources);
 
         final boolean compilationTaskSucceed = task.call();
 
         if (LOG.isEnabled(Logger.Level.ERROR) || LOG.isEnabled(Logger.Level.WARN)) {
-            collectDiagnostics(diagnosticsCollector, (level, diagnostic) -> LOG.logf(level, "%s, line %d in %s",
-                    diagnostic.getMessage(null), diagnostic.getLineNumber(),
-                    diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName()));
+            collectDiagnostics(diagnosticsCollector,
+                    (level, diagnostic) -> LOG.logf(level, "%s, line %d in %s", diagnostic.getMessage(null),
+                            diagnostic.getLineNumber(),
+                            diagnostic.getSource() == null ? "[unknown source]" : diagnostic.getSource().getName()));
         }
 
         if (!compilationTaskSucceed) {
@@ -119,8 +114,8 @@ public class JavaCompilationProvider implements CompilationProvider {
             final BiConsumer<Logger.Level, Diagnostic<? extends JavaFileObject>> callback) {
         for (Diagnostic<? extends JavaFileObject> diagnostic : diagnosticsCollector.getDiagnostics()) {
             Logger.Level level = diagnostic.getKind() == Diagnostic.Kind.ERROR ? Logger.Level.ERROR : Logger.Level.WARN;
-            if (level.equals(Logger.Level.WARN) && IGNORE_NAMESPACES.stream()
-                    .anyMatch(diagnostic.getMessage(null)::contains)) {
+            if (level.equals(Logger.Level.WARN)
+                    && IGNORE_NAMESPACES.stream().anyMatch(diagnostic.getMessage(null)::contains)) {
                 continue;
             }
             callback.accept(level, diagnostic);

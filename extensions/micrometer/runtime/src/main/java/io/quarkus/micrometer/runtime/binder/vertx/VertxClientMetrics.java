@@ -10,8 +10,7 @@ import io.micrometer.core.instrument.Tags;
 import io.micrometer.core.instrument.Timer;
 import io.vertx.core.spi.metrics.ClientMetrics;
 
-public class VertxClientMetrics
-        implements ClientMetrics<EventTiming, EventTiming, Object, Object> {
+public class VertxClientMetrics implements ClientMetrics<EventTiming, EventTiming, Object, Object> {
 
     private final String type;
     private final Timer processing;
@@ -25,24 +24,17 @@ public class VertxClientMetrics
         this.type = type;
 
         queueDelay = Timer.builder(name("queue.delay"))
-                .description("Time spent in the waiting queue before being processed")
-                .tags(tags)
-                .register(registry);
+                .description("Time spent in the waiting queue before being processed").tags(tags).register(registry);
 
         processing = Timer.builder(name("processing"))
-                .description("Processing time, from request start to response end")
-                .tags(tags)
-                .register(registry);
+                .description("Processing time, from request start to response end").tags(tags).register(registry);
 
         Gauge.builder(name("queue.size"), new Supplier<Number>() {
             @Override
             public Number get() {
                 return queue.doubleValue();
             }
-        })
-                .description("Number of pending elements in the waiting queue")
-                .tags(tags)
-                .strongReference(true)
+        }).description("Number of pending elements in the waiting queue").tags(tags).strongReference(true)
                 .register(registry);
 
         Gauge.builder(name("current"), new Supplier<Number>() {
@@ -50,21 +42,13 @@ public class VertxClientMetrics
             public Number get() {
                 return current.doubleValue();
             }
-        })
-                .description("The number of requests currently handled by the client")
-                .tags(tags)
-                .strongReference(true)
+        }).description("The number of requests currently handled by the client").tags(tags).strongReference(true)
                 .register(registry);
 
         completed = Counter.builder(name("completed"))
-                .description("Number of requests that have been handled by the client")
-                .tags(tags)
-                .register(registry);
+                .description("Number of requests that have been handled by the client").tags(tags).register(registry);
 
-        resetCount = Counter.builder(name("reset"))
-                .description("Total number of resets")
-                .tags(tags)
-                .register(registry);
+        resetCount = Counter.builder(name("reset")).description("Total number of resets").tags(tags).register(registry);
     }
 
     private String name(String suffix) {

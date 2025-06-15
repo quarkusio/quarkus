@@ -23,7 +23,8 @@ final class SubstituteLiquibaseUtil {
     private static String getBuildInfo(String propertyId) {
         // this is a bit of a mess: we have to get rid of the entire first part that accesses osgi classes
         // and only retain the second part
-        // taken from: https://github.com/liquibase/liquibase/blob/v4.7.1/liquibase-core/src/main/java/liquibase/util/LiquibaseUtil.java#L57-L91
+        // taken from:
+        // https://github.com/liquibase/liquibase/blob/v4.7.1/liquibase-core/src/main/java/liquibase/util/LiquibaseUtil.java#L57-L91
         if (liquibaseBuildProperties == null) {
             try {
                 liquibaseBuildProperties = new Properties();

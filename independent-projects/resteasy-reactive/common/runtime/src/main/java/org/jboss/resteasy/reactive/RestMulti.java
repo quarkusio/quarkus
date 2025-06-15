@@ -45,25 +45,21 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
         return new RestMulti.SyncRestMulti.Builder<>(multi);
     }
 
-    public static <T, R> RestMulti<R> fromUniResponse(Uni<T> uni,
-            Function<T, Multi<R>> dataExtractor) {
+    public static <T, R> RestMulti<R> fromUniResponse(Uni<T> uni, Function<T, Multi<R>> dataExtractor) {
         return fromUniResponse(uni, dataExtractor, null, null);
     }
 
-    public static <T, R> RestMulti<R> fromUniResponse(Uni<T> uni,
-            Function<T, Multi<R>> dataExtractor,
+    public static <T, R> RestMulti<R> fromUniResponse(Uni<T> uni, Function<T, Multi<R>> dataExtractor,
             Function<T, Map<String, List<String>>> headersExtractor) {
         return fromUniResponse(uni, dataExtractor, headersExtractor, null);
     }
 
-    public static <T, R> RestMulti<R> fromUniResponse(Uni<T> uni,
-            Function<T, Multi<R>> dataExtractor,
-            Function<T, Map<String, List<String>>> headersExtractor,
-            Function<T, Integer> statusExtractor) {
+    public static <T, R> RestMulti<R> fromUniResponse(Uni<T> uni, Function<T, Multi<R>> dataExtractor,
+            Function<T, Map<String, List<String>>> headersExtractor, Function<T, Integer> statusExtractor) {
         Function<? super T, ? extends Multi<? extends R>> actualDataExtractor = Infrastructure
                 .decorate(nonNull(dataExtractor, "dataExtractor"));
-        return (RestMulti<R>) Infrastructure.onMultiCreation(new AsyncRestMulti<>(uni, actualDataExtractor,
-                headersExtractor, statusExtractor));
+        return (RestMulti<R>) Infrastructure
+                .onMultiCreation(new AsyncRestMulti<>(uni, actualDataExtractor, headersExtractor, statusExtractor));
     }
 
     public static class SyncRestMulti<T> extends RestMulti<T> {
@@ -118,13 +114,11 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
 
             /**
              * Configure the {@code demand} signaled to the wrapped {@link Multi}, defaults to {@code 1}.
-             *
              * <p>
-             * A demand of {@code 1} guarantees serial/sequential processing, any higher demand supports
-             * concurrent processing. A demand greater {@code 1}, with concurrent {@link Multi} processing,
-             * does not guarantee element order - this means that elements emitted by the
-             * {@link RestMulti#fromMultiData(Multi) RestMulti.fromMultiData(Multi)} source <code>Multi</code>}
-             * will be produced in a non-deterministic order.
+             * A demand of {@code 1} guarantees serial/sequential processing, any higher demand supports concurrent
+             * processing. A demand greater {@code 1}, with concurrent {@link Multi} processing, does not guarantee
+             * element order - this means that elements emitted by the {@link RestMulti#fromMultiData(Multi)
+             * RestMulti.fromMultiData(Multi)} source <code>Multi</code>} will be produced in a non-deterministic order.
              *
              * @see MultiMerge#withConcurrency(int) Multi.createBy().merging().withConcurrency(int)
              * @see Multi#capDemandsTo(long)
@@ -139,12 +133,10 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
             }
 
             /**
-             * Configure whether objects produced by the wrapped {@link Multi} are encoded as JSON array elements, which is the
-             * default.
-             *
+             * Configure whether objects produced by the wrapped {@link Multi} are encoded as JSON array elements, which
+             * is the default.
              * <p>
              * {@code encodeAsJsonArray(false)} produces separate JSON objects.
-             *
              * <p>
              * This property is only used for JSON object results and ignored for SSE and chunked streaming.
              */
@@ -183,10 +175,8 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
         private final AtomicReference<Map<String, List<String>>> headers;
         private final Uni<I> upstream;
 
-        public <T> AsyncRestMulti(Uni<I> upstream,
-                Function<? super I, ? extends Multi<? extends O>> dataExtractor,
-                Function<I, Map<String, List<String>>> headersExtractor,
-                Function<I, Integer> statusExtractor) {
+        public <T> AsyncRestMulti(Uni<I> upstream, Function<? super I, ? extends Multi<? extends O>> dataExtractor,
+                Function<I, Map<String, List<String>>> headersExtractor, Function<I, Integer> statusExtractor) {
             this.upstream = upstream;
             this.dataExtractor = dataExtractor;
             this.statusExtractor = statusExtractor;
@@ -200,8 +190,8 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
             if (subscriber == null) {
                 throw new NullPointerException("The subscriber must not be `null`");
             }
-            AbstractUni.subscribe(upstream, new FlatMapPublisherSubscriber<>(subscriber, dataExtractor, statusExtractor, status,
-                    headersExtractor, headers));
+            AbstractUni.subscribe(upstream, new FlatMapPublisherSubscriber<>(subscriber, dataExtractor, statusExtractor,
+                    status, headersExtractor, headers));
         }
 
         @Override
@@ -229,8 +219,7 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
 
             public FlatMapPublisherSubscriber(Flow.Subscriber<? super O> downstream,
                     Function<? super I, ? extends Multi<? extends O>> dataExtractor,
-                    Function<I, Integer> statusExtractor,
-                    AtomicReference<Integer> status,
+                    Function<I, Integer> statusExtractor, AtomicReference<Integer> status,
                     Function<I, Map<String, List<String>>> headersExtractor,
                     AtomicReference<Map<String, List<String>>> headers) {
                 this.downstream = downstream;
@@ -284,7 +273,8 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
             /**
              * Called when we get the subscription from the upstream UNI
              *
-             * @param subscription the subscription allowing to cancel the computation.
+             * @param subscription
+             *        the subscription allowing to cancel the computation.
              */
             @Override
             public void onSubscribe(UniSubscription subscription) {
@@ -296,7 +286,8 @@ public abstract class RestMulti<T> extends AbstractMulti<T> {
             /**
              * Called after we produced the {@link Flow.Publisher} and subscribe on it.
              *
-             * @param subscription the subscription from the produced {@link Flow.Publisher}
+             * @param subscription
+             *        the subscription from the produced {@link Flow.Publisher}
              */
             @Override
             public void onSubscribe(Flow.Subscription subscription) {

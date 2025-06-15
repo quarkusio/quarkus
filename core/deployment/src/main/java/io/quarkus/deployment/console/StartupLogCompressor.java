@@ -45,8 +45,7 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
     public StartupLogCompressor(String name,
             @SuppressWarnings("unused") Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             @SuppressWarnings("unused") LoggingSetupBuildItem loggingSetupBuildItem,
-            Predicate<Thread> additionalThreadPredicate,
-            Predicate<String> linePredicate) {
+            Predicate<Thread> additionalThreadPredicate, Predicate<String> linePredicate) {
         this.additionalThreadPredicate = Objects.requireNonNull(additionalThreadPredicate);
         this.linePredicate = Objects.requireNonNull(linePredicate);
         if (QuarkusConsole.INSTANCE.isAnsiSupported()) {
@@ -86,7 +85,7 @@ public class StartupLogCompressor implements Closeable, BiPredicate<String, Bool
     @Override
     public boolean test(String s, Boolean errorStream) {
         if (thread == null || linePredicate.test(s)) {
-            //not installed or line predicate tested to true
+            // not installed or line predicate tested to true
             return true;
         }
         Thread current = Thread.currentThread();

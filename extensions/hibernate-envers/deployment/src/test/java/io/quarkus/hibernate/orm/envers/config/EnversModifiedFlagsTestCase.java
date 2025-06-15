@@ -13,16 +13,12 @@ import io.restassured.RestAssured;
 public class EnversModifiedFlagsTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestModifiedFlagsResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-modified-flags.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestModifiedFlagsResource.class, AbstractEnversResource.class)
+            .addAsResource("application-with-modified-flags.properties", "application.properties"));
 
     @Test
     public void testModifiedFlags() {
-        RestAssured.when().get("/envers-modified-flags").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-modified-flags").then().body(is("OK"));
     }
 }

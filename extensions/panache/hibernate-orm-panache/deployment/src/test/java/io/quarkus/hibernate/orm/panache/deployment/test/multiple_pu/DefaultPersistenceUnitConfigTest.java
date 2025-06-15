@@ -14,9 +14,8 @@ import io.restassured.RestAssured;
 public class DefaultPersistenceUnitConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FirstEntity.class, SecondEntity.class, PanacheTestResource.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FirstEntity.class, SecondEntity.class, PanacheTestResource.class)
                     .addAsResource("application-test.properties", "application.properties"));
 
     @Test

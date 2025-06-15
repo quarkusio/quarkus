@@ -20,14 +20,14 @@ import java.util.Optional;
  */
 public interface EnvVarFromKeyConfig {
     /**
-     * The optional name of the Secret from which a value is to be extracted.
-     * Mutually exclusive with {@link #fromConfigmap}.
+     * The optional name of the Secret from which a value is to be extracted. Mutually exclusive with
+     * {@link #fromConfigmap}.
      */
     Optional<String> fromSecret();
 
     /**
-     * The optional name of the ConfigMap from which a value is to be extracted.
-     * Mutually exclusive with {@link #fromSecret}.
+     * The optional name of the ConfigMap from which a value is to be extracted. Mutually exclusive with
+     * {@link #fromSecret}.
      */
     Optional<String> fromConfigmap();
 

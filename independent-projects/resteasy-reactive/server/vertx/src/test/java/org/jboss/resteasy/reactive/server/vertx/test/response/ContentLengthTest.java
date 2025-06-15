@@ -26,18 +26,13 @@ public class ContentLengthTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest runner = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FileResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(FileResource.class));
 
     @Test
     void testResponseHeaders() {
-        when()
-                .get("/file")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH,
-                        greaterThan(
-                                "" + (NUMBER_OF_COPIES * UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8).length)))
+        when().get("/file").then().statusCode(200)
+                .header(HttpHeaders.CONTENT_LENGTH, greaterThan(
+                        "" + (NUMBER_OF_COPIES * UUID.randomUUID().toString().getBytes(StandardCharsets.UTF_8).length)))
                 .header("transfer-encoding", nullValue());
     }
 
@@ -51,8 +46,7 @@ public class ContentLengthTest {
                     .getBytes(StandardCharsets.UTF_8);
             return Response.ok(new ByteArrayInputStream(bytes), "text/plain")
                     .header(HttpHeaders.CONTENT_LENGTH, bytes.length)
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename = " + "uuid.txt")
-                    .build();
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename = " + "uuid.txt").build();
         }
     }
 }

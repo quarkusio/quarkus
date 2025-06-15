@@ -14,8 +14,8 @@ public enum DeployStrategy {
      */
     Replace,
     /**
-     * To perform patch updates to the existing resources. If no resources exist, it will fail.
-     * More information in <a href="https://kubernetes.io/docs/reference/using-api/server-side-apply/">server-side-apply</a>.
+     * To perform patch updates to the existing resources. If no resources exist, it will fail. More information in
+     * <a href="https://kubernetes.io/docs/reference/using-api/server-side-apply/">server-side-apply</a>.
      */
     ServerSideApply;
 }

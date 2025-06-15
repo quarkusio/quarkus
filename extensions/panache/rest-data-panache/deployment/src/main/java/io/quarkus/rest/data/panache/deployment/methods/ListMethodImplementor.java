@@ -73,10 +73,8 @@ public class ListMethodImplementor extends StandardMethodImplementor {
     }
 
     /**
-     * Generate JAX-RS GET method.
-     *
-     * The RESTEasy Classic version exposes {@link RestDataResource#list(Page, Sort)}
-     * and the generated pseudocode with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
+     * Generate JAX-RS GET method. The RESTEasy Classic version exposes {@link RestDataResource#list(Page, Sort)} and
+     * the generated pseudocode with enabled pagination is shown below. If pagination is disabled pageIndex and pageSize
      * query parameters are skipped and null {@link Page} instance is used.
      *
      * <pre>
@@ -107,8 +105,9 @@ public class ListMethodImplementor extends StandardMethodImplementor {
      * }
      * </pre>
      *
-     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#list(Page, Sort)}
-     * and the generated code looks more or less like this:
+     * The RESTEasy Reactive version exposes
+     * {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#list(Page, Sort)} and the generated code looks more
+     * or less like this:
      *
      * <pre>
      * {@code
@@ -185,9 +184,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         parameters.add(param("uriInfo", UriInfo.class));
         parameters.add(param("namedQuery", String.class));
         for (SignatureMethodCreator.Parameter param : compatibleFieldsForQuery) {
-            parameters.add(param(
-                    param.getName().replace(".", "__"),
-                    param.getClazz()));
+            parameters.add(param(param.getName().replace(".", "__"), param.getClazz()));
         }
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
@@ -230,26 +227,29 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         if (isNotReactivePanache()) {
             TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
 
-            ResultHandle pageCount = pageCount(tryBlock, resourceMetadata, resource, page, namedQuery, fieldValues, int.class);
-            ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount, fieldValues, namedQuery);
+            ResultHandle pageCount = pageCount(tryBlock, resourceMetadata, resource, page, namedQuery, fieldValues,
+                    int.class);
+            ResultHandle links = paginationImplementor.getLinks(tryBlock, uriInfo, page, pageCount, fieldValues,
+                    namedQuery);
             ResultHandle entities = list(tryBlock, resourceMetadata, resource, page, sort, namedQuery, fieldValues);
 
             // Return response
             returnValueWithLinks(tryBlock, resourceMetadata, resourceProperties, entities, links);
             tryBlock.close();
         } else {
-            ResultHandle uniPageCount = pageCount(methodCreator, resourceMetadata, resource, page, namedQuery, fieldValues,
-                    Uni.class);
+            ResultHandle uniPageCount = pageCount(methodCreator, resourceMetadata, resource, page, namedQuery,
+                    fieldValues, Uni.class);
 
-            methodCreator.returnValue(UniImplementor.flatMap(methodCreator, uniPageCount, EXCEPTION_MESSAGE,
-                    (body, pageCount) -> {
+            methodCreator.returnValue(
+                    UniImplementor.flatMap(methodCreator, uniPageCount, EXCEPTION_MESSAGE, (body, pageCount) -> {
                         ResultHandle pageCountAsInt = body.checkCast(pageCount, Integer.class);
-                        ResultHandle links = paginationImplementor.getLinks(body, uriInfo, page, pageCountAsInt, fieldValues,
-                                namedQuery);
-                        ResultHandle uniEntities = list(body, resourceMetadata, resource, page, sort, namedQuery, fieldValues);
+                        ResultHandle links = paginationImplementor.getLinks(body, uriInfo, page, pageCountAsInt,
+                                fieldValues, namedQuery);
+                        ResultHandle uniEntities = list(body, resourceMetadata, resource, page, sort, namedQuery,
+                                fieldValues);
                         body.returnValue(UniImplementor.map(body, uniEntities, EXCEPTION_MESSAGE,
-                                (listBody, list) -> returnValueWithLinks(listBody, resourceMetadata, resourceProperties, list,
-                                        links)));
+                                (listBody, list) -> returnValueWithLinks(listBody, resourceMetadata, resourceProperties,
+                                        list, links)));
                     }));
         }
 
@@ -257,8 +257,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
     }
 
     private Collection<SignatureMethodCreator.Parameter> getFieldsToQuery(ResourceMetadata resourceMetadata) {
-        return resourceMetadata.getFields().entrySet()
-                .stream()
+        return resourceMetadata.getFields().entrySet().stream()
                 .filter(e -> isFieldTypeCompatibleForQueryParam(e.getValue()))
                 // we need to map primitive types to classes to make the fields nullable
                 .map(e -> param(e.getKey(), primitiveToClass(e.getValue().name().toString())))
@@ -272,9 +271,7 @@ public class ListMethodImplementor extends StandardMethodImplementor {
         parameters.add(param("sort", List.class, parameterizedType(classType(List.class), classType(String.class))));
         parameters.add(param("namedQuery", String.class));
         for (SignatureMethodCreator.Parameter param : compatibleFieldsForQuery) {
-            parameters.add(param(
-                    param.getName().replace(".", "__"),
-                    param.getClazz()));
+            parameters.add(param(param.getName().replace(".", "__"), param.getClazz()));
         }
         MethodCreator methodCreator = SignatureMethodCreator.getMethodCreator(getMethodName(), classCreator,
                 isNotReactivePanache() ? responseType(resourceMetadata.getEntityType())
@@ -342,15 +339,9 @@ public class ListMethodImplementor extends StandardMethodImplementor {
     }
 
     private boolean isFieldTypeCompatibleForQueryParam(Type fieldType) {
-        return fieldType.name().equals(STRING)
-                || fieldType.name().equals(BOOLEAN)
-                || fieldType.name().equals(CHARACTER)
-                || fieldType.name().equals(DOUBLE)
-                || fieldType.name().equals(SHORT)
-                || fieldType.name().equals(FLOAT)
-                || fieldType.name().equals(INTEGER)
-                || fieldType.name().equals(LONG)
-                || fieldType.name().equals(BYTE)
+        return fieldType.name().equals(STRING) || fieldType.name().equals(BOOLEAN) || fieldType.name().equals(CHARACTER)
+                || fieldType.name().equals(DOUBLE) || fieldType.name().equals(SHORT) || fieldType.name().equals(FLOAT)
+                || fieldType.name().equals(INTEGER) || fieldType.name().equals(LONG) || fieldType.name().equals(BYTE)
                 || fieldType.kind() == Type.Kind.PRIMITIVE;
     }
 }

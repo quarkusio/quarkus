@@ -13,9 +13,7 @@ import org.graalvm.nativeimage.hosted.Feature;
  */
 public class DisableLoggingFeature implements Feature {
 
-    private static final String[] CATEGORIES = {
-            "org.hibernate.validator.internal.util.Version",
-    };
+    private static final String[] CATEGORIES = { "org.hibernate.validator.internal.util.Version", };
 
     private final Map<String, Level> categoryMap = new HashMap<>(CATEGORIES.length);
 

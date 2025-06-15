@@ -194,41 +194,36 @@ public class JsonCommandsTest extends DatasourceTestBase {
         json.jsonSet("arr", "$", arr);
         json.jsonSet("obj", "$", JsonObject.of("name", "clement"));
 
-        List<Integer> list = json.jsonArrAppend(key, "arr", new io.quarkus.redis.datasource.Person("luke", "skywalker"));
+        List<Integer> list = json.jsonArrAppend(key, "arr",
+                new io.quarkus.redis.datasource.Person("luke", "skywalker"));
         assertThat(list).containsExactly(3); // 1, 2, luke...
         list = json.jsonArrAppend("arr", "$", new io.quarkus.redis.datasource.Person("luke", "skywalker"));
         assertThat(list).containsExactly(4); // a, b, c, luke...
-        assertThatThrownBy(() -> json.jsonArrAppend("obj", ".name", "a", "b"))
-                .hasMessageContaining(".name");
+        assertThatThrownBy(() -> json.jsonArrAppend("obj", ".name", "a", "b")).hasMessageContaining(".name");
 
-        assertThatThrownBy(() -> json.jsonArrAppend("missing", ".name", "a", "b"))
-                .hasMessageContaining("key");
+        assertThatThrownBy(() -> json.jsonArrAppend("missing", ".name", "a", "b")).hasMessageContaining("key");
     }
 
     @Test
     void jsonArrIndex() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2),
-                "nested", JsonObject.of("a", JsonArray.of(3, 4)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2), "nested",
+                JsonObject.of("a", JsonArray.of(3, 4)));
         json.jsonSet(key, "$", test);
         assertThat(json.jsonArrIndex(key, "$..a", 2)).containsExactly(1, -1);
         assertThat(json.jsonArrIndex(key, "$..a", 2, 0, 10)).containsExactly(1, -1);
 
-        assertThatThrownBy(() -> json.jsonArrIndex(key, ".name", 2))
-                .hasMessageContaining(".name");
+        assertThatThrownBy(() -> json.jsonArrIndex(key, ".name", 2)).hasMessageContaining(".name");
 
-        assertThatThrownBy(() -> json.jsonArrIndex("missing", ".name", "a"))
-                .hasMessageContaining(".name");
+        assertThatThrownBy(() -> json.jsonArrIndex("missing", ".name", "a")).hasMessageContaining(".name");
 
-        test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2),
-                "nested", JsonObject.of("a", false));
+        test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2), "nested", JsonObject.of("a", false));
         json.jsonSet(key, "$", test);
         assertThat(json.jsonArrIndex(key, "$..a", 2)).containsExactly(1, null);
     }
 
     @Test
     void jsonArrInsert() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(3),
-                "nested", JsonObject.of("a", JsonArray.of(3, 4)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested", JsonObject.of("a", JsonArray.of(3, 4)));
         json.jsonSet(key, "$", test);
         assertThat(json.jsonArrInsert(key, "$..a", 0, 1, 2)).containsExactly(3, 4);
         JsonObject object = json.jsonGetObject(key);
@@ -238,16 +233,14 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void jsonArrInsertWithNull() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2),
-                "nested", JsonObject.of("a", 1));
+        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2), "nested", JsonObject.of("a", 1));
         json.jsonSet(key, "$", test);
         assertThat(json.jsonArrInsert(key, "$..a", 0, 1, 2)).containsExactly(6, null);
     }
 
     @Test
     void jsonArrayLen() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(3),
-                "nested", JsonObject.of("a", JsonArray.of(3, 4)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested", JsonObject.of("a", JsonArray.of(3, 4)));
         json.jsonSet(key, "$", test);
         json.jsonSet("doc", "$", JsonArray.of("a", "b", "c"));
         json.jsonSet("doc2", "$", JsonObject.of("a", "b"));
@@ -258,16 +251,14 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void jsonArrayLenWithNull() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2),
-                "nested", JsonObject.of("a", 2));
+        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2), "nested", JsonObject.of("a", 2));
         json.jsonSet(key, "$", test);
         assertThat(json.jsonArrLen(key, "$..a")).containsExactly(4, null);
     }
 
     @Test
     void jsonArrayPop() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(3),
-                "nested", JsonObject.of("a", JsonArray.of(3, 4)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested", JsonObject.of("a", JsonArray.of(3, 4)));
         json.jsonSet(key, "$", test);
 
         assertThat(json.jsonArrPop(key, Integer.class, "$..a", -1)).containsExactly(3, 4);
@@ -277,16 +268,15 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void jsonArrayPopWithNull() {
-        JsonObject test = JsonObject.of("a", JsonArray.of("foo", "bar"),
-                "nested", JsonObject.of("a", 2), "nested2", JsonObject.of("a", new JsonArray()));
+        JsonObject test = JsonObject.of("a", JsonArray.of("foo", "bar"), "nested", JsonObject.of("a", 2), "nested2",
+                JsonObject.of("a", new JsonArray()));
         json.jsonSet(key, "$", test);
         assertThat(json.jsonArrPop(key, String.class, "$..a")).containsExactly("bar", null, null);
     }
 
     @Test
     void jsonArrayPopWithDefault() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(3),
-                "nested", JsonObject.of("a", JsonArray.of(3, 4)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested", JsonObject.of("a", JsonArray.of(3, 4)));
         json.jsonSet(key, "$", test);
 
         assertThat(json.jsonArrPop(key, Integer.class, "$..a")).containsExactly(3, 4);
@@ -302,8 +292,7 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void jsonArrayTrim() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(),
-                "nested", JsonObject.of("a", JsonArray.of(1, 4)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(), "nested", JsonObject.of("a", JsonArray.of(1, 4)));
         json.jsonSet(key, "$", test);
 
         assertThat(json.jsonArrTrim(key, "$..a", 1, 1)).containsExactly(0, 1);
@@ -313,8 +302,7 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void jsonArrayTrimWithNull() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2),
-                "nested", JsonObject.of("a", 1));
+        JsonObject test = JsonObject.of("a", JsonArray.of(1, 2, 3, 2), "nested", JsonObject.of("a", 1));
         json.jsonSet(key, "$", test);
 
         assertThat(json.jsonArrTrim(key, "$..a", 1, 1)).containsExactly(1, null);
@@ -324,9 +312,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void jsonClearAll() {
-        JsonObject test = JsonObject.of("obj", JsonObject.of("a", 1, "b", 2),
-                "arr", JsonArray.of(1, 2, 3), "str", "foo", "bool", true,
-                "int", 42, "float", 3.14);
+        JsonObject test = JsonObject.of("obj", JsonObject.of("a", 1, "b", 2), "arr", JsonArray.of(1, 2, 3), "str",
+                "foo", "bool", true, "int", 42, "float", 3.14);
         json.jsonSet(key, "$", test);
 
         json.jsonClear(key);
@@ -336,9 +323,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void jsonClear() {
-        JsonObject test = JsonObject.of("obj", JsonObject.of("a", 1, "b", 2),
-                "arr", JsonArray.of(1, 2, 3), "str", "foo", "bool", true,
-                "int", 42, "float", 3.14);
+        JsonObject test = JsonObject.of("obj", JsonObject.of("a", 1, "b", 2), "arr", JsonArray.of(1, 2, 3), "str",
+                "foo", "bool", true, "int", 42, "float", 3.14);
         json.jsonSet(key, "$", test);
 
         json.jsonClear(key, "$.*");
@@ -375,12 +361,12 @@ public class JsonCommandsTest extends DatasourceTestBase {
     @Test
     void mget() {
         // redis> JSON.SET doc1 $ '{"a":1, "b": 2, "nested": {"a": 3}, "c": null}'
-        //OK
-        //redis> JSON.SET doc2 $ '{"a":4, "b": 5, "nested": {"a": 6}, "c": null}'
-        //OK
-        //redis> JSON.MGET doc1 doc2 $..a
-        //1) "[1,3]"
-        //2) "[4,6]"
+        // OK
+        // redis> JSON.SET doc2 $ '{"a":4, "b": 5, "nested": {"a": 6}, "c": null}'
+        // OK
+        // redis> JSON.MGET doc1 doc2 $..a
+        // 1) "[1,3]"
+        // 2) "[4,6]"
 
         JsonObject j1 = JsonObject.of("a", 1, "b", 2, "nested", JsonObject.of("a", 3), "c", null);
         JsonObject j2 = JsonObject.of("a", 4, "b", 5, "nested", JsonObject.of("a", 6), "c", null);
@@ -414,7 +400,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void objKeys() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested", JsonObject.of("a", JsonObject.of("b", 2, "c", 1)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested",
+                JsonObject.of("a", JsonObject.of("b", 2, "c", 1)));
         json.jsonSet(key, test);
         assertThat(json.jsonObjKeys(key, "$..a")).containsExactly(null, List.of("b", "c"));
 
@@ -424,7 +411,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void objLen() {
-        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested", JsonObject.of("a", JsonObject.of("b", 2, "c", 1)));
+        JsonObject test = JsonObject.of("a", JsonArray.of(3), "nested",
+                JsonObject.of("a", JsonObject.of("b", 2, "c", 1)));
         json.jsonSet(key, test);
         json.jsonSet("empty", new JsonObject());
         json.jsonSet("arr", new JsonArray());
@@ -436,7 +424,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void strAppend() {
-        JsonObject test = JsonObject.of("a", "foo", "nested", JsonObject.of("a", "hello"), "nested2", JsonObject.of("a", 31));
+        JsonObject test = JsonObject.of("a", "foo", "nested", JsonObject.of("a", "hello"), "nested2",
+                JsonObject.of("a", 31));
         json.jsonSet(key, test);
         json.jsonSet("empty", new JsonObject());
         json.jsonSet("str", "hello");
@@ -451,7 +440,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void strLen() {
-        JsonObject test = JsonObject.of("a", "foo", "nested", JsonObject.of("a", "hello"), "nested2", JsonObject.of("a", 31));
+        JsonObject test = JsonObject.of("a", "foo", "nested", JsonObject.of("a", "hello"), "nested2",
+                JsonObject.of("a", 31));
         json.jsonSet(key, test);
         json.jsonSet("empty", new JsonObject());
         json.jsonSet("str", "hello");
@@ -463,7 +453,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void toggle() {
-        JsonObject test = JsonObject.of("a", true, "nested", JsonObject.of("a", false), "nested2", JsonObject.of("a", "true"));
+        JsonObject test = JsonObject.of("a", true, "nested", JsonObject.of("a", false), "nested2",
+                JsonObject.of("a", "true"));
         json.jsonSet(key, test);
         json.jsonSet("empty", new JsonObject());
         json.jsonSet("bool", false);
@@ -480,8 +471,8 @@ public class JsonCommandsTest extends DatasourceTestBase {
 
     @Test
     void type() {
-        JsonObject test = JsonObject.of("a", 2, "nested", JsonObject.of("a", true), "foo", "bar", "arr", JsonArray.of(1, 2, 3),
-                "next", JsonObject.of("a", 23.5));
+        JsonObject test = JsonObject.of("a", 2, "nested", JsonObject.of("a", true), "foo", "bar", "arr",
+                JsonArray.of(1, 2, 3), "next", JsonObject.of("a", 23.5));
         json.jsonSet(key, test);
         json.jsonSet("empty", new JsonObject());
         assertThat(json.jsonType(key, "$..foo")).containsExactly("string");

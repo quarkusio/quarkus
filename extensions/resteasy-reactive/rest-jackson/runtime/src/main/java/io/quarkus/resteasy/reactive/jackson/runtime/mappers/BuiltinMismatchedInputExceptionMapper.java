@@ -20,7 +20,8 @@ public class BuiltinMismatchedInputExceptionMapper
         if (LaunchMode.current().isDevOrTest()) {
             List<JsonMappingException.Reference> path = exception.getPath();
             if (path != null && !path.isEmpty()) {
-                var errorBuilder = new MismatchedJsonInputError.Builder((path.get(0)).getFrom().getClass().getSimpleName());
+                var errorBuilder = new MismatchedJsonInputError.Builder(
+                        (path.get(0)).getFrom().getClass().getSimpleName());
                 StringBuilder attributeNameBuilder = new StringBuilder();
 
                 for (JsonMappingException.Reference pathReference : path) {
@@ -98,13 +99,8 @@ public class BuiltinMismatchedInputExceptionMapper
         // will be used when the client only accepts text
         @Override
         public String toString() {
-            return "MismatchedJsonInputError{" +
-                    "objectName='" + objectName + '\'' +
-                    ", attributeName='" + attributeName + '\'' +
-                    ", line=" + line +
-                    ", column=" + column +
-                    ", value='" + value + '\'' +
-                    '}';
+            return "MismatchedJsonInputError{" + "objectName='" + objectName + '\'' + ", attributeName='"
+                    + attributeName + '\'' + ", line=" + line + ", column=" + column + ", value='" + value + '\'' + '}';
         }
 
         static class Builder {

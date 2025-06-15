@@ -57,7 +57,8 @@ class RestClientCDIDelegateBuilderTest {
     private static Path keystorePath;
 
     @BeforeAll
-    public static void beforeAll() throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
+    public static void beforeAll()
+            throws IOException, KeyStoreException, CertificateException, NoSuchAlgorithmException {
         // prepare keystore and truststore
 
         truststorePath = Files.createTempFile("truststore", ".jks");
@@ -97,10 +98,8 @@ class RestClientCDIDelegateBuilderTest {
 
     @Test
     void clientSpecificConfigs() {
-        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
-                .setAddDefaultSources(false)
-                .withMapping(RestClientsConfig.class)
-                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder().setAddDefaultSources(false)
+                .withMapping(RestClientsConfig.class).withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
                         new AbstractRestClientConfigBuilder() {
@@ -110,20 +109,16 @@ class RestClientCDIDelegateBuilderTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .withDefaultValues(createSampleConfigRoot())
-                .withDefaultValues(createSampleClientConfig("test-client"))
-                .build()
+                }).withDefaultValues(createSampleConfigRoot())
+                .withDefaultValues(createSampleClientConfig("test-client")).build()
                 .getConfigMapping(RestClientsConfig.class);
 
         assertEquals(1, configRoot.clients().size());
         assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
 
         QuarkusRestClientBuilderImpl restClientBuilderMock = Mockito.mock(QuarkusRestClientBuilderImpl.class);
-        new RestClientCDIDelegateBuilder<>(TestClient.class,
-                "http://localhost:8080",
-                "test-client",
-                configRoot).configureBuilder(restClientBuilderMock);
+        new RestClientCDIDelegateBuilder<>(TestClient.class, "http://localhost:8080", "test-client", configRoot)
+                .configureBuilder(restClientBuilderMock);
 
         verify(restClientBuilderMock).baseUri(URI.create("http://localhost:8080"));
         verify(restClientBuilderMock).property(QuarkusRestClientProperties.SHARED, true);
@@ -153,10 +148,8 @@ class RestClientCDIDelegateBuilderTest {
 
     @Test
     void globalConfigs() {
-        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder()
-                .setAddDefaultSources(false)
-                .withMapping(RestClientsConfig.class)
-                .withCustomizers(new SmallRyeConfigBuilderCustomizer() {
+        RestClientsConfig configRoot = ConfigUtils.emptyConfigBuilder().setAddDefaultSources(false)
+                .withMapping(RestClientsConfig.class).withCustomizers(new SmallRyeConfigBuilderCustomizer() {
                     @Override
                     public void configBuilder(final SmallRyeConfigBuilder builder) {
                         new AbstractRestClientConfigBuilder() {
@@ -166,16 +159,11 @@ class RestClientCDIDelegateBuilderTest {
                             }
                         }.configBuilder(builder);
                     }
-                })
-                .withDefaultValues(createSampleConfigRoot())
-                .build()
-                .getConfigMapping(RestClientsConfig.class);
+                }).withDefaultValues(createSampleConfigRoot()).build().getConfigMapping(RestClientsConfig.class);
 
         QuarkusRestClientBuilderImpl restClientBuilderMock = Mockito.mock(QuarkusRestClientBuilderImpl.class);
-        new RestClientCDIDelegateBuilder<>(TestClient.class,
-                "http://localhost:8080",
-                "test-client",
-                configRoot).configureBuilder(restClientBuilderMock);
+        new RestClientCDIDelegateBuilder<>(TestClient.class, "http://localhost:8080", "test-client", configRoot)
+                .configureBuilder(restClientBuilderMock);
 
         assertEquals(1, configRoot.clients().size());
         assertTrue(configRoot.clients().containsKey(TestClient.class.getName()));
@@ -263,10 +251,12 @@ class RestClientCDIDelegateBuilderTest {
         clientConfig.put("quarkus.rest-client." + restClientName + ".providers",
                 "io.quarkus.rest.client.reactive.runtime.RestClientCDIDelegateBuilderTest$MyResponseFilter1");
         clientConfig.put("quarkus.rest-client." + restClientName + ".query-param-style", "comma-separated");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store", truststorePath.toAbsolutePath().toString());
+        clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store",
+                truststorePath.toAbsolutePath().toString());
         clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store-password", "truststorePassword");
         clientConfig.put("quarkus.rest-client." + restClientName + ".trust-store-type", "JKS");
-        clientConfig.put("quarkus.rest-client." + restClientName + ".key-store", keystorePath.toAbsolutePath().toString());
+        clientConfig.put("quarkus.rest-client." + restClientName + ".key-store",
+                keystorePath.toAbsolutePath().toString());
         clientConfig.put("quarkus.rest-client." + restClientName + ".key-store-password", "keystorePassword");
         clientConfig.put("quarkus.rest-client." + restClientName + ".key-store-type", "JKS");
         return clientConfig;

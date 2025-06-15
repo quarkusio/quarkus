@@ -13,14 +13,12 @@ import io.restassured.RestAssured;
 public class EnversAuditStrategyTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestAuditStrategyResource.class, AbstractEnversResource.class)
-                    .addAsResource("application-with-audit-strategy.properties", "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestAuditStrategyResource.class, AbstractEnversResource.class)
+            .addAsResource("application-with-audit-strategy.properties", "application.properties"));
 
     @Test
     public void testAuditStrategy() {
-        RestAssured.when().get("/envers-audit-strategy").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-audit-strategy").then().body(is("OK"));
     }
 }

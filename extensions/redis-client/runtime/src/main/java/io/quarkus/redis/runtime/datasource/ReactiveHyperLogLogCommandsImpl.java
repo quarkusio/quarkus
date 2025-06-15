@@ -25,22 +25,19 @@ public class ReactiveHyperLogLogCommandsImpl<K, V> extends AbstractHyperLogLogCo
     @SafeVarargs
     @Override
     public final Uni<Boolean> pfadd(K key, V... values) {
-        return super._pfadd(key, values)
-                .map(Response::toBoolean);
+        return super._pfadd(key, values).map(Response::toBoolean);
     }
 
     @SafeVarargs
     @Override
     public final Uni<Void> pfmerge(K destination, K... sources) {
-        return super._pfmerge(destination, sources)
-                .replaceWithVoid();
+        return super._pfmerge(destination, sources).replaceWithVoid();
     }
 
     @SafeVarargs
     @Override
     public final Uni<Long> pfcount(K... keys) {
-        return super._pfcount(keys)
-                .map(Response::toLong);
+        return super._pfcount(keys).map(Response::toLong);
     }
 
 }

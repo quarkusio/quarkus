@@ -16,8 +16,7 @@ public class MultipartResource {
     }
 
     @POST
-    public void multipart(@RestForm String description,
-            @RestForm FileUpload upload,
+    public void multipart(@RestForm String description, @RestForm FileUpload upload,
             @RestForm @PartType(MediaType.APPLICATION_JSON) Person person) {
         // do something
     }

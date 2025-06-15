@@ -12,8 +12,8 @@ import io.quarkus.cache.CacheManager;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * This test checks that no exception is thrown when a {@link CacheManager} method is called while the extension is enabled and
- * no cache is declared in the application.
+ * This test checks that no exception is thrown when a {@link CacheManager} method is called while the extension is
+ * enabled and no cache is declared in the application.
  */
 public class ZeroCaffeineCacheTest {
 

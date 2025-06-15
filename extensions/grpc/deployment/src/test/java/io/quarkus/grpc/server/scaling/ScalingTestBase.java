@@ -24,17 +24,14 @@ public class ScalingTestBase {
         List<Callable<String>> calls = new ArrayList<>();
         for (int i = 0; i < requestNo; i++) {
             calls.add(() -> {
-                ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9001)
-                        .usePlaintext()
-                        .build();
+                ManagedChannel channel = ManagedChannelBuilder.forAddress("localhost", 9001).usePlaintext().build();
                 HelloReply reply = GreeterGrpc.newBlockingStub(channel)
                         .sayHello(HelloRequest.newBuilder().setName("foo").build());
                 channel.shutdownNow();
                 return reply.getMessage();
             });
         }
-        List<Future<String>> results = Executors.newFixedThreadPool(requestNo)
-                .invokeAll(calls);
+        List<Future<String>> results = Executors.newFixedThreadPool(requestNo).invokeAll(calls);
 
         Set<String> threads = new HashSet<>();
         for (Future<String> result : results) {

@@ -68,13 +68,11 @@ public class KubernetesDeployer {
 
     private static final Logger log = Logger.getLogger(KubernetesDeployer.class);
     private static final String CONTAINER_IMAGE_EXTENSIONS_STR = ContainerImageCapabilitiesUtil.CAPABILITY_TO_EXTENSION_NAME
-            .values().stream()
-            .map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
+            .values().stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
 
     @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
     public void selectDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
-            EnabledKubernetesDeploymentTargetsBuildItem targets,
-            Capabilities capabilities,
+            EnabledKubernetesDeploymentTargetsBuildItem targets, Capabilities capabilities,
             ContainerImageConfig containerImageConfig,
             BuildProducer<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
             BuildProducer<PreventImplicitContainerImagePushBuildItem> preventImplicitContainerImagePush) {
@@ -82,7 +80,8 @@ public class KubernetesDeployer {
         Optional<String> activeContainerImageCapability = ContainerImageCapabilitiesUtil
                 .getActiveContainerImageCapability(capabilities);
 
-        //If container image actions are explicitly disabled block deployment even if a container image capability is not present.
+        // If container image actions are explicitly disabled block deployment even if a container image capability is
+        // not present.
         if (!containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyDisabled()
                 && activeContainerImageCapability.isEmpty()) {
             // we can't throw an exception here, because it could prevent the Kubernetes resources from being generated
@@ -99,8 +98,7 @@ public class KubernetesDeployer {
 
     @BuildStep
     public void checkEnvironment(Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
-            KubernetesClientBuildItem kubernetesClientBuilder,
-            List<GeneratedKubernetesResourceBuildItem> resources,
+            KubernetesClientBuildItem kubernetesClientBuilder, List<GeneratedKubernetesResourceBuildItem> resources,
             BuildProducer<KubernetesDeploymentClusterBuildItem> deploymentCluster) {
 
         if (!KubernetesDeploy.INSTANCE.checkSilently(kubernetesClientBuilder)) {
@@ -113,14 +111,11 @@ public class KubernetesDeployer {
     }
 
     @BuildStep(onlyIf = IsNormalNotRemoteDev.class)
-    public void deploy(KubernetesClientBuildItem kubernetesClientBuilder,
-            Capabilities capabilities,
+    public void deploy(KubernetesClientBuildItem kubernetesClientBuilder, Capabilities capabilities,
             List<KubernetesDeploymentClusterBuildItem> deploymentClusters,
             Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
-            OutputTargetBuildItem outputTarget,
-            KubernetesOutputDirectoryBuildItem outputDirectoryBuildItem,
-            OpenShiftConfig openshiftConfig,
-            ContainerImageConfig containerImageConfig,
+            OutputTargetBuildItem outputTarget, KubernetesOutputDirectoryBuildItem outputDirectoryBuildItem,
+            OpenShiftConfig openshiftConfig, ContainerImageConfig containerImageConfig,
             ApplicationInfoBuildItem applicationInfo,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,
             BuildProducer<DeploymentResultBuildItem> deploymentResult,
@@ -133,9 +128,8 @@ public class KubernetesDeployer {
 
         if (selectedDeploymentTarget.isEmpty()) {
 
-            if (!containerImageConfig.isBuildExplicitlyDisabled() &&
-                    !containerImageConfig.isPushExplicitlyDisabled() &&
-                    ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities).isEmpty()) {
+            if (!containerImageConfig.isBuildExplicitlyDisabled() && !containerImageConfig.isPushExplicitlyDisabled()
+                    && ContainerImageCapabilitiesUtil.getActiveContainerImageCapability(capabilities).isEmpty()) {
                 throw new RuntimeException(
                         "A Kubernetes deployment was requested but no extension was found to build a container image. Consider adding one of following extensions: "
                                 + CONTAINER_IMAGE_EXTENSIONS_STR + ".");
@@ -145,27 +139,20 @@ public class KubernetesDeployer {
         }
 
         try (final KubernetesClient client = kubernetesClientBuilder.buildClient()) {
-            deploymentResult
-                    .produce(deploy(selectedDeploymentTarget.get().getEntry(), client,
-                            outputDirectoryBuildItem.getOutputDirectory(),
-                            openshiftConfig, applicationInfo, optionalResourceDefinitions));
+            deploymentResult.produce(deploy(selectedDeploymentTarget.get().getEntry(), client,
+                    outputDirectoryBuildItem.getOutputDirectory(), openshiftConfig, applicationInfo,
+                    optionalResourceDefinitions));
         }
     }
 
     /**
-     * Determine a single deployment target out of the possible options.
-     *
-     * The selection is done as follows:
-     *
-     * If there is no target deployment at all, just use vanilla Kubernetes. This will happen in cases where the user does not
-     * select a deployment target and no extension that specify one is present.
-     *
-     * If the user specifies deployment targets, pick the first one.
+     * Determine a single deployment target out of the possible options. The selection is done as follows: If there is
+     * no target deployment at all, just use vanilla Kubernetes. This will happen in cases where the user does not
+     * select a deployment target and no extension that specify one is present. If the user specifies deployment
+     * targets, pick the first one.
      */
-    private DeploymentTargetEntry determineDeploymentTarget(
-            ContainerImageInfoBuildItem containerImageInfo,
-            EnabledKubernetesDeploymentTargetsBuildItem targets,
-            ContainerImageConfig containerImageConfig) {
+    private DeploymentTargetEntry determineDeploymentTarget(ContainerImageInfoBuildItem containerImageInfo,
+            EnabledKubernetesDeploymentTargetsBuildItem targets, ContainerImageConfig containerImageConfig) {
         final DeploymentTargetEntry selectedTarget;
 
         List<String> userSpecifiedDeploymentTargets = KubernetesConfigUtil.getExplicitlyConfiguredDeploymentTargets();
@@ -177,26 +164,22 @@ public class KubernetesDeployer {
             }
         } else {
             String firstUserSpecifiedDeploymentTarget = userSpecifiedDeploymentTargets.get(0);
-            selectedTarget = targets
-                    .getEntriesSortedByPriority()
-                    .stream()
-                    .filter(d -> d.getName().equals(firstUserSpecifiedDeploymentTarget))
-                    .findFirst()
-                    .orElseThrow(() -> new IllegalArgumentException("The specified value '" + firstUserSpecifiedDeploymentTarget
+            selectedTarget = targets.getEntriesSortedByPriority().stream()
+                    .filter(d -> d.getName().equals(firstUserSpecifiedDeploymentTarget)).findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("The specified value '"
+                            + firstUserSpecifiedDeploymentTarget
                             + "' is not one of the allowed values of \"quarkus.kubernetes.deployment-target\""));
             if (userSpecifiedDeploymentTargets.size() > 1) {
-                log.info(
-                        "Only the first deployment target (which is '" + firstUserSpecifiedDeploymentTarget
-                                + "') selected via \"quarkus.kubernetes.deployment-target\" will be deployed");
+                log.info("Only the first deployment target (which is '" + firstUserSpecifiedDeploymentTarget
+                        + "') selected via \"quarkus.kubernetes.deployment-target\" will be deployed");
             }
         }
 
         return selectedTarget;
     }
 
-    private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget,
-            KubernetesClient client, Path outputDir,
-            OpenShiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo,
+    private DeploymentResultBuildItem deploy(DeploymentTargetEntry deploymentTarget, KubernetesClient client,
+            Path outputDir, OpenShiftConfig openshiftConfig, ApplicationInfoBuildItem applicationInfo,
             List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions) {
         String namespace = Optional.ofNullable(client.getNamespace()).orElse("default");
         log.info("Deploying to " + deploymentTarget.getName().toLowerCase() + " server: " + client.getMasterUrl()
@@ -213,7 +196,8 @@ public class KubernetesDeployer {
                         + conflictingResource.get().getMetadata().getName() + " because a "
                         + conflictingResource.get().getKind() + " with the same name exists.";
                 log.warn(messsage);
-                Log.warn("This may occur when switching deployment targets, or when the default deployment target is changed.");
+                Log.warn(
+                        "This may occur when switching deployment targets, or when the default deployment target is changed.");
                 Log.warn("Please remove conflicting resource and try again.");
                 throw new IllegalStateException(messsage);
             }
@@ -231,10 +215,9 @@ public class KubernetesDeployer {
             printExposeInformation(client, list, openshiftConfig, applicationInfo);
 
             HasMetadata m = list.getItems().stream()
-                    .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
-                    .findFirst().orElseThrow(() -> new IllegalStateException(
-                            "No " + deploymentTarget.getDeploymentResourceKind() + " found under: "
-                                    + manifest.getAbsolutePath()));
+                    .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r)).findFirst()
+                    .orElseThrow(() -> new IllegalStateException("No " + deploymentTarget.getDeploymentResourceKind()
+                            + " found under: " + manifest.getAbsolutePath()));
             return new DeploymentResultBuildItem(m.getMetadata().getName(), m.getMetadata().getLabels());
         } catch (FileNotFoundException e) {
             throw new IllegalStateException("Can't find generated kubernetes manifest: " + manifest.getAbsolutePath());
@@ -286,10 +269,9 @@ public class KubernetesDeployer {
     private Optional<GenericKubernetesResource> findConflictingResource(KubernetesClient clinet,
             DeploymentTargetEntry deploymentTarget, List<HasMetadata> generated) {
         HasMetadata deploymentResource = generated.stream()
-                .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException(
-                        "No " + deploymentTarget.getDeploymentResourceKind() + " found under: " + deploymentTarget.getName()));
+                .filter(r -> deploymentTarget.getDeploymentResourceKind().matches(r)).findFirst()
+                .orElseThrow(() -> new IllegalStateException("No " + deploymentTarget.getDeploymentResourceKind()
+                        + " found under: " + deploymentTarget.getName()));
         String name = deploymentResource.getMetadata().getName();
 
         for (DeploymentResourceKind deploymentKind : DeploymentResourceKind.values()) {
@@ -298,8 +280,8 @@ public class KubernetesDeployer {
             }
             try {
                 GenericKubernetesResource resource = clinet
-                        .genericKubernetesResources(deploymentKind.getApiVersion(), deploymentKind.getKind()).withName(name)
-                        .get();
+                        .genericKubernetesResources(deploymentKind.getApiVersion(), deploymentKind.getKind())
+                        .withName(name).get();
                 if (resource != null) {
                     Log.warn("Found conflicting resource:" + resource.getApiVersion() + "/" + resource.getKind() + ":"
                             + resource.getMetadata().getName());
@@ -320,7 +302,7 @@ public class KubernetesDeployer {
             if (e instanceof InterruptedException) {
                 throw e;
             }
-            //This is something that should not really happen. it's not a fatal condition so let's just log.
+            // This is something that should not really happen. it's not a fatal condition so let's just log.
             log.warn("Failed to wait for the deletion of: " + metadata.getApiVersion() + " " + metadata.getKind() + " "
                     + metadata.getMetadata().getName() + ". Is the resource waitable?");
         }
@@ -330,9 +312,9 @@ public class KubernetesDeployer {
         if (metadata instanceof GenericKubernetesResource) {
             GenericKubernetesResource genericResource = (GenericKubernetesResource) metadata;
             ResourceDefinitionContext context = getGenericResourceContext(client, genericResource)
-                    .orElseThrow(() -> new IllegalStateException("Could not retrieve API resource information for:"
-                            + metadata.getApiVersion() + " " + metadata.getKind()
-                            + ". Is the CRD for the resource available?"));
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Could not retrieve API resource information for:" + metadata.getApiVersion() + " "
+                                    + metadata.getKind() + ". Is the CRD for the resource available?"));
 
             return client.genericKubernetesResources(context).resource(genericResource);
         }
@@ -362,43 +344,44 @@ public class KubernetesDeployer {
     }
 
     /**
-     * Obtain everything the APIResourceList from the server and extract all the info we need in order to know how to create /
-     * delete the specified generic resource.
+     * Obtain everything the APIResourceList from the server and extract all the info we need in order to know how to
+     * create / delete the specified generic resource.
      *
-     * @param client the client instance to use to query the server.
-     * @param resource the generic resource.
-     * @return an optional {@link ResourceDefinitionContext} with the resource info or empty if resource could not be matched.
+     * @param client
+     *        the client instance to use to query the server.
+     * @param resource
+     *        the generic resource.
+     *
+     * @return an optional {@link ResourceDefinitionContext} with the resource info or empty if resource could not be
+     *         matched.
      */
     private static Optional<ResourceDefinitionContext> getGenericResourceContext(KubernetesClient client,
             GenericKubernetesResource resource) {
         APIResourceList apiResourceList = client.getApiResources(resource.getApiVersion());
-        if (apiResourceList == null || apiResourceList.getResources() == null || apiResourceList.getResources().isEmpty()) {
+        if (apiResourceList == null || apiResourceList.getResources() == null
+                || apiResourceList.getResources().isEmpty()) {
             return Optional.empty();
         }
         return client.getApiResources(resource.getApiVersion()).getResources().stream()
                 .filter(r -> r.getKind().equals(resource.getKind()))
                 .map(r -> new ResourceDefinitionContext.Builder()
                         .withGroup(ApiVersionUtil.trimGroup(resource.getApiVersion()))
-                        .withVersion(ApiVersionUtil.trimVersion(resource.getApiVersion()))
-                        .withKind(r.getKind())
-                        .withNamespaced(r.getNamespaced())
-                        .withPlural(r.getName())
-                        .build())
+                        .withVersion(ApiVersionUtil.trimVersion(resource.getApiVersion())).withKind(r.getKind())
+                        .withNamespaced(r.getNamespaced()).withPlural(r.getName()).build())
                 .findFirst();
     }
 
     private static boolean isOptional(List<KubernetesOptionalResourceDefinitionBuildItem> optionalResourceDefinitions,
             HasMetadata resource) {
-        return optionalResourceDefinitions.stream()
-                .anyMatch(t -> t.getApiVersion().equals(resource.getApiVersion()) && t.getKind().equals(resource.getKind()));
+        return optionalResourceDefinitions.stream().anyMatch(
+                t -> t.getApiVersion().equals(resource.getApiVersion()) && t.getKind().equals(resource.getKind()));
     }
 
     private static boolean shouldDeleteExisting(DeploymentTargetEntry deploymentTarget, HasMetadata resource) {
         if (deploymentTarget.getDeployStrategy() != DeployStrategy.CreateOrUpdate) {
             return false;
         }
-        return KNATIVE.equalsIgnoreCase(deploymentTarget.getName())
-                || resource instanceof Service
+        return KNATIVE.equalsIgnoreCase(deploymentTarget.getName()) || resource instanceof Service
                 || (Objects.equals("v1", resource.getApiVersion()) && Objects.equals("Service", resource.getKind()))
                 || resource instanceof Job
                 || (Objects.equals("batch/v1", resource.getApiVersion()) && Objects.equals("Job", resource.getKind()));
@@ -439,14 +422,15 @@ public class KubernetesDeployer {
 
     private static Optional<String> getLabelSelectorVersion(HasMetadata resource) {
         AtomicReference<String> version = new AtomicReference<>();
-        KubernetesList list = new KubernetesListBuilder().addToItems(resource).accept(new Visitor<LabelSelectorFluent<?>>() {
-            @Override
-            public void visit(LabelSelectorFluent<?> item) {
-                if (item.getMatchLabels() != null) {
-                    version.set(item.getMatchLabels().get(VERSION_LABEL));
-                }
-            }
-        }).build();
+        KubernetesList list = new KubernetesListBuilder().addToItems(resource)
+                .accept(new Visitor<LabelSelectorFluent<?>>() {
+                    @Override
+                    public void visit(LabelSelectorFluent<?> item) {
+                        if (item.getMatchLabels() != null) {
+                            version.set(item.getMatchLabels().get(VERSION_LABEL));
+                        }
+                    }
+                }).build();
         return Optional.ofNullable(version.get());
     }
 }

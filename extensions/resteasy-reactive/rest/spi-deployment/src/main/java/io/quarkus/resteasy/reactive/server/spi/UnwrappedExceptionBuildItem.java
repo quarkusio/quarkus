@@ -3,8 +3,8 @@ package io.quarkus.resteasy.reactive.server.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * When an {@link Exception} of this type is thrown and no {@code jakarta.ws.rs.ext.ExceptionMapper} exists,
- * then RESTEasy Reactive will attempt to locate an {@code ExceptionMapper} for the cause of the Exception.
+ * When an {@link Exception} of this type is thrown and no {@code jakarta.ws.rs.ext.ExceptionMapper} exists, then
+ * RESTEasy Reactive will attempt to locate an {@code ExceptionMapper} for the cause of the Exception.
  */
 public final class UnwrappedExceptionBuildItem extends MultiBuildItem {
 

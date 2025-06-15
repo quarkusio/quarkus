@@ -8,12 +8,9 @@ import io.quarkus.test.QuarkusUnitTest;
 class PanacheRepositoryResourceCountMethodTest extends AbstractCountMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class,
-                            AbstractEntity.class, AbstractItem.class, Item.class, ItemsResource.class,
-                            ItemsRepository.class, EmptyListItem.class, EmptyListItemsRepository.class,
-                            EmptyListItemsResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class, AbstractEntity.class,
+                    AbstractItem.class, Item.class, ItemsResource.class, ItemsRepository.class, EmptyListItem.class,
+                    EmptyListItemsRepository.class, EmptyListItemsResource.class)
+            .addAsResource("application.properties").addAsResource("import.sql"));
 }

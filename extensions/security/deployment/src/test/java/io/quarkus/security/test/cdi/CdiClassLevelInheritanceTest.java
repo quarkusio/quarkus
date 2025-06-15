@@ -47,19 +47,10 @@ public class CdiClassLevelInheritanceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class,
-                            AuthData.class,
-                            DenyAllBean.class,
-                            RolesAllowedBean.class,
-                            AuthenticatedBean.class,
-                            PermissionsAllowedBean.class,
-                            SubclassPermissionsAllowedBean.class,
-                            SubclassDenyAllBean.class,
-                            SubclassRolesAllowedBean.class,
-                            SubclassAuthenticatedBean.class,
-                            TestException.class,
-                            SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, DenyAllBean.class,
+                    RolesAllowedBean.class, AuthenticatedBean.class, PermissionsAllowedBean.class,
+                    SubclassPermissionsAllowedBean.class, SubclassDenyAllBean.class, SubclassRolesAllowedBean.class,
+                    SubclassAuthenticatedBean.class, TestException.class, SecurityTestUtils.class));
 
     @Test
     public void testDenyAllInherited() {

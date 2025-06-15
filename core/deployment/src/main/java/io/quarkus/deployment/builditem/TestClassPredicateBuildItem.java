@@ -5,8 +5,8 @@ import java.util.function.Predicate;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * This is an optional build item that allows extensions to distinguish test classes from application classes. It is only
- * available during tests.
+ * This is an optional build item that allows extensions to distinguish test classes from application classes. It is
+ * only available during tests.
  */
 public final class TestClassPredicateBuildItem extends SimpleBuildItem {
 

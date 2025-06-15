@@ -16,8 +16,7 @@ public class ConfigPropertyInjectionValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Configured.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Configured.class))
             .setExpectedException(ConfigurationException.class);
 
     @Test

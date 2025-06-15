@@ -26,10 +26,9 @@ public class SqlFileConfigBuilderCustomizer implements SmallRyeConfigBuilderCust
 
         // use a priority of 50 to make sure that this is overridable by any of the standard methods
         if (!sqlFilesThatExist.isEmpty()) {
-            builder.withSources(
-                    new PropertiesConfigSource(
-                            Map.of("quarkus.hibernate-orm.sql-load-script", String.join(",", sqlFilesThatExist)),
-                            "quarkus-spring-data-jpa", 50));
+            builder.withSources(new PropertiesConfigSource(
+                    Map.of("quarkus.hibernate-orm.sql-load-script", String.join(",", sqlFilesThatExist)),
+                    "quarkus-spring-data-jpa", 50));
         }
 
     }

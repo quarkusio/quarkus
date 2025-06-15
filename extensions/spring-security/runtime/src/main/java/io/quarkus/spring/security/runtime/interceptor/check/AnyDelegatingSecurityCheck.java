@@ -8,8 +8,7 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
- * A {@link SecurityCheck} where if any of the delegates passes the security check then
- * the delegate passes as well
+ * A {@link SecurityCheck} where if any of the delegates passes the security check then the delegate passes as well
  */
 public class AnyDelegatingSecurityCheck implements SecurityCheck {
 

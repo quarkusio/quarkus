@@ -42,8 +42,7 @@ class ListDatabaseTest extends MongoWithReplicasTestBase {
                 .containsExactlyInAnyOrder("local", "admin");
 
         List<String> names = client.startSession()
-                .chain(session -> client.listDatabaseNames(session).collect().asList())
-                .await().indefinitely();
+                .chain(session -> client.listDatabaseNames(session).collect().asList()).await().indefinitely();
         assertThat(names).containsExactlyInAnyOrder("local", "admin");
 
         names = client.startSession()

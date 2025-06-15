@@ -22,7 +22,9 @@ public class BfInsertArgs implements RedisCommandExtraArguments {
      * exists. If the filter is automatically created and this parameter is absent, then the module-level capacity is
      * used.
      *
-     * @param capacity the capacity
+     * @param capacity
+     *        the capacity
+     *
      * @return the current {@link BfInsertArgs}
      */
     public BfInsertArgs capacity(long capacity) {
@@ -34,7 +36,9 @@ public class BfInsertArgs implements RedisCommandExtraArguments {
      * Specifies the error ratio of the newly created filter if it does not yet exist. If the filter is automatically
      * created and error is not specified then the module-level error rate is used.
      *
-     * @param errorRate the error rate, must be between 0 and 1.
+     * @param errorRate
+     *        the error rate, must be between 0 and 1.
+     *
      * @return the current {@link BfInsertArgs}
      */
     public BfInsertArgs errorRate(double errorRate) {
@@ -54,7 +58,8 @@ public class BfInsertArgs implements RedisCommandExtraArguments {
 
     /**
      * Prevents the filter from creating additional sub-filters if initial capacity is reached. Non-scaling filters
-     * requires slightly less memory than their scaling counterparts. The filter returns an error when capacity is reached.
+     * requires slightly less memory than their scaling counterparts. The filter returns an error when capacity is
+     * reached.
      *
      * @return the current {@link BfInsertArgs}
      */
@@ -64,13 +69,15 @@ public class BfInsertArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the expansion factory.
-     * When capacity is reached, an additional sub-filter is created. The size of the new sub-filter is the size of
-     * the last sub-filter multiplied by expansion. If the number of elements to be stored in the filter is unknown,
-     * we recommend that you use an expansion of 2 or more to reduce the number of sub-filters. Otherwise, we recommend
-     * that you use an expansion of 1 to reduce memory consumption. The default expansion value is 2.
+     * Set the expansion factory. When capacity is reached, an additional sub-filter is created. The size of the new
+     * sub-filter is the size of the last sub-filter multiplied by expansion. If the number of elements to be stored in
+     * the filter is unknown, we recommend that you use an expansion of 2 or more to reduce the number of sub-filters.
+     * Otherwise, we recommend that you use an expansion of 1 to reduce memory consumption. The default expansion value
+     * is 2.
      *
-     * @param expansion the expansion factor, must be positive
+     * @param expansion
+     *        the expansion factor, must be positive
+     *
      * @return the current {@link BfInsertArgs}
      */
     public BfInsertArgs expansion(int expansion) {

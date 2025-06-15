@@ -83,8 +83,9 @@ public class TypeParserTest {
 
         assertCorrect("java.util.List<? extends java.lang.Integer>", new TypeLiteral<List<? extends Integer>>() {
         }.getType());
-        assertCorrect("java.util.Map<? super int[][], java.util.List<?>>", new TypeLiteral<Map<? super int[][], List<?>>>() {
-        }.getType());
+        assertCorrect("java.util.Map<? super int[][], java.util.List<?>>",
+                new TypeLiteral<Map<? super int[][], List<?>>>() {
+                }.getType());
     }
 
     @Test

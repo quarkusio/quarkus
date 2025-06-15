@@ -12,7 +12,8 @@ import io.vertx.redis.client.Request;
 import io.vertx.redis.client.Response;
 
 /**
- * An implementation of the {@link Redis} interface that tracks the duration of each operation for observability purpose.
+ * An implementation of the {@link Redis} interface that tracks the duration of each operation for observability
+ * purpose.
  */
 public class ObservableRedis implements Redis {
 
@@ -68,8 +69,7 @@ public class ObservableRedis implements Redis {
 
     @Override
     public Future<RedisConnection> connect() {
-        return redis.connect()
-                .map(ObservableRedisConnection::new);
+        return redis.connect().map(ObservableRedisConnection::new);
     }
 
     @Override
@@ -80,15 +80,13 @@ public class ObservableRedis implements Redis {
     @Override
     public Future<Response> send(Request command) {
         long begin = System.nanoTime();
-        return redis.send(command)
-                .onComplete(x -> report(System.nanoTime() - begin, x.succeeded()));
+        return redis.send(command).onComplete(x -> report(System.nanoTime() - begin, x.succeeded()));
     }
 
     @Override
     public Future<List<Response>> batch(List<Request> commands) {
         long begin = System.nanoTime();
-        return redis.batch(commands)
-                .onComplete(x -> report(System.nanoTime() - begin, x.succeeded()));
+        return redis.batch(commands).onComplete(x -> report(System.nanoTime() - begin, x.succeeded()));
     }
 
     private class ObservableRedisConnection implements RedisConnection {
@@ -138,21 +136,19 @@ public class ObservableRedis implements Redis {
         @Override
         public Future<Response> send(Request command) {
             long begin = System.nanoTime();
-            return delegate.send(command)
-                    .onComplete(ar -> {
-                        long end = System.nanoTime();
-                        report(end - begin, ar.succeeded());
-                    });
+            return delegate.send(command).onComplete(ar -> {
+                long end = System.nanoTime();
+                report(end - begin, ar.succeeded());
+            });
         }
 
         @Override
         public Future<List<Response>> batch(List<Request> commands) {
             long begin = System.nanoTime();
-            return delegate.batch(commands)
-                    .onComplete(ar -> {
-                        long end = System.nanoTime();
-                        report(end - begin, ar.succeeded());
-                    });
+            return delegate.batch(commands).onComplete(ar -> {
+                long end = System.nanoTime();
+                report(end - begin, ar.succeeded());
+            });
         }
 
         @Override

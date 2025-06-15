@@ -16,21 +16,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MessageBundleDefaultedNameTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Controller.class, AppMessages.class, AlphaMessages.class, Item.class)
-                    .addAsResource(new StringAsset(
-                            "{Controller_index:hello(name)}"),
-                            "templates/Controller/index.html")
-                    .addAsResource(new StringAsset(
-                            "{msg:hello}"),
-                            "templates/app.html")
-                    .addAsResource(new StringAsset(
-                            "{alpha:hello-alpha}"),
-                            "templates/alpha.html")
-                    .addAsResource(new StringAsset(
-                            "{msg2:helloQux}"),
-                            "templates/qux.html")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClasses(Controller.class, AppMessages.class, AlphaMessages.class, Item.class)
+                    .addAsResource(new StringAsset("{Controller_index:hello(name)}"), "templates/Controller/index.html")
+                    .addAsResource(new StringAsset("{msg:hello}"), "templates/app.html")
+                    .addAsResource(new StringAsset("{alpha:hello-alpha}"), "templates/alpha.html")
+                    .addAsResource(new StringAsset("{msg2:helloQux}"), "templates/qux.html")
                     .addAsResource(new StringAsset("hello=Ahoj {name}!"), "messages/Controller_index_cs.properties"));
 
     @Inject
@@ -38,8 +29,7 @@ public class MessageBundleDefaultedNameTest {
 
     @Test
     public void testBundles() {
-        assertEquals("Hello world!",
-                Controller.Templates.index("world").render());
+        assertEquals("Hello world!", Controller.Templates.index("world").render());
         assertEquals("Ahoj svete!", Controller.Templates.index("svete").setLocale("cs").render());
 
         assertEquals("Hello world!", engine.getTemplate("app").render());

@@ -15,13 +15,10 @@ public class UserTagWithQuteExtensionIncludeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("{name}"),
-                            "templates/tags/hello.qute.txt")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("{name}"), "templates/tags/hello.qute.txt")
                     .addAsResource(new StringAsset("{#include base}{#item}{#hello name=name /}{/item}{/include}"),
                             "templates/foo.txt")
-                    .addAsResource(new StringAsset("{#insert item}NOK{/}"),
-                            "templates/base.html"));
+                    .addAsResource(new StringAsset("{#insert item}NOK{/}"), "templates/base.html"));
 
     @Inject
     Template foo;

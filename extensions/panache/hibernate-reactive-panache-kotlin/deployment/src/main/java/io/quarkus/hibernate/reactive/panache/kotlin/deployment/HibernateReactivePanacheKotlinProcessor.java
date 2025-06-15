@@ -85,7 +85,8 @@ public class HibernateReactivePanacheKotlinProcessor {
 
         Set<String> modelClasses = new HashSet<>();
         // Note that we do this in two passes because for some reason Jandex does not give us subtypes
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(TYPE_BUNDLE.entityBase().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex()
+                .getAllKnownImplementors(TYPE_BUNDLE.entityBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.entity().dotName())) {
                 continue;
             }
@@ -97,9 +98,9 @@ public class HibernateReactivePanacheKotlinProcessor {
         }
     }
 
-    private void processCompanions(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            KotlinPanacheCompanionEnhancer enhancer) {
+    private void processCompanions(CombinedIndexBuildItem index,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass, KotlinPanacheCompanionEnhancer enhancer) {
 
         Set<org.jboss.jandex.Type> typeParameters = new HashSet<>();
         for (ClassInfo classInfo : index.getComputingIndex()
@@ -108,32 +109,34 @@ public class HibernateReactivePanacheKotlinProcessor {
                 continue;
             }
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), enhancer));
-            typeParameters
-                    .addAll(resolveTypeParameters(classInfo.name(), TYPE_BUNDLE.entityCompanionBase().dotName(),
-                            index.getComputingIndex()));
+            typeParameters.addAll(resolveTypeParameters(classInfo.name(), TYPE_BUNDLE.entityCompanionBase().dotName(),
+                    index.getComputingIndex()));
         }
 
         for (org.jboss.jandex.Type parameterType : typeParameters) {
-            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+            // Register for reflection the type parameters of the repository: this should be the entity class and the ID
+            // class
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
         }
     }
 
-    private void processRepositories(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,
+    private void processRepositories(CombinedIndexBuildItem index,
+            BuildProducer<BytecodeTransformerBuildItem> transformers,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass, PanacheRepositoryEnhancer enhancer) {
 
         Set<org.jboss.jandex.Type> typeParameters = new HashSet<>();
-        for (ClassInfo classInfo : index.getComputingIndex().getAllKnownImplementors(TYPE_BUNDLE.repositoryBase().dotName())) {
+        for (ClassInfo classInfo : index.getComputingIndex()
+                .getAllKnownImplementors(TYPE_BUNDLE.repositoryBase().dotName())) {
             if (classInfo.name().equals(TYPE_BUNDLE.repository().dotName()) || enhancer.skipRepository(classInfo)) {
                 continue;
             }
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), enhancer));
-            typeParameters
-                    .addAll(resolveTypeParameters(classInfo.name(), TYPE_BUNDLE.repositoryBase().dotName(),
-                            index.getComputingIndex()));
+            typeParameters.addAll(resolveTypeParameters(classInfo.name(), TYPE_BUNDLE.repositoryBase().dotName(),
+                    index.getComputingIndex()));
         }
         for (org.jboss.jandex.Type parameterType : typeParameters) {
-            // Register for reflection the type parameters of the repository: this should be the entity class and the ID class
+            // Register for reflection the type parameters of the repository: this should be the entity class and the ID
+            // class
             reflectiveClass.produce(new ReflectiveClassBuildItem(true, true, parameterType.name().toString()));
         }
     }
@@ -145,10 +148,9 @@ public class HibernateReactivePanacheKotlinProcessor {
         for (AnnotationInstance annotationInstance : index.getComputingIndex().getAnnotations(DOTNAME_ID)) {
             ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
             if (JandexUtil.isSubclassOf(index.getComputingIndex(), info, TYPE_BUNDLE.entity().dotName())) {
-                BuildException be = new BuildException(
-                        "You provide a JPA identifier via @Id inside '" + info.name()
-                                + "' but one is already provided by PanacheEntity, "
-                                + "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
+                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name()
+                        + "' but one is already provided by PanacheEntity, "
+                        + "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
                         Collections.emptyList());
                 return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
             }

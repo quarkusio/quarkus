@@ -11,9 +11,9 @@ public interface ExecutionModelAnnotationsConfig {
     /**
      * Detection mode of invalid usage of execution model annotations.
      * <p>
-     * An execution model annotation is {@code @Blocking}, {@code @NonBlocking} and {@code @RunOnVirtualThread}.
-     * These annotations may only be used on "entrypoint" methods (methods invoked by various frameworks in Quarkus);
-     * using them on methods that can only be invoked by application code is invalid.
+     * An execution model annotation is {@code @Blocking}, {@code @NonBlocking} and {@code @RunOnVirtualThread}. These
+     * annotations may only be used on "entrypoint" methods (methods invoked by various frameworks in Quarkus); using
+     * them on methods that can only be invoked by application code is invalid.
      */
     @WithDefault("fail")
     Mode detectionMode();

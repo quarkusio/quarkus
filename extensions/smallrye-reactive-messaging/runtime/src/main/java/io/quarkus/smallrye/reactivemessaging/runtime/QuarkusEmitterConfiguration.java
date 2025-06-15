@@ -20,7 +20,8 @@ public class QuarkusEmitterConfiguration implements EmitterConfiguration {
     public QuarkusEmitterConfiguration() {
     }
 
-    public QuarkusEmitterConfiguration(String name, EmitterFactoryFor emitterType, OnOverflow onOverflow, Broadcast broadcast) {
+    public QuarkusEmitterConfiguration(String name, EmitterFactoryFor emitterType, OnOverflow onOverflow,
+            Broadcast broadcast) {
         this.name = name;
         this.emitterType = emitterType;
 
@@ -125,11 +126,9 @@ public class QuarkusEmitterConfiguration implements EmitterConfiguration {
         if (o == null || getClass() != o.getClass())
             return false;
         QuarkusEmitterConfiguration that = (QuarkusEmitterConfiguration) o;
-        return overflowBufferSize == that.overflowBufferSize
-                && broadcast == that.broadcast
+        return overflowBufferSize == that.overflowBufferSize && broadcast == that.broadcast
                 && numberOfSubscriberBeforeConnecting == that.numberOfSubscriberBeforeConnecting
-                && Objects.equals(name, that.name)
-                && Objects.equals(emitterType.value(), that.emitterType.value())
+                && Objects.equals(name, that.name) && Objects.equals(emitterType.value(), that.emitterType.value())
                 && overflowBufferStrategy == that.overflowBufferStrategy;
     }
 
@@ -141,13 +140,9 @@ public class QuarkusEmitterConfiguration implements EmitterConfiguration {
 
     @Override
     public String toString() {
-        return "QuarkusEmitterConfiguration{" +
-                "name='" + name + '\'' +
-                ", emitterType=" + emitterType +
-                ", overflowBufferStrategy=" + overflowBufferStrategy +
-                ", overflowBufferSize=" + overflowBufferSize +
-                ", broadcast=" + broadcast +
-                ", numberOfSubscriberBeforeConnecting=" + numberOfSubscriberBeforeConnecting +
-                '}';
+        return "QuarkusEmitterConfiguration{" + "name='" + name + '\'' + ", emitterType=" + emitterType
+                + ", overflowBufferStrategy=" + overflowBufferStrategy + ", overflowBufferSize=" + overflowBufferSize
+                + ", broadcast=" + broadcast + ", numberOfSubscriberBeforeConnecting="
+                + numberOfSubscriberBeforeConnecting + '}';
     }
 }

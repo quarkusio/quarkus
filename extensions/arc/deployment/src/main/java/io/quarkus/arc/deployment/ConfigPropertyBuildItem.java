@@ -14,10 +14,7 @@ public final class ConfigPropertyBuildItem extends MultiBuildItem {
     private final String defaultValue;
     private final ExecutionMode executionMode;
 
-    private ConfigPropertyBuildItem(
-            final String propertyName,
-            final Type propertyType,
-            final String defaultValue,
+    private ConfigPropertyBuildItem(final String propertyName, final Type propertyType, final String defaultValue,
             final ExecutionMode executionMode) {
 
         this.propertyName = propertyName;
@@ -50,16 +47,12 @@ public final class ConfigPropertyBuildItem extends MultiBuildItem {
         return executionMode.equals(ExecutionMode.RUNTIME_INIT);
     }
 
-    public static ConfigPropertyBuildItem staticInit(
-            final String propertyName,
-            final Type propertyType,
+    public static ConfigPropertyBuildItem staticInit(final String propertyName, final Type propertyType,
             final String defaultValue) {
         return new ConfigPropertyBuildItem(propertyName, propertyType, defaultValue, ExecutionMode.STATIC_INIT);
     }
 
-    public static ConfigPropertyBuildItem runtimeInit(
-            final String propertyName,
-            final Type propertyType,
+    public static ConfigPropertyBuildItem runtimeInit(final String propertyName, final Type propertyType,
             final String defaultValue) {
         return new ConfigPropertyBuildItem(propertyName, propertyType, defaultValue, ExecutionMode.RUNTIME_INIT);
     }

@@ -57,55 +57,56 @@ public class WebXmlParsingBuildStep {
     WebMetadataBuildItem createWebMetadata(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Consumer<AdditionalBeanBuildItem> additionalBeanBuildItemConsumer) throws Exception {
 
-        WebMetaData result = applicationArchivesBuildItem.getRootArchive()
-                .apply(tree -> {
-                    var webXml = tree.getPath(WEB_XML);
-                    if (webXml == null) {
-                        return new WebMetaData();
-                    }
-                    Set<String> additionalBeans = new HashSet<>();
+        WebMetaData result = applicationArchivesBuildItem.getRootArchive().apply(tree -> {
+            var webXml = tree.getPath(WEB_XML);
+            if (webXml == null) {
+                return new WebMetaData();
+            }
+            Set<String> additionalBeans = new HashSet<>();
 
-                    final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-                    inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
-                    MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
-                    inputFactory.setXMLResolver(dtdInfo);
-                    final WebMetaData metadata;
-                    try (InputStream in = Files.newInputStream(webXml)) {
-                        final XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(in);
-                        metadata = WebMetaDataParser.parse(xmlReader, dtdInfo,
-                                PropertyReplacers.resolvingExpressionReplacer(new MPConfigExpressionResolver()));
-                    } catch (IOException | XMLStreamException e) {
-                        throw new RuntimeException(e);
+            final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+            inputFactory.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+            MetaDataElementParser.DTDInfo dtdInfo = new MetaDataElementParser.DTDInfo();
+            inputFactory.setXMLResolver(dtdInfo);
+            final WebMetaData metadata;
+            try (InputStream in = Files.newInputStream(webXml)) {
+                final XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(in);
+                metadata = WebMetaDataParser.parse(xmlReader, dtdInfo,
+                        PropertyReplacers.resolvingExpressionReplacer(new MPConfigExpressionResolver()));
+            } catch (IOException | XMLStreamException e) {
+                throw new RuntimeException(e);
+            }
+            if (metadata.getServlets() != null) {
+                for (ServletMetaData i : metadata.getServlets()) {
+                    String servletClass = i.getServletClass();
+                    if (servletClass != null) {
+                        additionalBeans.add(servletClass);
                     }
-                    if (metadata.getServlets() != null) {
-                        for (ServletMetaData i : metadata.getServlets()) {
-                            String servletClass = i.getServletClass();
-                            if (servletClass != null) {
-                                additionalBeans.add(servletClass);
-                            }
-                        }
-                    }
-                    if (metadata.getFilters() != null) {
-                        for (FilterMetaData i : metadata.getFilters()) {
-                            additionalBeans.add(i.getFilterClass());
-                        }
-                    }
-                    if (metadata.getListeners() != null) {
-                        for (ListenerMetaData i : metadata.getListeners()) {
-                            additionalBeans.add(i.getListenerClass());
-                        }
-                    }
-                    additionalBeanBuildItemConsumer
-                            .accept(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(additionalBeans).build());
-                    return metadata;
-                });
+                }
+            }
+            if (metadata.getFilters() != null) {
+                for (FilterMetaData i : metadata.getFilters()) {
+                    additionalBeans.add(i.getFilterClass());
+                }
+            }
+            if (metadata.getListeners() != null) {
+                for (ListenerMetaData i : metadata.getListeners()) {
+                    additionalBeans.add(i.getListenerClass());
+                }
+            }
+            additionalBeanBuildItemConsumer
+                    .accept(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(additionalBeans).build());
+            return metadata;
+        });
 
         List<WebFragmentMetaData> webFragments = parseWebFragments(applicationArchivesBuildItem);
         for (WebFragmentMetaData webFragment : webFragments) {
-            //merge in any web fragments
-            //at the moment this is fairly simplistic, as it does not handle all the ordering and metadata complete bits
-            //of the spec. I am not sure how important this is, and it is very complex and does not 100% map to the quarkus
-            //deployment model. If there is demand for it, we can look at adding it later
+            // merge in any web fragments
+            // at the moment this is fairly simplistic, as it does not handle all the ordering and metadata complete
+            // bits
+            // of the spec. I am not sure how important this is, and it is very complex and does not 100% map to the
+            // quarkus
+            // deployment model. If there is demand for it, we can look at adding it later
 
             WebCommonMetaDataMerger.augment(result, webFragment, null, false);
         }

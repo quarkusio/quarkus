@@ -3,8 +3,8 @@ package io.quarkus.deployment.builditem.nativeimage;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A class that will be reinitialized at runtime in native mode. This will result in the static
- * initializer running twice.
+ * A class that will be reinitialized at runtime in native mode. This will result in the static initializer running
+ * twice.
  *
  * @deprecated Starting with Mandrel/GraalVM 23.1 for JDK 21 this is functionally the same with
  *             {@link RuntimeInitializedClassBuildItem}.

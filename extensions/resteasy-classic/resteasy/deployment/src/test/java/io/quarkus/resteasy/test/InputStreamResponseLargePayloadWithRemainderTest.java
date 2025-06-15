@@ -21,10 +21,8 @@ public class InputStreamResponseLargePayloadWithRemainderTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RootResource.class)
-                    .addAsResource(new StringAsset("quarkus.resteasy.vertx.response-buffer-size=11\n"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(RootResource.class).addAsResource(
+                    new StringAsset("quarkus.resteasy.vertx.response-buffer-size=11\n"), "application.properties"));
 
     @Test
     public void test() {

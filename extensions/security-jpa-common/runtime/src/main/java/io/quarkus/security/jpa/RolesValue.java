@@ -8,9 +8,8 @@ import java.lang.annotation.Target;
 
 /**
  * <p>
- * Indicates that this field or property should be used as a source of roles for security when you store
- * roles in a separate table from your user entity.
- * Supports only the {@link String} type.
+ * Indicates that this field or property should be used as a source of roles for security when you store roles in a
+ * separate table from your user entity. Supports only the {@link String} type.
  * </p>
  * <p>
  * Each role element is considered a comma-separated list of roles.

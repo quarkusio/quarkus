@@ -24,8 +24,10 @@ public class QuarkusMultipartReturnTypeHandler implements EndpointIndexer.Multip
     final Predicate<String> applicationClassPredicate;
     final BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer;
 
-    public QuarkusMultipartReturnTypeHandler(BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
-            Predicate<String> applicationClassPredicate, BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
+    public QuarkusMultipartReturnTypeHandler(
+            BuildProducer<GeneratedClassBuildItem> generatedClassBuildItemBuildProducer,
+            Predicate<String> applicationClassPredicate,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
         this.generatedClassBuildItemBuildProducer = generatedClassBuildItemBuildProducer;
         this.applicationClassPredicate = applicationClassPredicate;
         this.reflectiveClassProducer = reflectiveClassProducer;
@@ -50,11 +52,9 @@ public class QuarkusMultipartReturnTypeHandler implements EndpointIndexer.Multip
                             applicationClassPredicate.test(className)),
                     index);
             reflectiveClassProducer.produce(
-                    ReflectiveClassBuildItem.builder(MultipartMessageBodyWriter.class.getName()).methods()
-                            .build());
+                    ReflectiveClassBuildItem.builder(MultipartMessageBodyWriter.class.getName()).methods().build());
             reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(className).build());
-            reflectiveClassProducer
-                    .produce(ReflectiveClassBuildItem.builder(mapperClassName).methods().build());
+            reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(mapperClassName).methods().build());
             canHandle = true;
         }
 

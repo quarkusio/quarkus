@@ -6,7 +6,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 
 /**
  * This build item is used to specify additional bean defining annotations. See also
- * <a href="https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations">2.5.1. Bean defining annotations</a>.
+ * <a href="https://docs.jboss.org/cdi/spec/2.0/cdi-spec.html#bean_defining_annotations">2.5.1. Bean defining
+ * annotations</a>.
  * <p>
  * By default, the resulting beans must not be removed even if they are considered unused and
  * {@link ArcConfig#removeUnusedBeans} is enabled.
@@ -40,7 +41,6 @@ public final class BeanDefiningAnnotationBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return true if the resulting beans should be removed if they're considered unused as described in
      *         {@link ArcConfig#removeUnusedBeans}
      */

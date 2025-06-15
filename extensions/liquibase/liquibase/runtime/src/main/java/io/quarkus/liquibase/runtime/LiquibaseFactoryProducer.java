@@ -5,15 +5,10 @@ import javax.sql.DataSource;
 import io.quarkus.liquibase.LiquibaseFactory;
 
 /**
- * This class is sort of a producer for {@link LiquibaseFactory}.
- *
- * It isn't a CDI producer in the literal sense, but it is marked as a bean
- * and it's {@code createLiquibaseFactory} method is called at runtime in order to produce
- * the actual {@code LiquibaseFactory} objects.
- *
- * CDI scopes and qualifiers are set up at build-time, which is why this class is devoid of
- * any CDI annotations
- *
+ * This class is sort of a producer for {@link LiquibaseFactory}. It isn't a CDI producer in the literal sense, but it
+ * is marked as a bean and it's {@code createLiquibaseFactory} method is called at runtime in order to produce the
+ * actual {@code LiquibaseFactory} objects. CDI scopes and qualifiers are set up at build-time, which is why this class
+ * is devoid of any CDI annotations
  */
 public class LiquibaseFactoryProducer {
 
@@ -31,7 +26,7 @@ public class LiquibaseFactoryProducer {
                 .get(dataSourceName);
         LiquibaseDataSourceRuntimeConfig matchingRuntimeConfig = liquibaseRuntimeConfig.datasources()
                 .get(dataSourceName);
-        return new LiquibaseCreator(matchingRuntimeConfig, matchingBuildTimeConfig)
-                .createLiquibaseFactory(dataSource, dataSourceName);
+        return new LiquibaseCreator(matchingRuntimeConfig, matchingBuildTimeConfig).createLiquibaseFactory(dataSource,
+                dataSourceName);
     }
 }

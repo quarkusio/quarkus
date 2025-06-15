@@ -30,8 +30,7 @@ public class UniInvoker extends AbstractRxInvoker<Uni<?>> {
             @Override
             public CompletionStage<R> get() {
                 RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity,
-                        responseType == null ? new GenericType<>(String.class) : responseType,
-                        true);
+                        responseType == null ? new GenericType<>(String.class) : responseType, true);
                 restClientRequestContextRef.set(restClientRequestContext);
                 CompletableFuture response = restClientRequestContext.getResult();
                 return invoker.mapResponse(response, responseType == null ? String.class : responseType.getRawType());

@@ -21,10 +21,9 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class UnhandledOpenFailureDefaultStrategyTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientOpenErrorEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientOpenErrorEndpoint.class);
+    });
 
     @Inject
     WebSocketConnector<ClientOpenErrorEndpoint> connector;
@@ -34,9 +33,7 @@ public class UnhandledOpenFailureDefaultStrategyTest {
 
     @Test
     void testError() throws InterruptedException {
-        WebSocketClientConnection connection = connector
-                .baseUri(testUri)
-                .connectAndAwait();
+        WebSocketClientConnection connection = connector.baseUri(testUri).connectAndAwait();
         connection.sendTextAndAwait("foo");
         assertFalse(connection.isClosed());
         assertNull(connection.closeReason());

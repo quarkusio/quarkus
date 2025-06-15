@@ -11,8 +11,8 @@ import io.vertx.ext.web.RoutingContext;
 public interface Filter {
 
     /**
-     * The handler called on HTTP request or failure.
-     * It's important that the handler call {@link RoutingContext#next()} to invoke the next filter or the user routes.
+     * The handler called on HTTP request or failure. It's important that the handler call {@link RoutingContext#next()}
+     * to invoke the next filter or the user routes.
      *
      * @return the handler
      */
@@ -24,8 +24,8 @@ public interface Filter {
     int getPriority();
 
     /**
-     * Whether to add {@link #getHandler()} as HTTP request handler (via {@link Route#handler(Handler)}) or
-     * as failure handler (via {@link Route#failureHandler(Handler)}).
+     * Whether to add {@link #getHandler()} as HTTP request handler (via {@link Route#handler(Handler)}) or as failure
+     * handler (via {@link Route#failureHandler(Handler)}).
      *
      * @return true if filter should be applied on failures rather than HTTP requests
      */

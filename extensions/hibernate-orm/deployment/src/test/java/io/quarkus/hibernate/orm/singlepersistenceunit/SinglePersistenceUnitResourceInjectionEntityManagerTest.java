@@ -15,9 +15,7 @@ public class SinglePersistenceUnitResourceInjectionEntityManagerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addAsResource("application.properties"));
 
     @PersistenceContext
     EntityManager entityManager;

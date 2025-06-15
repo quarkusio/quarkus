@@ -18,19 +18,11 @@ public abstract class ChangingCredentialsTestBase {
 
     @Test
     public void testConnect() throws Exception {
-        given()
-                .when().get("/test")
-                .then()
-                .statusCode(200)
-                .body(CoreMatchers.equalTo(user1));
+        given().when().get("/test").then().statusCode(200).body(CoreMatchers.equalTo(user1));
 
         SECONDS.sleep(2); // sleep longer than pool idle connection timeout
 
-        given()
-                .when().get("/test")
-                .then()
-                .statusCode(200)
-                .body(CoreMatchers.equalTo(user2));
+        given().when().get("/test").then().statusCode(200).body(CoreMatchers.equalTo(user2));
     }
 
 }

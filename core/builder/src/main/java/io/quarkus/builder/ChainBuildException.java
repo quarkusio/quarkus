@@ -11,27 +11,27 @@ public final class ChainBuildException extends Exception {
     /**
      * Constructs a new {@code DeployerChainBuildException} instance. The message is left blank ({@code null}), and no
      * cause is specified.
-     *
      */
     public ChainBuildException() {
     }
 
     /**
-     * Constructs a new {@code DeployerChainBuildException} instance with an initial message. No
-     * cause is specified.
+     * Constructs a new {@code DeployerChainBuildException} instance with an initial message. No cause is specified.
      *
-     * @param msg the message
+     * @param msg
+     *        the message
      */
     public ChainBuildException(final String msg) {
         super(msg);
     }
 
     /**
-     * Constructs a new {@code DeployerChainBuildException} instance with an initial cause. If
-     * a non-{@code null} cause is specified, its message is used to initialize the message of this
-     * {@code DeployerChainBuildException}; otherwise the message is left blank ({@code null}).
+     * Constructs a new {@code DeployerChainBuildException} instance with an initial cause. If a non-{@code null} cause
+     * is specified, its message is used to initialize the message of this {@code DeployerChainBuildException};
+     * otherwise the message is left blank ({@code null}).
      *
-     * @param cause the cause
+     * @param cause
+     *        the cause
      */
     public ChainBuildException(final Throwable cause) {
         super(cause);
@@ -40,8 +40,10 @@ public final class ChainBuildException extends Exception {
     /**
      * Constructs a new {@code DeployerChainBuildException} instance with an initial message and cause.
      *
-     * @param msg the message
-     * @param cause the cause
+     * @param msg
+     *        the message
+     * @param cause
+     *        the cause
      */
     public ChainBuildException(final String msg, final Throwable cause) {
         super(msg, cause);

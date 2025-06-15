@@ -26,10 +26,8 @@ public class InvalidEncodingTest {
     private static final String TEXT_WITH_ACCENTED_CHARACTERS = "Text with UTF-8 accented characters: é à è";
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest TEST = new ResteasyReactiveUnitTest()
-            .setDefaultCharset(StandardCharsets.US_ASCII)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FeedbackBody.class, FeedbackResource.class));
+    static ResteasyReactiveUnitTest TEST = new ResteasyReactiveUnitTest().setDefaultCharset(StandardCharsets.US_ASCII)
+            .withApplicationRoot((jar) -> jar.addClasses(FeedbackBody.class, FeedbackResource.class));
 
     @Test
     public void testMultipartEncoding() throws URISyntaxException {
@@ -37,16 +35,9 @@ public class InvalidEncodingTest {
                 .controlName("content")
                 // we need to force the content-type to avoid having the charset included
                 // as we are testing the default behavior when no charset is defined
-                .header("Content-Type", "text/plain")
-                .charset(StandardCharsets.UTF_8)
-                .build();
+                .header("Content-Type", "text/plain").charset(StandardCharsets.UTF_8).build();
 
-        RestAssured
-                .given()
-                .multiPart(multiPartSpecification)
-                .post("/test/multipart-encoding")
-                .then()
-                .statusCode(200)
+        RestAssured.given().multiPart(multiPartSpecification).post("/test/multipart-encoding").then().statusCode(200)
                 .body(not(TEXT_WITH_ACCENTED_CHARACTERS));
     }
 

@@ -14,15 +14,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MissingCheckerForInclusivePermsValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .assertException(t -> {
-                Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
-                Assertions.assertTrue(t.getMessage().contains("@PermissionsAllowed annotation placed on"));
-                Assertions.assertTrue(
-                        t.getMessage().contains("SecuredBean#securedBean' has inclusive relation between its permissions"));
-                Assertions.assertTrue(t.getMessage().contains("you must also define"));
-                Assertions.assertTrue(t.getMessage().contains("@PermissionChecker for 'checker:missing' permissions"));
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().assertException(t -> {
+        Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
+        Assertions.assertTrue(t.getMessage().contains("@PermissionsAllowed annotation placed on"));
+        Assertions.assertTrue(
+                t.getMessage().contains("SecuredBean#securedBean' has inclusive relation between its permissions"));
+        Assertions.assertTrue(t.getMessage().contains("you must also define"));
+        Assertions.assertTrue(t.getMessage().contains("@PermissionChecker for 'checker:missing' permissions"));
+    });
 
     @Test
     public void test() {

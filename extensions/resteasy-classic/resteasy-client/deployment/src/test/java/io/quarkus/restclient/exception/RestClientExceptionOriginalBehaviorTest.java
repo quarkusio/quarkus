@@ -22,8 +22,7 @@ public class RestClientExceptionOriginalBehaviorTest {
     static StringAsset createStringAsset() {
         try {
             Properties props = new Properties();
-            props.put("io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url",
-                    "${test.url}/downstream");
+            props.put("io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url", "${test.url}/downstream");
             props.put("resteasy.original.webapplicationexception.behavior", "true");
             StringWriter sw = new StringWriter();
             props.store(sw, "application.properties");
@@ -35,11 +34,9 @@ public class RestClientExceptionOriginalBehaviorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(createStringAsset(), "application.properties")
-                    .addClasses(RestClientExceptionOriginalBehaviorTest.class, DownstreamServiceClient.class,
-                            FrontendService.class,
-                            DownstreamServiceUnavailableEndpoint.class));
+            .withApplicationRoot((jar) -> jar.addAsResource(createStringAsset(), "application.properties").addClasses(
+                    RestClientExceptionOriginalBehaviorTest.class, DownstreamServiceClient.class, FrontendService.class,
+                    DownstreamServiceUnavailableEndpoint.class));
 
     @TestHTTPResource
     URL url;

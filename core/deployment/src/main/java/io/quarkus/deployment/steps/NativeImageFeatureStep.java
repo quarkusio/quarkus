@@ -37,23 +37,22 @@ public class NativeImageFeatureStep {
 
     public static final String GRAAL_FEATURE = "io.quarkus.runner.Feature";
 
-    private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup", Object.class,
-            Class.class);
+    private static final MethodDescriptor IMAGE_SINGLETONS_LOOKUP = ofMethod(ImageSingletons.class, "lookup",
+            Object.class, Class.class);
     private static final MethodDescriptor BUILD_TIME_INITIALIZATION = ofMethod(RuntimeClassInitialization.class,
             "initializeAtBuildTime", void.class, String[].class);
     private static final MethodDescriptor REGISTER_RUNTIME_SYSTEM_PROPERTIES = ofMethod(RuntimeSystemProperties.class,
             "register", void.class, String.class, String.class);
     private static final MethodDescriptor GRAALVM_VERSION_GET_CURRENT = ofMethod(GraalVM.Version.class, "getCurrent",
             GraalVM.Version.class);
-    private static final MethodDescriptor GRAALVM_VERSION_COMPARE_TO = ofMethod(GraalVM.Version.class, "compareTo", int.class,
-            int[].class);
+    private static final MethodDescriptor GRAALVM_VERSION_COMPARE_TO = ofMethod(GraalVM.Version.class, "compareTo",
+            int.class, int[].class);
     private static final MethodDescriptor INITIALIZE_CLASSES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, Class[].class);
     private static final MethodDescriptor INITIALIZE_PACKAGES_AT_RUN_TIME = ofMethod(RuntimeClassInitialization.class,
             "initializeAtRunTime", void.class, String[].class);
     public static final String RUNTIME_CLASS_INITIALIZATION_SUPPORT = "org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport";
-    private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(
-            RUNTIME_CLASS_INITIALIZATION_SUPPORT,
+    private static final MethodDescriptor RERUN_INITIALIZATION = ofMethod(RUNTIME_CLASS_INITIALIZATION_SUPPORT,
             "rerunInitialization", void.class, Class.class, String.class);
 
     static final String BEFORE_ANALYSIS_ACCESS = Feature.BeforeAnalysisAccess.class.getName();
@@ -61,7 +60,8 @@ public class NativeImageFeatureStep {
     @BuildStep
     void addExportsToNativeImage(BuildProducer<JPMSExportBuildItem> features) {
         // required in order to access org.graalvm.nativeimage.impl.RuntimeClassInitializationSupport
-        // prior to 23.1 the class was provided by org.graalvm.sdk module and with 23.1 onwards, it's provided by org.graalvm.nativeimage instead
+        // prior to 23.1 the class was provided by org.graalvm.sdk module and with 23.1 onwards, it's provided by
+        // org.graalvm.nativeimage instead
         features.produce(new JPMSExportBuildItem("org.graalvm.sdk", "org.graalvm.nativeimage.impl", null,
                 GraalVM.Version.VERSION_23_1_0));
         features.produce(new JPMSExportBuildItem("org.graalvm.nativeimage", "org.graalvm.nativeimage.impl",
@@ -73,16 +73,14 @@ public class NativeImageFeatureStep {
             List<RuntimeInitializedClassBuildItem> runtimeInitializedClassBuildItems,
             List<RuntimeInitializedPackageBuildItem> runtimeInitializedPackageBuildItems,
             List<RuntimeReinitializedClassBuildItem> runtimeReinitializedClassBuildItems,
-            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields,
-            NativeConfig nativeConfig,
+            List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields, NativeConfig nativeConfig,
             LocalesBuildTimeConfig localesBuildTimeConfig) {
         ClassCreator file = new ClassCreator(new ClassOutput() {
             @Override
             public void write(String s, byte[] bytes) {
                 nativeImageClass.produce(new GeneratedNativeImageClassBuildItem(s, bytes));
             }
-        }, GRAAL_FEATURE, null,
-                Object.class.getName(), Feature.class.getName());
+        }, GRAAL_FEATURE, null, Object.class.getName(), Feature.class.getName());
 
         // Add getDescription method
         MethodCreator getDescription = file.getMethodCreator("getDescription", String.class);
@@ -92,23 +90,22 @@ public class NativeImageFeatureStep {
         TryBlock overallCatch = beforeAn.tryBlock();
 
         overallCatch.invokeStaticMethod(BUILD_TIME_INITIALIZATION,
-                overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize everything
+                overallCatch.marshalAsArray(String.class, overallCatch.load(""))); // empty string means initialize
+                                                                                                                                              // everything
 
         // Set the user.language and user.country system properties to the default locale
         // The deprecated option takes precedence for users who are already using it.
         if (nativeConfig.userLanguage().isPresent()) {
-            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                    overallCatch.load("user.language"), overallCatch.load(nativeConfig.userLanguage().get()));
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES, overallCatch.load("user.language"),
+                    overallCatch.load(nativeConfig.userLanguage().get()));
             if (nativeConfig.userCountry().isPresent()) {
-                overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                        overallCatch.load("user.country"), overallCatch.load(nativeConfig.userCountry().get()));
+                overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES, overallCatch.load("user.country"),
+                        overallCatch.load(nativeConfig.userCountry().get()));
             }
         } else if (localesBuildTimeConfig.defaultLocale().isPresent()) {
-            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                    overallCatch.load("user.language"),
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES, overallCatch.load("user.language"),
                     overallCatch.load(localesBuildTimeConfig.defaultLocale().get().getLanguage()));
-            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                    overallCatch.load("user.country"),
+            overallCatch.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES, overallCatch.load("user.country"),
                     overallCatch.load(localesBuildTimeConfig.defaultLocale().get().getCountry()));
         } else {
             ResultHandle graalVMVersion = overallCatch.invokeStaticMethod(GRAALVM_VERSION_GET_CURRENT);
@@ -118,24 +115,20 @@ public class NativeImageFeatureStep {
             /* GraalVM >= 24.2 */
             try (BytecodeCreator greaterEqual24_2 = graalVm24_2Test.trueBranch()) {
                 greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                        greaterEqual24_2.load("user.language"),
-                        greaterEqual24_2.load("en"));
+                        greaterEqual24_2.load("user.language"), greaterEqual24_2.load("en"));
                 greaterEqual24_2.invokeStaticMethod(REGISTER_RUNTIME_SYSTEM_PROPERTIES,
-                        greaterEqual24_2.load("user.country"),
-                        greaterEqual24_2.load("US"));
+                        greaterEqual24_2.load("user.country"), greaterEqual24_2.load("US"));
             }
         }
 
         if (!runtimeInitializedClassBuildItems.isEmpty()) {
-            //  Class[] runtimeInitializedClasses()
-            MethodCreator runtimeInitializedClasses = file
-                    .getMethodCreator("runtimeInitializedClasses", Class[].class)
+            // Class[] runtimeInitializedClasses()
+            MethodCreator runtimeInitializedClasses = file.getMethodCreator("runtimeInitializedClasses", Class[].class)
                     .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
 
             ResultHandle thisClass = runtimeInitializedClasses.loadClassFromTCCL(GRAAL_FEATURE);
-            ResultHandle cl = runtimeInitializedClasses.invokeVirtualMethod(
-                    ofMethod(Class.class, "getClassLoader", ClassLoader.class),
-                    thisClass);
+            ResultHandle cl = runtimeInitializedClasses
+                    .invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
             ResultHandle classesArray = runtimeInitializedClasses.newArray(Class.class,
                     runtimeInitializedClasses.load(runtimeInitializedClassBuildItems.size()));
             for (int i = 0; i < runtimeInitializedClassBuildItems.size(); i++) {
@@ -145,7 +138,8 @@ public class NativeImageFeatureStep {
                         tc.load(runtimeInitializedClassBuildItems.get(i).getClassName()), tc.load(false), cl);
                 tc.writeArrayValue(classesArray, i, clazz);
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                        cc.getCaughtException());
             }
             runtimeInitializedClasses.returnValue(classesArray);
 
@@ -154,7 +148,7 @@ public class NativeImageFeatureStep {
         }
 
         if (!runtimeInitializedPackageBuildItems.isEmpty()) {
-            //  String[] runtimeInitializedPackages()
+            // String[] runtimeInitializedPackages()
             MethodCreator runtimeInitializedPackages = file
                     .getMethodCreator("runtimeInitializedPackages", String[].class)
                     .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
@@ -166,7 +160,8 @@ public class NativeImageFeatureStep {
                 ResultHandle pkg = tc.load(runtimeInitializedPackageBuildItems.get(i).getPackageName());
                 tc.writeArrayValue(packagesArray, i, pkg);
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                        cc.getCaughtException());
             }
             runtimeInitializedPackages.returnValue(packagesArray);
 
@@ -181,9 +176,8 @@ public class NativeImageFeatureStep {
                     .setModifiers(Modifier.PRIVATE | Modifier.STATIC);
 
             ResultHandle thisClass = runtimeReinitializedClasses.loadClassFromTCCL(GRAAL_FEATURE);
-            ResultHandle cl = runtimeReinitializedClasses.invokeVirtualMethod(
-                    ofMethod(Class.class, "getClassLoader", ClassLoader.class),
-                    thisClass);
+            ResultHandle cl = runtimeReinitializedClasses
+                    .invokeVirtualMethod(ofMethod(Class.class, "getClassLoader", ClassLoader.class), thisClass);
             ResultHandle classesArray = runtimeReinitializedClasses.newArray(Class.class,
                     runtimeReinitializedClasses.load(runtimeReinitializedClassBuildItems.size()));
             for (int i = 0; i < runtimeReinitializedClassBuildItems.size(); i++) {
@@ -193,7 +187,8 @@ public class NativeImageFeatureStep {
                         tc.load(runtimeReinitializedClassBuildItems.get(i).getClassName()), tc.load(false), cl);
                 tc.writeArrayValue(classesArray, i, clazz);
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                        cc.getCaughtException());
             }
             runtimeReinitializedClasses.returnValue(classesArray);
 
@@ -216,15 +211,15 @@ public class NativeImageFeatureStep {
                 AssignableResultHandle index = less23_1.createVariable(int.class);
                 less23_1.assign(index, less23_1.load(0));
                 try (BytecodeCreator loop = less23_1.whileLoop(c -> c.ifIntegerLessThan(index, arraySize)).block()) {
-                    loop.invokeInterfaceMethod(RERUN_INITIALIZATION, imageSingleton, loop.readArrayValue(classes, index),
-                            quarkus);
+                    loop.invokeInterfaceMethod(RERUN_INITIALIZATION, imageSingleton,
+                            loop.readArrayValue(classes, index), quarkus);
                     loop.assign(index, loop.increment(index));
                 }
             }
         }
 
         // Ensure registration of fields being accessed through unsafe is done last to ensure that the class
-        // initialization configuration is done first.  Registering the fields before configuring class initialization
+        // initialization configuration is done first. Registering the fields before configuring class initialization
         // may results in classes being marked for runtime initialization even if not explicitly requested.
         if (!unsafeAccessedFields.isEmpty()) {
             ResultHandle beforeAnalysisParam = beforeAn.getMethodParam(0);
@@ -242,11 +237,11 @@ public class NativeImageFeatureStep {
                 ResultHandle fieldHandle = tc.invokeVirtualMethod(
                         ofMethod(Class.class, "getDeclaredField", Field.class, String.class), declaringClassHandle,
                         tc.load(unsafeAccessedField.getFieldName()));
-                tc.invokeInterfaceMethod(
-                        ofMethod(Feature.BeforeAnalysisAccess.class, "registerAsUnsafeAccessed", void.class, Field.class),
-                        registerAsUnsafeAccessed.getMethodParam(0), fieldHandle);
+                tc.invokeInterfaceMethod(ofMethod(Feature.BeforeAnalysisAccess.class, "registerAsUnsafeAccessed",
+                        void.class, Field.class), registerAsUnsafeAccessed.getMethodParam(0), fieldHandle);
                 CatchBlockCreator cc = tc.addCatch(Throwable.class);
-                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class), cc.getCaughtException());
+                cc.invokeVirtualMethod(ofMethod(Throwable.class, "printStackTrace", void.class),
+                        cc.getCaughtException());
             }
             registerAsUnsafeAccessed.returnVoid();
             overallCatch.invokeStaticMethod(registerAsUnsafeAccessed.getMethodDescriptor(), beforeAnalysisParam);

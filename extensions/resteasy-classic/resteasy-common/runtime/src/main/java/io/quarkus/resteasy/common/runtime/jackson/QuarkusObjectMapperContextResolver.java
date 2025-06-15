@@ -10,7 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Provider
 @ApplicationScoped
-@Priority(Priorities.USER + 10) // give it a priority that ensures that user supplied ContextResolver classes override this one
+@Priority(Priorities.USER + 10) // give it a priority that ensures that user supplied ContextResolver classes override
+                                                             // this one
 public class QuarkusObjectMapperContextResolver implements ContextResolver<ObjectMapper> {
 
     private final ObjectMapper objectMapper;

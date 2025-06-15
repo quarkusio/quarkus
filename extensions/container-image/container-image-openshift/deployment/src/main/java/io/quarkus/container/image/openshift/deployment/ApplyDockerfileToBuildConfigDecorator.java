@@ -32,8 +32,8 @@ public class ApplyDockerfileToBuildConfigDecorator extends NamedResourceDecorato
                     "Specified Dockerfile: '" + pathToDockerfile.toAbsolutePath().toString() + "' does not exist.");
         }
         if (!file.isFile()) {
-            throw new IllegalArgumentException(
-                    "Specified Dockerfile: '" + pathToDockerfile.toAbsolutePath().toString() + "' is not a normal file.");
+            throw new IllegalArgumentException("Specified Dockerfile: '" + pathToDockerfile.toAbsolutePath().toString()
+                    + "' is not a normal file.");
         }
 
         try {
@@ -41,8 +41,8 @@ public class ApplyDockerfileToBuildConfigDecorator extends NamedResourceDecorato
             Optional<String> fromLine = lines.filter(l -> !l.startsWith("#")).map(String::trim)
                     .filter(l -> l.startsWith("FROM")).findFirst();
             if (!fromLine.isPresent()) {
-                throw new IllegalArgumentException("Specified Dockerfile: '" + pathToDockerfile.toAbsolutePath().toString()
-                        + "' does not contain a FROM directive");
+                throw new IllegalArgumentException("Specified Dockerfile: '"
+                        + pathToDockerfile.toAbsolutePath().toString() + "' does not contain a FROM directive");
             }
         } catch (IOException e) {
             throw new IllegalArgumentException(
@@ -53,13 +53,8 @@ public class ApplyDockerfileToBuildConfigDecorator extends NamedResourceDecorato
     @Override
     public void andThenVisit(final BuildConfigSpecFluent<?> spec, ObjectMeta meta) {
         try (InputStream is = new FileInputStream(pathToDockerfile.toFile())) {
-            spec.withNewSource()
-                    .withDockerfile(new String(FileUtil.readFileContents(is)))
-                    .endSource()
-                    .withNewStrategy()
-                    .withNewDockerStrategy()
-                    .endDockerStrategy()
-                    .endStrategy();
+            spec.withNewSource().withDockerfile(new String(FileUtil.readFileContents(is))).endSource().withNewStrategy()
+                    .withNewDockerStrategy().endDockerStrategy().endStrategy();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

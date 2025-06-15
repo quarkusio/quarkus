@@ -15,9 +15,11 @@ public final class RolesAllowedConfigExpResolverBuildItem extends MultiBuildItem
     private final BiConsumer<String, Supplier<String[]>> configValueRecorder;
 
     /**
-     * @param roleConfigExpr roles allowed configuration expression
-     * @param configValueRecorder roles allowed supplier will be recorded to this consumer created during static-init;
-     *        runtime roles allowed expressions are supplied correctly only when runtime config is ready
+     * @param roleConfigExpr
+     *        roles allowed configuration expression
+     * @param configValueRecorder
+     *        roles allowed supplier will be recorded to this consumer created during static-init; runtime roles
+     *        allowed expressions are supplied correctly only when runtime config is ready
      */
     public RolesAllowedConfigExpResolverBuildItem(String roleConfigExpr,
             BiConsumer<String, Supplier<String[]>> configValueRecorder) {

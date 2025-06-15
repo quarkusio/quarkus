@@ -10,10 +10,10 @@ import io.quarkus.vertx.http.runtime.security.HttpCredentialTransport;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Provides a way to select custom {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism}
- * used for a REST endpoint and WebSockets Next endpoint authentication.
- * This annotation can only be used when proactive authentication is disabled. Using the annotation with
- * enabled proactive authentication will lead to build-time failure.
+ * Provides a way to select custom {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism} used for a
+ * REST endpoint and WebSockets Next endpoint authentication. This annotation can only be used when proactive
+ * authentication is disabled. Using the annotation with enabled proactive authentication will lead to build-time
+ * failure.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE, ElementType.METHOD })
@@ -21,8 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 public @interface HttpAuthenticationMechanism {
     /**
      * {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism} scheme as returned by
-     * {@link HttpCredentialTransport#getAuthenticationScheme()}.
-     * Custom mechanisms can set this name inside
+     * {@link HttpCredentialTransport#getAuthenticationScheme()}. Custom mechanisms can set this name inside
      * {@link io.quarkus.vertx.http.runtime.security.HttpAuthenticationMechanism#getCredentialTransport(RoutingContext)}.
      */
     String value();

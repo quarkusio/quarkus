@@ -32,29 +32,21 @@ public class HttpPolicyAuthFailureExceptionMapperTest {
     private static final AtomicInteger EXCEPTION_MAPPER_INVOCATION_COUNT = new AtomicInteger(0);
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class)
-                    .addAsResource(
-                            new StringAsset("quarkus.http.auth.proactive=false\n" +
-                                    "quarkus.http.auth.permission.basic.paths=/*\n" +
-                                    "quarkus.http.auth.permission.basic.policy=authenticated\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestIdentityProvider.class, TestIdentityController.class).addAsResource(
+                    new StringAsset(
+                            "quarkus.http.auth.proactive=false\n" + "quarkus.http.auth.permission.basic.paths=/*\n"
+                                    + "quarkus.http.auth.permission.basic.policy=authenticated\n"),
+                    "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("user", "user", "user");
     }
 
     @Test
     public void testAuthFailedExceptionMapper() {
-        RestAssured
-                .given()
-                .auth().basic("user", "unknown-pwd")
-                .get("/")
-                .then()
-                .statusCode(401)
+        RestAssured.given().auth().basic("user", "unknown-pwd").get("/").then().statusCode(401)
                 .body(Matchers.equalTo(EXPECTED_RESPONSE));
 
         assertEquals(1, EXCEPTION_MAPPER_INVOCATION_COUNT.get(),

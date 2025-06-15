@@ -37,10 +37,7 @@ final class Target_io_grpc_ServiceProviders { // NOSONAR
     }
 
     @Substitute
-    public static <T> List<T> loadAll(
-            Class<T> klass,
-            Iterable<Class<?>> hardcoded,
-            ClassLoader cl,
+    public static <T> List<T> loadAll(Class<T> klass, Iterable<Class<?>> hardcoded, ClassLoader cl,
             final Target_io_grpc_ServiceProviders_PriorityAccessor<T> priorityAccessor) {
 
         // For loading classes directly instead of using SPI.
@@ -56,7 +53,7 @@ final class Target_io_grpc_ServiceProviders { // NOSONAR
         }
 
         // DO NOT USE LAMBDA
-        //noinspection Java8ListSort,Convert2Lambda
+        // noinspection Java8ListSort,Convert2Lambda
         Collections.sort(list, Collections.reverseOrder(new Comparator<T>() { // NOSONAR
             @Override
             public int compare(T f1, T f2) {

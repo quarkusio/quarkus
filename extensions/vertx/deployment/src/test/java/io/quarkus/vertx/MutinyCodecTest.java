@@ -20,16 +20,14 @@ public class MutinyCodecTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(MyBean.class, MyNonLocalBean.class,
-                            MyPetCodec.class, Person.class, Pet.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyBean.class,
+                    MyNonLocalBean.class, MyPetCodec.class, Person.class, Pet.class));
 
     @Inject
     MyBean bean;
 
     /**
-     * Bean setting the consumption to be non-local.
-     * So, the user must configure the codec explicitly.
+     * Bean setting the consumption to be non-local. So, the user must configure the codec explicitly.
      */
     @Inject
     MyNonLocalBean nonLocalBean;
@@ -39,25 +37,22 @@ public class MutinyCodecTest {
 
     @Test
     public void testWithGenericCodec() {
-        Greeting hello = vertx.eventBus().<Greeting> request("person", new Person("bob", "morane"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        Greeting hello = vertx.eventBus().<Greeting> request("person", new Person("bob", "morane")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello bob morane");
     }
 
     @Test
     public void testWithUserCodec() {
-        Greeting hello = vertx.eventBus().<Greeting> request("pet", new Pet("neo", "rabbit"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        Greeting hello = vertx.eventBus().<Greeting> request("pet", new Pet("neo", "rabbit")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello NEO");
     }
 
     @Test
     public void testWithUserCodecNonLocal() {
-        String hello = vertx.eventBus().<String> request("nl-pet", new Pet("neo", "rabbit"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        String hello = vertx.eventBus().<String> request("nl-pet", new Pet("neo", "rabbit")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertEquals("Non Local Hello NEO", hello);
     }
 
@@ -76,15 +71,13 @@ public class MutinyCodecTest {
     static class MyBean {
         @ConsumeEvent("person")
         public Uni<Greeting> hello(Person p) {
-            return Uni.createFrom().item(
-                    () -> new Greeting("Hello " + p.getFirstName() + " " + p.getLastName()))
+            return Uni.createFrom().item(() -> new Greeting("Hello " + p.getFirstName() + " " + p.getLastName()))
                     .emitOn(Infrastructure.getDefaultExecutor());
         }
 
         @ConsumeEvent(value = "pet", codec = MyPetCodec.class)
         public Uni<Greeting> hello(Pet p) {
-            return Uni.createFrom().item(
-                    () -> new Greeting("Hello " + p.getName()))
+            return Uni.createFrom().item(() -> new Greeting("Hello " + p.getName()))
                     .emitOn(Infrastructure.getDefaultExecutor());
         }
     }
@@ -92,8 +85,7 @@ public class MutinyCodecTest {
     static class MyNonLocalBean {
         @ConsumeEvent(value = "nl-pet", codec = MyPetCodec.class, local = false)
         public Uni<String> hello(Pet p) {
-            return Uni.createFrom().item(
-                    () -> "Non Local Hello " + p.getName())
+            return Uni.createFrom().item(() -> "Non Local Hello " + p.getName())
                     .emitOn(Infrastructure.getDefaultExecutor());
         }
     }

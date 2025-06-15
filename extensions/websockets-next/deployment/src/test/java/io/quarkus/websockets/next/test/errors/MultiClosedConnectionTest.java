@@ -30,10 +30,9 @@ import io.vertx.core.impl.NoStackTraceThrowable;
 public class MultiClosedConnectionTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -65,19 +64,13 @@ public class MultiClosedConnectionTest {
 
         @OnOpen
         Multi<String> onOpen() {
-            return Multi.createFrom()
-                    .ticks()
-                    .every(Duration.ofMillis(300))
-                    .map(tick -> tick + "")
-                    .invoke(s -> {
-                        Log.infof("Next tick: %s", s);
-                        MESSAGES.add(s);
-                    })
-                    .onTermination()
-                    .invoke(() -> {
-                        Log.info("Terminated!");
-                        TERMINATION_LATCH.countDown();
-                    });
+            return Multi.createFrom().ticks().every(Duration.ofMillis(300)).map(tick -> tick + "").invoke(s -> {
+                Log.infof("Next tick: %s", s);
+                MESSAGES.add(s);
+            }).onTermination().invoke(() -> {
+                Log.info("Terminated!");
+                TERMINATION_LATCH.countDown();
+            });
         }
 
         @OnError

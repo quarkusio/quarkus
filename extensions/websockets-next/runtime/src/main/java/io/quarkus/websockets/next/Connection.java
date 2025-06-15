@@ -16,15 +16,15 @@ import io.smallrye.mutiny.Uni;
 public interface Connection extends Sender {
 
     /**
-     *
      * @return the unique identifier assigned to this connection
      */
     String id();
 
     /**
-     *
      * @param name
+     *
      * @return the value of the path parameter or {@code null}
+     *
      * @see WebSocketClient#path()
      */
     String pathParam(String name);
@@ -36,6 +36,7 @@ public interface Connection extends Sender {
 
     /**
      * @return {@link SSLSession} associated with the underlying socket, or {@code null} if connection is not secure.
+     *
      * @see #isSecure()
      */
     SSLSession sslSession();
@@ -46,13 +47,11 @@ public interface Connection extends Sender {
     boolean isClosed();
 
     /**
-     *
      * @return the close reason or {@code null} if the connection is not closed
      */
     CloseReason closeReason();
 
     /**
-     *
      * @return {@code true} if the WebSocket is open
      */
     default boolean isOpen() {
@@ -73,6 +72,7 @@ public interface Connection extends Sender {
      * Close the connection with a specific reason.
      *
      * @param reason
+     *
      * @return a new {@link Uni} with a {@code null} item
      */
     Uni<Void> close(CloseReason reason);
@@ -92,19 +92,16 @@ public interface Connection extends Sender {
     }
 
     /**
-     *
      * @return the handshake request
      */
     HandshakeRequest handshakeRequest();
 
     /**
-     *
      * @return the time when this connection was created
      */
     Instant creationTime();
 
     /**
-     *
      * @return the user data associated with this connection
      */
     UserData userData();

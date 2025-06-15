@@ -14,9 +14,8 @@ public class OracleAgroalConnectionConfigurer implements AgroalConnectionConfigu
     /**
      * Oracle connection properties are documented here:
      * https://docs.oracle.com/en/database/oracle/oracle-database/21/jajdb/oracle/jdbc/OracleConnection.html#Transport_Layer_Security__TLS_SSL_
-     *
-     * SSL seems to be disabled by default, so rather than disabling it explicitly we check that the user didn't attempt to
-     * enable it.
+     * SSL seems to be disabled by default, so rather than disabling it explicitly we check that the user didn't attempt
+     * to enable it.
      */
     @Override
     public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,

@@ -27,22 +27,16 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(GraphQLOverHttpApi.class, User.class)
+            .withApplicationRoot((jar) -> jar.addClasses(GraphQLOverHttpApi.class, User.class)
                     .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void httpGetTest() {
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .get("/graphql?query=query(%24id%3A%20ID!)%7Buser(id%3A%24id)%7Bname%7D%7D&variables=%7B%22id%22%3A%22QVBJcy5ndXJ1%22%7D")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).get(
+                "/graphql?query=query(%24id%3A%20ID!)%7Buser(id%3A%24id)%7Bname%7D%7D&variables=%7B%22id%22%3A%22QVBJcy5ndXJ1%22%7D")
+                .then().assertThat().statusCode(200).and()
                 .body(CoreMatchers.containsString("{\"data\":{\"user\":{\"name\":\"Koos\"}}}"));
     }
 
@@ -55,7 +49,9 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
         String variables = "{\"id\": \"1\"}";
 
         post(null, queryparams, variables,
-                "{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Koos\",\"surname\":\"van der Merwe\"}}}"); // query in query parameter
+                "{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Koos\",\"surname\":\"van der Merwe\"}}}"); // query in
+                                                                                                                                            // query
+                                                                                                                                            // parameter
     }
 
     @Test
@@ -66,14 +62,13 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
 
         String variables = "{\"id\": \"1\"}";
 
-        String request = "query ($id: ID!) {\n" +
-                "  user(id:$id) {\n" +
-                "    name\n" +
-                "  }\n" +
-                "}";
+        String request = "query ($id: ID!) {\n" + "  user(id:$id) {\n" + "    name\n" + "  }\n" + "}";
 
         post(request, queryparams, variables,
-                "{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Koos\",\"surname\":\"van der Merwe\"}}}"); // query in query parameter win
+                "{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Koos\",\"surname\":\"van der Merwe\"}}}"); // query in
+                                                                                                                                               // query
+                                                                                                                                               // parameter
+                                                                                                                                               // win
     }
 
     @Test
@@ -84,11 +79,7 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
 
         String variables = "{\"id\": \"1\"}";
 
-        String request = "query ($id: ID!) {\n" +
-                "  user(id:$id) {\n" +
-                "    name\n" +
-                "  }\n" +
-                "}";
+        String request = "query ($id: ID!) {\n" + "  user(id:$id) {\n" + "    name\n" + "  }\n" + "}";
 
         post(request, queryparams, variables,
                 "{\"data\":{\"user\":{\"id\":\"1\",\"name\":\"Koos\",\"surname\":\"van der Merwe\"}}}",
@@ -98,19 +89,18 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
     @Test
     public void httpPostWithVariablesQueryParamTest() throws Exception {
 
-        String request = "query ($id: ID!) {\n" +
-                "  user(id:$id) {\n" +
-                "    id\n" +
-                "    name\n" +
-                "  }\n" +
-                "}";
+        String request = "query ($id: ID!) {\n" + "  user(id:$id) {\n" + "    id\n" + "    name\n" + "  }\n" + "}";
 
         String variables = "{\"id\": \"1\"}";
 
         Map<String, String> queryparams = new HashMap<>();
         queryparams.put("variables", "{\"id\": \"QVBJcy5ndXJ1\"}");
 
-        post(request, queryparams, variables, "{\"data\":{\"user\":{\"id\":\"QVBJcy5ndXJ1\",\"name\":\"Koos\"}}}"); // id in query parameter win
+        post(request, queryparams, variables, "{\"data\":{\"user\":{\"id\":\"QVBJcy5ndXJ1\",\"name\":\"Koos\"}}}"); // id
+                                                                                                                    // in
+                                                                                                                    // query
+                                                                                                                    // parameter
+                                                                                                                    // win
     }
 
     @Test
@@ -119,13 +109,8 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
         Map<String, String> queryparams = new HashMap<>();
         queryparams.put("variables", "{\"id\": \"QVBJcy5ndXJ1\"}");
 
-        String request = "query ($id: ID!) {\n" +
-                "  user(id:$id) {\n" +
-                "    id\n" +
-                "    name\n" +
-                "    surname\n" +
-                "  }\n" +
-                "}";
+        String request = "query ($id: ID!) {\n" + "  user(id:$id) {\n" + "    id\n" + "    name\n" + "    surname\n"
+                + "  }\n" + "}";
 
         postAsGraphQL(request, queryparams,
                 "{\"data\":{\"user\":{\"id\":\"QVBJcy5ndXJ1\",\"name\":\"Koos\",\"surname\":\"van der Merwe\"}}}");
@@ -149,36 +134,24 @@ public class GraphQLOverHttpTest extends AbstractGraphQLTest {
             requestSpecification = requestSpecification.queryParams(queryparams);
         }
 
-        requestSpecification.when()
-                .accept(String.join(",", acceptHeaders))
-                .contentType(MEDIATYPE_JSON)
-                .body(getPayload(request, variables))
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        requestSpecification.when().accept(String.join(",", acceptHeaders)).contentType(MEDIATYPE_JSON)
+                .body(getPayload(request, variables)).post("/graphql").then().assertThat().statusCode(200).and()
                 .body(CoreMatchers.containsString(expected));
     }
 
     private void postAsGraphQL(String request, Map<String, ?> queryparams, String expected) {
-        RequestSpecification requestSpecification = RestAssured.given().config(RestAssured.config()
-                .encoderConfig(EncoderConfig.encoderConfig().encodeContentTypeAs(MEDIATYPE_GRAPHQL, ContentType.TEXT)))
+        RequestSpecification requestSpecification = RestAssured.given()
+                .config(RestAssured.config().encoderConfig(
+                        EncoderConfig.encoderConfig().encodeContentTypeAs(MEDIATYPE_GRAPHQL, ContentType.TEXT)))
                 .contentType(MEDIATYPE_GRAPHQL);
         if (queryparams != null) {
             requestSpecification = requestSpecification.queryParams(queryparams);
         }
 
-        requestSpecification.when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_GRAPHQL)
-                .body(request) // This is the important part.
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .body(CoreMatchers.containsString(expected));
+        requestSpecification.when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_GRAPHQL).body(request) // This is the
+                // important
+                // part.
+                .post("/graphql").then().assertThat().statusCode(200).and().body(CoreMatchers.containsString(expected));
 
     }
 }

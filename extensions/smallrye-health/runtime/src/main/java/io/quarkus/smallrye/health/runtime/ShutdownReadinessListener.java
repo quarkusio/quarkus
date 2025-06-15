@@ -8,11 +8,9 @@ import org.eclipse.microprofile.health.Readiness;
 import io.quarkus.runtime.shutdown.ShutdownListener;
 
 /**
- * listener that changes the readiness probe on pre-shutdown.
- *
- * Note that unless there is another preShutdown listener present
- * this will generally have no real effect, as after pre-shutdown
- * the HTTP endpoint will return service unavailable.
+ * listener that changes the readiness probe on pre-shutdown. Note that unless there is another preShutdown listener
+ * present this will generally have no real effect, as after pre-shutdown the HTTP endpoint will return service
+ * unavailable.
  */
 public class ShutdownReadinessListener implements ShutdownListener {
     @Override

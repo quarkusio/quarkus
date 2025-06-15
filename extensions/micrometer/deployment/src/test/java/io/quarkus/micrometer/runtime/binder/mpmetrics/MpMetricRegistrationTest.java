@@ -12,8 +12,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class MpMetricRegistrationTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
@@ -39,10 +38,8 @@ public class MpMetricRegistrationTest {
 
     @Test
     public void metricsWithDifferentType() {
-        Metadata metadata1 = Metadata.builder().withName("metric1")
-                .withDescription("description1").build();
-        Metadata metadata2 = Metadata.builder().withName("metric1")
-                .withDescription("description2").build();
+        Metadata metadata1 = Metadata.builder().withName("metric1").withDescription("description1").build();
+        Metadata metadata2 = Metadata.builder().withName("metric1").withDescription("description2").build();
 
         mpRegistry.histogram(metadata1);
 
@@ -53,13 +50,9 @@ public class MpMetricRegistrationTest {
 
     @Test
     public void wrongTypeInMetadata() {
-        Metadata metadata1 = Metadata.builder().withName("metric1")
-                .withDescription("description1").build();
+        Metadata metadata1 = Metadata.builder().withName("metric1").withDescription("description1").build();
 
-        Metadata metadata2 = Metadata.builder()
-                .withName("metric1")
-                .withType(MetricType.COUNTER)
-                .build();
+        Metadata metadata2 = Metadata.builder().withName("metric1").withType(MetricType.COUNTER).build();
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             mpRegistry.histogram(metadata2);
@@ -68,10 +61,8 @@ public class MpMetricRegistrationTest {
 
     @Test
     public void descriptionChanged() {
-        Metadata metadata1 = Metadata.builder().withName("metric1")
-                .withDescription("description1").build();
-        Metadata metadata2 = Metadata.builder().withName("metric1")
-                .withDescription("description2").build();
+        Metadata metadata1 = Metadata.builder().withName("metric1").withDescription("description1").build();
+        Metadata metadata2 = Metadata.builder().withName("metric1").withDescription("description2").build();
 
         // harmless re-registration
         mpRegistry.histogram(metadata1);
@@ -98,9 +89,7 @@ public class MpMetricRegistrationTest {
 
         mpRegistry.remove("mycounter");
 
-        Assertions.assertEquals(cmSize, mpRegistry.constructedMeters.size(),
-                "Both counters should have been removed");
-        Assertions.assertEquals(mdSize, mpRegistry.metadataMap.size(),
-                "mycounter metadata should have been removed");
+        Assertions.assertEquals(cmSize, mpRegistry.constructedMeters.size(), "Both counters should have been removed");
+        Assertions.assertEquals(mdSize, mpRegistry.metadataMap.size(), "mycounter metadata should have been removed");
     }
 }

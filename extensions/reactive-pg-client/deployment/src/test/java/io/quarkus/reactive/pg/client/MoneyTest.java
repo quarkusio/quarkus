@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import io.vertx.pgclient.data.Money;
 
 /**
- * Reproduce <a href="https://github.com/quarkusio/quarkus/issues/36144">PG Reactive Client: Cannot create Money value in Range
- * (-1.00, 0.00)</a>.
+ * Reproduce <a href="https://github.com/quarkusio/quarkus/issues/36144">PG Reactive Client: Cannot create Money value
+ * in Range (-1.00, 0.00)</a>.
  */
 public class MoneyTest {
 

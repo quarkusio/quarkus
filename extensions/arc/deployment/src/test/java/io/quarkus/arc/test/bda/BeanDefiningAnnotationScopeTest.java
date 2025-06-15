@@ -34,9 +34,8 @@ public class BeanDefiningAnnotationScopeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(MyBean.class, AnotherBean.class, YetAnotherBean.class, MakeItBean.class,
-                            QualifierMakeItBean.class, DependentStereotype.class))
+            .withApplicationRoot(root -> root.addClasses(MyBean.class, AnotherBean.class, YetAnotherBean.class,
+                    MakeItBean.class, QualifierMakeItBean.class, DependentStereotype.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -48,11 +47,12 @@ public class BeanDefiningAnnotationScopeTest {
 
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple(MakeItBean.class.getName()),
-                                DotName.createSimple(ApplicationScoped.class.getName())));
                         context.produce(
-                                new BeanDefiningAnnotationBuildItem(DotName.createSimple(QualifierMakeItBean.class.getName()),
+                                new BeanDefiningAnnotationBuildItem(DotName.createSimple(MakeItBean.class.getName()),
                                         DotName.createSimple(ApplicationScoped.class.getName())));
+                        context.produce(new BeanDefiningAnnotationBuildItem(
+                                DotName.createSimple(QualifierMakeItBean.class.getName()),
+                                DotName.createSimple(ApplicationScoped.class.getName())));
                     }
                 }).produces(BeanDefiningAnnotationBuildItem.class).build();
             }

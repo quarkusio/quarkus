@@ -34,38 +34,31 @@ import io.smallrye.mutiny.Uni;
 public class ValidNonBlockingFiltersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(StandardBlockingRequestFilter.class, AnotherStandardBlockingRequestFilter.class,
-                                    StandardNonBlockingRequestFilter.class, DummyResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(StandardBlockingRequestFilter.class,
+                    AnotherStandardBlockingRequestFilter.class, StandardNonBlockingRequestFilter.class,
+                    DummyResource.class);
+        }
+    });
 
     @Test
     public void testBlockingEndpoint() {
-        Headers headers = RestAssured.given().get("/dummy/blocking")
-                .then().statusCode(200).extract().headers();
+        Headers headers = RestAssured.given().get("/dummy/blocking").then().statusCode(200).extract().headers();
         assertEquals(
                 "1-custom-non-blocking/2-another-custom-non-blocking/3-standard-non-blocking/4-standard-blocking/5-another-standard-blocking/6-custom-blocking",
                 headers.get("filter-request").getValue());
-        assertEquals(
-                "false/false/false/true/true/true",
-                headers.get("thread").getValue());
+        assertEquals("false/false/false/true/true/true", headers.get("thread").getValue());
     }
 
     @Test
     public void testNonBlockingEndpoint() {
-        Headers headers = RestAssured.given().get("/dummy/nonblocking")
-                .then().statusCode(200).extract().headers();
+        Headers headers = RestAssured.given().get("/dummy/nonblocking").then().statusCode(200).extract().headers();
         assertEquals(
                 "1-custom-non-blocking/2-another-custom-non-blocking/3-standard-non-blocking/4-standard-blocking/5-another-standard-blocking/6-custom-blocking",
                 headers.get("filter-request").getValue());
-        assertEquals(
-                "false/false/false/false/false/false",
-                headers.get("thread").getValue());
+        assertEquals("false/false/false/false/false/false", headers.get("thread").getValue());
     }
 
     @Path("dummy")
@@ -85,10 +78,8 @@ public class ValidNonBlockingFiltersTest {
         }
 
         private Response getResponse(HttpHeaders headers) {
-            return Response.ok()
-                    .header("filter-request", headers.getHeaderString("filter-request"))
-                    .header("thread", headers.getHeaderString("thread"))
-                    .build();
+            return Response.ok().header("filter-request", headers.getHeaderString("filter-request"))
+                    .header("thread", headers.getHeaderString("thread")).build();
         }
     }
 
@@ -149,8 +140,7 @@ public class ValidNonBlockingFiltersTest {
         public void anotherNonBlocking(ContainerRequestContext requestContext) {
             MultivaluedMap<String, String> headers = requestContext.getHeaders();
             String previousFilterHeaderValue = headers.getFirst("filter-request");
-            headers.putSingle("filter-request",
-                    previousFilterHeaderValue + "/2-another-custom-non-blocking");
+            headers.putSingle("filter-request", previousFilterHeaderValue + "/2-another-custom-non-blocking");
             String previousThreadHeaderValue = headers.getFirst("thread");
             headers.putSingle("thread", previousThreadHeaderValue + "/" + BlockingOperationControl.isBlockingAllowed());
         }

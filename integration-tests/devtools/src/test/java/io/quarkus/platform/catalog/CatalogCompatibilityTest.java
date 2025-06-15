@@ -30,16 +30,12 @@ public class CatalogCompatibilityTest extends PlatformAwareTestBase {
     @Test
     void testCatalog() throws RegistryResolutionException, IOException {
         final ExtensionCatalogResolver catalogResolver = QuarkusProjectHelper.getCatalogResolver();
-        testPlatformCatalog(catalogResolver, catalogResolver.resolvePlatformCatalog(),
-                "io.quarkus");
+        testPlatformCatalog(catalogResolver, catalogResolver.resolvePlatformCatalog(), "io.quarkus");
     }
 
     static void testPlatformCatalog(ExtensionCatalogResolver catalogResolver, PlatformCatalog platformCatalog,
-            String expectedPlatformKey)
-            throws RegistryResolutionException, IOException {
-        assertThat(platformCatalog.getPlatforms())
-                .extracting(Platform::getPlatformKey)
-                .isNotEmpty()
+            String expectedPlatformKey) throws RegistryResolutionException, IOException {
+        assertThat(platformCatalog.getPlatforms()).extracting(Platform::getPlatformKey).isNotEmpty()
                 .contains(expectedPlatformKey);
         final Platform platform = platformCatalog.getPlatform(expectedPlatformKey);
         assertThat(platform).isNotNull();
@@ -64,7 +60,8 @@ public class CatalogCompatibilityTest extends PlatformAwareTestBase {
         checkCodestarts(extensionCatalog, processed);
     }
 
-    private static void checkCodestarts(ExtensionCatalog extensionCatalog, CatalogProcessor processed) throws IOException {
+    private static void checkCodestarts(ExtensionCatalog extensionCatalog, CatalogProcessor processed)
+            throws IOException {
         final List<ResourceLoader> codestartResourceLoaders = CodestartResourceLoadersBuilder
                 .getCodestartResourceLoaders(MessageWriter.info(), extensionCatalog);
         final QuarkusCodestartCatalog quarkusCodestartCatalog = QuarkusCodestartCatalog

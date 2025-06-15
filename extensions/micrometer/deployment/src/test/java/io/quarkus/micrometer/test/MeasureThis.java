@@ -26,39 +26,33 @@ public class MeasureThis {
         return new Consumer<MetricsFactory>() {
             @Override
             public void accept(MetricsFactory metricsFactory) {
-                metricsFactory.builder("count.me")
-                        .buildCounter(MeasureThis.counter::longValue);
-                metricsFactory.builder("gauge.supplier")
-                        .buildGauge(MeasureThis.gauge::doubleValue);
+                metricsFactory.builder("count.me").buildCounter(MeasureThis.counter::longValue);
+                metricsFactory.builder("gauge.supplier").buildGauge(MeasureThis.gauge::doubleValue);
 
-                MeasureThis.wrappedRunnable = metricsFactory.builder("time.runnable")
-                        .buildTimer(new Runnable() {
-                            @Override
-                            public void run() {
-                                runnableCount.increment();
-                            }
-                        });
+                MeasureThis.wrappedRunnable = metricsFactory.builder("time.runnable").buildTimer(new Runnable() {
+                    @Override
+                    public void run() {
+                        runnableCount.increment();
+                    }
+                });
 
-                MeasureThis.wrappedCallable = metricsFactory.builder("time.callable")
-                        .buildTimer(new Callable<Long>() {
-                            @Override
-                            public Long call() throws Exception {
-                                callableCount.increment();
-                                return callableCount.sum();
-                            }
-                        });
+                MeasureThis.wrappedCallable = metricsFactory.builder("time.callable").buildTimer(new Callable<Long>() {
+                    @Override
+                    public Long call() throws Exception {
+                        callableCount.increment();
+                        return callableCount.sum();
+                    }
+                });
 
-                MeasureThis.wrappedSupplier = metricsFactory.builder("time.supplier")
-                        .buildTimer(new Supplier<Long>() {
-                            @Override
-                            public Long get() {
-                                supplierCount.increment();
-                                return supplierCount.sum();
-                            }
-                        });
+                MeasureThis.wrappedSupplier = metricsFactory.builder("time.supplier").buildTimer(new Supplier<Long>() {
+                    @Override
+                    public Long get() {
+                        supplierCount.increment();
+                        return supplierCount.sum();
+                    }
+                });
 
-                MeasureThis.timeRecorder = metricsFactory.builder("time.recorder")
-                        .buildTimer();
+                MeasureThis.timeRecorder = metricsFactory.builder("time.recorder").buildTimer();
             }
         };
     }

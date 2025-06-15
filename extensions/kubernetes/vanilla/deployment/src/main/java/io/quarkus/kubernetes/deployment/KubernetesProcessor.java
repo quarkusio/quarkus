@@ -96,20 +96,13 @@ class KubernetesProcessor {
     }
 
     @BuildStep(onlyIfNot = IsTest.class)
-    public void build(ApplicationInfoBuildItem applicationInfo,
-            OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig,
-            KubernetesConfig kubernetesConfig,
-            OpenShiftConfig openshiftConfig,
-            KnativeConfig knativeConfig,
-            Capabilities capabilities,
-            LaunchModeBuildItem launchMode,
+    public void build(ApplicationInfoBuildItem applicationInfo, OutputTargetBuildItem outputTarget,
+            PackageConfig packageConfig, KubernetesConfig kubernetesConfig, OpenShiftConfig openshiftConfig,
+            KnativeConfig knativeConfig, Capabilities capabilities, LaunchModeBuildItem launchMode,
             List<KubernetesPortBuildItem> kubernetesPorts,
             EnabledKubernetesDeploymentTargetsBuildItem kubernetesDeploymentTargets,
-            List<ConfiguratorBuildItem> configurators,
-            List<ConfigurationSupplierBuildItem> configurationSuppliers,
-            List<DecoratorBuildItem> decorators,
-            BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
+            List<ConfiguratorBuildItem> configurators, List<ConfigurationSupplierBuildItem> configurationSuppliers,
+            List<DecoratorBuildItem> decorators, BuildProducer<DekorateOutputBuildItem> dekorateSessionProducer,
             Optional<CustomProjectRootBuildItem> customProjectRoot,
             Optional<CustomKubernetesOutputDirBuildItem> customOutputDir,
             BuildProducer<GeneratedFileSystemResourceBuildItem> generatedResourceProducer,
@@ -129,8 +122,7 @@ class KubernetesProcessor {
 
         Map<String, Object> config = KubernetesConfigUtil.toMap(kubernetesConfig, openshiftConfig, knativeConfig);
         Set<String> deploymentTargets = kubernetesDeploymentTargets.getEntriesSortedByPriority().stream()
-                .map(DeploymentTargetEntry::getName)
-                .collect(Collectors.toSet());
+                .map(DeploymentTargetEntry::getName).collect(Collectors.toSet());
 
         Path artifactPath = getRunner(outputTarget, packageConfig);
 
@@ -160,20 +152,20 @@ class KubernetesProcessor {
 
                 session.addPropertyConfiguration(Maps.fromProperties(config));
 
-                //We need to verify to filter out anything that doesn't extend the Configurator class.
-                //The ConfiguratorBuildItem is a wrapper to Object.
+                // We need to verify to filter out anything that doesn't extend the Configurator class.
+                // The ConfiguratorBuildItem is a wrapper to Object.
                 for (ConfiguratorBuildItem configuratorBuildItem : allConfigurators) {
                     session.getConfigurationRegistry().add((Configurator) configuratorBuildItem.getConfigurator());
                 }
-                //We need to verify to filter out anything that doesn't extend the ConfigurationSupplier class.
-                //The ConfigurationSupplierBuildItem is a wrapper to Object.
+                // We need to verify to filter out anything that doesn't extend the ConfigurationSupplier class.
+                // The ConfigurationSupplierBuildItem is a wrapper to Object.
                 for (ConfigurationSupplierBuildItem configurationSupplierBuildItem : allConfigurationSuppliers) {
                     session.getConfigurationRegistry()
                             .add((ConfigurationSupplier) configurationSupplierBuildItem.getConfigurationSupplier());
                 }
 
-                //We need to verify to filter out anything that doesn't extend the Decorator class.
-                //The DecoratorBuildItem is a wrapper to Object.
+                // We need to verify to filter out anything that doesn't extend the Decorator class.
+                // The DecoratorBuildItem is a wrapper to Object.
                 allDecorators.stream().filter(d -> d.matches(Decorator.class)).forEach(i -> {
                     String group = i.getGroup();
                     Decorator decorator = (Decorator) i.getDecorator();
@@ -184,10 +176,10 @@ class KubernetesProcessor {
                     }
                 });
 
-                //The targetDirectory should be the custom if provided, oterwise the 'default' output directory.
-                //I this case 'default' means that one that we used until now (up until we introduced the ability to override).
-                Path targetDirectory = customOutputDir
-                        .map(c -> c.getOutputDir())
+                // The targetDirectory should be the custom if provided, oterwise the 'default' output directory.
+                // I this case 'default' means that one that we used until now (up until we introduced the ability to
+                // override).
+                Path targetDirectory = customOutputDir.map(c -> c.getOutputDir())
                         .map(d -> d.isAbsolute() ? d : project.getRoot().resolve(d))
                         .orElseGet(() -> getEffectiveOutputDirectory(kubernetesConfig, project.getRoot(),
                                 outputTarget.getOutputDirectory()));
@@ -200,13 +192,14 @@ class KubernetesProcessor {
                 List<String> generatedFileNames = new ArrayList<>(generatedResourcesMap.size());
                 for (Map.Entry<String, String> resourceEntry : generatedResourcesMap.entrySet()) {
                     Path path = Paths.get(resourceEntry.getKey());
-                    //We need to ignore the config yml
+                    // We need to ignore the config yml
                     if (!path.toFile().getParentFile().getName().equals("dekorate")) {
                         continue;
                     }
                     String fileName = path.toFile().getName();
                     Path targetPath = targetDirectory.resolve(fileName);
-                    String relativePath = targetPath.toAbsolutePath().toString().replace(root.toAbsolutePath().toString(), "");
+                    String relativePath = targetPath.toAbsolutePath().toString()
+                            .replace(root.toAbsolutePath().toString(), "");
 
                     generatedKubernetesResourceProducer.produce(new GeneratedKubernetesResourceBuildItem(fileName,
                             resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
@@ -220,11 +213,9 @@ class KubernetesProcessor {
 
                     generatedFileNames.add(fileName);
                     generatedFiles.add(relativePath);
-                    generatedResourceProducer.produce(
-                            new GeneratedFileSystemResourceBuildItem(
-                                    // we need to make sure we are only passing the relative path to the build item
-                                    relativePath,
-                                    resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
+                    generatedResourceProducer.produce(new GeneratedFileSystemResourceBuildItem(
+                            // we need to make sure we are only passing the relative path to the build item
+                            relativePath, resourceEntry.getValue().getBytes(StandardCharsets.UTF_8)));
                 }
 
                 dekorateSessionProducer.produce(new DekorateOutputBuildItem(project, session, generatedFiles));
@@ -259,18 +250,17 @@ class KubernetesProcessor {
 
     /**
      * This method is based on the logic in {@link io.quarkus.deployment.pkg.steps.JarResultBuildStep#buildRunnerJar}.
-     * Note that we cannot consume the {@link io.quarkus.deployment.pkg.builditem.JarBuildItem} because it causes build cycle
-     * exceptions since we need to support adding generated resources into the JAR file (see
+     * Note that we cannot consume the {@link io.quarkus.deployment.pkg.builditem.JarBuildItem} because it causes build
+     * cycle exceptions since we need to support adding generated resources into the JAR file (see
      * https://github.com/quarkusio/quarkus/pull/20113).
      */
-    private Path getRunner(OutputTargetBuildItem outputTarget,
-            PackageConfig packageConfig) {
+    private Path getRunner(OutputTargetBuildItem outputTarget, PackageConfig packageConfig) {
         PackageConfig.JarConfig.JarType jarType = packageConfig.jar().type();
         return switch (jarType) {
             case LEGACY_JAR, UBER_JAR -> outputTarget.getOutputDirectory()
                     .resolve(outputTarget.getBaseName() + packageConfig.computedRunnerSuffix() + ".jar");
             case FAST_JAR, MUTABLE_JAR -> {
-                //thin JAR
+                // thin JAR
                 Path buildDir;
 
                 if (packageConfig.outputDirectory().isPresent()) {
@@ -285,16 +275,21 @@ class KubernetesProcessor {
     }
 
     /**
-     * Resolve the effective output directory where to generate the Kubernetes manifests.
-     * If the `quarkus.kubernetes.output-directory` property is not provided, then the default project output directory will be
+     * Resolve the effective output directory where to generate the Kubernetes manifests. If the
+     * `quarkus.kubernetes.output-directory` property is not provided, then the default project output directory will be
      * used.
      *
-     * @param config The Kubernetes configuration.
-     * @param projectLocation The project location.
-     * @param projectOutputDirectory The project output target.
+     * @param config
+     *        The Kubernetes configuration.
+     * @param projectLocation
+     *        The project location.
+     * @param projectOutputDirectory
+     *        The project output target.
+     *
      * @return the effective output directory.
      */
-    private Path getEffectiveOutputDirectory(KubernetesConfig config, Path projectLocation, Path projectOutputDirectory) {
+    private Path getEffectiveOutputDirectory(KubernetesConfig config, Path projectLocation,
+            Path projectOutputDirectory) {
         return config.outputDirectory().map(d -> projectLocation.resolve(d))
                 .orElse(projectOutputDirectory.resolve(KUBERNETES));
     }

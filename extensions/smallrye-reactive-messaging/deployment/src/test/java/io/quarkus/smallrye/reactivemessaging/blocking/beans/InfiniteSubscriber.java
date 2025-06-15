@@ -17,18 +17,12 @@ public class InfiniteSubscriber {
 
     @Incoming("infinite-producer-payload")
     public SubscriberBuilder<Integer, Void> consumeFourItems() {
-        return ReactiveStreams
-                .<Integer> builder()
-                .limit(4)
-                .forEach(payloads::add);
+        return ReactiveStreams.<Integer> builder().limit(4).forEach(payloads::add);
     }
 
     @Incoming("infinite-producer-msg")
     public SubscriberBuilder<Integer, Void> consumeFourMessages() {
-        return ReactiveStreams
-                .<Integer> builder()
-                .limit(4)
-                .forEach(messages::add);
+        return ReactiveStreams.<Integer> builder().limit(4).forEach(messages::add);
     }
 
     public List<Integer> payloads() {

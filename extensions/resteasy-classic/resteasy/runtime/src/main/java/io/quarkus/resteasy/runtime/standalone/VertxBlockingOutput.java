@@ -33,7 +33,7 @@ public class VertxBlockingOutput implements VertxOutput {
             public void handle(Throwable event) {
                 throwable = event;
                 log.debugf(event, "IO Exception ");
-                //TODO: do we need this?
+                // TODO: do we need this?
                 terminateResponse();
                 request.connection().close();
                 synchronized (request.connection()) {
@@ -69,7 +69,7 @@ public class VertxBlockingOutput implements VertxOutput {
     public void write(ByteBuf data, boolean last) throws IOException {
         if (last && data == null) {
             request.response().end();
-            //if there is a problem we still try and end, but then throw to report to the caller
+            // if there is a problem we still try and end, but then throw to report to the caller
             if (throwable != null) {
                 throw new IOException(throwable);
             }
@@ -83,7 +83,7 @@ public class VertxBlockingOutput implements VertxOutput {
             throw new IOException(throwable);
         }
         try {
-            //do all this in the same lock
+            // do all this in the same lock
             synchronized (request.connection()) {
                 try {
                     awaitWriteable();
@@ -119,7 +119,7 @@ public class VertxBlockingOutput implements VertxOutput {
         } else {
             request.response().write(buffer, handler(ret));
         }
-        //no need to free 'data', the write will handle this
+        // no need to free 'data', the write will handle this
         return ret;
     }
 

@@ -25,12 +25,10 @@ public interface ExpectedServerEndpointResponse {
     final class DoubleEchoExpectedServerEndpointResponse implements ExpectedServerEndpointResponse {
 
         public String[] getExpectedResponse(String[] sentMessages) {
-            return Arrays.stream(sentMessages)
-                    .mapMulti((msg, consumer) -> {
-                        consumer.accept("echo 0: " + msg);
-                        consumer.accept("echo 1: " + msg);
-                    })
-                    .toArray(String[]::new);
+            return Arrays.stream(sentMessages).mapMulti((msg, consumer) -> {
+                consumer.accept("echo 0: " + msg);
+                consumer.accept("echo 1: " + msg);
+            }).toArray(String[]::new);
         }
 
     }

@@ -25,13 +25,11 @@ public class ValidateExtensionTaskTest {
         TestUtils.createExtensionProject(testProjectDir, false, List.of("io.quarkus:quarkus-core"),
                 List.of("io.quarkus:quarkus-core-deployment"));
 
-        BuildResult validationResult = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME)
-                .build();
+        BuildResult validationResult = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir)
+                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).build();
 
-        assertThat(validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
+        assertThat(
+                validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SUCCESS);
     }
 
@@ -39,13 +37,11 @@ public class ValidateExtensionTaskTest {
     public void shouldDetectMissionExtensionDependency() throws IOException {
         TestUtils.createExtensionProject(testProjectDir, false, List.of("io.quarkus:quarkus-jdbc-h2"), List.of());
 
-        BuildResult validationResult = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME)
-                .buildAndFail();
+        BuildResult validationResult = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir)
+                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).buildAndFail();
 
-        assertThat(validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
+        assertThat(
+                validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.FAILED);
         assertThat(validationResult.getOutput()).contains("Quarkus Extension Dependency Verification Error");
         assertThat(validationResult.getOutput())
@@ -58,13 +54,11 @@ public class ValidateExtensionTaskTest {
         TestUtils.createExtensionProject(testProjectDir, false,
                 List.of("io.quarkus:quarkus-core", "io.quarkus:quarkus-core-deployment"), List.of());
 
-        BuildResult validationResult = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME)
-                .buildAndFail();
+        BuildResult validationResult = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir)
+                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).buildAndFail();
 
-        assertThat(validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
+        assertThat(
+                validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.FAILED);
         assertThat(validationResult.getOutput()).contains("Quarkus Extension Dependency Verification Error");
         assertThat(validationResult.getOutput())
@@ -77,13 +71,11 @@ public class ValidateExtensionTaskTest {
         TestUtils.createExtensionProject(testProjectDir, true,
                 List.of("io.quarkus:quarkus-core", "io.quarkus:quarkus-core-deployment"), List.of());
 
-        BuildResult validationResult = GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir)
-                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME)
-                .build();
+        BuildResult validationResult = GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir)
+                .withArguments(QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).build();
 
-        assertThat(validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
+        assertThat(
+                validationResult.task(":runtime:" + QuarkusExtensionPlugin.VALIDATE_EXTENSION_TASK_NAME).getOutcome())
                 .isEqualTo(TaskOutcome.SKIPPED);
     }
 }

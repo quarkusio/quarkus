@@ -20,7 +20,8 @@ import io.quarkus.runtime.RuntimeValue;
 import io.quarkus.runtime.annotations.Recorder;
 
 /**
- * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security objects.
+ * The runtime security recorder class that provides methods for creating RuntimeValues for the deployment security
+ * objects.
  */
 @Recorder
 public class ElytronRecorder {
@@ -37,13 +38,18 @@ public class ElytronRecorder {
     /**
      * Create a {@linkplain SecurityDomain.Builder} for the given default {@linkplain SecurityRealm}.
      *
-     * @param realmName - the default realm name
-     * @param realm - the default SecurityRealm
+     * @param realmName
+     *        - the default realm name
+     * @param realm
+     *        - the default SecurityRealm
+     *
      * @return a runtime value for the SecurityDomain.Builder
-     * @throws Exception on any error
+     *
+     * @throws Exception
+     *         on any error
      */
-    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName, RuntimeValue<SecurityRealm> realm)
-            throws Exception {
+    public RuntimeValue<SecurityDomain.Builder> configureDomainBuilder(String realmName,
+            RuntimeValue<SecurityRealm> realm) throws Exception {
         log.debugf("buildDomain, realm=%s", realm.getValue());
 
         SecurityDomain.Builder domain = SecurityDomain.builder()
@@ -55,10 +61,7 @@ public class ElytronRecorder {
                     public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
                         return CDI.current().select(DefaultRoleDecoder.class).get().decodeRoles(authorizationIdentity);
                     }
-                })
-                .build()
-                .setDefaultRealmName(realmName)
-                .setPermissionMapper(new PermissionMapper() {
+                }).build().setDefaultRealmName(realmName).setPermissionMapper(new PermissionMapper() {
                     @Override
                     public PermissionVerifier mapPermissions(PermissionMappable permissionMappable, Roles roles) {
                         return new PermissionVerifier() {
@@ -79,12 +82,16 @@ public class ElytronRecorder {
     /**
      * Called to add a realm to the {@linkplain SecurityDomain} being built
      *
-     * @param builder - runtime value for SecurityDomain.Builder created by
+     * @param builder
+     *        - runtime value for SecurityDomain.Builder created by
      *        {@linkplain #configureDomainBuilder(String, RuntimeValue)}
-     * @param realmName - the name of the SecurityRealm
-     * @param realm - the runtime value for the SecurityRealm
+     * @param realmName
+     *        - the name of the SecurityRealm
+     * @param realm
+     *        - the runtime value for the SecurityRealm
      */
-    public void addRealm(RuntimeValue<SecurityDomain.Builder> builder, String realmName, RuntimeValue<SecurityRealm> realm) {
+    public void addRealm(RuntimeValue<SecurityDomain.Builder> builder, String realmName,
+            RuntimeValue<SecurityRealm> realm) {
         builder.getValue().addRealm(realmName, realm.getValue()).setRoleDecoder(new RoleDecoder() {
             @Override
             public Roles decodeRoles(AuthorizationIdentity authorizationIdentity) {
@@ -96,7 +103,9 @@ public class ElytronRecorder {
     /**
      * Called to invoke the builder created by {@linkplain #configureDomainBuilder(String, RuntimeValue)}
      *
-     * @param builder - the security domain builder
+     * @param builder
+     *        - the security domain builder
+     *
      * @return the security domain runtime value
      */
     public RuntimeValue<SecurityDomain> buildDomain(RuntimeValue<SecurityDomain.Builder> builder) {

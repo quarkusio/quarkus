@@ -44,6 +44,7 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
      * By default, the transformation is applied to all kinds of targets.
      *
      * @param kind
+     *
      * @return {@code true} if the transformation applies to the specified kind, {@code false} otherwise
      */
     default boolean appliesTo(Kind kind) {
@@ -51,7 +52,6 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
     }
 
     /**
-     *
      * @param transformationContext
      */
     void transform(TransformationContext transformationContext);
@@ -97,7 +97,6 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
     // ---
 
     /**
-     *
      * @return a new builder instance
      */
     static Builder builder() {
@@ -112,8 +111,9 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
         AnnotationTarget getTarget();
 
         /**
-         * The initial set of annotations instances corresponds to {@link org.jboss.jandex.ClassInfo#declaredAnnotations()},
-         * {@link org.jboss.jandex.FieldInfo#annotations()} and {@link org.jboss.jandex.MethodInfo#annotations()} respectively.
+         * The initial set of annotations instances corresponds to
+         * {@link org.jboss.jandex.ClassInfo#declaredAnnotations()}, {@link org.jboss.jandex.FieldInfo#annotations()}
+         * and {@link org.jboss.jandex.MethodInfo#annotations()} respectively.
          *
          * @return the annotation instances
          */
@@ -154,9 +154,10 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
         }
 
         /**
-         *
          * @param appliesToKind
+         *
          * @return self
+         *
          * @see AnnotationsTransformer#appliesTo(Kind)
          */
         public Builder appliesTo(Kind appliesToKind) {
@@ -164,9 +165,10 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
         }
 
         /**
-         *
          * @param appliesTo
+         *
          * @return self
+         *
          * @see AnnotationsTransformer#appliesTo(Kind)
          */
         public Builder appliesTo(Predicate<Kind> appliesTo) {
@@ -175,8 +177,8 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
         }
 
         /**
-         *
          * @param priority
+         *
          * @return self
          */
         public Builder priority(int priority) {
@@ -188,6 +190,7 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         public Builder whenContainsAll(List<DotName> annotationNames) {
@@ -205,6 +208,7 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         public Builder whenContainsAll(DotName... annotationNames) {
@@ -215,18 +219,20 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
          * {@link TransformationContext#getAnnotations()} must contain ALL of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         @SafeVarargs
         public final Builder whenContainsAll(Class<? extends Annotation>... annotationNames) {
-            return whenContainsAll(
-                    Arrays.stream(annotationNames).map(a -> DotName.createSimple(a.getName())).collect(Collectors.toList()));
+            return whenContainsAll(Arrays.stream(annotationNames).map(a -> DotName.createSimple(a.getName()))
+                    .collect(Collectors.toList()));
         }
 
         /**
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         public Builder whenContainsAny(List<DotName> annotationNames) {
@@ -237,6 +243,7 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         public Builder whenContainsAny(DotName... annotationNames) {
@@ -247,18 +254,20 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
          * {@link TransformationContext#getAnnotations()} must contain ANY of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         @SafeVarargs
         public final Builder whenContainsAny(Class<? extends Annotation>... annotationNames) {
-            return whenContainsAny(
-                    Arrays.stream(annotationNames).map(a -> DotName.createSimple(a.getName())).collect(Collectors.toList()));
+            return whenContainsAny(Arrays.stream(annotationNames).map(a -> DotName.createSimple(a.getName()))
+                    .collect(Collectors.toList()));
         }
 
         /**
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         public Builder whenContainsNone(List<DotName> annotationNames) {
@@ -269,6 +278,7 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         public Builder whenContainsNone(DotName... annotationNames) {
@@ -279,19 +289,21 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
          * {@link TransformationContext#getAnnotations()} must NOT contain any of the given annotations.
          *
          * @param annotationNames
+         *
          * @return self
          */
         @SafeVarargs
         public final Builder whenContainsNone(Class<? extends Annotation>... annotationNames) {
-            return whenContainsNone(
-                    Arrays.stream(annotationNames).map(a -> DotName.createSimple(a.getName())).collect(Collectors.toList()));
+            return whenContainsNone(Arrays.stream(annotationNames).map(a -> DotName.createSimple(a.getName()))
+                    .collect(Collectors.toList()));
         }
 
         /**
-         * The transformation logic is only performed if the given predicate is evaluated to true. Multiple predicates are
-         * logically-ANDed.
+         * The transformation logic is only performed if the given predicate is evaluated to true. Multiple predicates
+         * are logically-ANDed.
          *
          * @param when
+         *
          * @return self
          */
         public Builder when(Predicate<TransformationContext> when) {
@@ -304,9 +316,11 @@ public interface AnnotationsTransformer extends AnnotationTransformation {
         }
 
         /**
-         * The given transformation logic is only performed if all conditions added via {@link #when(Predicate)} are met.
+         * The given transformation logic is only performed if all conditions added via {@link #when(Predicate)} are
+         * met.
          *
          * @param consumer
+         *
          * @return a new annotation transformer
          */
         public AnnotationsTransformer transform(Consumer<TransformationContext> consumer) {

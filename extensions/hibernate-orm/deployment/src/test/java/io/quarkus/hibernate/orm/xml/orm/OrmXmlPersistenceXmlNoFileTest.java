@@ -15,17 +15,14 @@ import io.quarkus.hibernate.orm.SmokeTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Test that the implicit mapping file META-INF/orm.xml is ignored
- * for persistence units configured through Quarkus' application.properties.
+ * Test that the implicit mapping file META-INF/orm.xml is ignored for persistence units configured through Quarkus'
+ * application.properties.
  */
 public class OrmXmlPersistenceXmlNoFileTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(SchemaUtil.class)
-                    .addClass(AnnotatedEntity.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClass(SmokeTestUtils.class).addClass(SchemaUtil.class).addClass(AnnotatedEntity.class)
                     .addAsResource("application-datasource-only.properties", "application.properties")
                     .addAsManifestResource("META-INF/persistence-mapping-file-no-file.xml", "persistence.xml")
                     // For a Quarkus persistence unit,
@@ -44,16 +41,14 @@ public class OrmXmlPersistenceXmlNoFileTest {
     @Test
     @Transactional
     public void ormXmlIgnored() {
-        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, AnnotatedEntity.class))
-                .contains("name")
+        assertThat(SchemaUtil.getColumnNames(entityManagerFactory, AnnotatedEntity.class)).contains("name")
                 .doesNotContain("someothername");
     }
 
     @Test
     @Transactional
     public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager,
-                AnnotatedEntity.class, AnnotatedEntity::new,
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(entityManager, AnnotatedEntity.class, AnnotatedEntity::new,
                 AnnotatedEntity::getId, AnnotatedEntity::setName, AnnotatedEntity::getName);
     }
 

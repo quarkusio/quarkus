@@ -27,8 +27,7 @@ public class FailedExecution {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("Failed execution of [")
-                .append(execution.getTrigger().getId())
+        StringBuilder builder = new StringBuilder("Failed execution of [").append(execution.getTrigger().getId())
                 .append("]");
         if (exception != null) {
             builder.append(": ").append(exception.getMessage());

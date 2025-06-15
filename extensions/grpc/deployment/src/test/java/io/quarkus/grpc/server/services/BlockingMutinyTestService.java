@@ -20,8 +20,7 @@ import io.vertx.core.Context;
 import io.vertx.core.Vertx;
 
 @GrpcService
-public class BlockingMutinyTestService
-        extends MutinyBlockingTestServiceGrpc.BlockingTestServiceImplBase {
+public class BlockingMutinyTestService extends MutinyBlockingTestServiceGrpc.BlockingTestServiceImplBase {
 
     @Override
     public Uni<EmptyProtos.Empty> emptyCall(EmptyProtos.Empty request) {
@@ -63,9 +62,8 @@ public class BlockingMutinyTestService
         assertThat(request).isNotNull();
         assertRunOnEventLoop();
         Context ctxt = assertRunOnDuplicatedContext();
-        return Multi.createFrom().range(0, 10)
-                .onItem().invoke(AssertHelper::assertRunOnDuplicatedContext)
-                .onItem().invoke(x -> assertThat(ctxt).isEqualTo(Vertx.currentContext()))
+        return Multi.createFrom().range(0, 10).onItem().invoke(AssertHelper::assertRunOnDuplicatedContext).onItem()
+                .invoke(x -> assertThat(ctxt).isEqualTo(Vertx.currentContext()))
                 .map(i -> ByteString.copyFromUtf8(Integer.toString(i)))
                 .map(s -> Messages.Payload.newBuilder().setBody(s).build())
                 .map(p -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(p).build());
@@ -78,8 +76,7 @@ public class BlockingMutinyTestService
         assertThat(request).isNotNull();
         assertRunOnWorker();
         assertRunOnDuplicatedContext();
-        return Multi.createFrom().range(0, 10)
-                .map(i -> ByteString.copyFromUtf8(Integer.toString(i)))
+        return Multi.createFrom().range(0, 10).map(i -> ByteString.copyFromUtf8(Integer.toString(i)))
                 .map(s -> Messages.Payload.newBuilder().setBody(s).build())
                 .map(p -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(p).build());
     }
@@ -89,15 +86,13 @@ public class BlockingMutinyTestService
             Multi<Messages.StreamingInputCallRequest> request) {
         assertRunOnEventLoop();
         Context ctxt = assertRunOnDuplicatedContext();
-        return request.map(i -> i.getPayload().getBody().toStringUtf8())
-                .collect().asList()
-                .map(list -> {
-                    assertRunOnEventLoop();
-                    assertRunOnDuplicatedContext();
-                    assertThat(ctxt).isEqualTo(Vertx.currentContext());
-                    assertThat(list).containsExactly("a", "b", "c", "d");
-                    return Messages.StreamingInputCallResponse.newBuilder().build();
-                });
+        return request.map(i -> i.getPayload().getBody().toStringUtf8()).collect().asList().map(list -> {
+            assertRunOnEventLoop();
+            assertRunOnDuplicatedContext();
+            assertThat(ctxt).isEqualTo(Vertx.currentContext());
+            assertThat(list).containsExactly("a", "b", "c", "d");
+            return Messages.StreamingInputCallResponse.newBuilder().build();
+        });
     }
 
     @Override
@@ -106,15 +101,13 @@ public class BlockingMutinyTestService
             Multi<Messages.StreamingInputCallRequest> request) {
         assertRunOnWorker();
         Context ctxt = assertRunOnDuplicatedContext();
-        return request.map(i -> i.getPayload().getBody().toStringUtf8())
-                .collect().asList()
-                .map(list -> {
-                    assertRunOnWorker();
-                    assertRunOnDuplicatedContext();
-                    assertThat(ctxt).isEqualTo(Vertx.currentContext());
-                    assertThat(list).containsExactly("a", "b", "c", "d");
-                    return Messages.StreamingInputCallResponse.newBuilder().build();
-                });
+        return request.map(i -> i.getPayload().getBody().toStringUtf8()).collect().asList().map(list -> {
+            assertRunOnWorker();
+            assertRunOnDuplicatedContext();
+            assertThat(ctxt).isEqualTo(Vertx.currentContext());
+            assertThat(list).containsExactly("a", "b", "c", "d");
+            return Messages.StreamingInputCallResponse.newBuilder().build();
+        });
     }
 
     @Override
@@ -123,15 +116,12 @@ public class BlockingMutinyTestService
         AtomicInteger counter = new AtomicInteger();
         assertRunOnEventLoop();
         Context ctxt = assertRunOnDuplicatedContext();
-        return request
-                .map(r -> r.getPayload().getBody().toStringUtf8())
-                .map(r -> {
-                    assertRunOnEventLoop();
-                    assertRunOnDuplicatedContext();
-                    assertThat(ctxt).isEqualTo(Vertx.currentContext());
-                    return r + counter.incrementAndGet();
-                })
-                .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
+        return request.map(r -> r.getPayload().getBody().toStringUtf8()).map(r -> {
+            assertRunOnEventLoop();
+            assertRunOnDuplicatedContext();
+            assertThat(ctxt).isEqualTo(Vertx.currentContext());
+            return r + counter.incrementAndGet();
+        }).map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build());
     }
 
@@ -142,15 +132,12 @@ public class BlockingMutinyTestService
         AtomicInteger counter = new AtomicInteger();
         assertRunOnWorker();
         Context ctxt = assertRunOnDuplicatedContext();
-        return request
-                .map(r -> r.getPayload().getBody().toStringUtf8())
-                .map(r -> {
-                    assertRunOnWorker();
-                    assertRunOnDuplicatedContext();
-                    assertThat(ctxt).isEqualTo(Vertx.currentContext());
-                    return r + counter.incrementAndGet();
-                })
-                .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
+        return request.map(r -> r.getPayload().getBody().toStringUtf8()).map(r -> {
+            assertRunOnWorker();
+            assertRunOnDuplicatedContext();
+            assertThat(ctxt).isEqualTo(Vertx.currentContext());
+            return r + counter.incrementAndGet();
+        }).map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build());
     }
 
@@ -159,16 +146,12 @@ public class BlockingMutinyTestService
             Multi<Messages.StreamingOutputCallRequest> request) {
         assertRunOnEventLoop();
         Context ctxt = assertRunOnDuplicatedContext();
-        return request
-                .map(r -> {
-                    assertRunOnEventLoop();
-                    assertRunOnDuplicatedContext();
-                    assertThat(ctxt).isEqualTo(Vertx.currentContext());
-                    return r.getPayload().getBody().toStringUtf8();
-                })
-                .map(String::toUpperCase)
-                .collect().asList()
-                .onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
+        return request.map(r -> {
+            assertRunOnEventLoop();
+            assertRunOnDuplicatedContext();
+            assertThat(ctxt).isEqualTo(Vertx.currentContext());
+            return r.getPayload().getBody().toStringUtf8();
+        }).map(String::toUpperCase).collect().asList().onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build());
 
@@ -180,16 +163,12 @@ public class BlockingMutinyTestService
             Multi<Messages.StreamingOutputCallRequest> request) {
         assertRunOnWorker();
         Context ctxt = assertRunOnDuplicatedContext();
-        return request
-                .map(r -> {
-                    assertRunOnWorker();
-                    assertRunOnDuplicatedContext();
-                    assertThat(ctxt).isEqualTo(Vertx.currentContext());
-                    return r.getPayload().getBody().toStringUtf8();
-                })
-                .map(String::toUpperCase)
-                .collect().asList()
-                .onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
+        return request.map(r -> {
+            assertRunOnWorker();
+            assertRunOnDuplicatedContext();
+            assertThat(ctxt).isEqualTo(Vertx.currentContext());
+            return r.getPayload().getBody().toStringUtf8();
+        }).map(String::toUpperCase).collect().asList().onItem().transformToMulti(s -> Multi.createFrom().iterable(s))
                 .map(r -> Messages.Payload.newBuilder().setBody(ByteString.copyFromUtf8(r)).build())
                 .map(r -> Messages.StreamingOutputCallResponse.newBuilder().setPayload(r).build());
 

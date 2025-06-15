@@ -31,14 +31,13 @@ import io.vertx.core.Vertx;
 public class HttpUpgradeRedirectOnFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            SecurityTestBase.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.websockets-next.server.security.auth-failure-redirect-url=https://quarkus.io\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
+                    SecurityTestBase.class)
+            .addAsResource(
+                    new StringAsset(
+                            "quarkus.websockets-next.server.security.auth-failure-redirect-url=https://quarkus.io\n"),
+                    "application.properties"));
 
     @Inject
     Vertx vertx;
@@ -48,23 +47,15 @@ public class HttpUpgradeRedirectOnFailureTest {
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
     public void testRedirectOnFailure() {
         // test redirected on failure
-        RestAssured
-                .given()
+        RestAssured.given()
                 // without this header the client would receive 404
-                .header("Sec-WebSocket-Key", "foo")
-                .redirects()
-                .follow(false)
-                .get(endUri)
-                .then()
-                .statusCode(302)
+                .header("Sec-WebSocket-Key", "foo").redirects().follow(false).get(endUri).then().statusCode(302)
                 .header(HttpHeaderNames.LOCATION.toString(), "https://quarkus.io");
 
         try (WSClient client = new WSClient(vertx)) {

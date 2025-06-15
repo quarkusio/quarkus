@@ -39,14 +39,11 @@ public class RuntimeResource {
     private final Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers;
 
     public RuntimeResource(String httpMethod, URITemplate path, URITemplate classPath, ServerMediaType produces,
-            List<MediaType> consumes,
-            EndpointInvoker invoker,
-            BeanFactory<Object> endpointFactory, ServerRestHandler[] handlerChain, String javaMethodName,
-            Class<?>[] parameterTypes,
-            Type returnType, boolean blocking, boolean runOnVirtualThread, Class<?> resourceClass,
-            ResteasyReactiveResourceInfo lazyMethod,
-            Map<String, Integer> pathParameterIndexes, Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score,
-            MediaType streamElementType,
+            List<MediaType> consumes, EndpointInvoker invoker, BeanFactory<Object> endpointFactory,
+            ServerRestHandler[] handlerChain, String javaMethodName, Class<?>[] parameterTypes, Type returnType,
+            boolean blocking, boolean runOnVirtualThread, Class<?> resourceClass,
+            ResteasyReactiveResourceInfo lazyMethod, Map<String, Integer> pathParameterIndexes,
+            Map<ScoreSystem.Category, List<ScoreSystem.Diagnostic>> score, MediaType streamElementType,
             Map<Class<? extends Throwable>, ResourceExceptionMapper<? extends Throwable>> classExceptionMappers) {
         this.httpMethod = httpMethod;
         this.path = path;

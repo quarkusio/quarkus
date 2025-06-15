@@ -45,15 +45,15 @@ class NarayanaSTMProcessor {
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_STM));
 
         return ReflectiveClassBuildItem.builder(ShadowNoFileLockStore.class.getName(),
-                CheckedActionFactoryImple.class.getName(),
-                Lock.class.getName()).methods().build();
+                CheckedActionFactoryImple.class.getName(), Lock.class.getName()).methods().build();
     }
 
     // the software transactional memory implementation does not require a TSM
     // so disable it at native image build time
     @BuildStep()
     public NativeImageSystemPropertyBuildItem substrateSystemPropertyBuildItem() {
-        return new NativeImageSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable", "false");
+        return new NativeImageSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable",
+                "false");
     }
 
     // the software transactional memory implementation does not require a TSM
@@ -69,8 +69,7 @@ class NarayanaSTMProcessor {
 
     // register STM dynamic proxies
     @BuildStep
-    NativeImageProxyDefinitionBuildItem stmProxies(
-            BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
+    NativeImageProxyDefinitionBuildItem stmProxies(BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchyClass,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         final DotName TRANSACTIONAL = DotName.createSimple(Transactional.class.getName());
         IndexView index = combinedIndexBuildItem.getIndex();
@@ -87,20 +86,16 @@ class NarayanaSTMProcessor {
                 final var className = getClass().getSimpleName();
                 for (ClassInfo ci : index.getAllKnownImplementors(name)) {
                     final var implName = ci.name();
-                    reflectiveHierarchyClass.produce(
-                            ReflectiveHierarchyBuildItem
-                                    .builder(implName)
-                                    .source(className + " > " + implName)
-                                    .build());
+                    reflectiveHierarchyClass.produce(ReflectiveHierarchyBuildItem.builder(implName)
+                            .source(className + " > " + implName).build());
                 }
             }
         }
 
         String[] classNames = proxies.toArray(new String[0]);
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(classNames)
-                .reason(getClass().getName())
-                .methods().fields().build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(classNames).reason(getClass().getName()).methods().fields().build());
 
         return new NativeImageProxyDefinitionBuildItem(classNames);
     }

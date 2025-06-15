@@ -21,8 +21,7 @@ public class DefaultScopeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NoScope.class, NoScopeButResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NoScope.class, NoScopeButResource.class));
 
     @Inject
     NoScope noScope;

@@ -14,8 +14,7 @@ import io.restassured.RestAssured;
 public class ErroneousConfigHotReloadTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnAnnotatedEntity.class, UnAnnotatedEntityResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(UnAnnotatedEntity.class, UnAnnotatedEntityResource.class)
                     .addAsResource("application-commented-out.properties", "application.properties"));
 
     @Test

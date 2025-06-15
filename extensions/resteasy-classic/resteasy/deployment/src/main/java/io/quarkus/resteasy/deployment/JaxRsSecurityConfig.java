@@ -20,11 +20,9 @@ public interface JaxRsSecurityConfig {
     boolean denyUnannotatedEndpoints();
 
     /**
-     * If no security annotations are affecting a method then they will default to requiring these roles,
-     * (equivalent to adding an @RolesAllowed annotation with the roles to every endpoint class).
-     *
-     * The role of '**' means any authenticated user, which is equivalent to the {@link io.quarkus.security.Authenticated}
-     * annotation.
+     * If no security annotations are affecting a method then they will default to requiring these roles, (equivalent to
+     * adding an @RolesAllowed annotation with the roles to every endpoint class). The role of '**' means any
+     * authenticated user, which is equivalent to the {@link io.quarkus.security.Authenticated} annotation.
      */
     Optional<List<String>> defaultRolesAllowed();
 

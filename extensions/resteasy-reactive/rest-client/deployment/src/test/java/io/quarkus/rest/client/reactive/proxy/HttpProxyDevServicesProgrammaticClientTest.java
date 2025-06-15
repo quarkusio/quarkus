@@ -25,16 +25,14 @@ public class HttpProxyDevServicesProgrammaticClientTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Resource.class, Client.class))
+            .withApplicationRoot(jar -> jar.addClasses(Resource.class, Client.class))
             .overrideConfigKey(
                     "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesProgrammaticClientTest$Client\".enable-local-proxy",
                     "true")
             .overrideConfigKey(
                     "quarkus.rest-client.\"io.quarkus.rest.client.reactive.proxy.HttpProxyDevServicesProgrammaticClientTest$Client\".url",
                     "http://localhost:${quarkus.http.test-port:8081}")
-            .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO))
-            .assertLogRecords(new Consumer<>() {
+            .setLogRecordPredicate(record -> record.getLevel().equals(Level.INFO)).assertLogRecords(new Consumer<>() {
                 @Override
                 public void accept(List<LogRecord> logRecords) {
                     assertThat(logRecords).extracting(LogRecord::getMessage)
@@ -48,15 +46,11 @@ public class HttpProxyDevServicesProgrammaticClientTest {
 
     @Test
     public void test() {
-        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://unused.dev")).build(Client.class);
+        Client client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://unused.dev"))
+                .build(Client.class);
 
         // test that the proxy works as expected
-        given()
-                .baseUri(proxyUrl)
-                .get("test/count")
-                .then()
-                .statusCode(200)
-                .body(equalTo("10"));
+        given().baseUri(proxyUrl).get("test/count").then().statusCode(200).body(equalTo("10"));
 
         // test that the client works as expected
         long result = client.count();

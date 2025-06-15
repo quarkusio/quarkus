@@ -28,8 +28,8 @@ import io.quarkus.runtime.util.HashUtil;
 
 /**
  * {@link io.quarkus.rest.data.panache.RestDataResource} implementor that generates data access logic depending on which
- * sub-interfaces are used in the application.
- * The method implementation differs depending on a data access strategy (active record or repository).
+ * sub-interfaces are used in the application. The method implementation differs depending on a data access strategy
+ * (active record or repository).
  */
 class ResourceImplementor {
 
@@ -50,21 +50,18 @@ class ResourceImplementor {
         String resourceType = resourceInterface.name().toString();
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
-        ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(className)
-                .interfaces(resourceType)
-                .build();
+        ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput).className(className)
+                .interfaces(resourceType).build();
 
         classCreator.addAnnotation(ApplicationScoped.class);
-        // The same resource is generated as part of the JaxRsResourceImplementor, so we need to avoid ambiguous resolution
+        // The same resource is generated as part of the JaxRsResourceImplementor, so we need to avoid ambiguous
+        // resolution
         // when injecting the resource in user beans:
         classCreator.addAnnotation(Alternative.class);
         classCreator.addAnnotation(Priority.class).add("value", Integer.MAX_VALUE);
 
         HibernateORMResourceMethodListenerImplementor listenerImplementor = new HibernateORMResourceMethodListenerImplementor(
-                classCreator,
-                resourceMethodListeners);
+                classCreator, resourceMethodListeners);
 
         implementList(classCreator, dataAccessImplementor);
         implementListWithQuery(classCreator, dataAccessImplementor);
@@ -85,11 +82,13 @@ class ResourceImplementor {
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
         ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
-        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class),
+                columns);
 
         BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
         isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+        isEmptySortBranch.falseBranch()
+                .returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
 
         methodCreator.close();
     }
@@ -102,24 +101,25 @@ class ResourceImplementor {
         ResultHandle query = methodCreator.getMethodParam(2);
         ResultHandle queryParams = methodCreator.getMethodParam(3);
         ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
-        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class),
+                columns);
 
         BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
-        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query,
-                queryParams));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort,
-                query, queryParams));
+        isEmptySortBranch.trueBranch()
+                .returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query, queryParams));
+        isEmptySortBranch.falseBranch().returnValue(
+                dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort, query, queryParams));
 
         methodCreator.close();
     }
 
     /**
-     * Generate list page count method.
-     * This method is used when building page URLs for list operation response and is not exposed to a user.
+     * Generate list page count method. This method is used when building page URLs for list operation response and is
+     * not exposed to a user.
      */
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list", int.class,
-                Page.class, String.class, Map.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list",
+                int.class, Page.class, String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle query = methodCreator.getMethodParam(1);
         ResultHandle queryParams = methodCreator.getMethodParam(2);
@@ -155,8 +155,8 @@ class ResourceImplementor {
         methodCreator.close();
     }
 
-    private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor, String entityType,
-            HibernateORMResourceMethodListenerImplementor resourceMethodListenerImplementor) {
+    private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
+            String entityType, HibernateORMResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("update", Object.class, Object.class, Object.class);
         methodCreator.addAnnotation(Transactional.class);
         ResultHandle id = methodCreator.getMethodParam(0);

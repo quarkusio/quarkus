@@ -99,7 +99,8 @@ public abstract class AbstractHttpSecurityPolicyGrantingPermissionsTest {
         assertForbidden(TEST, "/test/custom-action");
         // role 'test2' has correct permissions with wrong actions
         assertForbidden(TEST2, "/test/custom-action");
-        // role 'user' has correct permissions and actions required by 1st annotation, but miss actions required by 2nd one
+        // role 'user' has correct permissions and actions required by 1st annotation, but miss actions required by 2nd
+        // one
         assertForbidden(USER, "/test/custom-action");
         // role 'admin' has at least one correct permission and action required by both annotations
         assertSuccess(ADMIN, "/test/custom-action");
@@ -138,13 +139,7 @@ public abstract class AbstractHttpSecurityPolicyGrantingPermissionsTest {
     private void assertSuccess(AuthenticatedUser user, String... paths) {
         user.authenticate();
         for (var path : paths) {
-            RestAssured
-                    .given()
-                    .auth()
-                    .basic(user.role(), user.role())
-                    .get(path)
-                    .then()
-                    .statusCode(200)
+            RestAssured.given().auth().basic(user.role(), user.role()).get(path).then().statusCode(200)
                     .body(Matchers.is(user.role() + ":" + path));
         }
     }
@@ -152,22 +147,12 @@ public abstract class AbstractHttpSecurityPolicyGrantingPermissionsTest {
     private void assertForbidden(AuthenticatedUser user, String... paths) {
         user.authenticate();
         for (var path : paths) {
-            RestAssured
-                    .given()
-                    .auth()
-                    .basic(user.role(), user.role())
-                    .get(path)
-                    .then()
-                    .statusCode(403);
+            RestAssured.given().auth().basic(user.role(), user.role()).get(path).then().statusCode(403);
         }
     }
 
     private void assertUnauthorized(String path) {
-        RestAssured
-                .given()
-                .get(path)
-                .then()
-                .statusCode(401);
+        RestAssured.given().get(path).then().statusCode(401);
     }
 
     @ApplicationScoped
@@ -212,8 +197,7 @@ public abstract class AbstractHttpSecurityPolicyGrantingPermissionsTest {
             Arc.container().instance(SecurityIdentityAssociation.class).get().setIdentity(user.getSecurityIdentity());
 
             callService.get().subscribe().with(unused -> {
-                String ret = user.getSecurityIdentity().getPrincipal().getName() +
-                        ":" + event.normalizedPath();
+                String ret = user.getSecurityIdentity().getPrincipal().getName() + ":" + event.normalizedPath();
                 event.response().end(ret);
             }, throwable -> {
                 if (throwable instanceof UnauthorizedException) {

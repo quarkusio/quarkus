@@ -15,29 +15,21 @@ public class NoRestartTemplatesDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withApplicationRoot(root -> root
-                    .addClass(NoRestartRoute.class)
-                    .addAsResource(new StringAsset(
-                            "Hello {id}!"),
-                            "templates/foo/norestart.html")
-                    .addAsResource(new StringAsset(
-                            "Hi {id}!"),
-                            "templates/bar.html")
-                    .addAsResource(new StringAsset(
-                            "quarkus.qute.dev-mode.no-restart-templates=templates/.+"),
+            .withApplicationRoot(root -> root.addClass(NoRestartRoute.class)
+                    .addAsResource(new StringAsset("Hello {id}!"), "templates/foo/norestart.html")
+                    .addAsResource(new StringAsset("Hi {id}!"), "templates/bar.html")
+                    .addAsResource(new StringAsset("quarkus.qute.dev-mode.no-restart-templates=templates/.+"),
                             "application.properties"));
 
     @Test
     public void testNoRestartTemplates() {
         Response resp = given().get("norestart");
-        resp.then()
-                .statusCode(200);
+        resp.then().statusCode(200);
         String val1 = resp.getBody().asString();
         assertTrue(val1.startsWith("Hello "));
 
         resp = given().get("bar");
-        resp.then()
-                .statusCode(200);
+        resp.then().statusCode(200);
         String val2 = resp.getBody().asString();
         assertTrue(val2.startsWith("Hi "));
 

@@ -46,10 +46,8 @@ public class EventBusCodecProcessor {
     private static final DotName LOCAL_EVENT_BUT_CODEC = DotName.createSimple(LocalEventBusCodec.class);
 
     @BuildStep
-    public void registerCodecs(
-            BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            CombinedIndexBuildItem combinedIndex,
-            BuildProducer<MessageCodecBuildItem> messageCodecs,
+    public void registerCodecs(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
+            CombinedIndexBuildItem combinedIndex, BuildProducer<MessageCodecBuildItem> messageCodecs,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<LocalCodecSelectorTypesBuildItem> localCodecSelectorTypes) {
 
@@ -78,16 +76,13 @@ public class EventBusCodecProcessor {
             } else if (codecTargetFromParameter != null && !hasBuiltInCodec(codecTargetFromParameter)) {
                 // Codec is not set and built-in codecs cannot be used
                 if (!isLocal) {
-                    throw new IllegalStateException(
-                            "The Local Message Codec can only be used for local delivery,"
-                                    + " you will need to implement a message codec for " + codecTargetFromParameter.name()
-                                            .toString()
-                                    + " and make use of @ConsumeEvent#codec()");
+                    throw new IllegalStateException("The Local Message Codec can only be used for local delivery,"
+                            + " you will need to implement a message codec for "
+                            + codecTargetFromParameter.name().toString() + " and make use of @ConsumeEvent#codec()");
                 } else if (!codecByTypes.containsKey(codecTargetFromParameter.name())) {
                     if (isConcreteClass(codecTargetFromParameter, index)) {
                         // The default codec makes only sense for concrete classes
-                        LOGGER.debugf("Local Message Codec registered for type %s",
-                                codecTargetFromParameter);
+                        LOGGER.debugf("Local Message Codec registered for type %s", codecTargetFromParameter);
                         codecByTypes.put(codecTargetFromParameter.name(), LOCAL_EVENT_BUS_CODEC);
                     } else {
                         LOGGER.debugf("Local Message Codec will be selected for type %s", codecTargetFromParameter);
@@ -99,12 +94,10 @@ public class EventBusCodecProcessor {
             Type codecTargetFromReturnType = extractPayloadTypeFromReturn(method);
             if (codecTargetFromReturnType != null && !hasBuiltInCodec(codecTargetFromReturnType)) {
                 if (!isLocal) {
-                    throw new IllegalStateException(
-                            "The Local Message Codec can only be used for local delivery,"
-                                    + " you will need to modify the method to consume io.vertx.core.eventbus.Message, implement a message codec for "
-                                    + codecTargetFromReturnType.name()
-                                            .toString()
-                                    + " and make use of io.vertx.core.eventbus.DeliveryOptions");
+                    throw new IllegalStateException("The Local Message Codec can only be used for local delivery,"
+                            + " you will need to modify the method to consume io.vertx.core.eventbus.Message, implement a message codec for "
+                            + codecTargetFromReturnType.name().toString()
+                            + " and make use of io.vertx.core.eventbus.DeliveryOptions");
                 } else if (!codecByTypes.containsKey(codecTargetFromReturnType.name())) {
                     if (isConcreteClass(codecTargetFromReturnType, index)) {
                         // The default codec makes only sense for concrete classes
@@ -140,9 +133,7 @@ public class EventBusCodecProcessor {
             }
 
             Set<DotName> subclasses = combinedIndex.getIndex().getAllKnownSubclasses(typeDotName).stream()
-                    .map(ci -> ci.name())
-                    .filter(d -> !codecByTypes.containsKey(d))
-                    .collect(Collectors.toSet());
+                    .map(ci -> ci.name()).filter(d -> !codecByTypes.containsKey(d)).collect(Collectors.toSet());
 
             for (DotName subclass : subclasses) {
                 messageCodecs.produce(new MessageCodecBuildItem(subclass.toString(), codecDotName.toString()));
@@ -150,13 +141,12 @@ public class EventBusCodecProcessor {
         }
 
         // Register codec classes for reflection.
-        codecByTypes.values().stream().map(DotName::toString).distinct()
-                .forEach(new Consumer<String>() {
-                    @Override
-                    public void accept(String name) {
-                        reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().build());
-                    }
-                });
+        codecByTypes.values().stream().map(DotName::toString).distinct().forEach(new Consumer<String>() {
+            @Override
+            public void accept(String name) {
+                reflectiveClass.produce(ReflectiveClassBuildItem.builder(name).methods().build());
+            }
+        });
 
         localCodecSelectorTypes.produce(new LocalCodecSelectorTypesBuildItem(
                 selectorTypes.stream().map(Object::toString).collect(Collectors.toSet())));
@@ -164,25 +154,17 @@ public class EventBusCodecProcessor {
 
     private static final List<String> BUILT_IN_CODECS = Arrays.asList(
             // Primitive wrapper classes
-            Boolean.class.getName(),
-            Byte.class.getName(),
-            Character.class.getName(),
-            Double.class.getName(),
-            Integer.class.getName(),
-            Float.class.getName(),
-            Long.class.getName(),
-            Short.class.getName(),
+            Boolean.class.getName(), Byte.class.getName(), Character.class.getName(), Double.class.getName(),
+            Integer.class.getName(), Float.class.getName(), Long.class.getName(), Short.class.getName(),
 
             String.class.getName(),
 
             Void.class.getName(),
 
-            JsonObject.class.getName(),
-            JsonArray.class.getName(),
+            JsonObject.class.getName(), JsonArray.class.getName(),
 
             // Buffers classes
-            Buffer.class.getName(),
-            io.vertx.mutiny.core.buffer.Buffer.class.getName());
+            Buffer.class.getName(), io.vertx.mutiny.core.buffer.Buffer.class.getName());
 
     private static Type extractPayloadTypeFromReturn(MethodInfo method) {
         Type returnType = method.returnType();
@@ -206,8 +188,8 @@ public class EventBusCodecProcessor {
             return null;
         }
         /*
-         * VertxProcessor.collectEventConsumers makes sure that only methods with either just the message object,
-         * or headers as first argument then message object are allowed.
+         * VertxProcessor.collectEventConsumers makes sure that only methods with either just the message object, or
+         * headers as first argument then message object are allowed.
          */
         int messageIndex = parameters.size() == 1 ? 0 : 1;
         Type param = method.parameterType(messageIndex);
@@ -227,7 +209,9 @@ public class EventBusCodecProcessor {
     /**
      * Checks whether the given type has a built-in codec.
      *
-     * @param type the type, must not be {@code null}
+     * @param type
+     *        the type, must not be {@code null}
+     *
      * @return {@code true} is the type has a built-in codec, {@code false} otherwise.
      */
     private static boolean hasBuiltInCodec(Type type) {
@@ -241,7 +225,9 @@ public class EventBusCodecProcessor {
     /**
      * Checks whether the given type matches one of the event bus {@code Message} classes.
      *
-     * @param type the type, must not be {@code null}
+     * @param type
+     *        the type, must not be {@code null}
+     *
      * @return {@code true} if it matches, {@code false} otherwise.
      */
     private static boolean isMessageClass(ParameterizedType type) {

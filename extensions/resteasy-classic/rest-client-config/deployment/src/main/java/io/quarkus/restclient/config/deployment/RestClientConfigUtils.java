@@ -39,24 +39,23 @@ public final class RestClientConfigUtils {
                 String.class);
         if (scopeConfig.isEmpty()) { // microprofile style config; fully qualified class name
             scopeConfig = config.getOptionalValue(
-                    String.format(MP_REST_SCOPE_FORMAT, restClientInterface.name().toString()),
-                    String.class);
+                    String.format(MP_REST_SCOPE_FORMAT, restClientInterface.name().toString()), String.class);
         }
         if (scopeConfig.isEmpty() && configKeyOptional.isPresent()) { // quarkus style config; configKey
             scopeConfig = config.getOptionalValue(String.format(QUARKUS_REST_SCOPE_FORMAT, configKeyOptional.get()),
                     String.class);
         }
         if (scopeConfig.isEmpty() && configKeyOptional.isPresent()) { // quarkus style config; quoted configKey
-            scopeConfig = config.getOptionalValue(String.format(QUARKUS_REST_SCOPE_FORMAT, '"' + configKeyOptional.get() + '"'),
-                    String.class);
+            scopeConfig = config.getOptionalValue(
+                    String.format(QUARKUS_REST_SCOPE_FORMAT, '"' + configKeyOptional.get() + '"'), String.class);
         }
         if (scopeConfig.isEmpty() && configKeyOptional.isPresent()) { // microprofile style config; configKey
-            scopeConfig = config.getOptionalValue(String.format(MP_REST_SCOPE_FORMAT, configKeyOptional.get()), String.class);
+            scopeConfig = config.getOptionalValue(String.format(MP_REST_SCOPE_FORMAT, configKeyOptional.get()),
+                    String.class);
         }
         if (scopeConfig.isEmpty()) { // quarkus style config; short class name
             scopeConfig = config.getOptionalValue(
-                    String.format(QUARKUS_REST_SCOPE_FORMAT, restClientInterface.simpleName()),
-                    String.class);
+                    String.format(QUARKUS_REST_SCOPE_FORMAT, restClientInterface.simpleName()), String.class);
         }
         return scopeConfig;
     }
@@ -65,19 +64,15 @@ public final class RestClientConfigUtils {
         return config.getOptionalValue(GLOBAL_REST_SCOPE_FORMAT, String.class);
     }
 
-    public static void generateRestClientConfigBuilder(
-            List<RegisteredRestClient> restClients,
+    public static void generateRestClientConfigBuilder(List<RegisteredRestClient> restClients,
             BuildProducer<GeneratedClassBuildItem> generatedClass,
             BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
 
         String className = "io.quarkus.runtime.generated.RestClientConfigBuilder";
         try (ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true))
-                .className(className)
-                .superClass(AbstractRestClientConfigBuilder.class)
-                .interfaces(ConfigBuilder.class)
-                .setFinal(true)
+                .classOutput(new GeneratedClassGizmoAdaptor(generatedClass, true)).className(className)
+                .superClass(AbstractRestClientConfigBuilder.class).interfaces(ConfigBuilder.class).setFinal(true)
                 .build()) {
 
             MethodCreator method = classCreator.getMethodCreator(
@@ -86,12 +81,13 @@ public final class RestClientConfigUtils {
             ResultHandle list = method.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
             for (RegisteredRestClient restClient : restClients) {
                 ResultHandle restClientElement = method.newInstance(
-                        MethodDescriptor.ofConstructor(RegisteredRestClient.class, String.class, String.class, String.class),
-                        method.load(restClient.getFullName()),
-                        method.load(restClient.getSimpleName()),
+                        MethodDescriptor.ofConstructor(RegisteredRestClient.class, String.class, String.class,
+                                String.class),
+                        method.load(restClient.getFullName()), method.load(restClient.getSimpleName()),
                         restClient.getConfigKey() != null ? method.load(restClient.getConfigKey()) : method.loadNull());
 
-                method.invokeVirtualMethod(MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class, Object.class), list,
+                method.invokeVirtualMethod(
+                        MethodDescriptor.ofMethod(ArrayList.class, "add", boolean.class, Object.class), list,
                         restClientElement);
             }
 

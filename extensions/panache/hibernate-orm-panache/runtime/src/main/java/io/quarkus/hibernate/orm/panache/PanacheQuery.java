@@ -28,43 +28,47 @@ import io.quarkus.panache.common.exception.PanacheQueryException;
  * </p>
  *
  * @author Stéphane Épardaud
- * @param <Entity> The entity type being queried
+ *
+ * @param <Entity>
+ *        The entity type being queried
  */
 public interface PanacheQuery<Entity> {
 
     // Builder
 
     /**
-     * Defines a projection class. This will transform the returned values into instances of the given type using the following
-     * mapping rules:
+     * Defines a projection class. This will transform the returned values into instances of the given type using the
+     * following mapping rules:
      * <ul>
-     * <li>If your query already selects some specific columns (starts with <code>select distinct? a, b, c…</code>) then we
-     * transform
-     * it into a query of the form: <code>select distinct? new ProjectionClass(a, b, c)…</code>. There must be a matching
-     * constructor
-     * that accepts the selected column types, in the right order.</li>
-     * <li>If your query does not select any specific column (starts with <code>from…</code>) then we transform it into a query
-     * of the form:
-     * <code>select new ProjectionClass(a, b, c…) from…</code> where we fetch the list of selected columns from your projection
-     * class'
-     * single constructor, using its parameter names (or their {@link ProjectedFieldName} annotations), in the same order as the
-     * constructor.</li>
+     * <li>If your query already selects some specific columns (starts with <code>select distinct? a, b, c…</code>) then
+     * we transform it into a query of the form: <code>select distinct? new ProjectionClass(a, b, c)…</code>. There must
+     * be a matching constructor that accepts the selected column types, in the right order.</li>
+     * <li>If your query does not select any specific column (starts with <code>from…</code>) then we transform it into
+     * a query of the form: <code>select new ProjectionClass(a, b, c…) from…</code> where we fetch the list of selected
+     * columns from your projection class' single constructor, using its parameter names (or their
+     * {@link ProjectedFieldName} annotations), in the same order as the constructor.</li>
      * <li>If this is already a project query of the form <code>select distinct? new…</code>, we throw a
      * {@link PanacheQueryException}</li>
      *
-     * @param type the projected class type
-     * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...) but a projected
-     *         result of the type
-     *         <code>type</code>
-     * @throws PanacheQueryException if this represents an already-projected query
+     * @param type
+     *        the projected class type
+     *
+     * @return a new query with the same state as the previous one (params, page, range, lockMode, hints, ...) but a
+     *         projected result of the type <code>type</code>
+     *
+     * @throws PanacheQueryException
+     *         if this represents an already-projected query
      */
     public <T> PanacheQuery<T> project(Class<T> type);
 
     /**
      * Sets the current page.
      *
-     * @param page the new page
+     * @param page
+     *        the new page
+     *
      * @return this query, modified
+     *
      * @see #page(int, int)
      * @see #page()
      */
@@ -73,9 +77,13 @@ public interface PanacheQuery<Entity> {
     /**
      * Sets the current page.
      *
-     * @param pageIndex the page index (0-based)
-     * @param pageSize the page size
+     * @param pageIndex
+     *        the page index (0-based)
+     * @param pageSize
+     *        the page size
+     *
      * @return this query, modified
+     *
      * @see #page(Page)
      * @see #page()
      */
@@ -85,7 +93,10 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the next page
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #previousPage()
      */
     public <T extends Entity> PanacheQuery<T> nextPage();
@@ -94,7 +105,10 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the previous page (or the first page if there is no previous page)
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #nextPage()
      */
     public <T extends Entity> PanacheQuery<T> previousPage();
@@ -103,7 +117,10 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the first page
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #lastPage()
      */
     public <T extends Entity> PanacheQuery<T> firstPage();
@@ -112,18 +129,23 @@ public interface PanacheQuery<Entity> {
      * Sets the current page to the last page. This will cause reading of the entity count.
      *
      * @return this query, modified
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #firstPage()
      * @see #count()
      */
     public <T extends Entity> PanacheQuery<T> lastPage();
 
     /**
-     * Returns true if there is another page to read after the current one.
-     * This will cause reading of the entity count.
+     * Returns true if there is another page to read after the current one. This will cause reading of the entity count.
      *
      * @return true if there is another page to read
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #hasPreviousPage()
      * @see #count()
      */
@@ -133,17 +155,22 @@ public interface PanacheQuery<Entity> {
      * Returns true if there is a page to read before the current one.
      *
      * @return true if there is a previous page to read
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #hasNextPage()
      */
     public boolean hasPreviousPage();
 
     /**
-     * Returns the total number of pages to be read using the current page size.
-     * This will cause reading of the entity count.
+     * Returns the total number of pages to be read using the current page size. This will cause reading of the entity
+     * count.
      *
      * @return the total number of pages to be read using the current page size.
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
      */
     public int pageCount();
 
@@ -151,18 +178,24 @@ public interface PanacheQuery<Entity> {
      * Returns the current page.
      *
      * @return the current page
-     * @throws UnsupportedOperationException if a page hasn't been set or if a range is already set
+     *
+     * @throws UnsupportedOperationException
+     *         if a page hasn't been set or if a range is already set
+     *
      * @see #page(Page)
      * @see #page(int,int)
      */
     public Page page();
 
     /**
-     * Switch the query to use a fixed range (start index - last index) instead of a page.
-     * As the range is fixed, subsequent pagination of the query is not possible.
+     * Switch the query to use a fixed range (start index - last index) instead of a page. As the range is fixed,
+     * subsequent pagination of the query is not possible.
      *
-     * @param startIndex the index of the first element, starting at 0
-     * @param lastIndex the index of the last element
+     * @param startIndex
+     *        the index of the first element, starting at 0
+     * @param lastIndex
+     *        the index of the last element
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> range(int startIndex, int lastIndex);
@@ -170,7 +203,9 @@ public interface PanacheQuery<Entity> {
     /**
      * Define the locking strategy used for this query.
      *
-     * @param lockModeType the locking strategy to be used for this query.
+     * @param lockModeType
+     *        the locking strategy to be used for this query.
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> withLock(LockModeType lockModeType);
@@ -178,55 +213,66 @@ public interface PanacheQuery<Entity> {
     /**
      * Set a query property or hint on the underlying JPA Query.
      *
-     * @param hintName name of the property or hint.
-     * @param value value for the property or hint.
+     * @param hintName
+     *        name of the property or hint.
+     * @param value
+     *        value for the property or hint.
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> withHint(String hintName, Object value);
 
     /**
      * <p>
-     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
-     * with {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared with
+     * {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
      * <p>
-     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this
-     * will modify the session's filters for the duration of obtaining the results (not while building
-     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this will modify the
+     * session's filters for the duration of obtaining the results (not while building the query). Enabled filters will
+     * be removed from the session afterwards, but no effort is made to preserve filters enabled on the session outside
+     * of this API.
      *
-     * @param filterName The name of the filter to enable
-     * @param parameters The set of parameters for the filter, if the filter requires parameters
+     * @param filterName
+     *        The name of the filter to enable
+     * @param parameters
+     *        The set of parameters for the filter, if the filter requires parameters
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> filter(String filterName, Parameters parameters);
 
     /**
      * <p>
-     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
-     * with {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared with
+     * {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
      * <p>
-     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this
-     * will modify the session's filters for the duration of obtaining the results (not while building
-     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this will modify the
+     * session's filters for the duration of obtaining the results (not while building the query). Enabled filters will
+     * be removed from the session afterwards, but no effort is made to preserve filters enabled on the session outside
+     * of this API.
      *
-     * @param filterName The name of the filter to enable
-     * @param parameters The set of parameters for the filter, if the filter requires parameters
+     * @param filterName
+     *        The name of the filter to enable
+     * @param parameters
+     *        The set of parameters for the filter, if the filter requires parameters
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> filter(String filterName, Map<String, Object> parameters);
 
     /**
      * <p>
-     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared
-     * with {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
+     * Enables a Hibernate filter during fetching of results for this query. Your filter must be declared with
+     * {@link FilterDef} on your entity or package, and enabled with {@link Filter} on your entity.
      * <p>
-     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this
-     * will modify the session's filters for the duration of obtaining the results (not while building
-     * the query). Enabled filters will be removed from the session afterwards, but no effort is made to
-     * preserve filters enabled on the session outside of this API.
+     * WARNING: setting filters can only be done on the underlying Hibernate {@link Session} and so this will modify the
+     * session's filters for the duration of obtaining the results (not while building the query). Enabled filters will
+     * be removed from the session afterwards, but no effort is made to preserve filters enabled on the session outside
+     * of this API.
      *
-     * @param filterName The name of the filter to enable
+     * @param filterName
+     *        The name of the filter to enable
+     *
      * @return this query, modified
      */
     public <T extends Entity> PanacheQuery<T> filter(String filterName);
@@ -234,9 +280,8 @@ public interface PanacheQuery<Entity> {
     // Results
 
     /**
-     * Reads and caches the total number of entities this query operates on. This causes a database
-     * query with <code>SELECT COUNT(*)</code> and a query equivalent to the current query, minus
-     * ordering.
+     * Reads and caches the total number of entities this query operates on. This causes a database query with
+     * <code>SELECT COUNT(*)</code> and a query equivalent to the current query, minus ordering.
      *
      * @return the total number of entities this query operates on, cached.
      */
@@ -246,6 +291,7 @@ public interface PanacheQuery<Entity> {
      * Returns the current page of results as a {@link List}.
      *
      * @return the current page of results as a {@link List}.
+     *
      * @see #stream()
      * @see #page(Page)
      * @see #page()
@@ -256,6 +302,7 @@ public interface PanacheQuery<Entity> {
      * Returns the current page of results as a {@link Stream}.
      *
      * @return the current page of results as a {@link Stream}.
+     *
      * @see #list()
      * @see #page(Page)
      * @see #page()
@@ -263,19 +310,19 @@ public interface PanacheQuery<Entity> {
     public <T extends Entity> Stream<T> stream();
 
     /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
+     * Returns the first result of the current page index. This ignores the current page size to fetch a single result.
      *
      * @return the first result of the current page index, or null if there are no results.
+     *
      * @see #singleResult()
      */
     public <T extends Entity> T firstResult();
 
     /**
-     * Returns the first result of the current page index. This ignores the current page size to fetch
-     * a single result.
+     * Returns the first result of the current page index. This ignores the current page size to fetch a single result.
      *
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
+     *
      * @see #singleResultOptional()
      */
     public <T extends Entity> Optional<T> firstResultOptional();
@@ -284,8 +331,12 @@ public interface PanacheQuery<Entity> {
      * Executes this query for the current page and return a single result.
      *
      * @return the single result (throws if there is not exactly one)
-     * @throws NoResultException if there is no result
-     * @throws NonUniqueResultException if there are more than one result
+     *
+     * @throws NoResultException
+     *         if there is no result
+     * @throws NonUniqueResultException
+     *         if there are more than one result
+     *
      * @see #firstResult()
      */
     public <T extends Entity> T singleResult();
@@ -294,7 +345,10 @@ public interface PanacheQuery<Entity> {
      * Executes this query for the current page and return a single result.
      *
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
-     * @throws NonUniqueResultException if there are more than one result
+     *
+     * @throws NonUniqueResultException
+     *         if there are more than one result
+     *
      * @see #firstResultOptional()
      */
     public <T extends Entity> Optional<T> singleResultOptional();

@@ -29,26 +29,22 @@ public class ReactiveAutoSuggestCommandsImpl<K> extends AbstractAutoSuggestComma
 
     @Override
     public Uni<Long> ftSugAdd(K key, String string, double score, boolean increment) {
-        return super._ftSugAdd(key, string, score, increment)
-                .map(Response::toLong);
+        return super._ftSugAdd(key, string, score, increment).map(Response::toLong);
     }
 
     @Override
     public Uni<Boolean> ftSugDel(K key, String string) {
-        return super._ftSugDel(key, string)
-                .map(Response::toBoolean);
+        return super._ftSugDel(key, string).map(Response::toBoolean);
     }
 
     @Override
     public Uni<List<Suggestion>> ftSugGet(K key, String prefix) {
-        return super._ftSugget(key, prefix)
-                .map(r -> decodeAsListOfSuggestion(r, false));
+        return super._ftSugget(key, prefix).map(r -> decodeAsListOfSuggestion(r, false));
     }
 
     @Override
     public Uni<List<Suggestion>> ftSugGet(K key, String prefix, GetArgs args) {
-        return super._ftSugget(key, prefix, args)
-                .map(r -> decodeAsListOfSuggestion(r, args.hasScores()));
+        return super._ftSugget(key, prefix, args).map(r -> decodeAsListOfSuggestion(r, args.hasScores()));
     }
 
     List<Suggestion> decodeAsListOfSuggestion(Response response, boolean hasScores) {
@@ -73,7 +69,6 @@ public class ReactiveAutoSuggestCommandsImpl<K> extends AbstractAutoSuggestComma
 
     @Override
     public Uni<Long> ftSugLen(K key) {
-        return super._ftSugLen(key)
-                .map(Response::toLong);
+        return super._ftSugLen(key).map(Response::toLong);
     }
 }

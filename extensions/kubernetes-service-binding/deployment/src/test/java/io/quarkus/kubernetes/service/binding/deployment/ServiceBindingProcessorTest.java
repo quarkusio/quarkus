@@ -60,7 +60,8 @@ class ServiceBindingProcessorTest {
         when(serviceConfig.binding()).thenReturn(Optional.of("custom-binding"));
         when(config.services()).thenReturn(Map.of("my-postgresql", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-postgresql", config);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-postgresql",
+                config);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());
@@ -94,7 +95,8 @@ class ServiceBindingProcessorTest {
         when(config.services()).thenReturn(Map.of("mysql-default", serviceConfig));
 
         ServiceBindingQualifierBuildItem qualifier = new ServiceBindingQualifierBuildItem("mysql", "default");
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config, qualifier);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromQualifier("app", config,
+                qualifier);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("some.group/v1", r.getApiVersion());
@@ -114,7 +116,8 @@ class ServiceBindingProcessorTest {
         when(serviceConfig.binding()).thenReturn(Optional.of("custom-binding"));
         when(config.services()).thenReturn(Map.of("my-mysql", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mysql", config);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mysql",
+                config);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());
@@ -166,7 +169,8 @@ class ServiceBindingProcessorTest {
         when(serviceConfig.binding()).thenReturn(Optional.of("custom-binding"));
         when(config.services()).thenReturn(Map.of("my-mongodb", serviceConfig));
 
-        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mongodb", config);
+        Optional<ServiceBindingRequirementBuildItem> requirement = createRequirementFromConfig("app", "my-mongodb",
+                config);
         assertTrue(requirement.isPresent());
         requirement.ifPresent(r -> {
             assertEquals("foo/v1", r.getApiVersion());

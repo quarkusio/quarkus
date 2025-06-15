@@ -23,23 +23,22 @@ public interface JacksonBuildTimeConfig {
     boolean failOnUnknownProperties();
 
     /**
-     * If enabled, Jackson will fail when no accessors are found for a type.
-     * This is enabled by default to match the default Jackson behavior.
+     * If enabled, Jackson will fail when no accessors are found for a type. This is enabled by default to match the
+     * default Jackson behavior.
      */
     @WithDefault("true")
     boolean failOnEmptyBeans();
 
     /**
-     * If enabled, Jackson will serialize dates as numeric value(s).
-     * When disabled, they are serialized in ISO 8601 format.
+     * If enabled, Jackson will serialize dates as numeric value(s). When disabled, they are serialized in ISO 8601
+     * format.
      */
     @WithDefault("false")
     boolean writeDatesAsTimestamps();
 
     /**
-     * If enabled, Jackson will serialize durations as numeric value(s).
-     * When disabled, they are serialized in ISO 8601 format.
-     * This is enabled by default to match the default Jackson behavior.
+     * If enabled, Jackson will serialize durations as numeric value(s). When disabled, they are serialized in ISO 8601
+     * format. This is enabled by default to match the default Jackson behavior.
      */
     @WithDefault("true")
     boolean writeDurationsAsTimestamps();
@@ -51,8 +50,8 @@ public interface JacksonBuildTimeConfig {
     boolean acceptCaseInsensitiveEnums();
 
     /**
-     * If set, Jackson will default to using the specified timezone when formatting dates.
-     * Some examples values are "Asia/Jakarta" and "GMT+3".
+     * If set, Jackson will default to using the specified timezone when formatting dates. Some examples values are
+     * "Asia/Jakarta" and "GMT+3".
      */
     @WithDefault("UTC")
     ZoneId timezone();
@@ -63,13 +62,13 @@ public interface JacksonBuildTimeConfig {
     Optional<JsonInclude.Include> serializationInclusion();
 
     /**
-     * Defines how names of JSON properties ("external names") are derived
-     * from names of POJO methods and fields ("internal names").
-     * The value can be one of the one of the constants in {@link com.fasterxml.jackson.databind.PropertyNamingStrategies},
-     * so for example, {@code LOWER_CAMEL_CASE} or {@code UPPER_CAMEL_CASE}.
+     * Defines how names of JSON properties ("external names") are derived from names of POJO methods and fields
+     * ("internal names"). The value can be one of the one of the constants in
+     * {@link com.fasterxml.jackson.databind.PropertyNamingStrategies}, so for example, {@code LOWER_CAMEL_CASE} or
+     * {@code UPPER_CAMEL_CASE}.
      * <p>
-     * The value can also be a fully qualified class name of a {@link com.fasterxml.jackson.databind.PropertyNamingStrategy}
-     * subclass.
+     * The value can also be a fully qualified class name of a
+     * {@link com.fasterxml.jackson.databind.PropertyNamingStrategy} subclass.
      */
     Optional<String> propertyNamingStrategy();
 }

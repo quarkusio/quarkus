@@ -25,15 +25,13 @@ public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
     private static final Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setDeleteUploadedFilesOnEnd(false)
-            .setUploadPath(uploadDir)
-            .setArchiveProducer(new Supplier<>() {
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setDeleteUploadedFilesOnEnd(false)
+            .setUploadPath(uploadDir).setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormDataWithAllUploads.class,
-                                    Status.class, MultipartResourceWithAllUploads.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(FormDataBase.class,
+                            OtherPackageFormDataBase.class, FormDataWithAllUploads.class, Status.class,
+                            MultipartResourceWithAllUploads.class);
                 }
             });
 
@@ -53,19 +51,10 @@ public class MultipartInputWithAllUploadsTest extends AbstractMultipartTest {
 
     @Test
     public void testSimple() throws IOException {
-        RestAssured.given()
-                .multiPart("name", "Alice")
-                .multiPart("active", "true")
-                .multiPart("num", "25")
-                .multiPart("status", "WORKING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .multiPart("txtFile", TXT_FILE, "text/plain")
-                .accept("text/plain")
-                .when()
-                .post("/multipart-all/simple/2")
-                .then()
-                .statusCode(200)
+        RestAssured.given().multiPart("name", "Alice").multiPart("active", "true").multiPart("num", "25")
+                .multiPart("status", "WORKING").multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml").multiPart("txtFile", TXT_FILE, "text/plain")
+                .accept("text/plain").when().post("/multipart-all/simple/2").then().statusCode(200)
                 .body(equalTo("Alice - true - 50 - WORKING - 3 - text/plain"));
 
         // ensure that the 3 uploaded files where created on disk

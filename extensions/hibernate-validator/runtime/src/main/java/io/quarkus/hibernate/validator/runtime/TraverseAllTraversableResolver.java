@@ -13,15 +13,13 @@ class TraverseAllTraversableResolver implements TraversableResolver {
 
     @Override
     public boolean isReachable(Object traversableObject, Node traversableProperty, Class<?> rootBeanType,
-            Path pathToTraversableObject,
-            ElementType elementType) {
+            Path pathToTraversableObject, ElementType elementType) {
         return true;
     }
 
     @Override
     public boolean isCascadable(Object traversableObject, Node traversableProperty, Class<?> rootBeanType,
-            Path pathToTraversableObject,
-            ElementType elementType) {
+            Path pathToTraversableObject, ElementType elementType) {
         return true;
     }
 }

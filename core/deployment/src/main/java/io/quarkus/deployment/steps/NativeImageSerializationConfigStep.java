@@ -50,8 +50,9 @@ public class NativeImageSerializationConfigStep {
 
         try (StringWriter writer = new StringWriter()) {
             root.appendTo(writer);
-            serializationConfig.produce(new GeneratedResourceBuildItem("META-INF/native-image/serialization-config.json",
-                    writer.toString().getBytes(StandardCharsets.UTF_8)));
+            serializationConfig
+                    .produce(new GeneratedResourceBuildItem("META-INF/native-image/serialization-config.json",
+                            writer.toString().getBytes(StandardCharsets.UTF_8)));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

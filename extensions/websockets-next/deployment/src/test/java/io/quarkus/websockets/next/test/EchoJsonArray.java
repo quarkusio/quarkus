@@ -20,9 +20,8 @@ public class EchoJsonArray {
     @OnTextMessage
     Uni<JsonArray> echo(JsonArray msg) {
         assertTrue(Context.isOnEventLoopThread());
-        return Uni.createFrom().item(
-                new JsonArray().add(
-                        new JsonObject().put("msg", echoService.echo(msg.getJsonObject(0).getString("msg")))));
+        return Uni.createFrom().item(new JsonArray()
+                .add(new JsonObject().put("msg", echoService.echo(msg.getJsonObject(0).getString("msg")))));
     }
 
 }

@@ -21,9 +21,10 @@ public class CacheTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("{#cached}{counter.val}{/cached}::"
-                            + "{#cached key=(myKey or 'alpha')}{counter.getVal(fail)}{/cached}"),
+            .withApplicationRoot(
+                    (jar) -> jar.addAsResource(
+                            new StringAsset("{#cached}{counter.val}{/cached}::"
+                                    + "{#cached key=(myKey or 'alpha')}{counter.getVal(fail)}{/cached}"),
                             "templates/foo.txt"));
 
     @Inject

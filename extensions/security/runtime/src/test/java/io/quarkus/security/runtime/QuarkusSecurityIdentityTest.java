@@ -25,10 +25,8 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testAddPermissionAsString() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal("alice"))
-                .addPermissionAsString("read")
-                .build();
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionAsString("read").build();
 
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
         assertFalse(identity.checkPermissionBlocking(new StringPermission("write")));
@@ -36,10 +34,8 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testAddPermissionWithActionAsString() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal("alice"))
-                .addPermissionAsString("read:singledoc")
-                .build();
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionAsString("read:singledoc").build();
 
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read", "singledoc")));
         assertFalse(identity.checkPermissionBlocking(new StringPermission("read", "all")));
@@ -48,10 +44,8 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testAddPermissionsAsString() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal("alice"))
-                .addPermissionsAsString(Set.of("read", "write"))
-                .build();
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionsAsString(Set.of("read", "write")).build();
 
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
         assertTrue(identity.checkPermissionBlocking(new StringPermission("write")));
@@ -60,10 +54,8 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testAddPermissionsWithActionAsString() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal("alice"))
-                .addPermissionsAsString(Set.of("read:singledoc", "write:singledoc"))
-                .build();
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissionsAsString(Set.of("read:singledoc", "write:singledoc")).build();
 
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read", "singledoc")));
         assertTrue(identity.checkPermissionBlocking(new StringPermission("write", "singledoc")));
@@ -74,10 +66,8 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testAddPermission() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal("alice"))
-                .addPermission(new StringPermission("read"))
-                .build();
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermission(new StringPermission("read")).build();
 
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
         assertFalse(identity.checkPermissionBlocking(new StringPermission("write")));
@@ -85,10 +75,8 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testAddPermissions() throws Exception {
-        SecurityIdentity identity = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal("alice"))
-                .addPermissions(Set.of(new StringPermission("read"), new StringPermission("write")))
-                .build();
+        SecurityIdentity identity = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("alice"))
+                .addPermissions(Set.of(new StringPermission("read"), new StringPermission("write"))).build();
 
         assertTrue(identity.checkPermissionBlocking(new StringPermission("read")));
         assertTrue(identity.checkPermissionBlocking(new StringPermission("write")));
@@ -105,12 +93,9 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testCopyIdentity() throws Exception {
-        SecurityIdentity identity1 = QuarkusSecurityIdentity.builder()
-                .setPrincipal(new QuarkusPrincipal("alice"))
-                .addRole("admin")
-                .addCredential(new PasswordCredential("password".toCharArray()))
-                .addAttribute("key", "value")
-                .build();
+        SecurityIdentity identity1 = QuarkusSecurityIdentity.builder().setPrincipal(new QuarkusPrincipal("alice"))
+                .addRole("admin").addCredential(new PasswordCredential("password".toCharArray()))
+                .addAttribute("key", "value").build();
 
         assertFalse(identity1.isAnonymous());
 
@@ -136,10 +121,8 @@ public class QuarkusSecurityIdentityTest {
 
     @Test
     public void testPrincipalNullAnonymousFalseWithBuilder() throws Exception {
-        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder()
-                .addRole("admin")
-                .addCredential(new PasswordCredential("password".toCharArray()))
-                .addAttribute("key", "value");
+        QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder().addRole("admin")
+                .addCredential(new PasswordCredential("password".toCharArray())).addAttribute("key", "value");
         ;
 
         assertThrows(IllegalStateException.class, () -> builder.build());

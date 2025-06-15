@@ -8,7 +8,8 @@ import org.jboss.resteasy.reactive.common.NotImplementedYet;
 import org.jboss.resteasy.reactive.common.jaxrs.AbstractRestResponseBuilder;
 import org.jboss.resteasy.reactive.common.jaxrs.RestResponseImpl;
 
-public class ClientRestResponseBuilderImpl<T> extends AbstractRestResponseBuilder<T> { //TODO: should not extend the server version
+public class ClientRestResponseBuilderImpl<T> extends AbstractRestResponseBuilder<T> { // TODO: should not extend the
+                                                                                       // server version
 
     InputStream entityStream;
     RestClientRequestContext restClientRequestContext;
@@ -39,7 +40,7 @@ public class ClientRestResponseBuilderImpl<T> extends AbstractRestResponseBuilde
 
     @Override
     public RestResponse.ResponseBuilder<T> contentLocation(URI location) {
-        //TODO: needs some thinking
+        // TODO: needs some thinking
         throw new NotImplementedYet();
     }
 

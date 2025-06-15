@@ -16,8 +16,8 @@ import jakarta.interceptor.InterceptorBinding;
  * <li>at least one of its arguments is annotated with {@link io.quarkus.cache.CacheKey CacheKey}</li>
  * </ul>
  * It helps improving performances by storing at build time the positions of {@link io.quarkus.cache.CacheKey
- * CacheKey}-annotated arguments instead of relying on reflection at run time (which is bad for performances) to identify these
- * positions.
+ * CacheKey}-annotated arguments instead of relying on reflection at run time (which is bad for performances) to
+ * identify these positions.
  */
 @InterceptorBinding
 @Retention(RetentionPolicy.RUNTIME)

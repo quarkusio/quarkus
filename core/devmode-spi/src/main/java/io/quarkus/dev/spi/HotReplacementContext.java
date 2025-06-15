@@ -24,7 +24,6 @@ public interface HotReplacementContext {
 
     /**
      * If this is true then this is a dev mode test case, rather than a user actually using Quarkus.
-     *
      */
     boolean isTest();
 
@@ -38,8 +37,11 @@ public interface HotReplacementContext {
     /**
      * Scans for changed source files, and restarts if detected.
      *
-     * @param userInitiated If this scan was initiated by a user action (e.g. refreshing a browser)
+     * @param userInitiated
+     *        If this scan was initiated by a user action (e.g. refreshing a browser)
+     *
      * @return {@code true} if a restart was performed, {@code false} otherwise
+     *
      * @throws Exception
      */
     boolean doScan(boolean userInitiated) throws Exception;
@@ -47,24 +49,28 @@ public interface HotReplacementContext {
     /**
      * Adds a task that is run before a live reload scan is performed.
      *
-     * @param runnable The task to run
+     * @param runnable
+     *        The task to run
      */
     void addPreScanStep(Runnable runnable);
 
     /**
      * The consumer is invoked if only files which don't require restart are modified.
      *
-     * @param consumer The input is a set of changed file paths
+     * @param consumer
+     *        The input is a set of changed file paths
+     *
      * @see io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem#isRestartNeeded()
      */
     void consumeNoRestartChanges(Consumer<Set<String>> consumer);
 
     /**
-     * This method returns a list of changed files compared to the provided map of file names to hashes.
+     * This method returns a list of changed files compared to the provided map of file names to hashes. This is needed
+     * for remote dev mode, it is unlikely to be useful for anything else
      *
-     * This is needed for remote dev mode, it is unlikely to be useful for anything else
+     * @param fileHashes
+     *        The file hashes
      *
-     * @param fileHashes The file hashes
      * @return A set of changed files
      */
     Set<String> syncState(Map<String, String> fileHashes);

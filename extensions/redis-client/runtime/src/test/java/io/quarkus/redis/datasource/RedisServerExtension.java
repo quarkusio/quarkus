@@ -21,8 +21,7 @@ public class RedisServerExtension implements BeforeAllCallback, AfterAllCallback
 
     public static final String REDIS_DEFAULT_IMAGE = "redis/redis-stack:7.2.0-v0";
     static GenericContainer<?> server = new GenericContainer<>(
-            DockerImageName.parse(System.getProperty("redis.base.image", REDIS_DEFAULT_IMAGE)))
-            .withExposedPorts(6379);
+            DockerImageName.parse(System.getProperty("redis.base.image", REDIS_DEFAULT_IMAGE))).withExposedPorts(6379);
     static Redis redis;
     static RedisAPI api;
     static Vertx vertx;
@@ -85,8 +84,7 @@ public class RedisServerExtension implements BeforeAllCallback, AfterAllCallback
             cleanup();
         }
         // Look for the redis_version line
-        return info.lines().filter(s -> s.startsWith("redis_version")).findAny()
-                .map(line -> line.split(":")[1])
+        return info.lines().filter(s -> s.startsWith("redis_version")).findAny().map(line -> line.split(":")[1])
                 .orElseThrow();
 
     }

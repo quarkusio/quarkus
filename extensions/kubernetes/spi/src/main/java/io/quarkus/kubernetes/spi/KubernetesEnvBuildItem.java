@@ -67,8 +67,8 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         return create(name, value, null, null, null, target, null, isOldStyle(oldStyle));
     }
 
-    public static KubernetesEnvBuildItem createFromConfigMapKey(String varName, String key, String configmap, String target,
-            String prefix, boolean... oldStyle) {
+    public static KubernetesEnvBuildItem createFromConfigMapKey(String varName, String key, String configmap,
+            String target, String prefix, boolean... oldStyle) {
         return create(varName, key, null, configmap, null, target, prefix, isOldStyle(oldStyle));
     }
 
@@ -83,8 +83,8 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         return create(varName, key, secret, configmap, null, target, null, isOldStyle(oldStyle));
     }
 
-    public static KubernetesEnvBuildItem create(String name, String value, String secret, String configmap, String field,
-            String target, String prefix, boolean... oldStyle) throws IllegalArgumentException {
+    public static KubernetesEnvBuildItem create(String name, String value, String secret, String configmap,
+            String field, String target, String prefix, boolean... oldStyle) throws IllegalArgumentException {
         final boolean secretPresent = secret != null;
         final boolean configmapPresent = configmap != null;
         final boolean valuePresent = value != null;
@@ -92,22 +92,19 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         if (valuePresent) {
             if (secretPresent && configmapPresent) {
                 throw new IllegalArgumentException(String.format(
-                        "'%s' env var can't simultaneously take its value from '%s' configmap & '%s' secret",
-                        name, configmap, secret));
+                        "'%s' env var can't simultaneously take its value from '%s' configmap & '%s' secret", name,
+                        configmap, secret));
             }
             if (fieldPresent) {
                 throw new IllegalArgumentException(String.format(
-                        "'%s' env var can't simultaneously have a '%s' value & take is value from the '%s' field",
-                        name, value, field));
+                        "'%s' env var can't simultaneously have a '%s' value & take is value from the '%s' field", name,
+                        value, field));
             }
         }
         if (secretPresent && configmapPresent) {
-            log.warn(String.format("The '%s' name was used to try to import both from '%s' secret & '%s' configmap. " +
-                    "Only values from '%s' secret will be imported.\nIf you want to import from both, use a " +
-                    "different property name for either.",
-                    name, secret,
-                    configmap,
-                    secret));
+            log.warn(String.format("The '%s' name was used to try to import both from '%s' secret & '%s' configmap. "
+                    + "Only values from '%s' secret will be imported.\nIf you want to import from both, use a "
+                    + "different property name for either.", name, secret, configmap, secret));
         }
         final EnvType type;
         if (secretPresent) {
@@ -129,7 +126,8 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
         } else {
             type = EnvType.var;
         }
-        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, prefix, isOldStyle(oldStyle));
+        return new KubernetesEnvBuildItem(name, value, configmap, secret, field, type, target, prefix,
+                isOldStyle(oldStyle));
     }
 
     private static boolean isOldStyle(boolean[] oldStyle) {
@@ -183,8 +181,8 @@ public final class KubernetesEnvBuildItem extends BaseTargetable {
 
     @SuppressWarnings("unused")
     public KubernetesEnvBuildItem newWithTarget(String newTarget) {
-        return new KubernetesEnvBuildItem(this.name, this.value, this.configmap, this.secret, this.field, this.type, newTarget,
-                this.prefix, this.oldStyle);
+        return new KubernetesEnvBuildItem(this.name, this.value, this.configmap, this.secret, this.field, this.type,
+                newTarget, this.prefix, this.oldStyle);
     }
 
     public String toString() {

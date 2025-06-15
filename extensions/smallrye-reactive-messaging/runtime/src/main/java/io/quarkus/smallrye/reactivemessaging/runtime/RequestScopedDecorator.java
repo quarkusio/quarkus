@@ -28,16 +28,14 @@ public class RequestScopedDecorator implements PublisherDecorator {
                     if (!requestContext.isActive()) {
                         requestContext.activate();
                         InjectableContext.ContextState state = requestContext.getState();
-                        Message<?> withAck = message.withAckWithMetadata(m -> message.ack(m)
-                                .thenAccept(x -> {
-                                    requestContext.destroy(state);
-                                    requestContext.deactivate();
-                                }));
-                        return withAck.withNackWithMetadata((m, t) -> withAck.nack(m, t)
-                                .thenAccept(x -> {
-                                    requestContext.destroy(state);
-                                    requestContext.deactivate();
-                                }));
+                        Message<?> withAck = message.withAckWithMetadata(m -> message.ack(m).thenAccept(x -> {
+                            requestContext.destroy(state);
+                            requestContext.deactivate();
+                        }));
+                        return withAck.withNackWithMetadata((m, t) -> withAck.nack(m, t).thenAccept(x -> {
+                            requestContext.destroy(state);
+                            requestContext.deactivate();
+                        }));
                     }
                     return message;
                 } else {

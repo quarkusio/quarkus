@@ -29,13 +29,12 @@ import io.vertx.core.json.JsonObject;
 public class WebAuthnManualCustomCookiesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .add(new StringAsset("quarkus.webauthn.cookie-name=main-cookie\n"
-                            + "quarkus.webauthn.challenge-cookie-name=challenge-cookie\n"
-                            + "quarkus.webauthn.challenge-username-cookie-name=username-cookie\n"), "application.properties")
-                    .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, WebAuthnHardware.class,
-                            TestResource.class, ManualResource.class, TestUtil.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .add(new StringAsset("quarkus.webauthn.cookie-name=main-cookie\n"
+                    + "quarkus.webauthn.challenge-cookie-name=challenge-cookie\n"
+                    + "quarkus.webauthn.challenge-username-cookie-name=username-cookie\n"), "application.properties")
+            .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class, WebAuthnHardware.class,
+                    TestResource.class, ManualResource.class, TestUtil.class));
 
     @Inject
     WebAuthnUserProvider userProvider;
@@ -47,15 +46,9 @@ public class WebAuthnManualCustomCookiesTest {
     public void test() throws Exception {
 
         RestAssured.get("/open").then().statusCode(200).body(Matchers.is("Hello"));
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/secure").then().statusCode(302);
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/admin").then().statusCode(302);
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/cheese").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/secure").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/admin").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/cheese").then().statusCode(302);
 
         Assertions.assertTrue(userProvider.findByUsername("stef").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
@@ -64,17 +57,10 @@ public class WebAuthnManualCustomCookiesTest {
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
-        RequestSpecification request = RestAssured
-                .given()
-                .filter(cookieFilter);
+        RequestSpecification request = RestAssured.given().filter(cookieFilter);
         WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registration);
-        request
-                .queryParam("username", "stef")
-                .post("/register")
-                .then().statusCode(200)
-                .body(Matchers.is("OK"))
-                .cookie("challenge-cookie", Matchers.is(""))
-                .cookie("main-cookie", Matchers.notNullValue());
+        request.queryParam("username", "stef").post("/register").then().statusCode(200).body(Matchers.is("OK"))
+                .cookie("challenge-cookie", Matchers.is("")).cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we stored the user
         List<WebAuthnCredentialRecord> users = userProvider.findByUsername("stef").await().indefinitely();
@@ -92,16 +78,10 @@ public class WebAuthnManualCustomCookiesTest {
         JsonObject login = hardwareKey.makeLoginJson(challenge);
 
         // now finalise
-        request = RestAssured
-                .given()
-                .filter(cookieFilter);
+        request = RestAssured.given().filter(cookieFilter);
         WebAuthnEndpointHelper.addWebAuthnLoginFormParameters(request, login);
-        request
-                .post("/login")
-                .then().statusCode(200)
-                .body(Matchers.is("OK"))
-                .cookie("challenge-cookie", Matchers.is(""))
-                .cookie("main-cookie", Matchers.notNullValue());
+        request.post("/login").then().statusCode(200).body(Matchers.is("OK"))
+                .cookie("challenge-cookie", Matchers.is("")).cookie("main-cookie", Matchers.notNullValue());
 
         // make sure we bumped the user
         users = userProvider.findByUsername("stef").await().indefinitely();
@@ -114,22 +94,10 @@ public class WebAuthnManualCustomCookiesTest {
     }
 
     private void checkLoggedIn(CookieFilter cookieFilter) {
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .get("/secure")
-                .then()
-                .statusCode(200)
+        RestAssured.given().filter(cookieFilter).get("/secure").then().statusCode(200)
                 .body(Matchers.is("stef: [admin]"));
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .redirects().follow(false)
-                .get("/admin").then().statusCode(200).body(Matchers.is("OK"));
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .redirects().follow(false)
-                .get("/cheese").then().statusCode(403);
+        RestAssured.given().filter(cookieFilter).redirects().follow(false).get("/admin").then().statusCode(200)
+                .body(Matchers.is("OK"));
+        RestAssured.given().filter(cookieFilter).redirects().follow(false).get("/cheese").then().statusCode(403);
     }
 }

@@ -42,8 +42,8 @@ public class DefaultGroupsEndpoint {
     @Path("/routingContext")
     @RolesAllowed("User")
     public String checkRoutingContext() {
-        return jwtPrincipal.getGroups().stream().reduce("", String::concat)
-                + "; routing-context-available:" + securityIdentity.getAttributes().containsKey("routing-context-available");
+        return jwtPrincipal.getGroups().stream().reduce("", String::concat) + "; routing-context-available:"
+                + securityIdentity.getAttributes().containsKey("routing-context-available");
     }
 
     @GET

@@ -17,11 +17,8 @@ public class MessageBundleLocaleTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class)
-                    .addAsResource(new StringAsset(
-                            "{MessageBundleLocaleTest_Messages:helloWorld}"),
-                            "templates/foo.html"));
+            .withApplicationRoot((jar) -> jar.addClasses(Messages.class).addAsResource(
+                    new StringAsset("{MessageBundleLocaleTest_Messages:helloWorld}"), "templates/foo.html"));
 
     @Inject
     Template foo;

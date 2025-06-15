@@ -21,10 +21,9 @@ import io.vertx.core.json.JsonObject;
 public class ArrayTextCodecTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Item.class, Endpont.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Item.class, Endpont.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

@@ -33,20 +33,15 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
         this.tags = tags;
         this.ignored = new Handler(null);
 
-        published = Counter.builder("eventBus.published")
-                .description("Number of messages published to the event bus")
+        published = Counter.builder("eventBus.published").description("Number of messages published to the event bus")
                 .withRegistry(registry);
-        sent = Counter.builder("eventBus.sent")
-                .description("Number of messages sent to the event bus")
+        sent = Counter.builder("eventBus.sent").description("Number of messages sent to the event bus")
                 .withRegistry(registry);
         written = DistributionSummary.builder("eventBus.bytes.written")
-                .description("Track the number of bytes written to the distributed event bus")
-                .withRegistry(registry);
+                .description("Track the number of bytes written to the distributed event bus").withRegistry(registry);
         read = DistributionSummary.builder("eventBus.bytes.read")
-                .description("The number of bytes read from the distributed event bus")
-                .withRegistry(registry);
-        replyFailures = Counter.builder("eventBus.replyFailures")
-                .description("Count the number of reply failure")
+                .description("The number of bytes read from the distributed event bus").withRegistry(registry);
+        replyFailures = Counter.builder("eventBus.replyFailures").description("Count the number of reply failure")
                 .withRegistry(registry);
     }
 
@@ -60,8 +55,7 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
             // Ignore internal metrics
             return ignored;
         }
-        return handlers.computeIfAbsent(address, a -> new Handler(address))
-                .increment();
+        return handlers.computeIfAbsent(address, a -> new Handler(address)).increment();
 
     }
 
@@ -120,9 +114,7 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
     @Override
     public void replyFailure(String address, ReplyFailure failure) {
         if (!isInternal(address)) {
-            replyFailures
-                    .withTags(this.tags.and("address", address, "failure", failure.name()))
-                    .increment();
+            replyFailures.withTags(this.tags.and("address", address, "failure", failure.name())).increment();
         }
     }
 
@@ -153,20 +145,14 @@ public class VertxEventBusMetrics implements EventBusMetrics<VertxEventBusMetric
             this.count = new LongAdder();
             this.delivered = new LongAdder();
             this.discarded = new LongAdder();
-            Gauge.builder("eventBus.handlers", count::longValue)
-                    .description("Number of handlers per address")
-                    .tags(tags.and("address", address))
-                    .register(registry);
+            Gauge.builder("eventBus.handlers", count::longValue).description("Number of handlers per address")
+                    .tags(tags.and("address", address)).register(registry);
 
-            Gauge.builder("eventBus.delivered", delivered::longValue)
-                    .description("Number of messages delivered")
-                    .tags(tags.and("address", address))
-                    .register(registry);
+            Gauge.builder("eventBus.delivered", delivered::longValue).description("Number of messages delivered")
+                    .tags(tags.and("address", address)).register(registry);
 
-            Gauge.builder("eventBus.discarded", discarded::longValue)
-                    .description("Number of messages discarded")
-                    .tags(tags.and("address", address))
-                    .register(registry);
+            Gauge.builder("eventBus.discarded", discarded::longValue).description("Number of messages discarded")
+                    .tags(tags.and("address", address)).register(registry);
         }
 
         public Handler increment() {

@@ -31,10 +31,8 @@ public class DependentBeanJobTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Service.class, MyJob.class, RefiringJob.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Service.class, MyJob.class, RefiringJob.class)
+                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"), "application.properties"));
 
     @Inject
     Scheduler quartz;
@@ -49,13 +47,8 @@ public class DependentBeanJobTest {
         CountDownLatch constructLatch = service.initConstructLatch(10);
         CountDownLatch destroyedLatch = service.initDestroyedLatch(10);
         for (int i = 0; i < 10; i++) {
-            Trigger trigger = TriggerBuilder.newTrigger()
-                    .withIdentity("myTrigger" + i, "myGroup")
-                    .startNow()
-                    .build();
-            JobDetail job = JobBuilder.newJob(MyJob.class)
-                    .withIdentity("myJob" + i, "myGroup")
-                    .build();
+            Trigger trigger = TriggerBuilder.newTrigger().withIdentity("myTrigger" + i, "myGroup").startNow().build();
+            JobDetail job = JobBuilder.newJob(MyJob.class).withIdentity("myJob" + i, "myGroup").build();
             quartz.scheduleJob(job, trigger);
         }
         assertTrue(execLatch.await(2, TimeUnit.SECONDS), "Latch count: " + execLatch.getCount());
@@ -66,16 +59,9 @@ public class DependentBeanJobTest {
         execLatch = service.initExecuteLatch(3);
         constructLatch = service.initConstructLatch(3);
         destroyedLatch = service.initDestroyedLatch(3);
-        JobDetail job = JobBuilder.newJob(MyJob.class)
-                .withIdentity("myRepeatingJob", "myGroup")
-                .build();
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .withIdentity("myRepeatingTrigger", "myGroup")
-                .startNow()
-                .withSchedule(
-                        SimpleScheduleBuilder.simpleSchedule()
-                                .withIntervalInMilliseconds(333)
-                                .withRepeatCount(2))
+        JobDetail job = JobBuilder.newJob(MyJob.class).withIdentity("myRepeatingJob", "myGroup").build();
+        Trigger trigger = TriggerBuilder.newTrigger().withIdentity("myRepeatingTrigger", "myGroup").startNow()
+                .withSchedule(SimpleScheduleBuilder.simpleSchedule().withIntervalInMilliseconds(333).withRepeatCount(2))
                 .build();
         quartz.scheduleJob(job, trigger);
 
@@ -91,13 +77,9 @@ public class DependentBeanJobTest {
         CountDownLatch constructLatch = service.initConstructLatch(5);
         CountDownLatch destroyedLatch = service.initDestroyedLatch(5);
         for (int i = 0; i < 5; i++) {
-            Trigger trigger = TriggerBuilder.newTrigger()
-                    .withIdentity("myTrigger" + i, "myRefiringGroup")
-                    .startNow()
+            Trigger trigger = TriggerBuilder.newTrigger().withIdentity("myTrigger" + i, "myRefiringGroup").startNow()
                     .build();
-            JobDetail job = JobBuilder.newJob(RefiringJob.class)
-                    .withIdentity("myJob" + i, "myRefiringGroup")
-                    .build();
+            JobDetail job = JobBuilder.newJob(RefiringJob.class).withIdentity("myJob" + i, "myRefiringGroup").build();
             quartz.scheduleJob(job, trigger);
         }
         assertTrue(execLatch.await(2, TimeUnit.SECONDS), "Latch count: " + execLatch.getCount());
@@ -108,16 +90,9 @@ public class DependentBeanJobTest {
         execLatch = service.initExecuteLatch(3);
         constructLatch = service.initConstructLatch(3);
         destroyedLatch = service.initDestroyedLatch(3);
-        JobDetail job = JobBuilder.newJob(RefiringJob.class)
-                .withIdentity("myRepeatingJob", "myRefiringGroup")
-                .build();
-        Trigger trigger = TriggerBuilder.newTrigger()
-                .withIdentity("myRepeatingTrigger", "myRefiringGroup")
-                .startNow()
-                .withSchedule(
-                        SimpleScheduleBuilder.simpleSchedule()
-                                .withIntervalInMilliseconds(333)
-                                .withRepeatCount(2))
+        JobDetail job = JobBuilder.newJob(RefiringJob.class).withIdentity("myRepeatingJob", "myRefiringGroup").build();
+        Trigger trigger = TriggerBuilder.newTrigger().withIdentity("myRepeatingTrigger", "myRefiringGroup").startNow()
+                .withSchedule(SimpleScheduleBuilder.simpleSchedule().withIntervalInMilliseconds(333).withRepeatCount(2))
                 .build();
         quartz.scheduleJob(job, trigger);
 

@@ -45,7 +45,7 @@ public abstract class RouteHandler implements Handler<RoutingContext> {
     @Override
     public void handle(RoutingContext context) {
         QuarkusHttpUser user = (QuarkusHttpUser) context.user();
-        //todo: how should we handle non-proactive authentication here?
+        // todo: how should we handle non-proactive authentication here?
         if (requestContext.isActive()) {
             if (currentIdentityAssociation != null) {
                 if (user != null) {

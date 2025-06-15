@@ -15,16 +15,12 @@ import io.restassured.RestAssured;
 
 public class CustomExceptionMapperTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RootResource.class, CustomExceptionMapper.class, MessageService.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(RootResource.class, CustomExceptionMapper.class, MessageService.class));
 
     @Test
     public void testResourceNotFound() {
-        RestAssured.when().get("/not_found")
-                .then()
-                .statusCode(200)
-                .body(Matchers.is("not found but OK"));
+        RestAssured.when().get("/not_found").then().statusCode(200).body(Matchers.is("not found but OK"));
     }
 
     @Provider

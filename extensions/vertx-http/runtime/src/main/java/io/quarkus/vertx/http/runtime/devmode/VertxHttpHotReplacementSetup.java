@@ -65,10 +65,10 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
 
     @Override
     public void handleFailedInitialStart() {
-        //remove for vert.x 4.2
-        //at the moment there is a TCCL error that is normally handled by the log filters
-        //but if startup fails it may not take effect
-        //it happens once per thread, so it can completely mess up the console output, and hide the real issue
+        // remove for vert.x 4.2
+        // at the moment there is a TCCL error that is normally handled by the log filters
+        // but if startup fails it may not take effect
+        // it happens once per thread, so it can completely mess up the console output, and hide the real issue
         LogManager.getLogManager().getLogger("io.vertx.core.impl.ContextImpl").setLevel(Level.SEVERE);
         VertxHttpRecorder.startServerAfterFailedStart();
     }
@@ -104,7 +104,8 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                 }
             });
         }
-        if (hotReplacementContext.getDeploymentProblem() != null && routingContext.request().path().endsWith(CONFIG_FIX)) {
+        if (hotReplacementContext.getDeploymentProblem() != null
+                && routingContext.request().path().endsWith(CONFIG_FIX)) {
 
             routingContext.request().setExpectMultipart(true);
             routingContext.request().endHandler(new Handler<Void>() {
@@ -135,9 +136,11 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
             routingContext.request().resume();
             return;
         }
-        if ((nextUpdate > System.currentTimeMillis() &&
-                !hotReplacementContext.isTest() &&
-                !DevConsoleManager.isDoingHttpInitiatedReload()) // if there is a live reload possibly going on we don't want to let a request through to restarting application, this is best effort, but it narrows the window a lot
+        if ((nextUpdate > System.currentTimeMillis() && !hotReplacementContext.isTest()
+                && !DevConsoleManager.isDoingHttpInitiatedReload()) // if there is a live reload possibly going on we
+                // don't want to let a request through to restarting
+                // application, this is best effort, but it narrows
+                // the window a lot
                 || routingContext.request().headers().contains(HEADER_NAME)) {
             if (hotReplacementContext.getDeploymentProblem() != null) {
                 handleDeploymentProblem(routingContext, hotReplacementContext.getDeploymentProblem());
@@ -150,7 +153,7 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
         VertxCoreRecorder.getVertx().get().getOrCreateContext().executeBlocking(new Callable<Boolean>() {
             @Override
             public Boolean call() {
-                //the blocking pool may have a stale TCCL
+                // the blocking pool may have a stale TCCL
                 Thread.currentThread().setContextClassLoader(current);
                 boolean restart = false;
                 try {
@@ -165,9 +168,9 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                                 throw new IllegalStateException("Unable to perform live reload scanning", e);
                             }
                             if (currentState != VertxHttpRecorder.getCurrentApplicationState()) {
-                                //its possible a Kafka message or some other source triggered a reload,
-                                //so we could wait for the restart (due to the scan lock)
-                                //but then fail to dispatch to the new application
+                                // its possible a Kafka message or some other source triggered a reload,
+                                // so we could wait for the restart (due to the scan lock)
+                                // but then fail to dispatch to the new application
                                 restart = true;
                             }
                         }
@@ -176,9 +179,9 @@ public class VertxHttpHotReplacementSetup implements HotReplacementSetup {
                         throw new NoStackTraceException(hotReplacementContext.getDeploymentProblem());
                     }
                     if (restart) {
-                        //close all connections on close, except for this one
-                        //this prevents long-running requests such as SSE or websockets
-                        //from holding onto the old deployment
+                        // close all connections on close, except for this one
+                        // this prevents long-running requests such as SSE or websockets
+                        // from holding onto the old deployment
                         Set<ConnectionBase> connections = new HashSet<>(openConnections);
                         for (ConnectionBase con : connections) {
                             if (con != connectionBase) {

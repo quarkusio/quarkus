@@ -37,21 +37,19 @@ public class ExtensionsProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     InternalPageBuildItem createExtensionsPages(ExtensionsBuildItem extensionsBuildItem, DevUIConfig config) {
 
-        InternalPageBuildItem extensionsPages = new InternalPageBuildItem("Extensions", 10, "qwc-extensions-menu-action");
+        InternalPageBuildItem extensionsPages = new InternalPageBuildItem("Extensions", 10,
+                "qwc-extensions-menu-action");
 
         // Extensions
-        Map<ExtensionGroup, List<Extension>> response = Map.of(
-                ExtensionGroup.active, extensionsBuildItem.getActiveExtensions(),
-                ExtensionGroup.inactive, extensionsBuildItem.getInactiveExtensions());
+        Map<ExtensionGroup, List<Extension>> response = Map.of(ExtensionGroup.active,
+                extensionsBuildItem.getActiveExtensions(), ExtensionGroup.inactive,
+                extensionsBuildItem.getInactiveExtensions());
 
         extensionsPages.addBuildTimeData("extensions", response);
 
         // Page
-        extensionsPages.addPage(Page.webComponentPageBuilder()
-                .namespace(NAMESPACE)
-                .title("Extensions")
-                .icon("font-awesome-solid:puzzle-piece")
-                .componentLink("qwc-extensions.js"));
+        extensionsPages.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).title("Extensions")
+                .icon("font-awesome-solid:puzzle-piece").componentLink("qwc-extensions.js"));
 
         extensionsPages.addBuildTimeData("allowExtensionManagement", config.allowExtensionManagement());
 
@@ -81,9 +79,7 @@ public class ExtensionsProcessor {
         }.getClass().getEnclosingMethod().getName(), ignored -> {
             return CompletableFuture.supplyAsync(() -> {
                 try {
-                    QuarkusCommandOutcome outcome = new ListCategories(getQuarkusProject())
-                            .format("object")
-                            .execute();
+                    QuarkusCommandOutcome outcome = new ListCategories(getQuarkusProject()).format("object").execute();
 
                     if (outcome.isSuccess()) {
                         return outcome.getResult();
@@ -101,11 +97,8 @@ public class ExtensionsProcessor {
         }.getClass().getEnclosingMethod().getName(), ignored -> {
             return CompletableFuture.supplyAsync(() -> {
                 try {
-                    QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
-                            .installed(false)
-                            .all(false)
-                            .format("object")
-                            .execute();
+                    QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject()).installed(false).all(false)
+                            .format("object").execute();
 
                     if (outcome.isSuccess()) {
                         return outcome.getResult();
@@ -124,11 +117,8 @@ public class ExtensionsProcessor {
         }.getClass().getEnclosingMethod().getName(), ignored -> {
             return CompletableFuture.supplyAsync(() -> {
                 try {
-                    QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject())
-                            .installed(true)
-                            .all(false)
-                            .format("object")
-                            .execute();
+                    QuarkusCommandOutcome outcome = new ListExtensions(getQuarkusProject()).installed(true).all(false)
+                            .format("object").execute();
 
                     if (outcome.isSuccess()) {
 
@@ -164,8 +154,7 @@ public class ExtensionsProcessor {
                 String extensionArtifactId = params.get("extensionArtifactId");
                 try {
                     QuarkusCommandOutcome outcome = new RemoveExtensions(getQuarkusProject())
-                            .extensions(Set.of(extensionArtifactId))
-                            .execute();
+                            .extensions(Set.of(extensionArtifactId)).execute();
 
                     if (outcome.isSuccess()) {
                         return true;
@@ -187,8 +176,7 @@ public class ExtensionsProcessor {
 
                 try {
                     QuarkusCommandOutcome outcome = new AddExtensions(getQuarkusProject())
-                            .extensions(Set.of(extensionArtifactId))
-                            .execute();
+                            .extensions(Set.of(extensionArtifactId)).execute();
 
                     if (outcome.isSuccess()) {
                         return true;

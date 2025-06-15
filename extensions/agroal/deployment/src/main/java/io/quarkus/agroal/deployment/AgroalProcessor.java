@@ -83,19 +83,15 @@ class AgroalProcessor {
     }
 
     @BuildStep
-    void build(
-            DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
+    void build(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
-            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds,
-            List<JdbcDriverBuildItem> jdbcDriverBuildItems,
+            List<DefaultDataSourceDbKindBuildItem> defaultDbKinds, List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<NativeImageResourceBuildItem> resource,
-            BuildProducer<ServiceProviderBuildItem> service,
-            Capabilities capabilities,
-            BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
+            BuildProducer<NativeImageResourceBuildItem> resource, BuildProducer<ServiceProviderBuildItem> service,
+            Capabilities capabilities, BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedConfig,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) throws Exception {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, CurateOutcomeBuildItem curateOutcomeBuildItem)
+            throws Exception {
         if (dataSourcesBuildTimeConfig.driver().isPresent() || dataSourcesBuildTimeConfig.url().isPresent()) {
             throw new ConfigurationException(
                     "quarkus.datasource.url and quarkus.datasource.driver have been deprecated in Quarkus 1.3 and removed in 1.9. "
@@ -103,8 +99,7 @@ class AgroalProcessor {
         }
 
         List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedDataSourceBuildTimeConfigs = getAggregatedConfigBuildItems(
-                dataSourcesBuildTimeConfig,
-                dataSourcesJdbcBuildTimeConfig, curateOutcomeBuildItem,
+                dataSourcesBuildTimeConfig, dataSourcesJdbcBuildTimeConfig, curateOutcomeBuildItem,
                 jdbcDriverBuildItems, defaultDbKinds);
 
         if (aggregatedDataSourceBuildTimeConfigs.isEmpty()) {
@@ -120,9 +115,8 @@ class AgroalProcessor {
                 otelJdbcInstrumentationActive = true;
             }
 
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass())
-                            .methods().build());
+            reflectiveClass.produce(ReflectiveClassBuildItem
+                    .builder(aggregatedDataSourceBuildTimeConfig.getResolvedDriverClass()).methods().build());
 
             aggregatedConfig.produce(aggregatedDataSourceBuildTimeConfig);
         }
@@ -130,8 +124,7 @@ class AgroalProcessor {
         if (otelJdbcInstrumentationActive && capabilities.isPresent(OPENTELEMETRY_TRACER)) {
             // at least one datasource is using OpenTelemetry JDBC instrumentation,
             // therefore we register the OpenTelemetry data source wrapper bean
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder()
-                    .addBeanClass(AgroalOpenTelemetryWrapper.class)
+            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(AgroalOpenTelemetryWrapper.class)
                     .setDefaultScope(DotNames.SINGLETON).build());
         }
 
@@ -148,10 +141,8 @@ class AgroalProcessor {
                 io.agroal.pool.ConnectionHandler.class.getName(),
                 io.agroal.api.security.AgroalDefaultSecurityProvider.class.getName(),
                 io.agroal.api.security.AgroalKerberosSecurityProvider.class.getName(),
-                java.sql.Statement[].class.getName(),
-                java.sql.Statement.class.getName(),
-                java.sql.ResultSet.class.getName(),
-                java.sql.ResultSet[].class.getName()).build());
+                java.sql.Statement[].class.getName(), java.sql.Statement.class.getName(),
+                java.sql.ResultSet.class.getName(), java.sql.ResultSet[].class.getName()).build());
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.AGROAL.getName()));
@@ -181,15 +172,13 @@ class AgroalProcessor {
             if (driver != null && !javax.sql.DataSource.class.isAssignableFrom(driver)
                     && !Driver.class.isAssignableFrom(driver)) {
                 if (aggregatedConfig.isDefault()) {
-                    throw new ConfigurationException(
-                            "Driver " + driverName
-                                    + " is an XA datasource, but XA transactions have not been enabled on the default datasource; please either set 'quarkus.datasource.jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
+                    throw new ConfigurationException("Driver " + driverName
+                            + " is an XA datasource, but XA transactions have not been enabled on the default datasource; please either set 'quarkus.datasource.jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
                 } else {
-                    throw new ConfigurationException(
-                            "Driver " + driverName
-                                    + " is an XA datasource, but XA transactions have not been enabled on the datasource named '"
-                                    + fullDataSourceName + "'; please either set 'quarkus.datasource." + fullDataSourceName
-                                    + ".jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
+                    throw new ConfigurationException("Driver " + driverName
+                            + " is an XA datasource, but XA transactions have not been enabled on the datasource named '"
+                            + fullDataSourceName + "'; please either set 'quarkus.datasource." + fullDataSourceName
+                            + ".jdbc.transactions=xa' or switch to a standard non-XA JDBC driver implementation");
                 }
             }
         }
@@ -216,8 +205,7 @@ class AgroalProcessor {
     @BuildStep
     void generateDataSourceSupportBean(AgroalRecorder recorder,
             List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
-            SslNativeConfigBuildItem sslNativeConfig,
-            Capabilities capabilities,
+            SslNativeConfigBuildItem sslNativeConfig, Capabilities capabilities,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
@@ -239,24 +227,18 @@ class AgroalProcessor {
 
         // create the AgroalDataSourceSupport bean that DataSources/DataSourceHealthCheck use as a dependency
         AgroalDataSourceSupport agroalDataSourceSupport = getDataSourceSupport(aggregatedBuildTimeConfigBuildItems,
-                sslNativeConfig,
-                capabilities);
+                sslNativeConfig, capabilities);
         syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(AgroalDataSourceSupport.class)
-                .supplier(recorder.dataSourceSupportSupplier(agroalDataSourceSupport))
-                .scope(Singleton.class)
-                .unremovable()
-                .setRuntimeInit()
-                .done());
+                .supplier(recorder.dataSourceSupportSupplier(agroalDataSourceSupport)).scope(Singleton.class)
+                .unremovable().setRuntimeInit().done());
     }
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     @Consume(NarayanaInitBuildItem.class)
-    void generateDataSourceBeans(AgroalRecorder recorder,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+    void generateDataSourceBeans(AgroalRecorder recorder, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             List<AggregatedDataSourceBuildTimeConfigBuildItem> aggregatedBuildTimeConfigBuildItems,
-            SslNativeConfigBuildItem sslNativeConfig,
-            Capabilities capabilities,
+            SslNativeConfigBuildItem sslNativeConfig, Capabilities capabilities,
             Optional<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItem,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer,
             BuildProducer<JdbcDataSourceBuildItem> jdbcDataSource) {
@@ -270,20 +252,14 @@ class AgroalProcessor {
             String dataSourceName = aggregatedBuildTimeConfigBuildItem.getName();
 
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                    .configure(AgroalDataSource.class)
-                    .addType(DATA_SOURCE)
-                    .addType(AGROAL_DATA_SOURCE)
-                    .scope(ApplicationScoped.class)
-                    .qualifiers(qualifiers(dataSourceName))
-                    .setRuntimeInit()
-                    .unremovable()
-                    .addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
-                    .startup()
-                    .checkActive(recorder.agroalDataSourceCheckActiveSupplier(dataSourceName))
+                    .configure(AgroalDataSource.class).addType(DATA_SOURCE).addType(AGROAL_DATA_SOURCE)
+                    .scope(ApplicationScoped.class).qualifiers(qualifiers(dataSourceName)).setRuntimeInit()
+                    .unremovable().addInjectionPoint(ClassType.create(DotName.createSimple(DataSources.class)))
+                    .startup().checkActive(recorder.agroalDataSourceCheckActiveSupplier(dataSourceName))
                     // pass the runtime config into the recorder to ensure that the DataSource related beans
                     // are created after runtime configuration has been set up
-                    .createWith(recorder.agroalDataSourceSupplier(
-                            dataSourceName, dataSourcesRuntimeConfig, isOtelSdkEnabled(openTelemetrySdkBuildItem)))
+                    .createWith(recorder.agroalDataSourceSupplier(dataSourceName, dataSourcesRuntimeConfig,
+                            isOtelSdkEnabled(openTelemetrySdkBuildItem)))
                     .destroyer(BeanDestroyer.AutoCloseableDestroyer.class);
 
             if (!DataSourceUtil.isDefault(dataSourceName)) {
@@ -294,25 +270,25 @@ class AgroalProcessor {
 
             syntheticBeanBuildItemBuildProducer.produce(configurator.done());
 
-            jdbcDataSource.produce(new JdbcDataSourceBuildItem(dataSourceName,
-                    aggregatedBuildTimeConfigBuildItem.getDbKind(),
-                    aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion(),
-                    aggregatedBuildTimeConfigBuildItem.getJdbcConfig().transactions() != TransactionIntegration.DISABLED,
-                    aggregatedBuildTimeConfigBuildItem.isDefault()));
+            jdbcDataSource
+                    .produce(new JdbcDataSourceBuildItem(dataSourceName, aggregatedBuildTimeConfigBuildItem.getDbKind(),
+                            aggregatedBuildTimeConfigBuildItem.getDataSourceConfig().dbVersion(),
+                            aggregatedBuildTimeConfigBuildItem.getJdbcConfig()
+                                    .transactions() != TransactionIntegration.DISABLED,
+                            aggregatedBuildTimeConfigBuildItem.isDefault()));
         }
     }
 
     private List<AggregatedDataSourceBuildTimeConfigBuildItem> getAggregatedConfigBuildItems(
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<JdbcDriverBuildItem> jdbcDriverBuildItems,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, List<JdbcDriverBuildItem> jdbcDriverBuildItems,
             List<DefaultDataSourceDbKindBuildItem> defaultDbKinds) {
         List<AggregatedDataSourceBuildTimeConfigBuildItem> dataSources = new ArrayList<>();
 
         for (Entry<String, DataSourceBuildTimeConfig> entry : dataSourcesBuildTimeConfig.dataSources().entrySet()) {
-            DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
-                    .dataSources().get(entry.getKey()).jdbc();
+            DataSourceJdbcBuildTimeConfig jdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.dataSources()
+                    .get(entry.getKey()).jdbc();
             if (!jdbcBuildTimeConfig.enabled()) {
                 continue;
             }
@@ -321,19 +297,15 @@ class AgroalProcessor {
                     ? entry.getValue().devservices().enabled().orElse(!dataSourcesBuildTimeConfig.hasNamedDataSources())
                     : true;
 
-            Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem
-                    .resolve(entry.getValue().dbKind(), defaultDbKinds,
-                            enableImplicitResolution,
-                            curateOutcomeBuildItem);
+            Optional<String> effectiveDbKind = DefaultDataSourceDbKindBuildItem.resolve(entry.getValue().dbKind(),
+                    defaultDbKinds, enableImplicitResolution, curateOutcomeBuildItem);
 
             if (!effectiveDbKind.isPresent()) {
                 continue;
             }
 
-            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(),
-                    entry.getValue(),
-                    jdbcBuildTimeConfig,
-                    effectiveDbKind.get(),
+            dataSources.add(new AggregatedDataSourceBuildTimeConfigBuildItem(entry.getKey(), entry.getValue(),
+                    jdbcBuildTimeConfig, effectiveDbKind.get(),
                     resolveDriver(entry.getKey(), effectiveDbKind.get(), jdbcBuildTimeConfig, jdbcDriverBuildItems)));
         }
 
@@ -341,14 +313,14 @@ class AgroalProcessor {
     }
 
     private String resolveDriver(String dataSourceName, String dbKind,
-            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
+            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig,
+            List<JdbcDriverBuildItem> jdbcDriverBuildItems) {
         if (dataSourceJdbcBuildTimeConfig.driver().isPresent()) {
             return dataSourceJdbcBuildTimeConfig.driver().get();
         }
 
         Optional<JdbcDriverBuildItem> matchingJdbcDriver = jdbcDriverBuildItems.stream()
-                .filter(i -> dbKind.equals(i.getDbKind()))
-                .findFirst();
+                .filter(i -> dbKind.equals(i.getDbKind())).findFirst();
 
         if (matchingJdbcDriver.isPresent()) {
             if (io.quarkus.agroal.runtime.TransactionIntegration.XA == dataSourceJdbcBuildTimeConfig.transactions()) {
@@ -364,7 +336,8 @@ class AgroalProcessor {
                 "Unable to find a JDBC driver corresponding to the database kind '%s' for the %s (available: '%s'). "
                         + "Check if it's a typo, otherwise provide a suitable JDBC driver extension, define the driver manually,"
                         + " or disable the JDBC datasource by adding '%s=false' to your configuration if you don't need it.",
-                dbKind, DataSourceUtil.isDefault(dataSourceName) ? "default datasource" : "datasource '" + dataSourceName + "'",
+                dbKind,
+                DataSourceUtil.isDefault(dataSourceName) ? "default datasource" : "datasource '" + dataSourceName + "'",
                 jdbcDriverBuildItems.stream().map(JdbcDriverBuildItem::getDbKind).collect(Collectors.joining("','")),
                 DataSourceUtil.dataSourcePropertyKey(dataSourceName, "jdbc")));
     }
@@ -380,15 +353,14 @@ class AgroalProcessor {
     }
 
     @BuildStep
-    void registerRowSetSupport(
-            BuildProducer<NativeImageResourceBundleBuildItem> resourceBundleProducer,
+    void registerRowSetSupport(BuildProducer<NativeImageResourceBundleBuildItem> resourceBundleProducer,
             BuildProducer<NativeImageResourceBuildItem> nativeResourceProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer) {
         resourceBundleProducer.produce(new NativeImageResourceBundleBuildItem("com.sun.rowset.RowSetResourceBundle"));
         nativeResourceProducer.produce(new NativeImageResourceBuildItem("javax/sql/rowset/rowset.properties"));
-        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(
-                "com.sun.rowset.providers.RIOptimisticProvider",
-                "com.sun.rowset.providers.RIXMLProvider").build());
+        reflectiveClassProducer.produce(ReflectiveClassBuildItem
+                .builder("com.sun.rowset.providers.RIOptimisticProvider", "com.sun.rowset.providers.RIXMLProvider")
+                .build());
     }
 
     @BuildStep

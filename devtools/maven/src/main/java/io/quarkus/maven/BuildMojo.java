@@ -60,8 +60,8 @@ public class BuildMojo extends QuarkusBootstrapMojo {
     boolean skip = false;
 
     /**
-     * When the building an Uber JAR, the default JAR is renamed by adding {@code .original} suffix.
-     * Enabling this property will disable the renaming of the original JAR.
+     * When the building an Uber JAR, the default JAR is renamed by adding {@code .original} suffix. Enabling this
+     * property will disable the renaming of the original JAR.
      */
     @Deprecated
     @Parameter(property = "skipOriginalJarRename")
@@ -99,9 +99,9 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             return false;
         }
         if (!mavenProject().getArtifact().getArtifactHandler().getExtension().equals(ArtifactCoords.TYPE_JAR)) {
-            throw new MojoExecutionException(
-                    "The project artifact's extension is '" + mavenProject().getArtifact().getArtifactHandler().getExtension()
-                            + "' while this goal expects it be 'jar'");
+            throw new MojoExecutionException("The project artifact's extension is '"
+                    + mavenProject().getArtifact().getArtifactHandler().getExtension()
+                    + "' while this goal expects it be 'jar'");
         }
         return true;
     }
@@ -141,19 +141,15 @@ public class BuildMojo extends QuarkusBootstrapMojo {
             try (CuratedApplication curatedApplication = bootstrapApplication()) {
                 AugmentAction action = curatedApplication.createAugmentor();
                 AugmentResult result = action.createProductionApplication();
-                analyticsProvider.sendAnalytics(
-                        TrackEventType.BUILD,
-                        curatedApplication.getApplicationModel(),
-                        result.getGraalVMInfo(),
-                        buildDirectory);
+                analyticsProvider.sendAnalytics(TrackEventType.BUILD, curatedApplication.getApplicationModel(),
+                        result.getGraalVMInfo(), buildDirectory);
                 Artifact original = mavenProject().getArtifact();
                 if (result.getJar() != null) {
 
                     final boolean uberJarWithSuffix = result.getJar().isUberJar()
                             && result.getJar().getOriginalArtifact() != null
                             && !result.getJar().getOriginalArtifact().equals(result.getJar().getPath());
-                    if (!skipOriginalJarRename && uberJarWithSuffix
-                            && result.getJar().getOriginalArtifact() != null) {
+                    if (!skipOriginalJarRename && uberJarWithSuffix && result.getJar().getOriginalArtifact() != null) {
                         final Path standardJar = result.getJar().getOriginalArtifact();
                         if (Files.exists(standardJar)) {
                             final Path renamedOriginal = standardJar.getParent().toAbsolutePath()

@@ -14,8 +14,7 @@ public class PrivateNoArgsConstructorChangeFlagTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PrivateNoArgsConstructorChangeFlagTest.class, MyBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PrivateNoArgsConstructorChangeFlagTest.class, MyBean.class));
 
     @Inject
     MyBean bean;

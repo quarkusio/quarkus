@@ -27,9 +27,7 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
     Uni<Response> _set(K key, V value) {
         nonNull(key, "key");
         nonNull(value, "value");
-        RedisCommand cmd = RedisCommand.of(Command.SET)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value));
+        RedisCommand cmd = RedisCommand.of(Command.SET).put(marshaller.encode(key)).put(marshaller.encode(value));
         return execute(cmd);
     }
 
@@ -95,69 +93,55 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         positive(seconds, "seconds");
         nonNull(value, "value");
-        return execute(RedisCommand.of(Command.SETEX)
-                .put(marshaller.encode(key))
-                .put(seconds)
-                .put(marshaller.encode(value)));
+        return execute(
+                RedisCommand.of(Command.SETEX).put(marshaller.encode(key)).put(seconds).put(marshaller.encode(value)));
     }
 
     Uni<Response> _psetex(K key, long milliseconds, V value) {
         nonNull(key, "key");
         positive(milliseconds, "seconds");
         nonNull(value, "value");
-        return execute(RedisCommand.of(Command.PSETEX)
-                .put(marshaller.encode(key))
-                .put(milliseconds)
+        return execute(RedisCommand.of(Command.PSETEX).put(marshaller.encode(key)).put(milliseconds)
                 .put(marshaller.encode(value)));
     }
 
     Uni<Response> _setnx(K key, V value) {
         nonNull(key, "key");
         nonNull(value, "value");
-        return execute(RedisCommand.of(Command.SETNX)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value)));
+        return execute(RedisCommand.of(Command.SETNX).put(marshaller.encode(key)).put(marshaller.encode(value)));
     }
 
     Uni<Response> _setrange(K key, long offset, V value) {
         nonNull(key, "key");
         nonNull(value, "value");
         positiveOrZero(offset, "offset");
-        return execute(RedisCommand.of(Command.SETRANGE)
-                .put(marshaller.encode(key))
-                .put(offset)
+        return execute(RedisCommand.of(Command.SETRANGE).put(marshaller.encode(key)).put(offset)
                 .put(marshaller.encode(value)));
     }
 
     Uni<Response> _strlen(K key) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.STRLEN)
-                .put(marshaller.encode(key)));
+        return execute(RedisCommand.of(Command.STRLEN).put(marshaller.encode(key)));
     }
 
     Uni<Response> _decr(K key) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.DECR)
-                .put(marshaller.encode(key)));
+        return execute(RedisCommand.of(Command.DECR).put(marshaller.encode(key)));
     }
 
     Uni<Response> _decrby(K key, long amount) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.DECRBY)
-                .put(marshaller.encode(key))
-                .put(amount));
+        return execute(RedisCommand.of(Command.DECRBY).put(marshaller.encode(key)).put(amount));
     }
 
     Uni<Response> _get(K key) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.GET)
-                .put(marshaller.encode(key)));
+        return execute(RedisCommand.of(Command.GET).put(marshaller.encode(key)));
     }
 
     Uni<Response> _getdel(K key) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.GETDEL)
-                .put(marshaller.encode(key)));
+        return execute(RedisCommand.of(Command.GETDEL).put(marshaller.encode(key)));
     }
 
     Uni<Response> _getex(K key, GetExArgs args) {
@@ -181,49 +165,39 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
     Uni<Response> _getrange(K key, long start, long end) {
         nonNull(key, "key");
         positiveOrZero(start, "start");
-        return execute(RedisCommand.of(Command.GETRANGE)
-                .put(marshaller.encode(key))
-                .put(start)
-                .put(end));
+        return execute(RedisCommand.of(Command.GETRANGE).put(marshaller.encode(key)).put(start).put(end));
     }
 
     Uni<Response> _getset(K key, V value) {
         nonNull(key, "key");
         nonNull(value, "value");
-        return execute(RedisCommand.of(Command.GETSET)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value)));
+        return execute(RedisCommand.of(Command.GETSET).put(marshaller.encode(key)).put(marshaller.encode(value)));
     }
 
     Uni<Response> _incr(K key) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.INCR)
-                .put(marshaller.encode(key)));
+        return execute(RedisCommand.of(Command.INCR).put(marshaller.encode(key)));
     }
 
     Uni<Response> _incrby(K key, long amount) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.INCRBY)
-                .put(marshaller.encode(key)).put(amount));
+        return execute(RedisCommand.of(Command.INCRBY).put(marshaller.encode(key)).put(amount));
     }
 
     Uni<Response> _incrbyfloat(K key, double amount) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.INCRBYFLOAT)
-                .put(marshaller.encode(key)).put(amount));
+        return execute(RedisCommand.of(Command.INCRBYFLOAT).put(marshaller.encode(key)).put(amount));
     }
 
     Uni<Response> _append(K key, V value) {
         nonNull(key, "key");
-        return execute(RedisCommand.of(Command.APPEND)
-                .put(marshaller.encode(key)).put(marshaller.encode(value)));
+        return execute(RedisCommand.of(Command.APPEND).put(marshaller.encode(key)).put(marshaller.encode(value)));
     }
 
     Uni<Response> _mget(K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
-        return execute(RedisCommand.of(Command.MGET)
-                .put(marshaller.encode(keys)));
+        return execute(RedisCommand.of(Command.MGET).put(marshaller.encode(keys)));
     }
 
     Map<K, V> decodeAsOrderedMap(Response r, K[] keys) {
@@ -259,6 +233,7 @@ class AbstractStringCommands<K, V> extends AbstractRedisCommands {
         nonNull(key1, "key1");
         nonNull(key2, "key2");
 
-        return execute(RedisCommand.of(Command.LCS).put(marshaller.encode(key1)).put(marshaller.encode(key2)).put("LEN"));
+        return execute(
+                RedisCommand.of(Command.LCS).put(marshaller.encode(key1)).put(marshaller.encode(key2)).put("LEN"));
     }
 }

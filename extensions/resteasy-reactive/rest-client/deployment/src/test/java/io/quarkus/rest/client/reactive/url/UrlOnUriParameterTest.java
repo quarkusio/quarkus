@@ -24,8 +24,7 @@ public class UrlOnUriParameterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Resource.class, Client.class))
+            .withApplicationRoot(jar -> jar.addClasses(Resource.class, Client.class))
             .overrideConfigKey("quarkus.rest-client.\"client\".url", "http://does-not-exist.io");
 
     @RestClient

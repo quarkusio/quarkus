@@ -22,10 +22,10 @@ import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 @Singleton
 public final class HttpAuthorizer extends AbstractHttpAuthorizer {
 
-    HttpAuthorizer(IdentityProviderManager identityProviderManager,
-            AuthorizationController controller, Instance<HttpSecurityPolicy> installedPolicies,
-            BlockingSecurityExecutor blockingExecutor, BeanManager beanManager,
-            Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
+    HttpAuthorizer(IdentityProviderManager identityProviderManager, AuthorizationController controller,
+            Instance<HttpSecurityPolicy> installedPolicies, BlockingSecurityExecutor blockingExecutor,
+            BeanManager beanManager, Event<AuthorizationFailureEvent> authZFailureEvent,
+            Event<AuthorizationSuccessEvent> authZSuccessEvent,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled) {
         super(identityProviderManager, controller, toList(installedPolicies), beanManager, blockingExecutor,
                 authZFailureEvent, authZSuccessEvent, securityEventsEnabled);
@@ -34,7 +34,8 @@ public final class HttpAuthorizer extends AbstractHttpAuthorizer {
     private static List<HttpSecurityPolicy> toList(Instance<HttpSecurityPolicy> installedPolicies) {
         List<HttpSecurityPolicy> globalPolicies = new ArrayList<>();
         for (HttpSecurityPolicy i : installedPolicies) {
-            if (i.name() == null && !(i instanceof AbstractPathMatchingHttpSecurityPolicy i1 && i1.hasNoPermissions())) {
+            if (i.name() == null
+                    && !(i instanceof AbstractPathMatchingHttpSecurityPolicy i1 && i1.hasNoPermissions())) {
                 globalPolicies.add(i);
             }
         }

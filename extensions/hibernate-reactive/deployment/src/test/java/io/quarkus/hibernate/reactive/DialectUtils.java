@@ -19,7 +19,8 @@ public class DialectUtils {
     public static String getDefaultVersion(Class<? extends Dialect> dialectClass) {
         try {
             return DialectVersions.toString(dialectClass.getConstructor().newInstance().getVersion());
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }
@@ -27,6 +28,7 @@ public class DialectUtils {
     public static String getConfiguredVersion(Mutiny.SessionFactory sessionFactory) {
         ServiceRegistry serviceRegistry = ((MutinySessionFactoryImpl) ClientProxy.unwrap(sessionFactory))
                 .getServiceRegistry();
-        return DialectVersions.toString(serviceRegistry.requireService(JdbcEnvironment.class).getDialect().getVersion());
+        return DialectVersions
+                .toString(serviceRegistry.requireService(JdbcEnvironment.class).getDialect().getVersion());
     }
 }

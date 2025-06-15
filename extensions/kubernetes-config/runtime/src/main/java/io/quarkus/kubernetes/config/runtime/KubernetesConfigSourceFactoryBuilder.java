@@ -23,8 +23,8 @@ public class KubernetesConfigSourceFactoryBuilder implements ConfigBuilder {
         @Override
         public Iterable<ConfigSource> getConfigSources(final ConfigSourceContext context,
                 final KubernetesClientBuildConfig config) {
-            boolean inAppCDsGeneration = Boolean
-                    .parseBoolean(System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
+            boolean inAppCDsGeneration = Boolean.parseBoolean(
+                    System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
             if (inAppCDsGeneration) {
                 return Collections.emptyList();
             }

@@ -10,10 +10,9 @@ import io.vertx.ext.web.RoutingContext;
 
 public class VertxRequestContextFactory implements RequestContextFactory {
     @Override
-    public ResteasyReactiveRequestContext createContext(Deployment deployment,
-            Object context, ThreadSetupAction requestContext,
-            ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
-        return new VertxResteasyReactiveRequestContext(deployment, (RoutingContext) context,
-                requestContext, handlerChain, abortHandlerChain, null);
+    public ResteasyReactiveRequestContext createContext(Deployment deployment, Object context,
+            ThreadSetupAction requestContext, ServerRestHandler[] handlerChain, ServerRestHandler[] abortHandlerChain) {
+        return new VertxResteasyReactiveRequestContext(deployment, (RoutingContext) context, requestContext,
+                handlerChain, abortHandlerChain, null);
     }
 }

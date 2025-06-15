@@ -26,13 +26,10 @@ public interface HibernateOrmRuntimeConfig {
     Map<String, HibernateOrmRuntimeConfigPersistenceUnit> persistenceUnits();
 
     /**
-     * Enable or disable access to a Hibernate ORM `EntityManager`/`Session`/`StatelessSession`
-     * *when no transaction is active* but a request scope is.
-     *
-     * When enabled, the corresponding sessions will be read-only.
-     *
-     * Defaults to enabled for backwards compatibility, but disabling this is recommended,
-     * to avoid inconsistent resulsts caused by queries running outside of transactions.
+     * Enable or disable access to a Hibernate ORM `EntityManager`/`Session`/`StatelessSession` *when no transaction is
+     * active* but a request scope is. When enabled, the corresponding sessions will be read-only. Defaults to enabled
+     * for backwards compatibility, but disabling this is recommended, to avoid inconsistent resulsts caused by queries
+     * running outside of transactions.
      */
     @WithName("request-scoped.enabled")
     @WithDefault("true")
@@ -43,8 +40,7 @@ public interface HibernateOrmRuntimeConfig {
     }
 
     static String puPropertyKey(String puName, String radical) {
-        String prefix = PersistenceUnitUtil.isDefaultPersistenceUnit(puName)
-                ? "quarkus.hibernate-orm."
+        String prefix = PersistenceUnitUtil.isDefaultPersistenceUnit(puName) ? "quarkus.hibernate-orm."
                 : "quarkus.hibernate-orm.\"" + puName + "\".";
         return prefix + radical;
     }

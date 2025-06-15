@@ -23,8 +23,8 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-credentials-provider", password = "secret123!", formats = { Format.JKS, Format.PKCS12 })
-})
+        @Certificate(name = "test-credentials-provider", password = "secret123!", formats = { Format.JKS,
+                Format.PKCS12 }) })
 public class JKSKeyStoreCredentialsProviderTest {
 
     private static final String configuration = """
@@ -33,9 +33,8 @@ public class JKSKeyStoreCredentialsProviderTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(MyCredentialProvider.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(MyCredentialProvider.class)
                     .add(new StringAsset(configuration), "application.properties"));
 
     @Inject

@@ -18,8 +18,7 @@ class ReactiveStreamsOperatorsUsageTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingReactiveStreamsOperators.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanUsingReactiveStreamsOperators.class));
 
     @Inject
     BeanUsingReactiveStreamsOperators bean;
@@ -34,13 +33,11 @@ class ReactiveStreamsOperatorsUsageTest {
     static class BeanUsingReactiveStreamsOperators {
 
         public CompletionStage<List<Integer>> verify() {
-            return ReactiveStreams.of(1, 2, 3)
-                    .map(i -> i + 1) // 2, 3, 4
+            return ReactiveStreams.of(1, 2, 3).map(i -> i + 1) // 2, 3, 4
                     .flatMapRsPublisher(x -> ReactiveStreams.of(x, x).buildRs()) // 2,2,3,3,4,4
                     .distinct() // 2, 3, 4
                     .limit(2) // 2, 3
-                    .toList()
-                    .run();
+                    .toList().run();
         }
     }
 

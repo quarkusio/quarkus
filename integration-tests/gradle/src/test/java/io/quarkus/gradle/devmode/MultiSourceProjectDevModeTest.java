@@ -25,8 +25,8 @@ public class MultiSourceProjectDevModeTest extends QuarkusDevGradleTestBase {
 
         assertUpdatedResponseContains("/hello", "hi");
 
-        replace("src/main/kotlin/org/acme/ExampleResource.kt",
-                ImmutableMap.of("fun hello(): String = service.hello()", "fun hello(): String = service.hello() + \"!\""));
+        replace("src/main/kotlin/org/acme/ExampleResource.kt", ImmutableMap.of("fun hello(): String = service.hello()",
+                "fun hello(): String = service.hello() + \"!\""));
 
         assertUpdatedResponseContains("/hello", "hi!");
     }

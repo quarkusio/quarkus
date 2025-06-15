@@ -22,22 +22,13 @@ public class ClassHierarchyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> {
-        JavaArchive javaArchive = ShrinkWrap.create(JavaArchive.class)
-                .addClass(Dto.class);
+        JavaArchive javaArchive = ShrinkWrap.create(JavaArchive.class).addClass(Dto.class);
         // Create an inner class with an incomplete hierarchy
-        try (DynamicType.Unloaded<?> superClass = new ByteBuddy()
-                .subclass(Object.class)
-                .name("SuperClass")
-                .make();
-                DynamicType.Unloaded<?> outerClass = new ByteBuddy()
-                        .subclass(superClass.getTypeDescription())
-                        .name("OuterClass")
-                        .make();
-                DynamicType.Unloaded<?> innerClass = new ByteBuddy()
-                        .subclass(AbstractCollection.class)
-                        .innerTypeOf(outerClass.getTypeDescription())
-                        .name("InnerClass")
-                        .make();
+        try (DynamicType.Unloaded<?> superClass = new ByteBuddy().subclass(Object.class).name("SuperClass").make();
+                DynamicType.Unloaded<?> outerClass = new ByteBuddy().subclass(superClass.getTypeDescription())
+                        .name("OuterClass").make();
+                DynamicType.Unloaded<?> innerClass = new ByteBuddy().subclass(AbstractCollection.class)
+                        .innerTypeOf(outerClass.getTypeDescription()).name("InnerClass").make();
                 DynamicType.Loaded<?> innerLoad = innerClass.load(Thread.currentThread().getContextClassLoader())) {
             javaArchive.add(new ByteArrayAsset(innerLoad.getBytes()), "InnerClass.class");
         }

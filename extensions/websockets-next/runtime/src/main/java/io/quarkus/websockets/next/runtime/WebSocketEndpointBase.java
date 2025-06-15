@@ -30,7 +30,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
 
     private static final Logger LOG = Logger.getLogger(WebSocketEndpointBase.class);
 
-    // Keep this field public - there's a problem with ConnectionArgumentProvider reading the protected field in the test mode
+    // Keep this field public - there's a problem with ConnectionArgumentProvider reading the protected field in the
+    // test mode
     public final WebSocketConnectionBase connection;
 
     protected final Codecs codecs;
@@ -53,14 +54,14 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
             SecuritySupport securitySupport, ErrorInterceptor errorInterceptor) {
         this.connection = connection;
         this.codecs = codecs;
-        this.limiter = inboundProcessingMode() == InboundProcessingMode.SERIAL ? new ConcurrencyLimiter(connection) : null;
+        this.limiter = inboundProcessingMode() == InboundProcessingMode.SERIAL ? new ConcurrencyLimiter(connection)
+                : null;
         this.container = Arc.container();
         this.contextSupport = contextSupport;
         this.securitySupport = securitySupport;
         this.errorInterceptor = errorInterceptor;
         InjectableBean<?> bean = container.bean(beanIdentifier());
-        if (bean.getScope().equals(ApplicationScoped.class)
-                || bean.getScope().equals(Singleton.class)) {
+        if (bean.getScope().equals(ApplicationScoped.class) || bean.getScope().equals(Singleton.class)) {
             // For certain scopes, we can optimize and obtain the contextual reference immediately
             this.bean = null;
             this.beanInstance = container.instance(bean).get();
@@ -100,8 +101,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return execute(null, onCloseExecutionModel(), this::doOnClose, true);
     }
 
-    private <M> Future<Void> execute(M message, ExecutionModel executionModel,
-            Function<M, Uni<Void>> action, boolean terminateSession) {
+    private <M> Future<Void> execute(M message, ExecutionModel executionModel, Function<M, Uni<Void>> action,
+            boolean terminateSession) {
         if (executionModel == ExecutionModel.NONE) {
             if (terminateSession) {
                 // Just start and terminate the session context
@@ -128,9 +129,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
         return promise.future();
     }
 
-    private <M> void doExecute(Context context, M message, ExecutionModel executionModel,
-            Function<M, Uni<Void>> action, boolean terminateSession, Runnable onComplete,
-            Consumer<? super Throwable> onFailure) {
+    private <M> void doExecute(Context context, M message, ExecutionModel executionModel, Function<M, Uni<Void>> action,
+            boolean terminateSession, Runnable onComplete, Consumer<? super Throwable> onFailure) {
         Handler<Void> contextSupportEnd = executionModel.isBlocking() ? new Handler<Void>() {
 
             @Override
@@ -146,15 +146,13 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                     Context context = Vertx.currentContext();
                     contextSupport.start();
                     securitySupport.start();
-                    action.apply(message).subscribe().with(
-                            v -> {
-                                context.runOnContext(contextSupportEnd);
-                                onComplete.run();
-                            },
-                            t -> {
-                                context.runOnContext(contextSupportEnd);
-                                onFailure.accept(t);
-                            });
+                    action.apply(message).subscribe().with(v -> {
+                        context.runOnContext(contextSupportEnd);
+                        onComplete.run();
+                    }, t -> {
+                        context.runOnContext(contextSupportEnd);
+                        onFailure.accept(t);
+                    });
                 }
             });
         } else if (executionModel == ExecutionModel.WORKER_THREAD) {
@@ -164,15 +162,13 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                     Context context = Vertx.currentContext();
                     contextSupport.start();
                     securitySupport.start();
-                    action.apply(message).subscribe().with(
-                            v -> {
-                                context.runOnContext(contextSupportEnd);
-                                onComplete.run();
-                            },
-                            t -> {
-                                context.runOnContext(contextSupportEnd);
-                                onFailure.accept(t);
-                            });
+                    action.apply(message).subscribe().with(v -> {
+                        context.runOnContext(contextSupportEnd);
+                        onComplete.run();
+                    }, t -> {
+                        context.runOnContext(contextSupportEnd);
+                        onFailure.accept(t);
+                    });
                     return null;
                 }
             }, false);
@@ -180,15 +176,13 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
             // Event loop
             contextSupport.start();
             securitySupport.start();
-            action.apply(message).subscribe().with(
-                    v -> {
-                        contextSupport.end(terminateSession);
-                        onComplete.run();
-                    },
-                    t -> {
-                        contextSupport.end(terminateSession);
-                        onFailure.accept(t);
-                    });
+            action.apply(message).subscribe().with(v -> {
+                contextSupport.end(terminateSession);
+                onComplete.run();
+            }, t -> {
+                contextSupport.end(terminateSession);
+                onFailure.accept(t);
+            });
         }
     }
 
@@ -213,15 +207,13 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                             Context context = Vertx.currentContext();
                             contextSupport.start();
                             securitySupport.start();
-                            action.apply(throwable).subscribe().with(
-                                    v -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.complete();
-                                    },
-                                    t -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.fail(t);
-                                    });
+                            action.apply(throwable).subscribe().with(v -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.complete();
+                            }, t -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.fail(t);
+                            });
                         }
                     });
                 } else if (executionModel == ExecutionModel.WORKER_THREAD) {
@@ -231,15 +223,13 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                             Context context = Vertx.currentContext();
                             contextSupport.start();
                             securitySupport.start();
-                            action.apply(throwable).subscribe().with(
-                                    v -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.complete();
-                                    },
-                                    t -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.fail(t);
-                                    });
+                            action.apply(throwable).subscribe().with(v -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.complete();
+                            }, t -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.fail(t);
+                            });
                             return null;
                         }
                     }, false);
@@ -250,15 +240,13 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
                             Context context = Vertx.currentContext();
                             contextSupport.start();
                             securitySupport.start();
-                            action.apply(throwable).subscribe().with(
-                                    v -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.complete();
-                                    },
-                                    t -> {
-                                        context.runOnContext(contextSupportEnd);
-                                        promise.fail(t);
-                                    });
+                            action.apply(throwable).subscribe().with(v -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.complete();
+                            }, t -> {
+                                context.runOnContext(contextSupportEnd);
+                                promise.fail(t);
+                            });
                         }
                     });
                 }
@@ -342,12 +330,9 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     public Uni<Void> multiText(Multi<Object> multi, Function<? super Object, Uni<?>> action) {
         multi
                 // Encode and send message
-                .onItem().call(action)
-                .onFailure().recoverWithMulti(t -> {
+                .onItem().call(action).onFailure().recoverWithMulti(t -> {
                     return doOnError(t).toMulti();
-                })
-                .subscribe().with(
-                        m -> LOG.debugf("Multi >> text message: %s", connection),
+                }).subscribe().with(m -> LOG.debugf("Multi >> text message: %s", connection),
                         t -> LOG.errorf(t, "Unable to send text message from Multi: %s ", connection));
         return Uni.createFrom().voidItem();
     }
@@ -359,10 +344,8 @@ public abstract class WebSocketEndpointBase implements WebSocketEndpoint {
     public Uni<Void> multiBinary(Multi<Object> multi, Function<? super Object, Uni<?>> action) {
         multi
                 // Encode and send message
-                .onItem().call(action)
-                .onFailure().recoverWithMulti(t -> doOnError(t).toMulti())
-                .subscribe().with(
-                        m -> LOG.debugf("Multi >> binary message: %s", connection),
+                .onItem().call(action).onFailure().recoverWithMulti(t -> doOnError(t).toMulti()).subscribe()
+                .with(m -> LOG.debugf("Multi >> binary message: %s", connection),
                         t -> LOG.errorf(t, "Unable to send binary message from Multi: %s ", connection));
         return Uni.createFrom().voidItem();
     }

@@ -16,11 +16,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DisabledScheduledMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("DisabledScheduledMethodTest.interval=disabled"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("DisabledScheduledMethodTest.interval=disabled"), "application.properties"));
 
     @Test
     public void testNoSchedulerInvocations() throws InterruptedException {

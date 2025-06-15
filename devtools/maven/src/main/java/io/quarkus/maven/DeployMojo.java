@@ -52,8 +52,7 @@ public class DeployMojo extends AbstractDeploymentMojo {
                         "Too many installed extensions support quarkus:deploy.  You must choose one by setting quarkus.deploy.target.");
                 getLog().error("Extensions: " + targets.stream().collect(Collectors.joining(" ")));
             } else if (target != null && !targets.contains(target)) {
-                getLog().error(
-                        "Unknown quarkus.deploy.target: " + target);
+                getLog().error("Unknown quarkus.deploy.target: " + target);
                 getLog().error("Extensions: " + targets.stream().collect(Collectors.joining(" ")));
             } else {
                 forceDependencies = false;

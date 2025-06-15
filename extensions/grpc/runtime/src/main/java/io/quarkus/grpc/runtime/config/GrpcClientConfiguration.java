@@ -18,8 +18,7 @@ public interface GrpcClientConfiguration {
     String XDS = "xds";
 
     /**
-     * Use new Vert.x gRPC client support.
-     * By default, we still use previous Java gRPC support.
+     * Use new Vert.x gRPC client support. By default, we still use previous Java gRPC support.
      */
     @WithDefault("false")
     boolean useQuarkusGrpcClient();
@@ -64,17 +63,16 @@ public interface GrpcClientConfiguration {
     String host();
 
     /**
-     * The SSL/TLS config.
-     * Only use this if you want to use the old Java gRPC client.
+     * The SSL/TLS config. Only use this if you want to use the old Java gRPC client.
      */
     SslClientConfig ssl();
 
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used. If a
+     * name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but no
+     * TLS configuration is found with that name then an error will be thrown.
      * <p>
      * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then,
      * `quarkus.grpc.clients.$client-name.tls` will be used.
@@ -84,21 +82,19 @@ public interface GrpcClientConfiguration {
     Optional<String> tlsConfigurationName();
 
     /**
-     * The TLS config.
-     * Only use this if you want to use the Quarkus gRPC client.
+     * The TLS config. Only use this if you want to use the Quarkus gRPC client.
      */
     TlsClientConfig tls();
 
     /**
-     * Use a name resolver. Defaults to dns.
-     * If set to "stork", host will be treated as SmallRye Stork service name
+     * Use a name resolver. Defaults to dns. If set to "stork", host will be treated as SmallRye Stork service name
      */
     @WithDefault(DNS)
     String nameResolver();
 
     /**
-     * Whether {@code plain-text} should be used instead of {@code TLS}.
-     * Enabled by default, except if TLS/SSL is configured. In this case, {@code plain-text} is disabled.
+     * Whether {@code plain-text} should be used instead of {@code TLS}. Enabled by default, except if TLS/SSL is
+     * configured. In this case, {@code plain-text} is disabled.
      */
     Optional<Boolean> plainText();
 
@@ -135,8 +131,7 @@ public interface GrpcClientConfiguration {
     int maxHedgedAttempts();
 
     /**
-     * The max number of retry attempts.
-     * Retry must be explicitly enabled.
+     * The max number of retry attempts. Retry must be explicitly enabled.
      */
     @WithDefault("5")
     int maxRetryAttempts();
@@ -147,20 +142,18 @@ public interface GrpcClientConfiguration {
     OptionalInt maxTraceEvents();
 
     /**
-     * The maximum message size allowed for a single gRPC frame (in bytes).
-     * Default is 4 MiB.
+     * The maximum message size allowed for a single gRPC frame (in bytes). Default is 4 MiB.
      */
     OptionalInt maxInboundMessageSize();
 
     /**
-     * The maximum size of metadata allowed to be received (in bytes).
-     * Default is 8192B.
+     * The maximum size of metadata allowed to be received (in bytes). Default is 8192B.
      */
     OptionalInt maxInboundMetadataSize();
 
     /**
-     * The negotiation type for the HTTP/2 connection.
-     * Accepted values are: {@code TLS}, {@code PLAINTEXT_UPGRADE}, {@code PLAINTEXT}
+     * The negotiation type for the HTTP/2 connection. Accepted values are: {@code TLS}, {@code PLAINTEXT_UPGRADE},
+     * {@code PLAINTEXT}
      */
     @WithDefault("TLS")
     String negotiationType();
@@ -176,8 +169,7 @@ public interface GrpcClientConfiguration {
     OptionalLong perRpcBufferLimit();
 
     /**
-     * Whether retry is enabled.
-     * Note that retry is disabled by default.
+     * Whether retry is enabled. Note that retry is disabled by default.
      */
     @WithDefault("false")
     boolean retry();
@@ -193,8 +185,7 @@ public interface GrpcClientConfiguration {
     Optional<String> userAgent();
 
     /**
-     * Use a custom load balancing policy.
-     * Accepted values are: {@code pick_first}, {@code round_robin}, {@code grpclb}.
+     * Use a custom load balancing policy. Accepted values are: {@code pick_first}, {@code round_robin}, {@code grpclb}.
      * This value is ignored if name-resolver is set to 'stork'.
      */
     @WithDefault("pick_first")
@@ -227,9 +218,8 @@ public interface GrpcClientConfiguration {
         Optional<Path> key();
 
         /**
-         * An optional trust store which holds the certificate information of the certificates to trust
-         *
-         * The trust store can be either on classpath or in an external file.
+         * An optional trust store which holds the certificate information of the certificates to trust The trust store
+         * can be either on classpath or in an external file.
          */
         Optional<Path> trustStore();
 
@@ -354,8 +344,7 @@ public interface GrpcClientConfiguration {
     }
 
     /**
-     * Client XDS config
-     * * <a href="https://github.com/grpc/grpc-java/tree/master/examples/example-xds">XDS usage</a>
+     * Client XDS config * <a href="https://github.com/grpc/grpc-java/tree/master/examples/example-xds">XDS usage</a>
      */
     @ConfigGroup
     interface ClientXds extends GrpcServerConfiguration.Xds {

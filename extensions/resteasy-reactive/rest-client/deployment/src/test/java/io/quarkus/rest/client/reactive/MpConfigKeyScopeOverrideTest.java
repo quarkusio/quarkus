@@ -18,8 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MpConfigKeyScopeOverrideTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, HelloClient2.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, HelloClient2.class))
             .withConfigurationResource("mp-configkey-scope-test-application.properties");
 
     @RestClient

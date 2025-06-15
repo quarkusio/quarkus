@@ -22,9 +22,9 @@ import io.quarkus.runtime.RuntimeValue;
 /**
  * Makes it possible to register a synthetic bean.
  * <p>
- * Bean instances can be easily produced through a recorder and set via {@link ExtendedBeanConfigurator#supplier(Supplier)},
- * {@link ExtendedBeanConfigurator#runtimeValue(RuntimeValue)}, {@link ExtendedBeanConfigurator#createWith(Function)} and
- * {@link ExtendedBeanConfigurator#runtimeProxy(Object)}.
+ * Bean instances can be easily produced through a recorder and set via
+ * {@link ExtendedBeanConfigurator#supplier(Supplier)}, {@link ExtendedBeanConfigurator#runtimeValue(RuntimeValue)},
+ * {@link ExtendedBeanConfigurator#createWith(Function)} and {@link ExtendedBeanConfigurator#runtimeProxy(Object)}.
  *
  * @see ExtendedBeanConfigurator
  * @see BeanRegistrar
@@ -37,7 +37,9 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
      * The implementation class is automatically registered as a resulting bean type.
      *
      * @param implClazz
+     *
      * @return a new configurator instance
+     *
      * @see ExtendedBeanConfigurator#done()
      */
     public static ExtendedBeanConfigurator configure(Class<?> implClazz) {
@@ -50,7 +52,9 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
      * The implementation class is automatically registered as a resulting bean type.
      *
      * @param implClazz
+     *
      * @return a new configurator instance
+     *
      * @see ExtendedBeanConfigurator#done()
      */
     public static ExtendedBeanConfigurator configure(DotName implClazz) {
@@ -63,7 +67,9 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
      * Unlike {@link #configure(Class)}, the implementation class is <b>not</b> registered as a resulting bean type.
      *
      * @param implClazz
+     *
      * @return a new configurator instance
+     *
      * @see ExtendedBeanConfigurator#done()
      */
     public static ExtendedBeanConfigurator create(Class<?> implClazz) {
@@ -76,7 +82,9 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
      * Unlike {@link #configure(DotName)}, the implementation class is <b>not</b> registered as a resulting bean type.
      *
      * @param implClazz
+     *
      * @return a new configurator instance
+     *
      * @see ExtendedBeanConfigurator#done()
      */
     public static ExtendedBeanConfigurator create(DotName implClazz) {
@@ -130,11 +138,13 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
          * @return a new build item
          */
         public SyntheticBeanBuildItem done() {
-            if (supplier == null && runtimeValue == null && fun == null && runtimeProxy == null && creatorConsumer == null) {
+            if (supplier == null && runtimeValue == null && fun == null && runtimeProxy == null
+                    && creatorConsumer == null) {
                 throw new IllegalStateException(
                         "Synthetic bean does not provide a creation method, use ExtendedBeanConfigurator#creator(), ExtendedBeanConfigurator#supplier(), ExtendedBeanConfigurator#createWith() or ExtendedBeanConfigurator#runtimeValue()");
             }
-            if (checkActive != null && supplier == null && runtimeValue == null && fun == null && runtimeProxy == null) {
+            if (checkActive != null && supplier == null && runtimeValue == null && fun == null
+                    && runtimeProxy == null) {
                 // "check active" procedure is set via recorder proxy,
                 // creation function must also be set via recorder proxy
                 throw new IllegalStateException(
@@ -146,11 +156,16 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         /**
          * The contextual bean instance is supplied by a proxy returned from a recorder method.
          * <p>
-         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
+         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection
+         * points.
          *
-         * @param supplier A supplier returned from a recorder method
+         * @param supplier
+         *        A supplier returned from a recorder method
+         *
          * @return self
-         * @throws IllegalArgumentException If the supplier argument is not a proxy returned from a recorder method
+         *
+         * @throws IllegalArgumentException
+         *         If the supplier argument is not a proxy returned from a recorder method
          */
         public ExtendedBeanConfigurator supplier(Supplier<?> supplier) {
             checkReturnedProxy(supplier);
@@ -162,11 +177,16 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         /**
          * The contextual bean instance is a proxy returned from a recorder method.
          * <p>
-         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
+         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection
+         * points.
          *
-         * @param runtimeValue A runtime value returned from a recorder method
+         * @param runtimeValue
+         *        A runtime value returned from a recorder method
+         *
          * @return self
-         * @throws IllegalArgumentException If the runtimeValue argument is not a proxy returned from a recorder method
+         *
+         * @throws IllegalArgumentException
+         *         If the runtimeValue argument is not a proxy returned from a recorder method
          */
         public ExtendedBeanConfigurator runtimeValue(RuntimeValue<?> runtimeValue) {
             checkReturnedProxy(runtimeValue);
@@ -178,12 +198,16 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         /**
          * The contextual bean instance is created by a proxy returned from a recorder method.
          * <p>
-         * This method is useful if you need to use build-time parameters or synthetic injection points during creation of a
-         * bean instance.
+         * This method is useful if you need to use build-time parameters or synthetic injection points during creation
+         * of a bean instance.
          *
-         * @param function A function returned from a recorder method
+         * @param function
+         *        A function returned from a recorder method
+         *
          * @return self
-         * @throws IllegalArgumentException If the function argument is not a proxy returned from a recorder method
+         *
+         * @throws IllegalArgumentException
+         *         If the function argument is not a proxy returned from a recorder method
          */
         public <B> ExtendedBeanConfigurator createWith(Function<SyntheticCreationalContext<B>, B> function) {
             checkReturnedProxy(function);
@@ -195,11 +219,16 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         /**
          * The contextual bean instance is a proxy returned from a recorder method.
          * <p>
-         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection points.
+         * Use {@link #createWith(Function)} if you want to leverage build-time parameters or synthetic injection
+         * points.
          *
-         * @param proxy A proxy returned from a recorder method
+         * @param proxy
+         *        A proxy returned from a recorder method
+         *
          * @return self
-         * @throws IllegalArgumentException If the proxy argument is not a proxy returned from a recorder method
+         *
+         * @throws IllegalArgumentException
+         *         If the proxy argument is not a proxy returned from a recorder method
          */
         public ExtendedBeanConfigurator runtimeProxy(Object proxy) {
             checkReturnedProxy(proxy);
@@ -213,13 +242,14 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
          * {@link ExecutionTime#STATIC_INIT} by default.
          * <p>
          * It is possible to change this behavior and initialize the bean during the {@link ExecutionTime#RUNTIME_INIT}.
-         * However, in such case a client that attempts to obtain such bean during {@link ExecutionTime#STATIC_INIT} or before
-         * runtime-init synthetic beans are initialized will receive an exception.
+         * However, in such case a client that attempts to obtain such bean during {@link ExecutionTime#STATIC_INIT} or
+         * before runtime-init synthetic beans are initialized will receive an exception.
          * <p>
          * {@link ExecutionTime#RUNTIME_INIT} build steps that access a runtime-init synthetic bean should consume the
          * {@link SyntheticBeansRuntimeInitBuildItem}.
          *
          * @return self
+         *
          * @see SyntheticBeansRuntimeInitBuildItem
          */
         public ExtendedBeanConfigurator setRuntimeInit() {
@@ -228,12 +258,16 @@ public final class SyntheticBeanBuildItem extends MultiBuildItem {
         }
 
         /**
-         * The {@link #checkActive(Consumer)} procedure is a {@code Supplier<ActiveResult>} proxy
-         * returned from a recorder method.
+         * The {@link #checkActive(Consumer)} procedure is a {@code Supplier<ActiveResult>} proxy returned from a
+         * recorder method.
          *
-         * @param checkActive a {@code Supplier<ActiveResult>} returned from a recorder method
+         * @param checkActive
+         *        a {@code Supplier<ActiveResult>} returned from a recorder method
+         *
          * @return self
-         * @throws IllegalArgumentException if the {@code checkActive} argument is not a proxy returned from a recorder method
+         *
+         * @throws IllegalArgumentException
+         *         if the {@code checkActive} argument is not a proxy returned from a recorder method
          */
         public ExtendedBeanConfigurator checkActive(Supplier<ActiveResult> checkActive) {
             checkReturnedProxy(checkActive);

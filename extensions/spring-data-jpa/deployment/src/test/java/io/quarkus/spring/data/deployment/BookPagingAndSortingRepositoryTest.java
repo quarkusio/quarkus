@@ -21,17 +21,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BookPagingAndSortingRepositoryTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("import_hp_books.sql", "import.sql")
-                    .addClasses(Book.class, BookListPagingAndSortingRepository.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addAsResource("import_hp_books.sql", "import.sql")
+                            .addClasses(Book.class, BookListPagingAndSortingRepository.class))
             .withConfigurationResource("application.properties");
 
     @Inject
     BookListPagingAndSortingRepository repo;
 
     @Test
-    //    @Order(1)
+    // @Order(1)
     @Transactional
     public void shouldReturnFirstPageOfTwoBooks() {
         Pageable pageRequest = PageRequest.of(0, 2);

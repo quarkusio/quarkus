@@ -15,8 +15,7 @@ final class MultipleDataSourcesTestUtil {
     }
 
     static void testDataSource(String dataSourceName, AgroalDataSource dataSource, String jdbcUrl, String username,
-            int maxSize)
-            throws SQLException {
+            int maxSize) throws SQLException {
         AgroalConnectionPoolConfiguration configuration = null;
 
         try {

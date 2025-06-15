@@ -10,7 +10,8 @@ final class MetricsForwardingWebSocketEndpoint extends ForwardingWebSocketEndpoi
     private final WebSocketMetricsInterceptor interceptor;
     private final String path;
 
-    MetricsForwardingWebSocketEndpoint(WebSocketEndpoint delegate, WebSocketMetricsInterceptor interceptor, String path) {
+    MetricsForwardingWebSocketEndpoint(WebSocketEndpoint delegate, WebSocketMetricsInterceptor interceptor,
+            String path) {
         super(delegate);
         this.interceptor = interceptor;
         this.path = path;

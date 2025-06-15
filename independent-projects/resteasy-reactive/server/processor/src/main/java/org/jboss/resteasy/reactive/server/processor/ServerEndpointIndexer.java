@@ -127,8 +127,7 @@ public class ServerEndpointIndexer
     @Override
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
         DotName dotName = paramType.name();
-        if (dotName.equals(JSONP_JSON_VALUE)
-                || dotName.equals(JSONP_JSON_NUMBER)
+        if (dotName.equals(JSONP_JSON_VALUE) || dotName.equals(JSONP_JSON_NUMBER)
                 || dotName.equals(JSONP_JSON_STRING)) {
             additionalWriters.add(ServerJsonValueHandler.class, APPLICATION_JSON, jakarta.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_ARRAY)) {
@@ -143,8 +142,7 @@ public class ServerEndpointIndexer
     @Override
     protected void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
         DotName dotName = paramType.name();
-        if (dotName.equals(JSONP_JSON_NUMBER)
-                || dotName.equals(JSONP_JSON_VALUE)
+        if (dotName.equals(JSONP_JSON_NUMBER) || dotName.equals(JSONP_JSON_VALUE)
                 || dotName.equals(JSONP_JSON_STRING)) {
             additionalReaders.add(ServerJsonValueHandler.class, APPLICATION_JSON, jakarta.json.JsonValue.class);
         } else if (dotName.equals(JSONP_JSON_ARRAY)) {
@@ -207,14 +205,15 @@ public class ServerEndpointIndexer
     }
 
     /**
-     * Aim here is to find a method that actually returns endpoint response.
-     * We can receive method with similar signature several times here, only differing in the modifiers (abstract etc.).
-     * However, {@code actualEndpointClass} will change.
-     * For example once from the interface with JAX-RS endpoint defining annotations and also from implementors.
+     * Aim here is to find a method that actually returns endpoint response. We can receive method with similar
+     * signature several times here, only differing in the modifiers (abstract etc.). However,
+     * {@code actualEndpointClass} will change. For example once from the interface with JAX-RS endpoint defining
+     * annotations and also from implementors.
      *
      * @return method that returns endpoint response
      */
-    public static MethodInfo findEndpointImplementation(MethodInfo methodInfo, ClassInfo actualEndpointClass, IndexView index) {
+    public static MethodInfo findEndpointImplementation(MethodInfo methodInfo, ClassInfo actualEndpointClass,
+            IndexView index) {
         // provided that 'actualEndpointClass' is requested from CDI via InstanceHandler factory
         // we know that this class resolution must be unambiguous:
         // 1. go down - find exactly one non-abstract class
@@ -293,12 +292,11 @@ public class ServerEndpointIndexer
     }
 
     @Override
-    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters, int i,
-            Set<String> fileFormNames) {
+    protected boolean handleBeanParam(ClassInfo actualEndpointInfo, Type paramType, MethodParameter[] methodParameters,
+            int i, Set<String> fileFormNames) {
         ClassInfo beanParamClassInfo = index.getClassByName(paramType.name());
-        InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo,
-                actualEndpointInfo,
-                existingConverters, additionalReaders, injectableBeans, hasRuntimeConverters);
+        InjectableBean injectableBean = scanInjectableBean(beanParamClassInfo, actualEndpointInfo, existingConverters,
+                additionalReaders, injectableBeans, hasRuntimeConverters);
         if ((injectableBean.getFieldExtractorsCount() == 0) && !injectableBean.isInjectionRequired()) {
             long declaredMethodsCount = beanParamClassInfo.methods().stream()
                     .filter(m -> !m.name().equals("<init>") && !m.name().equals("<clinit>")).count();
@@ -307,8 +305,9 @@ public class ServerEndpointIndexer
                         "Class %s has no fields. Parameters containers are only supported if they have at least one annotated field.",
                         beanParamClassInfo.name()));
             } else {
-                throw new DeploymentException(String.format("No annotations found on fields at '%s'. "
-                        + "Annotations like `@QueryParam` should be used in fields, not in methods.",
+                throw new DeploymentException(String.format(
+                        "No annotations found on fields at '%s'. "
+                                + "Annotations like `@QueryParam` should be used in fields, not in methods.",
                         beanParamClassInfo.name()));
             }
 
@@ -328,8 +327,8 @@ public class ServerEndpointIndexer
     }
 
     @Override
-    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo, MethodInfo info,
-            AnnotationStore annotationStore) {
+    protected void handleAdditionalMethodProcessing(ServerResourceMethod method, ClassInfo currentClassInfo,
+            MethodInfo info, AnnotationStore annotationStore) {
         Supplier<EndpointInvoker> invokerSupplier = null;
         for (HandlerChainCustomizer i : method.getHandlerChainCustomizers()) {
             invokerSupplier = i.alternateInvoker(method);
@@ -356,8 +355,8 @@ public class ServerEndpointIndexer
         try {
             new URITemplate(method.getPath(), false);
         } catch (PatternSyntaxException e) {
-            throw new IllegalArgumentException("Path '" + method.getPath() + "' of method '" + currentClassInfo.name() + "#"
-                    + info.name() + "' is not a valid expression", e);
+            throw new IllegalArgumentException("Path '" + method.getPath() + "' of method '" + currentClassInfo.name()
+                    + "#" + info.name() + "' is not a valid expression", e);
         }
     }
 
@@ -388,13 +387,13 @@ public class ServerEndpointIndexer
             for (AnnotationInstance i : field.annotations()) {
                 annotations.put(i.name(), i);
             }
-            ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null, existingConverters,
-                    additionalReaders,
-                    annotations, field.type(), "%s", new Object[] { field }, applyFieldRules, hasRuntimeConverters,
+            ServerIndexedParameter result = extractParameterInfo(currentClassInfo, actualEndpointInfo, null,
+                    existingConverters, additionalReaders, annotations, field.type(), "%s", new Object[] { field },
+                    applyFieldRules, hasRuntimeConverters,
                     // We don't support annotation-less path params in injectable beans: only annotations
                     Collections.emptySet(), field.name(), EMPTY_STRING_ARRAY, new HashMap<>());
             if ((result.getType() != null) && (result.getType() != ParameterType.BEAN)) {
-                //BODY means no annotation, so for fields not injectable
+                // BODY means no annotation, so for fields not injectable
                 fieldExtractors.put(field, result);
             }
             if (result.getType() == ParameterType.BEAN) {
@@ -436,8 +435,7 @@ public class ServerEndpointIndexer
 
         DotName superClassName = currentClassInfo.superName();
         boolean superTypeIsInjectable = false;
-        if (superClassName != null
-                && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)
+        if (superClassName != null && !superClassName.equals(ResteasyReactiveDotNames.OBJECT)
                 && !superClassName.equals(ResteasyReactiveDotNames.RECORD)) {
             ClassInfo superClass = index.getClassByName(superClassName);
             if (superClass != null) {
@@ -454,17 +452,17 @@ public class ServerEndpointIndexer
         currentInjectableBean.setFieldExtractorsCount(fieldExtractors.size());
 
         if ((fieldInjectionHandler != null) && (!fieldExtractors.isEmpty() || superTypeIsInjectable)) {
-            fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable, this.index);
+            fieldInjectionHandler.handleFieldInjection(currentTypeName, fieldExtractors, superTypeIsInjectable,
+                    this.index);
         }
         currentInjectableBean.setInjectionRequired(!fieldExtractors.isEmpty() || superTypeIsInjectable);
         return currentInjectableBean;
     }
 
     @Override
-    protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo, boolean encoded,
-            Type paramType, ServerIndexedParameter parameterResult, String name, String defaultValue, ParameterType type,
-            String elementType, boolean single, String signature,
-            Set<String> fileFormNames) {
+    protected MethodParameter createMethodParameter(ClassInfo currentClassInfo, ClassInfo actualEndpointInfo,
+            boolean encoded, Type paramType, ServerIndexedParameter parameterResult, String name, String defaultValue,
+            ParameterType type, String elementType, boolean single, String signature, Set<String> fileFormNames) {
         ParameterConverterSupplier converter = parameterResult.getConverter();
         DeclaredTypes declaredTypes = getDeclaredTypes(paramType, currentClassInfo, actualEndpointInfo);
         String mimeType = getPartMime(parameterResult.getAnns());
@@ -473,44 +471,44 @@ public class ServerEndpointIndexer
         if (SUPPORTED_MULTIPART_FILE_TYPES.contains(DotName.createSimple(declaredType))) {
             fileFormNames.add(name);
         }
-        return new ServerMethodParameter(name,
-                elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
-                type, single, signature,
-                converter, defaultValue, parameterResult.isObtainedAsCollection(), parameterResult.isOptional(), encoded,
-                parameterResult.getCustomParameterExtractor(), mimeType, parameterResult.getSeparator());
+        return new ServerMethodParameter(name, elementType, declaredType, declaredTypes.getDeclaredUnresolvedType(),
+                type, single, signature, converter, defaultValue, parameterResult.isObtainedAsCollection(),
+                parameterResult.isOptional(), encoded, parameterResult.getCustomParameterExtractor(), mimeType,
+                parameterResult.getSeparator());
     }
 
     @Override
-    protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
+    protected void handleOtherParam(Map<String, String> existingConverters, String errorLocation,
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType,
+            MethodInfo currentMethodInfo) {
         try {
-            builder.setConverter(extractConverter(elementType, index,
-                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo));
+            builder.setConverter(extractConverter(elementType, index, existingConverters, errorLocation,
+                    hasRuntimeConverters, builder.getAnns(), currentMethodInfo));
         } catch (Throwable throwable) {
-            throw new RuntimeException("Could not create converter for " + elementType + " for " + builder.getErrorLocation()
-                    + " of type " + builder.getType(), throwable);
+            throw new RuntimeException("Could not create converter for " + elementType + " for "
+                    + builder.getErrorLocation() + " of type " + builder.getType(), throwable);
         }
     }
 
     @Override
     protected void handleSortedSetParam(Map<String, String> existingConverters, String errorLocation,
-            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
-        ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType,
+            MethodInfo currentMethodInfo) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index, existingConverters, errorLocation,
+                hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SortedSetConverter.SortedSetSupplier(converter));
     }
 
     @Override
     protected void handleOptionalParam(Map<String, String> existingConverters,
-            Map<DotName, AnnotationInstance> parameterAnnotations,
-            String errorLocation,
-            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType, String genericElementType,
+            Map<DotName, AnnotationInstance> parameterAnnotations, String errorLocation, boolean hasRuntimeConverters,
+            ServerIndexedParameter builder, String elementType, String genericElementType,
             MethodInfo currentMethodInfo) {
         ParameterConverterSupplier converter = null;
 
         if (genericElementType != null) {
-            ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index, existingConverters,
-                    errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+            ParameterConverterSupplier genericTypeConverter = extractConverter(genericElementType, index,
+                    existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
             if (LIST.toString().equals(elementType)) {
                 converter = new ListConverter.ListSupplier(genericTypeConverter);
                 builder.setSingle(false);
@@ -527,7 +525,8 @@ public class ServerEndpointIndexer
         }
 
         if (converter == null) {
-            // If no generic type provided or element type is not supported, then we try to use a custom runtime converter:
+            // If no generic type provided or element type is not supported, then we try to use a custom runtime
+            // converter:
             converter = extractConverter(elementType, index, existingConverters, errorLocation, hasRuntimeConverters,
                     builder.getAnns(), currentMethodInfo);
         }
@@ -536,26 +535,29 @@ public class ServerEndpointIndexer
     }
 
     @Override
-    protected void handleSetParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
-        ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+    protected void handleSetParam(Map<String, String> existingConverters, String errorLocation,
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType,
+            MethodInfo currentMethodInfo) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index, existingConverters, errorLocation,
+                hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new SetConverter.SetSupplier(converter));
     }
 
     @Override
-    protected void handleListParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
-        ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+    protected void handleListParam(Map<String, String> existingConverters, String errorLocation,
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType,
+            MethodInfo currentMethodInfo) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index, existingConverters, errorLocation,
+                hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new ListConverter.ListSupplier(converter));
     }
 
     @Override
-    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
-            ServerIndexedParameter builder, String elementType, MethodInfo currentMethodInfo) {
-        ParameterConverterSupplier converter = extractConverter(elementType, index,
-                existingConverters, errorLocation, hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
+    protected void handleArrayParam(Map<String, String> existingConverters, String errorLocation,
+            boolean hasRuntimeConverters, ServerIndexedParameter builder, String elementType,
+            MethodInfo currentMethodInfo) {
+        ParameterConverterSupplier converter = extractConverter(elementType, index, existingConverters, errorLocation,
+                hasRuntimeConverters, builder.getAnns(), currentMethodInfo);
         builder.setConverter(new ArrayConverter.ArraySupplier(converter, elementType));
     }
 
@@ -578,8 +580,7 @@ public class ServerEndpointIndexer
 
     @Override
     protected void handleTemporalParam(ServerIndexedParameter builder, DotName paramType,
-            Map<DotName, AnnotationInstance> parameterAnnotations,
-            MethodInfo currentMethodInfo) {
+            Map<DotName, AnnotationInstance> parameterAnnotations, MethodInfo currentMethodInfo) {
         builder.setConverter(determineTemporalConverter(paramType, parameterAnnotations, currentMethodInfo));
     }
 
@@ -605,8 +606,7 @@ public class ServerEndpointIndexer
         if (INSTANT.equals(paramType)) {
             if (dateFormatInstance != null) {
                 throw new RuntimeException(contextualizeErrorMessage(
-                        "'java.time.Instant' types must not be annotated with '@DateFormat'",
-                        currentMethodInfo));
+                        "'java.time.Instant' types must not be annotated with '@DateFormat'", currentMethodInfo));
             }
             return new InstantParamConverter.Supplier();
         }
@@ -617,7 +617,8 @@ public class ServerEndpointIndexer
                     currentMethodInfo));
         } else if ((format == null) && (dateTimeFormatterProviderClassName == null) && (dateFormatInstance != null)) {
             throw new RuntimeException(contextualizeErrorMessage(
-                    "One of 'format' or 'dateTimeFormatterProvider' must be set when using '@DateFormat'", currentMethodInfo));
+                    "One of 'format' or 'dateTimeFormatterProvider' must be set when using '@DateFormat'",
+                    currentMethodInfo));
         }
 
         if (LOCAL_DATE.equals(paramType)) {
@@ -675,7 +676,8 @@ public class ServerEndpointIndexer
     private ParameterConverterSupplier extractConverter(String elementType, IndexView indexView,
             Map<String, String> existingConverters, String errorLocation, boolean hasRuntimeConverters,
             Map<DotName, AnnotationInstance> annotations, MethodInfo currentMethodInfo) {
-        // no converter if we have a RestForm mime type: this goes via message body readers in MultipartFormParamExtractor
+        // no converter if we have a RestForm mime type: this goes via message body readers in
+        // MultipartFormParamExtractor
         if (getPartMime(annotations) != null)
             return null;
         if (elementType.equals(String.class.getName())) {
@@ -701,22 +703,20 @@ public class ServerEndpointIndexer
             return new CharParamConverter.Supplier();
         } else if (elementType.equals(Character.class.getName())) {
             return new CharacterParamConverter.Supplier();
-        } else if (elementType.equals(FileUpload.class.getName())
-                || elementType.equals(Path.class.getName())
-                || elementType.equals(File.class.getName())
-                || elementType.equals(InputStream.class.getName())) {
+        } else if (elementType.equals(FileUpload.class.getName()) || elementType.equals(Path.class.getName())
+                || elementType.equals(File.class.getName()) || elementType.equals(InputStream.class.getName())) {
             // this is handled by MultipartFormParamExtractor
             return null;
         } else {
             DotName typeName = DotName.createSimple(elementType);
             if (SUPPORT_TEMPORAL_PARAMS.contains(typeName)) {
-                //It might be a LocalDate[Time] object
+                // It might be a LocalDate[Time] object
                 return determineTemporalConverter(typeName, annotations, currentMethodInfo);
             }
         }
 
-        return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters, errorLocation,
-                hasRuntimeConverters);
+        return converterSupplierIndexerExtension.extractConverterImpl(elementType, indexView, existingConverters,
+                errorLocation, hasRuntimeConverters);
     }
 
     @SuppressWarnings("unchecked")
@@ -743,7 +743,8 @@ public class ServerEndpointIndexer
             return (B) this;
         }
 
-        public B setConverterSupplierIndexerExtension(ConverterSupplierIndexerExtension converterSupplierIndexerExtension) {
+        public B setConverterSupplierIndexerExtension(
+                ConverterSupplierIndexerExtension converterSupplierIndexerExtension) {
             this.converterSupplierIndexerExtension = converterSupplierIndexerExtension;
             return (B) this;
         }

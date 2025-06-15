@@ -19,17 +19,15 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class TypesafeGraphQLClientInjectionWithQuarkusConfigConflictingWithAnnotationTest {
 
-    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
-            System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
+    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":"
+            + System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, Testing2GraphQLClientApi.class,
-                            Person.class, PersonDto.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.secondtypesafeclient.url=" + url + "\n"),
-                            "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestingGraphQLApi.class, Testing2GraphQLClientApi.class, Person.class, PersonDto.class)
+            .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.secondtypesafeclient.url=" + url + "\n"),
+                    "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
     Testing2GraphQLClientApi client;

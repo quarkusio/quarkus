@@ -30,14 +30,12 @@ public final class DefaultUniAsserter implements UnwrappableUniAsserter {
     @SuppressWarnings("unchecked")
     @Override
     public <T> UniAsserter assertThat(Supplier<Uni<T>> uni, Consumer<T> asserter) {
-        execution = uniFromSupplier(uni)
-                .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        asserter.accept((T) o);
-                    }
-                });
+        execution = uniFromSupplier(uni).onItem().invoke(new Consumer<Object>() {
+            @Override
+            public void accept(Object o) {
+                asserter.accept((T) o);
+            }
+        });
         return this;
     }
 
@@ -55,27 +53,23 @@ public final class DefaultUniAsserter implements UnwrappableUniAsserter {
 
     @Override
     public <T> UniAsserter assertEquals(Supplier<Uni<T>> uni, T t) {
-        execution = uniFromSupplier(uni)
-                .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertEquals(t, o);
-                    }
-                });
+        execution = uniFromSupplier(uni).onItem().invoke(new Consumer<Object>() {
+            @Override
+            public void accept(Object o) {
+                Assertions.assertEquals(t, o);
+            }
+        });
         return this;
     }
 
     @Override
     public <T> UniAsserter assertSame(Supplier<Uni<T>> uni, T t) {
-        execution = uniFromSupplier(uni)
-                .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertSame(t, o);
-                    }
-                });
+        execution = uniFromSupplier(uni).onItem().invoke(new Consumer<Object>() {
+            @Override
+            public void accept(Object o) {
+                Assertions.assertSame(t, o);
+            }
+        });
         return this;
     }
 
@@ -87,38 +81,33 @@ public final class DefaultUniAsserter implements UnwrappableUniAsserter {
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private <T> Uni<T> uniFromSupplier(Supplier<Uni<T>> uni) {
-        return execution.onItem()
-                .transformToUni((Function) new Function<Object, Uni<T>>() {
-                    @Override
-                    public Uni<T> apply(Object o) {
-                        return uni.get();
-                    }
-                });
+        return execution.onItem().transformToUni((Function) new Function<Object, Uni<T>>() {
+            @Override
+            public Uni<T> apply(Object o) {
+                return uni.get();
+            }
+        });
     }
 
     @Override
     public <T> UniAsserter assertNotEquals(Supplier<Uni<T>> uni, T t) {
-        execution = uniFromSupplier(uni)
-                .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertNotEquals(t, o);
-                    }
-                });
+        execution = uniFromSupplier(uni).onItem().invoke(new Consumer<Object>() {
+            @Override
+            public void accept(Object o) {
+                Assertions.assertNotEquals(t, o);
+            }
+        });
         return this;
     }
 
     @Override
     public <T> UniAsserter assertNotSame(Supplier<Uni<T>> uni, T t) {
-        execution = uniFromSupplier(uni)
-                .onItem()
-                .invoke(new Consumer<Object>() {
-                    @Override
-                    public void accept(Object o) {
-                        Assertions.assertNotSame(t, o);
-                    }
-                });
+        execution = uniFromSupplier(uni).onItem().invoke(new Consumer<Object>() {
+            @Override
+            public void accept(Object o) {
+                Assertions.assertNotSame(t, o);
+            }
+        });
         return this;
     }
 
@@ -156,22 +145,21 @@ public final class DefaultUniAsserter implements UnwrappableUniAsserter {
     @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public <T> UniAsserter assertFailedWith(Supplier<Uni<T>> uni, Consumer<Throwable> c) {
-        execution = execution.onItem()
-                .transformToUni((Function) new Function<Object, Uni<T>>() {
-                    @Override
-                    public Uni<T> apply(Object obj) {
-                        return uni.get().onItemOrFailure().transformToUni((o, t) -> {
-                            if (t == null) {
-                                return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
-                            } else {
-                                return Uni.createFrom().item(() -> {
-                                    c.accept(t);
-                                    return null;
-                                });
-                            }
+        execution = execution.onItem().transformToUni((Function) new Function<Object, Uni<T>>() {
+            @Override
+            public Uni<T> apply(Object obj) {
+                return uni.get().onItemOrFailure().transformToUni((o, t) -> {
+                    if (t == null) {
+                        return Uni.createFrom().failure(() -> Assertions.fail("Uni did not contain a failure."));
+                    } else {
+                        return Uni.createFrom().item(() -> {
+                            c.accept(t);
+                            return null;
                         });
                     }
                 });
+            }
+        });
         return this;
     }
 

@@ -26,22 +26,15 @@ public class RestClientAnnotationExpressionParserTest {
     }
 
     private static Stream<Arguments> test() {
-        return Stream.of(
-                Arguments.of("", Collections.emptyList()),
+        return Stream.of(Arguments.of("", Collections.emptyList()),
                 Arguments.of("only verbatim", List.of(new Verbatim("only verbatim"))),
                 Arguments.of("${only.config}", List.of(new ConfigName("only.config"))),
                 Arguments.of("{only.methodCall}", List.of(new ConfigName("only.methodCall"))),
                 Arguments.of(
                         "first use a ${config.name} then a {methodCall} then a {fieldAccess} then another ${config} and we're done",
-                        List.of(
-                                new Verbatim("first use a "),
-                                new ConfigName("config.name"),
-                                new Verbatim(" then a "),
-                                new Accessible("methodCall"),
-                                new Verbatim(" then a "),
-                                new Accessible("fieldAccess"),
-                                new Verbatim(" then another "),
-                                new ConfigName("config"),
+                        List.of(new Verbatim("first use a "), new ConfigName("config.name"), new Verbatim(" then a "),
+                                new Accessible("methodCall"), new Verbatim(" then a "), new Accessible("fieldAccess"),
+                                new Verbatim(" then another "), new ConfigName("config"),
                                 new Verbatim(" and we're done"))));
     }
 }

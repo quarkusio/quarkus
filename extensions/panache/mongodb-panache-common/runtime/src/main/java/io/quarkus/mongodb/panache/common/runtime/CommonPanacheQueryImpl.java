@@ -128,13 +128,12 @@ public class CommonPanacheQueryImpl<Entity> {
 
     private void checkPagination() {
         if (page == null) {
-            throw new UnsupportedOperationException(
-                    "Cannot call a page related method, "
-                            + "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
         if (range != null) {
-            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
-                    "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
     }
 
@@ -171,8 +170,7 @@ public class CommonPanacheQueryImpl<Entity> {
                 countOptions.collation(collation);
             }
 
-            count = clientSession == null
-                    ? collection.countDocuments(query, countOptions)
+            count = clientSession == null ? collection.countDocuments(query, countOptions)
                     : collection.countDocuments(clientSession, query, countOptions);
         }
         return count;

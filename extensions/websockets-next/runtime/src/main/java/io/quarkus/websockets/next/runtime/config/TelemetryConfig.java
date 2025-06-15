@@ -9,16 +9,14 @@ import io.smallrye.config.WithName;
 public interface TelemetryConfig {
 
     /**
-     * If collection of WebSocket traces is enabled.
-     * Only applicable when the OpenTelemetry extension is present.
+     * If collection of WebSocket traces is enabled. Only applicable when the OpenTelemetry extension is present.
      */
     @WithName("traces.enabled")
     @WithDefault("true")
     boolean tracesEnabled();
 
     /**
-     * If collection of WebSocket metrics is enabled.
-     * Only applicable when the Micrometer extension is present.
+     * If collection of WebSocket metrics is enabled. Only applicable when the Micrometer extension is present.
      */
     @WithName("metrics.enabled")
     @WithDefault("false")

@@ -1,8 +1,8 @@
 package io.quarkus.cache;
 
 /**
- * This exception is thrown when a cache value computation fails because of an exception. The cause of the failure can be
- * retrieved using the {@link Throwable#getCause()} method.
+ * This exception is thrown when a cache value computation fails because of an exception. The cause of the failure can
+ * be retrieved using the {@link Throwable#getCause()} method.
  */
 public class CacheException extends RuntimeException {
 

@@ -51,9 +51,9 @@ public class ResourceLocatorHandler implements ServerRestHandler {
             });
             locator = instance.getInstance();
             if (locator == null) {
-                //TODO: we should make sure ArC always picks up these classes and makes them beans
-                //but until we get a bug report about it lets not worry for now, as I don't think anyone
-                //really uses this
+                // TODO: we should make sure ArC always picks up these classes and makes them beans
+                // but until we get a bug report about it lets not worry for now, as I don't think anyone
+                // really uses this
                 locator = locatorClass.getDeclaredConstructor().newInstance();
             }
         } else {
@@ -81,7 +81,7 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         RequestMapper<RuntimeResource> mapper = target.get(requestContext.getMethod());
         boolean hadNullMethodMapper = false;
         if (mapper == null) {
-            mapper = target.get(null); //another layer of resource locators maybe
+            mapper = target.get(null); // another layer of resource locators maybe
             // we set this without checking if we matched, but we only use it after
             // we check for a null mapper, so by the time we use it, it must have meant that
             // we had a matcher for a null method
@@ -107,14 +107,16 @@ public class ResourceLocatorHandler implements ServerRestHandler {
             }
         }
         if (mapper == null) {
-            throw new WebApplicationException(Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
+            throw new WebApplicationException(
+                    Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
         }
         RequestMapper.RequestMatch<RuntimeResource> res = mapper
                 .map(requestContext.getRemaining().isEmpty() ? "/" : requestContext.getRemaining());
         if (res == null) {
             // the TCK checks for both these return statuses
             if (hadNullMethodMapper)
-                throw new WebApplicationException(Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
+                throw new WebApplicationException(
+                        Response.status(Response.Status.METHOD_NOT_ALLOWED.getStatusCode()).build());
             throw new WebApplicationException(Response.status(Response.Status.NOT_FOUND.getStatusCode()).build());
         }
         requestContext.saveUriMatchState();
@@ -141,9 +143,9 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         if (res != null) {
             return res;
         }
-        //not found, so we need to compute one
-        //we look through all interfaces and superclasses
-        //we need to do this as it could implement multiple interfaces
+        // not found, so we need to compute one
+        // we look through all interfaces and superclasses
+        // we need to do this as it could implement multiple interfaces
         List<Map<String, RequestMapper<RuntimeResource>>> results = new ArrayList<>();
         Set<Class<?>> seen = new HashSet<>();
         findTargetRecursive(locatorClass, results, seen);
@@ -161,7 +163,7 @@ public class ResourceLocatorHandler implements ServerRestHandler {
         for (Map.Entry<String, ArrayList<RequestMapper.RequestPath<RuntimeResource>>> i : newMapper.entrySet()) {
             finalResult.put(i.getKey(), new RequestMapper<RuntimeResource>(i.getValue()));
         }
-        //it does not matter if this is computed twice
+        // it does not matter if this is computed twice
         resourceLocatorHandlers.put(locatorClass, finalResult);
         return finalResult;
     }

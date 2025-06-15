@@ -27,12 +27,16 @@ public final class JarUnsigner {
     }
 
     /**
-     * Unsigns a jar file by removing the signature entries.
-     * If the JAR is not signed, it will simply copy the original JAR to the target path.
+     * Unsigns a jar file by removing the signature entries. If the JAR is not signed, it will simply copy the original
+     * JAR to the target path.
      *
-     * @param jarPath the path to the jar file to unsign
-     * @param targetPath the path to the target jar file
-     * @throws IOException if an I/O error occurs
+     * @param jarPath
+     *        the path to the jar file to unsign
+     * @param targetPath
+     *        the path to the target jar file
+     *
+     * @throws IOException
+     *         if an I/O error occurs
      */
     public static void unsignJar(Path jarPath, Path targetPath) throws IOException {
         try (JarFile in = new JarFile(jarPath.toFile(), false)) {
@@ -66,8 +70,7 @@ public final class JarUnsigner {
                     while (entries.hasMoreElements()) {
                         JarEntry entry = entries.nextElement();
                         String entryName = entry.getName();
-                        if (!entryName.equals(JarFile.MANIFEST_NAME)
-                                && !entryName.equals("META-INF/INDEX.LIST")
+                        if (!entryName.equals(JarFile.MANIFEST_NAME) && !entryName.equals("META-INF/INDEX.LIST")
                                 && !isSignatureFile(entryName)) {
                             entry.setCompressedSize(-1);
                             out.putNextEntry(entry);
@@ -93,10 +96,15 @@ public final class JarUnsigner {
     /**
      * Unsigns a jar file by removing the signature entries.
      *
-     * @param jarPath the path to the jar file to unsign
-     * @param targetPath the path to the target jar file
-     * @param includePredicate a predicate to determine which entries to include in the target jar
-     * @throws IOException if an I/O error occurs
+     * @param jarPath
+     *        the path to the jar file to unsign
+     * @param targetPath
+     *        the path to the target jar file
+     * @param includePredicate
+     *        a predicate to determine which entries to include in the target jar
+     *
+     * @throws IOException
+     *         if an I/O error occurs
      */
     public static void unsignJar(Path jarPath, Path targetPath, Predicate<String> includePredicate) throws IOException {
         // Reusing buffer for performance reasons
@@ -127,10 +135,8 @@ public final class JarUnsigner {
                 while (entries.hasMoreElements()) {
                     JarEntry entry = entries.nextElement();
                     String entryName = entry.getName();
-                    if (includePredicate.test(entryName)
-                            && !entryName.equals(JarFile.MANIFEST_NAME)
-                            && !entryName.equals("META-INF/INDEX.LIST")
-                            && !isSignatureFile(entryName)) {
+                    if (includePredicate.test(entryName) && !entryName.equals(JarFile.MANIFEST_NAME)
+                            && !entryName.equals("META-INF/INDEX.LIST") && !isSignatureFile(entryName)) {
                         entry.setCompressedSize(-1);
                         out.putNextEntry(entry);
                         try (InputStream inStream = in.getInputStream(entry)) {
@@ -154,10 +160,7 @@ public final class JarUnsigner {
     private static boolean isSignatureFile(String entry) {
         entry = entry.toUpperCase();
         if (entry.startsWith("META-INF/") && entry.indexOf('/', "META-INF/".length()) == -1) {
-            return entry.endsWith(".SF")
-                    || entry.endsWith(".DSA")
-                    || entry.endsWith(".RSA")
-                    || entry.endsWith(".EC");
+            return entry.endsWith(".SF") || entry.endsWith(".DSA") || entry.endsWith(".RSA") || entry.endsWith(".EC");
         }
         return false;
     }

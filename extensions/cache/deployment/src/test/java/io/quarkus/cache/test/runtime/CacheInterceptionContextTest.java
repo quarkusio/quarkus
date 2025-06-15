@@ -28,7 +28,8 @@ public class CacheInterceptionContextTest {
 
     @Test
     public void testImmutability() {
-        CacheInterceptionContext<CacheResult> context = new CacheInterceptionContext<>(new ArrayList<>(), new ArrayList<>());
+        CacheInterceptionContext<CacheResult> context = new CacheInterceptionContext<>(new ArrayList<>(),
+                new ArrayList<>());
         // Lists should be unmodifiable.
         assertThrows(UnsupportedOperationException.class, () -> {
             context.getInterceptorBindings().add(new CacheResult() {

@@ -14,10 +14,8 @@ public class ShutdownAnnotationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(ShutdownMethods.class))
-            .setAllowTestClassOutsideDeployment(true)
-            .setAfterUndeployListener(() -> {
+            .withApplicationRoot(root -> root.addClasses(ShutdownMethods.class))
+            .setAllowTestClassOutsideDeployment(true).setAfterUndeployListener(() -> {
                 assertEquals(3, Messages.MESSAGES.size());
                 assertEquals("shutdown_pc", Messages.MESSAGES.get(0));
                 assertEquals("shutdown_first", Messages.MESSAGES.get(1));

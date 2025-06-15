@@ -57,12 +57,11 @@ public class EchoWebSocketTest {
     URI echoMultiBidi;
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, EchoBlocking.class, EchoBlockingAndAwait.class, EchoService.class, EchoJson.class,
-                        EchoJsonArray.class, EchoPojo.class, EchoBlockingPojo.class, EchoMultiConsume.class,
-                        EchoMultiProduce.class, EchoMultiBidi.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class, EchoBlocking.class, EchoBlockingAndAwait.class, EchoService.class, EchoJson.class,
+                EchoJsonArray.class, EchoPojo.class, EchoBlockingPojo.class, EchoMultiConsume.class,
+                EchoMultiProduce.class, EchoMultiBidi.class);
+    });
 
     @Test
     public void testEcho() throws Exception {
@@ -135,16 +134,14 @@ public class EchoWebSocketTest {
         WebSocketClient client = vertx.createWebSocketClient();
         try {
             LinkedBlockingDeque<String> message = new LinkedBlockingDeque<>();
-            client
-                    .connect(testUri.getPort(), testUri.getHost(), testUri.getPath())
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            WebSocket ws = r.result();
-                            action.accept(ws, message);
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
-                    });
+            client.connect(testUri.getPort(), testUri.getHost(), testUri.getPath()).onComplete(r -> {
+                if (r.succeeded()) {
+                    WebSocket ws = r.result();
+                    action.accept(ws, message);
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertEquals(payload, message.poll(10, TimeUnit.SECONDS));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get();

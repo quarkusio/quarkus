@@ -23,8 +23,8 @@ import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.StaticHandler;
 
 /**
- * {@link StaticHandler} implementation to handle static resources using the Classpath.
- * This is meant to be used on {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT} mode.
+ * {@link StaticHandler} implementation to handle static resources using the Classpath. This is meant to be used on
+ * {@link io.quarkus.runtime.LaunchMode#DEVELOPMENT} mode.
  */
 public class DevStaticHandler implements Handler<RoutingContext> {
 
@@ -79,8 +79,7 @@ public class DevStaticHandler implements Handler<RoutingContext> {
         }
 
         if (context.request().method().equals(HttpMethod.OPTIONS)) {
-            context.response().putHeader(ALLOW_HEADER, ALLOW_HEADER_VALUE).setStatusCode(HTTP_STATUS_NO_CONTENT)
-                    .send();
+            context.response().putHeader(ALLOW_HEADER, ALLOW_HEADER_VALUE).setStatusCode(HTTP_STATUS_NO_CONTENT).send();
             return;
         }
 

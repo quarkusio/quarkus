@@ -92,9 +92,9 @@ public final class RouteBuildItem extends MultiBuildItem {
     }
 
     /**
-     * @return {@code true} if the route is exposing a management endpoint.
-     *         It matters when using a different interface/port for the management endpoints, as these routes will only
-     *         be accessible from that different interface/port.
+     * @return {@code true} if the route is exposing a management endpoint. It matters when using a different
+     *         interface/port for the management endpoints, as these routes will only be accessible from that different
+     *         interface/port.
      */
     public boolean isManagement() {
         return management;
@@ -107,8 +107,8 @@ public final class RouteBuildItem extends MultiBuildItem {
     }
 
     /**
-     * HttpRootPathBuildItem.Builder and NonApplicationRootPathBuildItem.Builder extend this.
-     * Please verify the extended builders behavior when changing this one.
+     * HttpRootPathBuildItem.Builder and NonApplicationRootPathBuildItem.Builder extend this. Please verify the extended
+     * builders behavior when changing this one.
      */
     public static class Builder {
         protected Function<Router, Route> routeFunction;
@@ -127,6 +127,7 @@ public final class RouteBuildItem extends MultiBuildItem {
          * {@link #routeFunction(String, Consumer)} should be used instead
          *
          * @param routeFunction
+         *
          * @see #routeFunction(String, Consumer)
          */
         @Deprecated
@@ -136,9 +137,11 @@ public final class RouteBuildItem extends MultiBuildItem {
         }
 
         /**
-         * @param path A normalized path (e.g. use HttpRootPathBuildItem to construct/resolve the path value) defining
+         * @param path
+         *        A normalized path (e.g. use HttpRootPathBuildItem to construct/resolve the path value) defining
          *        the route. This path this is also used on the "Not Found" page in dev mode.
-         * @param routeFunction a Consumer of Route
+         * @param routeFunction
+         *        a Consumer of Route
          */
         public Builder routeFunction(String path, Consumer<Route> routeFunction) {
             this.routeFunction = new BasicRoute(path, null, routeFunction);
@@ -147,9 +150,10 @@ public final class RouteBuildItem extends MultiBuildItem {
         }
 
         /**
-         * @param route A normalized path used to define a basic route
-         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
-         *        used on the "Not Found" page in dev mode.
+         * @param route
+         *        A normalized path used to define a basic route (e.g. use HttpRootPathBuildItem to
+         *        construct/resolve the path value). This path this is also used on the "Not Found" page in dev
+         *        mode.
          */
         public Builder route(String route) {
             this.routeFunction = new BasicRoute(route);
@@ -158,10 +162,12 @@ public final class RouteBuildItem extends MultiBuildItem {
         }
 
         /**
-         * @param route A normalized path used to define a basic route
-         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
-         *        used on the "Not Found" page in dev mode.
-         * @param order Priority ordering of the route
+         * @param route
+         *        A normalized path used to define a basic route (e.g. use HttpRootPathBuildItem to
+         *        construct/resolve the path value). This path this is also used on the "Not Found" page in dev
+         *        mode.
+         * @param order
+         *        Priority ordering of the route
          */
         public Builder orderedRoute(String route, Integer order) {
             this.routeFunction = new BasicRoute(route, order);
@@ -170,11 +176,14 @@ public final class RouteBuildItem extends MultiBuildItem {
         }
 
         /**
-         * @param route A normalized path used to define a basic route
-         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
-         *        used on the "Not Found" page in dev mode.
-         * @param order Priority ordering of the route
-         * @param routeCustomizer Route customizer.
+         * @param route
+         *        A normalized path used to define a basic route (e.g. use HttpRootPathBuildItem to
+         *        construct/resolve the path value). This path this is also used on the "Not Found" page in dev
+         *        mode.
+         * @param order
+         *        Priority ordering of the route
+         * @param routeCustomizer
+         *        Route customizer.
          */
         public Builder orderedRoute(String route, Integer order, Consumer<Route> routeCustomizer) {
             this.routeFunction = new BasicRoute(route, order, routeCustomizer);
@@ -183,12 +192,16 @@ public final class RouteBuildItem extends MultiBuildItem {
         }
 
         /**
-         * @param name The name of the route. It is used to identify the route in the metrics.
-         * @param route A normalized path used to define a basic route
-         *        (e.g. use HttpRootPathBuildItem to construct/resolve the path value). This path this is also
-         *        used on the "Not Found" page in dev mode.
-         * @param order Priority ordering of the route
-         * @param routeCustomizer Route customizer.
+         * @param name
+         *        The name of the route. It is used to identify the route in the metrics.
+         * @param route
+         *        A normalized path used to define a basic route (e.g. use HttpRootPathBuildItem to
+         *        construct/resolve the path value). This path this is also used on the "Not Found" page in dev
+         *        mode.
+         * @param order
+         *        Priority ordering of the route
+         * @param routeCustomizer
+         *        Route customizer.
          */
         public Builder orderedRoute(String name, String route, Integer order, Consumer<Route> routeCustomizer) {
             this.routeFunction = new BasicRoute(name, route, order, routeCustomizer);

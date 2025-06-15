@@ -263,7 +263,8 @@ public class KeyCommandsTest extends DatasourceTestBase {
         keys.pexpire(key, Duration.ofSeconds(20), new ExpireArgs().gt());
         assertThat(keys.ttl(key)).isBetween(10L, 20L);
 
-        assertThat(keys.pexpiretime(key)).isBetween(System.currentTimeMillis() - 10000L, System.currentTimeMillis() + 30000L);
+        assertThat(keys.pexpiretime(key)).isBetween(System.currentTimeMillis() - 10000L,
+                System.currentTimeMillis() + 30000L);
     }
 
     @Test

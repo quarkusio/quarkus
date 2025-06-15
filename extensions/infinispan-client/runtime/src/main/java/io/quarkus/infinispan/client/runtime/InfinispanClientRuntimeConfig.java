@@ -120,15 +120,14 @@ public interface InfinispanClientRuntimeConfig {
     Optional<String> saslMechanism();
 
     /**
-     * Specifies the filename of a keystore to use to create the {@link SSLContext}.
-     * You also need to specify a keyStorePassword.
-     * Setting this property implicitly enables SSL/TLS.
+     * Specifies the filename of a keystore to use to create the {@link SSLContext}. You also need to specify a
+     * keyStorePassword. Setting this property implicitly enables SSL/TLS.
      */
     Optional<String> keyStore();
 
     /**
-     * Specifies the password needed to open the keystore. You also need to specify a keyStore.
-     * Setting this property implicitly enables SSL/TLS.
+     * Specifies the password needed to open the keystore. You also need to specify a keyStore. Setting this property
+     * implicitly enables SSL/TLS.
      */
     Optional<String> keyStorePassword();
 
@@ -143,15 +142,14 @@ public interface InfinispanClientRuntimeConfig {
     Optional<String> keyAlias();
 
     /**
-     * Specifies the filename of a truststore to use to create the {@link SSLContext}.
-     * You also need to specify a trustStorePassword.
-     * Setting this property implicitly enables SSL/TLS.
+     * Specifies the filename of a truststore to use to create the {@link SSLContext}. You also need to specify a
+     * trustStorePassword. Setting this property implicitly enables SSL/TLS.
      */
     Optional<String> trustStore();
 
     /**
-     * Specifies the password needed to open the truststore You also need to specify a trustStore.
-     * Setting this property implicitly enables SSL/TLS.
+     * Specifies the password needed to open the truststore You also need to specify a trustStore. Setting this property
+     * implicitly enables SSL/TLS.
      */
     Optional<String> trustStorePassword();
 
@@ -161,26 +159,22 @@ public interface InfinispanClientRuntimeConfig {
     Optional<String> trustStoreType();
 
     /**
-     * Configures the secure socket protocol.
-     * Setting this property implicitly enables SSL/TLS.
+     * Configures the secure socket protocol. Setting this property implicitly enables SSL/TLS.
      */
     Optional<String> sslProtocol();
 
     /**
-     * Sets the ssl provider. For example BCFIPS
-     * Setting this implicitly enables SSL/TLS.
+     * Sets the ssl provider. For example BCFIPS Setting this implicitly enables SSL/TLS.
      */
     Optional<String> sslProvider();
 
     /**
-     * Configures the ciphers.
-     * Setting this property implicitly enables SSL/TLS.
+     * Configures the ciphers. Setting this property implicitly enables SSL/TLS.
      */
     Optional<List<String>> sslCiphers();
 
     /**
-     * Do SSL hostname validation.
-     * Defaults to true.
+     * Do SSL hostname validation. Defaults to true.
      */
     Optional<Boolean> sslHostNameValidation();
 
@@ -195,8 +189,8 @@ public interface InfinispanClientRuntimeConfig {
     Optional<Integer> socketTimeout();
 
     /**
-     * Whether a tracing propagation is enabled in case the Opentelemetry extension is present.
-     * By default the propagation of the context is propagated from the client to the Infinispan Server.
+     * Whether a tracing propagation is enabled in case the Opentelemetry extension is present. By default the
+     * propagation of the context is propagated from the client to the Infinispan Server.
      */
     @WithName("tracing.propagation.enabled")
     Optional<Boolean> tracingPropagationEnabled();

@@ -22,8 +22,7 @@ public class CompressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(MyRoutes.class)
+            .withApplicationRoot(root -> root.addClasses(MyRoutes.class)
                     .addAsManifestResource(new StringAsset(MyRoutes.MESSAGE), "resources/file.txt")
                     .addAsManifestResource(new StringAsset(MyRoutes.MESSAGE), "resources/my.doc"))
             .overrideConfigKey("quarkus.http.enable-compression", "true");
@@ -48,8 +47,7 @@ public class CompressionTest {
     }
 
     private void assertUncompressed(String path) {
-        ExtractableResponse<Response> response = get(path)
-                .then().statusCode(200).extract();
+        ExtractableResponse<Response> response = get(path).then().statusCode(200).extract();
         assertTrue(response.header("Content-Encoding") == null, response.headers().toString());
         assertEquals(MyRoutes.MESSAGE, response.asString());
     }

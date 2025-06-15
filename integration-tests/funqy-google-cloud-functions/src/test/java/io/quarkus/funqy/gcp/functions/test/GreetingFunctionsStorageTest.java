@@ -14,11 +14,6 @@ class GreetingFunctionsStorageTest {
     @Test
     public void test() {
         // test the function using RestAssured
-        given()
-                .body("{\"data\":{\"name\":\"hello.txt\"}}")
-                .when()
-                .post()
-                .then()
-                .statusCode(200);
+        given().body("{\"data\":{\"name\":\"hello.txt\"}}").when().post().then().statusCode(200);
     }
 }

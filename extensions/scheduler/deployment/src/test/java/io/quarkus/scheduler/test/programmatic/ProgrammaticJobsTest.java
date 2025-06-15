@@ -34,9 +34,7 @@ import io.vertx.core.Context;
 public class ProgrammaticJobsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class));
 
     @Inject
     Scheduler scheduler;
@@ -52,23 +50,15 @@ public class ProgrammaticJobsTest {
 
     @Test
     public void testJobs() throws InterruptedException {
-        scheduler.newJob("alwaysSkip1")
-                .setInterval("1s")
-                .setSkipPredicate(ex -> true)
-                .setTask(ex -> SKIPPED_EXECUTIONS.incrementAndGet())
-                .schedule();
-        scheduler.newJob("alwaysSkip2")
-                .setInterval("1s")
-                .setTask(ex -> SKIPPED_EXECUTIONS.incrementAndGet())
-                .setSkipPredicate(AlwaysSkipPredicate.class)
-                .schedule();
+        scheduler.newJob("alwaysSkip1").setInterval("1s").setSkipPredicate(ex -> true)
+                .setTask(ex -> SKIPPED_EXECUTIONS.incrementAndGet()).schedule();
+        scheduler.newJob("alwaysSkip2").setInterval("1s").setTask(ex -> SKIPPED_EXECUTIONS.incrementAndGet())
+                .setSkipPredicate(AlwaysSkipPredicate.class).schedule();
 
-        Scheduler.JobDefinition<?> job1 = scheduler.newJob("foo")
-                .setInterval("1s")
-                .setTask(ec -> {
-                    assertTrue(Arc.container().requestContext().isActive());
-                    myService.countDown(SYNC_LATCH);
-                });
+        Scheduler.JobDefinition<?> job1 = scheduler.newJob("foo").setInterval("1s").setTask(ec -> {
+            assertTrue(Arc.container().requestContext().isActive());
+            myService.countDown(SYNC_LATCH);
+        });
 
         assertEquals("Sync task was already set",
                 assertThrows(IllegalStateException.class, () -> job1.setAsyncTask(ec -> null)).getMessage());
@@ -110,14 +100,12 @@ public class ProgrammaticJobsTest {
 
     @Test
     public void testAsyncJob() throws InterruptedException {
-        JobDefinition<?> asyncJob = scheduler.newJob("fooAsync")
-                .setInterval("1s")
-                .setAsyncTask(ec -> {
-                    assertTrue(Context.isOnEventLoopThread() && VertxContext.isOnDuplicatedContext());
-                    assertTrue(Arc.container().requestContext().isActive());
-                    myService.countDown(ASYNC_LATCH);
-                    return Uni.createFrom().voidItem();
-                });
+        JobDefinition<?> asyncJob = scheduler.newJob("fooAsync").setInterval("1s").setAsyncTask(ec -> {
+            assertTrue(Context.isOnEventLoopThread() && VertxContext.isOnDuplicatedContext());
+            assertTrue(Arc.container().requestContext().isActive());
+            myService.countDown(ASYNC_LATCH);
+            return Uni.createFrom().voidItem();
+        });
 
         assertEquals("Async task was already set",
                 assertThrows(IllegalStateException.class, () -> asyncJob.setTask(ec -> {
@@ -132,20 +120,14 @@ public class ProgrammaticJobsTest {
 
     @Test
     public void testClassJobs() throws InterruptedException {
-        scheduler.newJob("fooClass")
-                .setInterval("1s")
-                .setTask(JobClassTask.class)
-                .schedule();
+        scheduler.newJob("fooClass").setInterval("1s").setTask(JobClassTask.class).schedule();
         assertTrue(ProgrammaticJobsTest.SYNC_CLASS_LATCH.await(5, TimeUnit.SECONDS));
         assertNotNull(scheduler.unscheduleJob("fooClass"));
     }
 
     @Test
     public void testClassAsyncJobs() throws InterruptedException {
-        scheduler.newJob("fooAsyncClass")
-                .setInterval("1s")
-                .setAsyncTask(JobClassAsyncTask.class)
-                .schedule();
+        scheduler.newJob("fooAsyncClass").setInterval("1s").setAsyncTask(JobClassAsyncTask.class).schedule();
         assertTrue(ProgrammaticJobsTest.ASYNC_CLASS_LATCH.await(5, TimeUnit.SECONDS));
         assertNotNull(scheduler.unscheduleJob("fooAsyncClass"));
     }

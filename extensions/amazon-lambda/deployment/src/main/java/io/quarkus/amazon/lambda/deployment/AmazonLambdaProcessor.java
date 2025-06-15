@@ -88,19 +88,17 @@ public final class AmazonLambdaProcessor {
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchy,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer) throws BuildException {
 
-        List<ClassInfo> allKnownImplementors = new ArrayList<>(
-                combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_HANDLER)
-                        .stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
-        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
-                .getAllKnownImplementors(REQUEST_STREAM_HANDLER).stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
-        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex()
-                .getAllKnownSubclasses(SKILL_STREAM_HANDLER).stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
+        List<ClassInfo> allKnownImplementors = new ArrayList<>(combinedIndexBuildItem.getIndex()
+                .getAllKnownImplementors(REQUEST_HANDLER).stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
+        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex().getAllKnownImplementors(REQUEST_STREAM_HANDLER)
+                .stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
+        allKnownImplementors.addAll(combinedIndexBuildItem.getIndex().getAllKnownSubclasses(SKILL_STREAM_HANDLER)
+                .stream().filter(INCLUDE_HANDLER_PREDICATE).toList());
 
         if (allKnownImplementors.size() > 0 && providedLambda.isPresent()) {
-            throw new BuildException(
-                    "Multiple handler classes.  You have a custom handler class and the " + providedLambda.get().getProvider()
-                            + " extension.  Please remove one of them from your deployment.",
-                    Collections.emptyList());
+            throw new BuildException("Multiple handler classes.  You have a custom handler class and the "
+                    + providedLambda.get().getProvider()
+                    + " extension.  Please remove one of them from your deployment.", Collections.emptyList());
 
         }
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder().setUnremovable();
@@ -114,8 +112,7 @@ public final class AmazonLambdaProcessor {
             final DotName name = info.name();
             final String lambda = name.toString();
             builder.addBeanClass(lambda);
-            reflectiveClassBuildItemBuildProducer
-                    .produce(ReflectiveClassBuildItem.builder(lambda).methods().build());
+            reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(lambda).methods().build());
 
             String cdiName = null;
             AnnotationInstance named = info.declaredAnnotation(NAMED);
@@ -133,18 +130,15 @@ public final class AmazonLambdaProcessor {
                             streamHandler = true;
                             done = true;
                             break;
-                        } else if (method.parametersCount() == 2
-                                && !method.parameterType(0).name().equals(DotName.createSimple(Object.class.getName()))) {
-                            String source = getClass().getSimpleName() + " > " + method.declaringClass() + "[" + method + "]";
+                        } else if (method.parametersCount() == 2 && !method.parameterType(0).name()
+                                .equals(DotName.createSimple(Object.class.getName()))) {
+                            String source = getClass().getSimpleName() + " > " + method.declaringClass() + "[" + method
+                                    + "]";
 
-                            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                                    .builder(method.parameterType(0))
-                                    .source(source)
-                                    .build());
-                            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem
-                                    .builder(method.returnType())
-                                    .source(source)
-                                    .build());
+                            reflectiveHierarchy.produce(ReflectiveHierarchyBuildItem.builder(method.parameterType(0))
+                                    .source(source).build());
+                            reflectiveHierarchy.produce(
+                                    ReflectiveHierarchyBuildItem.builder(method.returnType()).source(source).build());
                             done = true;
                             break;
                         }
@@ -155,10 +149,8 @@ public final class AmazonLambdaProcessor {
             ret.add(new AmazonLambdaBuildItem(lambda, cdiName, streamHandler));
         }
         additionalBeanBuildItemBuildProducer.produce(builder.build());
-        reflectiveClassBuildItemBuildProducer
-                .produce(ReflectiveClassBuildItem.builder(FunctionError.class).methods().fields()
-                        .reason(getClass().getName())
-                        .build());
+        reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(FunctionError.class).methods()
+                .fields().reason(getClass().getName()).build());
         return ret;
     }
 
@@ -174,18 +166,17 @@ public final class AmazonLambdaProcessor {
         builder.addBeanClass(handlerClass);
         additionalBeanBuildItemBuildProducer.produce(builder.build());
 
-        reflectiveClassBuildItemBuildProducer
-                .produce(ReflectiveClassBuildItem.builder(handlerClass).methods().fields()
-                        .reason(getClass().getName())
-                        .build());
+        reflectiveClassBuildItemBuildProducer.produce(
+                ReflectiveClassBuildItem.builder(handlerClass).methods().fields().reason(getClass().getName()).build());
 
         // TODO
-        // This really isn't good enough.  We should recursively add reflection for all method and field types of the parameter
-        // and return type.  Otherwise Jackson won't work.  In AWS Lambda HTTP extension, the whole jackson model is registered
-        // for reflection.  Shouldn't have to do this.
+        // This really isn't good enough. We should recursively add reflection for all method and field types of the
+        // parameter
+        // and return type. Otherwise Jackson won't work. In AWS Lambda HTTP extension, the whole jackson model is
+        // registered
+        // for reflection. Shouldn't have to do this.
         for (Method method : handlerClass.getMethods()) {
-            if (method.getName().equals("handleRequest")
-                    && method.getParameterCount() == 2) {
+            if (method.getName().equals("handleRequest") && method.getParameterCount() == 2) {
                 Class<?>[] parameterTypes = method.getParameterTypes();
                 if (!parameterTypes[0].equals(Object.class)) {
                     reflectiveClassBuildItemBuildProducer
@@ -194,12 +185,10 @@ public final class AmazonLambdaProcessor {
                                     .methods().fields().build());
                     reflectiveClassBuildItemBuildProducer
                             .produce(ReflectiveClassBuildItem.builder(method.getReturnType().getName())
-                                    .reason(getClass().getName() + " > " + method.getName() + " return type")
-                                    .methods().fields().build());
-                    reflectiveClassBuildItemBuildProducer
-                            .produce(ReflectiveClassBuildItem.builder(DateTime.class)
-                                    .reason(getClass().getName())
-                                    .methods().fields().build());
+                                    .reason(getClass().getName() + " > " + method.getName() + " return type").methods()
+                                    .fields().build());
+                    reflectiveClassBuildItemBuildProducer.produce(ReflectiveClassBuildItem.builder(DateTime.class)
+                            .reason(getClass().getName()).methods().fields().build());
                     break;
                 }
             }
@@ -210,8 +199,7 @@ public final class AmazonLambdaProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     public void recordStaticInitHandlerClass(List<AmazonLambdaBuildItem> lambdas,
             LambdaObjectMapperInitializedBuildItem mapper, // ordering!
-            Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
-            AmazonLambdaStaticRecorder recorder,
+            Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda, AmazonLambdaStaticRecorder recorder,
             RecorderContext context) {
         // can set handler within static initialization if only one handler exists in deployment
         if (providedLambda.isPresent()) {
@@ -249,15 +237,15 @@ public final class AmazonLambdaProcessor {
             }
         } else if (lambdas == null || lambdas.isEmpty()) {
             String errorMessage = "Unable to find handler class, make sure your deployment includes a single "
-                    + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName() + " implementation";
+                    + RequestHandler.class.getName() + " or, " + RequestStreamHandler.class.getName()
+                    + " implementation";
             throw new RuntimeException(errorMessage);
         }
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void recordBeanContainer(BeanContainerBuildItem beanContainerBuildItem,
-            AmazonLambdaRecorder recorder,
+    public void recordBeanContainer(BeanContainerBuildItem beanContainerBuildItem, AmazonLambdaRecorder recorder,
             // try to order this after service recorders
             List<ServiceStartBuildItem> orderServicesFirst) {
         recorder.setBeanContainer(beanContainerBuildItem.getValue());
@@ -268,8 +256,7 @@ public final class AmazonLambdaProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     public void recordHandlerClass(List<AmazonLambdaBuildItem> lambdas,
             Optional<ProvidedAmazonLambdaHandlerBuildItem> providedLambda,
-            BeanContainerBuildItem beanContainerBuildItem,
-            AmazonLambdaRecorder recorder,
+            BeanContainerBuildItem beanContainerBuildItem, AmazonLambdaRecorder recorder,
             List<ServiceStartBuildItem> orderServicesFirst, // try to order this after service recorders
             RecorderContext context) {
         // Have to set lambda class at runtime if there is not a provided lambda or there is more than one lambda in
@@ -294,7 +281,8 @@ public final class AmazonLambdaProcessor {
                     if (i.getName() == null) {
                         unnamed.add((Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
                     } else {
-                        named.put(i.getName(), (Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
+                        named.put(i.getName(),
+                                (Class<? extends RequestHandler<?, ?>>) context.classProxy(i.getHandlerClass()));
                     }
                 }
             }
@@ -308,20 +296,22 @@ public final class AmazonLambdaProcessor {
      */
     @BuildStep(onlyIf = NativeBuild.class)
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    void startPoolLoop(AmazonLambdaRecorder recorder,
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
-            List<ServiceStartBuildItem> orderServicesFirst // try to order this after service recorders
+    void startPoolLoop(AmazonLambdaRecorder recorder, ShutdownContextBuildItem shutdownContextBuildItem,
+            LaunchModeBuildItem launchModeBuildItem, List<ServiceStartBuildItem> orderServicesFirst // try to order this
+                                                                                                                                                                                                         // after service
+                                                                                                                                                                                                         // recorders
     ) {
         recorder.startPollLoop(shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
     }
 
     @BuildStep
     @Record(value = ExecutionTime.RUNTIME_INIT)
-    void startPoolLoopDevOrTest(AmazonLambdaRecorder recorder,
-            List<ServiceStartBuildItem> orderServicesFirst, // force some ordering of recorders
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            LaunchModeBuildItem launchModeBuildItem) {
+    void startPoolLoopDevOrTest(AmazonLambdaRecorder recorder, List<ServiceStartBuildItem> orderServicesFirst, // force
+            // some
+            // ordering
+            // of
+            // recorders
+            ShutdownContextBuildItem shutdownContextBuildItem, LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
             recorder.startPollLoop(shutdownContextBuildItem, mode);
@@ -331,13 +321,11 @@ public final class AmazonLambdaProcessor {
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
     void recordExpectedExceptions(LambdaBuildTimeConfig config,
-            BuildProducer<ReflectiveClassBuildItem> registerForReflection,
-            AmazonLambdaStaticRecorder recorder) {
+            BuildProducer<ReflectiveClassBuildItem> registerForReflection, AmazonLambdaStaticRecorder recorder) {
         Set<Class<?>> classes = config.expectedExceptions().map(Set::copyOf).orElseGet(Set::of);
         classes.stream()
                 .map(clazz -> ReflectiveClassBuildItem.builder(clazz).constructors(false)
-                        .reason(getClass().getName() + " expectedExceptions")
-                        .build())
+                        .reason(getClass().getName() + " expectedExceptions").build())
                 .forEach(registerForReflection::produce);
         recorder.setExpectedExceptionClasses(classes);
     }

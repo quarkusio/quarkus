@@ -17,11 +17,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class IgnoreExplicitForJoinedDefaultValueTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class)
-                    .addAsResource("application-discriminator-ignore-explicit-for-joined-default-value.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(MyEntity.class)
+            .addAsResource("application-discriminator-ignore-explicit-for-joined-default-value.properties",
+                    "application.properties"));
 
     @Inject
     EntityManager em;

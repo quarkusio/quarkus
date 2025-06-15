@@ -33,20 +33,14 @@ public class KafkaStreamsJsonRPCService {
         final var res = new JsonObject();
 
         final var context = new TopologyParserContext();
-        Arrays.stream(topologyDescription.split("\n"))
-                .map(String::trim)
+        Arrays.stream(topologyDescription.split("\n")).map(String::trim)
                 .forEachOrdered(line -> Stream.of(SUB_TOPOLOGY, SOURCE, PROCESSOR, SINK, RIGHT_ARROW)
                         .filter(itemParser -> itemParser.test(line))
                         .forEachOrdered(itemParser -> itemParser.accept(context)));
 
-        res
-                .put("describe", topologyDescription)
-                .put("subTopologies", context.subTopologies)
-                .put("sources", context.sources)
-                .put("sinks", context.sinks)
-                .put("stores", context.stores)
-                .put("graphviz", context.graphviz.toGraph())
-                .put("mermaid", context.mermaid.toGraph());
+        res.put("describe", topologyDescription).put("subTopologies", context.subTopologies)
+                .put("sources", context.sources).put("sinks", context.sinks).put("stores", context.stores)
+                .put("graphviz", context.graphviz.toGraph()).put("mermaid", context.mermaid.toGraph());
 
         return res;
     }

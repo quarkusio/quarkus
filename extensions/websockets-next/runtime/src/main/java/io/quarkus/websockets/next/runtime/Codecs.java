@@ -188,8 +188,8 @@ public class Codecs {
     }
 
     WebSocketException forcedCannotDecode(String text, Buffer bytes, MessageCodec<?, ?> codec, Type type) {
-        String message = String.format("Forced %s codec [%s] cannot decode the type %s", bytes != null ? "binary" : "text",
-                codec.getClass().getName(), type);
+        String message = String.format("Forced %s codec [%s] cannot decode the type %s",
+                bytes != null ? "binary" : "text", codec.getClass().getName(), type);
         if (bytes != null) {
             return new BinaryDecodeException(bytes, message);
         } else {

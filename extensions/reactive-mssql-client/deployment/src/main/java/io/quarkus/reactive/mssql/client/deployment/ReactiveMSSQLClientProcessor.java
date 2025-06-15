@@ -69,7 +69,8 @@ import io.vertx.sqlclient.Pool;
 
 class ReactiveMSSQLClientProcessor {
 
-    private static final Type MSSQL_POOL_CREATOR = ClassType.create(DotName.createSimple(MSSQLPoolCreator.class.getName()));
+    private static final Type MSSQL_POOL_CREATOR = ClassType
+            .create(DotName.createSimple(MSSQLPoolCreator.class.getName()));
     private static final ParameterizedType POOL_CREATOR_INJECTION_TYPE = ParameterizedType.create(INJECT_INSTANCE,
             new Type[] { MSSQL_POOL_CREATOR }, null);
 
@@ -78,13 +79,9 @@ class ReactiveMSSQLClientProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature,
-            BuildProducer<MSSQLPoolBuildItem> msSQLPool,
-            BuildProducer<VertxPoolBuildItem> vertxPool,
-            MSSQLPoolRecorder recorder,
-            VertxBuildItem vertx,
-            EventLoopCountBuildItem eventLoopCount,
-            ShutdownContextBuildItem shutdown,
+    ServiceStartBuildItem build(BuildProducer<FeatureBuildItem> feature, BuildProducer<MSSQLPoolBuildItem> msSQLPool,
+            BuildProducer<VertxPoolBuildItem> vertxPool, MSSQLPoolRecorder recorder, VertxBuildItem vertx,
+            EventLoopCountBuildItem eventLoopCount, ShutdownContextBuildItem shutdown,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
@@ -99,8 +96,8 @@ class ReactiveMSSQLClientProcessor {
         Stream.Builder<String> msSQLPoolNamesBuilder = Stream.builder();
         for (String dataSourceName : dataSourcesBuildTimeConfig.dataSources().keySet()) {
 
-            if (!isReactiveMSSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig, dataSourceName,
-                    defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
+            if (!isReactiveMSSQLPoolDefined(dataSourcesBuildTimeConfig, dataSourcesReactiveBuildTimeConfig,
+                    dataSourceName, defaultDataSourceDbKindBuildItems, curateOutcomeBuildItem)) {
                 continue;
             }
 
@@ -112,12 +109,9 @@ class ReactiveMSSQLClientProcessor {
 
         Set<String> msSQLPoolNames = msSQLPoolNamesBuilder.build().collect(toSet());
         if (!msSQLPoolNames.isEmpty()) {
-            syntheticBeans.produce(SyntheticBeanBuildItem.configure(MSSQLPoolSupport.class)
-                    .scope(Singleton.class)
-                    .unremovable()
-                    .runtimeValue(recorder.createMSSQLPoolSupport(msSQLPoolNames))
-                    .setRuntimeInit()
-                    .done());
+            syntheticBeans.produce(
+                    SyntheticBeanBuildItem.configure(MSSQLPoolSupport.class).scope(Singleton.class).unremovable()
+                            .runtimeValue(recorder.createMSSQLPoolSupport(msSQLPoolNames)).setRuntimeInit().done());
         }
 
         // Enable SSL support by default
@@ -151,9 +145,8 @@ class ReactiveMSSQLClientProcessor {
             String qualifiersStr = qualifiers.stream().map(Name::toString).collect(Collectors.joining("_"));
             if (seen.getOrDefault(qualifiersStr, false)) {
                 errors.produce(new ValidationPhaseBuildItem.ValidationErrorBuildItem(
-                        new IllegalStateException(
-                                "There can be at most one bean of type '" + MSSQLPoolCreator.class.getName()
-                                        + "' for each datasource.")));
+                        new IllegalStateException("There can be at most one bean of type '"
+                                + MSSQLPoolCreator.class.getName() + "' for each datasource.")));
             } else {
                 seen.put(qualifiersStr, true);
             }
@@ -164,21 +157,19 @@ class ReactiveMSSQLClientProcessor {
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            MsSQLServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    MsSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MSSQL));
     }
 
     /**
-     * The health check needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance creation
-     * consumes the AdditionalBeanBuildItems).
+     * The health check needs to be produced in a separate method to avoid a circular dependency (the Vert.x instance
+     * creation consumes the AdditionalBeanBuildItems).
      */
     @BuildStep
-    void addHealthCheck(
-            Capabilities capabilities,
-            BuildProducer<HealthBuildItem> healthChecks,
+    void addHealthCheck(Capabilities capabilities, BuildProducer<HealthBuildItem> healthChecks,
             DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
@@ -192,57 +183,38 @@ class ReactiveMSSQLClientProcessor {
             return;
         }
 
-        healthChecks.produce(
-                new HealthBuildItem("io.quarkus.reactive.mssql.client.runtime.health.ReactiveMSSQLDataSourcesHealthCheck",
-                        dataSourcesBuildTimeConfig.healthEnabled()));
+        healthChecks.produce(new HealthBuildItem(
+                "io.quarkus.reactive.mssql.client.runtime.health.ReactiveMSSQLDataSourcesHealthCheck",
+                dataSourcesBuildTimeConfig.healthEnabled()));
     }
 
-    private void createPool(MSSQLPoolRecorder recorder,
-            VertxBuildItem vertx,
-            EventLoopCountBuildItem eventLoopCount,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<MSSQLPoolBuildItem> msSQLPool,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            String dataSourceName,
+    private void createPool(MSSQLPoolRecorder recorder, VertxBuildItem vertx, EventLoopCountBuildItem eventLoopCount,
+            ShutdownContextBuildItem shutdown, BuildProducer<MSSQLPoolBuildItem> msSQLPool,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeans, String dataSourceName,
             DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
             DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig) {
 
-        Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> poolFunction = recorder.configureMSSQLPool(vertx.getVertx(),
-                eventLoopCount.getEventLoopCount(),
-                dataSourceName,
-                dataSourcesRuntimeConfig,
-                dataSourcesReactiveRuntimeConfig,
-                dataSourcesReactiveMSSQLConfig,
-                shutdown);
+        Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> poolFunction = recorder.configureMSSQLPool(
+                vertx.getVertx(), eventLoopCount.getEventLoopCount(), dataSourceName, dataSourcesRuntimeConfig,
+                dataSourcesReactiveRuntimeConfig, dataSourcesReactiveMSSQLConfig, shutdown);
         msSQLPool.produce(new MSSQLPoolBuildItem(dataSourceName, poolFunction));
 
         ExtendedBeanConfigurator msSQLPoolBeanConfigurator = SyntheticBeanBuildItem.configure(MSSQLPool.class)
-                .defaultBean()
-                .addType(Pool.class)
-                .scope(ApplicationScoped.class)
-                .qualifiers(qualifiers(dataSourceName))
+                .defaultBean().addType(Pool.class).scope(ApplicationScoped.class).qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(POOL_CREATOR_INJECTION_TYPE, qualifier(dataSourceName))
-                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                .createWith(poolFunction)
-                .unremovable()
-                .setRuntimeInit()
-                .startup();
+                .checkActive(recorder.poolCheckActiveSupplier(dataSourceName)).createWith(poolFunction).unremovable()
+                .setRuntimeInit().startup();
 
         syntheticBeans.produce(msSQLPoolBeanConfigurator.done());
 
         ExtendedBeanConfigurator mutinyMSSQLPoolConfigurator = SyntheticBeanBuildItem
-                .configure(io.vertx.mutiny.mssqlclient.MSSQLPool.class)
-                .defaultBean()
-                .addType(io.vertx.mutiny.sqlclient.Pool.class)
-                .scope(ApplicationScoped.class)
+                .configure(io.vertx.mutiny.mssqlclient.MSSQLPool.class).defaultBean()
+                .addType(io.vertx.mutiny.sqlclient.Pool.class).scope(ApplicationScoped.class)
                 .qualifiers(qualifiers(dataSourceName))
                 .addInjectionPoint(VERTX_MSSQL_POOL_TYPE, qualifier(dataSourceName))
                 .checkActive(recorder.poolCheckActiveSupplier(dataSourceName))
-                .createWith(recorder.mutinyMSSQLPool(dataSourceName))
-                .unremovable()
-                .setRuntimeInit()
-                .startup();
+                .createWith(recorder.mutinyMSSQLPool(dataSourceName)).unremovable().setRuntimeInit().startup();
 
         syntheticBeans.produce(mutinyMSSQLPoolConfigurator.done());
     }
@@ -251,8 +223,8 @@ class ReactiveMSSQLClientProcessor {
             DataSourcesReactiveBuildTimeConfig dataSourcesReactiveBuildTimeConfig, String dataSourceName,
             List<DefaultDataSourceDbKindBuildItem> defaultDataSourceDbKindBuildItems,
             CurateOutcomeBuildItem curateOutcomeBuildItem) {
-        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig
-                .dataSources().get(dataSourceName);
+        DataSourceBuildTimeConfig dataSourceBuildTimeConfig = dataSourcesBuildTimeConfig.dataSources()
+                .get(dataSourceName);
         DataSourceReactiveBuildTimeConfig dataSourceReactiveBuildTimeConfig = dataSourcesReactiveBuildTimeConfig
                 .dataSources().get(dataSourceName).reactive();
 
@@ -265,8 +237,7 @@ class ReactiveMSSQLClientProcessor {
             return false;
         }
 
-        if (!DatabaseKind.isMsSQL(dbKind.get())
-                || !dataSourceReactiveBuildTimeConfig.enabled()) {
+        if (!DatabaseKind.isMsSQL(dbKind.get()) || !dataSourceReactiveBuildTimeConfig.enabled()) {
             return false;
         }
 

@@ -18,13 +18,13 @@ public class NestedMessageBundleDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest testConfig = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyNestedMessages.class, TestRouteConfig.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyNestedMessages.class, TestRouteConfig.class));
 
     @Test
     public void testMessages() {
         assertEquals("Hello Jachym!", RestAssured.get("test").then().statusCode(200).extract().body().asString());
-        testConfig.modifySourceFile(NestedMessageBundleDevModeTest.class, s -> s.replace("Hello {name}!", "Hi {name}!"));
+        testConfig.modifySourceFile(NestedMessageBundleDevModeTest.class,
+                s -> s.replace("Hello {name}!", "Hi {name}!"));
         assertEquals("Hi Jachym!", RestAssured.get("test").then().statusCode(200).extract().body().asString());
     }
 
@@ -39,8 +39,7 @@ public class NestedMessageBundleDevModeTest {
     public static class TestRouteConfig {
 
         void addTestRoute(@Observes Router router) {
-            router.route("/test")
-                    .produces("text/plain")
+            router.route("/test").produces("text/plain")
                     .handler(rc -> rc.response().end(MessageBundles.get(MyNestedMessages.class).hello_name("Jachym")));
         }
 

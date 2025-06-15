@@ -23,8 +23,8 @@ public class InfinispanGetWrapper {
     public <K, V> Uni<V> get(K key, Function<K, V> valueLoader) {
         return Uni.createFrom().completionStage(
                 /*
-                 * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation will be
-                 * delayed until subscription time. In other words, the cache value computation is done lazily.
+                 * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation
+                 * will be delayed until subscription time. In other words, the cache value computation is done lazily.
                  */
                 new Supplier<CompletionStage<V>>() {
                     @Override
@@ -42,32 +42,30 @@ public class InfinispanGetWrapper {
             if ((prev = synchronousGets.putIfAbsent(key, stage)) != null) {
                 return prev;
             }
-            cache.getAsync(key)
-                    .whenComplete((valGet, tGet) -> {
-                        if (tGet != null) {
-                            stage.completeExceptionally((Throwable) tGet);
-                            synchronousGets.remove(key);
-                        } else if (valGet != null) {
-                            stage.complete(valGet);
-                            synchronousGets.remove(key);
-                        } else {
-                            Object newValue = valueLoader.apply(key);
-                            if (newValue == null) {
-                                synchronousGets.remove(key);
-                                stage.complete(null);
+            cache.getAsync(key).whenComplete((valGet, tGet) -> {
+                if (tGet != null) {
+                    stage.completeExceptionally((Throwable) tGet);
+                    synchronousGets.remove(key);
+                } else if (valGet != null) {
+                    stage.complete(valGet);
+                    synchronousGets.remove(key);
+                } else {
+                    Object newValue = valueLoader.apply(key);
+                    if (newValue == null) {
+                        synchronousGets.remove(key);
+                        stage.complete(null);
+                    } else {
+                        cache.putIfAbsentAsync(key, newValue).whenComplete((valPut, tPut) -> {
+                            if (tPut != null) {
+                                stage.completeExceptionally((Throwable) tPut);
                             } else {
-                                cache.putIfAbsentAsync(key, newValue)
-                                        .whenComplete((valPut, tPut) -> {
-                                            if (tPut != null) {
-                                                stage.completeExceptionally((Throwable) tPut);
-                                            } else {
-                                                stage.complete(valPut == null ? newValue : valPut);
-                                            }
-                                            synchronousGets.remove(key);
-                                        });
+                                stage.complete(valPut == null ? newValue : valPut);
                             }
-                        }
-                    });
+                            synchronousGets.remove(key);
+                        });
+                    }
+                }
+            });
 
         } catch (Exception ex) {
             stage.completeExceptionally(ex);

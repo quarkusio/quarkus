@@ -37,32 +37,25 @@ import io.smallrye.mutiny.Uni;
 public class LargeMultipartPayloadTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addAsResource(new StringAsset("""
+                    quarkus.http.limits.max-body-size=30M
+                    """), "application.properties");
+        }
+    }).addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder
+            .addBuildStep(context -> context.produce(new MethodScannerBuildItem(new MethodScanner() {
                 @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addAsResource(new StringAsset("""
-                                    quarkus.http.limits.max-body-size=30M
-                                    """),
-                                    "application.properties");
+                public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
+                        Map<String, Object> methodContext) {
+                    return List.of(new AlwaysFailHandler());
                 }
-            }).addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder.addBuildStep(context -> context.produce(
-                    new MethodScannerBuildItem(new MethodScanner() {
-                        @Override
-                        public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
-                                Map<String, Object> methodContext) {
-                            return List.of(new AlwaysFailHandler());
-                        }
-                    }))).produces(MethodScannerBuildItem.class).build());
+            }))).produces(MethodScannerBuildItem.class).build());
 
     @Test
     public void testConnectionClosedOnException() {
-        given()
-                .multiPart("file", twentyMegaBytes())
-                .post("/test")
-                .then()
-                .statusCode(200)
+        given().multiPart("file", twentyMegaBytes()).post("/test").then().statusCode(200)
                 .body(Matchers.is("Expected failure!"));
     }
 
@@ -98,7 +91,8 @@ public class LargeMultipartPayloadTest {
         }
 
         @Override
-        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod resourceMethod) {
             return List.of(new AlwaysFailHandler());
         }
     }

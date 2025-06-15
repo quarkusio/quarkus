@@ -32,9 +32,8 @@ public class ProdModeTestBuildChainBuilderConsumer implements Consumer<BuildChai
         BuildStepBuilder buildStepBuilder;
         ClassLoader cl = this.getClass().getClassLoader();
         try {
-            buildStepBuilder = builder.addBuildStep(
-                    cl.loadClass(buildStepClassName).asSubclass(BuildStep.class).getConstructor(Map.class)
-                            .newInstance(testContext));
+            buildStepBuilder = builder.addBuildStep(cl.loadClass(buildStepClassName).asSubclass(BuildStep.class)
+                    .getConstructor(Map.class).newInstance(testContext));
         } catch (ClassNotFoundException | NoSuchMethodException | InstantiationException | IllegalAccessException
                 | InvocationTargetException e) {
             throw new IllegalArgumentException("Unable to create build step '" + buildStepClassName + "'", e);

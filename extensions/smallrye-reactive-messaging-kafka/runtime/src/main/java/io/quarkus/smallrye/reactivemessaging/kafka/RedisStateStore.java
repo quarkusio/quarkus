@@ -61,8 +61,9 @@ public class RedisStateStore implements CheckpointStateStore {
         public CheckpointStateStore create(KafkaConnectorIncomingConfiguration config, Vertx vertx,
                 KafkaConsumer<?, ?> consumer, Class<?> stateType) {
             String consumerGroupId = (String) consumer.configuration().get(ConsumerConfig.GROUP_ID_CONFIG);
-            String clientName = config.config().getOptionalValue(KafkaCommitHandler.Strategy.CHECKPOINT + "." +
-                    REDIS_STATE_STORE + ".client-name", String.class)
+            String clientName = config.config()
+                    .getOptionalValue(KafkaCommitHandler.Strategy.CHECKPOINT + "." + REDIS_STATE_STORE + ".client-name",
+                            String.class)
                     .orElse(null);
             ReactiveRedisDataSource rds = clientName != null
                     ? redisDataSource.select(RedisClientName.Literal.of(clientName)).get()
@@ -88,12 +89,10 @@ public class RedisStateStore implements CheckpointStateStore {
         if (partitions.isEmpty() || closed.get()) {
             return Uni.createFrom().item(Collections.emptyMap());
         }
-        List<Tuple2<TopicPartition, String>> tps = partitions.stream()
-                .map(tp -> Tuple2.of(tp, getKey(tp)))
+        List<Tuple2<TopicPartition, String>> tps = partitions.stream().map(tp -> Tuple2.of(tp, getKey(tp)))
                 .collect(Collectors.toList());
         return redis.value(byte[].class).mget(tps.stream().map(Tuple2::getItem2).toArray(String[]::new))
-                .map(response -> response.entrySet().stream()
-                        .filter(e -> e.getValue() != null)
+                .map(response -> response.entrySet().stream().filter(e -> e.getValue() != null)
                         .collect(Collectors.toMap(e -> getTpFromKey(e.getKey()),
                                 e -> ProcessingState.getOrEmpty(stateCodec.decode(e.getValue())))));
     }
@@ -121,8 +120,8 @@ public class RedisStateStore implements CheckpointStateStore {
                     return true;
                 }
                 ProcessingState<?> currentState = stateCodec.decode(current.get(key));
-                return ProcessingState.isEmptyOrNull(currentState) ||
-                        (!ProcessingState.isEmptyOrNull(newState) && newState.getOffset() >= currentState.getOffset());
+                return ProcessingState.isEmptyOrNull(currentState) || (!ProcessingState.isEmptyOrNull(newState)
+                        && newState.getOffset() >= currentState.getOffset());
             }).collect(Collectors.toMap(e -> getKey(e.getKey()), e -> stateCodec.encode(e.getValue())));
             if (map.isEmpty()) {
                 return Uni.createFrom().voidItem();

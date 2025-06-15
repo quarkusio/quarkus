@@ -35,15 +35,8 @@ public class IndexWrapper implements IndexView {
 
     private static final Logger LOGGER = Logger.getLogger(IndexWrapper.class);
 
-    private static final Set<String> PRIMITIVE_TYPES = Set.of(
-            "boolean",
-            "byte",
-            "short",
-            "int",
-            "long",
-            "float",
-            "double",
-            "char");
+    private static final Set<String> PRIMITIVE_TYPES = Set.of("boolean", "byte", "short", "int", "long", "float",
+            "double", "char");
 
     private final IndexView index;
     private final ClassLoader deploymentClassLoader;
@@ -62,8 +55,7 @@ public class IndexWrapper implements IndexView {
         }
         Collection<ClassInfo> known = index.getKnownClasses();
         Collection<ClassInfo> additional = additionalClasses.values().stream().filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
+                .map(Optional::get).collect(Collectors.toList());
         List<ClassInfo> all = new ArrayList<>(known.size() + additional.size());
         all.addAll(known);
         all.addAll(additional);
@@ -343,8 +335,7 @@ public class IndexWrapper implements IndexView {
             // Ignore primitives and arrays
             return false;
         }
-        try (InputStream stream = classLoader
-                .getResourceAsStream(fromClassNameToResourceName(className))) {
+        try (InputStream stream = classLoader.getResourceAsStream(fromClassNameToResourceName(className))) {
             if (stream != null) {
                 indexer.index(stream);
                 result = true;

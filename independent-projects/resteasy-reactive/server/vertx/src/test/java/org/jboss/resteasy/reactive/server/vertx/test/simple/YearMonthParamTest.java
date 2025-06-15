@@ -24,39 +24,34 @@ public class YearMonthParamTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, CustomDateTimeFormatterProvider.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, CustomDateTimeFormatterProvider.class));
 
     @Test
     public void yearMonthAsQueryParam() {
-        RestAssured.get("/hello?date=01984-12")
-                .then().statusCode(200).body(Matchers.equalTo("hello#1984-12"));
+        RestAssured.get("/hello?date=01984-12").then().statusCode(200).body(Matchers.equalTo("hello#1984-12"));
     }
 
     @Test
     public void yearMonthAsPathParam() {
-        RestAssured.get("/hello/1821-01")
-                .then().statusCode(200).body(Matchers.equalTo("hello@1821-01"));
+        RestAssured.get("/hello/1821-01").then().statusCode(200).body(Matchers.equalTo("hello@1821-01"));
     }
 
     @Test
     public void yearMonthAsFormParam() {
-        RestAssured.given().formParam("date", "995-06").post("/hello")
-                .then().statusCode(200).body(Matchers.equalTo("hello:0995-06"));
+        RestAssured.given().formParam("date", "995-06").post("/hello").then().statusCode(200)
+                .body(Matchers.equalTo("hello:0995-06"));
     }
 
     @Test
     public void yearMonthAsHeader() {
-        RestAssured.with().header("date", "1984-11")
-                .get("/hello/header")
-                .then().statusCode(200).body(Matchers.equalTo("hello=1984-11"));
+        RestAssured.with().header("date", "1984-11").get("/hello/header").then().statusCode(200)
+                .body(Matchers.equalTo("hello=1984-11"));
     }
 
     @Test
     public void yearMonthAsCookie() {
-        RestAssured.with().cookie("date", "1984-10")
-                .get("/hello/cookie")
-                .then().statusCode(200).body(Matchers.equalTo("hello/1984-10"));
+        RestAssured.with().cookie("date", "1984-10").get("/hello/cookie").then().statusCode(200)
+                .body(Matchers.equalTo("hello/1984-10"));
     }
 
     @Path("hello")
@@ -81,15 +76,13 @@ public class YearMonthParamTest {
 
         @GET
         @Path("cookie")
-        public String helloCookie(
-                @CookieParam("date") YearMonth date) {
+        public String helloCookie(@CookieParam("date") YearMonth date) {
             return "hello/" + date;
         }
 
         @GET
         @Path("header")
-        public String helloHeader(
-                @HeaderParam("date") YearMonth date) {
+        public String helloHeader(@HeaderParam("date") YearMonth date) {
             return "hello=" + date;
         }
     }

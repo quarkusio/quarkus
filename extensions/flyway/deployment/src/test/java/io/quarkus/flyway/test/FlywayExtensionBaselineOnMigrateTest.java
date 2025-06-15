@@ -18,16 +18,13 @@ public class FlywayExtensionBaselineOnMigrateTest {
     Flyway flyway;
 
     static final FlywayH2TestCustomizer customizer = FlywayH2TestCustomizer
-            .withDbName("quarkus-flyway-baseline-on-migrate")
-            .withPort(11301)
+            .withDbName("quarkus-flyway-baseline-on-migrate").withPort(11301)
             .withInitSqlFile("src/test/resources/h2-init-data.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setBeforeAllCustomizer(customizer::startH2)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setBeforeAllCustomizer(customizer::startH2)
             .setAfterAllCustomizer(customizer::stopH2)
-            .withApplicationRoot((jar) -> jar
-                    .addClass(FlywayH2TestCustomizer.class)
+            .withApplicationRoot((jar) -> jar.addClass(FlywayH2TestCustomizer.class)
                     .addAsResource("baseline-on-migrate.properties", "application.properties"));
 
     @Test

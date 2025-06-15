@@ -40,12 +40,11 @@ public class AeshConsole extends QuarkusConsole {
     private String[] messages = new String[0];
     private int totalStatusLines = 0;
     private int lastWriteCursorX;
-    private String lastColorCode; //foreground color code, or reset
+    private String lastColorCode; // foreground color code, or reset
     private volatile boolean doingReadline;
     /**
-     * if the status area has gotten big then small again
-     * this tracks how many lines of blank space we have
-     * so we start writing in the correct place.
+     * if the status area has gotten big then small again this tracks how many lines of blank space we have so we start
+     * writing in the correct place.
      */
     private int bottomBlankSpace = 0;
     /**
@@ -53,8 +52,7 @@ public class AeshConsole extends QuarkusConsole {
      * <p>
      * Data must be added to this, before it is written out by {@link #deadlockSafeWrite()}
      * <p>
-     * Because Aesh can log deadlocks are possible on Windows if a write fails, unless care
-     * is taken.
+     * Because Aesh can log deadlocks are possible on Windows if a write fails, unless care is taken.
      */
     private final ConcurrentLinkedQueue<String> writeQueue = new ConcurrentLinkedQueue<>();
     private final Lock connectionLock = new ReentrantLock();
@@ -117,8 +115,8 @@ public class AeshConsole extends QuarkusConsole {
         try {
             positionLock.writeLock().lock();
             while (statusMap.containsKey(priority)) {
-                //this kinda sucks, but it means that if multiple extensions try and
-                //use this and happen to pick the same priority things don't blow up
+                // this kinda sucks, but it means that if multiple extensions try and
+                // use this and happen to pick the same priority things don't blow up
                 priority++;
             }
             StatusLineImpl value = new StatusLineImpl(priority);
@@ -175,18 +173,18 @@ public class AeshConsole extends QuarkusConsole {
     private void deadlockSafeWrite() {
         for (;;) {
             if (pauseOutput) {
-                //output is paused
+                // output is paused
                 return;
             }
-            //after we have unlocked we always need to check again
-            //another thread may have added something to the queue after our last write but before
-            //we unlocked. Checking again makes sure we are safe
+            // after we have unlocked we always need to check again
+            // another thread may have added something to the queue after our last write but before
+            // we unlocked. Checking again makes sure we are safe
             if (writeQueue.isEmpty()) {
                 return;
             }
             if (connectionLock.tryLock()) {
-                //we need to guard against Aesh logging something if there is a problem
-                //it results in an infinite loop otherwise
+                // we need to guard against Aesh logging something if there is a problem
+                // it results in an infinite loop otherwise
                 IN_WRITE.set(true);
                 try {
                     while (!writeQueue.isEmpty()) {
@@ -212,9 +210,9 @@ public class AeshConsole extends QuarkusConsole {
                             exitCliMode();
                             return;
                         }
-                        //todo: why does async exit not work here
-                        //Quarkus.asyncExit();
-                        //end(conn);
+                        // todo: why does async exit not work here
+                        // Quarkus.asyncExit();
+                        // end(conn);
                         new Thread(new Runnable() {
                             @Override
                             public void run() {
@@ -232,7 +230,7 @@ public class AeshConsole extends QuarkusConsole {
                 if (redirectIn == null) {
                     return;
                 }
-                //see if the users application wants to read the keystrokes:
+                // see if the users application wants to read the keystrokes:
                 int pos = 0;
                 while (pos < keys.length) {
                     if (!redirectIn.acceptInput(keys[pos])) {
@@ -244,16 +242,16 @@ public class AeshConsole extends QuarkusConsole {
                     if (pos == keys.length) {
                         return;
                     }
-                    //the app only consumed some keys
-                    //stick the rest in a new array
+                    // the app only consumed some keys
+                    // stick the rest in a new array
                     int[] newKeys = new int[keys.length - pos];
                     System.arraycopy(keys, pos, newKeys, 0, newKeys.length);
                     keys = newKeys;
                 }
                 try {
                     if (delegateConnection != null) {
-                        //console mode
-                        //just sent the input to the delegate
+                        // console mode
+                        // just sent the input to the delegate
                         if (keys.length == 1) {
                             for (var k : keys) {
                                 if (k == 27) { // escape key
@@ -295,7 +293,7 @@ public class AeshConsole extends QuarkusConsole {
                         }
                     }
                 } catch (Throwable t) {
-                    //can't reliably use logging here
+                    // can't reliably use logging here
                     t.printStackTrace();
                 }
             });
@@ -315,9 +313,8 @@ public class AeshConsole extends QuarkusConsole {
     /**
      * prints the status messages
      * <p>
-     * this will overwrite the bottom part of the screen
-     * callers are responsible for writing enough newlines to
-     * preserve any console history they want.
+     * this will overwrite the bottom part of the screen callers are responsible for writing enough newlines to preserve
+     * any console history they want.
      *
      * @param buffer
      */
@@ -325,7 +322,7 @@ public class AeshConsole extends QuarkusConsole {
         if (totalStatusLines == 0 || closed) {
             return;
         } else if (totalStatusLines < size.getHeight()) {
-            //if the console is tiny we don't do this
+            // if the console is tiny we don't do this
             clearStatusMessages(buffer);
             gotoLine(buffer, size.getHeight() - totalStatusLines);
         } else {
@@ -337,7 +334,7 @@ public class AeshConsole extends QuarkusConsole {
             if (msg != null) {
                 buffer.append(msg);
                 if (i > 0) {
-                    //if there is any more messages to print we add a newline
+                    // if there is any more messages to print we add a newline
                     for (int j = 0; j < i; ++j) {
                         if (messages[j] != null) {
                             buffer.append("\n");
@@ -407,9 +404,9 @@ public class AeshConsole extends QuarkusConsole {
         Matcher m = ESCAPE.matcher(s);
         while (m.find()) {
             int val = Integer.parseInt(m.group(1));
-            if (val == 0 || //reset
-                    (val >= 30 && val <= 39) || //foreground colors
-                    (val >= 90 && val <= 97)) { //bright foreground colors
+            if (val == 0 || // reset
+                    (val >= 30 && val <= 39) || // foreground colors
+                    (val >= 90 && val <= 97)) { // bright foreground colors
                 lastColorCode = m.group(0);
             }
         }
@@ -420,7 +417,8 @@ public class AeshConsole extends QuarkusConsole {
         }
         synchronized (this) {
             if (totalStatusLines == 0) {
-                bottomBlankSpace = 0; //just to be safe, will only happen if status is added then removed, which is not really likely
+                bottomBlankSpace = 0; // just to be safe, will only happen if status is added then removed, which is not
+                                      // really likely
                 writeQueue.add(s);
             } else {
                 clearStatusMessages(buffer);
@@ -446,7 +444,7 @@ public class AeshConsole extends QuarkusConsole {
                     gotoCoords(buffer, size.getHeight() - bottomBlankSpace - totalStatusLines - 1, cursorPos + 1);
                     buffer.append(s);
                     lastWriteCursorX = newCursorPos;
-                    //partial line, just write it
+                    // partial line, just write it
                     writeQueue.add(buffer.toString());
                 } else {
                     gotoLine(buffer, size.getHeight());
@@ -458,16 +456,23 @@ public class AeshConsole extends QuarkusConsole {
                         usedBlankSpace = Math.min(bottomBlankSpace, lines);
                         bottomBlankSpace -= usedBlankSpace;
                     }
-                    //move the existing content up by the number of lines
-                    int appendLines = Math.max(
-                            Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines + 1) //+1 for the extra blank line above the status line
+                    // move the existing content up by the number of lines
+                    int appendLines = Math.max(Math.min(cursorPos > 1 ? lines - 1 : lines, totalStatusLines + 1) // +1
+                                                                                                                 // for
+                                                                                                                 // the
+                                                                                                                 // extra
+                                                                                                                 // blank
+                                                                                                                 // line
+                                                                                                                 // above
+                                                                                                                 // the
+                                                                                                                 // status
+                                                                                                                 // line
                             , 1);
                     appendLines -= usedBlankSpace;
                     clearStatusMessages(buffer);
-                    buffer.append("\033[").append(size.getHeight() - totalStatusLines - originalBlank - (cursorPos > 0 ? 1 : 0))
-                            .append(";")
-                            .append(cursorPos + 1)
-                            .append("H");
+                    buffer.append("\033[")
+                            .append(size.getHeight() - totalStatusLines - originalBlank - (cursorPos > 0 ? 1 : 0))
+                            .append(";").append(cursorPos + 1).append("H");
                     buffer.append(s);
                     buffer.append("\033[").append(size.getHeight()).append(";").append(0).append("H");
                     for (int i = 0; i < appendLines; ++i) {
@@ -565,17 +570,11 @@ public class AeshConsole extends QuarkusConsole {
             AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
             ConsoleCliManager.commands.forEach(commandBuilder::command);
 
-            CommandRegistry registry = commandBuilder
-                    .create();
-            Settings settings = SettingsBuilder
-                    .builder()
-                    .enableExport(false)
-                    .enableAlias(true)
-                    .aliasManager(
-                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
-                    .connection(delegateConnection)
-                    .commandRegistry(registry)
-                    .build();
+            CommandRegistry registry = commandBuilder.create();
+            Settings settings = SettingsBuilder.builder().enableExport(false).enableAlias(true)
+                    .aliasManager(new AliasManager(
+                            Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                    .connection(delegateConnection).commandRegistry(registry).build();
             aeshConsole = new ReadlineConsole(settings);
             aeshConsole.setPrompt("quarkus$ ");
             Thread t = new Thread(new Runnable() {
@@ -597,7 +596,8 @@ public class AeshConsole extends QuarkusConsole {
     @Override
     public Map<Character, String> singleLetterAliases() {
         try {
-            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true);
+            var manager = new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(),
+                    true);
             Map<Character, String> ret = new HashMap<>();
             for (String alias : manager.getAllNames()) {
                 if (alias.length() == 1) {
@@ -616,18 +616,12 @@ public class AeshConsole extends QuarkusConsole {
             AeshCommandRegistryBuilder<CommandInvocation> commandBuilder = AeshCommandRegistryBuilder.builder();
             ConsoleCliManager.commands.forEach(commandBuilder::command);
 
-            CommandRegistry registry = commandBuilder
-                    .create();
-            Settings settings = SettingsBuilder
-                    .builder()
-                    .enableExport(false)
-                    .inputStream(new ByteArrayInputStream(new byte[] { (byte) alias, '\n' }))
-                    .enableAlias(true)
-                    .aliasManager(
-                            new AliasManager(Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
-                    .connection(delegateConnection)
-                    .commandRegistry(registry)
-                    .build();
+            CommandRegistry registry = commandBuilder.create();
+            Settings settings = SettingsBuilder.builder().enableExport(false)
+                    .inputStream(new ByteArrayInputStream(new byte[] { (byte) alias, '\n' })).enableAlias(true)
+                    .aliasManager(new AliasManager(
+                            Paths.get(System.getProperty("user.home")).resolve(ALIAS_FILE).toFile(), true))
+                    .connection(delegateConnection).commandRegistry(registry).build();
             aeshConsole = new ReadlineConsole(settings);
             aeshConsole.start();
         } catch (IOException e) {
@@ -644,7 +638,7 @@ public class AeshConsole extends QuarkusConsole {
         delegateConnection.close();
         delegateConnection = null;
         connection.enterRawMode();
-        //exit alternate screen mode
+        // exit alternate screen mode
         connection.write(EXIT_ALTERNATE_SCREEN);
         pauseOutput = false;
         write(false, "");

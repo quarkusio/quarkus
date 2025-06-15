@@ -44,24 +44,13 @@ public class NewParamsRestResource {
 
     @POST
     @Path("params/{p}")
-    public String params(@RestPath String p,
-            @RestQuery String q,
-            @RestQuery Optional<String> q2,
-            @RestQuery Optional<Integer> q3,
-            @RestHeader int h,
-            @RestHeader String xMyHeader,
-            @RestHeader("Test-Header-Param") String testHeaderParam,
-            @RestHeader("") String paramEmpty,
-            @RestForm String f,
-            @RestMatrix String m,
-            @RestCookie String c,
-            @RestCookie("c") Cookie cookie) {
+    public String params(@RestPath String p, @RestQuery String q, @RestQuery Optional<String> q2,
+            @RestQuery Optional<Integer> q3, @RestHeader int h, @RestHeader String xMyHeader,
+            @RestHeader("Test-Header-Param") String testHeaderParam, @RestHeader("") String paramEmpty,
+            @RestForm String f, @RestMatrix String m, @RestCookie String c, @RestCookie("c") Cookie cookie) {
         return "params: p: " + p + ", q: " + q + ", h: " + h + ", xMyHeader: " + xMyHeader + ", testHeaderParam: "
-                + testHeaderParam + ", paramEmpty: "
-                + paramEmpty + ", f: " + f + ", m: " + m
-                + ", c: " + c
-                + ", c2: " + cookie.getValue()
-                + ", q2: " + q2.orElse("empty") + ", q3: " + q3.orElse(-1);
+                + testHeaderParam + ", paramEmpty: " + paramEmpty + ", f: " + f + ", m: " + m + ", c: " + c + ", c2: "
+                + cookie.getValue() + ", q2: " + q2.orElse("empty") + ", q3: " + q3.orElse(-1);
     }
 
     @Blocking
@@ -77,18 +66,11 @@ public class NewParamsRestResource {
     @GET
     @Path("context")
     public String context(// Spec:
-            UriInfo uriInfo,
-            HttpHeaders headers,
-            Request request,
-            Providers providers,
-            ResourceContext resourceContext,
+            UriInfo uriInfo, HttpHeaders headers, Request request, Providers providers, ResourceContext resourceContext,
             Configuration configuration,
             // Extras
-            ResourceInfo resourceInfo,
-            SimpleResourceInfo simplifiedResourceInfo,
-            ServerRequestContext restContext,
-            HttpServerRequest httpServerRequest,
-            HttpServerResponse httpServerResponse) {
+            ResourceInfo resourceInfo, SimpleResourceInfo simplifiedResourceInfo, ServerRequestContext restContext,
+            HttpServerRequest httpServerRequest, HttpServerResponse httpServerResponse) {
         Assertions.assertNotNull(uriInfo);
         Assertions.assertNotNull(headers);
         Assertions.assertNotNull(request);
@@ -106,8 +88,7 @@ public class NewParamsRestResource {
     @GET
     @Path("sse")
     @Produces(MediaType.SERVER_SENT_EVENTS)
-    public void eventStream(SseEventSink eventSink,
-            Sse sse) {
+    public void eventStream(SseEventSink eventSink, Sse sse) {
         Assertions.assertNotNull(eventSink);
         Assertions.assertNotNull(sse);
         try (SseEventSink sink = eventSink) {

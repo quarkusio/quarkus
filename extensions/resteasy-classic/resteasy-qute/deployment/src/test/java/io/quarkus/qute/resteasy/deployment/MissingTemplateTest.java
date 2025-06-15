@@ -12,8 +12,7 @@ public class MissingTemplateTest {
 
     @RegisterExtension
     static final QuarkusUnitTest configError = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MissingTemplateResource.class)
+            .withApplicationRoot((jar) -> jar.addClass(MissingTemplateResource.class)
                     .addAsResource("templates/MissingTemplateResource/hello.txt"))
             .setExpectedException(TemplateException.class);
 

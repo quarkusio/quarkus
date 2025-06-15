@@ -295,8 +295,8 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
 
             }
         } else {
-            getLogger().info("Copying Quarkus build for {} JAR type from {} into {}", jarType(),
-                    genBuildDir, targetDir);
+            getLogger().info("Copying Quarkus build for {} JAR type from {} into {}", jarType(), genBuildDir,
+                    targetDir);
         }
         getFileSystemOperations().copy(copy -> {
             copy.into(targetDir);
@@ -318,11 +318,11 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
 
         if (nativeEnabled()) {
             if (nativeSourcesOnly()) {
-                getLogger().info("Synchronizing Quarkus build for native sources from {} and {} into {}",
-                        appBuildDir, depBuildDir, appTargetDir);
+                getLogger().info("Synchronizing Quarkus build for native sources from {} and {} into {}", appBuildDir,
+                        depBuildDir, appTargetDir);
             } else {
-                getLogger().info("Synchronizing Quarkus native build from {} and {} into {}",
-                        appBuildDir, depBuildDir, appTargetDir);
+                getLogger().info("Synchronizing Quarkus native build from {} and {} into {}", appBuildDir, depBuildDir,
+                        appTargetDir);
             }
         } else {
             getLogger().info("Synchronizing Quarkus build for {} JAR type from {} and {} into {}", jarType(),
@@ -350,17 +350,11 @@ public abstract class QuarkusBuild extends QuarkusBuildTask {
             getLogger().info("Copying remaining Quarkus application artifacts for {} JAR type from {} into {}",
                     jarType(), sourceDir, buildDir);
         }
-        getFileSystemOperations().copy(
-                copy -> {
-                    copy.eachFile(new CopyActionDeleteNonWriteableTarget(buildDir.toPath()));
-                    copy.into(buildDir).from(sourceDir)
-                            .include(QUARKUS_ARTIFACT_PROPERTIES,
-                                    nativeRunnerFileName(),
-                                    runnerJarFileName(),
-                                    "jib-image*",
-                                    NATIVE_SOURCES,
-                                    nativeImageSourceJarDirName() + "/**");
-                });
+        getFileSystemOperations().copy(copy -> {
+            copy.eachFile(new CopyActionDeleteNonWriteableTarget(buildDir.toPath()));
+            copy.into(buildDir).from(sourceDir).include(QUARKUS_ARTIFACT_PROPERTIES, nativeRunnerFileName(),
+                    runnerJarFileName(), "jib-image*", NATIVE_SOURCES, nativeImageSourceJarDirName() + "/**");
+        });
     }
 
     private String expandConfigurationKey(String shortKey) {

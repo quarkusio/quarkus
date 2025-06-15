@@ -94,8 +94,8 @@ class VertxHttpProcessor {
 
     @BuildStep
     LogCategoryBuildItem logging() {
-        //this log is only used to log an error about an incorrect URI, which results in a 400 response
-        //we don't want to log this
+        // this log is only used to log an error about an incorrect URI, which results in a 400 response
+        // we don't want to log this
         return new LogCategoryBuildItem(Http1xServerRequest.class.getName(), Level.OFF);
     }
 
@@ -105,28 +105,27 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    List<RouteBuildItem> convertRoutes(
-            List<io.quarkus.vertx.http.deployment.spi.RouteBuildItem> items,
+    List<RouteBuildItem> convertRoutes(List<io.quarkus.vertx.http.deployment.spi.RouteBuildItem> items,
             HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         List<RouteBuildItem> list = new ArrayList<>();
         for (io.quarkus.vertx.http.deployment.spi.RouteBuildItem item : items) {
-            RouteBuildItem converted = RouteConverter.convert(item, httpRootPathBuildItem, nonApplicationRootPathBuildItem);
+            RouteBuildItem converted = RouteConverter.convert(item, httpRootPathBuildItem,
+                    nonApplicationRootPathBuildItem);
             list.add(converted);
         }
         return list;
     }
 
     @BuildStep
-    NonApplicationRootPathBuildItem frameworkRoot(
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+    NonApplicationRootPathBuildItem frameworkRoot(VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         String mrp = null;
         if (managementBuildTimeConfig.enabled()) {
             mrp = managementBuildTimeConfig.rootPath();
         }
-        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.rootPath(), httpBuildTimeConfig.nonApplicationRootPath(),
-                mrp);
+        return new NonApplicationRootPathBuildItem(httpBuildTimeConfig.rootPath(),
+                httpBuildTimeConfig.nonApplicationRootPath(), mrp);
     }
 
     @BuildStep
@@ -154,11 +153,8 @@ class VertxHttpProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
-        return AdditionalBeanBuildItem.builder()
-                .setUnremovable()
-                .addBeanClass(CurrentVertxRequest.class)
-                .addBeanClass(CurrentRequestProducer.class)
-                .addBeanClass(HttpCertificateUpdateEventListener.class)
+        return AdditionalBeanBuildItem.builder().setUnremovable().addBeanClass(CurrentVertxRequest.class)
+                .addBeanClass(CurrentRequestProducer.class).addBeanClass(HttpCertificateUpdateEventListener.class)
                 .build();
     }
 
@@ -177,8 +173,8 @@ class VertxHttpProcessor {
     }
 
     /**
-     * Workaround for https://github.com/quarkusio/quarkus/issues/4720 by filtering Vertx multiple instance warning in dev
-     * mode.
+     * Workaround for https://github.com/quarkusio/quarkus/issues/4720 by filtering Vertx multiple instance warning in
+     * dev mode.
      */
     @BuildStep
     void filterMultipleVertxInstancesWarning(LaunchModeBuildItem launchModeBuildItem,
@@ -191,9 +187,10 @@ class VertxHttpProcessor {
 
     @BuildStep
     public void kubernetes(BuildProducer<KubernetesPortBuildItem> kubernetesPorts) {
-        kubernetesPorts.produce(KubernetesPortBuildItem.fromRuntimeConfiguration("http", "quarkus.http.port", 8080, true));
-        kubernetesPorts.produce(
-                KubernetesPortBuildItem.fromRuntimeConfiguration("https", "quarkus.http.ssl-port", 8443, isSslConfigured()));
+        kubernetesPorts
+                .produce(KubernetesPortBuildItem.fromRuntimeConfiguration("http", "quarkus.http.port", 8080, true));
+        kubernetesPorts.produce(KubernetesPortBuildItem.fromRuntimeConfiguration("https", "quarkus.http.ssl-port", 8443,
+                isSslConfigured()));
     }
 
     @BuildStep
@@ -204,9 +201,7 @@ class VertxHttpProcessor {
     }
 
     @BuildStep
-    void notFoundRoutes(
-            List<RouteBuildItem> routes,
-            BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFound) {
+    void notFoundRoutes(List<RouteBuildItem> routes, BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFound) {
         for (RouteBuildItem i : routes) {
             if (i.getNotFoundPageDisplayableEndpoint() != null) {
                 notFound.produce(i.getNotFoundPageDisplayableEndpoint());
@@ -218,32 +213,25 @@ class VertxHttpProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void preinitializeRouter(CoreVertxBuildItem vertx, VertxHttpRecorder recorder,
             BuildProducer<InitialRouterBuildItem> initialRouter, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
-        // We need to initialize the routers that are exposed as synthetic beans in a separate build step to avoid cycles in the build chain
+        // We need to initialize the routers that are exposed as synthetic beans in a separate build step to avoid
+        // cycles in the build chain
         RuntimeValue<Router> httpRouteRouter = recorder.initializeRouter(vertx.getVertx());
         RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter = recorder.createMutinyRouter(httpRouteRouter);
         initialRouter.produce(new InitialRouterBuildItem(httpRouteRouter, mutinyRouter));
 
         // Also note that we need a client proxy to handle the use case where a bean also @Observes Router
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(Router.class)
-                .scope(BuiltinScope.APPLICATION.getInfo())
-                .setRuntimeInit()
-                .runtimeValue(httpRouteRouter).done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(Router.class).scope(BuiltinScope.APPLICATION.getInfo())
+                .setRuntimeInit().runtimeValue(httpRouteRouter).done());
         syntheticBeans.produce(SyntheticBeanBuildItem.configure(io.vertx.mutiny.ext.web.Router.class)
-                .scope(BuiltinScope.APPLICATION.getInfo())
-                .setRuntimeInit()
-                .runtimeValue(mutinyRouter).done());
+                .scope(BuiltinScope.APPLICATION.getInfo()).setRuntimeInit().runtimeValue(mutinyRouter).done());
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder,
-            InitialRouterBuildItem initialRouter,
-            CoreVertxBuildItem vertx,
-            List<RouteBuildItem> routes,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+    VertxWebRouterBuildItem initializeRouter(VertxHttpRecorder recorder, InitialRouterBuildItem initialRouter,
+            CoreVertxBuildItem vertx, List<RouteBuildItem> routes, VertxHttpBuildTimeConfig httpBuildTimeConfig,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            NonApplicationRootPathBuildItem nonApplicationRootPath,
-            ShutdownContextBuildItem shutdown) {
+            NonApplicationRootPathBuildItem nonApplicationRootPath, ShutdownContextBuildItem shutdown) {
 
         RuntimeValue<Router> httpRouteRouter = initialRouter.getHttpRouter();
         RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter = initialRouter.getMutinyRouter();
@@ -284,8 +272,8 @@ class VertxHttpProcessor {
         }
 
         /*
-         * To create mainrouter when `${quarkus.http.root-path}` is not {@literal /}
-         * Refer https://github.com/quarkusio/quarkus/issues/34261
+         * To create mainrouter when `${quarkus.http.root-path}` is not {@literal /} Refer
+         * https://github.com/quarkusio/quarkus/issues/34261
          */
         if (!httpBuildTimeConfig.rootPath().equals("/") && !mainRouterCreated) {
             mainRouter = recorder.initializeRouter(vertx.getVertx());
@@ -297,12 +285,12 @@ class VertxHttpProcessor {
                         nonApplicationRootPath.getNormalizedHttpRootPath());
 
                 redirectRoutes.forEach(route -> recorder.addRoute(httpRouteRouter, route.getRouteFunction(),
-                        recorder.getNonApplicationRedirectHandler(),
-                        route.getType()));
+                        recorder.getNonApplicationRedirectHandler(), route.getType()));
             }
         }
 
-        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter, managementRouter, mutinyRouter);
+        return new VertxWebRouterBuildItem(httpRouteRouter, mainRouter, frameworkRouter, managementRouter,
+                mutinyRouter);
     }
 
     @BuildStep
@@ -313,8 +301,7 @@ class VertxHttpProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createDevUILog(BuildProducer<FooterLogBuildItem> footerLogProducer,
-            VertxHttpRecorder recorder,
+    void createDevUILog(BuildProducer<FooterLogBuildItem> footerLogProducer, VertxHttpRecorder recorder,
             BuildProducer<VertxDevUILogBuildItem> vertxDevUILogBuildItem) {
 
         RuntimeValue<SubmissionPublisher<String>> publisher = recorder.createAccessLogPublisher();
@@ -326,27 +313,23 @@ class VertxHttpProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     ServiceStartBuildItem finalizeRouter(Optional<LoggingDecorateBuildItem> decorateBuildItem,
-            LogBuildTimeConfig logBuildTimeConfig,
-            VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer, CoreVertxBuildItem vertx,
-            LaunchModeBuildItem launchMode,
-            List<DefaultRouteBuildItem> defaultRoutes,
-            List<FilterBuildItem> filters,
-            List<ManagementInterfaceFilterBuildItem> managementInterfacefilters,
-            VertxWebRouterBuildItem httpRouteRouter,
-            HttpRootPathBuildItem httpRootPathBuildItem,
+            LogBuildTimeConfig logBuildTimeConfig, VertxHttpRecorder recorder, BeanContainerBuildItem beanContainer,
+            CoreVertxBuildItem vertx, LaunchModeBuildItem launchMode, List<DefaultRouteBuildItem> defaultRoutes,
+            List<FilterBuildItem> filters, List<ManagementInterfaceFilterBuildItem> managementInterfacefilters,
+            VertxWebRouterBuildItem httpRouteRouter, HttpRootPathBuildItem httpRootPathBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems,
-            BodyHandlerBuildItem bodyHandlerBuildItem,
+            List<RequireBodyHandlerBuildItem> requireBodyHandlerBuildItems, BodyHandlerBuildItem bodyHandlerBuildItem,
             List<ErrorPageActionsBuildItem> errorPageActionsBuildItems,
             BuildProducer<ShutdownListenerBuildItem> shutdownListenerBuildItemBuildProducer,
-            ShutdownConfig shutdownConfig,
-            LiveReloadConfig lrc,
-            CoreVertxBuildItem core, // Injected to be sure that Vert.x has been produced before calling this method.
-            ExecutorBuildItem executorBuildItem,
-            TlsRegistryBuildItem tlsRegistryBuildItem, // Injected to be sure that the TLS registry has been produced before calling this method.
-            Optional<VertxDevUILogBuildItem> vertxDevUILogBuildItem)
-            throws BuildException {
+            ShutdownConfig shutdownConfig, LiveReloadConfig lrc, CoreVertxBuildItem core, // Injected to be sure that
+            // Vert.x has been produced
+            // before calling this method.
+            ExecutorBuildItem executorBuildItem, TlsRegistryBuildItem tlsRegistryBuildItem, // Injected to be sure that
+            // the TLS registry has been
+            // produced before calling
+            // this method.
+            Optional<VertxDevUILogBuildItem> vertxDevUILogBuildItem) throws BuildException {
 
         Optional<DefaultRouteBuildItem> defaultRoute;
         if (defaultRoutes == null || defaultRoutes.isEmpty()) {
@@ -363,13 +346,12 @@ class VertxHttpProcessor {
         GracefulShutdownFilter gracefulShutdownFilter = recorder.createGracefulShutdownHandler();
         shutdownListenerBuildItemBuildProducer.produce(new ShutdownListenerBuildItem(gracefulShutdownFilter));
 
-        List<Filter> listOfFilters = filters.stream()
-                .filter(f -> f.getHandler() != null)
-                .map(FilterBuildItem::toFilter).collect(Collectors.toList());
+        List<Filter> listOfFilters = filters.stream().filter(f -> f.getHandler() != null).map(FilterBuildItem::toFilter)
+                .collect(Collectors.toList());
 
         List<Filter> listOfManagementInterfaceFilters = managementInterfacefilters.stream()
-                .filter(f -> f.getHandler() != null)
-                .map(ManagementInterfaceFilterBuildItem::toFilter).collect(Collectors.toList());
+                .filter(f -> f.getHandler() != null).map(ManagementInterfaceFilterBuildItem::toFilter)
+                .collect(Collectors.toList());
 
         Optional<RuntimeValue<Router>> mainRouter = httpRouteRouter.getMainRouter() != null
                 ? Optional.of(httpRouteRouter.getMainRouter())
@@ -378,8 +360,7 @@ class VertxHttpProcessor {
         if (httpRouteRouter.getFrameworkRouter() != null) {
             if (nonApplicationRootPathBuildItem.isAttachedToMainRouter()) {
                 // Mount nested framework router
-                recorder.mountFrameworkRouter(httpRouteRouter.getHttpRouter(),
-                        httpRouteRouter.getFrameworkRouter(),
+                recorder.mountFrameworkRouter(httpRouteRouter.getHttpRouter(), httpRouteRouter.getFrameworkRouter(),
                         nonApplicationRootPathBuildItem.getVertxRouterPath());
             } else {
                 // Create main router, not mounted under application router
@@ -412,21 +393,14 @@ class VertxHttpProcessor {
         }
 
         recorder.finalizeRouter(beanContainer.getValue(),
-                defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null),
-                listOfFilters, listOfManagementInterfaceFilters,
-                vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
+                defaultRoute.map(DefaultRouteBuildItem::getRoute).orElse(null), listOfFilters,
+                listOfManagementInterfaceFilters, vertx.getVertx(), lrc, mainRouter, httpRouteRouter.getHttpRouter(),
                 httpRouteRouter.getMutinyRouter(), httpRouteRouter.getFrameworkRouter(),
-                httpRouteRouter.getManagementRouter(),
-                httpRootPathBuildItem.getRootPath(),
-                nonApplicationRootPathBuildItem.getNonApplicationRootPath(),
-                launchMode.getLaunchMode(),
+                httpRouteRouter.getManagementRouter(), httpRootPathBuildItem.getRootPath(),
+                nonApplicationRootPathBuildItem.getNonApplicationRootPath(), launchMode.getLaunchMode(),
                 getBodyHandlerRequiredConditions(requireBodyHandlerBuildItems), bodyHandlerBuildItem.getHandler(),
-                gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy(),
-                logBuildTimeConfig,
-                srcMainJava,
-                knowClasses,
-                combinedActions,
-                publisher);
+                gracefulShutdownFilter, shutdownConfig, executorBuildItem.getExecutorProxy(), logBuildTimeConfig,
+                srcMainJava, knowClasses, combinedActions, publisher);
 
         return new ServiceStartBuildItem("vertx-http");
     }
@@ -438,31 +412,23 @@ class VertxHttpProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void openSocket(ApplicationStartBuildItem start,
-            LaunchModeBuildItem launchMode,
-            CoreVertxBuildItem vertx,
-            ShutdownContextBuildItem shutdown,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            Optional<RequireVirtualHttpBuildItem> requireVirtual,
-            Optional<RequireSocketHttpBuildItem> requireSocket,
-            EventLoopCountBuildItem eventLoopCount,
-            List<WebsocketSubProtocolsBuildItem> websocketSubProtocols,
-            Capabilities capabilities,
+    void openSocket(ApplicationStartBuildItem start, LaunchModeBuildItem launchMode, CoreVertxBuildItem vertx,
+            ShutdownContextBuildItem shutdown, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, Optional<RequireVirtualHttpBuildItem> requireVirtual,
+            Optional<RequireSocketHttpBuildItem> requireSocket, EventLoopCountBuildItem eventLoopCount,
+            List<WebsocketSubProtocolsBuildItem> websocketSubProtocols, Capabilities capabilities,
             VertxHttpRecorder recorder) throws IOException {
         boolean startVirtual = requireVirtual.isPresent() || httpBuildTimeConfig.virtual();
         if (startVirtual) {
-            reflectiveClass
-                    .produce(ReflectiveClassBuildItem.builder(VirtualServerChannel.class).reason(getClass().getName()).build());
+            reflectiveClass.produce(
+                    ReflectiveClassBuildItem.builder(VirtualServerChannel.class).reason(getClass().getName()).build());
         }
-        boolean startSocket = requireSocket.isPresent() ||
-                ((!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
+        boolean startSocket = requireSocket.isPresent()
+                || ((!startVirtual || launchMode.getLaunchMode() != LaunchMode.NORMAL)
                         && (requireVirtual.isEmpty() || !requireVirtual.get().isAlwaysVirtual()));
-        recorder.startServer(vertx.getVertx(), shutdown,
-                launchMode.getLaunchMode(), startVirtual, startSocket,
+        recorder.startServer(vertx.getVertx(), shutdown, launchMode.getLaunchMode(), startVirtual, startSocket,
                 eventLoopCount.getEventLoopCount(),
-                websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols())
-                        .collect(Collectors.toList()),
+                websocketSubProtocols.stream().map(bi -> bi.getWebsocketSubProtocols()).collect(Collectors.toList()),
                 launchMode.isAuxiliaryApplication(), !capabilities.isPresent(Capability.VERTX_WEBSOCKETS));
     }
 
@@ -477,15 +443,16 @@ class VertxHttpProcessor {
      * Register the {@link ExchangeAttributeBuilder} services for native image consumption
      *
      * @param exchangeAttributeBuilderService
+     *
      * @throws BuildException
      */
     @BuildStep
-    void registerExchangeAttributeBuilders(final BuildProducer<ServiceProviderBuildItem> exchangeAttributeBuilderService)
-            throws BuildException {
+    void registerExchangeAttributeBuilders(
+            final BuildProducer<ServiceProviderBuildItem> exchangeAttributeBuilderService) throws BuildException {
         // get hold of the META-INF/services/io.quarkus.vertx.http.runtime.attribute.ExchangeAttributeBuilder
         // from within the jar containing the ExchangeAttributeBuilder class
-        final List<ClassPathElement> elements = QuarkusClassLoader.getElements(META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER,
-                false);
+        final List<ClassPathElement> elements = QuarkusClassLoader
+                .getElements(META_INF_SERVICES_EXCHANGE_ATTRIBUTE_BUILDER, false);
         if (elements.isEmpty()) {
             logger.debug("Skipping registration of service providers for " + ExchangeAttributeBuilder.class);
             return;
@@ -497,7 +464,8 @@ class VertxHttpProcessor {
                         logger.debug("Skipping registration of service providers for " + ExchangeAttributeBuilder.class
                                 + " since no service descriptor file found");
                     } else {
-                        // we register all the listed providers since the access log configuration is a runtime construct
+                        // we register all the listed providers since the access log configuration is a runtime
+                        // construct
                         // and we won't know at build time which attributes the user application will choose
                         final ServiceProviderBuildItem serviceProviderBuildItem;
                         try {
@@ -515,9 +483,8 @@ class VertxHttpProcessor {
     }
 
     /**
-     * This method will return true if:
-     * <1> "quarkus.http.insecure-requests" is not explicitly disabled
-     * <2> any of the http SSL runtime properties are set at build time
+     * This method will return true if: <1> "quarkus.http.insecure-requests" is not explicitly disabled <2> any of the
+     * http SSL runtime properties are set at build time
      * <p>
      * If any of the above rules applied, the port "https" will be generated as part of the Kubernetes resources.
      */
@@ -531,8 +498,7 @@ class VertxHttpProcessor {
         }
 
         for (String sslProperty : HTTP_SSL_PROPERTIES) {
-            Optional<List<String>> property = config.getOptionalValues(HTTP_SSL_PREFIX + sslProperty,
-                    String.class);
+            Optional<List<String>> property = config.getOptionalValues(HTTP_SSL_PREFIX + sslProperty, String.class);
             if (property.isPresent()) {
                 return true;
             }

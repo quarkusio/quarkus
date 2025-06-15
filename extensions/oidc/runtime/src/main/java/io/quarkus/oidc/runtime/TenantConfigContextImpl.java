@@ -70,8 +70,7 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         this.ready = ready;
 
         boolean isService = OidcUtils.isServiceApp(config);
-        stateCookieEncryptionKey = !isService && providerIsNoNull(provider) ? createStateSecretKey(config)
-                : null;
+        stateCookieEncryptionKey = !isService && providerIsNoNull(provider) ? createStateSecretKey(config) : null;
         sessionCookieEncryptionKey = !isService && providerIsNoNull(provider)
                 ? createTokenEncSecretKey(config, provider)
                 : null;
@@ -204,7 +203,8 @@ final class TenantConfigContextImpl implements TenantConfigContext {
                     }
                     return OidcUtils.createSecretKeyFromDigest(secretBytes);
                 } else if (provider.client.getClientJwtKey() instanceof PrivateKey) {
-                    return OidcUtils.createSecretKeyFromDigest(((PrivateKey) provider.client.getClientJwtKey()).getEncoded());
+                    return OidcUtils
+                            .createSecretKeyFromDigest(((PrivateKey) provider.client.getClientJwtKey()).getEncoded());
                 }
 
                 LOG.warn(
@@ -281,7 +281,8 @@ final class TenantConfigContextImpl implements TenantConfigContext {
         return tokenDecryptionKey;
     }
 
-    private static Map<Redirect.Location, List<OidcRedirectFilter>> getRedirectFiltersMap(List<OidcRedirectFilter> filters) {
+    private static Map<Redirect.Location, List<OidcRedirectFilter>> getRedirectFiltersMap(
+            List<OidcRedirectFilter> filters) {
         Map<Redirect.Location, List<OidcRedirectFilter>> map = new HashMap<>();
         for (OidcRedirectFilter filter : filters) {
             Redirect redirect = ClientProxy.unwrap(filter).getClass().getAnnotation(Redirect.class);

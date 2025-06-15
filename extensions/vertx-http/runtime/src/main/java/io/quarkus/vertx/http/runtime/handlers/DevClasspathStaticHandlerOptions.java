@@ -28,8 +28,7 @@ public record DevClasspathStaticHandlerOptions(VertxHttpBuildTimeConfig httpBuil
         }
 
         public DevClasspathStaticHandlerOptions build() {
-            return new DevClasspathStaticHandlerOptions(this.httpBuildTimeConfig, this.indexPage,
-                    this.contentEncoding);
+            return new DevClasspathStaticHandlerOptions(this.httpBuildTimeConfig, this.indexPage, this.contentEncoding);
         }
 
     }

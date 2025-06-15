@@ -23,7 +23,8 @@ public class ReflectiveBeanClassesProcessor {
             if (annotation != null) {
                 Type[] targets = annotation.value("targets") != null ? annotation.value("targets").asClassArray()
                         : new Type[] {};
-                String[] classNames = annotation.value("classNames") != null ? annotation.value("classNames").asStringArray()
+                String[] classNames = annotation.value("classNames") != null
+                        ? annotation.value("classNames").asStringArray()
                         : new String[] {};
                 if (targets.length == 0 && classNames.length == 0) {
                     reflectiveBeanClasses.produce(new ReflectiveBeanClassBuildItem(beanClass));

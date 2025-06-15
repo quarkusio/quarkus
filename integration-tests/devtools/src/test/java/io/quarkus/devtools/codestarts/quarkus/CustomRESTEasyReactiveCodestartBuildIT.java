@@ -15,12 +15,9 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 class CustomRESTEasyReactiveCodestartBuildIT {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("rest")
-            .languages(JAVA, KOTLIN)
-            .putData(REST_CODESTART_RESOURCE_CLASS_NAME, "RESTEasyEndpoint")
-            .putData(REST_CODESTART_RESOURCE_PATH, "/resteasy")
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("rest")
+            .languages(JAVA, KOTLIN).putData(REST_CODESTART_RESOURCE_CLASS_NAME, "RESTEasyEndpoint")
+            .putData(REST_CODESTART_RESOURCE_PATH, "/resteasy").build();
 
     @Test
     void testBuild() throws IOException {

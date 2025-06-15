@@ -57,8 +57,8 @@ final class Execution {
         executorBuilder.setQueueLimited(false);
         executorBuilder.setCorePoolSize(8).setMaximumPoolSize(1024);
         executorBuilder.setExceptionHandler(JBossExecutors.loggingExceptionHandler());
-        executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null, "build-%t",
-                JBossExecutors.loggingExceptionHandler(), null));
+        executorBuilder.setThreadFactory(new JBossThreadFactory(new ThreadGroup("build group"), Boolean.FALSE, null,
+                "build-%t", JBossExecutors.loggingExceptionHandler(), null));
         buildTargetName = builder.getBuildTargetName();
         executor = executorBuilder.build();
         lastStepCount.set(builder.getChain().getEndStepCount());
@@ -133,8 +133,7 @@ final class Execution {
 
         long duration = max(0, System.nanoTime() - start);
         metrics.buildFinished(TimeUnit.NANOSECONDS.toMillis(duration));
-        return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics),
-                duration, metrics);
+        return new BuildResult(singles, multis, finalIds, Collections.unmodifiableList(diagnostics), duration, metrics);
     }
 
     EnhancedQueueExecutor getExecutor() {

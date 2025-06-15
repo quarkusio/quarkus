@@ -29,16 +29,17 @@ public class PermissionCheckerInheritanceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     InheritanceSecuredBean securedBean;
 
     @Test
     public void testCheckerOnAbstractParent() {
-        assertSuccess(() -> securedBean.secured_checkerOnParent("parent"), "secured_checkerOnParent", ADMIN_WITH_AUGMENTORS);
-        assertFailureFor(() -> securedBean.secured_checkerOnParent("parent"), ForbiddenException.class, USER_WITH_AUGMENTORS);
+        assertSuccess(() -> securedBean.secured_checkerOnParent("parent"), "secured_checkerOnParent",
+                ADMIN_WITH_AUGMENTORS);
+        assertFailureFor(() -> securedBean.secured_checkerOnParent("parent"), ForbiddenException.class,
+                USER_WITH_AUGMENTORS);
         assertFailureFor(() -> securedBean.secured_checkerOnParent("wrong-value"), ForbiddenException.class,
                 ADMIN_WITH_AUGMENTORS);
     }
@@ -67,8 +68,8 @@ public class PermissionCheckerInheritanceTest {
                 ADMIN_WITH_AUGMENTORS);
         assertFailureFor(() -> securedBean.secured_overloadedParentOne("wrong-value"), ForbiddenException.class,
                 ADMIN_WITH_AUGMENTORS);
-        assertSuccess(() -> securedBean.secured_overloadedParentTwo("overloaded_parent_two"), "secured_overloadedParentTwo",
-                ADMIN_WITH_AUGMENTORS);
+        assertSuccess(() -> securedBean.secured_overloadedParentTwo("overloaded_parent_two"),
+                "secured_overloadedParentTwo", ADMIN_WITH_AUGMENTORS);
         assertFailureFor(() -> securedBean.secured_overloadedParentTwo("wrong-value"), ForbiddenException.class,
                 ADMIN_WITH_AUGMENTORS);
     }

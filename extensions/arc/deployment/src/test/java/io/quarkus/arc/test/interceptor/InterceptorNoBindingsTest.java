@@ -15,8 +15,7 @@ public class InterceptorNoBindingsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InterceptorWithoutBindings.class))
+            .withApplicationRoot((jar) -> jar.addClasses(InterceptorWithoutBindings.class))
             .setExpectedException(DefinitionException.class);
 
     @Test

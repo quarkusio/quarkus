@@ -14,7 +14,8 @@ public final class MSSQLPoolBuildItem extends MultiBuildItem {
 
     private final Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> mssqlPool;
 
-    public MSSQLPoolBuildItem(String dataSourceName, Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> mssqlPool) {
+    public MSSQLPoolBuildItem(String dataSourceName,
+            Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> mssqlPool) {
         this.dataSourceName = dataSourceName;
         this.mssqlPool = mssqlPool;
     }

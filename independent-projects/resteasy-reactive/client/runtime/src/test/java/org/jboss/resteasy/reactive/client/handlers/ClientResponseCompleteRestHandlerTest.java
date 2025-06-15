@@ -104,9 +104,8 @@ class ClientResponseCompleteRestHandlerTest {
 
     private Map<String, Object> readAndParseResponse(Response response) throws JsonProcessingException {
         String responseContent = response.readEntity(String.class);
-        return objectMapper.readValue(responseContent,
-                new TypeReference<>() {
-                });
+        return objectMapper.readValue(responseContent, new TypeReference<>() {
+        });
     }
 
 }

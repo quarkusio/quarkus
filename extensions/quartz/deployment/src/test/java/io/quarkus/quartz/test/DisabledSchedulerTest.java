@@ -24,11 +24,8 @@ public class DisabledSchedulerTest {
     Instance<org.quartz.Scheduler> quartzScheduler;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.enabled=false"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("quarkus.scheduler.enabled=false"), "application.properties"));
 
     @Test
     public void testSchedulerInvocations() throws InterruptedException {

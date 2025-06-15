@@ -29,8 +29,7 @@ public class NonSerializable {
         if (o == null || getClass() != o.getClass())
             return false;
         NonSerializable that = (NonSerializable) o;
-        return count == that.count &&
-                Objects.equals(message, that.message);
+        return count == that.count && Objects.equals(message, that.message);
     }
 
     @Override

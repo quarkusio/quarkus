@@ -60,18 +60,20 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Adds the given attribute to the list of attribute loaded from the document source.
-     * You can pass the list of identifier, being either an attribute name for hashes and JSON or a JSON Path expression
-     * for JSON.
-     * The alias is the optional name used in the result. If it is not provided, the identifier is used. This should be avoided.
+     * Adds the given attribute to the list of attribute loaded from the document source. You can pass the list of
+     * identifier, being either an attribute name for hashes and JSON or a JSON Path expression for JSON. The alias is
+     * the optional name used in the result. If it is not provided, the identifier is used. This should be avoided.
      * <p>
      * Attributes needed for aggregations should be stored as {@code SORTABLE}, where they are available to the
      * aggregation pipeline with very low latency. LOAD hurts the performance of aggregate queries considerably because
      * every processed record needs to execute the equivalent of {@code HMGET} against a Redis key, which when executed
      * over millions of keys, amounts to high processing times.
      *
-     * @param field the field
-     * @param alias the alias (optional but recommended)
+     * @param field
+     *        the field
+     * @param alias
+     *        the alias (optional but recommended)
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs field(String field, String alias) {
@@ -80,16 +82,17 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Adds the given attribute to the list of attribute loaded from the document source.
-     * You can pass the list of identifier, being either an attribute name for hashes and JSON or a JSON Path expression
-     * for JSON.
+     * Adds the given attribute to the list of attribute loaded from the document source. You can pass the list of
+     * identifier, being either an attribute name for hashes and JSON or a JSON Path expression for JSON.
      * <p>
      * Attributes needed for aggregations should be stored as {@code SORTABLE}, where they are available to the
      * aggregation pipeline with very low latency. LOAD hurts the performance of aggregate queries considerably because
      * every processed record needs to execute the equivalent of {@code HMGET} against a Redis key, which when executed
      * over millions of keys, amounts to high processing times.
      *
-     * @param field the field
+     * @param field
+     *        the field
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs field(String field) {
@@ -100,7 +103,9 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     /**
      * Overrides the timeout parameter of the module.
      *
-     * @param timeout the timeout
+     * @param timeout
+     *        the timeout
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs timeout(Duration timeout) {
@@ -109,11 +114,12 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Groups the results in the pipeline based on one or more properties.
-     * Each group should have at least one reducer, a function that handles the group entries, either counting them,
-     * or performing multiple aggregate operations.
+     * Groups the results in the pipeline based on one or more properties. Each group should have at least one reducer,
+     * a function that handles the group entries, either counting them, or performing multiple aggregate operations.
      *
-     * @param groupBy the group by clause
+     * @param groupBy
+     *        the group by clause
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs groupBy(GroupBy groupBy) {
@@ -124,7 +130,9 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     /**
      * Sorts the pipeline up until the point of {@code SORTBY}, using the given property and the ascending order.
      *
-     * @param sortBy the sort by clause
+     * @param sortBy
+     *        the sort by clause
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs sortBy(SortBy sortBy) {
@@ -133,17 +141,19 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Applies a 1-to-1 transformation on one or more properties and either stores the result as a new property down
-     * the pipeline or replaces any property using this transformation.
+     * Applies a 1-to-1 transformation on one or more properties and either stores the result as a new property down the
+     * pipeline or replaces any property using this transformation.
      * <p>
-     * {@code expression} is an expression that can be used to perform arithmetic operations on numeric properties,
-     * or functions that can be applied on properties depending on their types, or any combination thereof.
+     * {@code expression} is an expression that can be used to perform arithmetic operations on numeric properties, or
+     * functions that can be applied on properties depending on their types, or any combination thereof.
      * <p>
-     * For example, APPLY "sqrt(@foo)/log(@bar) + 5" AS baz evaluates this expression dynamically for each record in
-     * the pipeline and store the result as a new property called baz, which can be referenced by further
+     * For example, APPLY "sqrt(@foo)/log(@bar) + 5" AS baz evaluates this expression dynamically for each record in the
+     * pipeline and store the result as a new property called baz, which can be referenced by further
      * APPLY/SORTBY/GROUPBY/REDUCE operations down the pipeline.
      *
-     * @param apply the Apply clause
+     * @param apply
+     *        the Apply clause
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs apply(Apply apply) {
@@ -152,12 +162,14 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Limits the number of results to return just num results starting at index offset (zero-based).
-     * It is much more efficient to use {@code SORTBY … MAX} if you are interested in just limiting the output of a
-     * sort operation.
+     * Limits the number of results to return just num results starting at index offset (zero-based). It is much more
+     * efficient to use {@code SORTBY … MAX} if you are interested in just limiting the output of a sort operation.
      *
-     * @param offset the offset
-     * @param count the count
+     * @param offset
+     *        the offset
+     * @param count
+     *        the count
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs limit(int offset, int count) {
@@ -167,10 +179,12 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Filters the results using predicate expressions relating to values in each result.
-     * They are applied post query and relate to the current state of the pipeline.
+     * Filters the results using predicate expressions relating to values in each result. They are applied post query
+     * and relate to the current state of the pipeline.
      *
-     * @param filter the filter
+     * @param filter
+     *        the filter
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs filter(String filter) {
@@ -179,17 +193,20 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Defines one or more value parameters. Each parameter has a name and a value.
-     * You can reference parameters in the query by a $, followed by the parameter name, for example, $user.
-     * Each such reference in the search query to a parameter name is substituted by the corresponding parameter value.
-     * For example, with parameter definition PARAMS 4 lon 29.69465 lat 34.95126, the expression @loc:[$lon $lat 10 km]
-     * is evaluated to @loc:[29.69465 34.95126 10 km]. You cannot reference parameters in the query string where concrete
-     * values are not allowed, such as in field names, for example, @loc.
+     * Defines one or more value parameters. Each parameter has a name and a value. You can reference parameters in the
+     * query by a $, followed by the parameter name, for example, $user. Each such reference in the search query to a
+     * parameter name is substituted by the corresponding parameter value. For example, with parameter definition PARAMS
+     * 4 lon 29.69465 lat 34.95126, the expression @loc:[$lon $lat 10 km] is evaluated to @loc:[29.69465 34.95126 10
+     * km]. You cannot reference parameters in the query string where concrete values are not allowed, such as in field
+     * names, for example, @loc.
      * <p>
      * To use PARAMS, set DIALECT to 2.
      *
-     * @param name the parameter name
-     * @param value the parameter value
+     * @param name
+     *        the parameter name
+     * @param value
+     *        the parameter value
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs param(String name, Object value) {
@@ -198,10 +215,12 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Selects the dialect version under which to execute the query. If not specified, the query will execute under
-     * the default dialect version set during module initial loading.
+     * Selects the dialect version under which to execute the query. If not specified, the query will execute under the
+     * default dialect version set during module initial loading.
      *
-     * @param version the version
+     * @param version
+     *        the version
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs dialect(int version) {
@@ -222,7 +241,9 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     /**
      * When using a cursor, configure the number of result.
      *
-     * @param count the number of result to fetch in one go.
+     * @param count
+     *        the number of result to fetch in one go.
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs cursorCount(int count) {
@@ -233,7 +254,9 @@ public class AggregateArgs implements RedisCommandExtraArguments {
     /**
      * When using a cursor, configure the max idle duration.
      *
-     * @param maxIdleDuration the max idle duration of the cursor.
+     * @param maxIdleDuration
+     *        the max idle duration of the cursor.
+     *
      * @return the current {@code AggregateArgs}
      */
     public AggregateArgs cursorMaxIdleTime(Duration maxIdleDuration) {
@@ -389,7 +412,9 @@ public class AggregateArgs implements RedisCommandExtraArguments {
         /**
          * Adds a property to the {@code GROUPBY} clause.
          *
-         * @param property the property
+         * @param property
+         *        the property
+         *
          * @return the current {@code GroupBy}
          */
         public GroupBy addProperty(String property) {
@@ -400,9 +425,13 @@ public class AggregateArgs implements RedisCommandExtraArguments {
         /**
          * Adds a reduce function to the {@code GROUPBY} clause.
          *
-         * @param function the name of the function
-         * @param alias the alias used in the returned document
-         * @param args the arguments
+         * @param function
+         *        the name of the function
+         * @param alias
+         *        the alias used in the returned document
+         * @param args
+         *        the arguments
+         *
          * @return the current {@code GroupBy}
          */
         public GroupBy addReduceFunction(String function, String alias, Object... args) {
@@ -413,8 +442,11 @@ public class AggregateArgs implements RedisCommandExtraArguments {
         /**
          * Adds a reduce function to the {@code GROUPBY} clause.
          *
-         * @param function the name of the function
-         * @param args the arguments
+         * @param function
+         *        the name of the function
+         * @param args
+         *        the arguments
+         *
          * @return the current {@code GroupBy}
          */
         public GroupBy addReduceFunction(String function, Object... args) {

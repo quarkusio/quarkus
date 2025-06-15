@@ -19,8 +19,7 @@ public class ExcludePersistenceXmlConfigUsingApplicationPropertiesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml"))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.persistence-xml.ignore", "true");

@@ -97,8 +97,8 @@ public interface KubernetesClientBuildConfig {
     Optional<Duration> watchReconnectInterval();
 
     /**
-     * Maximum reconnect attempts in case of watch failure
-     * By default there is no limit to the number of reconnect attempts
+     * Maximum reconnect attempts in case of watch failure By default there is no limit to the number of reconnect
+     * attempts
      */
     OptionalInt watchReconnectLimit();
 
@@ -148,9 +148,9 @@ public interface KubernetesClientBuildConfig {
     Optional<List<String>> noProxy();
 
     /**
-     * Enable the generation of the RBAC manifests. If enabled and no other role binding are provided using the properties
-     * `quarkus.kubernetes.rbac.`, it will generate a default role binding using the role "view" and the application
-     * service account.
+     * Enable the generation of the RBAC manifests. If enabled and no other role binding are provided using the
+     * properties `quarkus.kubernetes.rbac.`, it will generate a default role binding using the role "view" and the
+     * application service account.
      */
     @WithDefault("true")
     boolean generateRbac();

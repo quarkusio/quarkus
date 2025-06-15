@@ -45,7 +45,8 @@ public class SchedulerJsonRPCService {
     private final Instance<Scheduler> scheduler;
     private final Instance<Vertx> vertx;
 
-    public SchedulerJsonRPCService(Instance<SchedulerContext> context, Instance<Scheduler> scheduler, Instance<Vertx> vertx) {
+    public SchedulerJsonRPCService(Instance<SchedulerContext> context, Instance<Scheduler> scheduler,
+            Instance<Vertx> vertx) {
         runningStatus = BroadcastProcessor.create();
         log = BroadcastProcessor.create();
         this.context = context;
@@ -181,8 +182,7 @@ public class SchedulerJsonRPCService {
                 Context vdc = VertxContext.getOrCreateDuplicatedContext(vertx.get());
                 VertxContextSafetyToggle.setContextSafe(vdc, true);
                 try {
-                    ScheduledInvoker invoker = c
-                            .createInvoker(metadata.getInvokerClassName());
+                    ScheduledInvoker invoker = c.createInvoker(metadata.getInvokerClassName());
                     if (invoker.isBlocking()) {
                         vdc.executeBlocking(() -> {
                             try {
@@ -201,10 +201,7 @@ public class SchedulerJsonRPCService {
                     }
                     LOG.infof("Invoked scheduled method %s via Dev UI", methodDescription);
                 } catch (Exception e) {
-                    LOG.error(
-                            "Unable to invoke a @Scheduled method: "
-                                    + metadata.getMethodDescription(),
-                            e);
+                    LOG.error("Unable to invoke a @Scheduled method: " + metadata.getMethodDescription(), e);
                 }
                 return newSuccess("Invoked scheduled method " + methodDescription + " via Dev UI");
             }
@@ -213,27 +210,19 @@ public class SchedulerJsonRPCService {
     }
 
     private JsonObject newSuccess(String message) {
-        return new JsonObject()
-                .put("success", true)
-                .put("message", message);
+        return new JsonObject().put("success", true).put("message", message);
     }
 
     private JsonObject newFailure(String message) {
-        return new JsonObject()
-                .put("success", false)
-                .put("message", message);
+        return new JsonObject().put("success", false).put("message", message);
     }
 
     private JsonObject newRunningStatus(String id, boolean running) {
-        return new JsonObject()
-                .put("id", id)
-                .put("running", running);
+        return new JsonObject().put("id", id).put("running", running);
     }
 
     private JsonObject newExecutionLog(Trigger trigger, boolean success, String message, boolean userDefinedIdentity) {
-        JsonObject log = new JsonObject()
-                .put("timestamp", LocalDateTime.now().toString())
-                .put("success", success);
+        JsonObject log = new JsonObject().put("timestamp", LocalDateTime.now().toString()).put("success", success);
         String description = trigger.getMethodDescription();
         if (description != null) {
             log.put("triggerMethodDescription", description);

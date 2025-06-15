@@ -26,13 +26,12 @@ public class AutoProducerMethodsProcessor {
     private static final Logger LOGGER = Logger.getLogger(AutoProducerMethodsProcessor.class);
 
     /**
-     * Register an annotation transformer that automatically adds {@link Produces} to all non-void methods that are annotated
-     * with a qualifier or a scope annotation.
+     * Register an annotation transformer that automatically adds {@link Produces} to all non-void methods that are
+     * annotated with a qualifier or a scope annotation.
      */
     @BuildStep
     void annotationTransformer(ArcConfig config, BeanArchiveIndexBuildItem beanArchiveIndex,
-            CustomScopeAnnotationsBuildItem scopes,
-            List<StereotypeRegistrarBuildItem> stereotypeRegistrars,
+            CustomScopeAnnotationsBuildItem scopes, List<StereotypeRegistrarBuildItem> stereotypeRegistrars,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) throws Exception {
         if (!config.autoProducerMethods()) {
             return;
@@ -66,7 +65,8 @@ public class AutoProducerMethodsProcessor {
                     // Skip void methods
                     return;
                 }
-                Set<AnnotationInstance> methodAnnotations = Annotations.getAnnotations(Kind.METHOD, ctx.getAnnotations());
+                Set<AnnotationInstance> methodAnnotations = Annotations.getAnnotations(Kind.METHOD,
+                        ctx.getAnnotations());
                 if (methodAnnotations.isEmpty() || contains(methodAnnotations, DotNames.PRODUCES)
                         || contains(methodAnnotations, DotNames.INJECT)) {
                     // Skip methods with no annotations, initializers and methods already annotated with @Produces

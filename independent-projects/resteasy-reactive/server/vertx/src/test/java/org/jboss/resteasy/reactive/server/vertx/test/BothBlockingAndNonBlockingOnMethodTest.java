@@ -19,14 +19,12 @@ import io.smallrye.common.annotation.NonBlocking;
 public class BothBlockingAndNonBlockingOnMethodTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class);
-                }
-            }).setExpectedException(DeploymentException.class);
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class);
+        }
+    }).setExpectedException(DeploymentException.class);
 
     @Test
     public void test() {

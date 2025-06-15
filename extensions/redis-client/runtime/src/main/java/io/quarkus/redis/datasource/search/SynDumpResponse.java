@@ -18,7 +18,9 @@ public class SynDumpResponse {
     /**
      * Gets the list of synonyms.
      *
-     * @param word the group name
+     * @param word
+     *        the group name
+     *
      * @return the list
      */
     public List<String> synonym(String word) {

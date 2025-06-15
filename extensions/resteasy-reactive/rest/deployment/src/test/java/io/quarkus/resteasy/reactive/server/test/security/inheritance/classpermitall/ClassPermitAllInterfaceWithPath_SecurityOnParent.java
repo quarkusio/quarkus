@@ -35,7 +35,8 @@ public interface ClassPermitAllInterfaceWithPath_SecurityOnParent {
     String classPathOnInterface_ImplOnParent_InterfaceMethodWithPath_ClassPermitAll(JsonObject array);
 
     @POST
-    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH
+            + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
     String classPathOnInterface_ImplOnParent_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array);
 
 }

@@ -12,13 +12,10 @@ import io.smallrye.config.ConfigValidationException;
 public class InvalidConfigInNameTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .assertException(t -> {
-                assertTrue(t instanceof ConfigValidationException);
-                assertTrue(t.getMessage().contains("NoSuchElementException"));
-            })
-            .withEmptyApplication()
-            .overrideConfigKey("quarkus.container-image.build", "true")
+    static QuarkusUnitTest runner = new QuarkusUnitTest().assertException(t -> {
+        assertTrue(t instanceof ConfigValidationException);
+        assertTrue(t.getMessage().contains("NoSuchElementException"));
+    }).withEmptyApplication().overrideConfigKey("quarkus.container-image.build", "true")
             .overrideConfigKey("quarkus.container-image.name", "test-${foo.bar}");
 
     @Test

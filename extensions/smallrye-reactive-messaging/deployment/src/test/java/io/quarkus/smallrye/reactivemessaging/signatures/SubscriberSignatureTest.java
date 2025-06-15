@@ -29,13 +29,9 @@ public class SubscriberSignatureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingSubscriberOfPayload.class,
-                            BeanUsingSubscriberOfMessage.class,
-                            BeanUsingConsumerMethod.class,
-                            BeanConsumingMessages.class,
-                            BeanConsumingPayloads.class,
-                            Spy.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanUsingSubscriberOfPayload.class,
+                    BeanUsingSubscriberOfMessage.class, BeanUsingConsumerMethod.class, BeanConsumingMessages.class,
+                    BeanConsumingPayloads.class, Spy.class));
 
     @Inject
     BeanUsingSubscriberOfPayload beanUsingSubscriberOfPayload;

@@ -15,10 +15,8 @@ public class MSSQLPoolProducerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-default-datasource.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingBareMSSQLClient.class)
-                    .addClasses(BeanUsingMutinyMSSQLClient.class));
+            .withConfigurationResource("application-default-datasource.properties").withApplicationRoot((jar) -> jar
+                    .addClasses(BeanUsingBareMSSQLClient.class).addClasses(BeanUsingMutinyMSSQLClient.class));
 
     @Inject
     BeanUsingBareMSSQLClient beanUsingBare;
@@ -28,10 +26,7 @@ public class MSSQLPoolProducerTest {
 
     @Test
     public void testVertxInjection() {
-        beanUsingBare.verify()
-                .thenCompose(v -> beanUsingMutiny.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingBare.verify().thenCompose(v -> beanUsingMutiny.verify()).toCompletableFuture().join();
     }
 
     @ApplicationScoped
@@ -52,8 +47,7 @@ public class MSSQLPoolProducerTest {
         io.vertx.mutiny.sqlclient.Pool mssqlClient;
 
         public CompletionStage<Void> verify() {
-            return mssqlClient.query("SELECT 1").execute()
-                    .onItem().ignore().andContinueWithNull()
+            return mssqlClient.query("SELECT 1").execute().onItem().ignore().andContinueWithNull()
                     .subscribeAsCompletionStage();
         }
     }

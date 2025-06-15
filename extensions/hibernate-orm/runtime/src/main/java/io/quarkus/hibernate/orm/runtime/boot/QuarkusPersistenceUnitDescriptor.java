@@ -34,8 +34,7 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     private final boolean reactive;
 
     public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
-            PersistenceUnitTransactionType persistenceUnitTransactionType,
-            List<String> managedClassNames,
+            PersistenceUnitTransactionType persistenceUnitTransactionType, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
         this.configurationName = configurationName;
@@ -50,15 +49,13 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     }
 
     /**
-     * @deprecated Do not use directly: this should be considered an internal constructor,
-     *             as we're trusting all parameters.
-     *             Useful for serialization to bytecode (which requires the constructor to be public).
+     * @deprecated Do not use directly: this should be considered an internal constructor, as we're trusting all
+     *             parameters. Useful for serialization to bytecode (which requires the constructor to be public).
      */
     @Deprecated
     @RecordableConstructor
-    public QuarkusPersistenceUnitDescriptor(String name, String configurationName,
-            String providerClassName, boolean useQuotedIdentifiers,
-            PersistenceUnitTransactionType persistenceUnitTransactionType,
+    public QuarkusPersistenceUnitDescriptor(String name, String configurationName, String providerClassName,
+            boolean useQuotedIdentifiers, PersistenceUnitTransactionType persistenceUnitTransactionType,
             ValidationMode validationMode, SharedCacheMode sharedCacheMode, List<String> managedClassNames,
             Properties properties, boolean reactive) {
         this.name = name;
@@ -74,12 +71,16 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
     }
 
     /**
-     * Converts a generic PersistenceUnitDescriptor into one of this specific type, and validates that
-     * several options that Quarkus does not support are not set.
+     * Converts a generic PersistenceUnitDescriptor into one of this specific type, and validates that several options
+     * that Quarkus does not support are not set.
      *
-     * @param toClone the descriptor to clone
+     * @param toClone
+     *        the descriptor to clone
+     *
      * @return a new instance of LightPersistenceXmlDescriptor
-     * @throws UnsupportedOperationException on unsupported configurations
+     *
+     * @throws UnsupportedOperationException
+     *         on unsupported configurations
      */
     @SuppressWarnings("deprecated")
     public static QuarkusPersistenceUnitDescriptor validateAndReadFrom(PersistenceUnitDescriptor toClone) {
@@ -88,8 +89,8 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
         }
         Objects.requireNonNull(toClone);
         verifyIgnoredFields(toClone);
-        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(), toClone.getProviderClassName(),
-                toClone.isUseQuotedIdentifiers(),
+        return new QuarkusPersistenceUnitDescriptor(toClone.getName(), toClone.getName(),
+                toClone.getProviderClassName(), toClone.isUseQuotedIdentifiers(),
                 toClone.getPersistenceUnitTransactionType(), toClone.getValidationMode(), toClone.getSharedCacheMode(),
                 Collections.unmodifiableList(toClone.getManagedClassNames()), toClone.getProperties(), false);
     }
@@ -223,18 +224,12 @@ public final class QuarkusPersistenceUnitDescriptor implements PersistenceUnitDe
 
     @Override
     public String toString() {
-        return "QuarkusPersistenceUnitDescriptor{" +
-                "name='" + name + '\'' +
-                ", configurationName='" + configurationName + '\'' +
-                ", providerClassName='" + providerClassName + '\'' +
-                ", useQuotedIdentifiers=" + useQuotedIdentifiers +
-                ", transactionType=" + persistenceUnitTransactionType +
-                ", validationMode=" + validationMode +
-                ", sharedCacheMode=" + sharedCacheMode +
-                ", managedClassNames=" + managedClassNames +
-                ", properties=" + properties +
-                ", isReactive=" + reactive +
-                '}';
+        return "QuarkusPersistenceUnitDescriptor{" + "name='" + name + '\'' + ", configurationName='"
+                + configurationName + '\'' + ", providerClassName='" + providerClassName + '\''
+                + ", useQuotedIdentifiers=" + useQuotedIdentifiers + ", transactionType="
+                + persistenceUnitTransactionType + ", validationMode=" + validationMode + ", sharedCacheMode="
+                + sharedCacheMode + ", managedClassNames=" + managedClassNames + ", properties=" + properties
+                + ", isReactive=" + reactive + '}';
     }
 
     @Override

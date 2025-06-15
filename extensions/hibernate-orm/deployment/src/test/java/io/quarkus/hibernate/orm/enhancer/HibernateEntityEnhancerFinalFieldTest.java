@@ -24,8 +24,8 @@ import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that final field write access is not replaced with a call to an internal Hibernate ORM method
- * (since writes to final fields can only occur from constructors).
+ * Checks that final field write access is not replaced with a call to an internal Hibernate ORM method (since writes to
+ * final fields can only occur from constructors).
  * <p>
  * See https://github.com/quarkusio/quarkus/issues/20186
  */
@@ -33,13 +33,10 @@ public class HibernateEntityEnhancerFinalFieldTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
-                    .addClasses(
-                            EntityWithFinalField.class,
-                            EntityWithEmbeddedIdWithFinalField.class, EntityWithEmbeddedIdWithFinalField.EmbeddableId.class,
-                            EntityWithEmbeddedNonIdWithFinalField.class,
-                            EntityWithEmbeddedNonIdWithFinalField.EmbeddableNonId.class))
+            .withApplicationRoot((jar) -> jar.addClass(TransactionTestUtils.class).addClasses(
+                    EntityWithFinalField.class, EntityWithEmbeddedIdWithFinalField.class,
+                    EntityWithEmbeddedIdWithFinalField.EmbeddableId.class, EntityWithEmbeddedNonIdWithFinalField.class,
+                    EntityWithEmbeddedNonIdWithFinalField.EmbeddableNonId.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -99,12 +96,12 @@ public class HibernateEntityEnhancerFinalFieldTest {
         // This is special because in this particular test,
         // we know Hibernate ORM *has to* instantiate the EmbeddableIdType itself:
         // it cannot reuse the ID we passed.
-        // And since the EmbeddableIdType has a final field, instantiation will not be able to use a no-arg constructor...
+        // And since the EmbeddableIdType has a final field, instantiation will not be able to use a no-arg
+        // constructor...
         inTransaction(() -> {
             EntityWithEmbeddedIdWithFinalField entity = em
                     .createQuery("from embidwithfinal e where e.name = :name", EntityWithEmbeddedIdWithFinalField.class)
-                    .setParameter("name", persistedEntity.getName())
-                    .getSingleResult();
+                    .setParameter("name", persistedEntity.getName()).getSingleResult();
             assertThat(entity).extracting(EntityWithEmbeddedIdWithFinalField::getId).extracting(i -> i.id)
                     .isEqualTo(persistedEntity.getId().id);
         });
@@ -278,8 +275,7 @@ public class HibernateEntityEnhancerFinalFieldTest {
             return embedded;
         }
 
-        public void setEmbedded(
-                EmbeddableNonId embedded) {
+        public void setEmbedded(EmbeddableNonId embedded) {
             this.embedded = embedded;
         }
 

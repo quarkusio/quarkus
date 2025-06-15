@@ -28,7 +28,8 @@ public class ClassDenyAllBaseResourceWithoutPathImplInterface_SecurityOnBase
     @RolesAllowed("admin")
     @Override
     public String classPathOnInterface_ImplOnBase_ImplMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array) {
-        return CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
+        return CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + IMPL_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
     }
 
     @PermitAll
@@ -44,14 +45,18 @@ public class ClassDenyAllBaseResourceWithoutPathImplInterface_SecurityOnBase
 
     @RolesAllowed("admin")
     @Override
-    public String classPathOnInterface_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array) {
-        return CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
+    public String classPathOnInterface_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodRolesAllowed(
+            JsonObject array) {
+        return CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
     }
 
     @PermitAll
     @Override
-    public String classPathOnInterface_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
+    public String classPathOnInterface_ImplOnBase_InterfaceMethodWithPath_ClassDenyAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_INTERFACE + IMPL_ON_BASE + INTERFACE_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @Override
@@ -63,8 +68,8 @@ public class ClassDenyAllBaseResourceWithoutPathImplInterface_SecurityOnBase
     @PermitAll
     @Override
     public ClassDenyAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_ClassDenyAllMethodPermitAll() {
-        return new ClassDenyAllSubResourceWithoutPath(
-                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH);
+        return new ClassDenyAllSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
+                + SUB_IMPL_ON_BASE + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH);
     }
 
     @RolesAllowed("admin")

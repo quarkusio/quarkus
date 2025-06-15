@@ -125,7 +125,8 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
         final ExtensionCatalog catalog = extensionsCatalog(limitExtensionsToImportedPlatforms, log);
 
         final Path projectDirPath = getProject().getProjectDir().toPath();
-        final Path rootProjectPath = getProject().getParent() != null ? getProject().getRootProject().getProjectDir().toPath()
+        final Path rootProjectPath = getProject().getParent() != null
+                ? getProject().getRootProject().getProjectDir().toPath()
                 : projectDirPath;
         final BuildFile buildFile;
         if (Files.exists(rootProjectPath.resolve("settings.gradle.kts"))
@@ -139,7 +140,8 @@ public abstract class QuarkusPlatformTask extends QuarkusTask {
                     "Mixed DSL is not supported. Both build and settings file need to use either Kotlin or Groovy DSL");
         }
         final JavaVersion javaVersion = resolveProjectJavaVersion();
-        return QuarkusProjectHelper.getProject(getProject().getProjectDir().toPath(), catalog, buildFile, javaVersion, log);
+        return QuarkusProjectHelper.getProject(getProject().getProjectDir().toPath(), catalog, buildFile, javaVersion,
+                log);
     }
 
     private JavaVersion resolveProjectJavaVersion() {

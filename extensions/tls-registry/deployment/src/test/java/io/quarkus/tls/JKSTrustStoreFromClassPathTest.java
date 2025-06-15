@@ -21,8 +21,8 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM, Format.PKCS12 })
-})
+        @Certificate(name = "test-formats", password = "password", formats = { Format.JKS, Format.PEM,
+                Format.PKCS12 }) })
 public class JKSTrustStoreFromClassPathTest {
 
     private static final String configuration = """
@@ -31,8 +31,8 @@ public class JKSTrustStoreFromClassPathTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource(new File("target/certs/test-formats-truststore.jks"), "/certs/truststore.jks")
                     .add(new StringAsset(configuration), "application.properties"));
 
@@ -46,8 +46,7 @@ public class JKSTrustStoreFromClassPathTest {
         assertThat(def.getTrustStoreOptions()).isNotNull();
         assertThat(def.getTrustStore()).isNotNull();
 
-        X509Certificate certificate = (X509Certificate) def.getTrustStore()
-                .getCertificate("test-formats");
+        X509Certificate certificate = (X509Certificate) def.getTrustStore().getCertificate("test-formats");
         assertThat(certificate).isNotNull();
         assertThat(certificate.getSubjectAlternativeNames()).anySatisfy(l -> {
             assertThat(l.get(0)).isEqualTo(2);

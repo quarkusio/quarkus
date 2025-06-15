@@ -23,10 +23,9 @@ import io.quarkus.websockets.next.WebSocketClientConnection;
 public class BasicConnectorContextTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class);
+    });
 
     @TestHTTPResource("/end")
     URI uri;
@@ -40,17 +39,13 @@ public class BasicConnectorContextTest {
     @Test
     void testClient() throws InterruptedException {
         BasicWebSocketConnector connector = BasicWebSocketConnector.create();
-        connector
-                .executionModel(BasicWebSocketConnector.ExecutionModel.NON_BLOCKING)
-                .onTextMessage((c, m) -> {
-                    String thread = Thread.currentThread().getName();
-                    THREADS.add(thread);
-                    MESSAGE_LATCH.countDown();
-                })
-                .onClose((c, cr) -> {
-                    CLOSED_LATCH.countDown();
-                })
-                .baseUri(uri);
+        connector.executionModel(BasicWebSocketConnector.ExecutionModel.NON_BLOCKING).onTextMessage((c, m) -> {
+            String thread = Thread.currentThread().getName();
+            THREADS.add(thread);
+            MESSAGE_LATCH.countDown();
+        }).onClose((c, cr) -> {
+            CLOSED_LATCH.countDown();
+        }).baseUri(uri);
         WebSocketClientConnection conn1 = connector.connectAndAwait();
         WebSocketClientConnection conn2 = connector.connectAndAwait();
         assertTrue(MESSAGE_LATCH.await(10, TimeUnit.SECONDS));

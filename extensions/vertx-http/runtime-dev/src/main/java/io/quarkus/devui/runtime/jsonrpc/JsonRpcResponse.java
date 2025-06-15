@@ -27,11 +27,7 @@ public final class JsonRpcResponse {
 
     @Override
     public String toString() {
-        return "JsonRpcResponse{" +
-                "id=" + id +
-                ", result=" + result +
-                ", error=" + error +
-                '}';
+        return "JsonRpcResponse{" + "id=" + id + ", result=" + result + ", error=" + error + '}';
     }
 
     public static final class Result {
@@ -45,10 +41,7 @@ public final class JsonRpcResponse {
 
         @Override
         public String toString() {
-            return "Result{" +
-                    "messageType='" + messageType + '\'' +
-                    ", object=" + object +
-                    '}';
+            return "Result{" + "messageType='" + messageType + '\'' + ", object=" + object + '}';
         }
     }
 
@@ -63,10 +56,7 @@ public final class JsonRpcResponse {
 
         @Override
         public String toString() {
-            return "Error{" +
-                    "code=" + code +
-                    ", message='" + message + '\'' +
-                    '}';
+            return "Error{" + "code=" + code + ", message='" + message + '\'' + '}';
         }
     }
 }

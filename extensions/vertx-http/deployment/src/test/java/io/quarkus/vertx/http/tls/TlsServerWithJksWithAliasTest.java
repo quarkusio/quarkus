@@ -31,8 +31,7 @@ public class TlsServerWithJksWithAliasTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class)
                     .addAsResource(new File("target/certs/ssl-test-alias-keystore.jks"), "server-keystore.jks"))
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "server-keystore.jks")
             .overrideConfigKey("quarkus.tls.key-store.jks.alias", "alias")
@@ -41,10 +40,8 @@ public class TlsServerWithJksWithAliasTest {
 
     @Test
     public void testSslServerWithJKS() {
-        RestAssured
-                .given()
-                .trustStore(new File("target/certs/ssl-test-alias-truststore.jks"), "secret")
-                .get(url).then().statusCode(200).body(is("ssl"));
+        RestAssured.given().trustStore(new File("target/certs/ssl-test-alias-truststore.jks"), "secret").get(url).then()
+                .statusCode(200).body(is("ssl"));
     }
 
     @ApplicationScoped

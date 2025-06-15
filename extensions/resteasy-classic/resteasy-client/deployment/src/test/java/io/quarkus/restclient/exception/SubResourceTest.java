@@ -31,12 +31,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SubResourceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SubResourceTest.class, ClientRootResource.class, ClientSubResource.class,
-                            ServerResource.class, TestExceptionMapper.class, TestException.class)
-                    .addAsResource(new StringAsset(ClientRootResource.class.getName() + "/mp-rest/url=${test.url}\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(SubResourceTest.class, ClientRootResource.class, ClientSubResource.class, ServerResource.class,
+                    TestExceptionMapper.class, TestException.class)
+            .addAsResource(new StringAsset(ClientRootResource.class.getName() + "/mp-rest/url=${test.url}\n"),
+                    "application.properties"));
 
     @RestClient
     ClientRootResource clientRootResource;
@@ -44,7 +43,6 @@ public class SubResourceTest {
     /**
      * Creates a REST client with an attached exception mapper. The exception mapper will throw a {@link TestException}.
      * This test invokes a call to the root resource.
-     *
      */
     @Test
     public void rootResourceExceptionMapper() {
@@ -60,7 +58,8 @@ public class SubResourceTest {
      * This test invokes a call to the sub-resource. The sub-resource then invokes an additional call which should also
      * result in a {@link TestException} thrown.
      *
-     * @throws Exception if a test error occurs
+     * @throws Exception
+     *         if a test error occurs
      */
     @Test
     public void subResourceExceptionMapper() throws Exception {
@@ -74,7 +73,6 @@ public class SubResourceTest {
     /**
      * This test invokes a call to the sub-resource. The sub-resource then invokes an additional call which should
      * return the header value for {@code test-header}.
-     *
      */
     @Test
     public void subResourceWithHeader() {
@@ -88,7 +86,8 @@ public class SubResourceTest {
      * This test invokes a call to the sub-resource. The sub-resource then invokes an additional call which should
      * return the header value for {@code test-global-header}.
      *
-     * @throws Exception if a test error occurs
+     * @throws Exception
+     *         if a test error occurs
      */
     @Test
     public void subResourceWithGlobalHeader() throws Exception {

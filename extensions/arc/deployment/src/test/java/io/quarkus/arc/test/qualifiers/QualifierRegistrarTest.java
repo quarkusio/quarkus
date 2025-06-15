@@ -33,8 +33,7 @@ public class QualifierRegistrarTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NotAQualifier.class, SimpleBean.class, Client.class))
+            .withApplicationRoot((jar) -> jar.addClasses(NotAQualifier.class, SimpleBean.class, Client.class))
             .addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {
                     @Override
@@ -42,7 +41,8 @@ public class QualifierRegistrarTest {
                         context.produce(new QualifierRegistrarBuildItem(new QualifierRegistrar() {
                             @Override
                             public Map<DotName, Set<String>> getAdditionalQualifiers() {
-                                return Collections.singletonMap(DotName.createSimple(NotAQualifier.class.getName()), null);
+                                return Collections.singletonMap(DotName.createSimple(NotAQualifier.class.getName()),
+                                        null);
                             }
                         }));
                     }

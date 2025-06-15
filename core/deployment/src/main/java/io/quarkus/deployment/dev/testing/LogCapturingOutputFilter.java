@@ -50,9 +50,8 @@ public class LogCapturingOutputFilter implements BiPredicate<String, Boolean> {
             return true;
         }
         while (cl.getParent() != null) {
-            if (cl == application.getAugmentClassLoader()
-                    || cl == application.getBaseRuntimeClassLoader()) {
-                //TODO: for convenience we save the log records as HTML rather than ANSI here
+            if (cl == application.getAugmentClassLoader() || cl == application.getBaseRuntimeClassLoader()) {
+                // TODO: for convenience we save the log records as HTML rather than ANSI here
                 synchronized (logOutput) {
                     if (convertToHtml) {
                         ByteArrayOutputStream out = new ByteArrayOutputStream();

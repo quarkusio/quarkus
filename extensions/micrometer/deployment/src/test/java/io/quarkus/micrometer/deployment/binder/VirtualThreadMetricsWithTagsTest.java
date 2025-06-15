@@ -18,11 +18,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class VirtualThreadMetricsWithTagsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.virtual-threads.tags", "k1=v1, k2=v2")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withEmptyApplication();
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withEmptyApplication();
 
     @Inject
     Instance<VirtualThreadCollector> collector;
@@ -39,15 +37,13 @@ public class VirtualThreadMetricsWithTagsTest {
 
     @Test
     void testTags() {
-        assertThat(collector.get().getTags()).hasSize(2)
-                .anySatisfy(t -> {
-                    assertThat(t.getKey()).isEqualTo("k1");
-                    assertThat(t.getValue()).isEqualTo("v1");
-                })
-                .anySatisfy(t -> {
-                    assertThat(t.getKey()).isEqualTo("k2");
-                    assertThat(t.getValue()).isEqualTo("v2");
-                });
+        assertThat(collector.get().getTags()).hasSize(2).anySatisfy(t -> {
+            assertThat(t.getKey()).isEqualTo("k1");
+            assertThat(t.getValue()).isEqualTo("v1");
+        }).anySatisfy(t -> {
+            assertThat(t.getKey()).isEqualTo("k2");
+            assertThat(t.getValue()).isEqualTo("v2");
+        });
     }
 
 }

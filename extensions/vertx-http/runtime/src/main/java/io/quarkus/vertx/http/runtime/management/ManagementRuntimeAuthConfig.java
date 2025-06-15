@@ -27,9 +27,9 @@ public interface ManagementRuntimeAuthConfig {
     /**
      * Map the `SecurityIdentity` roles to deployment specific roles and add the matching roles to `SecurityIdentity`.
      * <p>
-     * For example, if `SecurityIdentity` has a `user` role and the endpoint is secured with a 'UserRole' role,
-     * use this property to map the `user` role to the `UserRole` role, and have `SecurityIdentity` to have
-     * both `user` and `UserRole` roles.
+     * For example, if `SecurityIdentity` has a `user` role and the endpoint is secured with a 'UserRole' role, use this
+     * property to map the `user` role to the `UserRole` role, and have `SecurityIdentity` to have both `user` and
+     * `UserRole` roles.
      */
     @ConfigDocMapKey("role-name")
     Map<String, List<String>> rolesMapping();

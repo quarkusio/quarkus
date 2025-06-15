@@ -53,9 +53,7 @@ public interface DkimSignOptionsConfig {
     Optional<CanonicalizationAlgorithmOption> bodyCanonAlgo();
 
     /**
-     * Configures the body limit to sign.
-     *
-     * Must be greater than zero.
+     * Configures the body limit to sign. Must be greater than zero.
      */
     OptionalInt bodyLimit();
 
@@ -65,16 +63,12 @@ public interface DkimSignOptionsConfig {
     Optional<Boolean> signatureTimestamp();
 
     /**
-     * Configures the expire time in seconds when the signature sign will be expired.
-     *
-     * Must be greater than zero.
+     * Configures the expire time in seconds when the signature sign will be expired. Must be greater than zero.
      */
     OptionalLong expireTime();
 
     /**
-     * Configures the signed headers in DKIM, separated by commas.
-     *
-     * The order in the list matters.
+     * Configures the signed headers in DKIM, separated by commas. The order in the list matters.
      */
     Optional<List<String>> signedHeaders();
 

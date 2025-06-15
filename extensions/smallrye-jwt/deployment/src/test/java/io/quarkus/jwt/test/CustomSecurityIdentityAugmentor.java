@@ -15,7 +15,8 @@ public class CustomSecurityIdentityAugmentor implements SecurityIdentityAugmento
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
-        builder.addAttribute("routing-context-available", identity.getAttributes().containsKey(RoutingContext.class.getName()));
+        builder.addAttribute("routing-context-available",
+                identity.getAttributes().containsKey(RoutingContext.class.getName()));
         return Uni.createFrom().item(builder.build());
     }
 

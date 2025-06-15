@@ -28,23 +28,24 @@ public class OAuth2AuthMechanism implements HttpAuthenticationMechanism {
     private static final Logger LOG = Logger.getLogger(OAuth2AuthMechanism.class);
     private static final String BEARER_PREFIX = "Bearer ";
 
-    protected static final ChallengeData CHALLENGE_DATA = new ChallengeData(
-            HttpResponseStatus.UNAUTHORIZED.code(),
-            HttpHeaderNames.WWW_AUTHENTICATE,
-            "Bearer {token}");
+    protected static final ChallengeData CHALLENGE_DATA = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+            HttpHeaderNames.WWW_AUTHENTICATE, "Bearer {token}");
 
     /**
      * Extract the Authorization header and validate the bearer token if it exists. If it does, and is validated, this
-     * builds the org.jboss.security.SecurityContext authenticated Subject that drives the container APIs as well as
-     * the authorization layers.
+     * builds the org.jboss.security.SecurityContext authenticated Subject that drives the container APIs as well as the
+     * authorization layers.
      *
-     * @param context - the http request exchange object
-     * @param identityProviderManager - the current security context that
-     * @return one of AUTHENTICATED, NOT_AUTHENTICATED or NOT_ATTEMPTED depending on the header and authentication outcome.
+     * @param context
+     *        - the http request exchange object
+     * @param identityProviderManager
+     *        - the current security context that
+     *
+     * @return one of AUTHENTICATED, NOT_AUTHENTICATED or NOT_ATTEMPTED depending on the header and authentication
+     *         outcome.
      */
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         String authHeader = context.request().headers().get("Authorization");
 
         if (authHeader == null || !authHeader.startsWith(BEARER_PREFIX)) {

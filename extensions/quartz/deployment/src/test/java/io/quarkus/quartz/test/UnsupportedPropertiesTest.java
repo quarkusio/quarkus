@@ -16,15 +16,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnsupportedPropertiesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    // can be tested with any Quartz property that we don't have a Quarkus equivalent for
-                    // this test leverages org.quartz.context.key.SOME_KEY, which is a configuration equivalent of
-                    // Scheduler.getContext().put("key", "value")
-                    .addAsResource(new StringAsset(
-                            "quarkus.quartz.unsupported-properties.\"org.quartz.context.key.someKey\" = someValue\n" +
-                                    "quarkus.scheduler.start-mode=forced"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            // can be tested with any Quartz property that we don't have a Quarkus equivalent for
+            // this test leverages org.quartz.context.key.SOME_KEY, which is a configuration equivalent of
+            // Scheduler.getContext().put("key", "value")
+            .addAsResource(new StringAsset(
+                    "quarkus.quartz.unsupported-properties.\"org.quartz.context.key.someKey\" = someValue\n"
+                            + "quarkus.scheduler.start-mode=forced"),
+                    "application.properties"));
 
     @Inject
     org.quartz.Scheduler quartz;

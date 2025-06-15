@@ -69,8 +69,7 @@ public class GlobalConfigurationTest {
         assertThat(configRoot.connectionPoolSize().getAsInt()).isEqualTo(2);
         assertThat(configRoot.maxRedirects().getAsInt()).isEqualTo(2);
         assertThat(configRoot.followRedirects().get()).isTrue();
-        assertThat(configRoot.providers().get())
-                .isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
+        assertThat(configRoot.providers().get()).isEqualTo("io.quarkus.restclient.configuration.MyResponseFilter");
         assertThat(configRoot.queryParamStyle().get()).isEqualTo(QueryParamStyle.MULTI_PAIRS);
 
         assertThat(configRoot.trustStore().get()).isEqualTo("/path");

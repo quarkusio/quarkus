@@ -17,8 +17,7 @@ public class GrpcDevModeTest extends QuarkusDevGradleTestBase {
     protected void testDevMode() throws Exception {
         assertThat(getHttpResponse("/hello")).isEqualTo("hello 2");
 
-        replace("application/src/main/proto/devmodetest.proto",
-                ImmutableMap.of("TEST_ONE = 2;", "TEST_ONE = 15;"));
+        replace("application/src/main/proto/devmodetest.proto", ImmutableMap.of("TEST_ONE = 2;", "TEST_ONE = 15;"));
 
         Thread.sleep(1000);
 

@@ -19,18 +19,12 @@ public class EnabledProactiveAuthFailedExceptionMapperTest {
             AuthFailedExceptionMapper.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(classes)
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=true\n"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(classes)
+            .addAsResource(new StringAsset("quarkus.http.auth.proactive=true\n"), "application.properties"));
 
     @Test
     public void testExMapperCustomizedResponse() {
-        RestAssured
-                .given()
-                .auth().oauth2("absolute-nonsense")
-                .get("/endp/verifyInjectedIssuer").then()
-                .statusCode(401)
+        RestAssured.given().auth().oauth2("absolute-nonsense").get("/endp/verifyInjectedIssuer").then().statusCode(401)
                 .body(Matchers.equalTo(CUSTOMIZED_RESPONSE));
     }
 
@@ -38,9 +32,7 @@ public class EnabledProactiveAuthFailedExceptionMapperTest {
 
         @ServerExceptionMapper(value = AuthenticationFailedException.class)
         public Response unauthorized() {
-            return Response
-                    .status(401)
-                    .entity(CUSTOMIZED_RESPONSE).build();
+            return Response.status(401).entity(CUSTOMIZED_RESPONSE).build();
         }
 
     }

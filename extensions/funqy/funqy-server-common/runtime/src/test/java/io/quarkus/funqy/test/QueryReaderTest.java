@@ -71,7 +71,8 @@ public class QueryReaderTest {
         Assertions.assertEquals(42, nested.getNestedOne().getIntVal());
         Assertions.assertEquals(4, nested.getNestedOne().getShortVal());
         Assertions.assertEquals(442, nested.getNestedOne().getLongVal());
-        Assertions.assertTrue(nested.getNestedOne().getDoubleVal() <= 4.3 && nested.getNestedOne().getDoubleVal() > 4.1);
+        Assertions
+                .assertTrue(nested.getNestedOne().getDoubleVal() <= 4.3 && nested.getNestedOne().getDoubleVal() > 4.1);
         Assertions.assertTrue(nested.getNestedOne().getFloatVal() <= 4.3 && nested.getNestedOne().getFloatVal() > 4.1);
         Assertions.assertEquals(1, nested.getNestedOne().getB());
         Assertions.assertEquals(true, nested.getNestedOne().isBoolVal());
@@ -80,7 +81,8 @@ public class QueryReaderTest {
         Assertions.assertEquals(32, nested.getNestedTwo().getIntVal());
         Assertions.assertEquals(3, nested.getNestedTwo().getShortVal());
         Assertions.assertEquals(332, nested.getNestedTwo().getLongVal());
-        Assertions.assertTrue(nested.getNestedTwo().getDoubleVal() <= 3.3 && nested.getNestedTwo().getDoubleVal() > 3.1);
+        Assertions
+                .assertTrue(nested.getNestedTwo().getDoubleVal() <= 3.3 && nested.getNestedTwo().getDoubleVal() > 3.1);
         Assertions.assertTrue(nested.getNestedTwo().getFloatVal() <= 3.3 && nested.getNestedTwo().getFloatVal() > 3.1);
         Assertions.assertEquals(2, nested.getNestedTwo().getB());
         Assertions.assertEquals(true, nested.getNestedTwo().isBoolVal());

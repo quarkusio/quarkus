@@ -17,13 +17,11 @@ import jakarta.validation.Validator;
 import jakarta.validation.executable.ExecutableValidator;
 
 /**
- * NOTE: this is a copy of the interceptor present in hibernate-validator-cdi.
- * For now, I prefer not depending on this artifact but this might change in the
- * future.
+ * NOTE: this is a copy of the interceptor present in hibernate-validator-cdi. For now, I prefer not depending on this
+ * artifact but this might change in the future.
  * <p>
- * An interceptor which performs a validation of the Bean Validation constraints
- * specified at the parameters and/or return values of intercepted methods using
- * the method validation functionality provided by Hibernate Validator.
+ * An interceptor which performs a validation of the Bean Validation constraints specified at the parameters and/or
+ * return values of intercepted methods using the method validation functionality provided by Hibernate Validator.
  *
  * @author Gunnar Morling
  * @author Hardy Ferentschik
@@ -33,10 +31,9 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
     /**
      * The validator to be used for method validation.
      * <p>
-     * Although the concrete validator is not necessarily serializable (and HV's
-     * implementation indeed isn't) it is still alright to have it as non-transient
-     * field here. Upon passivation not the validator itself will be serialized, but
-     * the proxy injected here, which in turn is serializable.
+     * Although the concrete validator is not necessarily serializable (and HV's implementation indeed isn't) it is
+     * still alright to have it as non-transient field here. Upon passivation not the validator itself will be
+     * serialized, but the proxy injected here, which in turn is serializable.
      * </p>
      * {@link Instance} is used to make the resolution dynamic and working at runtime, this delays {@link Validator}
      * injection enough to enable it to work for beans that observe {@code @Initialized(ApplicationScoped.class)} event.
@@ -45,17 +42,17 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
     Instance<Validator> validatorInstance;
 
     /**
-     * Validates the Bean Validation constraints specified at the parameters and/or
-     * return value of the intercepted method.
+     * Validates the Bean Validation constraints specified at the parameters and/or return value of the intercepted
+     * method.
      *
-     * @param ctx The context of the intercepted method invocation.
+     * @param ctx
+     *        The context of the intercepted method invocation.
      *
      * @return The result of the method invocation.
      *
-     * @throws Exception Any exception caused by the intercepted method invocation.
-     *         A {@link ConstraintViolationException} in case at least one
-     *         constraint violation occurred either during parameter or
-     *         return value validation.
+     * @throws Exception
+     *         Any exception caused by the intercepted method invocation. A {@link ConstraintViolationException} in
+     *         case at least one constraint violation occurred either during parameter or return value validation.
      */
     protected Object validateMethodInvocation(InvocationContext ctx) throws Exception {
 
@@ -81,14 +78,15 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
     }
 
     /**
-     * Validates the Bean Validation constraints specified at the parameters and/or
-     * return value of the intercepted constructor.
+     * Validates the Bean Validation constraints specified at the parameters and/or return value of the intercepted
+     * constructor.
      *
-     * @param ctx The context of the intercepted constructor invocation.
+     * @param ctx
+     *        The context of the intercepted constructor invocation.
      *
-     * @throws Exception Any exception caused by the intercepted constructor
-     *         invocation. A {@link ConstraintViolationException} in case
-     *         at least one constraint violation occurred either during
+     * @throws Exception
+     *         Any exception caused by the intercepted constructor invocation. A
+     *         {@link ConstraintViolationException} in case at least one constraint violation occurred either during
      *         parameter or return value validation.
      */
     protected void validateConstructorInvocation(InvocationContext ctx) throws Exception {
@@ -104,8 +102,7 @@ public abstract class AbstractMethodValidationInterceptor implements Serializabl
         ctx.proceed();
         Object createdObject = ctx.getTarget();
 
-        violations = executableValidator.validateConstructorReturnValue(ctx.getConstructor(),
-                createdObject);
+        violations = executableValidator.validateConstructorReturnValue(ctx.getConstructor(), createdObject);
 
         if (!violations.isEmpty()) {
             throw new ConstraintViolationException(getMessage(ctx.getConstructor(), ctx.getParameters(), violations),

@@ -25,9 +25,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AwsProxyRequest {
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Variables - Private
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     private String body;
     private String resource;
@@ -47,9 +47,9 @@ public class AwsProxyRequest {
         stageVariables = new HashMap<>();
     }
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Methods - Getter/Setter
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     @JsonIgnore
     public String getQueryString() {
@@ -106,8 +106,7 @@ public class AwsProxyRequest {
         return multiValueQueryStringParameters;
     }
 
-    public void setMultiValueQueryStringParameters(
-            MultiValuedTreeMap<String, String> multiValueQueryStringParameters) {
+    public void setMultiValueQueryStringParameters(MultiValuedTreeMap<String, String> multiValueQueryStringParameters) {
         this.multiValueQueryStringParameters = multiValueQueryStringParameters;
     }
 

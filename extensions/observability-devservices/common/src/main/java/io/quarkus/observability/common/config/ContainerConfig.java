@@ -11,11 +11,11 @@ import io.smallrye.config.WithDefault;
 public interface ContainerConfig {
 
     /**
-     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled
-     * by default, unless there is an existing configuration present.
+     * If DevServices has been explicitly enabled or disabled. DevServices is generally enabled by default, unless there
+     * is an existing configuration present.
      * <p>
-     * When DevServices is enabled Quarkus will attempt to automatically configure and start
-     * a containers when running in Dev or Test mode and when Docker is running.
+     * When DevServices is enabled Quarkus will attempt to automatically configure and start a containers when running
+     * in Dev or Test mode and when Docker is running.
      */
     @WithDefault("true")
     boolean enabled();
@@ -29,13 +29,12 @@ public interface ContainerConfig {
     String imageName();
 
     /**
-     * Indicates if the container managed by Quarkus Dev Services is shared.
-     * When shared, Quarkus looks for running containers using label-based service discovery.
-     * If a matching container is found, it is used, and so a second one is not started.
-     * Otherwise, Dev Services starts a new container.
+     * Indicates if the container managed by Quarkus Dev Services is shared. When shared, Quarkus looks for running
+     * containers using label-based service discovery. If a matching container is found, it is used, and so a second one
+     * is not started. Otherwise, Dev Services starts a new container.
      * <p>
-     * The discovery uses the {@code quarkus-dev-service-label} label.
-     * The value is configured using the {@code service-name} property.
+     * The discovery uses the {@code quarkus-dev-service-label} label. The value is configured using the
+     * {@code service-name} property.
      * <p>
      * Container sharing is only used in dev mode.
      */
@@ -51,11 +50,10 @@ public interface ContainerConfig {
     Optional<Set<String>> networkAliases();
 
     /**
-     * The full name of the label attached to the started container.
-     * This label is used when {@code shared} is set to {@code true}.
-     * In this case, before starting a container, Dev Services for looks for a container with th label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
-     * starts a new container with this label set to the specified value.
+     * The full name of the label attached to the started container. This label is used when {@code shared} is set to
+     * {@code true}. In this case, before starting a container, Dev Services for looks for a container with th label set
+     * to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it starts
+     * a new container with this label set to the specified value.
      * <p>
      * This property is used when you need multiple shared containers.
      * <p>
@@ -65,12 +63,11 @@ public interface ContainerConfig {
     String label();
 
     /**
-     * The value of the {@code quarkus-dev-service} label attached to the started container.
-     * This property is used when {@code shared} is set to {@code true}.
-     * In this case, before starting a container, Dev Services for looks for a container with the
-     * {@code quarkus-dev-service} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
-     * starts a new container with the {@code quarkus-dev-service} label set to the specified value.
+     * The value of the {@code quarkus-dev-service} label attached to the started container. This property is used when
+     * {@code shared} is set to {@code true}. In this case, before starting a container, Dev Services for looks for a
+     * container with the {@code quarkus-dev-service} label set to the configured value. If found, it will use this
+     * container instead of starting a new one. Otherwise, it starts a new container with the
+     * {@code quarkus-dev-service} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared containers.
      */

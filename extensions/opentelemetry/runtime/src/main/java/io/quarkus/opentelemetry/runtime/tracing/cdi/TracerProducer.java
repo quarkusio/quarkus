@@ -50,10 +50,7 @@ public class TracerProducer {
 
             @Override
 
-            public Span addEvent(
-                    final String name,
-                    final Attributes attributes,
-                    final long timestamp,
+            public Span addEvent(final String name, final Attributes attributes, final long timestamp,
                     final TimeUnit unit) {
                 return Span.current().addEvent(name, attributes, timestamp, unit);
             }

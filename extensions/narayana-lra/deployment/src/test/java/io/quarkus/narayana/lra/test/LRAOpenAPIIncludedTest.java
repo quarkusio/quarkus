@@ -12,13 +12,12 @@ import io.restassured.RestAssured;
 public class LRAOpenAPIIncludedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addAsResource(new StringAsset("quarkus.lra.openapi.included=true"),
-                    "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.lra.openapi.included=true"), "application.properties"));
 
     @Test
     public void testLRAIncluded() {
-        RestAssured.when().get("/q/openapi").then()
-                .body(containsString("lraproxy"), containsString("lra-participant-proxy"), containsString("LRAStatus"));
+        RestAssured.when().get("/q/openapi").then().body(containsString("lraproxy"),
+                containsString("lra-participant-proxy"), containsString("LRAStatus"));
     }
 }

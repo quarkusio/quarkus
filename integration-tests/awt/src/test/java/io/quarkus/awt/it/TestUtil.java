@@ -20,34 +20,31 @@ import java.util.regex.Pattern;
 public class TestUtil {
 
     /**
-     * These exceptions in native-image runtime are a hallmark of either
-     * JNI access or reflection misconfiguration. Test should always fail the
-     * logs check if these are found.
+     * These exceptions in native-image runtime are a hallmark of either JNI access or reflection misconfiguration. Test
+     * should always fail the logs check if these are found.
      */
-    private static final Pattern BLACKLISTED_EXCEPTIONS = Pattern.compile("(?i:.*(" +
-            "java.lang.NoSuchFieldError|" +
-            "java.lang.NoClassDefFoundError|" +
-            "java.lang.NullPointerException" +
-            ").*)");
+    private static final Pattern BLACKLISTED_EXCEPTIONS = Pattern.compile("(?i:.*(" + "java.lang.NoSuchFieldError|"
+            + "java.lang.NoClassDefFoundError|" + "java.lang.NullPointerException" + ").*)");
 
     /**
      * Looks for a pattern in the log or just seeks blacklisted errors.
      *
-     * @param lineMatchRegexp pattern
-     * @param name identifier
+     * @param lineMatchRegexp
+     *        pattern
+     * @param name
+     *        identifier
      */
     public static void checkLog(final Pattern lineMatchRegexp, final String name) {
         final Path accessLogFilePath = Paths.get(".", "target", "quarkus.log").toAbsolutePath();
-        org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(3, TimeUnit.SECONDS)
+        org.awaitility.Awaitility.given().pollInterval(100, TimeUnit.MILLISECONDS).atMost(3, TimeUnit.SECONDS)
                 .untilAsserted(() -> {
-                    assertTrue(Files.exists(accessLogFilePath), "Quarkus log file " + accessLogFilePath + " is missing");
+                    assertTrue(Files.exists(accessLogFilePath),
+                            "Quarkus log file " + accessLogFilePath + " is missing");
                     boolean found = false;
                     final StringBuilder sbLog = new StringBuilder();
                     final Set<String> offendingLines = new HashSet<>();
-                    try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)),
-                                    StandardCharsets.UTF_8))) {
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
+                            new ByteArrayInputStream(Files.readAllBytes(accessLogFilePath)), StandardCharsets.UTF_8))) {
                         String line;
                         while ((line = reader.readLine()) != null) {
                             if (BLACKLISTED_EXCEPTIONS.matcher(line).matches()) {
@@ -63,26 +60,27 @@ public class TestUtil {
                         }
                     }
                     assertTrue(offendingLines.isEmpty(),
-                            name + ": Log file must not contain blacklisted exceptions. " +
-                                    "See the offending lines: \n" +
-                                    String.join("\n", offendingLines) +
-                                    "\n in the context of the log: " + sbLog);
+                            name + ": Log file must not contain blacklisted exceptions. "
+                                    + "See the offending lines: \n" + String.join("\n", offendingLines)
+                                    + "\n in the context of the log: " + sbLog);
                     if (lineMatchRegexp != null) {
-                        assertTrue(found,
-                                name + ": Log file doesn't contain a line matching " + lineMatchRegexp.pattern() +
-                                        ", log was: " + sbLog);
+                        assertTrue(found, name + ": Log file doesn't contain a line matching "
+                                + lineMatchRegexp.pattern() + ", log was: " + sbLog);
                     }
                 });
     }
 
     /**
-     * Compares two int arrays, pair by pair. If the difference
-     * between members of the pair is bigger than threshold,
+     * Compares two int arrays, pair by pair. If the difference between members of the pair is bigger than threshold,
      * arrays are not the same.
      *
-     * @param a array
-     * @param b array
-     * @param threshold array tolerance for the absolute difference between array elements
+     * @param a
+     *        array
+     * @param b
+     *        array
+     * @param threshold
+     *        array tolerance for the absolute difference between array elements
+     *
      * @return true if they are the same (within the threshold)
      */
     public static boolean compareArrays(int[] a, int[] b, int[] threshold) {
@@ -99,11 +97,7 @@ public class TestUtil {
 
     public static int[] decodeArray4(final String array) {
         final String[] ints = array.split(",");
-        return new int[] {
-                Integer.parseInt(ints[0]),
-                Integer.parseInt(ints[1]),
-                Integer.parseInt(ints[2]),
-                Integer.parseInt(ints[3])
-        };
+        return new int[] { Integer.parseInt(ints[0]), Integer.parseInt(ints[1]), Integer.parseInt(ints[2]),
+                Integer.parseInt(ints[3]) };
     }
 }

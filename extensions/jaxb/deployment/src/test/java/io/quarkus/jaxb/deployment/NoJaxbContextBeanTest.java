@@ -18,11 +18,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoJaxbContextBeanTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            io.quarkus.jaxb.deployment.one.Model.class,
-                            io.quarkus.jaxb.deployment.two.Model.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(io.quarkus.jaxb.deployment.one.Model.class, io.quarkus.jaxb.deployment.two.Model.class));
 
     @Test
     @ActivateRequestContext

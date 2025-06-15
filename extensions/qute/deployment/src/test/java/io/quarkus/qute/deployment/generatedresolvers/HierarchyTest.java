@@ -22,10 +22,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HierarchyTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Bar.class)
-                    .addAsResource(new StringAsset("{foo.name}"), "templates/test.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Foo.class, Bar.class).addAsResource(new StringAsset("{foo.name}"), "templates/test.html"));
 
     @Inject
     Template test;
@@ -50,8 +48,8 @@ public class HierarchyTest {
         }
         assertNotNull(fooResolver);
         assertNotNull(barResolver);
-        assertTrue(barResolver.getPriority() > fooResolver.getPriority(), "Bar resolver priority " + barResolver.getPriority()
-                + " is not higher than Foo resolver priority " + fooResolver.getPriority());
+        assertTrue(barResolver.getPriority() > fooResolver.getPriority(), "Bar resolver priority "
+                + barResolver.getPriority() + " is not higher than Foo resolver priority " + fooResolver.getPriority());
         assertEquals("bar", test.data("foo", new Bar()).render());
     }
 

@@ -40,13 +40,13 @@ public class AsyncReturnTypeScanner implements MethodScanner {
         if (returnTypeName.equals(COMPLETION_STAGE) || returnTypeName.equals(COMPLETABLE_FUTURE)) {
             CompletionStageResponseHandler handler = new CompletionStageResponseHandler();
             handler.setCancellable(isCancelable);
-            return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
-                    HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
+            return Collections.singletonList(
+                    new FixedHandlerChainCustomizer(handler, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
         } else if (returnTypeName.equals(UNI)) {
             UniResponseHandler handler = new UniResponseHandler();
             handler.setCancellable(isCancelable);
-            return Collections.singletonList(new FixedHandlerChainCustomizer(handler,
-                    HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
+            return Collections.singletonList(
+                    new FixedHandlerChainCustomizer(handler, HandlerChainCustomizer.Phase.AFTER_METHOD_INVOKE));
         }
         if (returnTypeName.equals(MULTI) || returnTypeName.equals(REST_MULTI) || returnTypeName.equals(PUBLISHER)
                 || returnTypeName.equals(LEGACY_PUBLISHER)) {
@@ -76,8 +76,8 @@ public class AsyncReturnTypeScanner implements MethodScanner {
     @Override
     public boolean isMethodSignatureAsync(MethodInfo method) {
         DotName returnTypeName = method.returnType().name();
-        return returnTypeName.equals(COMPLETION_STAGE) || returnTypeName.equals(COMPLETABLE_FUTURE) ||
-                returnTypeName.equals(UNI) || returnTypeName.equals(MULTI) || returnTypeName.equals(REST_MULTI) ||
-                returnTypeName.equals(PUBLISHER) || returnTypeName.equals(LEGACY_PUBLISHER);
+        return returnTypeName.equals(COMPLETION_STAGE) || returnTypeName.equals(COMPLETABLE_FUTURE)
+                || returnTypeName.equals(UNI) || returnTypeName.equals(MULTI) || returnTypeName.equals(REST_MULTI)
+                || returnTypeName.equals(PUBLISHER) || returnTypeName.equals(LEGACY_PUBLISHER);
     }
 }

@@ -16,8 +16,6 @@ public class CookiesTestResource {
     @SuppressWarnings("deprecation")
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     public Response sameSite(@FormParam("cookie") String cookie) {
-        return Response.status(200)
-                .cookie(NewCookie.valueOf(cookie))
-                .build();
+        return Response.status(200).cookie(NewCookie.valueOf(cookie)).build();
     }
 }

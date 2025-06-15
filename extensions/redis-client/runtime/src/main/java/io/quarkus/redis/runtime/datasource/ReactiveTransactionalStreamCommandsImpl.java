@@ -64,14 +64,15 @@ public class ReactiveTransactionalStreamCommandsImpl<K, F, V> extends AbstractTr
     public Uni<Void> xautoclaim(K key, String group, String consumer, Duration minIdleTime, String start, int count,
             boolean justId) {
         this.tx.enqueue(r -> reactive.decodeAsClaimedMessages(key, r));
-        return this.reactive._xautoclaim(key, group, consumer, minIdleTime, start, count, justId).invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._xautoclaim(key, group, consumer, minIdleTime, start, count, justId)
+                .invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> xclaim(K key, String group, String consumer, Duration minIdleTime, String... id) {
         this.tx.enqueue(r -> reactive.decodeListOfMessages(key, r));
-        return this.reactive._xclaim(key, group, consumer, minIdleTime, id).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._xclaim(key, group, consumer, minIdleTime, id).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Override
@@ -109,7 +110,8 @@ public class ReactiveTransactionalStreamCommandsImpl<K, F, V> extends AbstractTr
     @Override
     public Uni<Void> xgroupDelConsumer(K key, String groupname, String consumername) {
         this.tx.enqueue(Response::toLong);
-        return this.reactive._xgroupDelConsumer(key, groupname, consumername).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._xgroupDelConsumer(key, groupname, consumername).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Override
@@ -181,13 +183,15 @@ public class ReactiveTransactionalStreamCommandsImpl<K, F, V> extends AbstractTr
     @Override
     public Uni<Void> xreadgroup(String group, String consumer, Map<K, String> lastIdsPerStream) {
         this.tx.enqueue(r -> reactive.decodeAsListOfMessagesFromXRead(r));
-        return this.reactive._xreadgroup(group, consumer, lastIdsPerStream).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._xreadgroup(group, consumer, lastIdsPerStream).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Override
     public Uni<Void> xreadgroup(String group, String consumer, K key, String id, XReadGroupArgs args) {
         this.tx.enqueue(r -> reactive.decodeAsListOfMessagesFromXRead(r));
-        return this.reactive._xreadgroup(group, consumer, key, id, args).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._xreadgroup(group, consumer, key, id, args).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Override
@@ -212,7 +216,8 @@ public class ReactiveTransactionalStreamCommandsImpl<K, F, V> extends AbstractTr
     @Override
     public Uni<Void> xtrim(K key, String threshold) {
         this.tx.enqueue(Response::toLong);
-        return this.reactive._xtrim(key, new XTrimArgs().minid(threshold)).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._xtrim(key, new XTrimArgs().minid(threshold)).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 
     @Override

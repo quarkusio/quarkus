@@ -31,54 +31,42 @@ public class MtlsBasicAnnotationBasedAuthMechSelectionTest {
     URL basicUrl;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MtlsResource.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class)
-                    .addAsResource("mtls/mtls-basic-jks.conf", "application.properties")
-                    .addAsResource("mtls/server-keystore.jks", "server-keystore.jks")
-                    .addAsResource("mtls/server-truststore.jks", "server-truststore.jks"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MtlsResource.class)
+            .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class)
+            .addAsResource("mtls/mtls-basic-jks.conf", "application.properties")
+            .addAsResource("mtls/server-keystore.jks", "server-keystore.jks")
+            .addAsResource("mtls/server-truststore.jks", "server-truststore.jks"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin");
     }
 
     @Test
     public void testMutualTLSAuthenticationEnforced() {
         // endpoint is annotated with @MTLS, therefore mTLS must pass while anything less fail
-        RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+        RestAssured.given().trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
                 .get(mtlsUrl).then().statusCode(401);
-        RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
-                .get(mtlsUrl).then().statusCode(200).body(is("CN=client,OU=cert,O=quarkus,L=city,ST=state,C=AU"));
-        RestAssured.given()
-                .auth()
-                .preemptive()
-                .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
-                .get(mtlsUrl).then().statusCode(401);
+        RestAssured.given().keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
+                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password").get(mtlsUrl).then()
+                .statusCode(200).body(is("CN=client,OU=cert,O=quarkus,L=city,ST=state,C=AU"));
+        RestAssured.given().auth().preemptive().basic("admin", "admin")
+                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password").get(mtlsUrl).then()
+                .statusCode(401);
     }
 
     @Test
     public void testBasicAuthenticationEnforced() {
         // endpoint is annotated with @Basic, therefore basic auth must pass while anything less fail
-        RestAssured.given()
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
+        RestAssured.given().trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
                 .get(basicUrl).then().statusCode(401);
-        RestAssured.given()
-                .auth()
-                .preemptive()
-                .basic("admin", "admin")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
-                .get(basicUrl).then().statusCode(200).body(is("admin"));
-        RestAssured.given()
-                .keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
-                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password")
-                .get(basicUrl).then().statusCode(401);
+        RestAssured.given().auth().preemptive().basic("admin", "admin")
+                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password").get(basicUrl).then()
+                .statusCode(200).body(is("admin"));
+        RestAssured.given().keyStore(new File("src/test/resources/mtls/client-keystore.jks"), "password")
+                .trustStore(new File("src/test/resources/mtls/client-truststore.jks"), "password").get(basicUrl).then()
+                .statusCode(401);
     }
 
     @Path("/")

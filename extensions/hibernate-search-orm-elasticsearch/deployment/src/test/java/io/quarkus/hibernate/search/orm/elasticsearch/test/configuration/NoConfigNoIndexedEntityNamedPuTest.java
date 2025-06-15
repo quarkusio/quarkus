@@ -12,8 +12,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoConfigNoIndexedEntityNamedPuTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class))
             .withConfigurationResource("application-nohsearchconfig-named-pu.properties");
 
     @Test

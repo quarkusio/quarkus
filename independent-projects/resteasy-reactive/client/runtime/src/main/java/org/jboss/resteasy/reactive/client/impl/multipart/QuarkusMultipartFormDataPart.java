@@ -46,7 +46,8 @@ public class QuarkusMultipartFormDataPart {
         this.text = false;
     }
 
-    public QuarkusMultipartFormDataPart(String name, String filename, Multi<Byte> content, String mediaType, boolean text) {
+    public QuarkusMultipartFormDataPart(String name, String filename, Multi<Byte> content, String mediaType,
+            boolean text) {
         if (name == null) {
             throw new NullPointerException("Multipart field name cannot be null");
         }

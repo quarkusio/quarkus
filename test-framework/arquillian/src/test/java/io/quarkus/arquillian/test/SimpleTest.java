@@ -30,8 +30,7 @@ public class SimpleTest {
 
     @Deployment
     public static JavaArchive createTestArchive() {
-        return ShrinkWrap.create(JavaArchive.class)
-                .addClass(SimpleClass.class);
+        return ShrinkWrap.create(JavaArchive.class).addClass(SimpleClass.class);
     }
 
     @Inject

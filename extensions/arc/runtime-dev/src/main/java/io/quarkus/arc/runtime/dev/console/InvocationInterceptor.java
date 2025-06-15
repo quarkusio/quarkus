@@ -46,17 +46,16 @@ public class InvocationInterceptor {
         ManagedContext requestContext = container.requestContext();
         if (requestContext.isActive()) {
             InvocationTree tree = invocationTree.get();
-            return proceed(tree.invocationStarted(bean, context.getMethod(), getKind(context)), context, requestContext, tree);
+            return proceed(tree.invocationStarted(bean, context.getMethod(), getKind(context)), context, requestContext,
+                    tree);
         } else {
-            return proceed(
-                    new Builder().setInterceptedBean(bean).setMethod(context.getMethod()).setKind(getKind(context))
-                            .setStart(System.currentTimeMillis()),
-                    context, requestContext, null);
+            return proceed(new Builder().setInterceptedBean(bean).setMethod(context.getMethod())
+                    .setKind(getKind(context)).setStart(System.currentTimeMillis()), context, requestContext, null);
         }
     }
 
-    Object proceed(Invocation.Builder builder, InvocationContext context, ManagedContext requestContext, InvocationTree tree)
-            throws Exception {
+    Object proceed(Invocation.Builder builder, InvocationContext context, ManagedContext requestContext,
+            InvocationTree tree) throws Exception {
         long nanoTime = System.nanoTime();
         try {
             return context.proceed();

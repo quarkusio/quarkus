@@ -8,23 +8,25 @@ import jakarta.interceptor.AroundInvoke
 import jakarta.interceptor.Interceptor
 import jakarta.interceptor.InterceptorBinding
 import jakarta.interceptor.InvocationContext
+import kotlin.test.assertEquals
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
-import kotlin.test.assertEquals
 
 class InterceptableSuspendMethodTest {
     @RegisterExtension
-    val container = ArcTestContainer(MyInterceptorBinding::class.java, MyInterceptor::class.java,
-            MyService::class.java)
+    val container =
+        ArcTestContainer(
+            MyInterceptorBinding::class.java,
+            MyInterceptor::class.java,
+            MyService::class.java,
+        )
 
     @Test
     fun test() {
         val service = Arc.container().instance(MyService::class.java).get()
-        val result = runBlocking {
-            service.hello()
-        }
+        val result = runBlocking { service.hello() }
 
         assertEquals("hello", result)
         assertEquals(1, MyInterceptor.intercepted)

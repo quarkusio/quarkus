@@ -25,8 +25,7 @@ import io.smallrye.mutiny.Uni;
 public class GrpcServerProcessorTest {
 
     static Stream<Arguments> blockingAnnotations() {
-        return Stream.of(
-                arguments(BlockingRoot.class, BlockingRoot.EXPECTED),
+        return Stream.of(arguments(BlockingRoot.class, BlockingRoot.EXPECTED),
                 arguments(BlockingExtendsBlockingRoot.class, BlockingExtendsBlockingRoot.EXPECTED),
                 arguments(NonBlockingExtendsBlockingRoot.class, NonBlockingExtendsBlockingRoot.EXPECTED),
                 arguments(ExtendsBlockingRoot.class, ExtendsBlockingRoot.EXPECTED),

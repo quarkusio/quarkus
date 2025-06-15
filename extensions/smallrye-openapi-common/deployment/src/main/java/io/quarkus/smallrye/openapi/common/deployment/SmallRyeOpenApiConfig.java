@@ -22,8 +22,8 @@ public interface SmallRyeOpenApiConfig {
     String path();
 
     /**
-     * If set, the generated OpenAPI schema documents will be stored here on build.
-     * Both openapi.json and openapi.yaml will be stored here if this is set.
+     * If set, the generated OpenAPI schema documents will be stored here on build. Both openapi.json and openapi.yaml
+     * will be stored here if this is set.
      */
     Optional<Path> storeSchemaDirectory();
 
@@ -46,8 +46,8 @@ public interface SmallRyeOpenApiConfig {
     boolean ignoreStaticDocument();
 
     /**
-     * If management interface is turned on the openapi schema document will be published under the management interface. This
-     * allows you to exclude OpenAPI from management by setting the value to false
+     * If management interface is turned on the openapi schema document will be published under the management
+     * interface. This allows you to exclude OpenAPI from management by setting the value to false
      */
     @WithName("management.enabled")
     @WithDefault("true")
@@ -107,8 +107,8 @@ public interface SmallRyeOpenApiConfig {
     boolean autoAddOperationSummary();
 
     /**
-     * Setting it to `true` will automatically add a default server to the schema if none is provided,
-     * using the current running server host and port.
+     * Setting it to `true` will automatically add a default server to the schema if none is provided, using the current
+     * running server host and port.
      */
     Optional<Boolean> autoAddServer();
 
@@ -119,14 +119,15 @@ public interface SmallRyeOpenApiConfig {
     boolean autoAddSecurity();
 
     /**
-     * This will automatically add the OpenAPI specification document endpoint to the schema.
-     * It also adds "openapi" to the list of tags and specify an "operationId"
+     * This will automatically add the OpenAPI specification document endpoint to the schema. It also adds "openapi" to
+     * the list of tags and specify an "operationId"
      */
     @WithDefault("false")
     boolean autoAddOpenApiEndpoint();
 
     /**
-     * Required when using `apiKey` security. The location of the API key. Valid values are "query", "header" or "cookie".
+     * Required when using `apiKey` security. The location of the API key. Valid values are "query", "header" or
+     * "cookie".
      */
     Optional<String> apiKeyParameterIn();
 
@@ -241,9 +242,8 @@ public interface SmallRyeOpenApiConfig {
     Optional<OperationIdStrategy> operationIdStrategy();
 
     /**
-     * Set this boolean value to enable or disable the merging of the deprecated `@Schema`
-     * `example` property into the `examples` array introduced in OAS 3.1.0. If
-     * set to `false`, the deprecated `example` will be kept as a separate
+     * Set this boolean value to enable or disable the merging of the deprecated `@Schema` `example` property into the
+     * `examples` array introduced in OAS 3.1.0. If set to `false`, the deprecated `example` will be kept as a separate
      * annotation on the schema in the OpenAPI model.
      */
     @WithDefault("true")
@@ -265,10 +265,7 @@ public interface SmallRyeOpenApiConfig {
     }
 
     default Map<String, String> getValidSecuritySchemeExtensions() {
-        return securitySchemeExtensions()
-                .entrySet()
-                .stream()
-                .filter(x -> x.getKey().startsWith("x-"))
+        return securitySchemeExtensions().entrySet().stream().filter(x -> x.getKey().startsWith("x-"))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 }

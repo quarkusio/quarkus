@@ -23,10 +23,8 @@ public class VertxKotlinProcessor {
             return;
         }
 
-        additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(ApplicationCoroutineScope.class)
-                .setUnremovable()
-                .build());
+        additionalBean.produce(AdditionalBeanBuildItem.builder().addBeanClass(ApplicationCoroutineScope.class)
+                .setUnremovable().build());
     }
 
     @BuildStep

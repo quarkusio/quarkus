@@ -8,11 +8,12 @@ import java.io.InputStream;
 public class IoUtil {
 
     /**
-     * Returns an input stream for reading the specified resource from the specified ClassLoader.
-     * This might return {@code null}, in the case there is no matching resource.
+     * Returns an input stream for reading the specified resource from the specified ClassLoader. This might return
+     * {@code null}, in the case there is no matching resource.
      *
      * @param classLoader
      * @param className
+     *
      * @return
      */
     public static InputStream readClass(ClassLoader classLoader, String className) {
@@ -20,12 +21,12 @@ public class IoUtil {
     }
 
     /**
-     * Returns an byte array representing the content of the specified resource as loaded
-     * from the specified ClassLoader.
-     * This might return {@code null}, in the case there is no matching resource.
+     * Returns an byte array representing the content of the specified resource as loaded from the specified
+     * ClassLoader. This might return {@code null}, in the case there is no matching resource.
      *
      * @param classLoader
      * @param className
+     *
      * @return
      */
     public static byte[] readClassAsBytes(ClassLoader classLoader, String className) throws IOException {

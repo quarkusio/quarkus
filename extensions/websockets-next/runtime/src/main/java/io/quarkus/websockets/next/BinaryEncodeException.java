@@ -1,7 +1,6 @@
 package io.quarkus.websockets.next;
 
 /**
- *
  * @see BinaryMessageCodec
  */
 public class BinaryEncodeException extends WebSocketException {

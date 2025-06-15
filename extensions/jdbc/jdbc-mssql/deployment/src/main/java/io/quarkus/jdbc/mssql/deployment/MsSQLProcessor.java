@@ -40,13 +40,11 @@ public class MsSQLProcessor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MsSQLAgroalConnectionConfigurer.class)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                    .setUnremovable()
-                    .build());
+            additionalBeans
+                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MsSQLAgroalConnectionConfigurer.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
@@ -63,13 +61,12 @@ public class MsSQLProcessor {
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider,
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            MsSQLServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    MsSQLServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MSSQL));
     }

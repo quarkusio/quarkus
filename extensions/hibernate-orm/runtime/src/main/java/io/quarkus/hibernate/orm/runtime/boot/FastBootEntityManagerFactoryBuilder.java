@@ -54,11 +54,10 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
     protected final MultiTenancyStrategy multiTenancyStrategy;
     protected final boolean shouldApplySchemaMigration;
 
-    public FastBootEntityManagerFactoryBuilder(
-            QuarkusPersistenceUnitDescriptor puDescriptor,
-            PrevalidatedQuarkusMetadata metadata,
-            StandardServiceRegistry standardServiceRegistry, RuntimeSettings runtimeSettings, Object validatorFactory,
-            Object cdiBeanManager, MultiTenancyStrategy multiTenancyStrategy, boolean shouldApplySchemaMigration) {
+    public FastBootEntityManagerFactoryBuilder(QuarkusPersistenceUnitDescriptor puDescriptor,
+            PrevalidatedQuarkusMetadata metadata, StandardServiceRegistry standardServiceRegistry,
+            RuntimeSettings runtimeSettings, Object validatorFactory, Object cdiBeanManager,
+            MultiTenancyStrategy multiTenancyStrategy, boolean shouldApplySchemaMigration) {
         this.puDescriptor = puDescriptor;
         this.metadata = metadata;
         this.standardServiceRegistry = standardServiceRegistry;
@@ -127,20 +126,23 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
         return "[PersistenceUnit: " + puDescriptor.getName() + "] ";
     }
 
-    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options, StandardServiceRegistry ssr) {
+    protected void populate(String persistenceUnitName, SessionFactoryOptionsBuilder options,
+            StandardServiceRegistry ssr) {
         // will use user override value or default to false if not supplied to follow
         // JPA spec.
-        final boolean jtaTransactionAccessEnabled = runtimeSettings.getBoolean(
-                org.hibernate.cfg.AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS);
+        final boolean jtaTransactionAccessEnabled = runtimeSettings
+                .getBoolean(org.hibernate.cfg.AvailableSettings.ALLOW_JTA_TRANSACTION_ACCESS);
         if (!jtaTransactionAccessEnabled) {
             options.disableJtaTransactionAccess();
         }
 
-        //Check for use of deprecated org.hibernate.jpa.AvailableSettings.SESSION_FACTORY_OBSERVER
+        // Check for use of deprecated org.hibernate.jpa.AvailableSettings.SESSION_FACTORY_OBSERVER
         final Object legacyObserver = runtimeSettings.get("hibernate.ejb.session_factory_observer");
         if (legacyObserver != null) {
-            throw new HibernateException("Legacy setting being used: 'hibernate.ejb.session_factory_observer' was replaced by '"
-                    + org.hibernate.cfg.AvailableSettings.SESSION_FACTORY_OBSERVER + "'. Please update your configuration.");
+            throw new HibernateException(
+                    "Legacy setting being used: 'hibernate.ejb.session_factory_observer' was replaced by '"
+                            + org.hibernate.cfg.AvailableSettings.SESSION_FACTORY_OBSERVER
+                            + "'. Please update your configuration.");
         }
 
         // Locate and apply any requested SessionFactoryObserver
@@ -156,15 +158,15 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
 
         options.addSessionFactoryObservers(new ServiceRegistryCloser());
 
-        //New in ORM 6.2:
+        // New in ORM 6.2:
         options.addSessionFactoryObservers(new SessionFactoryObserverForNamedQueryValidation(metadata));
 
         // We should avoid running schema migrations multiple times
         if (shouldApplySchemaMigration) {
             options.addSessionFactoryObservers(new SessionFactoryObserverForSchemaExport(metadata));
         }
-        //Vanilla ORM registers this one as well; we don't:
-        //options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );
+        // Vanilla ORM registers this one as well; we don't:
+        // options.addSessionFactoryObservers( new SessionFactoryObserverForRegistration() );
 
         // This one is specific to Quarkus
         options.addSessionFactoryObservers(new QuarkusSessionFactoryObserverForDbVersionCheck());
@@ -183,20 +185,21 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             options.applyBeanManager(cdiBeanManager);
         }
 
-        //Small memory optimisations: ensure the class transformation caches of the bytecode enhancer
-        //are cleared both on start and on close of the SessionFactory.
-        //(On start is useful especially in Quarkus as we won't do any more enhancement after this point)
+        // Small memory optimisations: ensure the class transformation caches of the bytecode enhancer
+        // are cleared both on start and on close of the SessionFactory.
+        // (On start is useful especially in Quarkus as we won't do any more enhancement after this point)
         BytecodeProvider bytecodeProvider = ssr.getService(BytecodeProvider.class);
         options.addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
 
         // Should be added in case of discriminator strategy too, that is not handled by options.isMultiTenancyEnabled()
         if (options.isMultiTenancyEnabled()
                 || (multiTenancyStrategy != null && multiTenancyStrategy != MultiTenancyStrategy.NONE)) {
-            options.applyCurrentTenantIdentifierResolver(new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
+            options.applyCurrentTenantIdentifierResolver(
+                    new HibernateCurrentTenantIdentifierResolver(persistenceUnitName));
         }
 
-        InjectableInstance<Interceptor> interceptorInstance = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
-                Interceptor.class, persistenceUnitName);
+        InjectableInstance<Interceptor> interceptorInstance = PersistenceUnitUtil
+                .singleExtensionInstanceForPersistenceUnit(Interceptor.class, persistenceUnitName);
         if (!interceptorInstance.isUnsatisfied()) {
             options.applyStatelessInterceptorSupplier(interceptorInstance::get);
         }
@@ -207,13 +210,15 @@ public class FastBootEntityManagerFactoryBuilder implements EntityManagerFactory
             options.applyStatementInspector(statementInspectorInstance.get());
         }
 
-        InjectableInstance<FormatMapper> jsonFormatMapper = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
-                FormatMapper.class, persistenceUnitName, JsonFormat.Literal.INSTANCE);
+        InjectableInstance<FormatMapper> jsonFormatMapper = PersistenceUnitUtil
+                .singleExtensionInstanceForPersistenceUnit(FormatMapper.class, persistenceUnitName,
+                        JsonFormat.Literal.INSTANCE);
         if (!jsonFormatMapper.isUnsatisfied()) {
             options.applyJsonFormatMapper(jsonFormatMapper.get());
         }
-        InjectableInstance<FormatMapper> xmlFormatMapper = PersistenceUnitUtil.singleExtensionInstanceForPersistenceUnit(
-                FormatMapper.class, persistenceUnitName, XmlFormat.Literal.INSTANCE);
+        InjectableInstance<FormatMapper> xmlFormatMapper = PersistenceUnitUtil
+                .singleExtensionInstanceForPersistenceUnit(FormatMapper.class, persistenceUnitName,
+                        XmlFormat.Literal.INSTANCE);
         if (!xmlFormatMapper.isUnsatisfied()) {
             options.applyXmlFormatMapper(xmlFormatMapper.get());
         }

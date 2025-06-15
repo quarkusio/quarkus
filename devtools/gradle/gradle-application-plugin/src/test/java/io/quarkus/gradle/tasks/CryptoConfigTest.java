@@ -22,9 +22,7 @@ public class CryptoConfigTest {
         FileUtils.copyDirectory(new File(url.toURI()), testProjectDir.toFile());
         FileUtils.copyFile(new File("../gradle.properties"), testProjectDir.resolve("gradle.properties").toFile());
 
-        GradleRunner.create()
-                .withPluginClasspath()
-                .withProjectDir(testProjectDir.toFile())
+        GradleRunner.create().withPluginClasspath().withProjectDir(testProjectDir.toFile())
                 .withArguments("build", "--info", "--stacktrace", "--build-cache", "--configuration-cache")
                 // .build() checks whether the build failed, which is good enough for this test
                 .build();

@@ -69,17 +69,16 @@ public class AzureFunctionsDeployCommand {
     private static final String INVALID_APP_NAME = "The app name '%s' is not valid. The <appName> only allow alphanumeric characters, hyphens and cannot start or end in a hyphen.";
     private static final String EMPTY_RESOURCE_GROUP = "Please config the <resourceGroup> in pom.xml.";
     private static final String INVALID_RESOURCE_GROUP_NAME = "The <resourceGroup> only allow alphanumeric characters, periods, underscores, "
-            +
-            "hyphens and parenthesis and cannot end in a period.";
+            + "hyphens and parenthesis and cannot end in a period.";
     private static final String INVALID_SERVICE_PLAN_NAME = "Invalid value for <appServicePlanName>, it need to match the pattern %s";
-    private static final String INVALID_SERVICE_PLAN_RESOURCE_GROUP_NAME = "Invalid value for <appServicePlanResourceGroup>, " +
-            "it only allow alphanumeric characters, periods, underscores, hyphens and parenthesis and cannot end in a period.";
+    private static final String INVALID_SERVICE_PLAN_RESOURCE_GROUP_NAME = "Invalid value for <appServicePlanResourceGroup>, "
+            + "it only allow alphanumeric characters, periods, underscores, hyphens and parenthesis and cannot end in a period.";
     private static final String EMPTY_IMAGE_NAME = "Please config the <image> of <runtime> in pom.xml.";
     private static final String INVALID_OS = "The value of <os> is not correct, supported values are: windows, linux and docker.";
-    private static final String EXPANDABLE_PRICING_TIER_WARNING = "'%s' may not be a valid pricing tier, " +
-            "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
-    private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, " +
-            "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
+    private static final String EXPANDABLE_PRICING_TIER_WARNING = "'%s' may not be a valid pricing tier, "
+            + "please refer to https://aka.ms/maven_function_configuration#supported-pricing-tiers for valid values";
+    private static final String EXPANDABLE_REGION_WARNING = "'%s' may not be a valid region, "
+            + "please refer to https://aka.ms/maven_function_configuration#supported-regions for valid values";
     private static final String EXPANDABLE_JAVA_VERSION_WARNING = "'%s' may not be a valid java version, recommended values are `Java 17` and `Java 21`";
 
     protected static final String USING_AZURE_ENVIRONMENT = "Using Azure environment: %s.";
@@ -94,8 +93,7 @@ public class AzureFunctionsDeployCommand {
     }
 
     @BuildStep
-    public void deploy(DeployConfig deployConfig, AzureFunctionsConfig config,
-            AzureFunctionsAppNameBuildItem appName,
+    public void deploy(DeployConfig deployConfig, AzureFunctionsConfig config, AzureFunctionsAppNameBuildItem appName,
             OutputTargetBuildItem output,
 
             BuildProducer<DeployCommandActionBuildItem> producer) throws Exception {
@@ -119,7 +117,7 @@ public class AzureFunctionsDeployCommand {
 
     private void setCurrentOperation() {
         // Note:
-        // This gets rid of some these messages.  Not sure why or how to remove the rest of them yet:
+        // This gets rid of some these messages. Not sure why or how to remove the rest of them yet:
         // default to NULL OperationContext, because operation or its action operation is null:Quarkus
         try {
             Method push = OperationThreadContext.class.getDeclaredMethod("pushOperation", Operation.class);
@@ -178,27 +176,24 @@ public class AzureFunctionsDeployCommand {
         }
         if (config.appServicePlanResourceGroup().isPresent()
                 && StringUtils.isNotEmpty(config.appServicePlanResourceGroup().orElse(null))
-                &&
-                (config.appServicePlanResourceGroup().orElse(null).endsWith(".")
+                && (config.appServicePlanResourceGroup().orElse(null).endsWith(".")
                         || !config.appServicePlanResourceGroup().orElse(null).matches(RESOURCE_GROUP_PATTERN))) {
             throw new BuildException(INVALID_SERVICE_PLAN_RESOURCE_GROUP_NAME);
         }
         // slot name
         /*
-         * if (deploymentSlotSetting != null && StringUtils.isEmpty(deploymentSlotSetting.getName())) {
-         * throw new BuildException(EMPTY_SLOT_NAME);
-         * }
-         * if (deploymentSlotSetting != null && !deploymentSlotSetting.getName().matches(SLOT_NAME_PATTERN)) {
-         * throw new BuildException(String.format(INVALID_SLOT_NAME, SLOT_NAME_PATTERN));
-         * }
-         *
+         * if (deploymentSlotSetting != null && StringUtils.isEmpty(deploymentSlotSetting.getName())) { throw new
+         * BuildException(EMPTY_SLOT_NAME); } if (deploymentSlotSetting != null &&
+         * !deploymentSlotSetting.getName().matches(SLOT_NAME_PATTERN)) { throw new
+         * BuildException(String.format(INVALID_SLOT_NAME, SLOT_NAME_PATTERN)); }
          */
         // region
         if (StringUtils.isNotEmpty(config.region()) && Region.fromName(config.region()).isExpandedValue()) {
             log.warn(format(EXPANDABLE_REGION_WARNING, config.region()));
         }
         // os
-        if (StringUtils.isNotEmpty(config.runtime().os()) && OperatingSystem.fromString(config.runtime().os()) == null) {
+        if (StringUtils.isNotEmpty(config.runtime().os())
+                && OperatingSystem.fromString(config.runtime().os()) == null) {
             throw new BuildException(INVALID_OS);
         }
         // java version
@@ -225,8 +220,8 @@ public class AzureFunctionsDeployCommand {
         if (appServiceClient == null) {
             final Account account = loginAzure(config.auth());
             final List<Subscription> subscriptions = account.getSubscriptions();
-            final String targetSubscriptionId = getTargetSubscriptionId(config.subscriptionId().orElse(null), subscriptions,
-                    account.getSelectedSubscriptions());
+            final String targetSubscriptionId = getTargetSubscriptionId(config.subscriptionId().orElse(null),
+                    subscriptions, account.getSelectedSubscriptions());
             checkSubscription(subscriptions, targetSubscriptionId);
             com.microsoft.azure.toolkit.lib.Azure.az(AzureAccount.class).account()
                     .setSelectedSubscriptions(Collections.singletonList(targetSubscriptionId));
@@ -243,8 +238,7 @@ public class AzureFunctionsDeployCommand {
             return;
         }
         final Optional<Subscription> optionalSubscription = subscriptions.stream()
-                .filter(subscription -> StringUtils.equals(subscription.getId(), targetSubscriptionId))
-                .findAny();
+                .filter(subscription -> StringUtils.equals(subscription.getId(), targetSubscriptionId)).findAny();
         if (!optionalSubscription.isPresent()) {
             throw new BuildException(format(SUBSCRIPTION_NOT_FOUND, targetSubscriptionId));
         }
@@ -299,8 +293,7 @@ public class AzureFunctionsDeployCommand {
         }
     }
 
-    protected String getTargetSubscriptionId(String defaultSubscriptionId,
-            List<Subscription> subscriptions,
+    protected String getTargetSubscriptionId(String defaultSubscriptionId, List<Subscription> subscriptions,
             List<Subscription> selectedSubscriptions) throws BuildException {
         if (!StringUtils.isBlank(defaultSubscriptionId)) {
             return defaultSubscriptionId;
@@ -329,16 +322,16 @@ public class AzureFunctionsDeployCommand {
     }
 
     protected FunctionAppBase<?, ?, ?> createOrUpdateResource(final FunctionAppConfig config) throws Exception {
-        FunctionApp app = Azure.az(AzureFunctions.class).functionApps(config.subscriptionId()).updateOrCreate(config.appName(),
-                config.resourceGroup());
+        FunctionApp app = Azure.az(AzureFunctions.class).functionApps(config.subscriptionId())
+                .updateOrCreate(config.appName(), config.resourceGroup());
         final boolean newFunctionApp = !app.exists();
         AppServiceConfig defaultConfig = !newFunctionApp ? fromAppService(app, app.getAppServicePlan())
-                : buildDefaultConfig(config.subscriptionId(),
-                        config.resourceGroup(), config.appName());
+                : buildDefaultConfig(config.subscriptionId(), config.resourceGroup(), config.appName());
         mergeAppServiceConfig(config, defaultConfig);
         if (!newFunctionApp && !config.disableAppInsights() && StringUtils.isEmpty(config.appInsightsKey())) {
             // fill ai key from existing app settings
-            config.appInsightsKey(app.getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
+            config.appInsightsKey(
+                    app.getAppSettings().get(CreateOrUpdateFunctionAppTask.APPINSIGHTS_INSTRUMENTATION_KEY));
         }
         return new CreateOrUpdateFunctionAppTask(config).doExecute();
     }

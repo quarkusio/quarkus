@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MissingConfigCronExpressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(NoSuchElementException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MissingConfigCronExpressionTest.InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(NoSuchElementException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MissingConfigCronExpressionTest.InvalidBean.class));
 
     @Test
     public void test() {

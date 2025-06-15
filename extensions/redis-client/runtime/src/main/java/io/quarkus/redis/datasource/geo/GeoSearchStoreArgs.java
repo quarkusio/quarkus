@@ -32,7 +32,9 @@ public class GeoSearchStoreArgs<V> implements RedisCommandExtraArguments {
     /**
      * Use the position of the given existing {@code member} in the sorted set.
      *
-     * @param member the member, must not be {@code null}
+     * @param member
+     *        the member, must not be {@code null}
+     *
      * @return the current {@code GeoSearchStoreArgs}
      */
     public GeoSearchStoreArgs<V> fromMember(V member) {
@@ -46,8 +48,11 @@ public class GeoSearchStoreArgs<V> implements RedisCommandExtraArguments {
     /**
      * Use the given {@code longitude} and {@code latitude} position.
      *
-     * @param longitude the longitude
-     * @param latitude the latitude
+     * @param longitude
+     *        the longitude
+     * @param latitude
+     *        the latitude
+     *
      * @return the current {@code GeoSearchStoreArgs}
      */
     private GeoSearchStoreArgs<V> fromCoordinate(double longitude, double latitude) {
@@ -59,8 +64,11 @@ public class GeoSearchStoreArgs<V> implements RedisCommandExtraArguments {
     /**
      * Search inside circular area according to given {@code radius}.
      *
-     * @param radius the radius value
-     * @param unit the unit
+     * @param radius
+     *        the radius value
+     * @param unit
+     *        the unit
+     *
      * @return the current {@code GeoSearchStoreArgs}
      **/
     public GeoSearchStoreArgs<V> byRadius(double radius, GeoUnit unit) {
@@ -78,9 +86,13 @@ public class GeoSearchStoreArgs<V> implements RedisCommandExtraArguments {
     /**
      * Search inside circular area according to given {@code radius}.
      *
-     * @param width the width of the box
-     * @param height the height of the box
-     * @param unit the unit
+     * @param width
+     *        the width of the box
+     * @param height
+     *        the height of the box
+     * @param unit
+     *        the unit
+     *
      * @return the current {@code GeoSearchStoreArgs}
      **/
     public GeoSearchStoreArgs<V> byBox(double width, double height, GeoUnit unit) {
@@ -123,7 +135,9 @@ public class GeoSearchStoreArgs<V> implements RedisCommandExtraArguments {
      * By default all the matching items are returned. It is possible to limit the results to the first N matching items
      * by using the {@code COUNT &lt;count&gt;} option.
      *
-     * @param count the count value
+     * @param count
+     *        the count value
+     *
      * @return the current {@code GeoSearchStoreArgs}
      **/
     public GeoSearchStoreArgs<V> count(long count) {

@@ -64,8 +64,8 @@ public class GeoRadiusArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Also return the raw geohash-encoded sorted set score of the item, in the form of a 52 bit unsigned integer.
-     * This is only useful for low level hacks or debugging and is otherwise of little interest for the general user.
+     * Also return the raw geohash-encoded sorted set score of the item, in the form of a 52 bit unsigned integer. This
+     * is only useful for low level hacks or debugging and is otherwise of little interest for the general user.
      *
      * @return the current {@code GeoRadiusArgs}
      **/
@@ -78,7 +78,9 @@ public class GeoRadiusArgs implements RedisCommandExtraArguments {
      * By default all the matching items are returned. It is possible to limit the results to the first N matching items
      * by using the {@code COUNT &lt;count&gt;} option.
      *
-     * @param count the count value
+     * @param count
+     *        the count value
+     *
      * @return the current {@code GeoRadiusArgs}
      **/
     public GeoRadiusArgs count(long count) {

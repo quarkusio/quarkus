@@ -14,20 +14,16 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultRolesAllowedStarJaxRsTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermitAllResource.class, UnsecuredResource.class,
-                            TestIdentityProvider.class, UnsecuredResourceInterface.class,
-                            TestIdentityController.class, UnsecuredParentResource.class,
-                            UnsecuredSubResource.class)
-                    .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed = **\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(PermitAllResource.class, UnsecuredResource.class, TestIdentityProvider.class,
+                    UnsecuredResourceInterface.class, TestIdentityController.class, UnsecuredParentResource.class,
+                    UnsecuredSubResource.class)
+            .addAsResource(new StringAsset("quarkus.security.jaxrs.default-roles-allowed = **\n"),
+                    "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -66,17 +62,9 @@ public class DefaultRolesAllowedStarJaxRsTest {
     }
 
     private void assertStatus(String path, int adminStatus, int userStatus, int anonStatus) {
-        given().auth().preemptive()
-                .basic("admin", "admin").get(path)
-                .then()
-                .statusCode(adminStatus);
-        given().auth().preemptive()
-                .basic("user", "user").get(path)
-                .then()
-                .statusCode(userStatus);
-        when().get(path)
-                .then()
-                .statusCode(anonStatus);
+        given().auth().preemptive().basic("admin", "admin").get(path).then().statusCode(adminStatus);
+        given().auth().preemptive().basic("user", "user").get(path).then().statusCode(userStatus);
+        when().get(path).then().statusCode(anonStatus);
 
     }
 

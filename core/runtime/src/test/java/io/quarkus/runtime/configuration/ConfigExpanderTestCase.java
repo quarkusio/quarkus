@@ -18,10 +18,8 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public class ConfigExpanderTestCase {
 
     private SmallRyeConfig buildConfig(Map<String, String> configMap) {
-        return new SmallRyeConfigBuilder()
-                .addDefaultInterceptors()
-                .withSources(new PropertiesConfigSource(configMap, "test input", 500))
-                .build();
+        return new SmallRyeConfigBuilder().addDefaultInterceptors()
+                .withSources(new PropertiesConfigSource(configMap, "test input", 500)).build();
     }
 
     private Map<String, String> maps(Map... maps) {
@@ -34,10 +32,8 @@ public class ConfigExpanderTestCase {
 
     @Test
     public void testBasicExpander() {
-        final SmallRyeConfig config = buildConfig(maps(
-                singletonMap("foo.one", "value"),
-                singletonMap("foo.two", "${foo.one}"),
-                singletonMap("foo.three", "+${foo.two}+")));
+        final SmallRyeConfig config = buildConfig(maps(singletonMap("foo.one", "value"),
+                singletonMap("foo.two", "${foo.one}"), singletonMap("foo.three", "+${foo.two}+")));
         assertEquals("value", config.getValue("foo.one", String.class));
         assertEquals("value", config.getValue("foo.two", String.class));
         assertEquals("+value+", config.getValue("foo.three", String.class));
@@ -45,9 +41,8 @@ public class ConfigExpanderTestCase {
 
     @Test
     public void testExpanderDefaults() {
-        final SmallRyeConfig config = buildConfig(maps(
-                singletonMap("foo.two", "${foo.one:value}"),
-                singletonMap("foo.three", "+${foo.two}+")));
+        final SmallRyeConfig config = buildConfig(
+                maps(singletonMap("foo.two", "${foo.one:value}"), singletonMap("foo.three", "+${foo.two}+")));
         assertEquals("value", config.getValue("foo.two", String.class));
         assertEquals("+value+", config.getValue("foo.three", String.class));
     }
@@ -55,8 +50,7 @@ public class ConfigExpanderTestCase {
     @Test
     public void testExpanderMissing() {
         final SmallRyeConfig config = buildConfig(
-                maps(singletonMap("foo.two", "${foo.one}empty"),
-                        singletonMap("foo.three", "+${foo.two}+")));
+                maps(singletonMap("foo.two", "${foo.one}empty"), singletonMap("foo.three", "+${foo.two}+")));
 
         assertThrows(NoSuchElementException.class, () -> config.getValue("foo.two", String.class));
 
@@ -65,17 +59,15 @@ public class ConfigExpanderTestCase {
 
     @Test
     public void testExpanderOptional() {
-        final SmallRyeConfig config = buildConfig(maps(
-                singletonMap("foo.two", "${foo.one:}empty"),
-                singletonMap("foo.three", "+${foo.two}+")));
+        final SmallRyeConfig config = buildConfig(
+                maps(singletonMap("foo.two", "${foo.one:}empty"), singletonMap("foo.three", "+${foo.two}+")));
         assertEquals("empty", config.getValue("foo.two", String.class));
         assertEquals("+empty+", config.getValue("foo.three", String.class));
     }
 
     @Test
     public void testStackBlowOut() {
-        final SmallRyeConfig config = buildConfig(maps(
-                singletonMap("foo.blowout", "${foo.blowout}")));
+        final SmallRyeConfig config = buildConfig(maps(singletonMap("foo.blowout", "${foo.blowout}")));
         try {
             config.getValue("foo.blowout", String.class);
             fail("Expected exception");

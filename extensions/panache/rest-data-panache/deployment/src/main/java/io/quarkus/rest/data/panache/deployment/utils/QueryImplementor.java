@@ -15,7 +15,8 @@ import io.quarkus.gizmo.ResultHandle;
 
 public final class QueryImplementor {
     /**
-     * Returns the name of the query or if it is not defined, then it will return a query built by the search parameters.
+     * Returns the name of the query or if it is not defined, then it will return a query built by the search
+     * parameters.
      *
      * <pre>
      * {@code
@@ -28,9 +29,13 @@ public final class QueryImplementor {
      * }
      * </pre>
      *
-     * @param creator a bytecode creator to be used for code generation.
-     * @param namedQuery HQL query to list entities.
-     * @param fieldValues fields query params.
+     * @param creator
+     *        a bytecode creator to be used for code generation.
+     * @param namedQuery
+     *        HQL query to list entities.
+     * @param fieldValues
+     *        fields query params.
+     *
      * @return query.
      */
     public AssignableResultHandle getQuery(BytecodeCreator creator, ResultHandle namedQuery,
@@ -50,12 +55,14 @@ public final class QueryImplementor {
         BranchResult checkIfNamedQueryIsNull = creator.ifNull(namedQuery);
         BytecodeCreator whenNamedQueryIsNull = checkIfNamedQueryIsNull.trueBranch();
         BytecodeCreator whenNamedQueryIsNotNull = checkIfNamedQueryIsNull.falseBranch();
-        whenNamedQueryIsNotNull.assign(query, whenNamedQueryIsNotNull.invokeVirtualMethod(
-                ofMethod(String.class, "concat", String.class, String.class),
-                whenNamedQueryIsNotNull.load("#"), namedQuery));
-        whenNamedQueryIsNull.assign(query, whenNamedQueryIsNull.invokeStaticMethod(
-                ofMethod(String.class, "join", String.class, CharSequence.class, Iterable.class),
-                creator.load(" AND "), queryList));
+        whenNamedQueryIsNotNull.assign(query,
+                whenNamedQueryIsNotNull.invokeVirtualMethod(
+                        ofMethod(String.class, "concat", String.class, String.class), whenNamedQueryIsNotNull.load("#"),
+                        namedQuery));
+        whenNamedQueryIsNull.assign(query,
+                whenNamedQueryIsNull.invokeStaticMethod(
+                        ofMethod(String.class, "join", String.class, CharSequence.class, Iterable.class),
+                        creator.load(" AND "), queryList));
 
         return query;
     }
@@ -69,8 +76,8 @@ public final class QueryImplementor {
             ResultHandle fieldValueFromQuery = field.getValue();
             BytecodeCreator fieldValueFromQueryIsSet = creator.ifNotNull(fieldValueFromQuery).trueBranch();
             fieldValueFromQueryIsSet.invokeInterfaceMethod(
-                    ofMethod(Map.class, "put", Object.class, Object.class, Object.class),
-                    dataParams, fieldValueFromQueryIsSet.load(paramName), fieldValueFromQuery);
+                    ofMethod(Map.class, "put", Object.class, Object.class, Object.class), dataParams,
+                    fieldValueFromQueryIsSet.load(paramName), fieldValueFromQuery);
         }
 
         return dataParams;

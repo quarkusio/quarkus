@@ -30,14 +30,16 @@ public interface BuildSystemRunner {
     static BuildSystemRunner getRunner(OutputOptionMixin output, PropertiesOptions propertiesOptions,
             RegistryClientMixin registryClient, Path projectRoot, BuildTool buildTool) {
         if (buildTool == null) {
-            throw new IllegalStateException("Is this a project directory? Unable to find a build file in: " + projectRoot);
+            throw new IllegalStateException(
+                    "Is this a project directory? Unable to find a build file in: " + projectRoot);
         }
         switch (buildTool) {
             default:
             case MAVEN:
                 return new MavenRunner(output, propertiesOptions, registryClient, projectRoot);
             case GRADLE_KOTLIN_DSL:
-                return new GradleRunner(output, propertiesOptions, registryClient, projectRoot, BuildTool.GRADLE_KOTLIN_DSL);
+                return new GradleRunner(output, propertiesOptions, registryClient, projectRoot,
+                        BuildTool.GRADLE_KOTLIN_DSL);
             case GRADLE:
                 return new GradleRunner(output, propertiesOptions, registryClient, projectRoot, BuildTool.GRADLE);
             case JBANG:
@@ -76,9 +78,7 @@ public interface BuildSystemRunner {
     }
 
     default List<String> wrapWithDoubleQuotes(List<String> stringsToWrap) {
-        return stringsToWrap.stream()
-                .map("\"%s\""::formatted)
-                .toList();
+        return stringsToWrap.stream().map("\"%s\""::formatted).toList();
     }
 
     default List<String> flattenMappedProperties(Map<String, String> props) {
@@ -97,12 +97,10 @@ public interface BuildSystemRunner {
         return getProjectRoot().relativize(absolutePath).toString();
     }
 
-    Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format)
-            throws Exception;
+    Integer listExtensionCategories(RunModeOption runMode, CategoryListFormatOptions format) throws Exception;
 
     Integer listExtensions(RunModeOption runMode, ListFormatOptions format, boolean installable, String searchPattern,
-            String category)
-            throws Exception;
+            String category) throws Exception;
 
     Integer addExtension(RunModeOption runMode, Set<String> extensions) throws Exception;
 
@@ -110,10 +108,10 @@ public interface BuildSystemRunner {
 
     Integer projectInfo(boolean perModule) throws Exception;
 
-    Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite)
-            throws Exception;
+    Integer updateProject(TargetQuarkusVersionGroup targetQuarkusVersion, RewriteGroup rewrite) throws Exception;
 
-    BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode, List<String> params);
+    BuildCommandArgs prepareAction(String action, BuildOptions buildOptions, RunModeOption runMode,
+            List<String> params);
 
     BuildCommandArgs prepareBuild(BuildOptions buildOptions, RunModeOption runMode, List<String> params);
 
@@ -142,10 +140,8 @@ public interface BuildSystemRunner {
 
         @Override
         public String toString() {
-            return "BuildCommandArgs{" +
-                    "arguments=" + Arrays.toString(arguments) +
-                    ", targetDirectory=" + targetDirectory +
-                    '}';
+            return "BuildCommandArgs{" + "arguments=" + Arrays.toString(arguments) + ", targetDirectory="
+                    + targetDirectory + '}';
         }
     }
 }

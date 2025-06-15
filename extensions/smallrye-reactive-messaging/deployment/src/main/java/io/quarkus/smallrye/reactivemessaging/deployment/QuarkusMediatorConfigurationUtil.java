@@ -51,8 +51,8 @@ public final class QuarkusMediatorConfigurationUtil {
     }
 
     public static QuarkusMediatorConfiguration create(MethodInfo methodInfo, boolean isSuspendMethod, BeanInfo bean,
-            RecorderContext recorderContext,
-            ClassLoader cl, boolean strict, ReactiveMessagingConfiguration.ExecutionMode executionMode) {
+            RecorderContext recorderContext, ClassLoader cl, boolean strict,
+            ReactiveMessagingConfiguration.ExecutionMode executionMode) {
 
         Class[] parameterTypeClasses;
         Class<?> returnTypeClass;
@@ -65,7 +65,8 @@ public final class QuarkusMediatorConfigurationUtil {
             // the generated invoker will always return a CompletionStage
             // TODO: avoid hard coding this and use an SPI to communicate the info with the invoker generation code
             returnTypeClass = CompletionStage.class;
-            genericReturnTypeAssignable = new JandexGenericTypeAssignable(determineReturnTypeOfSuspendMethod(methodInfo), cl);
+            genericReturnTypeAssignable = new JandexGenericTypeAssignable(
+                    determineReturnTypeOfSuspendMethod(methodInfo), cl);
         } else {
             parameterTypeClasses = new Class[methodInfo.parametersCount()];
             for (int i = 0; i < methodInfo.parametersCount(); i++) {
@@ -85,8 +86,7 @@ public final class QuarkusMediatorConfigurationUtil {
             List<Class<?>> inner = new ArrayList<>();
             if (type.kind() == Type.Kind.PARAMETERIZED_TYPE) {
                 inner = type.asParameterizedType().arguments().stream()
-                        .map(t -> recorderContext.classProxy(t.name().toString()))
-                        .collect(Collectors.toList());
+                        .map(t -> recorderContext.classProxy(t.name().toString())).collect(Collectors.toList());
             }
             ti.setGenerics(inner);
             gen.add(ti);
@@ -99,8 +99,7 @@ public final class QuarkusMediatorConfigurationUtil {
         handleKeyedMulti(methodInfo, recorderContext, configuration);
 
         MediatorConfigurationSupport mediatorConfigurationSupport = new MediatorConfigurationSupport(
-                fullMethodName(methodInfo), returnTypeClass, parameterTypeClasses,
-                genericReturnTypeAssignable,
+                fullMethodName(methodInfo), returnTypeClass, parameterTypeClasses, genericReturnTypeAssignable,
                 methodInfo.parameterTypes().isEmpty() ? new AlwaysInvalidIndexGenericTypeAssignable()
                         : new MethodParamGenericTypeAssignable(methodInfo, 0, cl));
 
@@ -127,14 +126,13 @@ public final class QuarkusMediatorConfigurationUtil {
         Shape shape = mediatorConfigurationSupport.determineShape(incomingValues, outgoingValues);
         configuration.setShape(shape);
         Acknowledgment.Strategy acknowledgment = mediatorConfigurationSupport
-                .processSuppliedAcknowledgement(incomingValues,
-                        () -> {
-                            AnnotationInstance instance = methodInfo.annotation(ACKNOWLEDGMENT);
-                            if (instance != null) {
-                                return Acknowledgment.Strategy.valueOf(instance.value().asEnum());
-                            }
-                            return null;
-                        });
+                .processSuppliedAcknowledgement(incomingValues, () -> {
+                    AnnotationInstance instance = methodInfo.annotation(ACKNOWLEDGMENT);
+                    if (instance != null) {
+                        return Acknowledgment.Strategy.valueOf(instance.value().asEnum());
+                    }
+                    return null;
+                });
         configuration.setAcknowledgment(acknowledgment);
 
         MediatorConfigurationSupport.ValidationOutput validationOutput = mediatorConfigurationSupport.validate(shape,
@@ -166,8 +164,8 @@ public final class QuarkusMediatorConfigurationUtil {
             }
         }));
 
-        configuration.setBroadcastValue(mediatorConfigurationSupport.processBroadcast(outgoingValues,
-                new Supplier<Integer>() {
+        configuration.setBroadcastValue(
+                mediatorConfigurationSupport.processBroadcast(outgoingValues, new Supplier<Integer>() {
                     @Override
                     public Integer get() {
                         AnnotationInstance instance = methodInfo.annotation(BROADCAST);
@@ -182,8 +180,7 @@ public final class QuarkusMediatorConfigurationUtil {
                     }
                 }));
         configuration.setHasTargetedOutput(mediatorConfigurationSupport.processTargetedOutput());
-        if (!hasBlockingAnnotation(methodInfo)
-                && !hasNonBlockingAnnotation(methodInfo)
+        if (!hasBlockingAnnotation(methodInfo) && !hasNonBlockingAnnotation(methodInfo)
                 && hasBlockingPayloadSignature(methodInfo)) {
             switch (executionMode) {
                 case WORKER:
@@ -203,7 +200,8 @@ public final class QuarkusMediatorConfigurationUtil {
         AnnotationInstance smallryeBlockingAnnotation = methodInfo.annotation(SMALLRYE_BLOCKING);
         AnnotationInstance transactionalAnnotation = methodInfo.annotation(TRANSACTIONAL);
         AnnotationInstance runOnVirtualThreadAnnotation = methodInfo.annotation(RUN_ON_VIRTUAL_THREAD);
-        // IF @RunOnVirtualThread is used on the declaring class, it forces all @Blocking method to be run on virtual threads.
+        // IF @RunOnVirtualThread is used on the declaring class, it forces all @Blocking method to be run on virtual
+        // threads.
         AnnotationInstance runOnVirtualThreadClassAnnotation = methodInfo.declaringClass()
                 .declaredAnnotation(RUN_ON_VIRTUAL_THREAD);
         if (blockingAnnotation != null || smallryeBlockingAnnotation != null || transactionalAnnotation != null
@@ -214,9 +212,8 @@ public final class QuarkusMediatorConfigurationUtil {
                 AnnotationValue ordered = blockingAnnotation.value("ordered");
                 if (runOnVirtualThreadAnnotation != null || runOnVirtualThreadClassAnnotation != null) {
                     if (ordered != null && ordered.asBoolean()) {
-                        throw new ConfigurationException(
-                                "The method `" + methodInfo.name()
-                                        + "` is using `@RunOnVirtualThread` but explicitly set as `@Blocking(ordered = true)`");
+                        throw new ConfigurationException("The method `" + methodInfo.name()
+                                + "` is using `@RunOnVirtualThread` but explicitly set as `@Blocking(ordered = true)`");
                     }
                     configuration.setBlockingExecutionOrdered(false);
                     configuration.setWorkerPoolName(QuarkusWorkerPoolRegistry.DEFAULT_VIRTUAL_THREAD_WORKER);
@@ -224,8 +221,8 @@ public final class QuarkusMediatorConfigurationUtil {
                     configuration.setBlockingExecutionOrdered(ordered == null || ordered.asBoolean());
                 }
                 String poolName;
-                if (blockingAnnotation.value() != null &&
-                        !(poolName = blockingAnnotation.value().asString()).equals(Blocking.DEFAULT_WORKER_POOL)) {
+                if (blockingAnnotation.value() != null
+                        && !(poolName = blockingAnnotation.value().asString()).equals(Blocking.DEFAULT_WORKER_POOL)) {
                     configuration.setWorkerPoolName(poolName);
                 }
             } else if (runOnVirtualThreadAnnotation != null || runOnVirtualThreadClassAnnotation != null) {
@@ -239,16 +236,16 @@ public final class QuarkusMediatorConfigurationUtil {
         return configuration;
     }
 
-    private static void handleKeyedMulti(MethodInfo methodInfo,
-            RecorderContext recorderContext, QuarkusMediatorConfiguration configuration) {
+    private static void handleKeyedMulti(MethodInfo methodInfo, RecorderContext recorderContext,
+            QuarkusMediatorConfiguration configuration) {
         if (methodInfo.parametersCount() == 1) { // @Keyed can only be used with a single parameter, a keyed multi
             var info = methodInfo.parameters().get(0);
             var annotation = info.annotation(ReactiveMessagingDotNames.KEYED);
             if (annotation != null) {
                 // Make sure we have a keyed multi and an incoming.
                 if (methodInfo.annotation(INCOMING) == null && methodInfo.annotation(INCOMINGS) == null) {
-                    throw new ConfigurationException(
-                            "The method `" + methodInfo.name() + "` is using `@Keyed` but is not annotated with `@Incoming`");
+                    throw new ConfigurationException("The method `" + methodInfo.name()
+                            + "` is using `@Keyed` but is not annotated with `@Incoming`");
                 }
                 if (info.type().kind() != Type.Kind.PARAMETERIZED_TYPE
                         || !info.type().asParameterizedType().name().equals(ReactiveMessagingDotNames.KEYED_MULTI)) {
@@ -327,9 +324,8 @@ public final class QuarkusMediatorConfigurationUtil {
 
             }
             if ((value == null) || value.isEmpty()) {
-                throw new IllegalArgumentException(
-                        "@" + dotName.withoutPackagePrefix() + " value cannot be blank. Offending method is: "
-                                + fullMethodName(methodInfo));
+                throw new IllegalArgumentException("@" + dotName.withoutPackagePrefix()
+                        + " value cannot be blank. Offending method is: " + fullMethodName(methodInfo));
             }
 
             // TODO: does it make sense to validate the name with the supplied configuration?
@@ -340,22 +336,19 @@ public final class QuarkusMediatorConfigurationUtil {
 
     private static List<String> getValues(MethodInfo methodInfo, DotName dotName) {
         return methodInfo.annotations().stream().filter(ai -> ai.name().equals(dotName))
-                .map(ai -> ai.value().asString())
-                .collect(Collectors.toList());
+                .map(ai -> ai.value().asString()).collect(Collectors.toList());
     }
 
     private static List<String> getIncomingValues(MethodInfo methodInfo) {
         return methodInfo.annotations().stream().filter(ai -> ai.name().equals(INCOMINGS))
                 .flatMap(incomings -> Arrays.stream(incomings.value().asNestedArray()))
-                .map(incoming -> incoming.value().asString())
-                .collect(Collectors.toList());
+                .map(incoming -> incoming.value().asString()).collect(Collectors.toList());
     }
 
     private static List<String> getOutgoingValues(MethodInfo methodInfo) {
         return methodInfo.annotations().stream().filter(ai -> ai.name().equals(OUTGOINGS))
                 .flatMap(outgoings -> Arrays.stream(outgoings.value().asNestedArray()))
-                .map(outgoing -> outgoing.value().asString())
-                .collect(Collectors.toList());
+                .map(outgoing -> outgoing.value().asString()).collect(Collectors.toList());
     }
 
     private static String fullMethodName(MethodInfo methodInfo) {
@@ -477,10 +470,8 @@ public final class QuarkusMediatorConfigurationUtil {
     }
 
     public static boolean hasBlockingAnnotation(MethodInfo method) {
-        return method.hasAnnotation(BLOCKING)
-                || method.hasAnnotation(SMALLRYE_BLOCKING)
-                || method.hasAnnotation(RUN_ON_VIRTUAL_THREAD)
-                || method.hasAnnotation(TRANSACTIONAL);
+        return method.hasAnnotation(BLOCKING) || method.hasAnnotation(SMALLRYE_BLOCKING)
+                || method.hasAnnotation(RUN_ON_VIRTUAL_THREAD) || method.hasAnnotation(TRANSACTIONAL);
     }
 
     private static boolean hasBlockingPayloadSignature(MethodInfo methodInfo) {

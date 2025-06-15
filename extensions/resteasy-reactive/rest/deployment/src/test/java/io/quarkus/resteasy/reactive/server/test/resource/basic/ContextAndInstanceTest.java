@@ -22,21 +22,20 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ContextAndInstanceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
-                    jar.addClasses(SummaryGeneratorInterface.class);
-                    jar.addClasses(SummaryGeneratorSubInterface.class);
-                    jar.addClasses(SummaryGenerator.class);
-                    jar.addClasses(GermanSummaryGenerator.class);
-                    jar.addClasses(GreetingGeneratorInterface.class);
-                    jar.addClasses(GreetingGeneratorSubInterface.class);
-                    jar.addClasses(GermanGreetingGenerator.class);
-                    return jar;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive jar = ShrinkWrap.create(JavaArchive.class);
+            jar.addClasses(SummaryGeneratorInterface.class);
+            jar.addClasses(SummaryGeneratorSubInterface.class);
+            jar.addClasses(SummaryGenerator.class);
+            jar.addClasses(GermanSummaryGenerator.class);
+            jar.addClasses(GreetingGeneratorInterface.class);
+            jar.addClasses(GreetingGeneratorSubInterface.class);
+            jar.addClasses(GermanGreetingGenerator.class);
+            return jar;
+        }
+    });
 
     @Test
     void testContextWithAbstractClass() {

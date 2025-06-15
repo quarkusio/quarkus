@@ -16,12 +16,10 @@ import io.quarkus.test.component.beans.MyComponent;
 public class MockConfiguratorTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
-            .mock(Charlie.class).createMockitoMock(charlie -> {
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder().mock(Charlie.class)
+            .createMockitoMock(charlie -> {
                 Mockito.when(charlie.pong()).thenReturn("bar");
-            })
-            .configProperty("foo", "BAR")
-            .build();
+            }).configProperty("foo", "BAR").build();
 
     @Inject
     MyComponent myComponent;

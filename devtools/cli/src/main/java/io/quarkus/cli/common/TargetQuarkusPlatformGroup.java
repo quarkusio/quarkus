@@ -29,19 +29,19 @@ public class TargetQuarkusPlatformGroup {
                 validStream = stream;
             } catch (IllegalArgumentException iex) {
                 throw new CommandLine.ParameterException(spec.commandLine(),
-                        String.format("Invalid value '%s' for option '--stream'. " +
-                                "Value should be specified as 'platformKey:streamId'. %s", stream, iex.getMessage()));
+                        String.format(
+                                "Invalid value '%s' for option '--stream'. "
+                                        + "Value should be specified as 'platformKey:streamId'. %s",
+                                stream, iex.getMessage()));
             }
         }
     }
 
     @CommandLine.Option(paramLabel = "groupId:artifactId:version", names = { "-P",
-            "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n"
-                    + "  " + FULL_EXAMPLE + "%n"
-                    + "  io.quarkus::999-SNAPSHOT"
-                    + "  3.15.2%n"
-                    + "Default groupId: " + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + "%n"
-                    + "Default artifactId: " + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + "%n")
+            "--platform-bom" }, description = "A specific Quarkus platform BOM, for example:%n" + "  " + FULL_EXAMPLE
+                    + "%n" + "  io.quarkus::999-SNAPSHOT" + "  3.15.2%n" + "Default groupId: "
+                    + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + "%n" + "Default artifactId: "
+                    + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + "%n")
     void setPlatformBom(String bom) {
         bom = bom.replaceFirst("^::", "").trim();
         if (!bom.isEmpty()) {
@@ -51,24 +51,20 @@ public class TargetQuarkusPlatformGroup {
                 if (lastPos <= 0) {
                     // no : at all, use default group and artifact id
                     setBom(ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID,
-                            ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID,
-                            bom);
+                            ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID, bom);
                 } else if (lastPos == firstPos + 1) { // We have :: somewhere
                     if (lastPos == bom.length() - 1) {
                         // some.group::, use default artifact and client version
-                        setBom(bom.substring(0, firstPos),
-                                ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID,
+                        setBom(bom.substring(0, firstPos), ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID,
                                 Version.clientVersion());
                     } else {
                         // some.group::version, use default artifact id
-                        setBom(bom.substring(0, firstPos),
-                                ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID,
+                        setBom(bom.substring(0, firstPos), ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID,
                                 bom.substring(lastPos + 1));
                     }
                 } else if (firstPos == 0 && lastPos == bom.length() - 1) {
                     // :my-bom:, use default group and version
-                    setBom(ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID,
-                            bom.substring(1, lastPos),
+                    setBom(ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID, bom.substring(1, lastPos),
                             Version.clientVersion());
                 } else {
                     platformBom = ArtifactCoords.fromString(bom);
@@ -76,8 +72,10 @@ public class TargetQuarkusPlatformGroup {
                 }
             } catch (IllegalArgumentException iex) {
                 throw new CommandLine.ParameterException(spec.commandLine(),
-                        String.format("Invalid value '%s' for option '--platform-bom'. " +
-                                "Value should be specified as 'GROUP-ID:ARTIFACT-ID:VERSION'. %s", bom, iex.getMessage()));
+                        String.format(
+                                "Invalid value '%s' for option '--platform-bom'. "
+                                        + "Value should be specified as 'GROUP-ID:ARTIFACT-ID:VERSION'. %s",
+                                bom, iex.getMessage()));
             }
         }
     }
@@ -110,10 +108,7 @@ public class TargetQuarkusPlatformGroup {
 
     @Override
     public String toString() {
-        return "TargetQuarkusVersionGroup{"
-                + "stream=" + streamCoords
-                + ", platformBom=" + platformBom
-                + '}';
+        return "TargetQuarkusVersionGroup{" + "stream=" + streamCoords + ", platformBom=" + platformBom + '}';
     }
 
     private void setBom(String groupId, String artifactId, String version) {

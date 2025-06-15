@@ -35,11 +35,9 @@ public class FastJarFormatWorksTest extends QuarkusGradleWrapperTestBase {
         DevModeClient devModeClient = new DevModeClient();
         Process process = launch(jar, output);
         try {
-            //Wait until server up
+            // Wait until server up
             dumpFileContentOnFailure(() -> {
-                await()
-                        .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES)
+                await().pollDelay(1, TimeUnit.SECONDS).atMost(1, TimeUnit.MINUTES)
                         .until(() -> devModeClient.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);

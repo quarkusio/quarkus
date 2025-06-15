@@ -25,8 +25,7 @@ public class Bar {
         if (o == null || getClass() != o.getClass())
             return false;
         Bar bar = (Bar) o;
-        return Objects.equals(name, bar.name) &&
-                Objects.equals(description, bar.description);
+        return Objects.equals(name, bar.name) && Objects.equals(description, bar.description);
     }
 
     @Override

@@ -28,39 +28,32 @@ public class ClientHeaderParamFromPropertyTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class)
-                    .addAsResource(
-                            new StringAsset("my.property-value=" + HEADER_VALUE),
-                            "application.properties"));
+                    .addAsResource(new StringAsset("my.property-value=" + HEADER_VALUE), "application.properties"));
 
     @Test
     void shouldSetHeaderFromProperties() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.getWithHeader()).isEqualTo(HEADER_VALUE);
     }
 
     @Test
     void shouldFailOnMissingRequiredHeaderProperty() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
-        assertThatThrownBy(client::missingRequiredProperty)
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(client::missingRequiredProperty).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void shouldSucceedOnMissingNonRequiredHeaderProperty() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.missingNonRequiredProperty()).isEqualTo(HEADER_VALUE);
     }
 
     @Test
     void shouldSupportAdditionalTextOnHeaderProperty() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.supportAdditionalText()).isEqualTo("Bearer " + HEADER_VALUE + " Token");
     }

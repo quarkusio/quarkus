@@ -58,11 +58,10 @@ public class HttpMeterFilterProvider {
     }
 
     MeterFilter maximumAllowableUriTagsFilter(final String metricName, final int maximumTagValues) {
-        MeterFilter denyFilter = new OnlyOnceLoggingDenyMeterFilter(() -> String
-                .format("Reached the maximum number (%s) of URI tags for '%s'. Are you using path parameters?",
-                        maximumTagValues, metricName));
+        MeterFilter denyFilter = new OnlyOnceLoggingDenyMeterFilter(() -> String.format(
+                "Reached the maximum number (%s) of URI tags for '%s'. Are you using path parameters?",
+                maximumTagValues, metricName));
 
-        return MeterFilter.maximumAllowableTags(metricName, "uri", maximumTagValues,
-                denyFilter);
+        return MeterFilter.maximumAllowableTags(metricName, "uri", maximumTagValues, denyFilter);
     }
 }

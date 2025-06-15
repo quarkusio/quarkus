@@ -34,16 +34,17 @@ public class DatabaseListTest extends MongoTestBase {
     void list() {
         assertThat(client.listDatabaseNames().collect().asList().await().indefinitely().size()).isBetween(2, 3);
         assertThat(client.listDatabases().collect().asList().await().indefinitely().size()).isBetween(2, 3);
-        assertThat(client.listDatabases(Document.class).collect().asList().await().indefinitely().size())
+        assertThat(client.listDatabases(Document.class).collect().asList().await().indefinitely().size()).isBetween(2,
+                3);
+        Assertions
+                .assertThat(client.listDatabases(Document.class, new DatabaseListOptions().maxTime(1, TimeUnit.SECONDS))
+                        .collect().asList().await().indefinitely().size())
                 .isBetween(2, 3);
-        Assertions.assertThat(client.listDatabases(Document.class, new DatabaseListOptions().maxTime(1, TimeUnit.SECONDS))
-                .collect().asList().await().indefinitely().size()).isBetween(2, 3);
-        assertThat(client.listDatabases(Document.class, null)
-                .collect().asList().await().indefinitely().size()).isBetween(2, 3);
-        assertThat(client.listDatabases(new DatabaseListOptions().nameOnly(true)).collect().asList()
-                .await().indefinitely().size()).isBetween(2, 3);
-        assertThat(
-                client.listDatabases((DatabaseListOptions) null).collect().asList().await().indefinitely().size())
+        assertThat(client.listDatabases(Document.class, null).collect().asList().await().indefinitely().size())
+                .isBetween(2, 3);
+        assertThat(client.listDatabases(new DatabaseListOptions().nameOnly(true)).collect().asList().await()
+                .indefinitely().size()).isBetween(2, 3);
+        assertThat(client.listDatabases((DatabaseListOptions) null).collect().asList().await().indefinitely().size())
                 .isBetween(2, 3);
     }
 }

@@ -10,10 +10,8 @@ import io.smallrye.config.WithDefault;
 /**
  * Debugging
  * <p>
- * This is used currently only to suppress warnings about unknown properties
- * when the user supplies something like: -Dquarkus.debug.reflection=true
- *
- * TODO refactor code to actually use these values
+ * This is used currently only to suppress warnings about unknown properties when the user supplies something like:
+ * -Dquarkus.debug.reflection=true TODO refactor code to actually use these values
  */
 @ConfigMapping(prefix = "quarkus.debug")
 @ConfigRoot(phase = ConfigPhase.BUILD_TIME)

@@ -30,7 +30,7 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
     Instance<IdentityProvider<LambdaAuthenticationRequest>> identityProviders;
 
     // there is no way in CDI to currently provide a prioritized list of IdentityProvider
-    // So, what we do here is to try to see if anybody has registered one.  If no identity, then
+    // So, what we do here is to try to see if anybody has registered one. If no identity, then
     // fire off a request that can only be resolved by the DefaultLambdaIdentityProvider
     boolean useDefault;
 
@@ -40,7 +40,8 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext routingContext, IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext routingContext,
+            IdentityProviderManager identityProviderManager) {
         MultiMap qheaders = routingContext.request().headers();
         if (qheaders instanceof QuarkusHttpHeaders) {
             Map<Class<?>, Object> contextObjects = ((QuarkusHttpHeaders) qheaders).getContextObjects();
@@ -48,14 +49,12 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
                 AwsProxyRequest event = (AwsProxyRequest) contextObjects.get(AwsProxyRequest.class);
                 if (isAuthenticatable(event)) {
                     if (useDefault) {
-                        return identityProviderManager
-                                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
-                                        new DefaultLambdaAuthenticationRequest(event), routingContext));
+                        return identityProviderManager.authenticate(HttpSecurityUtils.setRoutingContextAttribute(
+                                new DefaultLambdaAuthenticationRequest(event), routingContext));
 
                     } else {
-                        return identityProviderManager
-                                .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
-                                        new LambdaAuthenticationRequest(event), routingContext));
+                        return identityProviderManager.authenticate(HttpSecurityUtils
+                                .setRoutingContextAttribute(new LambdaAuthenticationRequest(event), routingContext));
                     }
                 }
             }
@@ -67,9 +66,10 @@ public class LambdaHttpAuthenticationMechanism implements HttpAuthenticationMech
         final Map<String, String> systemEnvironment = System.getenv();
         final boolean isSamLocal = Boolean.parseBoolean(systemEnvironment.get("AWS_SAM_LOCAL"));
         final String forcedUserName = systemEnvironment.get("QUARKUS_AWS_LAMBDA_FORCE_USER_NAME");
-        return (isSamLocal && forcedUserName != null) || (event.getRequestContext() != null
-                && (event.getRequestContext().getAuthorizer() != null || (event.getRequestContext().getIdentity() != null
-                        && event.getRequestContext().getIdentity().getUser() != null)));
+        return (isSamLocal && forcedUserName != null)
+                || (event.getRequestContext() != null && (event.getRequestContext().getAuthorizer() != null
+                        || (event.getRequestContext().getIdentity() != null
+                                && event.getRequestContext().getIdentity().getUser() != null)));
     }
 
     @Override

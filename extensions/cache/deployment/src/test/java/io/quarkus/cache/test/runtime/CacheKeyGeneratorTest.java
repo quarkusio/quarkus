@@ -38,9 +38,9 @@ public class CacheKeyGeneratorTest {
     private static final Object OBJECT = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar
-            .addAsResource(new StringAsset("cache-key-element=" + ASPARAGUS), "application.properties")
-            .addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            jar -> jar.addAsResource(new StringAsset("cache-key-element=" + ASPARAGUS), "application.properties")
+                    .addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -114,7 +114,8 @@ public class CacheKeyGeneratorTest {
         }
 
         @CacheInvalidate(cacheName = CACHE_NAME, keyGenerator = NotABeanKeyGen.class)
-        public void invalidate2(/* Key element */ String param0, /* Not used */ Long param1, /* Key element */ String param2) {
+        public void invalidate2(/* Key element */ String param0, /* Not used */ Long param1,
+                /* Key element */ String param2) {
         }
     }
 

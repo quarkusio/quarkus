@@ -28,8 +28,7 @@ public class ClientResponseFilterTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class));
 
     @TestHTTPResource
     URL url;

@@ -36,7 +36,7 @@ public class DevModeMetricsTest {
         public void countedMethod() {
         }
 
-        //MARKER-KEEP-ME
+        // MARKER-KEEP-ME
 
         @GET
         @Path("/getvalue/{name}")
@@ -53,12 +53,9 @@ public class DevModeMetricsTest {
     }
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(
-                            new File("src/test/resources/config/jaxrs-metrics.properties"),
-                            "application.properties")
-                    .addClasses(DevModeMetricsTest.class, MetricsResource.class));
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new File("src/test/resources/config/jaxrs-metrics.properties"), "application.properties")
+            .addClasses(DevModeMetricsTest.class, MetricsResource.class));
 
     @Test
     public void test() {
@@ -72,13 +69,11 @@ public class DevModeMetricsTest {
                 .body(not(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource")));
 
         // trigger a reload by adding a new metric (mycounter2)
-        TEST.modifySourceFile(DevModeMetricsTest.class, (s) -> s.replaceFirst("MARKER-KEEP-ME",
-                "MARKER-KEEP-ME\n" +
-                        "@Counted(name = \"mycounter2\", absolute = true)\n" +
-                        "@GET\n" +
-                        "@Path(\"/increment-counter2\")\n" +
-                        "public void countedMethod2() {\n" +
-                        "} //MARKER-END"));
+        TEST.modifySourceFile(DevModeMetricsTest.class,
+                (s) -> s.replaceFirst("MARKER-KEEP-ME",
+                        "MARKER-KEEP-ME\n" + "@Counted(name = \"mycounter2\", absolute = true)\n" + "@GET\n"
+                                + "@Path(\"/increment-counter2\")\n" + "public void countedMethod2() {\n"
+                                + "} //MARKER-END"));
 
         // enable jax-rs metrics via quarkus.resteasy.metrics.enabled
         TEST.modifyResourceFile("application.properties",
@@ -93,8 +88,7 @@ public class DevModeMetricsTest {
         when().get("/getvalue/mycounter2").then().body(equalTo("1"));
 
         // jax-rs metrics are enabled
-        when().get("/q/metrics").then()
-                .statusCode(200)
+        when().get("/q/metrics").then().statusCode(200)
                 .body(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource"));
 
         // disable jax-rs metrics via quarkus.resteasy.metrics.enabled
@@ -106,20 +100,18 @@ public class DevModeMetricsTest {
                 (s) -> s.replaceFirst("//MARKER-KEEP-ME[\\s\\S]+?MARKER-END", ""));
 
         // verify that mycounter2 no longer exists
-        when().get("/getvalue/mycounter2").then()
-                .statusCode(204);
+        when().get("/getvalue/mycounter2").then().statusCode(204);
 
         // jax-rs metrics are disabled
         when().get("/q/metrics").then()
                 .body(not(containsString("io.quarkus.smallrye.metrics.deployment.DevModeMetricsTest$MetricsResource")));
 
         // enable jax-rs metrics via quarkus.resteasy.metrics.enabled
-        TEST.modifyResourceFile("application.properties",
-                v -> v.replace("quarkus.smallrye-metrics.jaxrs.enabled=false", "quarkus.smallrye-metrics.jaxrs.enabled=true"));
+        TEST.modifyResourceFile("application.properties", v -> v.replace("quarkus.smallrye-metrics.jaxrs.enabled=false",
+                "quarkus.smallrye-metrics.jaxrs.enabled=true"));
 
         // verify that mycounter2 no longer exists
-        when().get("/getvalue/mycounter2").then()
-                .statusCode(204);
+        when().get("/getvalue/mycounter2").then().statusCode(204);
 
         // jax-rs metrics are enabled
         when().get("/q/metrics").then()

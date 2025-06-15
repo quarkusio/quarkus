@@ -23,11 +23,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ChannelInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyConsumer.class, GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class,
-                            HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyConsumer.class,
+                    GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class, HelloService.class, HelloRequest.class,
+                    HelloReply.class, HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
@@ -49,14 +48,12 @@ public class ChannelInjectionTest {
         Channel channel;
 
         public String invoke(String s) {
-            return GreeterGrpc.newBlockingStub(channel)
-                    .sayHello(HelloRequest.newBuilder().setName(s).build())
+            return GreeterGrpc.newBlockingStub(channel).sayHello(HelloRequest.newBuilder().setName(s).build())
                     .getMessage();
         }
 
         public String invokeWeird(String s) {
-            return GreeterGrpc.newBlockingStub(channel)
-                    .wEIRD(HelloRequest.newBuilder().setName(s).build())
+            return GreeterGrpc.newBlockingStub(channel).wEIRD(HelloRequest.newBuilder().setName(s).build())
                     .getMessage();
         }
 

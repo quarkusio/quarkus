@@ -32,42 +32,33 @@ import io.restassured.RestAssured;
 public class MediaTypesWithSuffixHandlingTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(() -> {
-                JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
-                archive.addClasses(TestResource.class, NoSuffixMessageBodyWriter.class, SuffixMessageBodyWriter.class);
-                return archive;
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(() -> {
+        JavaArchive archive = ShrinkWrap.create(JavaArchive.class);
+        archive.addClasses(TestResource.class, NoSuffixMessageBodyWriter.class, SuffixMessageBodyWriter.class);
+        return archive;
+    });
 
     @Test
     public void testWriterWithoutSuffix() {
-        RestAssured.get("/test/writer/with-no-suffix")
-                .then()
-                .statusCode(200)
+        RestAssured.get("/test/writer/with-no-suffix").then().statusCode(200)
                 .body(Matchers.equalTo("result - no suffix writer"));
     }
 
     @Test
     public void testReaderWithoutSuffix() {
-        RestAssured.get("/test/reader/with-no-suffix")
-                .then()
-                .statusCode(200)
+        RestAssured.get("/test/reader/with-no-suffix").then().statusCode(200)
                 .body(Matchers.equalTo("from reader - result"));
     }
 
     @Test
     public void testWriterWithSuffix() {
-        RestAssured.get("/test/writer/with-suffix")
-                .then()
-                .statusCode(200)
+        RestAssured.get("/test/writer/with-suffix").then().statusCode(200)
                 .body(Matchers.equalTo("result - suffix writer"));
     }
 
     @Test
     public void testReaderWithSuffix() {
-        RestAssured.get("/test/reader/with-suffix")
-                .then()
-                .statusCode(200)
+        RestAssured.get("/test/reader/with-suffix").then().statusCode(200)
                 .body(Matchers.equalTo("from reader suffix - result"));
     }
 
@@ -106,10 +97,12 @@ public class MediaTypesWithSuffixHandlingTest {
     @Provider
     @Consumes("text/test")
     @Produces("text/test")
-    public static class NoSuffixMessageBodyWriter implements ServerMessageBodyWriter<Object>, ServerMessageBodyReader<Object> {
+    public static class NoSuffixMessageBodyWriter
+            implements ServerMessageBodyWriter<Object>, ServerMessageBodyReader<Object> {
 
         @Override
-        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+                MediaType mediaType) {
             return true;
         }
 
@@ -140,8 +133,8 @@ public class MediaTypesWithSuffixHandlingTest {
         }
 
         @Override
-        public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType,
-                ServerRequestContext context) throws WebApplicationException {
+        public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ServerRequestContext context)
+                throws WebApplicationException {
             return "from reader";
         }
 
@@ -152,8 +145,7 @@ public class MediaTypesWithSuffixHandlingTest {
 
         @Override
         public Object readFrom(Class<Object> aClass, Type type, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> multivaluedMap, InputStream inputStream)
-                throws WebApplicationException {
+                MultivaluedMap<String, String> multivaluedMap, InputStream inputStream) throws WebApplicationException {
             throw new IllegalStateException("should never have been called");
         }
     }
@@ -161,10 +153,12 @@ public class MediaTypesWithSuffixHandlingTest {
     @Provider
     @Consumes("text/test+suffix")
     @Produces("text/test+suffix")
-    public static class SuffixMessageBodyWriter implements ServerMessageBodyWriter<Object>, ServerMessageBodyReader<Object> {
+    public static class SuffixMessageBodyWriter
+            implements ServerMessageBodyWriter<Object>, ServerMessageBodyReader<Object> {
 
         @Override
-        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+        public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+                MediaType mediaType) {
             return true;
         }
 
@@ -195,8 +189,8 @@ public class MediaTypesWithSuffixHandlingTest {
         }
 
         @Override
-        public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType,
-                ServerRequestContext context) throws WebApplicationException {
+        public Object readFrom(Class<Object> type, Type genericType, MediaType mediaType, ServerRequestContext context)
+                throws WebApplicationException {
             return "from reader suffix";
         }
 
@@ -207,8 +201,7 @@ public class MediaTypesWithSuffixHandlingTest {
 
         @Override
         public Object readFrom(Class<Object> aClass, Type type, Annotation[] annotations, MediaType mediaType,
-                MultivaluedMap<String, String> multivaluedMap, InputStream inputStream)
-                throws WebApplicationException {
+                MultivaluedMap<String, String> multivaluedMap, InputStream inputStream) throws WebApplicationException {
             throw new IllegalStateException("should never have been called");
         }
     }

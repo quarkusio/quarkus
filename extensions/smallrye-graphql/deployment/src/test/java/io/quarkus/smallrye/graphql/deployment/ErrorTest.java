@@ -13,34 +13,21 @@ import io.smallrye.common.annotation.NonBlocking;
 public class ErrorTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ErrorApi.class, Foo.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(ErrorApi.class, Foo.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testNonBlockingError() {
         String query = getPayload("{ foo { message} }");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .assertThat()
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql/").then().assertThat()
                 .statusCode(500);
     }
 
     @Test
     public void testBlockingError() {
         String query = getPayload("{ blockingFoo { message} }");
-        RestAssured.given()
-                .body(query)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql/")
-                .then()
-                .log().everything()
-                .assertThat()
-                .statusCode(500);
+        RestAssured.given().body(query).contentType(MEDIATYPE_JSON).post("/graphql/").then().log().everything()
+                .assertThat().statusCode(500);
     }
 
     public static class Foo {

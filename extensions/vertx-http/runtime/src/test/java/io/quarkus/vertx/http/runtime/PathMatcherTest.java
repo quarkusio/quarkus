@@ -146,9 +146,10 @@ public class PathMatcherTest {
         assertMatched(matcher, "/one1/two#three/christmas!", handler5);
         assertMatched(matcher, "/one1/two#thre");
         // no default handler
-        matcher = ImmutablePathMatcher.builder().addPath("/one/two#three", handler2).addPath("/one/two#three/", handler4)
-                .addPath("/one/two?three=four", handler1).addPath("/one/*/three?one\\\\\\=two", handler3)
-                .addPath("/one/two#three*", handler4).addPath("/*/two#three*", handler5).build();
+        matcher = ImmutablePathMatcher.builder().addPath("/one/two#three", handler2)
+                .addPath("/one/two#three/", handler4).addPath("/one/two?three=four", handler1)
+                .addPath("/one/*/three?one\\\\\\=two", handler3).addPath("/one/two#three*", handler4)
+                .addPath("/*/two#three*", handler5).build();
         assertMatched(matcher, "/one/two#three", handler2);
         assertMatched(matcher, "/one/two?three=four", handler1);
         assertMatched(matcher, "/one/any-value/three?one\\\\\\=two", handler3);
@@ -182,10 +183,10 @@ public class PathMatcherTest {
         final Object handler7 = new Object();
         final Object handler8 = new Object();
         final ImmutablePathMatcher<Object> matcher = ImmutablePathMatcher.builder().addPath("/one/two", handler1)
-                .addPath("/one/two/three", handler2).addPath("/one/two/three/four", handler3)
-                .addPath("/", handler4).addPath("/*", HANDLER).addPath("/one/two/*/four", handler5)
-                .addPath("/one/*/three/four", handler6).addPath("/*/two/three/four", handler7)
-                .addPath("/*/two", handler8).addPath("/*/two/three/four/", HANDLER).build();
+                .addPath("/one/two/three", handler2).addPath("/one/two/three/four", handler3).addPath("/", handler4)
+                .addPath("/*", HANDLER).addPath("/one/two/*/four", handler5).addPath("/one/*/three/four", handler6)
+                .addPath("/*/two/three/four", handler7).addPath("/*/two", handler8)
+                .addPath("/*/two/three/four/", HANDLER).build();
         assertMatched(matcher, "/one/two", handler1);
         assertMatched(matcher, "/one/two/three", handler2);
         assertMatched(matcher, "/one/two/three/four", handler3);
@@ -212,9 +213,8 @@ public class PathMatcherTest {
         final Object handler5 = new Object();
         // with default path handler
         ImmutablePathMatcher<Object> matcher = ImmutablePathMatcher.builder().addPath("/*/two", handler2)
-                .addPath("/*/*/three", handler1).addPath("/one/*/three", handler3)
-                .addPath("/one/two/*/four", handler4).addPath("/one/two/three/*/five", handler5)
-                .addPath("/*", HANDLER).build();
+                .addPath("/*/*/three", handler1).addPath("/one/*/three", handler3).addPath("/one/two/*/four", handler4)
+                .addPath("/one/two/three/*/five", handler5).addPath("/*", HANDLER).build();
         assertMatched(matcher, "/any-value");
         assertMatched(matcher, "/one/two/three/four/five", handler5);
         assertMatched(matcher, "/one/two/three/4/five", handler5);
@@ -239,9 +239,9 @@ public class PathMatcherTest {
         assertMatched(matcher, "/1/two/three/", handler1);
         assertMatched(matcher, "/1/two/three/f");
         // no default path handler
-        matcher = ImmutablePathMatcher.builder().addPath("/*/two", handler2)
-                .addPath("/*/*/three", handler1).addPath("/one/*/three", handler3)
-                .addPath("/one/two/*/four", handler4).addPath("/one/two/three/*/five", handler5).build();
+        matcher = ImmutablePathMatcher.builder().addPath("/*/two", handler2).addPath("/*/*/three", handler1)
+                .addPath("/one/*/three", handler3).addPath("/one/two/*/four", handler4)
+                .addPath("/one/two/three/*/five", handler5).build();
         assertNotMatched(matcher, "/any-value");
         assertMatched(matcher, "/one/two/three/four/five", handler5);
         assertMatched(matcher, "/one/two/three/4/five", handler5);
@@ -276,9 +276,8 @@ public class PathMatcherTest {
         final Object handler5 = new Object();
         // with default handler
         ImmutablePathMatcher<Object> matcher = ImmutablePathMatcher.builder().addPath("/*/two/*", handler1)
-                .addPath("/one/*/*", handler2).addPath("/one/two/*/four*", handler3)
-                .addPath("/one/*/three/*", handler4).addPath("/one/two/*/*", handler5)
-                .addPath("/*", HANDLER).build();
+                .addPath("/one/*/*", handler2).addPath("/one/two/*/four*", handler3).addPath("/one/*/three/*", handler4)
+                .addPath("/one/two/*/*", handler5).addPath("/*", HANDLER).build();
         assertMatched(matcher, "/one/two/three/four/five/six", handler3);
         assertMatched(matcher, "/one/two/three/four/five", handler3);
         assertMatched(matcher, "/one/two/three/four/", handler3);
@@ -311,14 +310,21 @@ public class PathMatcherTest {
     @Test
     public void testInvalidPathPattern() {
         // path must start with a path separator
-        assertThrows(IllegalArgumentException.class, () -> ImmutablePathMatcher.builder().addPath("one", HANDLER).build());
+        assertThrows(IllegalArgumentException.class,
+                () -> ImmutablePathMatcher.builder().addPath("one", HANDLER).build());
         // inner wildcard must always be only path segment character
-        assertThrows(ConfigurationException.class, () -> ImmutablePathMatcher.builder().addPath("/one*/", HANDLER).build());
-        assertThrows(ConfigurationException.class, () -> ImmutablePathMatcher.builder().addPath("/*one/", HANDLER).build());
-        assertThrows(ConfigurationException.class, () -> ImmutablePathMatcher.builder().addPath("/o*ne/", HANDLER).build());
-        assertThrows(ConfigurationException.class, () -> ImmutablePathMatcher.builder().addPath("/one/*two/", HANDLER).build());
-        assertThrows(ConfigurationException.class, () -> ImmutablePathMatcher.builder().addPath("/one/*two/", HANDLER).build());
-        assertThrows(ConfigurationException.class, () -> ImmutablePathMatcher.builder().addPath("/one/two*/", HANDLER).build());
+        assertThrows(ConfigurationException.class,
+                () -> ImmutablePathMatcher.builder().addPath("/one*/", HANDLER).build());
+        assertThrows(ConfigurationException.class,
+                () -> ImmutablePathMatcher.builder().addPath("/*one/", HANDLER).build());
+        assertThrows(ConfigurationException.class,
+                () -> ImmutablePathMatcher.builder().addPath("/o*ne/", HANDLER).build());
+        assertThrows(ConfigurationException.class,
+                () -> ImmutablePathMatcher.builder().addPath("/one/*two/", HANDLER).build());
+        assertThrows(ConfigurationException.class,
+                () -> ImmutablePathMatcher.builder().addPath("/one/*two/", HANDLER).build());
+        assertThrows(ConfigurationException.class,
+                () -> ImmutablePathMatcher.builder().addPath("/one/two*/", HANDLER).build());
         assertThrows(ConfigurationException.class,
                 () -> ImmutablePathMatcher.builder().addPath("/one/*two*/", HANDLER).build());
     }
@@ -353,8 +359,7 @@ public class PathMatcherTest {
         List<String> handler3 = new ArrayList<>();
         handler3.add("Morpheus");
         var matcher = ImmutablePathMatcher.<List<String>> builder().handlerAccumulator(List::addAll)
-                .addPath("/*", handler1).addPath("/*", handler2)
-                .addPath("/", handler3).build();
+                .addPath("/*", handler1).addPath("/*", handler2).addPath("/", handler3).build();
         var handler = matcher.match("/default-path-handler").getValue();
         assertNotNull(handler);
         assertTrue(handler.contains("Neo"));
@@ -379,9 +384,10 @@ public class PathMatcherTest {
         handler5.add("TheOracle");
         List<String> handler6 = new ArrayList<>();
         handler6.add("AgentBrown");
-        var matcher = ImmutablePathMatcher.<List<String>> builder().handlerAccumulator(List::addAll).addPath("/path*", handler1)
-                .addPath("/path*", handler2).addPath("/path/*", handler3).addPath("/path/", handler4)
-                .addPath("/path/*/", handler5).addPath("/*", handler6).addPath("/path", handler1).build();
+        var matcher = ImmutablePathMatcher.<List<String>> builder().handlerAccumulator(List::addAll)
+                .addPath("/path*", handler1).addPath("/path*", handler2).addPath("/path/*", handler3)
+                .addPath("/path/", handler4).addPath("/path/*/", handler5).addPath("/*", handler6)
+                .addPath("/path", handler1).build();
         var handler = matcher.match("/path").getValue();
         assertNotNull(handler);
         assertTrue(handler.contains("Neo"));
@@ -436,9 +442,8 @@ public class PathMatcherTest {
                 .addPath("/*/one", handler1).addPath("/*/*", handler2).addPath("/*/*", handler3)
                 .addPath("/*/one", handler4).addPath("/*/two", handler5).addPath("/*", handler6)
                 .addPath("/one/*/three", handler7).addPath("/one/*", handler8).addPath("/one/*/*", handler9)
-                .addPath("/one/*/three", handler10).addPath("/one/*/*", handler11)
-                .addPath("/one/*/*/*", handler12).addPath("/one/*/*/*", handler13)
-                .addPath("/one/*/*/*", handler14).build();
+                .addPath("/one/*/three", handler10).addPath("/one/*/*", handler11).addPath("/one/*/*/*", handler12)
+                .addPath("/one/*/*/*", handler13).addPath("/one/*/*/*", handler14).build();
         var handler = matcher.match("/one/two/three").getValue();
         assertNotNull(handler);
         assertEquals(2, handler.size());

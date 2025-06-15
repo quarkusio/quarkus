@@ -31,17 +31,13 @@ public class ApplyBuilderImageDecorator extends NamedResourceDecorator<SourceBui
         String builderTag = imageRef.getTag();
         String builderName = !builderRepository.contains("/") ? builderRepository
                 : builderRepository.substring(builderRepository.lastIndexOf("/") + 1);
-        Optional<String> builderGroup = Optional.of(builderRepository)
-                .filter(s -> s.contains("/"))
+        Optional<String> builderGroup = Optional.of(builderRepository).filter(s -> s.contains("/"))
                 .map(s -> s.substring(0, s.indexOf("/")));
 
         boolean usesInternalRegistry = imageRef.getRegistry()
                 .filter(registry -> registry.contains(OPENSHIFT_INTERNAL_REGISTRY_PROJECT)).isPresent();
-        strategy.withNewFrom()
-                .withKind("ImageStreamTag")
-                .withName(builderName + ":" + builderTag)
-                .withNamespace(builderGroup.filter(g -> usesInternalRegistry).orElse(null))
-                .endFrom();
+        strategy.withNewFrom().withKind("ImageStreamTag").withName(builderName + ":" + builderTag)
+                .withNamespace(builderGroup.filter(g -> usesInternalRegistry).orElse(null)).endFrom();
     }
 
     @Override

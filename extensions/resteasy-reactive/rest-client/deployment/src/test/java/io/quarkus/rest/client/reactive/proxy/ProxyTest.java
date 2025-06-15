@@ -19,9 +19,8 @@ public class ProxyTest extends ProxyTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Client1.class, Client2.class, Client3.class, Client4.class, Client5.class,
-                            Client6.class, ViaHeaderReturningResource.class))
+            .withApplicationRoot(jar -> jar.addClasses(Client1.class, Client2.class, Client3.class, Client4.class,
+                    Client5.class, Client6.class, ViaHeaderReturningResource.class))
             .withConfigurationResource("proxy-test-application.properties");
 
     @RestClient
@@ -57,20 +56,17 @@ public class ProxyTest extends ProxyTestBase {
         assertThat(response.readEntity(String.class)).isEqualTo(PROXY_8182);
 
         RestClientBuilderImpl restClientBuilder = (RestClientBuilderImpl) RestClientBuilder.newBuilder();
-        response = restClientBuilder.baseUri(appUri).proxyAddress("localhost", 8183)
-                .proxyUser("admin").proxyPassword("r00t")
-                .build(Client1.class).get();
+        response = restClientBuilder.baseUri(appUri).proxyAddress("localhost", 8183).proxyUser("admin")
+                .proxyPassword("r00t").build(Client1.class).get();
         assertThat(response.readEntity(String.class)).isEqualTo(AUTHENTICATED_PROXY);
 
         restClientBuilder = (RestClientBuilderImpl) RestClientBuilder.newBuilder();
-        response = restClientBuilder.baseUri(appUri).proxyAddress("localhost", 8183)
-                .proxyUser("admin").proxyPassword("r00t").nonProxyHosts("example.com|localhost")
-                .build(Client1.class).get();
+        response = restClientBuilder.baseUri(appUri).proxyAddress("localhost", 8183).proxyUser("admin")
+                .proxyPassword("r00t").nonProxyHosts("example.com|localhost").build(Client1.class).get();
         assertThat(response.readEntity(String.class)).isEqualTo(NO_PROXY);
 
         restClientBuilder = (RestClientBuilderImpl) RestClientBuilder.newBuilder();
-        response = restClientBuilder.baseUri(appUri).proxyAddress("none", -1)
-                .build(Client1.class).get();
+        response = restClientBuilder.baseUri(appUri).proxyAddress("none", -1).build(Client1.class).get();
         assertThat(response.readEntity(String.class)).isEqualTo(NO_PROXY);
     }
 }

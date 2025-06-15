@@ -47,21 +47,14 @@ import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeFlowDevModeTestCase {
 
-    private static Class<?>[] testClasses = {
-            ProtectedResource.class,
-            UnprotectedResource.class,
-            CustomTenantConfigResolver.class,
-            CustomTokenStateManager.class,
-            OidcConfigSource.class,
-            SecretProvider.class
-    };
+    private static Class<?>[] testClasses = { ProtectedResource.class, UnprotectedResource.class,
+            CustomTenantConfigResolver.class, CustomTokenStateManager.class, OidcConfigSource.class,
+            SecretProvider.class };
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-dev-mode.properties", "application.properties")
-                    .addAsServiceProvider(ConfigSource.class, OidcConfigSource.class));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(testClasses).addAsResource("application-dev-mode.properties", "application.properties")
+            .addAsServiceProvider(ConfigSource.class, OidcConfigSource.class));
 
     @Order(1)
     @Test
@@ -84,7 +77,8 @@ public class CodeFlowDevModeTestCase {
             }
 
             // Enable the default tenant
-            test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true"));
+            test.modifyResourceFile("application.properties",
+                    s -> s.replace("tenant-enabled=false", "tenant-enabled=true"));
             // Default tenant is enabled, client secret is wrong
             try {
                 page = webClient.getPage("http://localhost:8080/protected");
@@ -104,7 +98,8 @@ public class CodeFlowDevModeTestCase {
             webClient.getCookieManager().clearCookies();
 
             // Now set the correct client secret
-            test.modifyResourceFile("application.properties", s -> s.replace("secret-from-vault-typo", "secret-from-vault"));
+            test.modifyResourceFile("application.properties",
+                    s -> s.replace("secret-from-vault-typo", "secret-from-vault"));
 
             page = webClient.getPage("http://localhost:8080/protected");
 
@@ -142,8 +137,9 @@ public class CodeFlowDevModeTestCase {
     @Test
     public void testAccessTokenVerified() throws IOException {
         try (final WebClient webClient = createWebClient()) {
-            test.modifyResourceFile("application.properties", s -> s.replace("tenant-enabled=false", "tenant-enabled=true")
-                    .replace("secret-from-vault-typo", "secret-from-vault"));
+            test.modifyResourceFile("application.properties",
+                    s -> s.replace("tenant-enabled=false", "tenant-enabled=true").replace("secret-from-vault-typo",
+                            "secret-from-vault"));
             HtmlPage page = webClient.getPage("http://localhost:8080/protected/access-token-name");
 
             assertEquals("Sign in to quarkus", page.getTitleText());
@@ -197,8 +193,7 @@ public class CodeFlowDevModeTestCase {
 
     protected static void checkPkceSecretGenerated() {
         AtomicBoolean checkPassed = new AtomicBoolean();
-        given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+        given().pollInterval(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

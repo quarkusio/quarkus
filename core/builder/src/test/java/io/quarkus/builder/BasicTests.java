@@ -190,15 +190,12 @@ public class BasicTests {
             }
         });
         stepBuilder.consumes(DummyItem.class);
-        assertThatThrownBy(stepBuilder::build)
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContainingAll(
-                        "Build step 'myBuildStepId'",
-                        "does not produce any build item and thus will never get executed",
-                        "change the return type of the method to a build item type",
-                        "add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>",
-                        "annotate the method with @Produces",
-                        "Use @Produce(ArtifactResultBuildItem.class) if you want to always execute this step");
+        assertThatThrownBy(stepBuilder::build).isInstanceOf(IllegalArgumentException.class).hasMessageContainingAll(
+                "Build step 'myBuildStepId'", "does not produce any build item and thus will never get executed",
+                "change the return type of the method to a build item type",
+                "add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>",
+                "annotate the method with @Produces",
+                "Use @Produce(ArtifactResultBuildItem.class) if you want to always execute this step");
     }
 
     @Test

@@ -44,11 +44,12 @@ public final class SecurityEventUtil {
     }
 
     /**
-     * Adds Span attributes describing authenticated user if the user is authenticated and CDI request context is active.
-     * This will be true for example inside JAX-RS resources when the CDI request context is already setup and user code
-     * creates a new Span.
+     * Adds Span attributes describing authenticated user if the user is authenticated and CDI request context is
+     * active. This will be true for example inside JAX-RS resources when the CDI request context is already setup and
+     * user code creates a new Span.
      *
-     * @param span valid and recording Span; must not be null
+     * @param span
+     *        valid and recording Span; must not be null
      */
     static void addEndUserAttributes(Span span) {
         if (Arc.container().requestContext().isActive()) {
@@ -61,10 +62,11 @@ public final class SecurityEventUtil {
 
     /**
      * Updates authenticated user Span attributes if the {@link SecurityIdentity} got augmented during authorization.
+     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the
+     * TracerProcessor.
      *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
-     *
-     * @param event {@link AuthorizationFailureEvent}
+     * @param event
+     *        {@link AuthorizationFailureEvent}
      */
     public static void updateEndUserAttributes(AuthorizationFailureEvent event) {
         addEndUserAttribute(event.getSecurityIdentity(), getSpan());
@@ -72,10 +74,11 @@ public final class SecurityEventUtil {
 
     /**
      * Updates authenticated user Span attributes if the {@link SecurityIdentity} got augmented during authorization.
+     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the
+     * TracerProcessor.
      *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
-     *
-     * @param event {@link AuthorizationSuccessEvent}
+     * @param event
+     *        {@link AuthorizationSuccessEvent}
      */
     public static void updateEndUserAttributes(AuthorizationSuccessEvent event) {
         addEndUserAttribute(event.getSecurityIdentity(), getSpan());
@@ -83,19 +86,19 @@ public final class SecurityEventUtil {
 
     /**
      * If there is already valid recording {@link Span}, attributes describing authenticated user are added to it.
+     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the
+     * TracerProcessor.
      *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
-     *
-     * @param event {@link AuthenticationSuccessEvent}
+     * @param event
+     *        {@link AuthenticationSuccessEvent}
      */
     public static void addEndUserAttributes(AuthenticationSuccessEvent event) {
         addEndUserAttribute(event.getSecurityIdentity(), getSpan());
     }
 
     /**
-     * Adds {@link SecurityEvent} as Span event.
-     *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
+     * Adds {@link SecurityEvent} as Span event. WARNING: This method is called from synthetic method observer. Any
+     * renaming must be reflected in the TracerProcessor.
      */
     public static void addAllEvents(SecurityEvent event) {
         if (event instanceof AuthenticationSuccessEvent e) {
@@ -112,47 +115,43 @@ public final class SecurityEventUtil {
     }
 
     /**
-     * Adds {@link AuthenticationSuccessEvent} as Span event.
-     *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
+     * Adds {@link AuthenticationSuccessEvent} as Span event. WARNING: This method is called from synthetic method
+     * observer. Any renaming must be reflected in the TracerProcessor.
      */
     public static void addEvent(AuthenticationSuccessEvent event) {
         addEvent(AUTHN_SUCCESS_EVENT_NAME, attributesBuilder(event).build());
     }
 
     /**
-     * Adds {@link AuthenticationFailureEvent} as Span event.
-     *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
+     * Adds {@link AuthenticationFailureEvent} as Span event. WARNING: This method is called from synthetic method
+     * observer. Any renaming must be reflected in the TracerProcessor.
      */
     public static void addEvent(AuthenticationFailureEvent event) {
         addEvent(AUTHN_FAILURE_EVENT_NAME, attributesBuilder(event, AUTHENTICATION_FAILURE_KEY).build());
     }
 
     /**
-     * Adds {@link AuthorizationSuccessEvent} as Span event.
-     *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
+     * Adds {@link AuthorizationSuccessEvent} as Span event. WARNING: This method is called from synthetic method
+     * observer. Any renaming must be reflected in the TracerProcessor.
      */
     public static void addEvent(AuthorizationSuccessEvent event) {
-        addEvent(AUTHZ_SUCCESS_EVENT_NAME,
-                withAuthorizationContext(event, attributesBuilder(event), AuthorizationSuccessEvent.AUTHORIZATION_CONTEXT));
+        addEvent(AUTHZ_SUCCESS_EVENT_NAME, withAuthorizationContext(event, attributesBuilder(event),
+                AuthorizationSuccessEvent.AUTHORIZATION_CONTEXT));
     }
 
     /**
-     * Adds {@link AuthorizationFailureEvent} as Span event.
-     *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
+     * Adds {@link AuthorizationFailureEvent} as Span event. WARNING: This method is called from synthetic method
+     * observer. Any renaming must be reflected in the TracerProcessor.
      */
     public static void addEvent(AuthorizationFailureEvent event) {
-        addEvent(AUTHZ_FAILURE_EVENT_NAME, withAuthorizationContext(event, attributesBuilder(event, AUTHORIZATION_FAILURE_KEY),
-                AuthorizationFailureEvent.AUTHORIZATION_CONTEXT_KEY));
+        addEvent(AUTHZ_FAILURE_EVENT_NAME,
+                withAuthorizationContext(event, attributesBuilder(event, AUTHORIZATION_FAILURE_KEY),
+                        AuthorizationFailureEvent.AUTHORIZATION_CONTEXT_KEY));
     }
 
     /**
-     * Adds {@link SecurityEvent} as Span event that is not authN/authZ success/failure.
-     *
-     * WARNING: This method is called from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
+     * Adds {@link SecurityEvent} as Span event that is not authN/authZ success/failure. WARNING: This method is called
+     * from synthetic method observer. Any renaming must be reflected in the TracerProcessor.
      */
     public static void addEvent(SecurityEvent event) {
         if (!(event instanceof AuthenticationSuccessEvent || event instanceof AuthenticationFailureEvent
@@ -203,7 +202,8 @@ public final class SecurityEventUtil {
         return builder;
     }
 
-    private static Attributes withAuthorizationContext(SecurityEvent event, AttributesBuilder builder, String contextKey) {
+    private static Attributes withAuthorizationContext(SecurityEvent event, AttributesBuilder builder,
+            String contextKey) {
         if (event.getEventProperties().containsKey(contextKey)) {
             builder.put(AUTHORIZATION_CONTEXT, (String) event.getEventProperties().get(contextKey));
         }
@@ -213,8 +213,10 @@ public final class SecurityEventUtil {
     /**
      * Adds Span attributes describing the authenticated user.
      *
-     * @param event {@link RoutingContext}; must not be null
-     * @param span valid recording Span; must not be null
+     * @param event
+     *        {@link RoutingContext}; must not be null
+     * @param span
+     *        valid recording Span; must not be null
      */
     private static void addEndUserAttribute(RoutingContext event, Span span) {
         if (event.user() instanceof QuarkusHttpUser user) {
@@ -223,20 +225,20 @@ public final class SecurityEventUtil {
     }
 
     /**
-     * Adds End User attributes to the {@code span}. Only authenticated user is added to the {@link Span}.
-     * Anonymous identity is ignored as it does not represent authenticated user.
-     * Passed {@code securityIdentity} is attached to the {@link Context} so that we recognize when identity changes.
+     * Adds End User attributes to the {@code span}. Only authenticated user is added to the {@link Span}. Anonymous
+     * identity is ignored as it does not represent authenticated user. Passed {@code securityIdentity} is attached to
+     * the {@link Context} so that we recognize when identity changes.
      *
-     * @param securityIdentity SecurityIdentity
-     * @param span Span
+     * @param securityIdentity
+     *        SecurityIdentity
+     * @param span
+     *        Span
      */
     private static void addEndUserAttribute(SecurityIdentity securityIdentity, Span span) {
         if (securityIdentity != null && !securityIdentity.isAnonymous() && spanIsValidAndRecording(span)) {
-            span.setAllAttributes(Attributes.of(
-                    SemanticAttributes.ENDUSER_ID,
-                    securityIdentity.getPrincipal().getName(),
-                    SemanticAttributes.ENDUSER_ROLE,
-                    getRoles(securityIdentity)));
+            span.setAllAttributes(
+                    Attributes.of(SemanticAttributes.ENDUSER_ID, securityIdentity.getPrincipal().getName(),
+                            SemanticAttributes.ENDUSER_ROLE, getRoles(securityIdentity)));
         }
     }
 

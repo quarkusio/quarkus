@@ -29,10 +29,14 @@ public class UriNormalizationTest {
         Assertions.assertEquals("/example/", UriNormalizationUtil.normalizeWithBase(root, "/example", true).getPath());
         Assertions.assertEquals("/example", UriNormalizationUtil.normalizeWithBase(root, "/example", false).getPath());
 
-        Assertions.assertEquals("/prefix/example/", UriNormalizationUtil.normalizeWithBase(prefix, "example", true).getPath());
-        Assertions.assertEquals("/prefix/example", UriNormalizationUtil.normalizeWithBase(prefix, "example", false).getPath());
-        Assertions.assertEquals("/example/", UriNormalizationUtil.normalizeWithBase(prefix, "/example", true).getPath());
-        Assertions.assertEquals("/example", UriNormalizationUtil.normalizeWithBase(prefix, "/example", false).getPath());
+        Assertions.assertEquals("/prefix/example/",
+                UriNormalizationUtil.normalizeWithBase(prefix, "example", true).getPath());
+        Assertions.assertEquals("/prefix/example",
+                UriNormalizationUtil.normalizeWithBase(prefix, "example", false).getPath());
+        Assertions.assertEquals("/example/",
+                UriNormalizationUtil.normalizeWithBase(prefix, "/example", true).getPath());
+        Assertions.assertEquals("/example",
+                UriNormalizationUtil.normalizeWithBase(prefix, "/example", false).getPath());
 
         Assertions.assertEquals("foo/example/", UriNormalizationUtil.normalizeWithBase(foo, "example", true).getPath());
         Assertions.assertEquals("foo/example", UriNormalizationUtil.normalizeWithBase(foo, "example", false).getPath());

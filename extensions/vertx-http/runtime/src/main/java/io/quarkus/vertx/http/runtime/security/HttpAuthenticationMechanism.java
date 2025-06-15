@@ -39,10 +39,9 @@ public interface HttpAuthenticationMechanism {
     }
 
     /**
-     * The credential transport, used for finding the best candidate for authenticating and challenging when more than one
-     * mechanism is installed.
-     *
-     * May be {@link Uni} with null item if this mechanism cannot interfere with other mechanisms.
+     * The credential transport, used for finding the best candidate for authenticating and challenging when more than
+     * one mechanism is installed. May be {@link Uni} with null item if this mechanism cannot interfere with other
+     * mechanisms.
      */
     default Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
         return Uni.createFrom().nullItem();
@@ -70,14 +69,10 @@ public interface HttpAuthenticationMechanism {
     }
 
     /**
-     * Returns a priority which determines in which order HttpAuthenticationMechanisms handle the authentication and challenge
-     * requests
-     * when it is not possible to select the best candidate authentication mechanism based on the request credentials or path
-     * specific
-     * configuration.
-     *
-     * Multiple mechanisms are sorted in descending order, so the highest priority gets the first chance to send a challenge.
-     * The default priority is equal to 1000.
+     * Returns a priority which determines in which order HttpAuthenticationMechanisms handle the authentication and
+     * challenge requests when it is not possible to select the best candidate authentication mechanism based on the
+     * request credentials or path specific configuration. Multiple mechanisms are sorted in descending order, so the
+     * highest priority gets the first chance to send a challenge. The default priority is equal to 1000.
      *
      * @return priority
      */

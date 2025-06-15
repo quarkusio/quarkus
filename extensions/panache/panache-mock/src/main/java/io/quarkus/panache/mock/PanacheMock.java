@@ -132,7 +132,8 @@ public class PanacheMock {
         return new PanacheStubber(Mockito.doThrow(toBeThrown));
     }
 
-    public static PanacheStubber doThrow(Class<? extends Throwable> toBeThrown, Class<? extends Throwable>... toBeThrownNext) {
+    public static PanacheStubber doThrow(Class<? extends Throwable> toBeThrown,
+            Class<? extends Throwable>... toBeThrownNext) {
         return new PanacheStubber(Mockito.doThrow(toBeThrown, toBeThrownNext));
     }
 

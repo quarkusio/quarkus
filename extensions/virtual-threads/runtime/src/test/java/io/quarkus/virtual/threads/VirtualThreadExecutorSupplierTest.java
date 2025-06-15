@@ -28,10 +28,8 @@ class VirtualThreadExecutorSupplierTest {
 
     @BeforeEach
     void configRecorder() {
-        VirtualThreadsRecorder.config = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withMapping(VirtualThreadsConfig.class)
-                .build().getConfigMapping(VirtualThreadsConfig.class);
+        VirtualThreadsRecorder.config = new SmallRyeConfigBuilder().addDiscoveredConverters()
+                .withMapping(VirtualThreadsConfig.class).build().getConfigMapping(VirtualThreadsConfig.class);
     }
 
     @Test
@@ -40,25 +38,23 @@ class VirtualThreadExecutorSupplierTest {
             throws ClassNotFoundException, InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutorWithName("vthread-");
         var assertSubscriber = Uni.createFrom().emitter(e -> {
-            assertThat(Thread.currentThread().getName()).isNotEmpty()
-                    .startsWith("vthread-");
+            assertThat(Thread.currentThread().getName()).isNotEmpty().startsWith("vthread-");
             assertThatItRunsOnVirtualThread();
             e.complete(null);
-        }).runSubscriptionOn(executor)
-                .subscribe().withSubscriber(UniAssertSubscriber.create());
+        }).runSubscriptionOn(executor).subscribe().withSubscriber(UniAssertSubscriber.create());
         assertSubscriber.awaitItem(Duration.ofSeconds(1)).assertCompleted();
     }
 
     @Test
     @EnabledForJreRange(min = JRE.JAVA_20, disabledReason = "Virtual Threads are a preview feature starting from Java 20")
-    void execute() throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+    void execute()
+            throws ClassNotFoundException, InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         Executor executor = VirtualThreadsRecorder.newVirtualThreadPerTaskExecutorWithName(null);
         var assertSubscriber = Uni.createFrom().emitter(e -> {
             assertThat(Thread.currentThread().getName()).isEmpty();
             assertThatItRunsOnVirtualThread();
             e.complete(null);
-        }).runSubscriptionOn(executor)
-                .subscribe().withSubscriber(UniAssertSubscriber.create());
+        }).runSubscriptionOn(executor).subscribe().withSubscriber(UniAssertSubscriber.create());
         assertSubscriber.awaitItem(Duration.ofSeconds(1)).assertCompleted();
     }
 
@@ -83,17 +79,13 @@ class VirtualThreadExecutorSupplierTest {
     void executePropagatesVertxContextMutiny() {
         ExecutorService executorService = VirtualThreadsRecorder.getCurrent();
         Vertx vertx = Vertx.vertx();
-        var assertSubscriber = Uni.createFrom().voidItem()
-                .runSubscriptionOn(command -> vertx.executeBlocking(() -> {
-                    command.run();
-                    return null;
-                }))
-                .emitOn(executorService)
-                .map(x -> {
-                    assertThatItRunsOnVirtualThread();
-                    return Vertx.currentContext();
-                })
-                .subscribe().withSubscriber(UniAssertSubscriber.create());
+        var assertSubscriber = Uni.createFrom().voidItem().runSubscriptionOn(command -> vertx.executeBlocking(() -> {
+            command.run();
+            return null;
+        })).emitOn(executorService).map(x -> {
+            assertThatItRunsOnVirtualThread();
+            return Vertx.currentContext();
+        }).subscribe().withSubscriber(UniAssertSubscriber.create());
         assertThat(assertSubscriber.awaitItem().assertCompleted().getItem()).isNotNull();
     }
 
@@ -141,7 +133,8 @@ class VirtualThreadExecutorSupplierTest {
             }
         } catch (Exception e) {
             throw new AssertionError(
-                    "Thread " + Thread.currentThread() + " is not a virtual thread - cannot invoke Thread.isVirtual()", e);
+                    "Thread " + Thread.currentThread() + " is not a virtual thread - cannot invoke Thread.isVirtual()",
+                    e);
         }
     }
 }

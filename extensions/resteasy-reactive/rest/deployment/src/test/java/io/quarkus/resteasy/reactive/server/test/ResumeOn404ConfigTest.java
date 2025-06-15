@@ -22,35 +22,26 @@ import io.vertx.ext.web.Router;
 public class ResumeOn404ConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, CustomRoute.class);
-                }
-            })
-            .overrideRuntimeConfigKey("quarkus.rest.resume-on-404", "true");
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, CustomRoute.class);
+        }
+    }).overrideRuntimeConfigKey("quarkus.rest.resume-on-404", "true");
 
     @Test
     public void matchingFromResteasyReactive() {
-        get("/test")
-                .then()
-                .statusCode(200);
+        get("/test").then().statusCode(200);
     }
 
     @Test
     public void matchingFromCustomRoute() {
-        get("/main")
-                .then()
-                .statusCode(200);
+        get("/main").then().statusCode(200);
     }
 
     @Test
     public void missing() {
-        get("/dummy")
-                .then()
-                .statusCode(404);
+        get("/dummy").then().statusCode(404);
     }
 
     @Path("/test")

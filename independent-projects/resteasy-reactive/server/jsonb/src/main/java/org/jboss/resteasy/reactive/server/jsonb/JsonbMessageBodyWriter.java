@@ -29,7 +29,8 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
 
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         JsonMessageBodyWriterUtil.setContentTypeIfNecessary(httpHeaders);
         if ((o instanceof String) && (!(entityStream instanceof StreamingOutputStream))) {
             // YUK: done in order to avoid adding extra quotes... when we are not streaming a result
@@ -49,7 +50,8 @@ public class JsonbMessageBodyWriter extends ServerMessageBodyWriter.AllWriteable
         } else {
             json.toJson(o, stream);
         }
-        // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
+        // we don't use try-with-resources because that results in writing to the http output without the exception
+        // mapping coming into play
         originalStream.close();
     }
 }

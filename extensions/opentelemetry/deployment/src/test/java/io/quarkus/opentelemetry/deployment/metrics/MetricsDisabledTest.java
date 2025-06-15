@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MetricsDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.otel.metrics.enabled", "false")
             .assertException(t -> Assertions.assertEquals(DeploymentException.class, t.getClass()));
 
@@ -23,7 +22,7 @@ public class MetricsDisabledTest {
 
     @Test
     void testNoOpenTelemetry() {
-        //Should not be reached: dump what was injected if it somehow passed
+        // Should not be reached: dump what was injected if it somehow passed
         Assertions.assertNull(openTelemetryMeter,
                 "A OpenTelemetry Meter instance should not be found/injected when OpenTelemetry metrics is disabled");
     }

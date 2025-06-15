@@ -88,10 +88,8 @@ public class MetricAnnotationInfo {
         }
         output.add(AnnotationValue.createArrayValue("tags", tagValues));
 
-        log.debugf("%s --> name='%s', description='%s', unit='%s', tags='%s'",
-                input, name, description,
-                unit == null ? "none" : unit,
-                Arrays.asList(tags));
+        log.debugf("%s --> name='%s', description='%s', unit='%s', tags='%s'", input, name, description,
+                unit == null ? "none" : unit, Arrays.asList(tags));
     }
 
     static String append(String... values) {

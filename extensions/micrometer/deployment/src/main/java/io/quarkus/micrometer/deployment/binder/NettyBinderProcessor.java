@@ -16,23 +16,25 @@ import io.quarkus.micrometer.runtime.binder.netty.VertxNettyEventExecutorMetrics
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 /**
- * Add support for Netty allocator metrics. Note that
- * various bits of support may not be present at deploy time. Avoid referencing
- * classes that in turn import optional dependencies.
+ * Add support for Netty allocator metrics. Note that various bits of support may not be present at deploy time. Avoid
+ * referencing classes that in turn import optional dependencies.
  */
 public class NettyBinderProcessor {
     static final String NETTY_ALLOCATOR_METRICS_NAME = "io.micrometer.core.instrument.binder.netty4.NettyAllocatorMetrics";
-    static final Class<?> NETTY_ALLOCATOR_METRICS_CLASS = MicrometerRecorder.getClassForName(NETTY_ALLOCATOR_METRICS_NAME);
+    static final Class<?> NETTY_ALLOCATOR_METRICS_CLASS = MicrometerRecorder
+            .getClassForName(NETTY_ALLOCATOR_METRICS_NAME);
 
     static final String NETTY_EVENT_EXECUTOR_METRICS_NAME = "io.micrometer.core.instrument.binder.netty4.NettyEventExecutorMetrics";
     static final Class<?> NETTY_EVENT_EXECUTOR_METRICS_CLASS = MicrometerRecorder
             .getClassForName(NETTY_EVENT_EXECUTOR_METRICS_NAME);
 
     static final String NETTY_BYTE_BUF_ALLOCATOR_NAME = "io.netty.buffer.PooledByteBufAllocator";
-    static final Class<?> NETTY_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder.getClassForName(NETTY_BYTE_BUF_ALLOCATOR_NAME);
+    static final Class<?> NETTY_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder
+            .getClassForName(NETTY_BYTE_BUF_ALLOCATOR_NAME);
 
     static final String VERTX_BYTE_BUF_ALLOCATOR_NAME = "io.vertx.core.buffer.impl.VertxByteBufAllocator";
-    static final Class<?> VERTX_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder.getClassForName(VERTX_BYTE_BUF_ALLOCATOR_NAME);
+    static final Class<?> VERTX_BYTE_BUF_ALLOCATOR_CLASS = MicrometerRecorder
+            .getClassForName(VERTX_BYTE_BUF_ALLOCATOR_NAME);
 
     static final String REACTIVE_USAGE_NAME = "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload";
     static final Class<?> REACTIVE_USAGE_CLASS = MicrometerRecorder.getClassForName(REACTIVE_USAGE_NAME);
@@ -136,13 +138,9 @@ public class NettyBinderProcessor {
     }
 
     @BuildStep(onlyIf = ReactiveSupportEnabled.class)
-    void createReactiveNettyAllocatorMetrics(
-            BuildProducer<AdditionalBeanBuildItem> beans,
+    void createReactiveNettyAllocatorMetrics(BuildProducer<AdditionalBeanBuildItem> beans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         beans.produce(AdditionalBeanBuildItem.unremovableOf(ReactiveNettyMetricsProvider.class));
-        reflectiveClasses.produce(
-                ReflectiveClassBuildItem.builder(REACTIVE_USAGE_NAME)
-                        .fields()
-                        .build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(REACTIVE_USAGE_NAME).fields().build());
     }
 }

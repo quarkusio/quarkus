@@ -9,7 +9,8 @@ final class InitialRouterBuildItem extends SimpleBuildItem {
     private final RuntimeValue<Router> httpRouter;
     private final RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter;
 
-    public InitialRouterBuildItem(RuntimeValue<Router> httpRouter, RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter) {
+    public InitialRouterBuildItem(RuntimeValue<Router> httpRouter,
+            RuntimeValue<io.vertx.mutiny.ext.web.Router> mutinyRouter) {
         this.httpRouter = httpRouter;
         this.mutinyRouter = mutinyRouter;
     }

@@ -23,12 +23,11 @@ public class GraphQLNamingTest extends AbstractGraphQLTest {
     private static final Logger LOG = Logger.getLogger(GraphQLNamingTest.class);
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class, TestUnion.class, TestUnionMember.class)
-                    .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
+                    BusinessException.class, TestUnion.class, TestUnionMember.class)
+            .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testSchema() {
@@ -46,7 +45,8 @@ public class GraphQLNamingTest extends AbstractGraphQLTest {
         Assertions.assertTrue(body.contains("generics: TestGenericsPojo_String"));
         Assertions.assertTrue(body.contains("type TestGenericsPojo_String {"));
         Assertions.assertTrue(body.contains("enum SomeEnum {"));
-        Assertions.assertTrue(body.contains("enum TestPojoNumber {")); // This is the important part. TestPojo merged with Number
+        Assertions.assertTrue(body.contains("enum TestPojoNumber {")); // This is the important part. TestPojo merged
+                                                                       // with Number
     }
 
     private static Map<String, String> configuration() {

@@ -191,19 +191,17 @@ public class VertxCoreProducerTest {
             }
         };
 
-        VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(
-                new Consumer<VertxOptions>() {
-                    @Override
-                    public void accept(VertxOptions vertxOptions) {
-                        Assertions.assertEquals(3, vertxOptions.getAddressResolverOptions().getCacheMaxTimeToLive());
-                        Assertions.assertEquals(
-                                AddressResolverOptions.DEFAULT_CACHE_MIN_TIME_TO_LIVE,
-                                vertxOptions.getAddressResolverOptions().getCacheMinTimeToLive());
-                        Assertions.assertEquals(1, vertxOptions.getAddressResolverOptions().getCacheNegativeTimeToLive());
-                        Assertions.assertEquals(2, vertxOptions.getAddressResolverOptions().getMaxQueries());
-                        Assertions.assertEquals(200L, vertxOptions.getAddressResolverOptions().getQueryTimeout());
-                    }
-                }));
+        VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(new Consumer<VertxOptions>() {
+            @Override
+            public void accept(VertxOptions vertxOptions) {
+                Assertions.assertEquals(3, vertxOptions.getAddressResolverOptions().getCacheMaxTimeToLive());
+                Assertions.assertEquals(AddressResolverOptions.DEFAULT_CACHE_MIN_TIME_TO_LIVE,
+                        vertxOptions.getAddressResolverOptions().getCacheMinTimeToLive());
+                Assertions.assertEquals(1, vertxOptions.getAddressResolverOptions().getCacheNegativeTimeToLive());
+                Assertions.assertEquals(2, vertxOptions.getAddressResolverOptions().getMaxQueries());
+                Assertions.assertEquals(200L, vertxOptions.getAddressResolverOptions().getQueryTimeout());
+            }
+        }));
 
         VertxCoreRecorder.initialize(configuration, customizers, new DefaultThreadPoolConfig(), null, LaunchMode.TEST);
     }
@@ -211,16 +209,14 @@ public class VertxCoreProducerTest {
     @Test
     public void shouldInvokeCustomizers() {
         final AtomicBoolean called = new AtomicBoolean(false);
-        VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(
-                new Consumer<VertxOptions>() {
-                    @Override
-                    public void accept(VertxOptions vertxOptions) {
-                        called.set(true);
-                    }
-                }));
-        Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
-                null,
-                LaunchMode.TEST);
+        VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(Arrays.asList(new Consumer<VertxOptions>() {
+            @Override
+            public void accept(VertxOptions vertxOptions) {
+                called.set(true);
+            }
+        }));
+        Vertx v = VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers,
+                new DefaultThreadPoolConfig(), null, LaunchMode.TEST);
         Assertions.assertTrue(called.get(), "Customizer should get called during initialization");
     }
 
@@ -229,14 +225,12 @@ public class VertxCoreProducerTest {
         final String cacheDir = System.getProperty("user.dir");
         try {
             System.setProperty(CACHE_DIR_BASE_PROP_NAME, cacheDir);
-            VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(List.of(
-                    vertxOptions -> {
-                        Assertions.assertNotNull(vertxOptions.getFileSystemOptions());
-                        Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());
-                    }));
+            VertxOptionsCustomizer customizers = new VertxOptionsCustomizer(List.of(vertxOptions -> {
+                Assertions.assertNotNull(vertxOptions.getFileSystemOptions());
+                Assertions.assertEquals(cacheDir, vertxOptions.getFileSystemOptions().getFileCacheDir());
+            }));
             VertxCoreRecorder.initialize(new DefaultVertxConfiguration(), customizers, new DefaultThreadPoolConfig(),
-                    null,
-                    LaunchMode.TEST);
+                    null, LaunchMode.TEST);
         } finally {
             System.clearProperty(CACHE_DIR_BASE_PROP_NAME);
         }

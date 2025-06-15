@@ -21,14 +21,11 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 public class NonApplicationAndRootPathTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.http.root-path=/api\n";
+    private static final String APP_PROPS = "" + "quarkus.http.root-path=/api\n";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addClasses(MyObserver.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset(APP_PROPS), "application.properties").addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -38,16 +35,12 @@ public class NonApplicationAndRootPathTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
-                        context.produce(buildItem.routeBuilder()
-                                .route("non-app-relative")
-                                .handler(new MyHandler())
-                                .blockingRoute()
-                                .build());
+                        NonApplicationRootPathBuildItem buildItem = context
+                                .consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(buildItem.routeBuilder().route("non-app-relative").handler(new MyHandler())
+                                .blockingRoute().build());
                     }
-                }).produces(RouteBuildItem.class)
-                        .consumes(NonApplicationRootPathBuildItem.class)
-                        .build();
+                }).produces(RouteBuildItem.class).consumes(NonApplicationRootPathBuildItem.class).build();
             }
         };
     }
@@ -55,24 +48,22 @@ public class NonApplicationAndRootPathTest {
     public static class MyHandler implements Handler<RoutingContext> {
         @Override
         public void handle(RoutingContext routingContext) {
-            routingContext.response()
-                    .setStatusCode(200)
-                    .end(routingContext.request().path());
+            routingContext.response().setStatusCode(200).end(routingContext.request().path());
         }
     }
 
     @Test
     public void testNonApplicationEndpointDirect() {
         // Note RestAssured knows the path prefix is /api
-        RestAssured.given().get("/q/non-app-relative")
-                .then().statusCode(200).body(Matchers.equalTo("/api/q/non-app-relative"));
+        RestAssured.given().get("/q/non-app-relative").then().statusCode(200)
+                .body(Matchers.equalTo("/api/q/non-app-relative"));
     }
 
     @Singleton
     static class MyObserver {
 
         void test(@Observes String event) {
-            //Do Nothing
+            // Do Nothing
         }
 
     }

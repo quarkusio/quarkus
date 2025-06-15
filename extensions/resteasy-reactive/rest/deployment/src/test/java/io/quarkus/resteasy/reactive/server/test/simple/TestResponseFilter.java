@@ -11,7 +11,8 @@ import jakarta.ws.rs.ext.Provider;
 public class TestResponseFilter implements ContainerResponseFilter {
 
     @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+            throws IOException {
         responseContext.getHeaders().add("filter-response", "default");
     }
 

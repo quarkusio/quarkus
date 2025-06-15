@@ -19,10 +19,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ModifyingQueryWithFlushAndClearTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("import_users.sql", "import.sql")
-                    .addClasses(User.class, LoginEvent.class, UserRepository.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addAsResource("import_users.sql", "import.sql")
+                            .addClasses(User.class, LoginEvent.class, UserRepository.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -71,8 +71,7 @@ public class ModifyingQueryWithFlushAndClearTest {
         final User verifyUser = getUser("JOHN");
         // processLoginEvents did not see the new login event
         assertThat(verifyUser.getLoginEvents()).hasSize(1);
-        final boolean allProcessed = verifyUser.getLoginEvents().stream()
-                .allMatch(LoginEvent::isProcessed);
+        final boolean allProcessed = verifyUser.getLoginEvents().stream().allMatch(LoginEvent::isProcessed);
         assertThat(allProcessed).describedAs("all LoginEvents are marked as processed").isFalse();
     }
 
@@ -86,8 +85,7 @@ public class ModifyingQueryWithFlushAndClearTest {
 
         final User verifyUser = getUser("JOHN");
         assertThat(verifyUser.getLoginEvents()).hasSize(1);
-        final boolean allProcessed = verifyUser.getLoginEvents().stream()
-                .allMatch(LoginEvent::isProcessed);
+        final boolean allProcessed = verifyUser.getLoginEvents().stream().allMatch(LoginEvent::isProcessed);
         assertThat(allProcessed).describedAs("all LoginEvents are marked as processed").isTrue();
     }
 

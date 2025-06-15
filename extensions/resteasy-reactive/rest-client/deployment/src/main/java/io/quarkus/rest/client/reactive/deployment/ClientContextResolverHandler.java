@@ -1,21 +1,5 @@
 package io.quarkus.rest.client.reactive.deployment;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.LinkedHashMap;
-
-import jakarta.ws.rs.Priorities;
-
-import org.jboss.jandex.AnnotationInstance;
-import org.jboss.jandex.AnnotationTarget;
-import org.jboss.jandex.AnnotationValue;
-import org.jboss.jandex.ClassInfo;
-import org.jboss.jandex.DotName;
-import org.jboss.jandex.MethodInfo;
-import org.jboss.jandex.Type;
-import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
-
 import io.quarkus.arc.Arc;
 import io.quarkus.arc.ArcContainer;
 import io.quarkus.arc.InstanceHandle;
@@ -27,6 +11,19 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.gizmo.SignatureBuilder;
 import io.quarkus.rest.client.reactive.runtime.ResteasyReactiveContextResolver;
 import io.quarkus.runtime.util.HashUtil;
+import jakarta.ws.rs.Priorities;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.LinkedHashMap;
+import org.jboss.jandex.AnnotationInstance;
+import org.jboss.jandex.AnnotationTarget;
+import org.jboss.jandex.AnnotationValue;
+import org.jboss.jandex.ClassInfo;
+import org.jboss.jandex.DotName;
+import org.jboss.jandex.MethodInfo;
+import org.jboss.jandex.Type;
+import org.jboss.resteasy.reactive.client.impl.RestClientRequestContext;
 
 /**
  * Generates an implementation of {@link ResteasyReactiveContextResolver}

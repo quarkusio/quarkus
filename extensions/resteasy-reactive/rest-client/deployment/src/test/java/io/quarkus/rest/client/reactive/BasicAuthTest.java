@@ -24,12 +24,9 @@ import io.vertx.ext.web.RoutingContext;
 
 public class BasicAuthTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Resource.class)
-                    .addAsResource("application-basic-auth.properties", "application.properties")
-                    .addAsResource("test-users.properties")
-                    .addAsResource("test-roles.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Resource.class).addAsResource("application-basic-auth.properties", "application.properties")
+            .addAsResource("test-users.properties").addAsResource("test-roles.properties"));
 
     @TestHTTPResource
     URI baseUri;

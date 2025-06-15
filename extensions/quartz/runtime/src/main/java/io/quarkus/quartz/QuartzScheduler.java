@@ -8,7 +8,6 @@ import io.quarkus.scheduler.Scheduler;
 public interface QuartzScheduler extends Scheduler {
 
     /**
-     *
      * @return the underlying {@link org.quartz.Scheduler} instance, or {@code null} if the scheduler was not started
      */
     org.quartz.Scheduler getScheduler();
@@ -19,8 +18,8 @@ public interface QuartzScheduler extends Scheduler {
     interface QuartzJobDefinition extends JobDefinition<QuartzJobDefinition> {
 
         /**
-         *
          * @return self
+         *
          * @see Nonconcurrent
          */
         QuartzJobDefinition setNonconcurrent();

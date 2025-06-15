@@ -23,30 +23,18 @@ public class GraphQLConfigMappingTest extends AbstractGraphQLTest {
     private static final Logger LOG = Logger.getLogger(GraphQLConfigMappingTest.class);
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class, TestUnion.class, TestUnionMember.class)
-                    .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
+                    BusinessException.class, TestUnion.class, TestUnionMember.class)
+            .addAsResource(new StringAsset(getPropertyAsString(configuration())), "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testBusinessError() {
-        String pingRequest = "{\n" +
-                "  businesserror {\n" +
-                "    message\n" +
-                "  }\n" +
-                "}";
+        String pingRequest = "{\n" + "  businesserror {\n" + "    message\n" + "  }\n" + "}";
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .queryParam(QUERY, pingRequest)
-                .get("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).queryParam(QUERY, pingRequest)
+                .get("/graphql").then().assertThat().statusCode(200).and()
                 .body(CoreMatchers.containsString("Some invalid case"),
                         CoreMatchers.containsString("io.quarkus.smallrye.graphql.deployment.BusinessException"), // exception
                         CoreMatchers.containsString("business")); // code
@@ -55,21 +43,10 @@ public class GraphQLConfigMappingTest extends AbstractGraphQLTest {
 
     @Test
     public void testSystemError() {
-        String pingRequest = "{\n" +
-                "  systemserror {\n" +
-                "    message\n" +
-                "  }\n" +
-                "}";
+        String pingRequest = "{\n" + "  systemserror {\n" + "    message\n" + "  }\n" + "}";
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .queryParam(QUERY, pingRequest)
-                .get("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).queryParam(QUERY, pingRequest)
+                .get("/graphql").then().assertThat().statusCode(200).and()
                 .body(CoreMatchers.containsString("O gats, daar is 'n probleem !"), // custom message
                         CoreMatchers.containsString("java.lang.RuntimeException")); // exception
 

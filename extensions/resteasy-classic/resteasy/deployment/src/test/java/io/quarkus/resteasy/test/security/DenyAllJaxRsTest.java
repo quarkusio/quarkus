@@ -23,20 +23,16 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class DenyAllJaxRsTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermitAllResource.class, UnsecuredResource.class,
-                            TestIdentityProvider.class, UnsecuredParentResource.class,
-                            TestIdentityController.class, UnsecuredResourceInterface.class,
-                            UnsecuredSubResource.class, HelloResource.class)
-                    .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(PermitAllResource.class, UnsecuredResource.class, TestIdentityProvider.class,
+                    UnsecuredParentResource.class, TestIdentityController.class, UnsecuredResourceInterface.class,
+                    UnsecuredSubResource.class, HelloResource.class)
+            .addAsResource(new StringAsset("quarkus.security.jaxrs.deny-unannotated-endpoints = true\n"),
+                    "application.properties"));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -46,10 +42,7 @@ public class DenyAllJaxRsTest {
 
     @Test
     public void shouldReportNoImplementationDetailsWithWrongPathParam() {
-        when().get("/unsecured/permitAllPathParam/string")
-                .then()
-                .statusCode(404)
-                .body(emptyString());
+        when().get("/unsecured/permitAllPathParam/string").then().statusCode(404).body(emptyString());
     }
 
     @Test
@@ -101,26 +94,15 @@ public class DenyAllJaxRsTest {
 
     @Test
     public void testNonEndpointMethodAreNotDenied() {
-        // ensure io.quarkus.resteasy.test.security.DenyAllJaxRsTest.HelloResource.getHello is not secured with DenyAllInterceptor
-        given()
-                .get("/hello")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("hello"));
+        // ensure io.quarkus.resteasy.test.security.DenyAllJaxRsTest.HelloResource.getHello is not secured with
+        // DenyAllInterceptor
+        given().get("/hello").then().statusCode(200).body(Matchers.equalTo("hello"));
     }
 
     private void assertStatus(String path, int status, int anonStatus) {
-        given().auth().preemptive()
-                .basic("admin", "admin").get(path)
-                .then()
-                .statusCode(status);
-        given().auth().preemptive()
-                .basic("user", "user").get(path)
-                .then()
-                .statusCode(status);
-        when().get(path)
-                .then()
-                .statusCode(anonStatus);
+        given().auth().preemptive().basic("admin", "admin").get(path).then().statusCode(status);
+        given().auth().preemptive().basic("user", "user").get(path).then().statusCode(status);
+        when().get(path).then().statusCode(anonStatus);
 
     }
 

@@ -33,11 +33,11 @@ public class FlywayExtensionConfigActiveFalseNamedDataSourceStaticInjectionTest 
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))
                     .hasMessageContainingAll(
                             "Flyway for datasource 'users' was deactivated automatically because this datasource was deactivated.",
-                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                            // hints
                             "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".active'"
                                     + " to 'true' and configure datasource 'users'",
-                            "Refer to https://quarkus.io/guides/datasource for guidance.",
-                            "This bean is injected into",
+                            "Refer to https://quarkus.io/guides/datasource for guidance.", "This bean is injected into",
                             MyBean.class.getName() + "#flyway"));
 
     @Inject

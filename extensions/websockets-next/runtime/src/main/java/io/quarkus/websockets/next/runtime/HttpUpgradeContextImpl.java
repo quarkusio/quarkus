@@ -6,8 +6,9 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.http.HttpServerRequest;
 import io.vertx.ext.web.RoutingContext;
 
-record HttpUpgradeContextImpl(RoutingContext routingContext,
-        Uni<SecurityIdentity> securityIdentity, String endpointId) implements HttpUpgradeCheck.HttpUpgradeContext {
+record HttpUpgradeContextImpl(RoutingContext routingContext, Uni<SecurityIdentity> securityIdentity, String endpointId)
+        implements
+            HttpUpgradeCheck.HttpUpgradeContext {
 
     @Override
     public HttpServerRequest httpRequest() {

@@ -13,7 +13,8 @@ import io.quarkus.devservices.keycloak.KeycloakDevServicesRequiredBuildItem;
 import io.quarkus.devui.spi.page.CardPageBuildItem;
 import io.quarkus.oidc.client.deployment.OidcClientBuildStep;
 
-@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { OidcClientBuildStep.IsEnabled.class, DevServicesConfig.Enabled.class })
+@BuildSteps(onlyIfNot = IsNormal.class, onlyIf = { OidcClientBuildStep.IsEnabled.class,
+        DevServicesConfig.Enabled.class })
 public class KeycloakDevServiceRequiredBuildStep {
 
     private static final String CONFIG_PREFIX = "quarkus.oidc-client.";

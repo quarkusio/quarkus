@@ -22,9 +22,9 @@ public class SingletonCustomValueExtractorTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(TestBean.class, Container.class, SingletonContainerValueExtractor.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestBean.class, Container.class,
+                    SingletonContainerValueExtractor.class));
 
     @Test
     public void testSingletonCustomValueExtractor() {
@@ -43,8 +43,7 @@ public class SingletonCustomValueExtractorTest {
     }
 
     @Singleton
-    public static class SingletonContainerValueExtractor
-            implements ValueExtractor<Container<@ExtractedValue ?>> {
+    public static class SingletonContainerValueExtractor implements ValueExtractor<Container<@ExtractedValue ?>> {
 
         @Override
         public void extractValues(Container<?> originalValue, ValueReceiver receiver) {

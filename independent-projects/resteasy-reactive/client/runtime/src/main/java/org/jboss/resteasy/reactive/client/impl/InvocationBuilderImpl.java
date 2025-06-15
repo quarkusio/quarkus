@@ -41,8 +41,7 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     final HandlerChain handlerChain;
     final ThreadSetupAction requestContext;
 
-    public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient,
-            WebTargetImpl target,
+    public InvocationBuilderImpl(URI uri, ClientImpl restClient, HttpClient httpClient, WebTargetImpl target,
             ConfigurationImpl configuration, HandlerChain handlerChain, ThreadSetupAction requestContext) {
         this.uri = uri;
         this.restClient = restClient;
@@ -89,8 +88,8 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     @Override
     public AsyncInvokerImpl async() {
         setUserAgentIfNotSet();
-        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
-                properties, handlerChain, requestContext);
+        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration, properties, handlerChain,
+                requestContext);
     }
 
     @Override
@@ -161,8 +160,8 @@ public class InvocationBuilderImpl implements Invocation.Builder {
 
     @Override
     public CompletionStageRxInvoker rx() {
-        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration,
-                properties, handlerChain, requestContext);
+        return new AsyncInvokerImpl(restClient, httpClient, uri, requestSpec, configuration, properties, handlerChain,
+                requestContext);
     }
 
     @Override
@@ -183,8 +182,8 @@ public class InvocationBuilderImpl implements Invocation.Builder {
     }
 
     private void setUserAgentIfNotSet() {
-        if (!requestSpec.headers.getHeaders().containsKey(HttpHeaders.USER_AGENT)
-                && restClient.getUserAgent() != null && !restClient.getUserAgent().isEmpty()) {
+        if (!requestSpec.headers.getHeaders().containsKey(HttpHeaders.USER_AGENT) && restClient.getUserAgent() != null
+                && !restClient.getUserAgent().isEmpty()) {
             this.requestSpec.headers.header(HttpHeaders.USER_AGENT, restClient.getUserAgent());
         }
     }

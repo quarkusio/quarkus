@@ -8,7 +8,8 @@ import io.quarkus.runtime.annotations.ConfigGroup;
 import io.smallrye.config.WithParentName;
 
 /**
- * Container for a default and optionals named {@linkplain io.quarkus.elytron.security.runtime.jdbc.PrincipalQueryConfig}
+ * Container for a default and optionals named
+ * {@linkplain io.quarkus.elytron.security.runtime.jdbc.PrincipalQueryConfig}
  */
 @ConfigGroup
 public interface PrincipalQueriesConfig {

@@ -124,9 +124,9 @@ public class RuntimeResourceDeployment {
     private final ResponseWriterHandler responseWriterHandler;
 
     public RuntimeResourceDeployment(DeploymentInfo info, Supplier<Executor> executorSupplier,
-            Supplier<Executor> virtualExecutorSupplier,
-            RuntimeInterceptorDeployment runtimeInterceptorDeployment, DynamicEntityWriter dynamicEntityWriter,
-            ResourceLocatorHandler resourceLocatorHandler, boolean defaultBlocking) {
+            Supplier<Executor> virtualExecutorSupplier, RuntimeInterceptorDeployment runtimeInterceptorDeployment,
+            DynamicEntityWriter dynamicEntityWriter, ResourceLocatorHandler resourceLocatorHandler,
+            boolean defaultBlocking) {
         this.info = info;
         this.serialisers = info.getSerialisers();
         this.resteasyReactiveConfig = info.getResteasyReactiveConfig();
@@ -141,8 +141,8 @@ public class RuntimeResourceDeployment {
         this.responseWriterHandler = new ResponseWriterHandler(dynamicEntityWriter);
     }
 
-    public RuntimeResource buildResourceMethod(ResourceClass clazz,
-            ServerResourceMethod method, boolean locatableResource, URITemplate classPathTemplate, DeploymentInfo info) {
+    public RuntimeResource buildResourceMethod(ResourceClass clazz, ServerResourceMethod method,
+            boolean locatableResource, URITemplate classPathTemplate, DeploymentInfo info) {
         URITemplate methodPathTemplate = new URITemplate(method.getPath(), method.isResourceLocator());
         MultivaluedMap<ScoreSystem.Category, ScoreSystem.Diagnostic> score = new QuarkusMultivaluedHashMap<>();
 
@@ -176,15 +176,15 @@ public class RuntimeResourceDeployment {
         }
 
         ResteasyReactiveResourceInfo lazyMethod = new ResteasyReactiveResourceInfo(method.getName(), resourceClass,
-                parameterDeclaredUnresolvedTypes,
-                !defaultBlocking && !method.isBlocking(), method.getActualDeclaringClassName());
+                parameterDeclaredUnresolvedTypes, !defaultBlocking && !method.isBlocking(),
+                method.getActualDeclaringClassName());
 
         RuntimeInterceptorDeployment.MethodInterceptorContext interceptorDeployment = runtimeInterceptorDeployment
                 .forMethod(method, lazyMethod);
 
-        //setup reader and writer interceptors first
+        // setup reader and writer interceptors first
         ServerRestHandler interceptorHandler = interceptorDeployment.setupInterceptorHandler();
-        //we want interceptors in the abort handler chain
+        // we want interceptors in the abort handler chain
         List<ServerRestHandler> abortHandlingChain = new ArrayList<>(
                 3 + (interceptorHandler != null ? 1 : 0) + (info.getPreExceptionMapperHandler() != null ? 1 : 0));
 
@@ -214,9 +214,9 @@ public class RuntimeResourceDeployment {
                 blockingHandlerIndex = Optional.of(handlers.size() - 1);
             } else {
                 if (method.isRunOnVirtualThread()) {
-                    //should not happen
-                    log.error("a method was both non-blocking and @RunOnVirtualThread, it is now considered " +
-                            "@RunOnVirtual and blocking");
+                    // should not happen
+                    log.error("a method was both non-blocking and @RunOnVirtualThread, it is now considered "
+                            + "@RunOnVirtual and blocking");
                     handlers.add(blockingHandlerVirtualThread);
                     score.add(ScoreSystem.Category.Execution, ScoreSystem.Diagnostic.ExecutionVirtualThread);
                 } else {
@@ -229,12 +229,13 @@ public class RuntimeResourceDeployment {
         // special case for AsyncFile which can't do async IO and handle interceptors
         if (method.getReturnType().equals("Lio/vertx/core/file/AsyncFile;")
                 && interceptorDeployment.hasWriterInterceptors()) {
-            throw new RuntimeException(
-                    "Endpoints that return an AsyncFile cannot have any WriterInterceptor set");
+            throw new RuntimeException("Endpoints that return an AsyncFile cannot have any WriterInterceptor set");
         }
 
-        //spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources (which makes sense)
-        //so only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we ensure only one will run
+        // spec doesn't seem to test this, but RESTEasy does not run request filters for both root and sub resources
+        // (which makes sense)
+        // so only run request filters for methods that are leaf resources - i.e. have a HTTP method annotation so we
+        // ensure only one will run
         boolean hasWithFormReadRequestFilters = false;
         if (method.getHttpMethod() != null) {
             List<ResourceRequestFilterHandler> containerRequestFilterHandlers = interceptorDeployment
@@ -294,7 +295,8 @@ public class RuntimeResourceDeployment {
             }
         }
         if (checkWithFormReadRequestFilters && hasWithFormReadRequestFilters) {
-            // we need to remove the corresponding filters from the handlers list and add them to its end in the same order
+            // we need to remove the corresponding filters from the handlers list and add them to its end in the same
+            // order
             List<ServerRestHandler> readBodyRequestFilters = new ArrayList<>(1);
             for (int i = handlers.size() - 2; i >= 0; i--) {
                 var serverRestHandler = handlers.get(i);
@@ -313,7 +315,8 @@ public class RuntimeResourceDeployment {
             Class<Object> typeClass = loadClass(bodyParameter.declaredType);
             Type genericType = typeClass;
             if (!bodyParameter.type.equals(bodyParameter.declaredType)) {
-                // we only need to parse the signature and create generic type when the declared type differs from the type
+                // we only need to parse the signature and create generic type when the declared type differs from the
+                // type
                 genericType = TypeSignatureParser.parse(bodyParameter.signature);
             }
             handlers.add(new RequestDeserializeHandler(typeClass, genericType, consumesMediaTypes, serialisers,
@@ -356,8 +359,8 @@ public class RuntimeResourceDeployment {
                     Class<?>[] parameterTypes = javaMethod.getParameterTypes();
                     Type[] genericParameterTypes = javaMethod.getGenericParameterTypes();
                     Annotation[][] parameterAnnotations = javaMethod.getParameterAnnotations();
-                    smartInitParameterConverter(i, converter, paramConverterProviders, parameterTypes, genericParameterTypes,
-                            parameterAnnotations);
+                    smartInitParameterConverter(i, converter, paramConverterProviders, parameterTypes,
+                            genericParameterTypes, parameterAnnotations);
 
                     // make sure we give the user provided resolvers the chance to convert
                     converter = new RuntimeResolvedConverter(converter);
@@ -366,8 +369,7 @@ public class RuntimeResourceDeployment {
                 }
             }
 
-            handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor,
-                    converter, param.parameterType,
+            handlers.add(new ParameterHandler(i, param.getDefaultValue(), extractor, converter, param.parameterType,
                     param.isObtainedAsCollection(), param.isOptional()));
         }
         addHandlers(handlers, clazz, method, info, HandlerChainCustomizer.Phase.BEFORE_METHOD_INVOKE);
@@ -398,50 +400,50 @@ public class RuntimeResourceDeployment {
                     StandardCharsets.UTF_8.name(), false);
         }
         if (method.getHttpMethod() == null) {
-            //this is a resource locator method
+            // this is a resource locator method
             handlers.add(resourceLocatorHandler);
         } else if (!Response.class.isAssignableFrom(rawEffectiveReturnType)) {
-            //try and statically determine the media type and response writer
-            //we can't do this for all cases, but we can do it for the most common ones
-            //in practice this should work for the majority of endpoints
+            // try and statically determine the media type and response writer
+            // we can't do this for all cases, but we can do it for the most common ones
+            // in practice this should work for the majority of endpoints
             if (method.getProduces() != null && method.getProduces().length > 0) {
-                //the method can only produce a single content type, which is the most common case
+                // the method can only produce a single content type, which is the most common case
                 if (method.getProduces().length == 1) {
                     MediaType mediaType = MediaTypeHelper.valueOf(method.getProduces()[0]);
-                    //its a wildcard type, makes it hard to determine statically
+                    // its a wildcard type, makes it hard to determine statically
                     if (mediaType.isWildcardType() || mediaType.isWildcardSubtype()) {
                         handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                         score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                     } else if (isNotVoid(rawEffectiveReturnType)) {
-                        List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(rawEffectiveReturnType,
-                                RuntimeType.SERVER, MediaTypeHelper.toListOfMediaType(method.getProduces()));
+                        List<MessageBodyWriter<?>> buildTimeWriters = serialisers.findBuildTimeWriters(
+                                rawEffectiveReturnType, RuntimeType.SERVER,
+                                MediaTypeHelper.toListOfMediaType(method.getProduces()));
                         if (buildTimeWriters == null) {
-                            //if this is null this means that the type cannot be resolved at build time
-                            //this happens when the method returns a generic type (e.g. Object), so there
-                            //are more specific mappers that could be invoked depending on the actual return value
+                            // if this is null this means that the type cannot be resolved at build time
+                            // this happens when the method returns a generic type (e.g. Object), so there
+                            // are more specific mappers that could be invoked depending on the actual return value
                             handlers.add(new FixedProducesHandler(mediaType, dynamicEntityWriter));
                             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                         } else if (buildTimeWriters.isEmpty()) {
-                            //we could not find any writers that can write a response to this endpoint
-                            log.warn("Cannot find any combination of response writers for the method " + clazz.getClassName()
-                                    + "#" + method.getName() + "(" + Arrays.toString(method.getParameters()) + ")");
+                            // we could not find any writers that can write a response to this endpoint
+                            log.warn("Cannot find any combination of response writers for the method "
+                                    + clazz.getClassName() + "#" + method.getName() + "("
+                                    + Arrays.toString(method.getParameters()) + ")");
                             handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                         } else if (isSingleEffectiveWriter(buildTimeWriters)) {
                             MessageBodyWriter<?> writer = buildTimeWriters.get(0);
-                            handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriter(
-                                    writer, serialisers)));
+                            handlers.add(
+                                    new FixedProducesHandler(mediaType, new FixedEntityWriter(writer, serialisers)));
                             if (writer instanceof ServerMessageBodyWriter)
                                 score.add(ScoreSystem.Category.Writer,
                                         ScoreSystem.Diagnostic.WriterBuildTimeDirect(writer));
                             else
-                                score.add(ScoreSystem.Category.Writer,
-                                        ScoreSystem.Diagnostic.WriterBuildTime(writer));
+                                score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterBuildTime(writer));
                         } else {
-                            //multiple writers, we try them in the proper order which had already been created
-                            handlers.add(new FixedProducesHandler(mediaType,
-                                    new FixedEntityWriterArray(buildTimeWriters.toArray(EMPTY_MESSAGE_BODY_WRITERS),
-                                            serialisers)));
+                            // multiple writers, we try them in the proper order which had already been created
+                            handlers.add(new FixedProducesHandler(mediaType, new FixedEntityWriterArray(
+                                    buildTimeWriters.toArray(EMPTY_MESSAGE_BODY_WRITERS), serialisers)));
                             score.add(ScoreSystem.Category.Writer,
                                     ScoreSystem.Diagnostic.WriterBuildTimeMultiple(buildTimeWriters));
                         }
@@ -449,22 +451,23 @@ public class RuntimeResourceDeployment {
                         score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterNotRequired);
                     }
                 } else {
-                    //there are multiple possibilities
-                    //we could optimise this more in future
+                    // there are multiple possibilities
+                    // we could optimise this more in future
                     handlers.add(new VariableProducesHandler(serverMediaType, serialisers));
                     score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
                 }
             } else {
-                score.add(ScoreSystem.Category.Writer, isNotVoid(rawEffectiveReturnType) ? ScoreSystem.Diagnostic.WriterRunTime
-                        : ScoreSystem.Diagnostic.WriterNotRequired);
+                score.add(ScoreSystem.Category.Writer,
+                        isNotVoid(rawEffectiveReturnType) ? ScoreSystem.Diagnostic.WriterRunTime
+                                : ScoreSystem.Diagnostic.WriterNotRequired);
             }
         } else {
             score.add(ScoreSystem.Category.Writer, ScoreSystem.Diagnostic.WriterRunTime);
         }
 
-        //the response filter handlers, they need to be added to both the abort and
-        //normal chains. At the moment this only has one handler added to it but
-        //in future there will be one per filter
+        // the response filter handlers, they need to be added to both the abort and
+        // normal chains. At the moment this only has one handler added to it but
+        // in future there will be one per filter
         List<ServerRestHandler> responseFilterHandlers;
         if (method.isSse()) {
             handlers.add(SseResponseWriterHandler.INSTANCE);
@@ -477,7 +480,8 @@ public class RuntimeResourceDeployment {
             handlers.add(responseWriterHandler);
         }
         if (!clazz.resourceExceptionMapper().isEmpty() && (instanceHandler != null)) {
-            // when class level exception mapper are used, we need to make sure that an instance of resource class exists
+            // when class level exception mapper are used, we need to make sure that an instance of resource class
+            // exists
             // so we can invoke it
             abortHandlingChain.add(instanceHandler);
         }
@@ -491,25 +495,20 @@ public class RuntimeResourceDeployment {
 
         handlers.set(0, new AbortChainHandler(abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY)));
 
-        return new RuntimeResource(method.getHttpMethod(), methodPathTemplate,
-                classPathTemplate,
-                method.getProduces() == null ? null : serverMediaType,
-                consumesMediaTypes, invoker,
-                clazz.getFactory(), handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
-                effectiveReturnType, method.isBlocking(), method.isRunOnVirtualThread(), resourceClass,
-                lazyMethod,
+        return new RuntimeResource(method.getHttpMethod(), methodPathTemplate, classPathTemplate,
+                method.getProduces() == null ? null : serverMediaType, consumesMediaTypes, invoker, clazz.getFactory(),
+                handlers.toArray(EMPTY_REST_HANDLER_ARRAY), method.getName(), parameterDeclaredTypes,
+                effectiveReturnType, method.isBlocking(), method.isRunOnVirtualThread(), resourceClass, lazyMethod,
                 pathParameterIndexes, info.isDevelopmentMode() ? score : null, streamElementType,
                 clazz.resourceExceptionMapper());
     }
 
     /**
-     * This method takes into account the case where a parameter is for example List<UUID>
-     * and we want to allow users to be able to use their implementation of
-     * ParamConverter<UUID>.
+     * This method takes into account the case where a parameter is for example List<UUID> and we want to allow users to
+     * be able to use their implementation of ParamConverter<UUID>.
      */
     private static void smartInitParameterConverter(int i, ParameterConverter quarkusConverter,
-            ParamConverterProviders paramConverterProviders,
-            Class<?>[] parameterTypes, Type[] genericParameterTypes,
+            ParamConverterProviders paramConverterProviders, Class<?>[] parameterTypes, Type[] genericParameterTypes,
             Annotation[][] parameterAnnotations) {
         if (quarkusConverter.isForSingleObjectContainer()) {
 
@@ -533,13 +532,12 @@ public class RuntimeResourceDeployment {
                             }
                         }
                     }
-                    //TODO: are there any other cases we can support?
+                    // TODO: are there any other cases we can support?
                     if (genericTypeClassName == null) {
                         throw new IllegalArgumentException(
                                 "Unable to support parameter converter with type: '" + genericType.getTypeName() + "'");
                     }
-                    quarkusConverter.init(paramConverterProviders, loadClass(genericTypeClassName),
-                            genericArguments[0],
+                    quarkusConverter.init(paramConverterProviders, loadClass(genericTypeClassName), genericArguments[0],
                             parameterAnnotations[i]);
                     return;
                 }
@@ -587,8 +585,7 @@ public class RuntimeResourceDeployment {
                 method.getHandlerChainCustomizers().size());
         for (int i = 0; i < method.getHandlerChainCustomizers().size(); i++) {
             PublisherResponseHandler.StreamingResponseCustomizer streamingResponseCustomizer = method
-                    .getHandlerChainCustomizers().get(i)
-                    .streamingResponseCustomizer(method);
+                    .getHandlerChainCustomizers().get(i).streamingResponseCustomizer(method);
             if (streamingResponseCustomizer != null) {
                 customizers.add(streamingResponseCustomizer);
             }
@@ -615,8 +612,7 @@ public class RuntimeResourceDeployment {
     }
 
     private boolean addHandlers(List<ServerRestHandler> handlers, ResourceClass clazz, ServerResourceMethod method,
-            DeploymentInfo info,
-            HandlerChainCustomizer.Phase phase) {
+            DeploymentInfo info, HandlerChainCustomizer.Phase phase) {
         int originalHandlersSize = handlers.size();
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
             handlers.addAll(info.getGlobalHandlerCustomizers().get(i).handlers(phase, clazz, method));
@@ -664,7 +660,8 @@ public class RuntimeResourceDeployment {
                 } else if (param.mimeType != null && !param.mimeType.equals(MediaType.TEXT_PLAIN)) {
                     multiPartType = MultipartFormParamExtractor.Type.PartType;
                     // TODO: special primitive handling?
-                    // FIXME: by using the element type, we're also getting converters for parameter collection types such as List/Array/Set
+                    // FIXME: by using the element type, we're also getting converters for parameter collection types
+                    // such as List/Array/Set
                     // but also others we may not want?
                     typeClass = loadClass(param.type);
                     genericType = TypeSignatureParser.parse(param.signature);
@@ -672,8 +669,8 @@ public class RuntimeResourceDeployment {
                     genericType = Types.getMultipartElementType(genericType);
                 }
                 if (multiPartType != null) {
-                    return new MultipartFormParamExtractor(param.name, param.isSingle(), multiPartType, typeClass, genericType,
-                            param.mimeType, param.encoded);
+                    return new MultipartFormParamExtractor(param.name, param.isSingle(), multiPartType, typeClass,
+                            genericType, param.mimeType, param.encoded);
                 }
                 // regular form
                 return new FormParamExtractor(param.name, param.isSingle(), param.encoded);

@@ -20,7 +20,7 @@ public final class QuarkusCloudEventsFunction implements CloudEventsFunction {
     static {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
-        if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock unit testing.
+        if (Application.currentApplication() == null) { // were we already bootstrapped? Needed for mock unit testing.
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
             try {
                 // For GCP functions, we need to set the TCCL to the QuarkusHttpFunction classloader then restore it.
@@ -65,8 +65,8 @@ public final class QuarkusCloudEventsFunction implements CloudEventsFunction {
 
         // TODO maybe we can check this at static init
         if (delegate == null) {
-            throw new IOException("We didn't found any CloudEventsFunction to run " +
-                    "(or there is multiple one and none selected inside your application.properties)");
+            throw new IOException("We didn't found any CloudEventsFunction to run "
+                    + "(or there is multiple one and none selected inside your application.properties)");
         }
 
         delegate.accept(cloudEvent);

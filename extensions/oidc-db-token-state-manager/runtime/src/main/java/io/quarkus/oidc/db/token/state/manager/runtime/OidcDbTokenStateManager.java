@@ -53,25 +53,16 @@ public class OidcDbTokenStateManager implements TokenStateManager {
     public Uni<String> createTokenState(RoutingContext event, OidcTenantConfig oidcConfig,
             AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
         final String id = now() + UUID.randomUUID().toString();
-        return Uni
-                .createFrom()
-                .completionStage(
-                        pool
-                                .withTransaction(client -> client
-                                        .preparedQuery(insertStatement)
-                                        .execute(
-                                                Tuple.of(tokens.getIdToken(), tokens.getAccessToken(),
-                                                        tokens.getRefreshToken(), tokens.getAccessTokenExpiresIn(),
-                                                        tokens.getAccessTokenScope(),
-                                                        expiresIn(event), id)))
-                                .toCompletionStage())
-                .onFailure().transform(new Function<Throwable, Throwable>() {
+        return Uni.createFrom().completionStage(pool
+                .withTransaction(client -> client.preparedQuery(insertStatement)
+                        .execute(Tuple.of(tokens.getIdToken(), tokens.getAccessToken(), tokens.getRefreshToken(),
+                                tokens.getAccessTokenExpiresIn(), tokens.getAccessTokenScope(), expiresIn(event), id)))
+                .toCompletionStage()).onFailure().transform(new Function<Throwable, Throwable>() {
                     @Override
                     public Throwable apply(Throwable throwable) {
                         return new AuthenticationFailedException(TOKEN_STATE_INSERT_FAILED, throwable);
                     }
-                })
-                .flatMap(new Function<RowSet<Row>, Uni<? extends String>>() {
+                }).flatMap(new Function<RowSet<Row>, Uni<? extends String>>() {
                     @Override
                     public Uni<? extends String> apply(RowSet<Row> rows) {
                         if (rows != null) {
@@ -79,37 +70,28 @@ public class OidcDbTokenStateManager implements TokenStateManager {
                         }
                         return Uni.createFrom().failure(new AuthenticationFailedException(TOKEN_STATE_INSERT_FAILED));
                     }
-                })
-                .memoize().indefinitely();
+                }).memoize().indefinitely();
     }
 
     @Override
-    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            OidcRequestContext<AuthorizationCodeTokens> requestContext) {
-        return Uni
-                .createFrom()
-                .completionStage(
-                        pool
-                                .preparedQuery(getQuery)
-                                .execute(Tuple.of(tokenState))
-                                .toCompletionStage())
+    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
+        return Uni.createFrom()
+                .completionStage(pool.preparedQuery(getQuery).execute(Tuple.of(tokenState)).toCompletionStage())
                 .onFailure().transform(new Function<Throwable, Throwable>() {
                     @Override
                     public Throwable apply(Throwable throwable) {
                         return new AuthenticationCompletionException(FAILED_TO_ACQUIRE_TOKEN, throwable);
                     }
-                })
-                .flatMap(new Function<RowSet<Row>, Uni<? extends AuthorizationCodeTokens>>() {
+                }).flatMap(new Function<RowSet<Row>, Uni<? extends AuthorizationCodeTokens>>() {
                     @Override
                     public Uni<? extends AuthorizationCodeTokens> apply(RowSet<Row> rows) {
                         if (rows != null) {
                             final RowIterator<Row> iterator = rows.iterator();
                             if (iterator.hasNext()) {
                                 final Row firstRow = iterator.next();
-                                return Uni
-                                        .createFrom()
-                                        .item(new AuthorizationCodeTokens(
-                                                firstRow.getString(ID_TOKEN_COLUMN),
+                                return Uni.createFrom()
+                                        .item(new AuthorizationCodeTokens(firstRow.getString(ID_TOKEN_COLUMN),
                                                 firstRow.getString(ACCESS_TOKEN_COLUMN),
                                                 firstRow.getString(REFRESH_TOKEN_COLUMN),
                                                 firstRow.getLong(ACCESS_TOKEN_EXPIRES_IN_COLUMN),
@@ -118,22 +100,15 @@ public class OidcDbTokenStateManager implements TokenStateManager {
                         }
                         return Uni.createFrom().failure(new AuthenticationCompletionException(FAILED_TO_ACQUIRE_TOKEN));
                     }
-                })
-                .memoize().indefinitely();
+                }).memoize().indefinitely();
     }
 
     @Override
     public Uni<Void> deleteTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
             OidcRequestContext<Void> requestContext) {
-        return Uni
-                .createFrom()
-                .completionStage(pool
-                        .preparedQuery(deleteStatement)
-                        .execute(Tuple.of(tokenState))
-                        .toCompletionStage())
-                .replaceWithVoid()
-                .onFailure()
-                .recoverWithItem(new Function<Throwable, Void>() {
+        return Uni.createFrom()
+                .completionStage(pool.preparedQuery(deleteStatement).execute(Tuple.of(tokenState)).toCompletionStage())
+                .replaceWithVoid().onFailure().recoverWithItem(new Function<Throwable, Void>() {
                     @Override
                     public Void apply(Throwable throwable) {
                         LOG.debugf("Failed to delete tokens: %s", throwable.getMessage());

@@ -31,26 +31,24 @@ import io.restassured.RestAssured;
 
 public class SubResourceMediaTypeTest {
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
-                    war.addClasses(StoreResource.class);
-                    war.addClasses(AddressesResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class);
+            war.addClasses(StoreResource.class);
+            war.addClasses(AddressesResource.class);
+            return war;
+        }
+    });
 
     @Test
     public void basicTest() throws IOException {
         // Test that produces and consumes on sub resource takes effect
         {
             Client client = ClientBuilder.newClient();
-            Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/addresses",
+            Response response = client
+                    .target(PortProviderUtil.generateURL("/store/addresses",
                             SubResourceMediaTypeTest.class.getSimpleName()))
                     .request().accept("text/csv").post(Entity.xml("<resultCount>1</resultCount>"));
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -63,15 +61,13 @@ public class SubResourceMediaTypeTest {
         // Test that produces and consumes on sub resource takes effect
         {
             Client client = ClientBuilder.newClient();
-            Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/addresses",
+            Response response = client
+                    .target(PortProviderUtil.generateURL("/store/addresses",
                             SubResourceMediaTypeTest.class.getSimpleName()))
                     .request().accept("application/xml").post(Entity.xml("<resultCount>1</resultCount>"));
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("<addresses><address><name>name1</name></address></addresses>",
-                    response.readEntity(String.class),
-                    "Wrong content of response");
+                    response.readEntity(String.class), "Wrong content of response");
             response.close();
             client.close();
         }
@@ -82,9 +78,7 @@ public class SubResourceMediaTypeTest {
         {
             Client client = ClientBuilder.newClient();
             Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/addresses",
-                            SubResourceMediaTypeTest.class.getSimpleName()))
+                    PortProviderUtil.generateURL("/store/addresses", SubResourceMediaTypeTest.class.getSimpleName()))
                     .request().accept("text/html").get();
             Assertions.assertEquals(Response.Status.NOT_ACCEPTABLE.getStatusCode(), response.getStatus());
             response.close();

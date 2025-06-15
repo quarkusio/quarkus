@@ -27,15 +27,19 @@ public interface ClassDenyAllInterfaceWithoutPath_SecurityOnInterface {
     @PermitAll
     @POST
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
-    default String classPathOnResource_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
+    default String classPathOnResource_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @RolesAllowed("admin")
     @POST
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
-    default String classPathOnResource_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array) {
-        return CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
+    default String classPathOnResource_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodRolesAllowed(
+            JsonObject array) {
+        return CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
     }
 
 }

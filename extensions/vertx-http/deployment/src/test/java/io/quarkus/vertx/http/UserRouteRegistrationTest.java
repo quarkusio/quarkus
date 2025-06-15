@@ -20,11 +20,9 @@ public class UserRouteRegistrationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanRegisteringRouteUsingObserves.class,
-                            BeanRegisteringRouteUsingObservesWithMutinyRouter.class,
-                            BeanRegisteringRouteUsingInject.class,
-                            BeanRegisteringRouteUsingInjectWithMutinyRouter.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanRegisteringRouteUsingObserves.class,
+                    BeanRegisteringRouteUsingObservesWithMutinyRouter.class, BeanRegisteringRouteUsingInject.class,
+                    BeanRegisteringRouteUsingInjectWithMutinyRouter.class));
 
     @Test
     public void test() {
@@ -79,7 +77,8 @@ public class UserRouteRegistrationTest {
 
         public void register(@Observes StartupEvent ignored) {
             router.route("/inject-mutiny").handler(rc -> rc.response().endAndForget("inject mutiny - ok"));
-            router.route("/body-mutiny").consumes("text/plain").handler(io.vertx.mutiny.ext.web.handler.BodyHandler.create())
+            router.route("/body-mutiny").consumes("text/plain")
+                    .handler(io.vertx.mutiny.ext.web.handler.BodyHandler.create())
                     .handler(rc -> rc.response().endAndForget(rc.getBodyAsString()));
         }
 

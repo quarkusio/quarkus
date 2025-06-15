@@ -29,97 +29,44 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Dummy.class, ContextPropagationResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Dummy.class, ContextPropagationResource.class));
 
     @Test
     public void testAsyncQuery() {
-        String request = getPayload("{\n" +
-                "  testAsyncQuery {\n" +
-                "    stringField\n" +
-                "  }\n" +
-                "}");
+        String request = getPayload("{\n" + "  testAsyncQuery {\n" + "    stringField\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .log()
-                .body(true)
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql")
+                .then().log().body(true).assertThat().statusCode(200).and()
                 .body("data.testAsyncQuery.stringField", Matchers.equalTo("OK"));
     }
 
     @Test
     public void testAsyncQueryWithAsyncSource() {
-        String request = getPayload("{\n" +
-                "  testAsyncQuery {\n" +
-                "    stringField\n" +
-                "    stringBatchSourceAsync\n" +
-                "  }\n" +
-                "}");
+        String request = getPayload(
+                "{\n" + "  testAsyncQuery {\n" + "    stringField\n" + "    stringBatchSourceAsync\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .log()
-                .body(true)
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql")
+                .then().log().body(true).assertThat().statusCode(200).and()
                 .body("data.testAsyncQuery.stringField", Matchers.equalTo("OK"))
                 .body("data.testAsyncQuery.stringBatchSourceAsync", Matchers.equalTo("hello"));
     }
 
     @Test
     public void testManualPropagation() {
-        String request = getPayload("{\n" +
-                "  testManualPropagation {\n" +
-                "    stringField\n" +
-                "  }\n" +
-                "}");
+        String request = getPayload("{\n" + "  testManualPropagation {\n" + "    stringField\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .log()
-                .body(true)
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql")
+                .then().log().body(true).assertThat().statusCode(200).and()
                 .body("data.testManualPropagation.stringField", Matchers.equalTo("OK"));
     }
 
     @Test
     public void testSourceMethods() {
-        String request = getPayload("{\n" +
-                "  testSourceMethods {\n" +
-                "    stringBatchSource,\n" +
-                "    numberBatchSource\n" +
-                "  }\n" +
-                "}");
+        String request = getPayload("{\n" + "  testSourceMethods {\n" + "    stringBatchSource,\n"
+                + "    numberBatchSource\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .log()
-                .body(true)
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql")
+                .then().log().body(true).assertThat().statusCode(200).and()
                 .body("data.testSourceMethods.stringBatchSource", Matchers.equalTo("hello"));
     }
 
@@ -157,7 +104,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
 
             CompletableFuture<String> stringFuture = CompletableFuture.supplyAsync(() -> {
                 assertNotNull(context, "Context must to be available inside an async task");
-                assertEquals(executionId, context.get().getExecutionId(), "Execution ID must be the same inside an async task");
+                assertEquals(executionId, context.get().getExecutionId(),
+                        "Execution ID must be the same inside an async task");
                 assertEquals("testManualPropagation", context.get().getFieldName());
                 return "OK";
             }, managedExecutor);
@@ -180,7 +128,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
         @Name("stringBatchSource")
         public List<String> stringBatchSource(@Source List<Dummy> source) {
             assertEquals("stringBatchSource", context.get().getFieldName());
-            assertEquals(this.executionId, context.get().getExecutionId(), "Wrong execution ID propagated from the root query");
+            assertEquals(this.executionId, context.get().getExecutionId(),
+                    "Wrong execution ID propagated from the root query");
 
             List<String> result = new ArrayList<>();
             for (Dummy dummy : source) {
@@ -192,7 +141,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
         @Name("stringBatchSourceAsync")
         public CompletionStage<List<String>> stringBatchSourceAsync(@Source List<Dummy> source) {
             assertEquals("stringBatchSourceAsync", context.get().getFieldName());
-            assertEquals(this.executionId, context.get().getExecutionId(), "Wrong execution ID propagated from the root query");
+            assertEquals(this.executionId, context.get().getExecutionId(),
+                    "Wrong execution ID propagated from the root query");
 
             List<String> result = new ArrayList<>();
             for (Dummy dummy : source) {
@@ -204,7 +154,8 @@ public class SmallRyeGraphQLContextTestCase extends AbstractGraphQLTest {
         @Name("numberBatchSource")
         public List<Integer> numberBatchSource(@Source List<Dummy> source) {
             assertEquals("numberBatchSource", context.get().getFieldName());
-            assertEquals(this.executionId, context.get().getExecutionId(), "Wrong execution ID propagated from the root query");
+            assertEquals(this.executionId, context.get().getExecutionId(),
+                    "Wrong execution ID propagated from the root query");
 
             List<Integer> result = new ArrayList<>();
             for (Dummy dummy : source) {

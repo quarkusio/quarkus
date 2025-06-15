@@ -32,8 +32,7 @@ public class LinkImpl extends Link {
     LinkImpl(final URI uri, final Map<String, String> map) {
         this.uri = uri;
         this.map = map.isEmpty() ? Collections.<String, String> emptyMap()
-                : Collections
-                        .unmodifiableMap(new HashMap<String, String>(map));
+                : Collections.unmodifiableMap(new HashMap<String, String>(map));
     }
 
     @Override

@@ -29,11 +29,8 @@ public class OptionalDepsTest extends BootstrapFromOriginalJarTestBase {
 
         final TsQuarkusExt extA = new TsQuarkusExt("ext-a");
         addToExpectedLib(extA.getRuntime());
-        extA.getRuntime()
-                .addDependency(extADep)
-                .addDependency(new TsDependency(extAOptionalDep, true));
-        extA.getDeployment()
-                .addDependency(new TsDependency(extAOptionalDeploymentDep, true));
+        extA.getRuntime().addDependency(extADep).addDependency(new TsDependency(extAOptionalDep, true));
+        extA.getDeployment().addDependency(new TsDependency(extAOptionalDeploymentDep, true));
 
         final TsArtifact extBOptionalDep = TsArtifact.jar("ext-b-optional-dep");
         final TsArtifact extBDeploymentDep = TsArtifact.jar("ext-b-deployment-dep");
@@ -48,8 +45,7 @@ public class OptionalDepsTest extends BootstrapFromOriginalJarTestBase {
         extB.getDeployment().addDependency(new TsDependency(extBDeploymentDep, false));
         install(extB);
 
-        final TsArtifact appOptionalDep = TsArtifact.jar("app-optional-dep")
-                .addDependency(extB.getRuntime());
+        final TsArtifact appOptionalDep = TsArtifact.jar("app-optional-dep").addDependency(extB.getRuntime());
         addToExpectedLib(appOptionalDep);
 
         final TsQuarkusExt extC = new TsQuarkusExt("ext-c");
@@ -61,12 +57,9 @@ public class OptionalDepsTest extends BootstrapFromOriginalJarTestBase {
         install(extD);
         addToExpectedLib(extD.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA, true)
-                .addDependency(new TsDependency(appOptionalDep, true))
-                .addDependency(extD.getRuntime());
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA, true)
+                .addDependency(new TsDependency(appOptionalDep, true)).addDependency(extD.getRuntime());
     }
 
     @Override
@@ -75,69 +68,47 @@ public class OptionalDepsTest extends BootstrapFromOriginalJarTestBase {
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-a", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DIRECT,
-                DependencyFlags.OPTIONAL,
-                DependencyFlags.RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DIRECT, DependencyFlags.OPTIONAL,
+                DependencyFlags.RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT,
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-a-dep", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.OPTIONAL,
-                DependencyFlags.RUNTIME_CP,
+                JavaScopes.COMPILE, DependencyFlags.OPTIONAL, DependencyFlags.RUNTIME_CP,
                 DependencyFlags.DEPLOYMENT_CP));
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-a-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.OPTIONAL,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.OPTIONAL, DependencyFlags.DEPLOYMENT_CP));
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "app-optional-dep", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.OPTIONAL,
-                DependencyFlags.DIRECT,
-                DependencyFlags.RUNTIME_CP,
+                JavaScopes.COMPILE, DependencyFlags.OPTIONAL, DependencyFlags.DIRECT, DependencyFlags.RUNTIME_CP,
                 DependencyFlags.DEPLOYMENT_CP));
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.OPTIONAL,
-                DependencyFlags.RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.RUNTIME_CP,
+                JavaScopes.COMPILE, DependencyFlags.OPTIONAL, DependencyFlags.RUNTIME_EXTENSION_ARTIFACT,
+                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.RUNTIME_CP,
                 DependencyFlags.DEPLOYMENT_CP));
 
-        expected.add(new ArtifactDependency(ArtifactCoords.jar(
-                TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.OPTIONAL,
-                DependencyFlags.DEPLOYMENT_CP));
+        expected.add(new ArtifactDependency(
+                ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION),
+                JavaScopes.COMPILE, DependencyFlags.OPTIONAL, DependencyFlags.DEPLOYMENT_CP));
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment-dep", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.OPTIONAL,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.OPTIONAL, DependencyFlags.DEPLOYMENT_CP));
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-d", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DIRECT,
-                DependencyFlags.RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.RUNTIME_CP,
+                JavaScopes.COMPILE, DependencyFlags.DIRECT, DependencyFlags.RUNTIME_EXTENSION_ARTIFACT,
+                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.RUNTIME_CP,
                 DependencyFlags.DEPLOYMENT_CP));
 
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-d-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
 
         assertEquals(expected, getDependenciesWithFlag(model, DependencyFlags.DEPLOYMENT_CP));
     }

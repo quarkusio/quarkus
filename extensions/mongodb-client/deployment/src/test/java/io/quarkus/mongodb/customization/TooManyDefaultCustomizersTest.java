@@ -21,7 +21,8 @@ public class TooManyDefaultCustomizersTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class, MyCustomizer.class, MySecondCustomizer.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(MongoTestBase.class, MyCustomizer.class, MySecondCustomizer.class))
             .withConfigurationResource("default-mongoclient.properties")
             .assertException(t -> Assertions.assertThat(t).isInstanceOf(DeploymentException.class)
                     .hasMessageContaining("Multiple Mongo client customizers found for client <default>: "));

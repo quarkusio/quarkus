@@ -159,8 +159,8 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithRelativeRootPathAndWithManagementDisabled() {
-        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(
-                false, "management");
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(false,
+                "management");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 
@@ -207,8 +207,7 @@ public class NonApplicationRootPathBuildItemTest {
 
     @Test
     void testResolveManagementPathWithEmptyRootPath() {
-        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true,
-                "");
+        ManagementInterfaceBuildTimeConfig managementBuildTimeConfig = new ManagementBuildTimeConfigImpl(true, "");
         LaunchModeBuildItem launchModeBuildItem = new LaunchModeBuildItem(LaunchMode.NORMAL, Optional.empty(), false,
                 Optional.empty(), false);
 

@@ -16,8 +16,8 @@ import io.quarkus.arc.processor.DotNames;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * This build item can be used to turn a class that is not annotated with a CDI scope annotation into a bean, i.e. the default
- * scope annotation is added automatically if all conditions are met.
+ * This build item can be used to turn a class that is not annotated with a CDI scope annotation into a bean, i.e. the
+ * default scope annotation is added automatically if all conditions are met.
  */
 public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
@@ -77,10 +77,11 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
 
         /**
          * @param clazz
-         * @param annotations The current set of (possibly transformed) annotations
+         * @param annotations
+         *        The current set of (possibly transformed) annotations
          * @param index
-         * @return {@code true} if the input arguments match the predicate,
-         *         {@code false} otherwise
+         *
+         * @return {@code true} if the input arguments match the predicate, {@code false} otherwise
          */
         boolean test(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index);
 
@@ -114,12 +115,12 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         }
 
         /**
-         * At least one injection point or lifecycle callback must be declared in the class hierarchy. Otherwise, the scope
-         * annotation is not added.
+         * At least one injection point or lifecycle callback must be declared in the class hierarchy. Otherwise, the
+         * scope annotation is not added.
          * <p>
          * Note that the detection algorithm is just the best effort. Some inheritance rules defined by the spec are not
-         * followed, e.g. per spec an initializer method is only inherited if not overridden. This method merely scans the
-         * annotations.
+         * followed, e.g. per spec an initializer method is only inherited if not overridden. This method merely scans
+         * the annotations.
          *
          * @return self
          */
@@ -132,6 +133,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The bean will be unremovable.
          *
          * @see ArcConfig#removeUnusedBeans
+         *
          * @return self
          */
         public Builder unremovable() {
@@ -145,6 +147,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The previous predicate (if any) is replaced.
          *
          * @param predicate
+         *
          * @return self
          */
         public Builder match(MatchPredicate predicate) {
@@ -158,6 +161,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
          *
          * @param annotationName
+         *
          * @return self
          */
         public Builder isAnnotatedWith(DotName annotationName) {
@@ -165,13 +169,13 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         }
 
         /**
-         * The class or any of its element must be annotated with the given annotation. Otherwise, the scope annotation is not
-         * added.
+         * The class or any of its element must be annotated with the given annotation. Otherwise, the scope annotation
+         * is not added.
          * <p>
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
          *
-         *
          * @param annotationNames
+         *
          * @return self
          */
         public Builder containsAnnotations(DotName... annotationNames) {
@@ -191,6 +195,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
          *
          * @param predicate
+         *
          * @return self
          */
         public Builder anyMethodMatches(Predicate<MethodInfo> predicate) {
@@ -210,6 +215,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
          *
          * @param interfaceName
+         *
          * @return self
          */
         public Builder implementsInterface(DotName interfaceName) {
@@ -235,6 +241,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The scope annotation added to the class.
          *
          * @param scopeAnnotationName
+         *
          * @return self
          */
         public Builder defaultScope(DotName scopeAnnotationName) {
@@ -246,6 +253,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The scope annotation added to the class.
          *
          * @param scope
+         *
          * @return
          */
         public Builder defaultScope(BuiltinScope scope) {
@@ -256,6 +264,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * Specify an optional reason description that is used in log messages.
          *
          * @param reason
+         *
          * @return the reason why the scope annotation was added
          */
         public Builder reason(String reason) {
@@ -264,10 +273,11 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         }
 
         /**
-         * Set the priority. The default priority is {@code 0}. An {@link AutoAddScopeBuildItem} with higher priority takes
-         * precedence.
+         * Set the priority. The default priority is {@code 0}. An {@link AutoAddScopeBuildItem} with higher priority
+         * takes precedence.
          *
          * @param priority
+         *
          * @return self
          */
         public Builder priority(int priority) {
@@ -276,12 +286,13 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
         }
 
         /**
-         * If a scope was already added by another {@link AutoAddScopeBuildItem} then this consumer is used to handle this
-         * situation, i.e. log a warning or throw an exception. The first argument is the
+         * If a scope was already added by another {@link AutoAddScopeBuildItem} then this consumer is used to handle
+         * this situation, i.e. log a warning or throw an exception. The first argument is the
          * {@link AutoAddScopeBuildItem#getDefaultScope()} and the second argument is the
          * {@link AutoAddScopeBuildItem#getReason()}.
          *
          * @param consumer
+         *
          * @return self
          */
         public Builder scopeAlreadyAdded(BiConsumer<DotName, String> consumer) {
@@ -293,6 +304,7 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
          * The final predicate is a short-circuiting logical AND of the previous predicate (if any) and this condition.
          *
          * @param other
+         *
          * @return self
          */
         public Builder and(MatchPredicate other) {
@@ -308,8 +320,8 @@ public final class AutoAddScopeBuildItem extends MultiBuildItem {
             if (matchPredicate == null) {
                 throw new IllegalStateException("A matching predicate must be set!");
             }
-            return new AutoAddScopeBuildItem(matchPredicate, requiresContainerServices, defaultScope, unremovable, reason,
-                    priority, scopeAlreadyAdded);
+            return new AutoAddScopeBuildItem(matchPredicate, requiresContainerServices, defaultScope, unremovable,
+                    reason, priority, scopeAlreadyAdded);
         }
     }
 

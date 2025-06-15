@@ -29,8 +29,7 @@ public class ConnectorContextPropagationDecorator implements PublisherDecorator,
             @ConfigProperty(name = "quarkus.messaging.connector-context-propagation") Optional<List<String>> propagation) {
         tc = ThreadContext.builder()
                 .propagated(propagation.map(l -> l.toArray(String[]::new)).orElse(ThreadContext.NONE))
-                .cleared(ThreadContext.ALL_REMAINING)
-                .build();
+                .cleared(ThreadContext.ALL_REMAINING).build();
     }
 
     @Override
@@ -55,7 +54,8 @@ public class ConnectorContextPropagationDecorator implements PublisherDecorator,
         /**
          * Creates a new {@link AbstractMultiOperator} with the passed {@link Multi} as upstream.
          *
-         * @param upstream the upstream, must not be {@code null}
+         * @param upstream
+         *        the upstream, must not be {@code null}
          */
         public ContextPropagationOperator(Multi<? extends T> upstream, ThreadContext tc) {
             super(upstream);

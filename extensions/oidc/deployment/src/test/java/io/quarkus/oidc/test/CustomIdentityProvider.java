@@ -31,15 +31,14 @@ public class CustomIdentityProvider implements IdentityProvider<TokenAuthenticat
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request, AuthenticationRequestContext context) {
+    public Uni<SecurityIdentity> authenticate(TokenAuthenticationRequest request,
+            AuthenticationRequestContext context) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
 
         TokenCredential credential = request.getToken();
         try {
-            JwtClaims jwtClaims = new JwtConsumerBuilder()
-                    .setSkipSignatureVerification()
-                    .setSkipAllValidators()
-                    .build().processToClaims(credential.getToken());
+            JwtClaims jwtClaims = new JwtConsumerBuilder().setSkipSignatureVerification().setSkipAllValidators().build()
+                    .processToClaims(credential.getToken());
             jwtClaims.setClaim(Claims.raw_token.name(), credential.getToken());
 
             Principal principal = new OidcJwtCallerPrincipal(jwtClaims, credential);

@@ -35,7 +35,8 @@ public class KafkaRuntimeConfigProducer {
             if (propertyNameLowerCase.startsWith(UI_CONFIG_PREFIX)) {
                 config.getOptionalValue(propertyName, String.class).orElse("");
             }
-            if (!propertyNameLowerCase.startsWith(CONFIG_PREFIX) || propertyNameLowerCase.startsWith(UI_CONFIG_PREFIX)) {
+            if (!propertyNameLowerCase.startsWith(CONFIG_PREFIX)
+                    || propertyNameLowerCase.startsWith(UI_CONFIG_PREFIX)) {
                 continue;
             }
             if (propertyNameLowerCase.length() <= CONFIG_PREFIX.length()) {

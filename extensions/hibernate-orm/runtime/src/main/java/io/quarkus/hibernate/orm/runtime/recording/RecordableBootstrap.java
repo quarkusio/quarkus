@@ -23,8 +23,7 @@ import org.hibernate.service.spi.ServiceContributor;
 import io.quarkus.hibernate.orm.runtime.service.InitialInitiatorListProvider;
 
 /**
- * Has to extend StandardServiceRegistryBuilder even if we don't want: needs to
- * be assignable to it.
+ * Has to extend StandardServiceRegistryBuilder even if we don't want: needs to be assignable to it.
  */
 public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
@@ -42,12 +41,14 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
 
     public RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry,
             InitialInitiatorListProvider initialInitiatorsProvider) {
-        this(bootstrapServiceRegistry, new HashMap<String, Object>(), LoadedConfig.baseline(), initialInitiatorsProvider);
+        this(bootstrapServiceRegistry, new HashMap<String, Object>(), LoadedConfig.baseline(),
+                initialInitiatorsProvider);
     }
 
     private RecordableBootstrap(BootstrapServiceRegistry bootstrapServiceRegistry, Map<String, Object> properties,
             LoadedConfig loadedConfigBaseline, InitialInitiatorListProvider initialInitiatorsProvider) {
-        super(bootstrapServiceRegistry, properties, new ConfigLoader(bootstrapServiceRegistry), loadedConfigBaseline, null);
+        super(bootstrapServiceRegistry, properties, new ConfigLoader(bootstrapServiceRegistry), loadedConfigBaseline,
+                null);
         this.settings = properties;
         this.bootstrapServiceRegistry = bootstrapServiceRegistry;
         this.aggregatedCfgXml = loadedConfigBaseline;
@@ -78,8 +79,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     /**
-     * Read setting information from an XML file using the standard resource
-     * location.
+     * Read setting information from an XML file using the standard resource location.
      *
      * @return this, for method chaining
      *
@@ -115,8 +115,10 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     /**
      * Apply a setting value.
      *
-     * @param settingName The name of the setting
-     * @param value The value to use.
+     * @param settingName
+     *        The name of the setting
+     * @param value
+     *        The value to use.
      *
      * @return this, for method chaining
      */
@@ -129,7 +131,8 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     /**
      * Apply a groups of setting values.
      *
-     * @param settings The incoming settings to apply
+     * @param settings
+     *        The incoming settings to apply
      *
      * @return this, for method chaining
      */
@@ -148,7 +151,8 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     /**
      * Adds a service initiator.
      *
-     * @param initiator The initiator to be added
+     * @param initiator
+     *        The initiator to be added
      *
      * @return this, for method chaining
      */
@@ -162,8 +166,10 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     /**
      * Adds a user-provided service.
      *
-     * @param serviceRole The role of the service being added
-     * @param service The service implementation
+     * @param serviceRole
+     *        The role of the service being added
+     * @param service
+     *        The service implementation
      *
      * @return this, for method chaining
      */
@@ -174,15 +180,12 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     /**
-     * By default, when a ServiceRegistry is no longer referenced by any other
-     * registries as a parent it will be closed.
+     * By default, when a ServiceRegistry is no longer referenced by any other registries as a parent it will be closed.
      * <p/>
-     * Some applications that explicitly build "shared registries" may want to
-     * circumvent that behavior.
+     * Some applications that explicitly build "shared registries" may want to circumvent that behavior.
      * <p/>
-     * This method indicates that the registry being built should not be
-     * automatically closed. The caller agrees to take responsibility to close it
-     * themselves.
+     * This method indicates that the registry being built should not be automatically closed. The caller agrees to take
+     * responsibility to close it themselves.
      *
      * @return this, for method chaining
      */
@@ -193,8 +196,7 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     /**
-     * See the discussion on {@link #disableAutoClose}. This method enables the
-     * auto-closing.
+     * See the discussion on {@link #disableAutoClose}. This method enables the auto-closing.
      *
      * @return this, for method chaining
      */
@@ -235,15 +237,13 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     /**
-     * Temporarily exposed since Configuration is still around and much code still
-     * uses Configuration. This allows code to configure the builder and access that
-     * to configure Configuration object (used from HEM atm).
+     * Temporarily exposed since Configuration is still around and much code still uses Configuration. This allows code
+     * to configure the builder and access that to configure Configuration object (used from HEM atm).
      *
      * @return The settings map.
      *
-     * @deprecated Temporarily exposed since Configuration is still around and much
-     *             code still uses Configuration. This allows code to configure the
-     *             builder and access that to configure Configuration object.
+     * @deprecated Temporarily exposed since Configuration is still around and much code still uses Configuration. This
+     *             allows code to configure the builder and access that to configure Configuration object.
      */
     @Override
     @Deprecated
@@ -252,10 +252,10 @@ public final class RecordableBootstrap extends StandardServiceRegistryBuilder {
     }
 
     /**
-     * Destroy a service registry. Applications should only destroy registries they
-     * have explicitly created.
+     * Destroy a service registry. Applications should only destroy registries they have explicitly created.
      *
-     * @param serviceRegistry The registry to be closed.
+     * @param serviceRegistry
+     *        The registry to be closed.
      */
     public static void destroy(ServiceRegistry serviceRegistry) {
         if (serviceRegistry == null) {

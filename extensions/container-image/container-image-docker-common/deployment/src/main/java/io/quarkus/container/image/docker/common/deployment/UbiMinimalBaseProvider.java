@@ -11,9 +11,8 @@ import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 /**
- * Can extract information from Dockerfile that uses {@code registry.access.redhat.com/ubi([8-9]|[1-9][0-9]+)/ubi-minimal:$d.$d}
- * as the
- * base image
+ * Can extract information from Dockerfile that uses
+ * {@code registry.access.redhat.com/ubi([8-9]|[1-9][0-9]+)/ubi-minimal:$d.$d} as the base image
  */
 class UbiMinimalBaseProvider implements DockerFileBaseInformationProvider {
     private static final Pattern BASE_IMAGE_PATTERN = Pattern.compile(".*/ubi([8-9]|[1-9][0-9]+)/ubi-minimal");
@@ -30,7 +29,11 @@ class UbiMinimalBaseProvider implements DockerFileBaseInformationProvider {
 
     @Override
     public Optional<DockerFileBaseInformation> determine(Path dockerFile) {
-        AtomicInteger state = new AtomicInteger(State.FROM_NOT_ENCOUNTERED.ordinal()); //0: 'FROM' not yet encountered, 1: matching 'FROM' found, 2: ARG JAVA_PACKAGE found, 3: non matching 'FROM' found, 4: exception occurred
+        AtomicInteger state = new AtomicInteger(State.FROM_NOT_ENCOUNTERED.ordinal()); // 0: 'FROM' not yet encountered,
+                                                                                       // 1: matching 'FROM' found, 2:
+                                                                                       // ARG JAVA_PACKAGE found, 3: non
+                                                                                       // matching 'FROM' found, 4:
+                                                                                       // exception occurred
         AtomicReference<String> baseImage = new AtomicReference<>(null);
         AtomicInteger javaVersion = new AtomicInteger(0);
         try (Stream<String> lines = Files.lines(dockerFile)) {

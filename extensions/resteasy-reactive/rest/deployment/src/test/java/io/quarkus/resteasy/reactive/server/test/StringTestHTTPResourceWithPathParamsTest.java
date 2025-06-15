@@ -19,7 +19,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class StringTestHTTPResourceWithPathParamsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(UserResource.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .withApplicationRoot((jar) -> jar.addClass(UserResource.class));
 
     @TestHTTPEndpoint(UserResource.class)
     @TestHTTPResource("{userId}/order/{orderId}")
@@ -29,8 +30,8 @@ public class StringTestHTTPResourceWithPathParamsTest {
     void testGettingUserOrder() {
         int userId = 123;
         int orderId = 456;
-        given().when().get(getUserOrderUrl, userId, orderId)
-                .then().statusCode(200).body(equalTo(String.format("Order (%d) of user (%d)", userId, orderId)));
+        given().when().get(getUserOrderUrl, userId, orderId).then().statusCode(200)
+                .body(equalTo(String.format("Order (%d) of user (%d)", userId, orderId)));
     }
 
     @Path("/user")

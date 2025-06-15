@@ -46,8 +46,7 @@ public final class HibernateOrmIntegrationRuntimeConfiguredBuildItem extends Mul
             List<HibernateOrmIntegrationRuntimeConfiguredBuildItem> items) {
         Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> result = new HashMap<>();
         for (HibernateOrmIntegrationRuntimeConfiguredBuildItem item : items) {
-            result.computeIfAbsent(item.persistenceUnitName, ignored -> new ArrayList<>())
-                    .add(item.toDescriptor());
+            result.computeIfAbsent(item.persistenceUnitName, ignored -> new ArrayList<>()).add(item.toDescriptor());
         }
         return result;
     }

@@ -113,20 +113,21 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
             boolean allTypesResolvable = true;
             for (VariableElement parameter : ex.getParameters()) {
                 String parameterClassName = parameter.asType().toString();
-                TypeElement parameterTypeElement = utils.processingEnv().getElementUtils().getTypeElement(parameterClassName);
+                TypeElement parameterTypeElement = utils.processingEnv().getElementUtils()
+                        .getTypeElement(parameterClassName);
                 if (parameterTypeElement == null) {
                     allTypesResolvable = false;
                 } else {
                     if (utils.element().isAnnotationPresent(parameterTypeElement, Types.ANNOTATION_RECORDER)) {
                         if (parameterTypeElement.getModifiers().contains(Modifier.FINAL)) {
-                            utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR,
-                                    "Class '" + parameterTypeElement.getQualifiedName()
-                                            + "' is annotated with @Recorder and therefore cannot be made as a final class.");
+                            utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR, "Class '"
+                                    + parameterTypeElement.getQualifiedName()
+                                    + "' is annotated with @Recorder and therefore cannot be made as a final class.");
                         } else if (utils.element().getPackageName(clazz)
                                 .equals(utils.element().getPackageName(parameterTypeElement))) {
                             utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.WARNING,
-                                    "Build step class '" + clazz.getQualifiedName()
-                                            + "' and recorder '" + parameterTypeElement
+                                    "Build step class '" + clazz.getQualifiedName() + "' and recorder '"
+                                            + parameterTypeElement
                                             + "' share the same package. This is highly discouraged as it can lead to unexpected results.");
                         }
                         hasRecorder = true;
@@ -137,8 +138,7 @@ public class ExtensionBuildProcessor implements ExtensionProcessor {
 
             if (!hasRecorder && allTypesResolvable) {
                 utils.processingEnv().getMessager().printMessage(Diagnostic.Kind.ERROR, "Build Step '"
-                        + clazz.getQualifiedName() + "#"
-                        + ex.getSimpleName()
+                        + clazz.getQualifiedName() + "#" + ex.getSimpleName()
                         + "' which is annotated with '@Record' does not contain a method parameter whose type is annotated with '@Recorder'.");
             }
         }

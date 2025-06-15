@@ -32,7 +32,6 @@ public class ProbeConverter {
     }
 
     private static int getQuarkusGrpcPort() {
-        return ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class)
-                .orElse(9000);
+        return ConfigProvider.getConfig().getOptionalValue("quarkus.grpc.server.port", Integer.class).orElse(9000);
     }
 }

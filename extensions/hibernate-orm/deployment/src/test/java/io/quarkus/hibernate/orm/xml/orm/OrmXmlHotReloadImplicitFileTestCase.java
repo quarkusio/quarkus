@@ -16,11 +16,8 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class OrmXmlHotReloadImplicitFileTestCase {
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(SchemaUtil.class)
-                    .addClass(NonAnnotatedEntity.class)
-                    .addClass(OrmXmlHotReloadTestResource.class)
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(SchemaUtil.class)
+                    .addClass(NonAnnotatedEntity.class).addClass(OrmXmlHotReloadTestResource.class)
                     .addAsResource("application-datasource-only.properties", "application.properties")
                     .addAsManifestResource("META-INF/persistence-mapping-file-implicit-orm-xml.xml", "persistence.xml")
                     // META-INF/orm.xml should be picked up even if it's not mentioned explicitly.
@@ -28,22 +25,16 @@ public class OrmXmlHotReloadImplicitFileTestCase {
 
     @Test
     public void changeOrmXml() {
-        assertThat(getColumnNames())
-                .contains("thename")
-                .doesNotContain("name", "thename2");
+        assertThat(getColumnNames()).contains("thename").doesNotContain("name", "thename2");
 
         TEST.modifyResourceFile("META-INF/orm.xml",
                 s -> s.replace("<column name=\"thename\" />", "<column name=\"thename2\" />"));
 
-        assertThat(getColumnNames())
-                .contains("thename2")
-                .doesNotContain("name", "thename");
+        assertThat(getColumnNames()).contains("thename2").doesNotContain("name", "thename");
     }
 
     private String[] getColumnNames() {
-        return when().get("/orm-xml-hot-reload-test/column-names")
-                .then().extract().body().asString()
-                .split("\n");
+        return when().get("/orm-xml-hot-reload-test/column-names").then().extract().body().asString().split("\n");
     }
 
 }

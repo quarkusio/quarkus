@@ -13,16 +13,12 @@ import io.restassured.RestAssured;
 public class EnversOriginalIdPropNameTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestOriginalIdPropNameResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-original-id-prop-name.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestOriginalIdPropNameResource.class, AbstractEnversResource.class)
+            .addAsResource("application-with-original-id-prop-name.properties", "application.properties"));
 
     @Test
     public void testOriginalIdPropNameOverride() {
-        RestAssured.when().get("/envers-original-id-prop-name").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-original-id-prop-name").then().body(is("OK"));
     }
 }

@@ -13,14 +13,14 @@ import io.quarkus.cache.CacheManager;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * This test checks that no exception is thrown when a {@link CacheManager} method is called while the extension is disabled
- * and no cache is declared in the application.
+ * This test checks that no exception is thrown when a {@link CacheManager} method is called while the extension is
+ * disabled and no cache is declared in the application.
  */
 public class ZeroNoOpCacheTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.cache.enabled=false"), "application.properties"));
 
     @Inject
     CacheManager cacheManager;

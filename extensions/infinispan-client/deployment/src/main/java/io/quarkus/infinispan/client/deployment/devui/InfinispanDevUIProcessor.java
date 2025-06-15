@@ -22,22 +22,17 @@ public class InfinispanDevUIProcessor {
         cardPageBuildItem.setLogo("infinispan_dark.svg", "infinispan_light.svg");
 
         final PageBuilder consoleLink = Page.externalPageBuilder("Infinispan Server Console")
-                .dynamicUrlJsonRPCMethodName("getConsoleDefaultLink")
-                .doNotEmbed()
-                .icon("font-awesome-solid:server")
+                .dynamicUrlJsonRPCMethodName("getConsoleDefaultLink").doNotEmbed().icon("font-awesome-solid:server")
                 .staticLabel(Version.getMajorMinor());
 
         cardPageBuildItem.addPage(consoleLink);
 
-        final PageBuilder documentation = Page.externalPageBuilder("Documentation")
-                .icon("font-awesome-solid:info")
-                .url("https://infinispan.org/")
-                .doNotEmbed();
+        final PageBuilder documentation = Page.externalPageBuilder("Documentation").icon("font-awesome-solid:info")
+                .url("https://infinispan.org/").doNotEmbed();
         cardPageBuildItem.addPage(documentation);
 
         final PageBuilder codeTutorials = Page.externalPageBuilder("Code Tutorials")
-                .icon("font-awesome-solid:hat-wizard")
-                .url("https://github.com/infinispan/infinispan-simple-tutorials")
+                .icon("font-awesome-solid:hat-wizard").url("https://github.com/infinispan/infinispan-simple-tutorials")
                 .doNotEmbed();
 
         cardPageBuildItem.addPage(codeTutorials);

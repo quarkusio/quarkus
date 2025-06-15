@@ -39,20 +39,16 @@ import io.smallrye.mutiny.Uni;
 public class ServerInterceptorProducerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyService.class, ServerInterceptors.class,
-                            GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class, HelloReply.class,
-                            MutinyGreeterGrpc.class,
-                            HelloRequestOrBuilder.class, HelloReplyOrBuilder.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyService.class,
+                    ServerInterceptors.class, GreeterGrpc.class, Greeter.class, GreeterBean.class, HelloRequest.class,
+                    HelloReply.class, MutinyGreeterGrpc.class, HelloRequestOrBuilder.class, HelloReplyOrBuilder.class));
 
     protected ManagedChannel channel;
 
     @BeforeEach
     public void init() {
-        channel = ManagedChannelBuilder.forAddress("localhost", 9001)
-                .usePlaintext()
-                .build();
+        channel = ManagedChannelBuilder.forAddress("localhost", 9001).usePlaintext().build();
     }
 
     @AfterEach
@@ -102,14 +98,13 @@ public class ServerInterceptorProducerTest {
         @Override
         public <ReqT, RespT> Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
                 ServerCallHandler<ReqT, RespT> next) {
-            return next
-                    .startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
-                        @Override
-                        public void close(Status status, Metadata trailers) {
-                            callTime = System.currentTimeMillis();
-                            super.close(status, trailers);
-                        }
-                    }, headers);
+            return next.startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(call) {
+                @Override
+                public void close(Status status, Metadata trailers) {
+                    callTime = System.currentTimeMillis();
+                    super.close(status, trailers);
+                }
+            }, headers);
         }
 
     }

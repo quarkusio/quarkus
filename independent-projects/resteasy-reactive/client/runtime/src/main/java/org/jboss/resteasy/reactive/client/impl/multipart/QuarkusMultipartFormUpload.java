@@ -39,19 +39,11 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
     private final InboundBuffer<Object> pending;
     private final Context context;
 
-    public QuarkusMultipartFormUpload(Context context,
-            QuarkusMultipartForm parts,
-            boolean multipart,
-            int maxChunkSize,
+    public QuarkusMultipartFormUpload(Context context, QuarkusMultipartForm parts, boolean multipart, int maxChunkSize,
             PausableHttpPostRequestEncoder.EncoderMode encoderMode) throws Exception {
         this.context = context;
-        this.pending = new InboundBuffer<>(context)
-                .handler(this::handleChunk)
-                .drainHandler(v -> run())
-                .pause();
-        this.request = new DefaultFullHttpRequest(
-                HttpVersion.HTTP_1_1,
-                io.netty.handler.codec.http.HttpMethod.POST,
+        this.pending = new InboundBuffer<>(context).handler(this::handleChunk).drainHandler(v -> run()).pause();
+        this.request = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, io.netty.handler.codec.http.HttpMethod.POST,
                 "/");
         Charset charset = parts.getCharset() != null ? parts.getCharset() : HttpConstants.DEFAULT_CHARSET;
         DefaultHttpDataFactory httpDataFactory = new DefaultHttpDataFactory(-1, charset) {
@@ -72,11 +64,8 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                 encoder.addBodyAttribute(formDataPart.name(), formDataPart.value());
             } else if (formDataPart.isObject()) {
                 MemoryFileUpload data = new MemoryFileUpload(formDataPart.name(),
-                        formDataPart.filename() != null ? formDataPart.filename() : "",
-                        formDataPart.mediaType(),
-                        formDataPart.isText() ? null : "binary",
-                        null,
-                        formDataPart.content().length());
+                        formDataPart.filename() != null ? formDataPart.filename() : "", formDataPart.mediaType(),
+                        formDataPart.isText() ? null : "binary", null, formDataPart.content().length());
                 data.setContent(formDataPart.content().getByteBuf());
                 encoder.addBodyHttpData(data);
             } else if (formDataPart.multiByteContent() != null) {
@@ -93,22 +82,14 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                     contentTransferEncoding = "binary";
                 }
 
-                encoder.addBodyHttpData(new MultiByteHttpData(
-                        formDataPart.name(),
-                        formDataPart.filename(),
-                        contentType,
-                        contentTransferEncoding,
-                        Charset.defaultCharset(),
-                        formDataPart.multiByteContent(),
-                        this::handleError,
-                        context,
-                        this));
+                encoder.addBodyHttpData(new MultiByteHttpData(formDataPart.name(), formDataPart.filename(), contentType,
+                        contentTransferEncoding, Charset.defaultCharset(), formDataPart.multiByteContent(),
+                        this::handleError, context, this));
             } else {
                 String pathname = formDataPart.pathname();
                 if (pathname != null) {
-                    encoder.addBodyFileUpload(formDataPart.name(),
-                            formDataPart.filename(), new File(formDataPart.pathname()),
-                            formDataPart.mediaType(), formDataPart.isText());
+                    encoder.addBodyFileUpload(formDataPart.name(), formDataPart.filename(),
+                            new File(formDataPart.pathname()), formDataPart.mediaType(), formDataPart.isText());
                 } else {
                     String contentType = formDataPart.mediaType();
                     if (formDataPart.mediaType() == null) {
@@ -119,9 +100,7 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
                         }
                     }
                     String transferEncoding = formDataPart.isText() ? null : "binary";
-                    MemoryFileUpload fileUpload = new MemoryFileUpload(
-                            formDataPart.name(),
-                            formDataPart.filename(),
+                    MemoryFileUpload fileUpload = new MemoryFileUpload(formDataPart.name(), formDataPart.filename(),
                             contentType, transferEncoding, null, formDataPart.content().length());
                     fileUpload.setContent(formDataPart.content().getByteBuf());
                     encoder.addBodyHttpData(fileUpload);
@@ -160,8 +139,8 @@ public class QuarkusMultipartFormUpload implements ReadStream<Buffer>, Runnable 
     @Override
     public void run() {
         if (Vertx.currentContext() != context) {
-            throw new IllegalArgumentException("Wrong Vert.x context used for multipart upload. Expected: " + context +
-                    ", actual: " + Vertx.currentContext());
+            throw new IllegalArgumentException("Wrong Vert.x context used for multipart upload. Expected: " + context
+                    + ", actual: " + Vertx.currentContext());
         }
         while (!ended) {
             if (encoder.isChunked()) {

@@ -28,16 +28,13 @@ public class ClientWithQueryParamAndEncodedTest {
 
     @Test
     public void testClientWithoutEncoded() {
-        ClientWithoutEncoded client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .build(ClientWithoutEncoded.class);
+        ClientWithoutEncoded client = RestClientBuilder.newBuilder().baseUri(baseUri).build(ClientWithoutEncoded.class);
         assertEquals("Hello query=%2524value", client.call("%24value"));
     }
 
     @Test
     public void testClientWithEncodedInParameter() {
-        ClientWithEncodedInParameter client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
+        ClientWithEncodedInParameter client = RestClientBuilder.newBuilder().baseUri(baseUri)
                 .build(ClientWithEncodedInParameter.class);
         assertEquals("Hello query=%24value", client.call("%24value"));
         assertEquals("Hello query1=%2524value&query2=%24value&query3=%2524value",
@@ -47,8 +44,7 @@ public class ClientWithQueryParamAndEncodedTest {
 
     @Test
     public void testClientWithEncodedInMethod() {
-        ClientWithEncodedInMethod client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
+        ClientWithEncodedInMethod client = RestClientBuilder.newBuilder().baseUri(baseUri)
                 .build(ClientWithEncodedInMethod.class);
         assertEquals("Hello query=%24value", client.call("%24value"));
         assertEquals("Hello subQuery=%24value", client.sub1().call("%24value"));
@@ -58,8 +54,7 @@ public class ClientWithQueryParamAndEncodedTest {
 
     @Test
     public void testClientWithEncodedInClass() {
-        ClientWithEncodedInClass client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
+        ClientWithEncodedInClass client = RestClientBuilder.newBuilder().baseUri(baseUri)
                 .build(ClientWithEncodedInClass.class);
         assertEquals("Hello query=%24value", client.call("%24value"));
         assertEquals("Hello subQuery=%24value", client.sub().call("%24value"));

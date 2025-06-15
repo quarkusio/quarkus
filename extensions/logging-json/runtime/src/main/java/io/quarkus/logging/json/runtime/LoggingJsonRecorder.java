@@ -43,10 +43,12 @@ public class LoggingJsonRecorder {
         String keyOverrides = config.keyOverrides().orElse(null);
         Set<String> excludedKeys = config.excludedKeys().orElse(Set.of());
         Map<String, AdditionalField> additionalFields = config.additionalField().entrySet().stream()
-                .collect(Collectors.toMap(Entry::getKey, e -> new AdditionalField(e.getValue().value(), e.getValue().type()),
-                        (x, y) -> y, LinkedHashMap::new));
+                .collect(Collectors.toMap(Entry::getKey,
+                        e -> new AdditionalField(e.getValue().value(), e.getValue().type()), (x, y) -> y,
+                        LinkedHashMap::new));
 
-        OverridableJsonConfig overridableJsonConfig = new OverridableJsonConfig(keyOverrides, excludedKeys, additionalFields);
+        OverridableJsonConfig overridableJsonConfig = new OverridableJsonConfig(keyOverrides, excludedKeys,
+                additionalFields);
 
         if (config.logFormat() == JsonConfig.LogFormat.ECS) {
             overridableJsonConfig = addEcsFieldOverrides(overridableJsonConfig);
@@ -85,7 +87,8 @@ public class LoggingJsonRecorder {
     }
 
     private OverridableJsonConfig addEcsFieldOverrides(OverridableJsonConfig overridableJsonConfig) {
-        EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class, overridableJsonConfig.keyOverrides());
+        EnumMap<Key, String> keyOverrides = PropertyValues.stringToEnumMap(Key.class,
+                overridableJsonConfig.keyOverrides());
         keyOverrides.putIfAbsent(Key.TIMESTAMP, "@timestamp");
         keyOverrides.putIfAbsent(Key.LOGGER_NAME, "log.logger");
         keyOverrides.putIfAbsent(Key.LEVEL, "log.level");

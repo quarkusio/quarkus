@@ -5,7 +5,6 @@ import java.util.Map;
 
 /**
  * CloudEvent.
- *
  */
 public interface CloudEvent<T> {
 

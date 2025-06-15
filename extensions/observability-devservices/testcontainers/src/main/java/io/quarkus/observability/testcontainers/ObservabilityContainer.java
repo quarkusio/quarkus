@@ -46,9 +46,7 @@ public abstract class ObservabilityContainer<T extends ObservabilityContainer<T,
     }
 
     protected Consumer<OutputFrame> frameConsumer() {
-        return new JBossLoggingConsumer(log)
-                .withPrefix(prefix())
-                .withLoggingFilter(getLoggingFilter());
+        return new JBossLoggingConsumer(log).withPrefix(prefix()).withLoggingFilter(getLoggingFilter());
     }
 
     protected byte[] getResourceAsBytes(String resource) {

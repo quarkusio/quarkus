@@ -84,8 +84,8 @@ public class JKSKeyStores {
         JksOptions options = new JksOptions();
         try {
             options.setValue(Buffer.buffer(read(config.path())));
-            String password = CredentialProviders.getTrustStorePassword(config.password(), trustStoreCredentialProviderConfig)
-                    .orElse(null);
+            String password = CredentialProviders
+                    .getTrustStorePassword(config.password(), trustStoreCredentialProviderConfig).orElse(null);
             if (password == null) {
                 throw new IllegalStateException("Invalid JKS trust store configuration for certificate '" + name
                         + "' - the trust store password is not set and cannot be retrieved from the credential provider.");
@@ -114,7 +114,8 @@ public class JKSKeyStores {
                             "Alias '" + alias + "' not found in JKS key store (certificate not found)'" + name + "'");
                 }
             } catch (KeyStoreException e) {
-                throw new IllegalStateException("Unable to verify alias '" + alias + "' in JKS key store '" + name + "'", e);
+                throw new IllegalStateException(
+                        "Unable to verify alias '" + alias + "' in JKS key store '" + name + "'", e);
             }
 
             char[] ap = null;
@@ -132,7 +133,8 @@ public class JKSKeyStores {
                             "Alias '" + alias + "' not found in JKS key store (certificate not found)'" + name + "'");
                 }
             } catch (KeyStoreException | NoSuchAlgorithmException e) {
-                throw new IllegalStateException("Unable to verify alias '" + alias + "' in JKS key store '" + name + "'", e);
+                throw new IllegalStateException(
+                        "Unable to verify alias '" + alias + "' in JKS key store '" + name + "'", e);
             } catch (UnrecoverableKeyException e) {
                 throw new IllegalArgumentException(
                         "Unable to recover the key for alias '" + alias + "' in JKS key store '" + name + "'", e);
@@ -149,7 +151,8 @@ public class JKSKeyStores {
                             "Alias '" + alias + "' not found in JKS trust store (certificate not found)'" + name + "'");
                 }
             } catch (KeyStoreException e) {
-                throw new IllegalStateException("Unable to verify alias '" + alias + "' in JKS trust store '" + name + "'", e);
+                throw new IllegalStateException(
+                        "Unable to verify alias '" + alias + "' in JKS trust store '" + name + "'", e);
             }
         }
     }
@@ -158,7 +161,8 @@ public class JKSKeyStores {
         try {
             return options.loadKeyStore(vertx);
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to load JKS " + type + " store '" + name + "', verify the password.", e);
+            throw new IllegalStateException(
+                    "Unable to load JKS " + type + " store '" + name + "', verify the password.", e);
         }
     }
 }

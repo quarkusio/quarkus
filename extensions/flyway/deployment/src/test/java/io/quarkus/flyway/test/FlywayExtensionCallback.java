@@ -11,15 +11,9 @@ import org.flywaydb.core.api.callback.Event;
 
 public class FlywayExtensionCallback implements Callback {
 
-    public static List<Event> DEFAULT_EVENTS = Arrays.asList(
-            Event.BEFORE_BASELINE,
-            Event.AFTER_BASELINE,
-            Event.BEFORE_MIGRATE,
-            Event.BEFORE_EACH_MIGRATE,
-            Event.AFTER_EACH_MIGRATE,
-            Event.AFTER_VERSIONED,
-            Event.AFTER_MIGRATE,
-            Event.AFTER_MIGRATE_OPERATION_FINISH);
+    public static List<Event> DEFAULT_EVENTS = Arrays.asList(Event.BEFORE_BASELINE, Event.AFTER_BASELINE,
+            Event.BEFORE_MIGRATE, Event.BEFORE_EACH_MIGRATE, Event.AFTER_EACH_MIGRATE, Event.AFTER_VERSIONED,
+            Event.AFTER_MIGRATE, Event.AFTER_MIGRATE_OPERATION_FINISH);
 
     @Override
     public boolean supports(Event event, Context context) {

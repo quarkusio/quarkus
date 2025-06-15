@@ -18,12 +18,10 @@ public class MessageBundleExpressionValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WrongBundle.class, Item.class, MyGlobals.class)
+            .withApplicationRoot((jar) -> jar.addClasses(WrongBundle.class, Item.class, MyGlobals.class)
                     .addAsResource(new StringAsset(
                             // foo is not a parameter of WrongBundle.hello()
-                            "hello=Hallo {foo}!"),
-                            "messages/msg_de.properties"))
+                            "hello=Hallo {foo}!"), "messages/msg_de.properties"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

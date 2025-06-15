@@ -18,16 +18,10 @@ public class DataSourcesExcludedFromHealthChecksProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    void produceBean(
-            Capabilities capabilities,
-            DataSourceRecorder recorder,
-            DataSourcesBuildTimeConfig buildTimeConfig, DataSourcesRuntimeConfig runtimeConfig,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(DataSourceSupport.class)
-                .scope(Singleton.class)
-                .unremovable()
-                .runtimeValue(recorder.createDataSourceSupport(buildTimeConfig, runtimeConfig))
-                .setRuntimeInit()
-                .done());
+    void produceBean(Capabilities capabilities, DataSourceRecorder recorder, DataSourcesBuildTimeConfig buildTimeConfig,
+            DataSourcesRuntimeConfig runtimeConfig, BuildProducer<SyntheticBeanBuildItem> syntheticBeans) {
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(DataSourceSupport.class).scope(Singleton.class)
+                .unremovable().runtimeValue(recorder.createDataSourceSupport(buildTimeConfig, runtimeConfig))
+                .setRuntimeInit().done());
     }
 }

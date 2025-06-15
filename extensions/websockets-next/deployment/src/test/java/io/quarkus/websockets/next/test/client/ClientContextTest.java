@@ -28,10 +28,9 @@ import io.smallrye.mutiny.Uni;
 public class ClientContextTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    });
 
     @Inject
     WebSocketConnector<ClientEndpoint> connector;

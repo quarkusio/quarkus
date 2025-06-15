@@ -14,8 +14,8 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Represents a bit field type with details about signed/unsigned and the number of bits.
-     * Instances can be created from a boolean/bits or from strings like i8 (signed) or u10 (unsigned).
+     * Represents a bit field type with details about signed/unsigned and the number of bits. Instances can be created
+     * from a boolean/bits or from strings like i8 (signed) or u10 (unsigned).
      */
     public static class BitFieldType {
 
@@ -30,8 +30,8 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
                 this.signed = false;
                 this.bits = Integer.parseInt(bit.substring(1));
             }
-            throw new IllegalArgumentException("Invalid integer encoding for a bit field type: " + bit +
-                    ". It must start with `i` (signed integers) or `u` (unsigned integers)");
+            throw new IllegalArgumentException("Invalid integer encoding for a bit field type: " + bit
+                    + ". It must start with `i` (signed integers) or `u` (unsigned integers)");
         }
 
         public BitFieldType(boolean signed, int bits) {
@@ -58,8 +58,8 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Represents a bit field offset.
-     * See also <a href="https://redis.io/commands/bitfield#bits-and-positional-offsets">Bits and positional offsets</a>
+     * Represents a bit field offset. See also
+     * <a href="https://redis.io/commands/bitfield#bits-and-positional-offsets">Bits and positional offsets</a>
      */
     public static class Offset {
 
@@ -95,7 +95,9 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
      * Adds a new {@code GET} subcommand using offset {@code 0} and the field type of the previous command.
      *
      * @return the current {@code BitFieldArgs}
-     * @throws IllegalStateException if no previous field type was found
+     *
+     * @throws IllegalStateException
+     *         if no previous field type was found
      */
     public BitFieldArgs get() {
         return get(getPreviousFieldType(), 0);
@@ -104,7 +106,9 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code GET} subcommand using offset {@code 0}.
      *
-     * @param bitFieldType the bit field type, must not be {@code null}.
+     * @param bitFieldType
+     *        the bit field type, must not be {@code null}.
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs get(BitFieldType bitFieldType) {
@@ -114,9 +118,13 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code GET} subcommand using the field type of the previous command.
      *
-     * @param offset bitfield offset
+     * @param offset
+     *        bitfield offset
+     *
      * @return a new {@code GET} subcommand for the given {@code bitFieldType} and {@code offset}.
-     * @throws IllegalStateException if no previous field type was found
+     *
+     * @throws IllegalStateException
+     *         if no previous field type was found
      */
     public BitFieldArgs get(int offset) {
         return get(getPreviousFieldType(), offset);
@@ -125,8 +133,11 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code GET} subcommand.
      *
-     * @param bft the bit field type, must not be {@code null}.
-     * @param offset bitfield offset
+     * @param bft
+     *        the bit field type, must not be {@code null}.
+     * @param offset
+     *        bitfield offset
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs get(BitFieldType bft, int offset) {
@@ -136,8 +147,11 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code GET} subcommand.
      *
-     * @param bft the bit field type, must not be {@code null}.
-     * @param offset bitfield offset
+     * @param bft
+     *        the bit field type, must not be {@code null}.
+     * @param offset
+     *        bitfield offset
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs get(BitFieldType bft, Offset offset) {
@@ -156,9 +170,13 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code SET} subcommand.
      *
-     * @param bft the bit field type, must not be {@code null}.
-     * @param offset bitfield offset
-     * @param value the value
+     * @param bft
+     *        the bit field type, must not be {@code null}.
+     * @param offset
+     *        bitfield offset
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs set(BitFieldType bft, int offset, long value) {
@@ -168,9 +186,13 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code SET} subcommand.
      *
-     * @param bft the bit field type, must not be {@code null}.
-     * @param offset bitfield offset, must not be {@code null}.
-     * @param value the value
+     * @param bft
+     *        the bit field type, must not be {@code null}.
+     * @param offset
+     *        bitfield offset, must not be {@code null}.
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs set(BitFieldType bft, Offset offset, long value) {
@@ -189,9 +211,13 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code SET} subcommand using offset {@code 0} and the field type of the previous command.
      *
-     * @param value the value
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
-     * @throws IllegalStateException if no previous field type was found
+     *
+     * @throws IllegalStateException
+     *         if no previous field type was found
      */
     public BitFieldArgs set(long value) {
         return set(getPreviousFieldType(), value);
@@ -200,8 +226,11 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code SET} subcommand using offset {@code 0}.
      *
-     * @param bitFieldType the bit field type, must not be {@code null}.
-     * @param value the value
+     * @param bitFieldType
+     *        the bit field type, must not be {@code null}.
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs set(BitFieldType bitFieldType, long value) {
@@ -211,10 +240,15 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code SET} subcommand using the field type of the previous command.
      *
-     * @param offset bitfield offset
-     * @param value the value
+     * @param offset
+     *        bitfield offset
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
-     * @throws IllegalStateException if no previous field type was found
+     *
+     * @throws IllegalStateException
+     *         if no previous field type was found
      */
     public BitFieldArgs set(int offset, long value) {
         return set(getPreviousFieldType(), offset, value);
@@ -223,9 +257,13 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code INCRBY} subcommand.
      *
-     * @param bitFieldType the bit field type, must not be {@code null}.
-     * @param offset bitfield offset
-     * @param value the value
+     * @param bitFieldType
+     *        the bit field type, must not be {@code null}.
+     * @param offset
+     *        bitfield offset
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs incrBy(BitFieldType bitFieldType, int offset, long value) {
@@ -235,9 +273,13 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code INCRBY} subcommand.
      *
-     * @param bft the bit field type, must not be {@code null}.
-     * @param offset bitfield offset, must not be {@code null}.
-     * @param value the value
+     * @param bft
+     *        the bit field type, must not be {@code null}.
+     * @param offset
+     *        bitfield offset, must not be {@code null}.
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs incrBy(BitFieldType bft, Offset offset, long value) {
@@ -255,10 +297,15 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code INCRBY} subcommand using the field type of the previous command.
      *
-     * @param offset bitfield offset
-     * @param value the value
+     * @param offset
+     *        bitfield offset
+     * @param value
+     *        the value
+     *
      * @return a new {@code INCRBY} subcommand for the given {@code bitFieldType}, {@code offset} and {@code value}.
-     * @throws IllegalStateException if no previous field type was found
+     *
+     * @throws IllegalStateException
+     *         if no previous field type was found
      */
     public BitFieldArgs incrBy(int offset, long value) {
         return incrBy(getPreviousFieldType(), offset, value);
@@ -267,9 +314,13 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code INCRBY} subcommand using offset {@code 0} and the field type of the previous command.
      *
-     * @param value the value
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
-     * @throws IllegalStateException if no previous field type was found
+     *
+     * @throws IllegalStateException
+     *         if no previous field type was found
      */
     public BitFieldArgs incrBy(long value) {
         return incrBy(getPreviousFieldType(), value);
@@ -278,8 +329,11 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code INCRBY} subcommand using offset {@code 0}.
      *
-     * @param bitFieldType the bit field type, must not be {@code null}.
-     * @param value the value
+     * @param bitFieldType
+     *        the bit field type, must not be {@code null}.
+     * @param value
+     *        the value
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs incrBy(BitFieldType bitFieldType, long value) {
@@ -289,7 +343,9 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Adds a new {@code OVERFLOW} subcommand.
      *
-     * @param overflowType type of overflow, must not be {@code null}.
+     * @param overflowType
+     *        type of overflow, must not be {@code null}.
+     *
      * @return the current {@code BitFieldArgs}
      */
     public BitFieldArgs overflow(OverflowType overflowType) {
@@ -301,10 +357,12 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Creates a new signed {@link BitFieldType} for the given number of {@code bits}.
-     * Redis allows up to {@code 64} bits for unsigned integers.
+     * Creates a new signed {@link BitFieldType} for the given number of {@code bits}. Redis allows up to {@code 64}
+     * bits for unsigned integers.
      *
-     * @param bits number of bits to define the integer type width.
+     * @param bits
+     *        number of bits to define the integer type width.
+     *
      * @return the {@link BitFieldType}.
      */
     public static BitFieldType signed(int bits) {
@@ -312,10 +370,12 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Creates a new unsigned {@link BitFieldType} for the given number of {@code bits}. Redis allows up to {@code 63} bits for
-     * unsigned integers.
+     * Creates a new unsigned {@link BitFieldType} for the given number of {@code bits}. Redis allows up to {@code 63}
+     * bits for unsigned integers.
      *
-     * @param bits number of bits to define the integer type width.
+     * @param bits
+     *        number of bits to define the integer type width.
+     *
      * @return the {@link BitFieldType}.
      */
     public static BitFieldType unsigned(int bits) {
@@ -325,7 +385,9 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     /**
      * Creates a new {@link Offset} for the given {@code offset}.
      *
-     * @param offset zero-based offset.
+     * @param offset
+     *        zero-based offset.
+     *
      * @return the {@link Offset}.
      */
     public static Offset offset(int offset) {
@@ -333,10 +395,12 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Creates a new {@link Offset} for the given {@code offset} that is multiplied by the integer type width used in the sub
-     * command.
+     * Creates a new {@link Offset} for the given {@code offset} that is multiplied by the integer type width used in
+     * the sub command.
      *
-     * @param offset offset to be multiplied by the integer type width.
+     * @param offset
+     *        offset to be multiplied by the integer type width.
+     *
      * @return the {@link Offset}.
      */
     public static Offset typeWidthBasedOffset(int offset) {

@@ -49,7 +49,8 @@ public class CliCreateExtensionTest {
 
     @Test
     public void testCreateDryRunWithoutTests() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--dry-run", "--without-tests");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--dry-run",
+                "--without-tests");
         String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
         Assertions.assertTrue(noSpaces.contains("SkipDev-modeTesttrue"),
                 "Skip Dev-mode Test should be true. Found:\n" + result);
@@ -61,8 +62,8 @@ public class CliCreateExtensionTest {
 
     @Test
     public void testCreateDryRunNoTests() throws Exception {
-        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--dry-run",
-                "--no-unit-test", "--no-it-test", "--no-devmode-test");
+        CliDriver.Result result = CliDriver.execute(workspaceRoot, "create", "extension", "--dry-run", "--no-unit-test",
+                "--no-it-test", "--no-devmode-test");
         String noSpaces = result.stdout.replaceAll("[\\s\\p{Z}]", "");
         Assertions.assertTrue(noSpaces.contains("SkipDev-modeTesttrue"),
                 "Skip Dev-mode Test should be true. Found:\n" + result);
@@ -85,19 +86,13 @@ public class CliCreateExtensionTest {
                 CreateExtension.DEFAULT_QUARKIVERSE_PARENT_GROUP_ID,
                 CreateExtension.DEFAULT_QUARKIVERSE_PARENT_ARTIFACT_ID,
                 CreateExtension.DEFAULT_QUARKIVERSE_PARENT_VERSION);
-        validateBasicIdentifiers(projectPom,
-                "io.quarkiverse.custom",
-                "quarkus-custom-parent",
+        validateBasicIdentifiers(projectPom, "io.quarkiverse.custom", "quarkus-custom-parent",
                 CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
 
         Path runtimePom = project.resolve("runtime/pom.xml");
         validateBasicIdentifiers(runtimePom, // <parent> pom
-                "io.quarkiverse.custom",
-                "quarkus-custom-parent",
-                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
-        validateBasicIdentifiers(runtimePom,
-                "io.quarkiverse.custom",
-                "quarkus-custom",
+                "io.quarkiverse.custom", "quarkus-custom-parent", CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
+        validateBasicIdentifiers(runtimePom, "io.quarkiverse.custom", "quarkus-custom",
                 CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         Path quarkusExtension = project.resolve("runtime/src/main/resources/META-INF/quarkus-extension.yaml");
         Assertions.assertTrue(quarkusExtension.toFile().exists(),
@@ -105,24 +100,16 @@ public class CliCreateExtensionTest {
 
         Path deploymentPom = project.resolve("deployment/pom.xml");
         validateBasicIdentifiers(deploymentPom, // <parent> pom
-                "io.quarkiverse.custom",
-                "quarkus-custom-parent",
-                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
-        validateBasicIdentifiers(deploymentPom,
-                "io.quarkiverse.custom",
-                "quarkus-custom-deployment",
+                "io.quarkiverse.custom", "quarkus-custom-parent", CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
+        validateBasicIdentifiers(deploymentPom, "io.quarkiverse.custom", "quarkus-custom-deployment",
                 CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         CliDriver.valdiateGeneratedSourcePackage(project.resolve("deployment"), "io/quarkiverse/custom/deployment");
         CliDriver.valdiateGeneratedTestPackage(project.resolve("deployment"), "io/quarkiverse/custom/test");
 
         Path itPom = project.resolve("integration-tests/pom.xml");
         validateBasicIdentifiers(itPom, // <parent> pom
-                "io.quarkiverse.custom",
-                "quarkus-custom-parent",
-                CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
-        validateBasicIdentifiers(itPom,
-                "io.quarkiverse.custom",
-                "quarkus-custom-integration-tests",
+                "io.quarkiverse.custom", "quarkus-custom-parent", CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
+        validateBasicIdentifiers(itPom, "io.quarkiverse.custom", "quarkus-custom-integration-tests",
                 CreateExtension.DEFAULT_QUARKIVERSE_VERSION);
         CliDriver.valdiateGeneratedSourcePackage(project.resolve("integration-tests"), "io/quarkiverse/custom/it");
         CliDriver.valdiateGeneratedTestPackage(project.resolve("integration-tests"), "io/quarkiverse/custom/it");
@@ -139,14 +126,12 @@ public class CliCreateExtensionTest {
                 "Expected confirmation that the project has been created." + result);
 
         Path projectPom = project.resolve("pom.xml");
-        validateBasicIdentifiers(projectPom,
-                "org.my", "something-parent", "0.1");
+        validateBasicIdentifiers(projectPom, "org.my", "something-parent", "0.1");
 
         Path runtimePom = project.resolve("runtime/pom.xml");
         validateBasicIdentifiers(runtimePom, // <parent> pom
                 "org.my", "something-parent", "0.1");
-        validateBasicIdentifiers(runtimePom,
-                "org.my", "something", "0.1");
+        validateBasicIdentifiers(runtimePom, "org.my", "something", "0.1");
         Path quarkusExtension = project.resolve("runtime/src/main/resources/META-INF/quarkus-extension.yaml");
         Assertions.assertTrue(quarkusExtension.toFile().exists(),
                 "quarkus-extension.yaml should exist: " + quarkusExtension.toAbsolutePath().toString());
@@ -154,23 +139,20 @@ public class CliCreateExtensionTest {
         Path deploymentPom = project.resolve("deployment/pom.xml");
         validateBasicIdentifiers(deploymentPom, // <parent> pom
                 "org.my", "something-parent", "0.1");
-        validateBasicIdentifiers(deploymentPom,
-                "org.my", "something-deployment", "0.1");
+        validateBasicIdentifiers(deploymentPom, "org.my", "something-deployment", "0.1");
         CliDriver.valdiateGeneratedSourcePackage(project.resolve("deployment"), "org/my/something/deployment");
         CliDriver.valdiateGeneratedTestPackage(project.resolve("deployment"), "org/my/something/test");
 
         Path itPom = project.resolve("integration-tests/pom.xml");
         validateBasicIdentifiers(itPom, // <parent> pom
                 "org.my", "something-parent", "0.1");
-        validateBasicIdentifiers(itPom,
-                "org.my", "something-integration-tests", "0.1");
+        validateBasicIdentifiers(itPom, "org.my", "something-integration-tests", "0.1");
         CliDriver.valdiateGeneratedSourcePackage(project.resolve("integration-tests"), "org/my/something/it");
         CliDriver.valdiateGeneratedTestPackage(project.resolve("integration-tests"), "org/my/something/it");
     }
 
     String validateBasicIdentifiers(Path pom, String group, String artifact, String version) throws Exception {
-        Assertions.assertTrue(pom.toFile().exists(),
-                "pom.xml should exist: " + pom.toAbsolutePath().toString());
+        Assertions.assertTrue(pom.toFile().exists(), "pom.xml should exist: " + pom.toAbsolutePath().toString());
 
         String pomContent = CliDriver.readFileAsString(pom);
         Assertions.assertTrue(pomContent.contains("<groupId>" + group + "</groupId>"),

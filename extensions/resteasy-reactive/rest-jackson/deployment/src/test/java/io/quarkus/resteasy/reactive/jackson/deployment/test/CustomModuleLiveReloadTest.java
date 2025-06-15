@@ -32,11 +32,10 @@ import io.vertx.core.json.JsonArray;
 public class CustomModuleLiveReloadTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Resource.class, StringAndInt.class, StringAndIntSerializer.class,
-                            StringAndIntDeserializer.class, Customizer.class)
-                    .addAsResource(new StringAsset("index content"), "META-INF/resources/index.html"));
+    static final QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(Resource.class, StringAndInt.class, StringAndIntSerializer.class,
+                    StringAndIntDeserializer.class, Customizer.class)
+            .addAsResource(new StringAsset("index content"), "META-INF/resources/index.html"));
 
     @Test
     void test() {
@@ -49,10 +48,8 @@ public class CustomModuleLiveReloadTest {
     }
 
     private static void assertResponse() {
-        given().accept("application/json").get("test/array")
-                .then()
-                .statusCode(200)
-                .body(containsString("first:1"), containsString("second:2"));
+        given().accept("application/json").get("test/array").then().statusCode(200).body(containsString("first:1"),
+                containsString("second:2"));
     }
 
     @Path("test")

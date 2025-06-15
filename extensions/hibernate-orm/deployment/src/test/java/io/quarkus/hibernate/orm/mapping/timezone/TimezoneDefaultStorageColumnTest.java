@@ -13,16 +13,15 @@ public class TimezoneDefaultStorageColumnTest extends AbstractTimezoneDefaultSto
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithTimezones.class)
-                    .addClasses(SchemaUtil.class, SmokeTestUtils.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EntityWithTimezones.class).addClasses(SchemaUtil.class,
+                    SmokeTestUtils.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping.timezone.default-storage", "column");
 
     @Test
     public void schema() throws Exception {
-        assertThat(SchemaUtil.getColumnNames(sessionFactory, EntityWithTimezones.class))
-                .contains("zonedDateTime_tz", "offsetDateTime_tz", "offsetTime_tz");
+        assertThat(SchemaUtil.getColumnNames(sessionFactory, EntityWithTimezones.class)).contains("zonedDateTime_tz",
+                "offsetDateTime_tz", "offsetTime_tz");
         assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "zonedDateTime"))
                 .isEqualTo("TIMESTAMP_UTC");
         assertThat(SchemaUtil.getColumnTypeName(sessionFactory, EntityWithTimezones.class, "offsetDateTime"))
@@ -33,9 +32,9 @@ public class TimezoneDefaultStorageColumnTest extends AbstractTimezoneDefaultSto
     public void persistAndLoad() {
         long id = persistWithValuesToTest();
         assertLoadedValues(id,
-                // Column storage preserves the offset, but not the zone ID: https://hibernate.atlassian.net/browse/HHH-16289
+                // Column storage preserves the offset, but not the zone ID:
+                // https://hibernate.atlassian.net/browse/HHH-16289
                 PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(PERSISTED_ZONED_DATE_TIME.getOffset()),
-                PERSISTED_OFFSET_DATE_TIME,
-                PERSISTED_OFFSET_TIME);
+                PERSISTED_OFFSET_DATE_TIME, PERSISTED_OFFSET_TIME);
     }
 }

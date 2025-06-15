@@ -23,32 +23,16 @@ import io.smallrye.graphql.api.Adapter;
 public class AdapterTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AdapterApi.class, Person.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(AdapterApi.class, Person.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testSourcePost() {
-        String personRequest = getPayload("{\n" +
-                "    person {\n" +
-                "       name\n" +
-                "       address {\n" +
-                "           city\n" +
-                "       }\n" +
-                "    }\n" +
-                "}");
+        String personRequest = getPayload("{\n" + "    person {\n" + "       name\n" + "       address {\n"
+                + "           city\n" + "       }\n" + "    }\n" + "}");
 
-        RestAssured.given()
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(personRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(personRequest)
+                .post("/graphql").then().assertThat().statusCode(200).and()
                 .body(CoreMatchers.containsString("\"address\":{\"city\":\"City\"}"));
 
     }

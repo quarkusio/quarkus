@@ -14,10 +14,7 @@ public class TempoResult {
 
     @Override
     public String toString() {
-        return "TempoResult{" +
-                "traces=" + traces +
-                ", metrics=" + metrics +
-                '}';
+        return "TempoResult{" + "traces=" + traces + ", metrics=" + metrics + '}';
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -28,11 +25,8 @@ public class TempoResult {
 
         @Override
         public String toString() {
-            return "Metrics{" +
-                    "inspectedBytes=" + inspectedBytes +
-                    ", completedJobs=" + completedJobs +
-                    ", totalJobs=" + totalJobs +
-                    '}';
+            return "Metrics{" + "inspectedBytes=" + inspectedBytes + ", completedJobs=" + completedJobs + ", totalJobs="
+                    + totalJobs + '}';
         }
     }
 }

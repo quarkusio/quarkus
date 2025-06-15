@@ -19,8 +19,7 @@ public abstract class AbstractNonEmptySerializationTest {
 
         @Override
         public void customize(ObjectMapper objectMapper) {
-            objectMapper
-                    .enable(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES)
+            objectMapper.enable(DeserializationFeature.FAIL_ON_NULL_CREATOR_PROPERTIES)
                     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
         }
@@ -28,22 +27,14 @@ public abstract class AbstractNonEmptySerializationTest {
 
     @Test
     public void testObject() {
-        RestAssured.get("/json-include/my-object")
-                .then()
-                .statusCode(200)
-                .contentType("application/json")
-                .body("name", Matchers.equalTo("name"))
-                .body("description", Matchers.equalTo("description"))
-                .body("map.test", Matchers.equalTo(1))
-                .body("strings[0]", Matchers.equalTo("test"));
+        RestAssured.get("/json-include/my-object").then().statusCode(200).contentType("application/json")
+                .body("name", Matchers.equalTo("name")).body("description", Matchers.equalTo("description"))
+                .body("map.test", Matchers.equalTo(1)).body("strings[0]", Matchers.equalTo("test"));
     }
 
     @Test
     public void testEmptyObject() {
-        RestAssured.get("/json-include/my-object-empty")
-                .then()
-                .statusCode(200)
-                .contentType("application/json")
+        RestAssured.get("/json-include/my-object-empty").then().statusCode(200).contentType("application/json")
                 .body(Matchers.is("{}"));
     }
 }

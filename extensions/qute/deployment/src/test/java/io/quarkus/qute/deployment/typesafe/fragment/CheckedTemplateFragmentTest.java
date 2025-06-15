@@ -17,15 +17,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CheckedTemplateFragmentTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Templates.class, Item.class)
-                    .addAsResource(new StringAsset(
-                            "{#each items}{#fragment id='item'}{it.name}{#if it.name.length > 5} is a long name{/if}{/fragment}{/each}"),
-                            "templates/CheckedTemplateFragmentTest/items.html")
-                    .addAsResource(new StringAsset(
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Templates.class, Item.class)
+            .addAsResource(new StringAsset(
+                    "{#each items}{#fragment id='item'}{it.name}{#if it.name.length > 5} is a long name{/if}{/fragment}{/each}"),
+                    "templates/CheckedTemplateFragmentTest/items.html")
+            .addAsResource(
+                    new StringAsset(
                             "{#fragment id=foo}{#for i in bar}{i_count}. <{i}>{#if i_hasNext}, {/if}{/for}{/fragment}"),
-                            "templates/CheckedTemplateFragmentTest/foos.html"));
+                    "templates/CheckedTemplateFragmentTest/foos.html"));
 
     @SuppressWarnings("unchecked")
     @Test

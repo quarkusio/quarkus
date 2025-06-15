@@ -7,7 +7,6 @@ import io.quarkus.security.spi.runtime.AbstractSecurityEvent;
 
 /**
  * Security event.
- *
  */
 public class SecurityEvent extends AbstractSecurityEvent {
     public static final String SESSION_TOKENS_PROPERTY = "session-tokens";
@@ -23,13 +22,14 @@ public class SecurityEvent extends AbstractSecurityEvent {
          */
         OIDC_SERVER_AVAILABLE,
         /**
-         * OIDC Login event which is reported after the first user authentication but also when the user's session
-         * has expired and the user has re-authenticated at the OIDC provider site.
+         * OIDC Login event which is reported after the first user authentication but also when the user's session has
+         * expired and the user has re-authenticated at the OIDC provider site.
          */
         OIDC_LOGIN,
         /**
-         * OIDC Session refreshed event is reported if it has been detected that an ID token will expire shortly and the session
-         * has been successfully auto-refreshed without the user having to re-authenticate again at the OIDC site.
+         * OIDC Session refreshed event is reported if it has been detected that an ID token will expire shortly and the
+         * session has been successfully auto-refreshed without the user having to re-authenticate again at the OIDC
+         * site.
          */
         OIDC_SESSION_REFRESHED,
         /**
@@ -43,21 +43,20 @@ public class SecurityEvent extends AbstractSecurityEvent {
         OIDC_LOGOUT_RP_INITIATED,
 
         /**
-         * OIDC Logout event is reported when the current user has started an RP-initiated OIDC logout flow but the session has
-         * already expired.
+         * OIDC Logout event is reported when the current user has started an RP-initiated OIDC logout flow but the
+         * session has already expired.
          */
         OIDC_LOGOUT_RP_INITIATED_SESSION_EXPIRED,
 
         /**
-         * OIDC BackChannel Logout initiated event is reported when the BackChannel logout request to logout the current user
-         * has been received.
+         * OIDC BackChannel Logout initiated event is reported when the BackChannel logout request to logout the current
+         * user has been received.
          */
         OIDC_BACKCHANNEL_LOGOUT_INITIATED,
 
         /**
-         * OIDC BackChannel Logout completed event is reported when the current user's session has been removed due to a pending
-         * OIDC
-         * BackChannel logout request.
+         * OIDC BackChannel Logout completed event is reported when the current user's session has been removed due to a
+         * pending OIDC BackChannel logout request.
          */
         OIDC_BACKCHANNEL_LOGOUT_COMPLETED,
         /**

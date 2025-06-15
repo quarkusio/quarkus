@@ -25,9 +25,8 @@ public class MetadataInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MsgMetadata.class, CounterMetadata.class, ProcessorIngestingPayload.class, Source.class,
-                            Sink.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MsgMetadata.class, CounterMetadata.class,
+                    ProcessorIngestingPayload.class, Source.class, Sink.class));
 
     @Inject
     Sink sink;
@@ -37,7 +36,8 @@ public class MetadataInjectionTest {
         assertThat(sink.list()).allSatisfy(message -> {
             CounterMetadata c = message.getMetadata(CounterMetadata.class)
                     .orElseThrow(() -> new AssertionError("Metadata expected"));
-            MsgMetadata m = message.getMetadata(MsgMetadata.class).orElseThrow(() -> new AssertionError("Metadata expected"));
+            MsgMetadata m = message.getMetadata(MsgMetadata.class)
+                    .orElseThrow(() -> new AssertionError("Metadata expected"));
             assertThat(m.getMessage()).isEqualTo("foo");
             assertThat(c.getCount()).isNotEqualTo(0);
         }).hasSize(10);
@@ -101,8 +101,8 @@ public class MetadataInjectionTest {
 
         @Outgoing("source")
         public Multi<Message<String>> source() {
-            return Multi.createFrom().range(1, 11)
-                    .map(i -> Message.of(Integer.toString(i), Metadata.of(new CounterMetadata(i), new MsgMetadata("foo"))));
+            return Multi.createFrom().range(1, 11).map(
+                    i -> Message.of(Integer.toString(i), Metadata.of(new CounterMetadata(i), new MsgMetadata("foo"))));
         }
 
     }

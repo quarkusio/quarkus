@@ -5,8 +5,7 @@ import java.util.function.BooleanSupplier;
 import io.quarkus.hibernate.envers.HibernateEnversBuildTimeConfig;
 
 /**
- * Supplier that can be used to only run build steps
- * if the Hibernate Envers extension is enabled.
+ * Supplier that can be used to only run build steps if the Hibernate Envers extension is enabled.
  */
 public class HibernateEnversEnabled implements BooleanSupplier {
 

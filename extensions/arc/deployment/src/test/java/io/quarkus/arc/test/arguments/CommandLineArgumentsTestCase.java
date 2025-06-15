@@ -12,8 +12,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CommandLineArgumentsTestCase {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setCommandLineParameters("Hello", "World")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setCommandLineParameters("Hello", "World")
             .withEmptyApplication();
 
     @Inject

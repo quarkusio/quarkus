@@ -21,14 +21,12 @@ public class RestorableSystemProperties implements Closeable {
         }
         for (Map.Entry<String, String> i : props.entrySet()) {
             if (i.getKey() == null) {
-                throw new IllegalArgumentException(
-                        String.format("Internal error: Cannot set null key as a system property (value is %s)",
-                                i.getValue()));
+                throw new IllegalArgumentException(String.format(
+                        "Internal error: Cannot set null key as a system property (value is %s)", i.getValue()));
             }
             if (i.getValue() == null) {
-                throw new IllegalArgumentException(
-                        String.format("Internal error: Cannot use null value as a system property (key is %s)",
-                                i.getKey()));
+                throw new IllegalArgumentException(String
+                        .format("Internal error: Cannot use null value as a system property (key is %s)", i.getKey()));
             }
             System.setProperty(i.getKey(), i.getValue());
         }

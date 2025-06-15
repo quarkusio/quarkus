@@ -12,11 +12,11 @@ import io.quarkus.arc.Arc;
 /**
  * A replacement for ManagedBeanRegistryImpl that:
  * <ul>
- * <li>forces the use of QuarkusManagedBeanRegistry,
- * which works with Arc and respects configured scopes when instantiating CDI beans.</li>
- * <li>is not stoppable and leaves the release of beans to {@link QuarkusArcBeanContainer},
- * so that the bean container and its beans can be reused between static init and runtime init,
- * even though we stop Hibernate ORM services after the end of static init.</li>
+ * <li>forces the use of QuarkusManagedBeanRegistry, which works with Arc and respects configured scopes when
+ * instantiating CDI beans.</li>
+ * <li>is not stoppable and leaves the release of beans to {@link QuarkusArcBeanContainer}, so that the bean container
+ * and its beans can be reused between static init and runtime init, even though we stop Hibernate ORM services after
+ * the end of static init.</li>
  * </ul>
  *
  * @see QuarkusArcBeanContainer
@@ -46,17 +46,15 @@ public class QuarkusManagedBeanRegistry implements ManagedBeanRegistry {
 
     @Override
     public <T> ManagedBean<T> getBean(Class<T> beanClass, BeanInstanceProducer fallbackBeanInstanceProducer) {
-        return new ContainedBeanManagedBeanAdapter<>(beanClass,
-                beanContainer.getBean(beanClass, QuarkusBeanContainerLifecycleOptions.INSTANCE,
-                        fallbackBeanInstanceProducer));
+        return new ContainedBeanManagedBeanAdapter<>(beanClass, beanContainer.getBean(beanClass,
+                QuarkusBeanContainerLifecycleOptions.INSTANCE, fallbackBeanInstanceProducer));
     }
 
     @Override
     public <T> ManagedBean<T> getBean(String beanName, Class<T> beanContract,
             BeanInstanceProducer fallbackBeanInstanceProducer) {
-        return new ContainedBeanManagedBeanAdapter<>(beanContract,
-                beanContainer.getBean(beanName, beanContract, QuarkusBeanContainerLifecycleOptions.INSTANCE,
-                        fallbackBeanInstanceProducer));
+        return new ContainedBeanManagedBeanAdapter<>(beanContract, beanContainer.getBean(beanName, beanContract,
+                QuarkusBeanContainerLifecycleOptions.INSTANCE, fallbackBeanInstanceProducer));
     }
 
     private static class ContainedBeanManagedBeanAdapter<B> implements ManagedBean<B> {

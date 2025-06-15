@@ -13,9 +13,9 @@ import org.jboss.resteasy.reactive.server.spi.AsyncExceptionMapperContext;
 import io.smallrye.mutiny.Uni;
 
 /**
- * This class is used by the exception mappers that are generated as a result of the use of {@link ServerExceptionMapper}
- * with a {@link Uni} response type.
- * See {@code io.quarkus.resteasy.reactive.server.deployment.ServerExceptionMapperGenerator}
+ * This class is used by the exception mappers that are generated as a result of the use of
+ * {@link ServerExceptionMapper} with a {@link Uni} response type. See
+ * {@code io.quarkus.resteasy.reactive.server.deployment.ServerExceptionMapperGenerator}
  */
 public final class AsyncExceptionMappingUtil {
 

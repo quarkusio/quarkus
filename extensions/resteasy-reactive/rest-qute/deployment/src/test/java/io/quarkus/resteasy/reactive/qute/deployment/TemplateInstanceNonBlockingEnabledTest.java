@@ -22,8 +22,7 @@ public class TemplateInstanceNonBlockingEnabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class)
                     .addAsResource(new StringAsset("quarkus.rest.qute.template-instance-non-blocking-type=true"),
                             "application.properties")
                     .addAsResource(new StringAsset("Blocking allowed: {blockingAllowed}"), "templates/item.txt"));

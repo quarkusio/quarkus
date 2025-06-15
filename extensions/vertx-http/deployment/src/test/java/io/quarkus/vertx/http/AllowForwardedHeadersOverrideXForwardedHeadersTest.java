@@ -13,24 +13,18 @@ import io.restassured.RestAssured;
 public class AllowForwardedHeadersOverrideXForwardedHeadersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ForwardedHandlerInitializer.class)
-                    .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +
-                            "quarkus.http.proxy.allow-forwarded=true\n" +
-                            "quarkus.http.proxy.allow-x-forwarded=true\n" +
-                            "quarkus.http.proxy.strict-forwarded-control=false\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(ForwardedHandlerInitializer.class)
+            .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n"
+                    + "quarkus.http.proxy.allow-forwarded=true\n" + "quarkus.http.proxy.allow-x-forwarded=true\n"
+                    + "quarkus.http.proxy.strict-forwarded-control=false\n"), "application.properties"));
 
     @Test
     public void testXForwardedProtoOverridesForwardedProto() {
         assertThat(RestAssured.get("/path").asString()).startsWith("http|");
 
-        RestAssured.given()
-                .header("Forwarded", "proto=https;for=backend2:5555;host=somehost2")
-                .header("X-Forwarded-Proto", "http")
-                .get("/path")
-                .then()
+        RestAssured.given().header("Forwarded", "proto=https;for=backend2:5555;host=somehost2")
+                .header("X-Forwarded-Proto", "http").get("/path").then()
                 .body(Matchers.equalTo("https|somehost2|backend2:5555|/path|https://somehost2/path"));
     }
 

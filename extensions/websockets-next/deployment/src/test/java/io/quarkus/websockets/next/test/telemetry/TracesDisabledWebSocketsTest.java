@@ -36,9 +36,8 @@ public class TracesDisabledWebSocketsTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(BounceEndpoint.class, WSClient.class, InMemorySpanExporterProducer.class, BounceClient.class)
-                    .addAsResource(new StringAsset("""
+            .withApplicationRoot(root -> root.addClasses(BounceEndpoint.class, WSClient.class,
+                    InMemorySpanExporterProducer.class, BounceClient.class).addAsResource(new StringAsset("""
                             quarkus.otel.bsp.export.timeout=1s
                             quarkus.otel.bsp.schedule.delay=50
                             quarkus.websockets-next.server.traces.enabled=false
@@ -120,19 +119,14 @@ public class TracesDisabledWebSocketsTest {
     }
 
     private void waitForInitialRequestTrace() {
-        Awaitility.await()
-                .atMost(Duration.ofSeconds(5))
+        Awaitility.await().atMost(Duration.ofSeconds(5))
                 .untilAsserted(() -> assertEquals(1, spanExporter.getFinishedSpanItems().size()));
     }
 
     private SpanData getInitialRequestSpan() {
-        return spanExporter.getFinishedSpanItems()
-                .stream()
-                .filter(sd -> "GET /bounce".equals(sd.getName()))
-                .filter(sd -> sd.getKind() == SpanKind.SERVER)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError(
-                        "Expected span name 'GET /bounce' and kind '" + SpanKind.SERVER + "' not found: "
-                                + spanExporter.getFinishedSpanItems()));
+        return spanExporter.getFinishedSpanItems().stream().filter(sd -> "GET /bounce".equals(sd.getName()))
+                .filter(sd -> sd.getKind() == SpanKind.SERVER).findFirst()
+                .orElseThrow(() -> new AssertionError("Expected span name 'GET /bounce' and kind '" + SpanKind.SERVER
+                        + "' not found: " + spanExporter.getFinishedSpanItems()));
     }
 }

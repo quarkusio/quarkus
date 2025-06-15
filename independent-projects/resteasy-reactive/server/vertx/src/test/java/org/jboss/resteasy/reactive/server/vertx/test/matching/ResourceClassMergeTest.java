@@ -20,45 +20,27 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 public class ResourceClassMergeTest {
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(MatchDefaultRegexDifferentNameResourceA.class,
-                                    MatchDefaultRegexDifferentNameResourceB.class, MatchCustomRegexDifferentNameResourceA.class,
-                                    MatchCustomRegexDifferentNameResourceB.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(MatchDefaultRegexDifferentNameResourceA.class,
+                    MatchDefaultRegexDifferentNameResourceB.class, MatchCustomRegexDifferentNameResourceA.class,
+                    MatchCustomRegexDifferentNameResourceB.class);
+        }
+    });
 
     @Test
     public void testCallMatchDefaultRegexDifferentNameResource() {
-        given()
-                .when().get("routing-broken/abc/some/other/path")
-                .then()
-                .statusCode(200)
-                .body(is("abc"));
+        given().when().get("routing-broken/abc/some/other/path").then().statusCode(200).body(is("abc"));
 
-        given()
-                .when().get("routing-broken/efg/some/path")
-                .then()
-                .statusCode(200)
-                .body(is("efg"));
+        given().when().get("routing-broken/efg/some/path").then().statusCode(200).body(is("efg"));
     }
 
     @Test
     public void testCallMatchCustomRegexDifferentNameResource() {
-        given()
-                .when().get("routing-broken-custom-regex/abc/some/other/path")
-                .then()
-                .statusCode(200)
-                .body(is("abc"));
+        given().when().get("routing-broken-custom-regex/abc/some/other/path").then().statusCode(200).body(is("abc"));
 
-        given()
-                .when().get("routing-broken-custom-regex/efg/some/path")
-                .then()
-                .statusCode(200)
-                .body(is("efg"));
+        given().when().get("routing-broken-custom-regex/efg/some/path").then().statusCode(200).body(is("efg"));
     }
 
     @Path("/routing-broken/{id1}")

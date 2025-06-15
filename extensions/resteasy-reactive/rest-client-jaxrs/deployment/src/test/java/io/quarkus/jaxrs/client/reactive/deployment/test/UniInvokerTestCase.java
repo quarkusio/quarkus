@@ -23,8 +23,7 @@ public class UniInvokerTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class));
 
     @TestHTTPResource
     URL url;

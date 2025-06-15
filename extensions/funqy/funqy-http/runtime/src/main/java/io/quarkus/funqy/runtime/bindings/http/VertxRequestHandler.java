@@ -38,10 +38,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final CurrentVertxRequest currentVertxRequest;
     protected final Executor executor;
 
-    public VertxRequestHandler(Vertx vertx,
-            BeanContainer beanContainer,
-            String rootPath,
-            Executor executor) {
+    public VertxRequestHandler(Vertx vertx, BeanContainer beanContainer, String rootPath, Executor executor) {
         this.vertx = vertx;
         this.beanContainer = beanContainer;
         // make sure rootPath ends with "/" for easy parsing
@@ -142,24 +139,22 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             FunqyResponseImpl funqyResponse = new FunqyResponseImpl();
             invoker.invoke(funqyRequest, funqyResponse);
 
-            funqyResponse.getOutput().emitOn(executor).subscribe().with(
-                    o -> {
-                        if (invoker.hasOutput()) {
-                            routingContext.response().setStatusCode(200);
-                            routingContext.response().putHeader("Content-Type", "application/json");
-                            ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
-                            try {
-                                routingContext.response().end(writer.writeValueAsString(o));
-                            } catch (JsonProcessingException e) {
-                                log.error("Failed to marshal", e);
-                                routingContext.fail(400);
-                            }
-                        } else {
-                            routingContext.response().setStatusCode(204);
-                            routingContext.response().end();
-                        }
-                    },
-                    t -> routingContext.fail(t));
+            funqyResponse.getOutput().emitOn(executor).subscribe().with(o -> {
+                if (invoker.hasOutput()) {
+                    routingContext.response().setStatusCode(200);
+                    routingContext.response().putHeader("Content-Type", "application/json");
+                    ObjectWriter writer = (ObjectWriter) invoker.getBindingContext().get(ObjectWriter.class.getName());
+                    try {
+                        routingContext.response().end(writer.writeValueAsString(o));
+                    } catch (JsonProcessingException e) {
+                        log.error("Failed to marshal", e);
+                        routingContext.fail(400);
+                    }
+                } else {
+                    routingContext.response().setStatusCode(204);
+                    routingContext.response().end();
+                }
+            }, t -> routingContext.fail(t));
 
         } catch (Exception e) {
             routingContext.fail(e);

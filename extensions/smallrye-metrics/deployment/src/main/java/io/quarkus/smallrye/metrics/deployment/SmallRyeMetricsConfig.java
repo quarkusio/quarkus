@@ -10,10 +10,9 @@ import io.smallrye.config.WithName;
 public interface SmallRyeMetricsConfig {
 
     /**
-     * The path to the metrics handler.
-     * By default, this value will be resolved as a path relative to `${quarkus.http.non-application-root-path}`.
-     * If the management interface is enabled, the value will be resolved as a path relative to
-     * `${quarkus.management.root-path}`.
+     * The path to the metrics handler. By default, this value will be resolved as a path relative to
+     * `${quarkus.http.non-application-root-path}`. If the management interface is enabled, the value will be resolved
+     * as a path relative to `${quarkus.management.root-path}`.
      */
     @WithDefault("metrics")
     String path();
@@ -26,10 +25,10 @@ public interface SmallRyeMetricsConfig {
     boolean extensionsEnabled();
 
     /**
-     * Apply Micrometer compatibility mode, where instead of regular 'base' and 'vendor' metrics,
-     * Quarkus exposes the same 'jvm' metrics that Micrometer does. Application metrics are unaffected by this mode.
-     * The use case is to facilitate migration from Micrometer-based metrics, because original dashboards for JVM metrics
-     * will continue working without having to rewrite them.
+     * Apply Micrometer compatibility mode, where instead of regular 'base' and 'vendor' metrics, Quarkus exposes the
+     * same 'jvm' metrics that Micrometer does. Application metrics are unaffected by this mode. The use case is to
+     * facilitate migration from Micrometer-based metrics, because original dashboards for JVM metrics will continue
+     * working without having to rewrite them.
      */
     @WithName("micrometer.compatibility")
     @WithDefault("false")

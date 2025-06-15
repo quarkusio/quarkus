@@ -7,8 +7,7 @@ import io.quarkus.runtime.LaunchMode;
 
 /**
  * Similar to {@link IsDevelopment} except checks whether the application is being launched in dev mode but not from a
- * {@code mutable-jar} package,
- * in other words, not a remote server in a remote dev session.
+ * {@code mutable-jar} package, in other words, not a remote server in a remote dev session.
  */
 public class IsLocalDevelopment implements BooleanSupplier {
 

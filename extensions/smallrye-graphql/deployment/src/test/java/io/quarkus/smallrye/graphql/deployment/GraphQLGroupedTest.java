@@ -31,32 +31,17 @@ public class GraphQLGroupedTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BookGraphQLApi.class, Book.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BookGraphQLApi.class, Book.class)
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testSourcePost() {
-        String booksRequest = getPayload("{\n" +
-                "  books{\n" +
-                "    book(name:\"Lord of the Flies\"){\n" +
-                "      title\n" +
-                "      authors\n" +
-                "      published\n" +
-                "    }\n" +
-                "  }\n" +
-                "}");
+        String booksRequest = getPayload("{\n" + "  books{\n" + "    book(name:\"Lord of the Flies\"){\n"
+                + "      title\n" + "      authors\n" + "      published\n" + "    }\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(booksRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(booksRequest)
+                .post("/graphql").then().assertThat().statusCode(200).and()
                 .body(CoreMatchers.containsString("Lord of the Flies"));
 
     }
@@ -88,7 +73,8 @@ public class GraphQLGroupedTest extends AbstractGraphQLTest {
                     "William Golding");
             BOOKS.put(book1.title, book1);
 
-            Book book2 = new Book("0-582-53008-3", "Animal Farm", LocalDate.of(1945, Month.AUGUST, 17), "George Orwell");
+            Book book2 = new Book("0-582-53008-3", "Animal Farm", LocalDate.of(1945, Month.AUGUST, 17),
+                    "George Orwell");
             BOOKS.put(book2.title, book2);
         }
     }

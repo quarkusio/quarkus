@@ -19,8 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ShortNameScopeOverrideTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, HelloClientWithBaseUri.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, HelloClientWithBaseUri.class))
             .withConfigurationResource("shortname-scope-test-application.properties");
 
     @RestClient

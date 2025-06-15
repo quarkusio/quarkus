@@ -130,8 +130,8 @@ interface PermissionSecurityChecks {
                 }
                 boolean isReactive = isUniBoolean(checkerMethod);
                 if (!isReactive && !isPrimitiveBoolean(checkerMethod)) {
-                    throw new RuntimeException(("@PermissionChecker method '%s' has return type '%s', but only " +
-                            "supported return types are 'boolean' and 'Uni<Boolean>'. ")
+                    throw new RuntimeException(("@PermissionChecker method '%s' has return type '%s', but only "
+                            + "supported return types are 'boolean' and 'Uni<Boolean>'. ")
                             .formatted(toString(checkerMethod), checkerMethod.returnType().name()));
                 }
 
@@ -151,7 +151,8 @@ interface PermissionSecurityChecks {
 
                 var generatedPermissionClassName = getGeneratedPermissionName(checkerMethod, permissionCheckerIndex++);
                 var methodParamMappers = new MethodParameterMapper[checkerMethod.parametersCount()];
-                var generatedPermissionConstructor = getGeneratedPermissionConstructor(checkerMethod, methodParamMappers);
+                var generatedPermissionConstructor = getGeneratedPermissionConstructor(checkerMethod,
+                        methodParamMappers);
                 var checkerMetadata = new PermissionCheckerMetadata(checkerMethod, generatedPermissionClassName,
                         isReactive, generatedPermissionConstructor, methodParamMappers, isBlocking);
 
@@ -160,9 +161,8 @@ interface PermissionSecurityChecks {
                             Detected two @PermissionChecker annotations with same value '%s', annotated methods are:
                             - %s
                             - %s
-                            """
-                            .formatted(annotationInstance.value().asString(), toString(checkerMethod),
-                                    toString(permissionCheckers.get(permissionName).checkerMethod())));
+                            """.formatted(annotationInstance.value().asString(), toString(checkerMethod),
+                            toString(permissionCheckers.get(permissionName).checkerMethod())));
                 }
 
                 permissionCheckers.put(permissionName, checkerMetadata);
@@ -189,18 +189,20 @@ interface PermissionSecurityChecks {
         private static MethodInfo getGeneratedPermissionConstructor(MethodInfo checkerMethod,
                 MethodParameterMapper[] paramMappers) {
             if (!checkerMethod.exceptions().isEmpty()) {
-                throw new RuntimeException("@PermissionChecker method '%s' declares checked exceptions which is not allowed"
-                        .formatted(toString(checkerMethod)));
+                throw new RuntimeException(
+                        "@PermissionChecker method '%s' declares checked exceptions which is not allowed"
+                                .formatted(toString(checkerMethod)));
             }
             if (checkerMethod.parametersCount() == 0) {
-                throw new RuntimeException(
-                        "@PermissionChecker method '%s' must have at least one parameter".formatted(toString(checkerMethod)));
+                throw new RuntimeException("@PermissionChecker method '%s' must have at least one parameter"
+                        .formatted(toString(checkerMethod)));
             }
 
             // Permission constructor: permission name, <<secured-method-parameters>>...
             // Permission checker method: [optionally at any place SecurityIdentity], <<secured-method-parameters>>...
             // that is constructor param length great or equal to checker method param length
-            int constructorParameterCount = checkerMethod.parametersCount() + (hasSecurityIdentityParam(checkerMethod) ? 0 : 1);
+            int constructorParameterCount = checkerMethod.parametersCount()
+                    + (hasSecurityIdentityParam(checkerMethod) ? 0 : 1);
             final Type[] constructorParameterTypes = new Type[constructorParameterCount];
             final String[] constructorParameterNames = new String[constructorParameterCount];
 
@@ -224,11 +226,7 @@ interface PermissionSecurityChecks {
         }
 
         private static boolean hasSecurityIdentityParam(MethodInfo checkerMethod) {
-            return checkerMethod
-                    .parameterTypes()
-                    .stream()
-                    .filter(t -> t.kind() == Type.Kind.CLASS)
-                    .map(Type::name)
+            return checkerMethod.parameterTypes().stream().filter(t -> t.kind() == Type.Kind.CLASS).map(Type::name)
                     .anyMatch(SECURITY_IDENTITY_NAME::equals);
         }
 
@@ -244,8 +242,8 @@ interface PermissionSecurityChecks {
                 BuildProducer<GeneratedClassBuildItem> generatedClassesProducer,
                 BuildProducer<ReflectiveClassBuildItem> reflectiveClassesProducer) {
             this.recorder = recorder;
-            this.paramConverterGenerator = new PermissionConverterGenerator(generatedClassesProducer, reflectiveClassesProducer,
-                    recorder, index);
+            this.paramConverterGenerator = new PermissionConverterGenerator(generatedClassesProducer,
+                    reflectiveClassesProducer, recorder, index);
             return this;
         }
 
@@ -286,9 +284,8 @@ interface PermissionSecurityChecks {
         }
 
         /**
-         * Creates predicate for each secured method. Predicates are cached if possible.
-         * What we call predicate here is combination of (possibly computed) {@link Permission}s joined with
-         * logical operators 'AND' or 'OR'.
+         * Creates predicate for each secured method. Predicates are cached if possible. What we call predicate here is
+         * combination of (possibly computed) {@link Permission}s joined with logical operators 'AND' or 'OR'.
          * <p>
          * For example, combination of following 2 annotation instances:
          *
@@ -382,13 +379,14 @@ interface PermissionSecurityChecks {
                             final ClassInfo clazz = index.getClassByName(key.clazz.name());
                             Objects.requireNonNull(clazz);
                             if (clazz.constructors().size() != 1) {
-                                throw new RuntimeException(
-                                        String.format("Permission class '%s' has %d constructors, exactly one is allowed",
-                                                key.classSignature(), clazz.constructors().size()));
+                                throw new RuntimeException(String.format(
+                                        "Permission class '%s' has %d constructors, exactly one is allowed",
+                                        key.classSignature(), clazz.constructors().size()));
                             }
                             var constructor = clazz.constructors().get(0);
                             // first constructor parameter must be permission name
-                            if (constructor.parametersCount() == 0 || !STRING.equals(constructor.parameterType(0).name())) {
+                            if (constructor.parametersCount() == 0
+                                    || !STRING.equals(constructor.parameterType(0).name())) {
                                 throw new RuntimeException(
                                         String.format("Permission constructor '%s' first argument must be '%s'",
                                                 clazz.name().toString(), String.class.getName()));
@@ -434,7 +432,8 @@ interface PermissionSecurityChecks {
                     final MethodInfo methodInfo = target.asMethod();
 
                     // we don't allow combining @PermissionsAllowed with other security annotations as @DenyAll, ...
-                    if (alreadyCheckedMethods.containsKey(methodInfo) || hasAdditionalSecurityAnnotations.test(methodInfo)) {
+                    if (alreadyCheckedMethods.containsKey(methodInfo)
+                            || hasAdditionalSecurityAnnotations.test(methodInfo)) {
                         throw new IllegalStateException(
                                 String.format("Method %s of class %s is annotated with multiple security annotations",
                                         methodInfo.name(), methodInfo.declaringClass()));
@@ -450,7 +449,8 @@ interface PermissionSecurityChecks {
 
                         // ignore PermissionsAllowedInterceptor in security module
                         // we also need to check string as long as duplicate "PermissionsAllowedInterceptor" exists
-                        // in RESTEasy Reactive, however this workaround should be removed when the interceptor is dropped
+                        // in RESTEasy Reactive, however this workaround should be removed when the interceptor is
+                        // dropped
                         if (isPermissionsAllowedInterceptor(clazz)) {
                             continue;
                         }
@@ -474,9 +474,11 @@ interface PermissionSecurityChecks {
                                 }
 
                                 // ignore method annotated with other security annotation
-                                boolean noMethodLevelSecurityAnnotation = !alreadyCheckedMethods.containsKey(methodInfo);
+                                boolean noMethodLevelSecurityAnnotation = !alreadyCheckedMethods
+                                        .containsKey(methodInfo);
                                 // ignore method annotated with method-level @PermissionsAllowed
-                                boolean noMethodLevelPermissionsAllowed = !targetToPermissionKeys.containsKey(methodInfo);
+                                boolean noMethodLevelPermissionsAllowed = !targetToPermissionKeys
+                                        .containsKey(methodInfo);
                                 if (noMethodLevelSecurityAnnotation && noMethodLevelPermissionsAllowed) {
 
                                     gatherPermissionKeys(instance, methodInfo, cache, classMethodToPermissionKeys);
@@ -484,10 +486,11 @@ interface PermissionSecurityChecks {
                             }
                         } else {
 
-                            // we do not allow combining @PermissionsAllowed with other security annotations as @Authenticated
+                            // we do not allow combining @PermissionsAllowed with other security annotations as
+                            // @Authenticated
                             throw new IllegalStateException(
-                                    String.format("Class %s is annotated with multiple security annotations %s and %s", clazz,
-                                            instance.name(), existingClassInstance.name()));
+                                    String.format("Class %s is annotated with multiple security annotations %s and %s",
+                                            clazz, instance.name(), existingClassInstance.name()));
                         }
                     }
                 }
@@ -534,50 +537,39 @@ interface PermissionSecurityChecks {
         }
 
         static ArrayList<AnnotationInstance> getPermissionsAllowedInstances(IndexView index) {
-            return new ArrayList<>(
-                    index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
+            return new ArrayList<>(index.getAnnotationsWithRepeatable(PERMISSIONS_ALLOWED, index));
         }
 
         static PermissionsAllowedMetaAnnotationBuildItem movePermFromMetaAnnToMetaTarget(IndexView index) {
-            var permissionsAllowed = getPermissionsAllowedInstances(index)
-                    .stream()
+            var permissionsAllowed = getPermissionsAllowedInstances(index).stream()
                     .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
-                    .filter(ai -> ai.target().asClass().isAnnotation())
-                    .toList();
+                    .filter(ai -> ai.target().asClass().isAnnotation()).toList();
             final List<DotName> metaAnnotationNames = new ArrayList<>();
-            var newInstances = permissionsAllowed
-                    .stream()
-                    .flatMap(instanceOnMetaAnn -> {
-                        var metaAnnotationName = instanceOnMetaAnn.target().asClass().name();
-                        metaAnnotationNames.add(metaAnnotationName);
-                        return index.getAnnotations(metaAnnotationName).stream()
-                                .map(ai -> AnnotationInstance.create(PERMISSIONS_ALLOWED, ai.target(),
-                                        instanceOnMetaAnn.values()));
-                    })
-                    .toList();
+            var newInstances = permissionsAllowed.stream().flatMap(instanceOnMetaAnn -> {
+                var metaAnnotationName = instanceOnMetaAnn.target().asClass().name();
+                metaAnnotationNames.add(metaAnnotationName);
+                return index.getAnnotations(metaAnnotationName).stream().map(
+                        ai -> AnnotationInstance.create(PERMISSIONS_ALLOWED, ai.target(), instanceOnMetaAnn.values()));
+            }).toList();
             return new PermissionsAllowedMetaAnnotationBuildItem(newInstances, metaAnnotationNames);
         }
 
         private static AnnotationInstance getAnnotationInstance(ClassInfo classInfo,
                 List<AnnotationInstance> annotationInstances) {
-            return annotationInstances.stream()
-                    .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
-                    .filter(ai -> ai.target().asClass().name().equals(classInfo.name()))
-                    .findFirst().orElseThrow();
+            return annotationInstances.stream().filter(ai -> ai.target().kind() == AnnotationTarget.Kind.CLASS)
+                    .filter(ai -> ai.target().asClass().name().equals(classInfo.name())).findFirst().orElseThrow();
         }
 
         private static AnnotationInstance getAnnotationInstance(MethodInfo methodInfo,
                 List<AnnotationInstance> annotationInstances) {
-            return annotationInstances.stream()
-                    .filter(ai -> ai.target().kind() == AnnotationTarget.Kind.METHOD)
-                    .filter(ai -> ai.target().asMethod().name().equals(methodInfo.name()))
-                    .findFirst()
-                    .orElse(null);
+            return annotationInstances.stream().filter(ai -> ai.target().kind() == AnnotationTarget.Kind.METHOD)
+                    .filter(ai -> ai.target().asMethod().name().equals(methodInfo.name())).findFirst().orElse(null);
         }
 
         private <T extends AnnotationTarget> void gatherPermissionKeys(AnnotationInstance instance, T annotationTarget,
                 List<PermissionKey> cache, Map<T, List<List<PermissionKey>>> targetToPermissionKeys) {
-            // @PermissionsAllowed value is in format permission:action, permission2:action, permission:action2, permission3
+            // @PermissionsAllowed value is in format permission:action, permission2:action, permission:action2,
+            // permission3
             // here we transform it to permission -> actions
             record PermissionNameAndChecker(String permissionName, PermissionCheckerMetadata checker) {
             }
@@ -595,14 +587,15 @@ interface PermissionSecurityChecks {
                 } else if (permissionValExpression.contains(PERMISSION_TO_ACTION_SEPARATOR)) {
 
                     // expected format: permission:action
-                    final String[] permissionToActionArr = permissionValExpression.split(PERMISSION_TO_ACTION_SEPARATOR);
+                    final String[] permissionToActionArr = permissionValExpression
+                            .split(PERMISSION_TO_ACTION_SEPARATOR);
                     if (permissionToActionArr.length != 2) {
                         throw new RuntimeException(String.format(
                                 "PermissionsAllowed value '%s' contains more than one separator '%2$s', expected format is 'permissionName%2$saction'",
                                 permissionValExpression, PERMISSION_TO_ACTION_SEPARATOR));
                     }
-                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionToActionArr[0],
-                            null);
+                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(
+                            permissionToActionArr[0], null);
                     final String action = permissionToActionArr[1];
                     if (permissionToActions.containsKey(permissionNameKey)) {
                         permissionToActions.get(permissionNameKey).add(action);
@@ -614,8 +607,8 @@ interface PermissionSecurityChecks {
                 } else {
 
                     // expected format: permission
-                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(permissionValExpression,
-                            null);
+                    final PermissionNameAndChecker permissionNameKey = new PermissionNameAndChecker(
+                            permissionValExpression, null);
                     if (!permissionToActions.containsKey(permissionNameKey)) {
                         permissionToActions.put(permissionNameKey, new HashSet<>());
                     }
@@ -644,7 +637,8 @@ interface PermissionSecurityChecks {
             if (inclusive && foundPermissionChecker) {
                 // @PermissionsAllowed({ "read", "read:all", "read:it", "write" } && @PermissionChecker("read")
                 // require @PermissionChecker for all 'read:action' because determining expected behavior would be too
-                // complex; similarly for @PermissionChecker("read:all") require 'read' and 'read:it' have checker as well
+                // complex; similarly for @PermissionChecker("read:all") require 'read' and 'read:it' have checker as
+                // well
                 List<PermissionNameAndChecker> checkerPermissions = permissionToActions.keySet().stream()
                         .filter(k -> k.checker != null).toList();
                 for (PermissionNameAndChecker checkerPermission : checkerPermissions) {
@@ -655,16 +649,17 @@ interface PermissionSecurityChecks {
                             : checkerPermission.permissionName;
                     for (var e : permissionToActions.entrySet()) {
                         PermissionNameAndChecker permissionNameKey = e.getKey();
-                        // look for permission names that match our permission checker value (before action-to-perm separator)
+                        // look for permission names that match our permission checker value (before action-to-perm
+                        // separator)
                         // for example: read:it
-                        if (permissionNameKey.checker == null && permissionNameKey.permissionName.equals(permissionName)) {
+                        if (permissionNameKey.checker == null
+                                && permissionNameKey.permissionName.equals(permissionName)) {
                             boolean hasActions = e.getValue() != null && !e.getValue().isEmpty();
                             final String permissionsJoinedWithActions;
                             if (hasActions) {
-                                permissionsJoinedWithActions = e.getValue()
-                                        .stream()
-                                        .map(action -> permissionNameKey.permissionName + PERMISSION_TO_ACTION_SEPARATOR
-                                                + action)
+                                permissionsJoinedWithActions = e
+                                        .getValue().stream().map(action -> permissionNameKey.permissionName
+                                                + PERMISSION_TO_ACTION_SEPARATOR + action)
                                         .collect(Collectors.joining(", "));
                             } else {
                                 permissionsJoinedWithActions = permissionNameKey.permissionName;
@@ -686,8 +681,8 @@ interface PermissionSecurityChecks {
             for (var permissionToAction : permissionToActions.entrySet()) {
                 final var permissionNameKey = permissionToAction.getKey();
                 final var permissionActions = permissionToAction.getValue();
-                final var key = new PermissionKey(permissionNameKey.permissionName, permissionActions, params, classType,
-                        inclusive, permissionNameKey.checker, annotationTarget);
+                final var key = new PermissionKey(permissionNameKey.permissionName, permissionActions, params,
+                        classType, inclusive, permissionNameKey.checker, annotationTarget);
                 final int i = cache.indexOf(key);
                 if (i == -1) {
                     orPermissions.add(key);
@@ -698,8 +693,7 @@ interface PermissionSecurityChecks {
             }
 
             // store annotation value as permission keys
-            targetToPermissionKeys
-                    .computeIfAbsent(annotationTarget, at -> new ArrayList<>())
+            targetToPermissionKeys.computeIfAbsent(annotationTarget, at -> new ArrayList<>())
                     .add(List.copyOf(orPermissions));
         }
 
@@ -782,14 +776,12 @@ interface PermissionSecurityChecks {
                 var declaringCdiBeanType = classType(declaringCdiBean.name());
                 var generatedClassName = checkerMetadata.generatedClassName();
                 try (var classCreator = ClassCreator.builder()
-                        .classOutput(new GeneratedClassGizmoAdaptor(generatedClassProducer, true))
-                        .setFinal(true)
-                        .className(generatedClassName)
-                        .signature(SignatureBuilder
-                                .forClass()
+                        .classOutput(new GeneratedClassGizmoAdaptor(generatedClassProducer, true)).setFinal(true)
+                        .className(generatedClassName).signature(SignatureBuilder.forClass()
                                 // extends QuarkusPermission<XYZ>
                                 // XYZ == @PermissionChecker declaring class
-                                .setSuperClass(parameterizedType(classType(QuarkusPermission.class), declaringCdiBeanType)))
+                                .setSuperClass(
+                                        parameterizedType(classType(QuarkusPermission.class), declaringCdiBeanType)))
                         .build()) {
 
                     record SecuredMethodParamDesc(FieldDescriptor fieldDescriptor, int ctorParamIdx) {
@@ -811,8 +803,8 @@ interface PermissionSecurityChecks {
                             // GENERATED CODE: private final SomeDto securedMethodParameter1;
                             var fieldName = SECURED_METHOD_PARAMETER + paramMapper.securedMethodIdx();
                             var ctorParamIdx = paramMapper.permConstructorIdx();
-                            var fieldTypeName = checkerMetadata.quarkusPermissionConstructor().parameterType(ctorParamIdx)
-                                    .name();
+                            var fieldTypeName = checkerMetadata.quarkusPermissionConstructor()
+                                    .parameterType(ctorParamIdx).name();
                             var fieldCreator = classCreator.getFieldCreator(fieldName, fieldTypeName.toString());
                             fieldCreator.setModifiers(Modifier.PRIVATE | Modifier.FINAL);
                             securedMethodParams[i] = new SecuredMethodParamDesc(fieldCreator.getFieldDescriptor(),
@@ -821,23 +813,25 @@ interface PermissionSecurityChecks {
                     }
 
                     // public GeneratedQuarkusPermission(String permissionName, SomeDto securedMethodParameter1) {
-                    //  super("io.quarkus.security.runtime.GeneratedQuarkusPermission");
-                    //  this.securedMethodParameter1 = securedMethodParameter1;
+                    // super("io.quarkus.security.runtime.GeneratedQuarkusPermission");
+                    // this.securedMethodParameter1 = securedMethodParameter1;
                     // }
                     // How many 'securedMethodParameterXYZ' are there depends on the secured method
-                    var ctorParams = Stream.concat(Stream.of(String.class.getName()), Arrays
-                            .stream(securedMethodParams)
-                            .filter(SecuredMethodParamDesc::isNotSecurityIdentity)
-                            .map(SecuredMethodParamDesc::fieldDescriptor)
-                            .map(FieldDescriptor::getType)).toArray(String[]::new);
+                    var ctorParams = Stream.concat(Stream.of(String.class.getName()),
+                            Arrays.stream(securedMethodParams).filter(SecuredMethodParamDesc::isNotSecurityIdentity)
+                                    .map(SecuredMethodParamDesc::fieldDescriptor).map(FieldDescriptor::getType))
+                            .toArray(String[]::new);
                     try (var ctor = classCreator.getConstructorCreator(ctorParams)) {
                         ctor.setModifiers(Modifier.PUBLIC);
 
                         // GENERATED CODE: super("io.quarkus.security.runtime.GeneratedQuarkusPermission");
                         // why not to propagate permission name to the java.security.Permission ?
-                        // if someone declares @PermissionChecker("permission-name-1") we expect that required permission
-                        // @PermissionAllowed("permission-name-1") is only granted by the checker method and accidentally some
-                        // user-defined augmentor won't grant it based on permission name match in case they misunderstand docs
+                        // if someone declares @PermissionChecker("permission-name-1") we expect that required
+                        // permission
+                        // @PermissionAllowed("permission-name-1") is only granted by the checker method and
+                        // accidentally some
+                        // user-defined augmentor won't grant it based on permission name match in case they
+                        // misunderstand docs
                         var superCtorDesc = MethodDescriptor.ofConstructor(classCreator.getSuperClass(), String.class);
                         ctor.invokeSpecialMethod(superCtorDesc, ctor.getThis(), ctor.load(generatedClassName));
 
@@ -855,12 +849,12 @@ interface PermissionSecurityChecks {
 
                     // @Override
                     // protected final boolean isGranted(SecurityIdentity securityIdentity) {
-                    //  return getBean().hasPermission(securityIdentity, securedMethodParameter1);
+                    // return getBean().hasPermission(securityIdentity, securedMethodParameter1);
                     // }
                     // or when user-defined permission checker returns Uni<Boolean>:
                     // @Override
                     // protected final Uni<Boolean> isGrantedUni(SecurityIdentity securityIdentity) {
-                    //  return getBean().hasPermission(securityIdentity, securedMethodParameter1);
+                    // return getBean().hasPermission(securityIdentity, securedMethodParameter1);
                     // }
                     var isGrantedName = checkerMetadata.reactive() ? IS_GRANTED_UNI : IS_GRANTED;
                     var isGrantedReturn = DescriptorUtils.typeToString(checkerMetadata.checkerMethod().returnType());
@@ -881,8 +875,8 @@ interface PermissionSecurityChecks {
                             if (securedMethodParam.isNotSecurityIdentity()) {
                                 // QuarkusPermission field assigned in the permission constructor
                                 // for example: this.securedMethodParameter1
-                                securedMethodParamHandles[i] = methodCreator
-                                        .readInstanceField(securedMethodParam.fieldDescriptor(), methodCreator.getThis());
+                                securedMethodParamHandles[i] = methodCreator.readInstanceField(
+                                        securedMethodParam.fieldDescriptor(), methodCreator.getThis());
                             } else {
                                 // SecurityIdentity from QuarkusPermission#isGranted method parameter
                                 securedMethodParamHandles[i] = methodCreator.getMethodParam(0);
@@ -893,7 +887,8 @@ interface PermissionSecurityChecks {
                             result = methodCreator.invokeInterfaceMethod(isGrantedDescriptor, cdiBean,
                                     securedMethodParamHandles);
                         } else {
-                            result = methodCreator.invokeVirtualMethod(isGrantedDescriptor, cdiBean, securedMethodParamHandles);
+                            result = methodCreator.invokeVirtualMethod(isGrantedDescriptor, cdiBean,
+                                    securedMethodParamHandles);
                         }
 
                         // return 'hasPermission' result
@@ -916,7 +911,7 @@ interface PermissionSecurityChecks {
 
                     // @Override
                     // protected final Class<T> getBeanClass() {
-                    //  return io.quarkus.security.runtime.GeneratedQuarkusPermission.class;
+                    // return io.quarkus.security.runtime.GeneratedQuarkusPermission.class;
                     // }
                     try (var methodCreator = classCreator.getMethodCreator("getBeanClass", Class.class)) {
                         methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
@@ -926,7 +921,7 @@ interface PermissionSecurityChecks {
 
                     // @Override
                     // protected final boolean isBlocking() {
-                    //  return false; // or true
+                    // return false; // or true
                     // }
                     try (var methodCreator = classCreator.getMethodCreator("isBlocking", boolean.class)) {
                         methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
@@ -936,7 +931,7 @@ interface PermissionSecurityChecks {
 
                     // @Override
                     // protected final boolean isReactive() {
-                    //  return false; // true when checker method returns Uni<Boolean>
+                    // return false; // true when checker method returns Uni<Boolean>
                     // }
                     try (var methodCreator = classCreator.getMethodCreator("isReactive", boolean.class)) {
                         methodCreator.setModifiers(Modifier.PROTECTED | Modifier.FINAL);
@@ -1038,7 +1033,8 @@ interface PermissionSecurityChecks {
         private RuntimeValue<Permission> createStringPermission(PermissionKey permissionKey) {
             if (permissionKey.notAutodetectParams()) {
                 // validate - no point to specify params as string permission only accept name and actions
-                throw new IllegalArgumentException(String.format("'%s' must have autodetected params", STRING_PERMISSION));
+                throw new IllegalArgumentException(
+                        String.format("'%s' must have autodetected params", STRING_PERMISSION));
             }
             return recorder.createStringPermission(permissionKey.name, permissionKey.actions());
         }
@@ -1057,7 +1053,8 @@ interface PermissionSecurityChecks {
                     if (wrapper.isComputed()) {
                         computedPermissions.add(wrapper.computedPermission);
                     } else {
-                        // make permission computed for we can't combine computed and plain permissions (to keep things simple)
+                        // make permission computed for we can't combine computed and plain permissions (to keep things
+                        // simple)
                         computedPermissions.add(recorder.toComputedPermission(wrapper.permission));
                     }
                 }
@@ -1124,7 +1121,8 @@ interface PermissionSecurityChecks {
             private final Function<Object[], Permission> computedPermission;
             private final RuntimeValue<Permission> permission;
 
-            private PermissionWrapper(Function<Object[], Permission> computedPermission, RuntimeValue<Permission> permission) {
+            private PermissionWrapper(Function<Object[], Permission> computedPermission,
+                    RuntimeValue<Permission> permission) {
                 this.computedPermission = computedPermission;
                 this.permission = permission;
             }
@@ -1163,14 +1161,21 @@ interface PermissionSecurityChecks {
                 this.name = name;
                 if (permissionChecker != null) {
                     if (isNotDefaultStringPermission(clazz)) {
-                        throw new IllegalArgumentException("""
-                                @PermissionChecker '%s' matches permission '%s' and actions '%s' on secured method '%s', but
-                                the @PermissionsAllowed instance specified custom permission '%s'. Both cannot be supported.
-                                Please choose one.
-                                """.formatted(PermissionSecurityChecksBuilder.toString(permissionChecker.checkerMethod()), name,
-                                actions, PermissionSecurityChecksBuilder.toString(permsAllowedTarget), clazz.name()));
+                        throw new IllegalArgumentException(
+                                """
+                                        @PermissionChecker '%s' matches permission '%s' and actions '%s' on secured method '%s', but
+                                        the @PermissionsAllowed instance specified custom permission '%s'. Both cannot be supported.
+                                        Please choose one.
+                                        """
+                                        .formatted(
+                                                PermissionSecurityChecksBuilder
+                                                        .toString(permissionChecker.checkerMethod()),
+                                                name, actions,
+                                                PermissionSecurityChecksBuilder.toString(permsAllowedTarget),
+                                                clazz.name()));
                     }
-                    this.clazz = Type.create(DotName.createSimple(permissionChecker.generatedClassName()), Type.Kind.CLASS);
+                    this.clazz = Type.create(DotName.createSimple(permissionChecker.generatedClassName()),
+                            Type.Kind.CLASS);
                 } else {
                     this.clazz = clazz;
                 }
@@ -1234,8 +1239,8 @@ interface PermissionSecurityChecks {
                 if (o == null || getClass() != o.getClass())
                     return false;
                 PermissionKey that = (PermissionKey) o;
-                return name.equals(that.name) && Objects.equals(actions, that.actions) && Arrays.equals(params, that.params)
-                        && clazz.equals(that.clazz) && inclusive == that.inclusive
+                return name.equals(that.name) && Objects.equals(actions, that.actions)
+                        && Arrays.equals(params, that.params) && clazz.equals(that.clazz) && inclusive == that.inclusive
                         && Arrays.equals(paramsRemainder, that.paramsRemainder)
                         && Objects.equals(permissionChecker, that.permissionChecker);
             }
@@ -1262,8 +1267,8 @@ interface PermissionSecurityChecks {
             private final boolean passActionsToConstructor;
             private final String[] methodParamConverters;
 
-            private PermissionCacheKey(PermissionKey permissionKey, AnnotationTarget securedTarget, MethodInfo constructor,
-                    PermissionConverterGenerator paramConverterGenerator) {
+            private PermissionCacheKey(PermissionKey permissionKey, AnnotationTarget securedTarget,
+                    MethodInfo constructor, PermissionConverterGenerator paramConverterGenerator) {
                 if (isComputed(permissionKey, constructor)) {
                     if (securedTarget.kind() != AnnotationTarget.Kind.METHOD) {
                         throw new IllegalArgumentException(
@@ -1292,14 +1297,14 @@ interface PermissionSecurityChecks {
                             paramConverterGenerator.index, permissionKey.isQuarkusPermission(),
                             permissionKey.getPermissionCheckerMethod());
                     this.methodParamIndexes = getMethodParamIndexes(matches);
-                    this.methodParamConverters = getMethodParamConverters(paramConverterGenerator, matches, securedMethod,
-                            this.methodParamIndexes);
+                    this.methodParamConverters = getMethodParamConverters(paramConverterGenerator, matches,
+                            securedMethod, this.methodParamIndexes);
                     // make sure all @PermissionsAllowed(param = { expression.one.two, expression.one.three }
                     // params are mapped to Permission constructor parameters
                     if (permissionKey.notAutodetectParams()) {
-                        validateParamsDeclaredByUserMatched(matches, permissionKey.params, permissionKey.paramsRemainder,
-                                securedMethod, constructor, permissionKey.isQuarkusPermission(),
-                                permissionKey.getPermissionCheckerMethod());
+                        validateParamsDeclaredByUserMatched(matches, permissionKey.params,
+                                permissionKey.paramsRemainder, securedMethod, constructor,
+                                permissionKey.isQuarkusPermission(), permissionKey.getPermissionCheckerMethod());
                     }
                 } else {
                     // plain permission
@@ -1316,23 +1321,20 @@ interface PermissionSecurityChecks {
                     boolean quarkusPermission, MethodInfo permissionCheckerMethod) {
                 for (int i = 0; i < params.length; i++) {
                     int aI = i;
-                    boolean paramMapped = Arrays.stream(matches)
-                            .map(SecMethodAndPermCtorIdx::requiredParamIdx)
-                            .filter(Objects::nonNull)
-                            .anyMatch(mIdx -> mIdx == aI);
+                    boolean paramMapped = Arrays.stream(matches).map(SecMethodAndPermCtorIdx::requiredParamIdx)
+                            .filter(Objects::nonNull).anyMatch(mIdx -> mIdx == aI);
                     if (!paramMapped) {
                         var paramName = nestedParamExpressions == null || nestedParamExpressions[aI] == null ? params[i]
                                 : params[i] + "." + nestedParamExpressions[aI];
-                        var matchTarget = quarkusPermission ? PermissionSecurityChecksBuilder.toString(permissionCheckerMethod)
+                        var matchTarget = quarkusPermission
+                                ? PermissionSecurityChecksBuilder.toString(permissionCheckerMethod)
                                 : constructor.declaringClass().name().toString();
-                        throw new RuntimeException(
-                                """
-                                        Parameter '%s' specified via @PermissionsAllowed#params on secured method '%s'
-                                        cannot be matched to any %s '%s' parameter. Please make sure that both
-                                        secured method and constructor has formal parameter with name '%1$s'.
-                                        """
-                                        .formatted(paramName, PermissionSecurityChecksBuilder.toString(securedMethod),
-                                                quarkusPermission ? "checker" : "constructor", matchTarget));
+                        throw new RuntimeException("""
+                                Parameter '%s' specified via @PermissionsAllowed#params on secured method '%s'
+                                cannot be matched to any %s '%s' parameter. Please make sure that both
+                                secured method and constructor has formal parameter with name '%1$s'.
+                                """.formatted(paramName, PermissionSecurityChecksBuilder.toString(securedMethod),
+                                quarkusPermission ? "checker" : "constructor", matchTarget));
                     }
                 }
                 if (nestedParamExpressions != null) {
@@ -1384,8 +1386,8 @@ interface PermissionSecurityChecks {
                 final var matches = new SecMethodAndPermCtorIdx[constructor.parametersCount() - nonMethodParams];
                 for (int i = nonMethodParams; i < constructor.parametersCount(); i++) {
                     // find index for exact name match between constructor and method param
-                    var match = findSecuredMethodParamIndex(securedMethod, constructor, i,
-                            requiredParamsRemainder, requiredMethodParams, nonMethodParams, index);
+                    var match = findSecuredMethodParamIndex(securedMethod, constructor, i, requiredParamsRemainder,
+                            requiredMethodParams, nonMethodParams, index);
                     matches[i - nonMethodParams] = match;
                     if (match.methodParamIdx() == -1) {
                         final String constructorParamName = constructor.parameterName(i);
@@ -1401,9 +1403,9 @@ interface PermissionSecurityChecks {
                 return matches;
             }
 
-            private static SecMethodAndPermCtorIdx findSecuredMethodParamIndex(MethodInfo securedMethod, MethodInfo constructor,
-                    int constructorIx, String[] requiredParamsRemainder, String[] requiredParams, int nonMethodParams,
-                    IndexView index) {
+            private static SecMethodAndPermCtorIdx findSecuredMethodParamIndex(MethodInfo securedMethod,
+                    MethodInfo constructor, int constructorIx, String[] requiredParamsRemainder,
+                    String[] requiredParams, int nonMethodParams, IndexView index) {
                 final String constructorParamName = constructor.parameterName(constructorIx);
                 final int constructorParamIdx = constructorIx - nonMethodParams;
 
@@ -1435,8 +1437,8 @@ interface PermissionSecurityChecks {
                                             lastExpression = requiredParamRemainder.substring(lastDotIdx + 1);
                                         }
                                         if (constructorParamName.equals(lastExpression)) {
-                                            return new SecMethodAndPermCtorIdx(i, constructorParamIdx, requiredParamRemainder,
-                                                    i1);
+                                            return new SecMethodAndPermCtorIdx(i, constructorParamIdx,
+                                                    requiredParamRemainder, i1);
                                         }
                                     }
                                 }
@@ -1513,8 +1515,8 @@ interface PermissionSecurityChecks {
                 // we want to pass secured method arguments if:
                 // - user specifically opted so (by setting PermissionsAllowed#params)
                 // - autodetect strategy is used and:
-                //   - permission constructor has more than 2 args
-                //   - permission constructor has 2 args and second param is not string array
+                // - permission constructor has more than 2 args
+                // - permission constructor has 2 args and second param is not string array
                 return permissionKey.notAutodetectParams() || constructor.parametersCount() > 2
                         || (constructor.parametersCount() == 2 && secondParamIsNotStringArr(constructor));
             }
@@ -1583,11 +1585,10 @@ interface PermissionSecurityChecks {
             if (classCreator == null) {
                 classCreator = ClassCreator.builder()
                         .classOutput(new GeneratedClassGizmoAdaptor(generatedClassesProducer, true))
-                        .className(GENERATED_CLASS_NAME)
-                        .setFinal(true)
-                        .build();
+                        .className(GENERATED_CLASS_NAME).setFinal(true).build();
                 closed = false;
-                reflectiveClassesProducer.produce(ReflectiveClassBuildItem.builder(GENERATED_CLASS_NAME).methods().build());
+                reflectiveClassesProducer
+                        .produce(ReflectiveClassBuildItem.builder(GENERATED_CLASS_NAME).methods().build());
             }
             return classCreator;
         }
@@ -1613,7 +1614,8 @@ interface PermissionSecurityChecks {
         private String createConverter(String paramRemainder, MethodInfo securedMethod, int methodParamIdx) {
             String[] nestedParams = paramRemainder.split("\\.");
             var converterName = createConverterName(securedMethod);
-            try (MethodCreator methodCreator = getOrCreateClass().getMethodCreator(converterName, Object.class, Object.class)) {
+            try (MethodCreator methodCreator = getOrCreateClass().getMethodCreator(converterName, Object.class,
+                    Object.class)) {
                 methodCreator.setModifiers(Modifier.PUBLIC | Modifier.STATIC);
                 var paramToConvert = methodCreator.getMethodParam(0);
                 var paramType = securedMethod.parameterType(methodParamIdx);
@@ -1636,13 +1638,16 @@ interface PermissionSecurityChecks {
             var paramExpression = nestedParams[nestedParamIdx];
             var outerClass = index.getClassByName(outerType.name());
             if (outerClass == null) {
-                throw new IllegalArgumentException("""
-                            Method '%s#%s' parameter '%s' cannot be converted to a Permission constructor parameter
-                            as required by the '@PermissionsAllowed#params' attribute. Parameter expression references '%s'
-                            that has type '%s' which is not a class. Only class methods or fields can be mapped
-                            to a Permission constructor parameter.
-                        """.formatted(securedMethod.declaringClass().name(), securedMethod.name(),
-                        securedMethod.parameterName(methodParamIdx), paramExpression, outerType.name()));
+                throw new IllegalArgumentException(
+                        """
+                                    Method '%s#%s' parameter '%s' cannot be converted to a Permission constructor parameter
+                                    as required by the '@PermissionsAllowed#params' attribute. Parameter expression references '%s'
+                                    that has type '%s' which is not a class. Only class methods or fields can be mapped
+                                    to a Permission constructor parameter.
+                                """
+                                .formatted(securedMethod.declaringClass().name(), securedMethod.name(),
+                                        securedMethod.parameterName(methodParamIdx), paramExpression,
+                                        outerType.name()));
             }
 
             // try exact method name match
@@ -1660,8 +1665,8 @@ interface PermissionSecurityChecks {
                             because expression '%s' specified in the '@PermissionsAllowed#params' attribute is
                             accessible from method '%s#%s' which is not a public method.
                             """.formatted(securedMethod.declaringClass().name(), securedMethod.name(),
-                            securedMethod.parameterName(methodParamIdx), paramExpression, method.declaringClass().name(),
-                            method.name()));
+                            securedMethod.parameterName(methodParamIdx), paramExpression,
+                            method.declaringClass().name(), method.name()));
                 }
                 if (outerClass.isInterface()) {
                     newOuter = methodCreator.invokeInterfaceMethod(method, outer);
@@ -1693,8 +1698,8 @@ interface PermissionSecurityChecks {
                 newOuter = methodCreator.readInstanceField(field, outer);
                 newOuterType = field.type();
             }
-            return getNestedParam(nestedParams, nestedParamIdx + 1, newOuter, methodCreator, newOuterType, securedMethod,
-                    methodParamIdx);
+            return getNestedParam(nestedParams, nestedParamIdx + 1, newOuter, methodCreator, newOuterType,
+                    securedMethod, methodParamIdx);
         }
 
         private String createConverterName(MethodInfo securedMethod) {

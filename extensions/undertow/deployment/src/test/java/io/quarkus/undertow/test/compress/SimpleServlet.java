@@ -16,7 +16,8 @@ public class SimpleServlet extends HttpServlet {
     public static final String SERVLET_ENDPOINT = "/simple";
 
     @Override
-    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(final HttpServletRequest req, final HttpServletResponse resp)
+            throws ServletException, IOException {
         // this one must be listed in the quarkus.http.compress-media-types
         resp.setHeader("Content-type", "text/plain");
         resp.getWriter().write("ok");

@@ -29,20 +29,16 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class MessageBodyWriteTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(InvalidContentTypeTest.HelloResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(InvalidContentTypeTest.HelloResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().when().get("/test").then()
-                .statusCode(200)
-                .contentType(MediaType.APPLICATION_JSON)
+        given().when().get("/test").then().statusCode(200).contentType(MediaType.APPLICATION_JSON)
                 .header("Content-Type-Copy", startsWith(MediaType.APPLICATION_JSON));
     }
 
@@ -73,8 +69,7 @@ public class MessageBodyWriteTest {
         @Override
         public void writeTo(final Object value, final Class<?> type, final Type genericType,
                 final Annotation[] annotations, final MediaType mediaType,
-                final MultivaluedMap<String, Object> httpHeaders, final OutputStream entityStream)
-                throws IOException {
+                final MultivaluedMap<String, Object> httpHeaders, final OutputStream entityStream) throws IOException {
 
             httpHeaders.add("Content-Type-Copy", mediaType.toString());
             entityStream.write("{\"foo\": \"bar\"}".getBytes(StandardCharsets.UTF_8));

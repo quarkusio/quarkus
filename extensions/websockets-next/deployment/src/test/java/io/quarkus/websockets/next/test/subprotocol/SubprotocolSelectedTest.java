@@ -24,10 +24,9 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class SubprotocolSelectedTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class);
-            }).overrideConfigKey("quarkus.websockets-next.server.supported-subprotocols", "oak,larch");
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, WSClient.class);
+    }).overrideConfigKey("quarkus.websockets-next.server.supported-subprotocols", "oak,larch");
 
     @Inject
     Vertx vertx;
@@ -50,7 +49,8 @@ public class SubprotocolSelectedTest {
         @OnOpen
         Uni<Void> open() {
             if (connection.handshakeRequest().header(SEC_WEBSOCKET_PROTOCOL) == null) {
-                return connection.sendText("Sec-WebSocket-Protocol not set: " + connection.handshakeRequest().headers());
+                return connection
+                        .sendText("Sec-WebSocket-Protocol not set: " + connection.handshakeRequest().headers());
             } else if ("oak".equals(connection.subprotocol())) {
                 return connection.sendText("ok");
             } else {

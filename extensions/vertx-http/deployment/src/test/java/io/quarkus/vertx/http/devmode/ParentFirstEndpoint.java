@@ -18,10 +18,8 @@ public class ParentFirstEndpoint {
     VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
     void addConfigRoute(@Observes Router router) {
-        router.route("/test")
-                .produces("text/plain")
-                .handler(rc -> rc.response()
-                        .end(WebClient.class.getClassLoader() instanceof QuarkusClassLoader ? "true" : "false"));
+        router.route("/test").produces("text/plain").handler(rc -> rc.response()
+                .end(WebClient.class.getClassLoader() instanceof QuarkusClassLoader ? "true" : "false"));
     }
 
 }

@@ -14,11 +14,10 @@ import io.restassured.RestAssured;
 public class ParentFirstArtifactTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.class-loading.parent-first-artifacts=io.vertx:vertx-web-client\n"),
-                            "application.properties")
-                    .addClasses(ParentFirstEndpoint.class));
+    static final QuarkusDevModeTest test = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.class-loading.parent-first-artifacts=io.vertx:vertx-web-client\n"),
+                    "application.properties")
+            .addClasses(ParentFirstEndpoint.class));
 
     @Test
     public void test() {

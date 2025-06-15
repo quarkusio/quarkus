@@ -29,16 +29,15 @@ public class AzureFunctionsRunCommand {
     private static final Logger log = Logger.getLogger(AzureFunctionsRunCommand.class);
     protected static final String FUNC_CMD = "func -v";
     protected static final String FUNC_HOST_START_CMD = "func host start -p %s";
-    protected static final String RUNTIME_NOT_FOUND = "Azure Functions Core Tools not found. " +
-            "Please go to https://aka.ms/azfunc-install to install Azure Functions Core Tools first.";
-    private static final String FUNC_HOST_START_WITH_DEBUG_CMD = "func host start -p %s --language-worker -- " +
-            "\"-agentlib:jdwp=%s\"";
+    protected static final String RUNTIME_NOT_FOUND = "Azure Functions Core Tools not found. "
+            + "Please go to https://aka.ms/azfunc-install to install Azure Functions Core Tools first.";
+    private static final String FUNC_HOST_START_WITH_DEBUG_CMD = "func host start -p %s --language-worker -- "
+            + "\"-agentlib:jdwp=%s\"";
     private static final String STARTED_EXPRESSION = "Host lock lease acquired";
 
     @BuildStep
     public RunCommandActionBuildItem run(List<AzureFunctionBuildItem> functions, OutputTargetBuildItem target,
-            AzureFunctionsAppNameBuildItem appName,
-            AzureFunctionsConfig config) throws Exception {
+            AzureFunctionsAppNameBuildItem appName, AzureFunctionsConfig config) throws Exception {
         Path stagingDir = getDeploymentStagingDirectoryPath(target, appName.getAppName());
         File file = stagingDir.toFile();
         if (!file.exists() || !file.isDirectory()) {
@@ -53,8 +52,7 @@ public class AzureFunctionsRunCommand {
         List<String> args = new LinkedList<>();
         Arrays.stream(cmd.split(" ")).forEach(s -> args.add(s));
         RunCommandActionBuildItem launcher = new RunCommandActionBuildItem(AZURE_FUNCTIONS, args, stagingDir,
-                STARTED_EXPRESSION, null,
-                true);
+                STARTED_EXPRESSION, null, true);
         return launcher;
     }
 
@@ -63,12 +61,9 @@ public class AzureFunctionsRunCommand {
     }
 
     protected void checkRuntimeExistence(final CommandHandler handler) throws AzureExecutionException {
-        handler.runCommandWithReturnCodeCheck(
-                getCheckRuntimeCommand(),
-                true, /* showStdout */
+        handler.runCommandWithReturnCodeCheck(getCheckRuntimeCommand(), true, /* showStdout */
                 null, /* workingDirectory */
-                CommandUtils.getDefaultValidReturnCodes(),
-                RUNTIME_NOT_FOUND);
+                CommandUtils.getDefaultValidReturnCodes(), RUNTIME_NOT_FOUND);
     }
 
     protected String getCheckRuntimeCommand() {

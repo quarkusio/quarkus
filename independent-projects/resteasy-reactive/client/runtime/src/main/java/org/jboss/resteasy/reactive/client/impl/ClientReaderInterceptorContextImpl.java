@@ -31,8 +31,8 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
     private static final List<MissingMessageBodyReaderErrorMessageContextualizer> contextualizers;
 
     static {
-        var loader = ServiceLoader.load(MissingMessageBodyReaderErrorMessageContextualizer.class, Thread.currentThread()
-                .getContextClassLoader());
+        var loader = ServiceLoader.load(MissingMessageBodyReaderErrorMessageContextualizer.class,
+                Thread.currentThread().getContextClassLoader());
         if (!loader.iterator().hasNext()) {
             contextualizers = Collections.emptyList();
         } else {
@@ -53,11 +53,9 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
     private final MultivaluedMap<String, String> headers = new CaseInsensitiveMap<>();
 
     public ClientReaderInterceptorContextImpl(Annotation[] annotations, Class<?> entityClass, Type entityType,
-            MediaType mediaType, Map<String, Object> properties,
-            RestClientRequestContext clientRequestContext,
-            MultivaluedMap<String, String> headers,
-            ConfigurationImpl configuration, Serialisers serialisers, InputStream inputStream,
-            ReaderInterceptor[] interceptors) {
+            MediaType mediaType, Map<String, Object> properties, RestClientRequestContext clientRequestContext,
+            MultivaluedMap<String, String> headers, ConfigurationImpl configuration, Serialisers serialisers,
+            InputStream inputStream, ReaderInterceptor[] interceptors) {
         super(annotations, entityClass, entityType, mediaType, properties);
         this.clientRequestContext = clientRequestContext;
         this.configuration = configuration;
@@ -77,13 +75,11 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
                 if (reader.isReadable(entityClass, entityType, annotations, mediaType)) {
                     try {
                         if (reader instanceof ClientMessageBodyReader) {
-                            return ((ClientMessageBodyReader) reader).readFrom(entityClass, entityType, annotations, mediaType,
-                                    headers,
-                                    inputStream, clientRequestContext);
+                            return ((ClientMessageBodyReader) reader).readFrom(entityClass, entityType, annotations,
+                                    mediaType, headers, inputStream, clientRequestContext);
                         } else {
-                            return ((MessageBodyReader) reader).readFrom(entityClass, entityType, annotations, mediaType,
-                                    headers,
-                                    inputStream);
+                            return ((MessageBodyReader) reader).readFrom(entityClass, entityType, annotations,
+                                    mediaType, headers, inputStream);
                         }
 
                     } catch (IOException e) {
@@ -92,8 +88,8 @@ public class ClientReaderInterceptorContextImpl extends AbstractClientIntercepto
                 }
             }
 
-            StringBuilder errorMessage = new StringBuilder(
-                    "Response could not be mapped to type " + entityType + " for response with media type " + mediaType);
+            StringBuilder errorMessage = new StringBuilder("Response could not be mapped to type " + entityType
+                    + " for response with media type " + mediaType);
             if (!contextualizers.isEmpty()) {
                 var input = new MissingMessageBodyReaderErrorMessageContextualizer.Input() {
                     @Override

@@ -57,26 +57,23 @@ public final class AccessorGenerator {
         final PackageElement packageElement = elementUtil.getPackageOf(clazz);
         final String className = elementUtil.buildRelativeBinaryName(clazz, new StringBuilder()).append("$$accessor")
                 .toString();
-        final JSourceFile sourceFile = sources.createSourceFile(packageElement.getQualifiedName()
-                .toString(), className);
+        final JSourceFile sourceFile = sources.createSourceFile(packageElement.getQualifiedName().toString(),
+                className);
         JType clazzType = JTypes.typeOf(clazz.asType());
         if (clazz.asType() instanceof DeclaredType) {
             DeclaredType declaredType = ((DeclaredType) clazz.asType());
             TypeMirror enclosingType = declaredType.getEnclosingType();
             if (enclosingType != null && enclosingType.getKind() == TypeKind.DECLARED
-                    && clazz.getModifiers()
-                            .contains(Modifier.STATIC)) {
+                    && clazz.getModifiers().contains(Modifier.STATIC)) {
                 // Ugly workaround for Eclipse APT and static nested types
                 clazzType = unnestStaticNestedType(declaredType);
             }
         }
         final JClassDef classDef = sourceFile._class(JMod.PUBLIC | JMod.FINAL, className);
         classDef.constructor(JMod.PRIVATE); // no construction
-        classDef.annotate(QUARKUS_GENERATED)
-                .value("Quarkus annotation processor");
+        classDef.annotate(QUARKUS_GENERATED).value("Quarkus annotation processor");
         final JAssignableExpr instanceName = JExprs.name(INSTANCE_SYM);
-        boolean isEnclosingClassPublic = clazz.getModifiers()
-                .contains(Modifier.PUBLIC);
+        boolean isEnclosingClassPublic = clazz.getModifiers().contains(Modifier.PUBLIC);
         // iterate fields
         boolean generationNeeded = false;
         for (VariableElement field : fieldsIn(clazz.getEnclosedElements())) {
@@ -94,8 +91,7 @@ public final class AccessorGenerator {
                 if (fieldType instanceof DeclaredType) {
                     final DeclaredType declaredType = (DeclaredType) fieldType;
                     final TypeElement typeElement = (TypeElement) declaredType.asElement();
-                    if (typeElement.getModifiers()
-                            .contains(Modifier.PUBLIC)) {
+                    if (typeElement.getModifiers().contains(Modifier.PUBLIC)) {
                         continue;
                     }
                 } else {
@@ -108,32 +104,24 @@ public final class AccessorGenerator {
             final JType realType = JTypes.typeOf(fieldType);
             final JType publicType = fieldType instanceof PrimitiveType ? realType : JType.OBJECT;
 
-            final String fieldName = field.getSimpleName()
-                    .toString();
+            final String fieldName = field.getSimpleName().toString();
             final JMethodDef getter = classDef.method(JMod.PUBLIC | JMod.STATIC, publicType, "get_" + fieldName);
-            getter.annotate(SuppressWarnings.class)
-                    .value("unchecked");
+            getter.annotate(SuppressWarnings.class).value("unchecked");
             getter.param(JType.OBJECT, INSTANCE_SYM);
-            getter.body()
-                    ._return(instanceName.cast(clazzType)
-                            .field(fieldName));
+            getter.body()._return(instanceName.cast(clazzType).field(fieldName));
             final JMethodDef setter = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.VOID, "set_" + fieldName);
-            setter.annotate(SuppressWarnings.class)
-                    .value("unchecked");
+            setter.annotate(SuppressWarnings.class).value("unchecked");
             setter.param(JType.OBJECT, INSTANCE_SYM);
             setter.param(publicType, fieldName);
             final JAssignableExpr fieldExpr = JExprs.name(fieldName);
-            setter.body()
-                    .assign(instanceName.cast(clazzType)
-                            .field(fieldName),
-                            (publicType.equals(realType) ? fieldExpr : fieldExpr.cast(realType)));
+            setter.body().assign(instanceName.cast(clazzType).field(fieldName),
+                    (publicType.equals(realType) ? fieldExpr : fieldExpr.cast(realType)));
         }
 
         // we need to generate an accessor if the class isn't public
         if (!isEnclosingClassPublic) {
             for (ExecutableElement ctor : constructorsIn(clazz.getEnclosedElements())) {
-                if (ctor.getModifiers()
-                        .contains(Modifier.PRIVATE)) {
+                if (ctor.getModifiers().contains(Modifier.PRIVATE)) {
                     // skip it
                     continue;
                 }
@@ -141,25 +129,22 @@ public final class AccessorGenerator {
                 StringBuilder b = new StringBuilder();
                 for (VariableElement parameter : ctor.getParameters()) {
                     b.append('_');
-                    b.append(parameter.asType()
-                            .toString()
-                            .replace('.', '_'));
+                    b.append(parameter.asType().toString().replace('.', '_'));
                 }
                 String codedName = b.toString();
-                final JMethodDef ctorMethod = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.OBJECT, "construct" + codedName);
+                final JMethodDef ctorMethod = classDef.method(JMod.PUBLIC | JMod.STATIC, JType.OBJECT,
+                        "construct" + codedName);
                 final JCall ctorCall = clazzType._new();
                 for (VariableElement parameter : ctor.getParameters()) {
                     final TypeMirror paramType = parameter.asType();
                     final JType realType = JTypes.typeOf(paramType);
                     final JType publicType = paramType instanceof PrimitiveType ? realType : JType.OBJECT;
-                    final String name = parameter.getSimpleName()
-                            .toString();
+                    final String name = parameter.getSimpleName().toString();
                     ctorMethod.param(publicType, name);
                     final JAssignableExpr nameExpr = JExprs.name(name);
                     ctorCall.arg(publicType.equals(realType) ? nameExpr : nameExpr.cast(realType));
                 }
-                ctorMethod.body()
-                        ._return(ctorCall);
+                ctorMethod.body()._return(ctorCall);
             }
         }
 
@@ -168,8 +153,8 @@ public final class AccessorGenerator {
             try {
                 sources.writeSources();
             } catch (IOException e) {
-                processingEnv.getMessager()
-                        .printMessage(Diagnostic.Kind.ERROR, "Failed to generate source file: " + e, clazz);
+                processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Failed to generate source file: " + e,
+                        clazz);
             }
         }
     }
@@ -177,8 +162,7 @@ public final class AccessorGenerator {
     private JType unnestStaticNestedType(DeclaredType declaredType) {
         final TypeElement typeElement = (TypeElement) declaredType.asElement();
 
-        final String name = typeElement.getQualifiedName()
-                .toString();
+        final String name = typeElement.getQualifiedName().toString();
         final JType rawType = JTypes.typeNamed(name);
         final List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
         if (typeArguments.isEmpty()) {

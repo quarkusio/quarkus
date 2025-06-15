@@ -39,10 +39,9 @@ public class MutinyInfrastructure {
             public boolean getAsBoolean() {
                 /*
                  * So far all threads and Vert.x worker threads can block, but Vert.x event-loop threads must not block.
-                 * It is safe to detect Vert.x event-loop threads by naming convention.
-                 *
-                 * It also avoids adding a dependency of this extension on the Vert.x APIs to check if we are
-                 * calling from a Vert.x event-loop context / thread.
+                 * It is safe to detect Vert.x event-loop threads by naming convention. It also avoids adding a
+                 * dependency of this extension on the Vert.x APIs to check if we are calling from a Vert.x event-loop
+                 * context / thread.
                  */
                 String threadName = Thread.currentThread().getName();
                 return !threadName.startsWith(VERTX_EVENT_LOOP_THREAD_PREFIX);

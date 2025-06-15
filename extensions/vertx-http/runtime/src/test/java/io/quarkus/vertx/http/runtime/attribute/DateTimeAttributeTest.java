@@ -22,7 +22,8 @@ class DateTimeAttributeTest {
         final ExchangeAttribute attribute = new DateTimeAttribute.Builder().build(DateTimeAttribute.DATE_TIME_SHORT);
         final String value = attribute.readAttribute(null);
         Assertions.assertNotNull(value, DateTimeAttribute.DATE_TIME_SHORT + " attribute returned null");
-        Assertions.assertFalse(value.trim().isEmpty(), DateTimeAttribute.DATE_TIME_SHORT + " attribute returned empty value");
+        Assertions.assertFalse(value.trim().isEmpty(),
+                DateTimeAttribute.DATE_TIME_SHORT + " attribute returned empty value");
     }
 
 }

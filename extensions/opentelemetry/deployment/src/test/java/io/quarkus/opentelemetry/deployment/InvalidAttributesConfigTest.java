@@ -20,7 +20,8 @@ public class InvalidAttributesConfigTest {
                 public void accept(final Throwable throwable) {
                     throwable.getCause().printStackTrace();
                     assertTrue(throwable.getCause() instanceof NoSuchElementException);
-                    assertEquals("SRCFG00011: Could not expand value SOMETHING in property quarkus.otel.resource.attributes",
+                    assertEquals(
+                            "SRCFG00011: Could not expand value SOMETHING in property quarkus.otel.resource.attributes",
                             throwable.getCause().getMessage());
                 }
             });

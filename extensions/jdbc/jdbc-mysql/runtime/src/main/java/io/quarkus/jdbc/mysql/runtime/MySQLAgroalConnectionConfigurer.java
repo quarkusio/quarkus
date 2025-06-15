@@ -14,7 +14,8 @@ public class MySQLAgroalConnectionConfigurer implements AgroalConnectionConfigur
     @Override
     public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
             Map<String, String> additionalProperties) {
-        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcProperty("useSSL", "false");
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcProperty("useSSL",
+                "false");
     }
 
     @Override

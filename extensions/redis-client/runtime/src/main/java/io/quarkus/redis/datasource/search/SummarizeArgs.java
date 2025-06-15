@@ -22,10 +22,12 @@ public class SummarizeArgs implements RedisCommandExtraArguments {
     private String separator;
 
     /**
-     * Each field passed in {@code fields} is summarized.
-     * If no {@code FIELDS} directive is passed, then all fields returned are summarized.
+     * Each field passed in {@code fields} is summarized. If no {@code FIELDS} directive is passed, then all fields
+     * returned are summarized.
      *
-     * @param fields the fields
+     * @param fields
+     *        the fields
+     *
      * @return the current {@code SummarizeArgs}
      */
     public SummarizeArgs fields(String... fields) {
@@ -36,7 +38,9 @@ public class SummarizeArgs implements RedisCommandExtraArguments {
     /**
      * How many fragments should be returned. If not specified, a default of 3 is used.
      *
-     * @param fragments the number of fragment
+     * @param fragments
+     *        the number of fragment
+     *
      * @return the current {@code SummarizeArgs}
      */
     public SummarizeArgs fragments(int fragments) {
@@ -46,10 +50,12 @@ public class SummarizeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * The number of context words each fragment should contain. Context words surround the found term.
-     * A higher value will return a larger block of text. If not specified, the default value is 20.
+     * The number of context words each fragment should contain. Context words surround the found term. A higher value
+     * will return a larger block of text. If not specified, the default value is 20.
      *
-     * @param length the length of each fragment
+     * @param length
+     *        the length of each fragment
+     *
      * @return the current {@code SummarizeArgs}
      */
     public SummarizeArgs length(int length) {
@@ -61,10 +67,12 @@ public class SummarizeArgs implements RedisCommandExtraArguments {
     /**
      * The string used to divide between individual summary snippets. The default is {@code ...} which is common among
      * search engines; but you may override this with any other string if you desire to programmatically divide them
-     * later on. You may use a newline sequence, as newlines are stripped from the result body anyway
-     * (thus, it will not be conflated with an embedded newline in the text)
+     * later on. You may use a newline sequence, as newlines are stripped from the result body anyway (thus, it will not
+     * be conflated with an embedded newline in the text)
      *
-     * @param separator the separator
+     * @param separator
+     *        the separator
+     *
      * @return the current {@code SummarizeArgs}
      */
     public SummarizeArgs separator(String separator) {

@@ -27,50 +27,37 @@ public class AutoScopeBuildItemTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleBean.class))
-            .addBuildChainCustomizer(b -> {
+            .withApplicationRoot(root -> root.addClasses(SimpleBean.class)).addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(AutoAddScopeBuildItem.builder()
-                                .match((clazz, annotations, index) -> {
-                                    return clazz.name().toString().equals(SimpleBean.class.getName());
-                                })
-                                .defaultScope(BuiltinScope.DEPENDENT)
-                                .scopeAlreadyAdded((scope, reason) -> {
-                                    // We can't pass the state directly to AutoScopeBuildItemTest because it's loaded by a different classloader
-                                    Logger.getLogger("AutoScopeBuildItemTest").info(scope + ":" + reason);
-                                }).build());
+                        context.produce(AutoAddScopeBuildItem.builder().match((clazz, annotations, index) -> {
+                            return clazz.name().toString().equals(SimpleBean.class.getName());
+                        }).defaultScope(BuiltinScope.DEPENDENT).scopeAlreadyAdded((scope, reason) -> {
+                            // We can't pass the state directly to AutoScopeBuildItemTest because it's loaded by a
+                            // different classloader
+                            Logger.getLogger("AutoScopeBuildItemTest").info(scope + ":" + reason);
+                        }).build());
                     }
                 }).produces(AutoAddScopeBuildItem.class).build();
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(AutoAddScopeBuildItem.builder()
-                                .match((clazz, annotations, index) -> {
-                                    return clazz.name().toString().equals(SimpleBean.class.getName());
-                                })
-                                .anyMethodMatches(m -> m.hasAnnotation(PostConstruct.class))
-                                .isAnnotatedWith(DotName.createSimple(Named.class))
-                                .defaultScope(BuiltinScope.SINGLETON)
-                                .priority(10)
-                                .reason("Foo!")
-                                .build());
+                        context.produce(AutoAddScopeBuildItem.builder().match((clazz, annotations, index) -> {
+                            return clazz.name().toString().equals(SimpleBean.class.getName());
+                        }).anyMethodMatches(m -> m.hasAnnotation(PostConstruct.class))
+                                .isAnnotatedWith(DotName.createSimple(Named.class)).defaultScope(BuiltinScope.SINGLETON)
+                                .priority(10).reason("Foo!").build());
                     }
                 }).produces(AutoAddScopeBuildItem.class).build();
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(AutoAddScopeBuildItem.builder()
-                                .match((clazz, annotations, index) -> {
-                                    return clazz.name().toString().equals(NotABean.class.getName());
-                                })
-                                .containsAnnotations(DotName.createSimple(PostConstruct.class))
+                        context.produce(AutoAddScopeBuildItem.builder().match((clazz, annotations, index) -> {
+                            return clazz.name().toString().equals(NotABean.class.getName());
+                        }).containsAnnotations(DotName.createSimple(PostConstruct.class))
                                 .and((clazz, annotations, index) -> annotations.isEmpty())
-                                .defaultScope(BuiltinScope.SINGLETON)
-                                .unremovable()
-                                .build());
+                                .defaultScope(BuiltinScope.SINGLETON).unremovable().build());
                     }
                 }).produces(AutoAddScopeBuildItem.class).build();
             }).setLogRecordPredicate(log -> "AutoScopeBuildItemTest".equals(log.getLoggerName()))

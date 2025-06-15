@@ -21,10 +21,8 @@ public class AsyncTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Foo.class)
-                    .addAsResource(new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"),
-                            "templates/foo.txt"));
+            .withApplicationRoot((jar) -> jar.addClass(Foo.class).addAsResource(
+                    new StringAsset("{foo.val} is not {foo.val.setScale(2,roundingMode)}"), "templates/foo.txt"));
 
     @Inject
     Template foo;

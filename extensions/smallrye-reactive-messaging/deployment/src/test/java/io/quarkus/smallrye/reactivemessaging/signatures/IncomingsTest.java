@@ -21,9 +21,8 @@ import io.smallrye.mutiny.Multi;
 public class IncomingsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ProducerOnA.class, ProducerOnB.class, MyBeanUsingMultipleIncomings.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(ProducerOnA.class, ProducerOnB.class, MyBeanUsingMultipleIncomings.class));
 
     @Inject
     MyBeanUsingMultipleIncomings bean;

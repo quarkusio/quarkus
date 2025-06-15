@@ -36,13 +36,9 @@ public class ReactiveSortable<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(destination, "destination");
         nonNull(args, "args");
-        RedisCommand cmd = RedisCommand.of(Command.SORT)
-                .put(marshaller.encode(key))
-                .putAll(args.toArgs())
-                .put("STORE")
+        RedisCommand cmd = RedisCommand.of(Command.SORT).put(marshaller.encode(key)).putAll(args.toArgs()).put("STORE")
                 .put(marshaller.encode(destination));
-        return execute(cmd)
-                .map(Response::toLong);
+        return execute(cmd).map(Response::toLong);
     }
 
     public Uni<Long> sortAndStore(K key, K destination) {

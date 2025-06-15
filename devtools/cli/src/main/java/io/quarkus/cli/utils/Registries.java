@@ -11,7 +11,7 @@ import io.quarkus.registry.config.RegistryConfig;
 public final class Registries {
 
     private Registries() {
-        //Utility class
+        // Utility class
     }
 
     public static Set<String> getRegistries(RegistryClientMixin client, String... additionalRegistires) {

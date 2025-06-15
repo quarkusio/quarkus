@@ -16,7 +16,8 @@ import io.quarkus.smallrye.health.deployment.spi.HealthBuildItem;
 
 class ElasticsearchLowLevelClientProcessor {
 
-    private static final DotName ELASTICSEARCH_CLIENT_CONFIG = DotName.createSimple(ElasticsearchClientConfig.class.getName());
+    private static final DotName ELASTICSEARCH_CLIENT_CONFIG = DotName
+            .createSimple(ElasticsearchClientConfig.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -32,15 +33,17 @@ class ElasticsearchLowLevelClientProcessor {
     void elasticsearchClientConfigSupport(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
         // add the @ElasticsearchClientConfig class otherwise it won't be registered as a qualifier
-        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(ElasticsearchClientConfig.class).build());
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.builder().addBeanClass(ElasticsearchClientConfig.class).build());
 
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(ELASTICSEARCH_CLIENT_CONFIG, DotNames.APPLICATION_SCOPED, false));
+        beanDefiningAnnotations.produce(
+                new BeanDefiningAnnotationBuildItem(ELASTICSEARCH_CLIENT_CONFIG, DotNames.APPLICATION_SCOPED, false));
     }
 
     @BuildStep
     HealthBuildItem addHealthCheck(ElasticsearchBuildTimeConfig buildTimeConfig) {
-        return new HealthBuildItem("io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
+        return new HealthBuildItem(
+                "io.quarkus.elasticsearch.restclient.lowlevel.runtime.health.ElasticsearchHealthCheck",
                 buildTimeConfig.healthEnabled());
     }
 

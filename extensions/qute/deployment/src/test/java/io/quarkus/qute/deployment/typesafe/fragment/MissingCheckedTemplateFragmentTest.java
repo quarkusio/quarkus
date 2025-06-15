@@ -18,11 +18,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MissingCheckedTemplateFragmentTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Templates.class, Item.class)
-                    .addAsResource(new StringAsset("{#each items}{it.name}{/each}"),
-                            "templates/MissingCheckedTemplateFragmentTest/items.html"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Templates.class, Item.class).addAsResource(new StringAsset("{#each items}{it.name}{/each}"),
+                    "templates/MissingCheckedTemplateFragmentTest/items.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

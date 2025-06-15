@@ -18,9 +18,8 @@ public class CustomParserHookBuildTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    root -> root.addClasses(CustomParserHook.class, Foo.class)
-                            .addAsResource(new StringAsset("{foo.bar}"), "templates/foo.html"))
+            .withApplicationRoot(root -> root.addClasses(CustomParserHook.class, Foo.class)
+                    .addAsResource(new StringAsset("{foo.bar}"), "templates/foo.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

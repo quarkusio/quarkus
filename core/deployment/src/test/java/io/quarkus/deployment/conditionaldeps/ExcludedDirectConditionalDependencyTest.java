@@ -29,21 +29,13 @@ public class ExcludedDirectConditionalDependencyTest extends BootstrapFromOrigin
         addToExpectedLib(extD.getRuntime());
         addToExpectedLib(extE.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extC, extB.getRuntime())
-                .addDependency(extA)
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extC, extB.getRuntime()).addDependency(extA)
                 .addDependency(extD);
     }
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[] {
-                "ext-a",
-                "ext-c",
-                "ext-d",
-                "ext-e"
-        };
+        return new String[] { "ext-a", "ext-c", "ext-d", "ext-e" };
     }
 }

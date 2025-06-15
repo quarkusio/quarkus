@@ -25,27 +25,21 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TriggerPrevFireTimeZoneTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                ZonedDateTime now = ZonedDateTime.now();
-                ZonedDateTime prague = now.withZoneSameInstant(ZoneId.of("Europe/Prague"));
-                ZonedDateTime istanbul = now.withZoneSameInstant(ZoneId.of("Europe/Istanbul"));
-                // For example, the current date-time is 2024-07-09 10:08:00;
-                // the default time zone is Europe/London
-                // then the config should look like:
-                // simpleJobs1.cron=0/1 * 11 * * ?
-                // simpleJobs2.cron=0/1 * 12 * * ?
-                String properties = String.format(
-                        "simpleJobs1.cron=0/1 * %s * * ?\n"
-                                + "simpleJobs1.hour=%s\n"
-                                + "simpleJobs2.cron=0/1 * %s * * ?\n"
-                                + "simpleJobs2.hour=%s",
-                        prague.getHour(), prague.getHour(), istanbul.getHour(), istanbul.getHour());
-                root.addClasses(Jobs.class)
-                        .addAsResource(
-                                new StringAsset(properties),
-                                "application.properties");
-            });
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        ZonedDateTime now = ZonedDateTime.now();
+        ZonedDateTime prague = now.withZoneSameInstant(ZoneId.of("Europe/Prague"));
+        ZonedDateTime istanbul = now.withZoneSameInstant(ZoneId.of("Europe/Istanbul"));
+        // For example, the current date-time is 2024-07-09 10:08:00;
+        // the default time zone is Europe/London
+        // then the config should look like:
+        // simpleJobs1.cron=0/1 * 11 * * ?
+        // simpleJobs2.cron=0/1 * 12 * * ?
+        String properties = String.format(
+                "simpleJobs1.cron=0/1 * %s * * ?\n" + "simpleJobs1.hour=%s\n" + "simpleJobs2.cron=0/1 * %s * * ?\n"
+                        + "simpleJobs2.hour=%s",
+                prague.getHour(), prague.getHour(), istanbul.getHour(), istanbul.getHour());
+        root.addClasses(Jobs.class).addAsResource(new StringAsset(properties), "application.properties");
+    });
 
     @ConfigProperty(name = "simpleJobs1.hour")
     int pragueHour;

@@ -23,7 +23,8 @@ public final class HibernateSearchIntegrationRuntimeConfiguredBuildItem extends 
 
     @Override
     public String toString() {
-        return HibernateSearchIntegrationRuntimeConfiguredBuildItem.class.getSimpleName() + " [" + integrationName + "]";
+        return HibernateSearchIntegrationRuntimeConfiguredBuildItem.class.getSimpleName() + " [" + integrationName
+                + "]";
     }
 
     public HibernateOrmIntegrationRuntimeInitListener getInitListener() {

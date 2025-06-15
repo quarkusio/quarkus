@@ -33,15 +33,15 @@ public class DerbyDevServicesProcessor {
         return new DevServicesDatasourceProviderBuildItem(DatabaseKind.DERBY, new DevServicesDatasourceProvider() {
             @Override
             public RunningDevServicesDatasource startDatabase(Optional<String> username, Optional<String> password,
-                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig,
-                    LaunchMode launchMode, Optional<Duration> startupTimeout) {
+                    String datasourceName, DevServicesDatasourceContainerConfig containerConfig, LaunchMode launchMode,
+                    Optional<Duration> startupTimeout) {
                 try {
                     int port = containerConfig.getFixedExposedPort().isPresent()
                             ? containerConfig.getFixedExposedPort().getAsInt()
                             : 1527 + (launchMode == LaunchMode.TEST ? 0 : 1);
 
-                    String effectiveDbName = containerConfig.getDbName().orElse(
-                            DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
+                    String effectiveDbName = containerConfig.getDbName()
+                            .orElse(DataSourceUtil.isDefault(datasourceName) ? DEFAULT_DATABASE_NAME : datasourceName);
 
                     NetworkServerControl server = new NetworkServerControl(InetAddress.getByName("localhost"), port);
                     server.start(new PrintWriter(System.out));
@@ -71,12 +71,8 @@ public class DerbyDevServicesProcessor {
                         additionalArgs.append("=");
                         additionalArgs.append(i.getValue());
                     }
-                    return new RunningDevServicesDatasource(null,
-                            "jdbc:derby://localhost:" + port + "/memory:" + effectiveDbName + ";create=true"
-                                    + additionalArgs.toString(),
-                            null,
-                            null,
-                            null,
+                    return new RunningDevServicesDatasource(null, "jdbc:derby://localhost:" + port + "/memory:"
+                            + effectiveDbName + ";create=true" + additionalArgs.toString(), null, null, null,
                             new Closeable() {
                                 @Override
                                 public void close() throws IOException {

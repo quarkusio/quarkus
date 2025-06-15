@@ -17,20 +17,17 @@ public class MetamodelInfo {
     }
 
     public Set<String> getEntitiesWithExternallyAccessibleFields() {
-        return entities.entrySet().stream()
-                .filter(e -> {
-                    EntityModel value = e.getValue();
-                    for (;;) {
-                        if (!value.fields.isEmpty()) {
-                            return true;
-                        }
-                        value = entities.get(value.superClassName);
-                        if (value == null) {
-                            return false;
-                        }
-                    }
-                })
-                .map(Map.Entry::getKey)
-                .collect(Collectors.toSet());
+        return entities.entrySet().stream().filter(e -> {
+            EntityModel value = e.getValue();
+            for (;;) {
+                if (!value.fields.isEmpty()) {
+                    return true;
+                }
+                value = entities.get(value.superClassName);
+                if (value == null) {
+                    return false;
+                }
+            }
+        }).map(Map.Entry::getKey).collect(Collectors.toSet());
     }
 }

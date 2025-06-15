@@ -30,8 +30,7 @@ public class ReactivePermissionCheckerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     ReactivePermissionCheckerSecuredBean bean;
@@ -56,7 +55,8 @@ public class ReactivePermissionCheckerTest {
 
     @Test
     public void testPermissionCheckerRuntimeExceptionHandling() {
-        assertSuccess(() -> bean.permissionCheckFailingForUser(), "permissionCheckFailingForUser", ADMIN_WITH_AUGMENTORS);
+        assertSuccess(() -> bean.permissionCheckFailingForUser(), "permissionCheckFailingForUser",
+                ADMIN_WITH_AUGMENTORS);
         assertFailureFor(() -> bean.permissionCheckFailingForUser(), UnauthorizedException.class, ANONYMOUS);
         assertFailureFor(() -> bean.permissionCheckFailingForUser(), ForbiddenException.class, USER_WITH_AUGMENTORS);
     }

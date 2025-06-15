@@ -15,11 +15,9 @@ public class HttpUpgradeSelectAuthMechOnMethodValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("""
-                            quarkus.http.auth.proactive=false
-                            """), "application.properties")
-                    .addClasses(WSClient.class, BasicAuthOnMethodEndpoint.class))
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("""
+                    quarkus.http.auth.proactive=false
+                    """), "application.properties").addClasses(WSClient.class, BasicAuthOnMethodEndpoint.class))
             .assertException(t -> {
                 String message = t.getMessage();
                 Assertions.assertNotNull(message);

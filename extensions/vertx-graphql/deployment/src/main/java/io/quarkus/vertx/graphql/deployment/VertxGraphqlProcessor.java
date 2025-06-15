@@ -45,8 +45,7 @@ class VertxGraphqlProcessor {
 
     @BuildStep
     List<ReflectiveClassBuildItem> registerForReflection() {
-        return Arrays.asList(
-                ReflectiveClassBuildItem.builder(GraphQLBatch.class.getName()).methods().fields().build(),
+        return Arrays.asList(ReflectiveClassBuildItem.builder(GraphQLBatch.class.getName()).methods().fields().build(),
                 ReflectiveClassBuildItem.builder(GraphQLQuery.class.getName()).methods().fields().build());
     }
 
@@ -71,8 +70,7 @@ class VertxGraphqlProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerVertxGraphqlUI(VertxGraphqlRecorder recorder, VertxGraphqlConfig config,
             LaunchModeBuildItem launchMode, CoreVertxBuildItem coreVertxBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BuildProducer<RouteBuildItem> routes,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, BuildProducer<RouteBuildItem> routes,
             BodyHandlerBuildItem bodyHandler) {
 
         if (doNotIncludeVertxGraphqlUi(launchMode, config)) {
@@ -82,22 +80,15 @@ class VertxGraphqlProcessor {
         Matcher matcher = TRAILING_SLASH_SUFFIX_REGEX.matcher(config.ui().path());
         String path = matcher.replaceAll("");
         if (path.isEmpty()) {
-            throw new ConfigurationException(
-                    "quarkus.vertx-graphql.ui.path was set to \"" + config.ui().path()
-                            + "\", this is not allowed as it blocks the application from serving anything else.");
+            throw new ConfigurationException("quarkus.vertx-graphql.ui.path was set to \"" + config.ui().path()
+                    + "\", this is not allowed as it blocks the application from serving anything else.");
         }
 
         Handler<RoutingContext> handler = recorder.handler(coreVertxBuildItem.getVertx());
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder().route(path).handler(handler)
+                .displayOnNotFoundPage("GraphQL UI").build());
         routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route(path)
-                .handler(handler)
-                .displayOnNotFoundPage("GraphQL UI")
-                .build());
-        routes.produce(
-                nonApplicationRootPathBuildItem.routeBuilder()
-                        .routeFunction(path + "/*", recorder.routeFunction(bodyHandler.getHandler()))
-                        .handler(handler)
-                        .build());
+                .routeFunction(path + "/*", recorder.routeFunction(bodyHandler.getHandler())).handler(handler).build());
     }
 
     private static boolean doNotIncludeVertxGraphqlUi(LaunchModeBuildItem launchMode, VertxGraphqlConfig config) {

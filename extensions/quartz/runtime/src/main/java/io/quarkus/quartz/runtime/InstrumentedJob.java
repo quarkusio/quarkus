@@ -12,7 +12,6 @@ import io.quarkus.scheduler.spi.JobInstrumenter;
 import io.quarkus.scheduler.spi.JobInstrumenter.JobInstrumentationContext;
 
 /**
- *
  * @see JobInstrumenter
  */
 class InstrumentedJob implements Job {

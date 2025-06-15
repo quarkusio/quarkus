@@ -15,10 +15,9 @@ import io.quarkus.vertx.http.runtime.management.ManagementInterfaceBuildTimeConf
  */
 @Singleton
 public class ManagementPathMatchingHttpSecurityPolicy extends AbstractPathMatchingHttpSecurityPolicy {
-    ManagementPathMatchingHttpSecurityPolicy(
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
+    ManagementPathMatchingHttpSecurityPolicy(ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             ManagementConfig managementConfig, Instance<HttpSecurityPolicy> installedPolicies) {
-        super(managementConfig.auth().permissions(), managementConfig.auth().rolePolicy(), managementBuildTimeConfig.rootPath(),
-                installedPolicies, ALL);
+        super(managementConfig.auth().permissions(), managementConfig.auth().rolePolicy(),
+                managementBuildTimeConfig.rootPath(), installedPolicies, ALL);
     }
 }

@@ -62,7 +62,8 @@ public class QuarkusHttpFunctionTest {
             applicationMock.when(Application::currentApplication).thenReturn(application);
             QuarkusHttpFunction function = new QuarkusHttpFunction();
             CompletableFuture<Void> requestFuture = CompletableFuture.supplyAsync(() -> {
-                try (MockedStatic<VirtualClientConnection> connectionMock = Mockito.mockStatic(VirtualClientConnection.class)) {
+                try (MockedStatic<VirtualClientConnection> connectionMock = Mockito
+                        .mockStatic(VirtualClientConnection.class)) {
                     connectionMock.when(() -> VirtualClientConnection.connect(any(), any())).thenAnswer(i -> {
                         VirtualResponseHandler handler = i.getArgument(0);
                         CompletableFuture<Object> responseFuture = CompletableFuture.supplyAsync(() -> {
@@ -80,7 +81,8 @@ public class QuarkusHttpFunctionTest {
     }
 
     public static Iterable<Object[]> queries() {
-        return Arrays.asList(new Object[] { Optional.of(QUERY), PATH + "?" + QUERY }, new Object[] { Optional.empty(), PATH });
+        return Arrays.asList(new Object[] { Optional.of(QUERY), PATH + "?" + QUERY },
+                new Object[] { Optional.empty(), PATH });
     }
 
     @ParameterizedTest

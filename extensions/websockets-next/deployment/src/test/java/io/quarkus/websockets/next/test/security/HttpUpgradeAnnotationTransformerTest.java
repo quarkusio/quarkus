@@ -29,9 +29,8 @@ public class HttpUpgradeAnnotationTransformerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class, WSClient.class, SecurityTestUtils.class, IdentityMock.class,
-                            CdiBeanSecurity.class, AdminEndpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class, WSClient.class, SecurityTestUtils.class,
+                    IdentityMock.class, CdiBeanSecurity.class, AdminEndpoint.class));
 
     @Inject
     CdiBeanSecurity cdiBeanSecurity;

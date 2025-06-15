@@ -24,12 +24,10 @@ import io.quarkus.runtime.types.WildcardTypeImpl;
  * WildcardType -> '?' | '?' ('extends' | 'super') ReferenceType
  * </pre>
  *
- * Notice that the resulting type never contains type variables, only "proper" types.
- * Also notice that the grammar above does not support all kinds of nested types;
- * it should be possible to add that later, if there's an actual need.
+ * Notice that the resulting type never contains type variables, only "proper" types. Also notice that the grammar above
+ * does not support all kinds of nested types; it should be possible to add that later, if there's an actual need.
  * <p>
- * Types produced by this parser can be transferred from build time to runtime
- * via the recorder mechanism.
+ * Types produced by this parser can be transferred from build time to runtime via the recorder mechanism.
  */
 public class TypeParser {
     public static Type parse(String str) {
@@ -130,14 +128,8 @@ public class TypeParser {
     }
 
     private boolean isPrimitiveType(String token) {
-        return token.equals("boolean")
-                || token.equals("byte")
-                || token.equals("short")
-                || token.equals("int")
-                || token.equals("long")
-                || token.equals("float")
-                || token.equals("double")
-                || token.equals("char");
+        return token.equals("boolean") || token.equals("byte") || token.equals("short") || token.equals("int")
+                || token.equals("long") || token.equals("float") || token.equals("double") || token.equals("char");
     }
 
     private Type parsePrimitiveType(String token) {
@@ -179,8 +171,8 @@ public class TypeParser {
         if (token.isEmpty()) {
             throw new IllegalArgumentException("Unexpected end of input: " + str);
         }
-        return new IllegalArgumentException("Unexpected token '" + token + "' at position " + (pos - token.length())
-                + ": " + str);
+        return new IllegalArgumentException(
+                "Unexpected token '" + token + "' at position " + (pos - token.length()) + ": " + str);
     }
 
     private String peekToken() {
@@ -218,7 +210,8 @@ public class TypeParser {
         if (pos == str.length()) {
             throw new IllegalArgumentException("Unexpected end of input: " + str);
         }
-        throw new IllegalArgumentException("Unexpected character '" + str.charAt(pos) + "' at position " + pos + ": " + str);
+        throw new IllegalArgumentException(
+                "Unexpected character '" + str.charAt(pos) + "' at position " + pos + ": " + str);
     }
 
     private String nextToken() {

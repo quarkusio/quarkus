@@ -53,8 +53,7 @@ public final class HibernateOrmIntegrationStaticConfiguredBuildItem extends Mult
             List<HibernateOrmIntegrationStaticConfiguredBuildItem> items) {
         Map<String, List<HibernateOrmIntegrationStaticDescriptor>> result = new HashMap<>();
         for (HibernateOrmIntegrationStaticConfiguredBuildItem item : items) {
-            result.computeIfAbsent(item.persistenceUnitName, ignored -> new ArrayList<>())
-                    .add(item.toDescriptor());
+            result.computeIfAbsent(item.persistenceUnitName, ignored -> new ArrayList<>()).add(item.toDescriptor());
         }
         return result;
     }

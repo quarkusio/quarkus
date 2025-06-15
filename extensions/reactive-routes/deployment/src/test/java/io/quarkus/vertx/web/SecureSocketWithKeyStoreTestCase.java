@@ -12,17 +12,13 @@ public class SecureSocketWithKeyStoreTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = QuarkusUnitTest.withSecuredConnection()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TestRoute.class)
+            .withApplicationRoot((jar) -> jar.addClass(TestRoute.class)
                     .addAsResource("application-keystore.properties", "application.properties")
                     .addAsResource("keystore.jks"));
 
     @Test
     public void testSecureConnectionAvailable() {
         given().baseUri("https://localhost:" + System.getProperty("quarkus.http.testSslPort", "8444"))
-                .relaxedHTTPSValidation()
-                .when().get("/test").then()
-                .statusCode(200)
-                .body(is("test route"));
+                .relaxedHTTPSValidation().when().get("/test").then().statusCode(200).body(is("test route"));
     }
 }

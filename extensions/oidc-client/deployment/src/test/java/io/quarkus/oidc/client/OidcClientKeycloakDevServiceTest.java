@@ -18,15 +18,14 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * Test Keycloak Dev Service is started when OIDC extension is disabled (or not present, though indirectly).
- * OIDC client auth server URL and client id and secret must be automatically configured for this test to pass.
+ * Test Keycloak Dev Service is started when OIDC extension is disabled (or not present, though indirectly). OIDC client
+ * auth server URL and client id and secret must be automatically configured for this test to pass.
  */
 public class OidcClientKeycloakDevServiceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NamedOidcClientResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(NamedOidcClientResource.class)
                     .addAsResource("oidc-client-dev-service-test.properties", "application.properties"));
 
     @Inject

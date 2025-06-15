@@ -16,8 +16,7 @@ class MpMetricsBinder implements MeterBinder {
     // Micrometer application meter registry
     final MetricRegistryAdapter registry;
 
-    MpMetricsBinder(MetricRegistryAdapter registry,
-            Instance<AnnotatedGaugeAdapter> allGaugeAdapters) {
+    MpMetricsBinder(MetricRegistryAdapter registry, Instance<AnnotatedGaugeAdapter> allGaugeAdapters) {
         this.registry = registry;
         this.allGaugeAdapters = allGaugeAdapters;
     }

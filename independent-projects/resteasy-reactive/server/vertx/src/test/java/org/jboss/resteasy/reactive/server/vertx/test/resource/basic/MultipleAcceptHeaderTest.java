@@ -34,15 +34,14 @@ public class MultipleAcceptHeaderTest {
     private ClientImpl client;
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(TestResourceServer.class, PortProviderUtil.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(TestResourceServer.class, PortProviderUtil.class);
+            return war;
+        }
+    });
 
     private String generateBaseUrl() {
         return PortProviderUtil.generateBaseUrl();

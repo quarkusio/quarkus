@@ -53,7 +53,8 @@ public class KeycloakDevServiceRequiredBuildStep {
             }
         };
 
-        return KeycloakDevServicesRequiredBuildItem.of(devServicesConfigurator, OIDC_CLIENT_REG_AUTH_SERVER_URL_CONFIG_KEY);
+        return KeycloakDevServicesRequiredBuildItem.of(devServicesConfigurator,
+                OIDC_CLIENT_REG_AUTH_SERVER_URL_CONFIG_KEY);
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
@@ -62,7 +63,7 @@ public class KeycloakDevServiceRequiredBuildStep {
     }
 
     private static String getInitialToken() {
-        return ConfigProvider.getConfig().getOptionalValue("quarkus.oidc-client-registration.initial-token", String.class)
-                .orElse(null);
+        return ConfigProvider.getConfig()
+                .getOptionalValue("quarkus.oidc-client-registration.initial-token", String.class).orElse(null);
     }
 }

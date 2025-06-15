@@ -12,14 +12,10 @@ public class GlobUtil {
     }
 
     /**
-     * @deprecated in favor of {@link io.quarkus.util.GlobUtil#toRegexPattern(String)}
-     *
-     *             Transforms the given {@code glob} to a regular expression suitable for passing to
-     *             {@link Pattern#compile(String)}.
-     *
+     * @deprecated in favor of {@link io.quarkus.util.GlobUtil#toRegexPattern(String)} Transforms the given {@code glob}
+     *             to a regular expression suitable for passing to {@link Pattern#compile(String)}.
      *             <h2>Glob syntax
      *             <h2>
-     *
      *             <table>
      *             <tr>
      *             <th>Construct</th>
@@ -55,8 +51,8 @@ public class GlobUtil {
      *             </tr>
      *             <tr>
      *             <td><code>{one,two,three}</code></td>
-     *             <td>Matches any of the alternating tokens separated by comma; the tokens may contain wildcards, nested
-     *             alternations and ranges</td>
+     *             <td>Matches any of the alternating tokens separated by comma; the tokens may contain wildcards,
+     *             nested alternations and ranges</td>
      *             </tr>
      *             <tr>
      *             <td><code>\</code></td>
@@ -64,9 +60,13 @@ public class GlobUtil {
      *             </tr>
      *             </table>
      *
-     * @param glob the glob expression to transform
+     * @param glob
+     *        the glob expression to transform
+     *
      * @return a regular expression suitable for {@link Pattern}
-     * @throws IllegalStateException in case the {@code glob} is syntactically invalid
+     *
+     * @throws IllegalStateException
+     *         in case the {@code glob} is syntactically invalid
      */
     @Deprecated
     public static String toRegexPattern(String glob) {

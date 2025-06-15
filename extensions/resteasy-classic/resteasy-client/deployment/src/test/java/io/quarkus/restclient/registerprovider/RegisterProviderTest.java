@@ -16,12 +16,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RegisterProviderTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, EchoClient.class, MyFilter.class, MethodsCollector.class,
-                            MyRequestBean.class)
-                    .addAsResource(new StringAsset("io.quarkus.restclient.registerprovider.EchoClient/mp-rest/url=${test.url}"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(EchoResource.class, EchoClient.class, MyFilter.class, MethodsCollector.class,
+                    MyRequestBean.class)
+            .addAsResource(new StringAsset("io.quarkus.restclient.registerprovider.EchoClient/mp-rest/url=${test.url}"),
+                    "application.properties"));
 
     @RestClient
     EchoClient client;

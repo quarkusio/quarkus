@@ -12,9 +12,8 @@ import org.aesh.terminal.tty.Signal;
 import org.aesh.terminal.tty.Size;
 
 /**
- * Fake connection that can be used to stop a running aesh instance
- *
- * If you create a console with one of these and then close it Aesh will assume the program is done and exit
+ * Fake connection that can be used to stop a running aesh instance If you create a console with one of these and then
+ * close it Aesh will assume the program is done and exit
  */
 public class DelegateConnection implements Connection {
 

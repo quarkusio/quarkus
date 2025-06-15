@@ -25,8 +25,8 @@ public class KotlinPanacheMongoEntityEnhancer extends PanacheEntityEnhancer {
     @Override
     public ClassVisitor apply(String className, ClassVisitor outputClassVisitor) {
         return new KotlinPanacheClassOperationGenerationVisitor(outputClassVisitor,
-                indexView.getClassByName(DotName.createSimple(className)), indexView, types,
-                types.entityBase(), emptyList());
+                indexView.getClassByName(DotName.createSimple(className)), indexView, types, types.entityBase(),
+                emptyList());
     }
 
 }

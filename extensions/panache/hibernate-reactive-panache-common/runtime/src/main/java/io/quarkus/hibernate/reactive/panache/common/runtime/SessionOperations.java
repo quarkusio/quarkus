@@ -30,7 +30,8 @@ public final class SessionOperations {
             new Supplier<Mutiny.SessionFactory>() {
                 @Override
                 public SessionFactory get() {
-                    // Note that Mutiny.SessionFactory is @ApplicationScoped bean - it's safe to use the cached client proxy
+                    // Note that Mutiny.SessionFactory is @ApplicationScoped bean - it's safe to use the cached client
+                    // proxy
                     Mutiny.SessionFactory sessionFactory = Arc.container().instance(Mutiny.SessionFactory.class).get();
                     if (sessionFactory == null) {
                         throw new IllegalStateException("Mutiny.SessionFactory bean not found");
@@ -49,17 +50,21 @@ public final class SessionOperations {
                 }
             });
 
-    // This key is used to indicate that a reactive session should be opened lazily (when needed) in the current vertx context
+    // This key is used to indicate that a reactive session should be opened lazily (when needed) in the current vertx
+    // context
     private static final String SESSION_ON_DEMAND_KEY = "hibernate.reactive.panache.sessionOnDemand";
     private static final String SESSION_ON_DEMAND_OPENED_KEY = "hibernate.reactive.panache.sessionOnDemandOpened";
 
     /**
-     * Marks the current vertx duplicated context as "lazy" which indicates that a reactive session should be opened lazily if
-     * needed. The opened session is eventually closed and the marking key is removed when the provided {@link Uni} completes.
+     * Marks the current vertx duplicated context as "lazy" which indicates that a reactive session should be opened
+     * lazily if needed. The opened session is eventually closed and the marking key is removed when the provided
+     * {@link Uni} completes.
      *
      * @param <T>
      * @param work
+     *
      * @return a new {@link Uni}
+     *
      * @see #getSession()
      */
     static <T> Uni<T> withSessionOnDemand(Supplier<Uni<T>> work) {
@@ -84,6 +89,7 @@ public final class SessionOperations {
      *
      * @param <T>
      * @param work
+     *
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
@@ -95,6 +101,7 @@ public final class SessionOperations {
      *
      * @param <T>
      * @param work
+     *
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withTransaction(Function<Transaction, Uni<T>> work) {
@@ -106,6 +113,7 @@ public final class SessionOperations {
      *
      * @param <T>
      * @param work
+     *
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withSession(Function<Mutiny.Session, Uni<T>> work) {
@@ -117,10 +125,7 @@ public final class SessionOperations {
             return work.apply(current);
         } else {
             // reactive session does not exist - open a new one and close it when the returned Uni completes
-            return getSessionFactory()
-                    .openSession()
-                    .invoke(s -> context.putLocal(key, s))
-                    .chain(work::apply)
+            return getSessionFactory().openSession().invoke(s -> context.putLocal(key, s)).chain(work::apply)
                     .eventually(SessionOperations::closeSession);
         }
     }
@@ -135,8 +140,10 @@ public final class SessionOperations {
      * <li>otherwise an exception thrown</li>
      * </ol>
      *
-     * @throws IllegalStateException If no reactive session was found in the context and the context was not marked to open a
-     *         new session lazily
+     * @throws IllegalStateException
+     *         If no reactive session was found in the context and the context was not marked to open a new session
+     *         lazily
+     *
      * @return the {@link Mutiny.Session}
      */
     public static Uni<Mutiny.Session> getSession() {
@@ -179,9 +186,10 @@ public final class SessionOperations {
     }
 
     /**
-     *
      * @return the current vertx duplicated context
-     * @throws IllegalStateException If no vertx context is found or is not a safe context as mandated by the
+     *
+     * @throws IllegalStateException
+     *         If no vertx context is found or is not a safe context as mandated by the
      *         {@link VertxContextSafetyToggle}
      */
     private static Context vertxContext() {

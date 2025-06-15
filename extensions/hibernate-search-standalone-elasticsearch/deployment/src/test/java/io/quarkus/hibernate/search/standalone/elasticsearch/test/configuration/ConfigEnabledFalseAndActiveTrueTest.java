@@ -13,13 +13,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigEnabledFalseAndActiveTrueTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-standalone.enabled", "false")
             .overrideConfigKey("quarkus.hibernate-search-standalone.active", "true")
-            .assertException(throwable -> assertThat(throwable)
-                    .isInstanceOf(ConfigurationException.class)
+            .assertException(throwable -> assertThat(throwable).isInstanceOf(ConfigurationException.class)
                     .hasMessageContainingAll(
                             "Hibernate Search Standalone activated explicitly, but the Hibernate Search Standalone extension was disabled at build time",
                             "If you want Hibernate Search Standalone to be active, you must set 'quarkus.hibernate-search-standalone.enabled' to 'true' at build time",

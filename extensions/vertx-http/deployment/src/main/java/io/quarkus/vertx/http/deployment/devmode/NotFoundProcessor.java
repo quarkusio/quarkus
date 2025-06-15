@@ -34,18 +34,13 @@ public class NotFoundProcessor {
 
     @BuildStep(onlyIf = IsDevelopment.class)
     AdditionalBeanBuildItem resourceNotFoundDataAvailable() {
-        return AdditionalBeanBuildItem.builder()
-                .addBeanClass(ResourceNotFoundData.class)
-                .setUnremovable().build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(ResourceNotFoundData.class).setUnremovable().build();
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
     @Record(RUNTIME_INIT)
-    void routeNotFound(ResourceNotFoundRecorder recorder,
-            VertxWebRouterBuildItem router,
-            HttpRootPathBuildItem httpRoot,
-            BeanContainerBuildItem beanContainer,
-            LaunchModeBuildItem launchMode,
+    void routeNotFound(ResourceNotFoundRecorder recorder, VertxWebRouterBuildItem router,
+            HttpRootPathBuildItem httpRoot, BeanContainerBuildItem beanContainer, LaunchModeBuildItem launchMode,
             ApplicationArchivesBuildItem applicationArchivesBuildItem,
             List<RouteDescriptionBuildItem> routeDescriptions,
             List<NotFoundPageDisplayableEndpointBuildItem> additionalEndpoints) {
@@ -61,30 +56,20 @@ public class NotFoundProcessor {
                 .map(i -> i.apply(t -> {
                     var p = t.getPath(META_INF_RESOURCES);
                     return p == null ? null : p.toAbsolutePath().toString();
-                }))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+                })).filter(Objects::nonNull).collect(Collectors.toSet());
 
         String baseUrl = getBaseUrl(launchMode);
 
         // Additional endpoints
-        List<AdditionalRouteDescription> endpoints = additionalEndpoints
-                .stream()
-                .map(v -> new AdditionalRouteDescription(concatenateUrl(baseUrl, v.getEndpoint(httpRoot)), v.getDescription()))
-                .sorted()
-                .collect(Collectors.toList());
+        List<AdditionalRouteDescription> endpoints = additionalEndpoints.stream()
+                .map(v -> new AdditionalRouteDescription(concatenateUrl(baseUrl, v.getEndpoint(httpRoot)),
+                        v.getDescription()))
+                .sorted().collect(Collectors.toList());
 
         // Not found handler
-        Handler<RoutingContext> notFoundHandler = recorder.registerNotFoundHandler(
-                router.getHttpRouter(),
-                router.getMainRouter(),
-                router.getManagementRouter(),
-                beanContainer.getValue(),
-                baseUrl,
-                httpRoot.getRootPath(),
-                routes,
-                staticRoots,
-                endpoints);
+        Handler<RoutingContext> notFoundHandler = recorder.registerNotFoundHandler(router.getHttpRouter(),
+                router.getMainRouter(), router.getManagementRouter(), beanContainer.getValue(), baseUrl,
+                httpRoot.getRootPath(), routes, staticRoots, endpoints);
     }
 
     private String getBaseUrl(LaunchModeBuildItem launchMode) {

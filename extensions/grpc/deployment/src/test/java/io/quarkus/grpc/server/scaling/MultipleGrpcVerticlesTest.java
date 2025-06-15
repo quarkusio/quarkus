@@ -16,9 +16,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class MultipleGrpcVerticlesTest extends ScalingTestBase {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
                     .addClass(ThreadReturningGreeterService.class))
             .withConfigurationResource("multiple-instances-config.properties");
 

@@ -42,8 +42,8 @@ public class JaxRsPermissionChecker {
     @Inject
     CurrentIdentityAssociation identityAssociation;
 
-    JaxRsPermissionChecker(BeanManager beanManager,
-            Event<AuthorizationFailureEvent> authZFailureEvent, Event<AuthorizationSuccessEvent> authZSuccessEvent,
+    JaxRsPermissionChecker(BeanManager beanManager, Event<AuthorizationFailureEvent> authZFailureEvent,
+            Event<AuthorizationSuccessEvent> authZSuccessEvent,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy) {
         if (jaxRsPathMatchingPolicy.hasNoPermissions()) {
@@ -61,8 +61,8 @@ public class JaxRsPermissionChecker {
 
     void applyPermissionChecks(MethodDescription methodDescription) {
         HttpSecurityPolicy.CheckResult checkResult = jaxRsPathMatchingPolicy
-                .checkPermission(routingContext, identityAssociation.getDeferredIdentity(), methodDescription)
-                .await().indefinitely();
+                .checkPermission(routingContext, identityAssociation.getDeferredIdentity(), methodDescription).await()
+                .indefinitely();
         final SecurityIdentity newIdentity;
         if (checkResult.getAugmentedIdentity() == null) {
             if (checkResult.isPermitted()) {

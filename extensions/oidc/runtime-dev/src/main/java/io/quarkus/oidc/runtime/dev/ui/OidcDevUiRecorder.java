@@ -34,9 +34,9 @@ public class OidcDevUiRecorder {
     public RuntimeValue<OidcDevUiRpcSvcPropertiesBean> getRpcServiceProperties(String authorizationUrl, String tokenUrl,
             String logoutUrl, Duration webClientTimeout, Map<String, Map<String, String>> grantOptions,
             Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType, String oidcGrantType,
-            boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms, boolean swaggerIsAvailable,
-            boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload,
-            boolean discoverMetadata, String authServerUrl) {
+            boolean introspectionIsAvailable, String keycloakAdminUrl, List<String> keycloakRealms,
+            boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath, String graphqlUiPath,
+            boolean alwaysLogoutUserInDevUiOnReload, boolean discoverMetadata, String authServerUrl) {
         if (discoverMetadata) {
             JsonObject metadata = discoverMetadata(authServerUrl);
             if (metadata != null) {
@@ -47,11 +47,10 @@ public class OidcDevUiRecorder {
                         || metadata.containsKey("userinfo_endpoint");
             }
         }
-        return new RuntimeValue<OidcDevUiRpcSvcPropertiesBean>(
-                new OidcDevUiRpcSvcPropertiesBean(authorizationUrl, tokenUrl, logoutUrl,
-                        webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType, oidcGrantType,
-                        introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
-                        graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload));
+        return new RuntimeValue<OidcDevUiRpcSvcPropertiesBean>(new OidcDevUiRpcSvcPropertiesBean(authorizationUrl,
+                tokenUrl, logoutUrl, webClientTimeout, grantOptions, oidcUsers, oidcProviderName, oidcApplicationType,
+                oidcGrantType, introspectionIsAvailable, keycloakAdminUrl, keycloakRealms, swaggerIsAvailable,
+                graphqlIsAvailable, swaggerUiPath, graphqlUiPath, alwaysLogoutUserInDevUiOnReload));
     }
 
     public Handler<RoutingContext> readSessionCookieHandler() {

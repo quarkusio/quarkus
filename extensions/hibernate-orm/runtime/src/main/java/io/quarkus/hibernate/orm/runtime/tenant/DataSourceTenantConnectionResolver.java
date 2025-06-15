@@ -16,11 +16,10 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusConnectionProvider;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 
 /**
- * Creates a database connection based on the data sources in the configuration file.
- * The tenant identifier is used as the data source name.
+ * Creates a database connection based on the data sources in the configuration file. The tenant identifier is used as
+ * the data source name.
  *
  * @author Michael Schnell
- *
  */
 public class DataSourceTenantConnectionResolver implements TenantConnectionResolver {
 
@@ -49,9 +48,9 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
 
         AgroalDataSource dataSource = tenantDataSource(dataSourceName, tenantId, multiTenancyStrategy);
         if (dataSource == null) {
-            throw new IllegalStateException(
-                    String.format(Locale.ROOT, "No instance of datasource found for persistence unit '%1$s' and tenant '%2$s'",
-                            persistenceUnitName, tenantId));
+            throw new IllegalStateException(String.format(Locale.ROOT,
+                    "No instance of datasource found for persistence unit '%1$s' and tenant '%2$s'",
+                    persistenceUnitName, tenantId));
         }
         return switch (multiTenancyStrategy) {
             case DATABASE -> new QuarkusConnectionProvider(dataSource);
@@ -63,7 +62,8 @@ public class DataSourceTenantConnectionResolver implements TenantConnectionResol
     private static AgroalDataSource tenantDataSource(Optional<String> dataSourceName, String tenantId,
             MultiTenancyStrategy strategy) {
         return switch (strategy) {
-            case DATABASE -> Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(tenantId)).get();
+            case DATABASE ->
+                Arc.container().instance(AgroalDataSource.class, new DataSource.DataSourceLiteral(tenantId)).get();
             // The datasource name should always be present when using a multi-tenancy other than DATABASE;
             // we perform checks in HibernateOrmProcessor during the build.
             case SCHEMA -> getDataSource(dataSourceName.get());

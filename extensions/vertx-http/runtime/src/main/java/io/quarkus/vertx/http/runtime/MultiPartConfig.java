@@ -11,10 +11,11 @@ import io.smallrye.config.WithConverter;
  */
 public interface MultiPartConfig {
     /**
-     * A comma-separated list of {@code ContentType} to indicate whether a given multipart field should be handled as a file
-     * part.
+     * A comma-separated list of {@code ContentType} to indicate whether a given multipart field should be handled as a
+     * file part.
      * <p>
-     * You can use this setting to force HTTP-based extensions to parse a message part as a file based on its content type.
+     * You can use this setting to force HTTP-based extensions to parse a message part as a file based on its content
+     * type.
      * <p>
      * For now, this setting only works when using RESTEasy Reactive.
      */

@@ -9,9 +9,7 @@ public abstract class AbstractInjectResourcesMethodTest {
 
     @Test
     void shouldGetListOfItems() {
-        given().accept("application/json")
-                .when().get("/call/resource/items")
-                .then().statusCode(200)
-                .and().body("id", contains(1, 2));
+        given().accept("application/json").when().get("/call/resource/items").then().statusCode(200).and().body("id",
+                contains(1, 2));
     }
 }

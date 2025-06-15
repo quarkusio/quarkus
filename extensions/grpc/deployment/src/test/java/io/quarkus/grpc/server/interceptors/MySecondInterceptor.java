@@ -18,8 +18,8 @@ public class MySecondInterceptor implements ServerInterceptor, Prioritized {
     private volatile long callTime;
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
-            Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata,
+            ServerCallHandler<ReqT, RespT> serverCallHandler) {
         return serverCallHandler
                 .startCall(new ForwardingServerCall.SimpleForwardingServerCall<ReqT, RespT>(serverCall) {
                     @Override

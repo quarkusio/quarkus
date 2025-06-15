@@ -29,8 +29,8 @@ public class NativeImageResourcesStep {
         List<NativeImageResourceBuildItem> resources = new ArrayList<>();
 
         for (NativeImageResourceDirectoryBuildItem nativeImageResourceDirectory : nativeImageResourceDirectories) {
-            String path = Thread.currentThread().getContextClassLoader().getResource(nativeImageResourceDirectory.getPath())
-                    .getPath();
+            String path = Thread.currentThread().getContextClassLoader()
+                    .getResource(nativeImageResourceDirectory.getPath()).getPath();
             File resourceFile = Paths.get(new URL(path.substring(0, path.indexOf("!"))).toURI()).toFile();
             try (JarFile jarFile = new JarFile(resourceFile)) {
                 Enumeration<JarEntry> entries = jarFile.entries();
@@ -49,8 +49,7 @@ public class NativeImageResourcesStep {
     }
 
     @BuildStep
-    void forwardResourcePatternConfigToBuildItem(
-            NativeConfig nativeConfig,
+    void forwardResourcePatternConfigToBuildItem(NativeConfig nativeConfig,
             BuildProducer<NativeImageResourcePatternsBuildItem> nativeImageResourcePatterns) {
 
         final Optional<List<String>> includes = nativeConfig.resources().includes();

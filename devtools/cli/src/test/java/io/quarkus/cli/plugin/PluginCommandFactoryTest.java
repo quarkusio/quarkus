@@ -12,34 +12,34 @@ public class PluginCommandFactoryTest {
 
     @Test
     void testNoArgs() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand));
-        //when
+        // when
         commandLine.execute(new String[0]);
-        //thew
+        // thew
         assertEquals(0, rootCommand.getArguments().size());
     }
 
     @Test
     void testSingleArg() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand));
-        //when
+        // when
         commandLine.execute("hello");
-        //then
+        // then
         assertEquals("hello", rootCommand.getArguments().get(0));
     }
 
     @Test
     void testMultiArgs() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand));
-        //when
+        // when
         commandLine.execute("one", "two", "three");
-        //then
+        // then
         assertEquals("one", rootCommand.getArguments().get(0));
         assertEquals("two", rootCommand.getArguments().get(1));
         assertEquals("three", rootCommand.getArguments().get(2));
@@ -47,12 +47,12 @@ public class PluginCommandFactoryTest {
 
     @Test
     void testMultiArgsAndOptions() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand));
-        //when
+        // when
         commandLine.execute("one", "two", "three", "--depth", "5");
-        //then
+        // then
         assertEquals("one", rootCommand.getArguments().get(0));
         assertEquals("two", rootCommand.getArguments().get(1));
         assertEquals("three", rootCommand.getArguments().get(2));
@@ -62,43 +62,43 @@ public class PluginCommandFactoryTest {
 
     @Test
     void testSubCommandNoArgs() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand))
                 .addSubcommand("sub", new CommandLine(factory.createCommandSpec("sub command").apply(subCommand)));
 
-        //when
+        // when
         commandLine.execute(new String[0]);
-        //thew
+        // thew
         assertEquals(0, rootCommand.getArguments().size());
         assertEquals(0, subCommand.getArguments().size());
     }
 
     @Test
     void testSubSingleArg() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand))
                 .addSubcommand("sub", new CommandLine(factory.createCommandSpec("sub command").apply(subCommand)));
 
-        //when
+        // when
         commandLine.execute("sub", "hello");
-        //then
+        // then
         assertEquals("hello", subCommand.getArguments().get(0));
     }
 
     @Test
     void testSubMultiArgs() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand))
                 .addSubcommand("sub", new CommandLine(factory.createCommandSpec("sub command").apply(subCommand)));
-        //when
+        // when
         commandLine.execute("sub", "one", "two", "three");
-        //then
+        // then
         assertEquals("one", subCommand.getArguments().get(0));
         assertEquals("two", subCommand.getArguments().get(1));
         assertEquals("three", subCommand.getArguments().get(2));
@@ -106,14 +106,14 @@ public class PluginCommandFactoryTest {
 
     @Test
     void testSubMultiArgsAndOptions() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         CommandLine commandLine = new CommandLine(factory.createCommandSpec("rootCommand command").apply(rootCommand))
                 .addSubcommand("sub", new CommandLine(factory.createCommandSpec("sub command").apply(subCommand)));
-        //when
+        // when
         commandLine.execute("sub", "one", "two", "three", "--depth", "5");
-        //then
+        // then
         assertEquals("one", subCommand.getArguments().get(0));
         assertEquals("two", subCommand.getArguments().get(1));
         assertEquals("three", subCommand.getArguments().get(2));
@@ -123,7 +123,7 @@ public class PluginCommandFactoryTest {
 
     @Test
     void testSecLevelSubCommandNoArgs() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         TestCommand secondLevelSubCommand = new TestCommand();
@@ -133,9 +133,9 @@ public class PluginCommandFactoryTest {
                         .addSubcommand("sec-sub", new CommandLine(
                                 factory.createCommandSpec("secon level sub command").apply(secondLevelSubCommand))));
 
-        //when
+        // when
         commandLine.execute(new String[0]);
-        //thew
+        // thew
         assertEquals(0, rootCommand.getArguments().size());
         assertEquals(0, subCommand.getArguments().size());
         assertEquals(0, secondLevelSubCommand.getArguments().size());
@@ -143,7 +143,7 @@ public class PluginCommandFactoryTest {
 
     @Test
     void testSecLevelSubSingleArg() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         TestCommand secondLevelSubCommand = new TestCommand();
@@ -152,15 +152,15 @@ public class PluginCommandFactoryTest {
                         .addSubcommand("sec-sub", new CommandLine(
                                 factory.createCommandSpec("secon level sub command").apply(secondLevelSubCommand))));
 
-        //when
+        // when
         commandLine.execute("sub", "sec-sub", "hello");
-        //then
+        // then
         assertEquals("hello", secondLevelSubCommand.getArguments().get(0));
     }
 
     @Test
     void testSecLevelSubMultiArgs() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         TestCommand secondLevelSubCommand = new TestCommand();
@@ -168,9 +168,9 @@ public class PluginCommandFactoryTest {
                 .addSubcommand("sub", new CommandLine(factory.createCommandSpec("sub command").apply(subCommand))
                         .addSubcommand("sec-sub", new CommandLine(
                                 factory.createCommandSpec("secon level sub command").apply(secondLevelSubCommand))));
-        //when
+        // when
         commandLine.execute("sub", "sec-sub", "one", "two", "three");
-        //then
+        // then
         assertEquals("one", secondLevelSubCommand.getArguments().get(0));
         assertEquals("two", secondLevelSubCommand.getArguments().get(1));
         assertEquals("three", secondLevelSubCommand.getArguments().get(2));
@@ -178,7 +178,7 @@ public class PluginCommandFactoryTest {
 
     @Test
     void testSecLevelSubMultiArgsAndOptions() {
-        //given
+        // given
         TestCommand rootCommand = new TestCommand();
         TestCommand subCommand = new TestCommand();
         TestCommand secondLevelSubCommand = new TestCommand();
@@ -186,9 +186,9 @@ public class PluginCommandFactoryTest {
                 .addSubcommand("sub", new CommandLine(factory.createCommandSpec("sub command").apply(subCommand))
                         .addSubcommand("sec-sub", new CommandLine(
                                 factory.createCommandSpec("secon level sub command").apply(secondLevelSubCommand))));
-        //when
+        // when
         commandLine.execute("sub", "sec-sub", "one", "two", "three", "--depth", "5");
-        //then
+        // then
         assertEquals("one", secondLevelSubCommand.getArguments().get(0));
         assertEquals("two", secondLevelSubCommand.getArguments().get(1));
         assertEquals("three", secondLevelSubCommand.getArguments().get(2));

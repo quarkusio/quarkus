@@ -27,8 +27,7 @@ public class CodecRegistrationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(EventBusConsumers.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(EventBusConsumers.class));
 
     @Inject
     EventBusConsumers bean;
@@ -105,8 +104,7 @@ public class CodecRegistrationTest {
         vertx.eventBus().send(address, new CustomType1("baz-x"));
 
         await().until(() -> bean.getSink().size() == 3);
-        set = bean.getSink().stream().map(x -> (CustomType1) x).map(CustomType1::getName)
-                .collect(Collectors.toSet());
+        set = bean.getSink().stream().map(x -> (CustomType1) x).map(CustomType1::getName).collect(Collectors.toSet());
         assertThat(set).contains("foo-x", "bar-x", "baz-x");
         bean.getSink().clear();
     }
@@ -241,9 +239,7 @@ public class CodecRegistrationTest {
 
         @Override
         public String toString() {
-            return "CustomType1{" +
-                    "name='" + name + '\'' +
-                    '}';
+            return "CustomType1{" + "name='" + name + '\'' + '}';
         }
     }
 

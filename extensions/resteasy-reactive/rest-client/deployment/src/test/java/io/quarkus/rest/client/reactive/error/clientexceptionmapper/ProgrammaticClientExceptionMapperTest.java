@@ -21,9 +21,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class ProgrammaticClientExceptionMapperTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Dto.class, Client.class, Resource.class, DummyException.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Dto.class, Client.class, Resource.class, DummyException.class));
 
     @TestHTTPResource
     URI baseUri;

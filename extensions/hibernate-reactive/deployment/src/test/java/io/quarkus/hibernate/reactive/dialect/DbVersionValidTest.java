@@ -33,10 +33,8 @@ public class DbVersionValidTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(DialectUtils.class)
-                    .addClass(MyEntity.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClass(SmokeTestUtils.class).addClass(DialectUtils.class).addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.db-version", CONFIGURED_DB_VERSION);
 
@@ -52,9 +50,7 @@ public class DbVersionValidTest {
     @Test
     @RunOnVertxContext
     public void smokeTest(UniAsserter asserter) {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(asserter, sessionFactory,
-                MyEntity.class, MyEntity::new,
-                MyEntity::getId,
-                MyEntity::setName, MyEntity::getName);
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(asserter, sessionFactory, MyEntity.class, MyEntity::new,
+                MyEntity::getId, MyEntity::setName, MyEntity::getName);
     }
 }

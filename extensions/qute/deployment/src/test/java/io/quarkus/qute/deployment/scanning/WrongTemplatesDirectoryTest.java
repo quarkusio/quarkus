@@ -16,8 +16,7 @@ public class WrongTemplatesDirectoryTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("Hello!"), "Templates/bing.html"))
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("Hello!"), "Templates/bing.html"))
             .setExpectedException(TemplateException.class);
 
     @Inject

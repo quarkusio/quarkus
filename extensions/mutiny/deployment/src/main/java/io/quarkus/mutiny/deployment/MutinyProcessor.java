@@ -16,10 +16,8 @@ public class MutinyProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void runtimeInit(ExecutorBuildItem executorBuildItem,
-            MutinyInfrastructure recorder,
-            ShutdownContextBuildItem shutdownContext,
-            Optional<ContextHandlerBuildItem> contextHandler) {
+    public void runtimeInit(ExecutorBuildItem executorBuildItem, MutinyInfrastructure recorder,
+            ShutdownContextBuildItem shutdownContext, Optional<ContextHandlerBuildItem> contextHandler) {
         ContextHandler<Object> handler = contextHandler.map(ContextHandlerBuildItem::contextHandler).orElse(null);
         recorder.configureMutinyInfrastructure(executorBuildItem.getExecutorProxy(), shutdownContext, handler);
     }

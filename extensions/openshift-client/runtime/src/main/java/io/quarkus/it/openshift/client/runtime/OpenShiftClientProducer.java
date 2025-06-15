@@ -23,17 +23,13 @@ public class OpenShiftClientProducer {
     @DefaultBean
     @Singleton
     @Produces
-    public OpenShiftClient openShiftClient(KubernetesSerialization kubernetesSerialization,
-            Config config) {
+    public OpenShiftClient openShiftClient(KubernetesSerialization kubernetesSerialization, Config config) {
         // TODO - Temporary fix for https://github.com/fabric8io/kubernetes-client/pull/3347 + WithOpenShiftTestServer
         final OpenShiftConfig openShiftConfig = new OpenShiftConfig(config);
         openShiftConfig.setHttp2Disable(config.isHttp2Disable());
 
-        client = new KubernetesClientBuilder()
-                .withConfig(openShiftConfig)
-                .withKubernetesSerialization(kubernetesSerialization)
-                .build()
-                .adapt(OpenShiftClient.class);
+        client = new KubernetesClientBuilder().withConfig(openShiftConfig)
+                .withKubernetesSerialization(kubernetesSerialization).build().adapt(OpenShiftClient.class);
 
         return client;
     }

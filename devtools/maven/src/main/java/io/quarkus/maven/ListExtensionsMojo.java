@@ -9,10 +9,9 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 
 /**
- * List the available extensions.
- * You can add one or several extensions in one go, with the 2 following mojos:
- * {@code add-extensions} and {@code add-extension}.
- * You can list all extension or just installable. Choose between 3 output formats: name, concise and full.
+ * List the available extensions. You can add one or several extensions in one go, with the 2 following mojos:
+ * {@code add-extensions} and {@code add-extension}. You can list all extension or just installable. Choose between 3
+ * output formats: name, concise and full.
  */
 @Mojo(name = "list-extensions", requiresProject = false)
 public class ListExtensionsMojo extends QuarkusProjectMojoBase {
@@ -26,8 +25,8 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
     protected boolean all;
 
     /**
-     * Select the output format among 'id' (display the artifactId only), 'concise' (display name and artifactId) and 'full'
-     * (concise format and version related columns).
+     * Select the output format among 'id' (display the artifactId only), 'concise' (display name and artifactId) and
+     * 'full' (concise format and version related columns).
      */
     @Parameter(property = "format", defaultValue = DEFAULT_FORMAT)
     protected String format;
@@ -53,12 +52,8 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
     @Override
     public void doExecute(final QuarkusProject quarkusProject, final MessageWriter log) throws MojoExecutionException {
         try {
-            ListExtensions listExtensions = new ListExtensions(quarkusProject)
-                    .all(all)
-                    .format(format)
-                    .search(searchPattern)
-                    .category(category)
-                    .installed(installed);
+            ListExtensions listExtensions = new ListExtensions(quarkusProject).all(all).format(format)
+                    .search(searchPattern).category(category).installed(installed);
             listExtensions.execute();
 
             if (DEFAULT_FORMAT.equalsIgnoreCase(format)) {
@@ -70,8 +65,8 @@ public class ListExtensionsMojo extends QuarkusProjectMojoBase {
                 log.info(ListExtensions.FILTER_HINT, "-Dcategory=\"categoryId\"");
             }
             log.info("");
-            log.info(ListExtensions.ADD_EXTENSION_HINT,
-                    "pom.xml", "./mvnw quarkus:add-extension -Dextensions=\"artifactId\"");
+            log.info(ListExtensions.ADD_EXTENSION_HINT, "pom.xml",
+                    "./mvnw quarkus:add-extension -Dextensions=\"artifactId\"");
 
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to list extensions", e);

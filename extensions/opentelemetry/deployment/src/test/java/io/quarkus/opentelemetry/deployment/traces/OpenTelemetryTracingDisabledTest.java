@@ -12,8 +12,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryTracingDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.enabled", "false")
             .overrideConfigKey("quarkus.otel.metrics.enabled", "true")
             .overrideConfigKey("quarkus.otel.logs.enabled", "true");

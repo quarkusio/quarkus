@@ -40,7 +40,6 @@ public interface ContainerConfig extends EnvVarHolder {
 
     /**
      * The host under which the application is going to be exposed.
-     *
      */
     Optional<String> host();
 
@@ -82,16 +81,18 @@ public interface ContainerConfig extends EnvVarHolder {
 
     @Override
     default String targetPlatformName() {
-        // ContainerConfig doesn't need a deployment target since it doesn't need to process KubernetesEnvBuildItem apart to
-        // convert them to Env instances once processed by the EnvVarValidator. This trick is used to be able to reuse the
+        // ContainerConfig doesn't need a deployment target since it doesn't need to process KubernetesEnvBuildItem
+        // apart to
+        // convert them to Env instances once processed by the EnvVarValidator. This trick is used to be able to reuse
+        // the
         // logic supporting old and new env var syntax.
         return null;
     }
 
     default Collection<Env> convertToEnvs() {
-        return convertToBuildItems().stream()
-                .map(kebi -> new Env(EnvConverter.convertName(kebi.getName()), kebi.getValue(), kebi.getSecret(),
-                        kebi.getConfigMap(), kebi.getField(), null, kebi.getPrefix()))
+        return convertToBuildItems()
+                .stream().map(kebi -> new Env(EnvConverter.convertName(kebi.getName()), kebi.getValue(),
+                        kebi.getSecret(), kebi.getConfigMap(), kebi.getField(), null, kebi.getPrefix()))
                 .collect(Collectors.toList());
     }
 }

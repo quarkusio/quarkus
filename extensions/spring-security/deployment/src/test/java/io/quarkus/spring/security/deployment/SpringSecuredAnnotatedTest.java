@@ -34,29 +34,28 @@ public class SpringSecuredAnnotatedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithSpringSecurityMethodAnnotations.class,
-                            BeanWithSpringSecurityAnnotations.class,
-                            SpringSecuredSubClass.class,
-                            IdentityMock.class,
-                            AuthData.class,
-                            SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithSpringSecurityMethodAnnotations.class,
+                    BeanWithSpringSecurityAnnotations.class, SpringSecuredSubClass.class, IdentityMock.class,
+                    AuthData.class, SecurityTestUtils.class));
 
     @Test
     public void shouldRunUnannotated() {
-        assertSuccess(() -> beanWithSpringSecurityMethodAnnotations.unannotated(), "unannotated", ANONYMOUS, USER, ADMIN);
+        assertSuccess(() -> beanWithSpringSecurityMethodAnnotations.unannotated(), "unannotated", ANONYMOUS, USER,
+                ADMIN);
     }
 
     @Test
     public void shouldRestrictOnMethod() {
-        assertFailureFor(() -> beanWithSpringSecurityAnnotations.restrictedOnMethod(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> beanWithSpringSecurityAnnotations.restrictedOnMethod(), UnauthorizedException.class,
+                ANONYMOUS);
         assertFailureFor(() -> beanWithSpringSecurityAnnotations.restrictedOnMethod(), ForbiddenException.class, ADMIN);
         assertSuccess(() -> beanWithSpringSecurityAnnotations.restrictedOnMethod(), "accessibleForUserOnly", USER);
     }
 
     @Test
     public void shouldRestrictToUserOnMethod() {
-        assertFailureFor(() -> beanWithSpringSecurityMethodAnnotations.restricted(), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> beanWithSpringSecurityMethodAnnotations.restricted(), UnauthorizedException.class,
+                ANONYMOUS);
         assertFailureFor(() -> beanWithSpringSecurityMethodAnnotations.restricted(), ForbiddenException.class, USER);
         assertSuccess(() -> beanWithSpringSecurityMethodAnnotations.restricted(), "accessibleForAdminOnly", ADMIN);
     }

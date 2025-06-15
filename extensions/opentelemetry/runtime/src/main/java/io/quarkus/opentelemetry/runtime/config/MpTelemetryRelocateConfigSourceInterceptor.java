@@ -15,8 +15,7 @@ public class MpTelemetryRelocateConfigSourceInterceptor implements ConfigSourceI
         ConfigValue mpCompatibility = context.proceed("quarkus.otel.mp.compatibility");
         if (mpCompatibility != null && mpCompatibility.getValue() != null) {
             if (Converters.getImplicitConverter(Boolean.class).convert(mpCompatibility.getValue())) {
-                return new RelocateConfigSourceInterceptor(Map.of(
-                        "quarkus.otel.service.name", "otel.service.name",
+                return new RelocateConfigSourceInterceptor(Map.of("quarkus.otel.service.name", "otel.service.name",
                         "quarkus.otel.resource.attributes", "otel.resource.attributes"));
             }
         }

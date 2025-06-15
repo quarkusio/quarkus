@@ -26,19 +26,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class IfBuildPropertyRepeatableStereotypeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NotMatchingProperty.class, InheritableNotMatchingProperty.class,
-                            TransitiveNotMatchingProperty.class,
-                            InheritableTransitiveNotMatchingProperty.class, MyService.class, NotMatchingPropertyMyService.class,
-                            InheritableNotMatchingPropertyMyService.class, TransitiveNotMatchingPropertyMyService.class,
-                            InheritableTransitiveNotMatchingPropertyMyService.class, MyServiceSimple.class,
-                            MyServiceNotMatchingPropertyDirect.class, MyServiceNotMatchingPropertyTransitive.class,
-                            MyServiceNotMatchingPropertyOnSuperclassNotInheritable.class,
-                            MyServiceNotMatchingPropertyOnSuperclassInheritable.class,
-                            MyServiceNotMatchingPropertyTransitiveOnSuperclassNotInheritable.class,
-                            MyServiceNotMatchingPropertyTransitiveOnSuperclassInheritable.class, Producers.class))
-            .overrideConfigKey("foo.bar", "quux")
-            .overrideConfigKey("some.prop", "val");
+            .withApplicationRoot((jar) -> jar.addClasses(NotMatchingProperty.class,
+                    InheritableNotMatchingProperty.class, TransitiveNotMatchingProperty.class,
+                    InheritableTransitiveNotMatchingProperty.class, MyService.class, NotMatchingPropertyMyService.class,
+                    InheritableNotMatchingPropertyMyService.class, TransitiveNotMatchingPropertyMyService.class,
+                    InheritableTransitiveNotMatchingPropertyMyService.class, MyServiceSimple.class,
+                    MyServiceNotMatchingPropertyDirect.class, MyServiceNotMatchingPropertyTransitive.class,
+                    MyServiceNotMatchingPropertyOnSuperclassNotInheritable.class,
+                    MyServiceNotMatchingPropertyOnSuperclassInheritable.class,
+                    MyServiceNotMatchingPropertyTransitiveOnSuperclassNotInheritable.class,
+                    MyServiceNotMatchingPropertyTransitiveOnSuperclassInheritable.class, Producers.class))
+            .overrideConfigKey("foo.bar", "quux").overrideConfigKey("some.prop", "val");
 
     @Inject
     @Any
@@ -47,8 +45,7 @@ public class IfBuildPropertyRepeatableStereotypeTest {
     @Test
     public void test() {
         Set<String> hello = services.stream().map(MyService::hello).collect(Collectors.toSet());
-        Set<Object> expected = Set.of(
-                MyServiceSimple.class.getSimpleName(),
+        Set<Object> expected = Set.of(MyServiceSimple.class.getSimpleName(),
                 MyServiceNotMatchingPropertyOnSuperclassNotInheritable.class.getSimpleName(),
                 MyServiceNotMatchingPropertyTransitiveOnSuperclassNotInheritable.class.getSimpleName(),
                 Producers.SIMPLE);

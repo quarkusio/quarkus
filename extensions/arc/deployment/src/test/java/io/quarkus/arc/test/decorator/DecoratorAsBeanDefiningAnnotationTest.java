@@ -21,11 +21,10 @@ public class DecoratorAsBeanDefiningAnnotationTest {
     // The idea is to test that @Decorator is a bean defining annotation and will be picked up.
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClass(SomeBean.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(SomeBean.class))
             // we need a non-application archive, so cannot use `withAdditionalDependency()`
-            .setForcedDependencies(
-                    List.of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement-decorator", Version.getVersion())));
+            .setForcedDependencies(List
+                    .of(Dependency.of("io.quarkus", "quarkus-arc-test-supplement-decorator", Version.getVersion())));
 
     @Inject
     SomeBean bean;

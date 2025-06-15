@@ -19,8 +19,7 @@ public class MailTemplateInstanceAdaptor implements CheckedTemplateAdapter {
     public void convertTemplateInstance(MethodVisitor mv) {
         // we have a TemplateInstance on the stack, we need to turn it into a MailTemplateInstance
         mv.visitMethodInsn(Opcodes.INVOKESTATIC, MailTemplateProducer.class.getName().replace('.', '/'),
-                "getMailTemplateInstance",
-                "(L" + TemplateInstance.class.getName().replace('.', '/') + ";)L"
+                "getMailTemplateInstance", "(L" + TemplateInstance.class.getName().replace('.', '/') + ";)L"
                         + MailTemplateInstance.class.getName().replace('.', '/') + ";",
                 false);
     }

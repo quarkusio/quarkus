@@ -31,18 +31,14 @@ public class RemoteUserHttpAccessLogTest {
 
     @RegisterExtension
     public static QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClasses(RolesAllowedResource.class, SecurityOverrideFilter.class)
+            .withApplicationRoot(jar -> jar.addClasses(RolesAllowedResource.class, SecurityOverrideFilter.class)
                     .addClasses(TestIdentityController.class, TestIdentityProvider.class)
-                    .add(new StringAsset("quarkus.http.access-log.enabled=true\n" +
-                            "quarkus.http.access-log.pattern=%h %t " + REMOTE_USER_SHORT), "application.properties"))
+                    .add(new StringAsset("quarkus.http.access-log.enabled=true\n"
+                            + "quarkus.http.access-log.pattern=%h %t " + REMOTE_USER_SHORT), "application.properties"))
             .setLogRecordPredicate(logRecord -> logRecord.getLevel().equals(Level.INFO)
                     && logRecord.getLoggerName().equals("io.quarkus.http.access-log"))
             .assertLogRecords(logRecords -> {
-                var accessLogRecords = logRecords
-                        .stream()
-                        .map(LogRecord::getMessage)
-                        .collect(Collectors.toList());
+                var accessLogRecords = logRecords.stream().map(LogRecord::getMessage).collect(Collectors.toList());
                 assertTrue(accessLogRecords.stream().anyMatch(msg -> msg.endsWith("admin")));
                 assertFalse(accessLogRecords.stream().anyMatch(msg -> msg.endsWith("user")));
                 assertTrue(accessLogRecords.stream().anyMatch(msg -> msg.endsWith("Charlie")));
@@ -50,26 +46,14 @@ public class RemoteUserHttpAccessLogTest {
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
     public void testAuthRemoteUserLogged() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .get("/roles")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().preemptive().basic("admin", "admin").get("/roles").then().statusCode(200)
                 .body(Matchers.is("default"));
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .get("/roles")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().preemptive().basic("user", "user").get("/roles").then().statusCode(200)
                 .body(Matchers.is("default"));
     }
 

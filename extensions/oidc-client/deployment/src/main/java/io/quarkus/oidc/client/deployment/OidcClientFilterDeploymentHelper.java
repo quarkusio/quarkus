@@ -34,8 +34,7 @@ public class OidcClientFilterDeploymentHelper<T extends AbstractTokensProducer> 
     public OidcClientFilterDeploymentHelper(Class<T> baseClass, BuildProducer<GeneratedBeanBuildItem> generatedBean) {
         this.baseClass = baseClass;
         this.classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
-        this.targetPackage = DotNames
-                .internalPackageNameWithTrailingSlash(DotName.createSimple(baseClass.getName()));
+        this.targetPackage = DotNames.internalPackageNameWithTrailingSlash(DotName.createSimple(baseClass.getName()));
     }
 
     /**

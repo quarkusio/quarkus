@@ -47,7 +47,8 @@ public class DevModeCommandLineBuilder {
     /**
      * Logs a warning about extensions enabling the C2 compiler
      *
-     * @param extensions extensions enabling the C2 compiler
+     * @param extensions
+     *        extensions enabling the C2 compiler
      */
     private static void extensionsEnableC2Warning(List<ArtifactKey> extensions) {
         var sb = new StringBuilder().append("Extension");
@@ -69,7 +70,8 @@ public class DevModeCommandLineBuilder {
     /**
      * Logs a warning about extensions disabling debug mode
      *
-     * @param extensions extensions disabling debug mode
+     * @param extensions
+     *        extensions disabling debug mode
      */
     private static void extensionsDisablingDebugWarning(List<ArtifactKey> extensions) {
         var sb = new StringBuilder().append("Extension");
@@ -350,8 +352,8 @@ public class DevModeCommandLineBuilder {
     public DevModeCommandLine build() throws Exception {
         JBossVersion.disableVersionLogging();
 
-        //build a class-path string for the base platform
-        //this stuff does not change
+        // build a class-path string for the base platform
+        // this stuff does not change
         // Do not include URIs in the manifest, because some JVMs do not like that
         final DevModeContext devModeContext = new DevModeContext();
         for (Map.Entry<Object, Object> e : System.getProperties().entrySet()) {
@@ -360,7 +362,7 @@ public class DevModeCommandLineBuilder {
         devModeContext.setProjectDir(projectDir);
         devModeContext.getBuildSystemProperties().putAll(buildSystemProperties);
 
-        //  this is a minor hack to allow ApplicationConfig to be populated with defaults
+        // this is a minor hack to allow ApplicationConfig to be populated with defaults
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.name", applicationName);
         devModeContext.getBuildSystemProperties().putIfAbsent("quarkus.application.version", applicationVersion);
 
@@ -480,10 +482,12 @@ public class DevModeCommandLineBuilder {
     /**
      * Checks user and extension config options to decide whether to disable C2.
      * <p>
-     * By default, the C2 compiler is disabled for dev mode to make startup a little faster.
-     * It only makes sense in dev-mode but it is not available when GraalVM is used as the JDK.
+     * By default, the C2 compiler is disabled for dev mode to make startup a little faster. It only makes sense in
+     * dev-mode but it is not available when GraalVM is used as the JDK.
      *
-     * @param lockedJvmOptions JVM option locked by extensions
+     * @param lockedJvmOptions
+     *        JVM option locked by extensions
+     *
      * @return whether to disable the C2 compiler
      */
     private boolean isDisableC2(Map<String, List<ArtifactKey>> lockedJvmOptions) {
@@ -518,7 +522,8 @@ public class DevModeCommandLineBuilder {
                     break;
                 }
                 default: {
-                    log.warn("Ignoring invalid value \"" + suspend + "\" for \"suspend\" param and defaulting to \"n\"");
+                    log.warn(
+                            "Ignoring invalid value \"" + suspend + "\" for \"suspend\" param and defaulting to \"n\"");
                     suspend = "n";
                     break;
                 }
@@ -547,8 +552,8 @@ public class DevModeCommandLineBuilder {
         }
 
         if (debug != null && debug.equalsIgnoreCase("client")) {
-            args.add("-" + AGENTLIB_JDWP + "=transport=dt_socket,address=" + debugHost + ":" + port + ",server=n,suspend="
-                    + suspend);
+            args.add("-" + AGENTLIB_JDWP + "=transport=dt_socket,address=" + debugHost + ":" + port
+                    + ",server=n,suspend=" + suspend);
             actualDebugPort = String.valueOf(port);
         } else if (debug == null || !debug.equalsIgnoreCase("false")) {
             // if the debug port is used, we want to make an effort to pick another one
@@ -562,7 +567,8 @@ public class DevModeCommandLineBuilder {
                     try (Socket socket = new Socket(getInetAddress(debugHost), port)) {
                         // we can make a connection, that means the port is in use
                         isPortUsed = true;
-                        warnAboutChange = warnAboutChange || (originalPort != 0); // we only want to warn if the user had not configured a random port
+                        warnAboutChange = warnAboutChange || (originalPort != 0); // we only want to warn if the user
+                                                                                  // had not configured a random port
                     } catch (IOException e) {
                         // no connection made, so the port is not in use
                         isPortUsed = false;
@@ -582,8 +588,8 @@ public class DevModeCommandLineBuilder {
                 if (warnAboutChange) {
                     log.warn("Changed debug port to " + actualDebugPort + " because of a port conflict");
                 }
-                args.add("-" + AGENTLIB_JDWP + "=transport=dt_socket,address=" + debugHost + ":" + port + ",server=y,suspend="
-                        + suspend);
+                args.add("-" + AGENTLIB_JDWP + "=transport=dt_socket,address=" + debugHost + ":" + port
+                        + ",server=y,suspend=" + suspend);
             } else {
                 log.error("Port " + port + " in use, not starting in debug mode");
             }
@@ -599,7 +605,8 @@ public class DevModeCommandLineBuilder {
         }
         Map<String, List<ArtifactKey>> mergedLockedOptions = Map.of();
         for (var extDevConfig : extDevModeConfig) {
-            if (extDevModeJvmOptionFilter != null && extDevModeJvmOptionFilter.isDisabled(extDevConfig.getExtensionKey())) {
+            if (extDevModeJvmOptionFilter != null
+                    && extDevModeJvmOptionFilter.isDisabled(extDevConfig.getExtensionKey())) {
                 log.debugf("Skipped JVM options from %s", extDevConfig.getExtensionKey());
                 continue;
             }

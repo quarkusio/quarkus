@@ -18,11 +18,9 @@ public class DataNamespaceMessageBundleFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hellos.class, Item.class, OtherItem.class, GoodByes.class)
-                    .addAsResource(new StringAsset(
-                            "hello=Hallo {data:item.unknownProperty}!"),
-                            "messages/msg_de.properties"))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Hellos.class, Item.class, OtherItem.class, GoodByes.class).addAsResource(
+                            new StringAsset("hello=Hallo {data:item.unknownProperty}!"), "messages/msg_de.properties"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

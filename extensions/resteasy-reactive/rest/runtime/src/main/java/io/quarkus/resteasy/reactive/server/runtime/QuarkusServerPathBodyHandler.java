@@ -40,7 +40,8 @@ public class QuarkusServerPathBodyHandler implements ServerMessageBodyReader<Pat
     public Path readFrom(Class<Path> type, Type genericType, MediaType mediaType, ServerRequestContext context)
             throws WebApplicationException, IOException {
         Path file = createFile(context);
-        return FileBodyHandler.doRead(context.getRequestHeaders().getRequestHeaders(), context.getInputStream(), file.toFile())
+        return FileBodyHandler
+                .doRead(context.getRequestHeaders().getRequestHeaders(), context.getInputStream(), file.toFile())
                 .toPath();
     }
 
@@ -55,7 +56,8 @@ public class QuarkusServerPathBodyHandler implements ServerMessageBodyReader<Pat
             throws IOException, WebApplicationException {
         // unfortunately we don't do much here to avoid the file leak
         // however this should never be called in a real world scenario
-        return FileBodyHandler.doRead(httpHeaders, entityStream, Files.createTempFile(PREFIX, SUFFIX).toFile()).toPath();
+        return FileBodyHandler.doRead(httpHeaders, entityStream, Files.createTempFile(PREFIX, SUFFIX).toFile())
+                .toPath();
     }
 
     static Path createFile(ServerRequestContext context) throws IOException {

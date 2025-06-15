@@ -49,22 +49,14 @@ public class HibernateValidatorTestResource {
         Map<String, List<String>> invalidCategorizedEmails = new HashMap<>();
         invalidCategorizedEmails.put("a", Collections.singletonList("b"));
 
-        result.append(formatViolations(validator.validate(new MyBean(
-                "Bill Jones",
-                "b",
-                Collections.singletonList("c"),
-                -4d,
-                invalidCategorizedEmails))));
+        result.append(formatViolations(validator.validate(
+                new MyBean("Bill Jones", "b", Collections.singletonList("c"), -4d, invalidCategorizedEmails))));
 
         Map<String, List<String>> validCategorizedEmails = new HashMap<>();
         validCategorizedEmails.put("Professional", Collections.singletonList("bill.jones@example.com"));
 
-        result.append(formatViolations(validator.validate(new MyBean(
-                "Bill Jones",
-                "bill.jones@example.com",
-                Collections.singletonList("biji@example.com"),
-                5d,
-                validCategorizedEmails))));
+        result.append(formatViolations(validator.validate(new MyBean("Bill Jones", "bill.jones@example.com",
+                Collections.singletonList("biji@example.com"), 5d, validCategorizedEmails))));
 
         return result.build();
     }
@@ -91,7 +83,8 @@ public class HibernateValidatorTestResource {
 
     @GET
     @Path("/no-produces-with-response/{id}/")
-    public Response testRestEndPointWithNoProducesUsingResponse(@Digits(integer = 5, fraction = 0) @RestPath("id") String id) {
+    public Response testRestEndPointWithNoProducesUsingResponse(
+            @Digits(integer = 5, fraction = 0) @RestPath("id") String id) {
         return Response.ok(id).build();
     }
 
@@ -108,10 +101,8 @@ public class HibernateValidatorTestResource {
             return "passed";
         }
 
-        return "failed: " + violations.stream()
-                .map(v -> v.getPropertyPath().toString() + " (" + v.getMessage() + ")")
-                .sorted()
-                .collect(Collectors.joining(", "));
+        return "failed: " + violations.stream().map(v -> v.getPropertyPath().toString() + " (" + v.getMessage() + ")")
+                .sorted().collect(Collectors.joining(", "));
     }
 
     public static class MyBean {

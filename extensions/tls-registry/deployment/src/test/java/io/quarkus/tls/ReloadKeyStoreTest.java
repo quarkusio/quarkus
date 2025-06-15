@@ -26,8 +26,7 @@ import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-reload-A", password = "password", formats = Format.PKCS12, subjectAlternativeNames = "dns:localhost"),
-        @Certificate(name = "test-reload-B", password = "password", formats = Format.PKCS12, subjectAlternativeNames = "dns:acme.org")
-})
+        @Certificate(name = "test-reload-B", password = "password", formats = Format.PKCS12, subjectAlternativeNames = "dns:acme.org") })
 public class ReloadKeyStoreTest {
 
     private static final String configuration = """
@@ -37,13 +36,12 @@ public class ReloadKeyStoreTest {
     public static final File temp = new File("target/test-certificates-" + UUID.randomUUID());
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration),
+                    "application.properties"))
             .overrideRuntimeConfigKey("quarkus.tls.key-store.p12.path", temp.getAbsolutePath() + "/tls.p12")
             .overrideRuntimeConfigKey("quarkus.tls.key-store.p12.password", "password")
-            .overrideRuntimeConfigKey("loc", temp.getAbsolutePath())
-            .setBeforeAllCustomizer(() -> {
+            .overrideRuntimeConfigKey("loc", temp.getAbsolutePath()).setBeforeAllCustomizer(() -> {
                 try {
                     // Prepare a random directory to store the certificates.
                     temp.mkdirs();
@@ -70,8 +68,8 @@ public class ReloadKeyStoreTest {
             assertThat(l.get(1)).isEqualTo("dns:localhost");
         });
 
-        Files.copy(new File("target/certs/test-reload-B-keystore.p12").toPath(),
-                new File(certs, "/tls.p12").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certs/test-reload-B-keystore.p12").toPath(), new File(certs, "/tls.p12").toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         assertThat(def.reload()).isTrue();
         certificate = (X509Certificate) def.getKeyStore().getCertificate("test-reload-B");

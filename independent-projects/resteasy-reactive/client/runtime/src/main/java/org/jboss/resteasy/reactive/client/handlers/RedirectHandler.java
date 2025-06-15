@@ -17,6 +17,7 @@ public interface RedirectHandler {
     URI handle(Response response);
 
     default int getPriority() {
-        return Optional.ofNullable(this.getClass().getAnnotation(Priority.class)).map(Priority::value).orElse(DEFAULT_PRIORITY);
+        return Optional.ofNullable(this.getClass().getAnnotation(Priority.class)).map(Priority::value)
+                .orElse(DEFAULT_PRIORITY);
     }
 }

@@ -113,11 +113,10 @@ public interface RabbitMQDevServicesBuildTimeConfig {
     }
 
     /**
-     * If Dev Services for RabbitMQ has been explicitly enabled or disabled. Dev Services are generally enabled
-     * by default, unless there is an existing configuration present. For RabbitMQ, Dev Services starts a broker unless
-     * {@code rabbitmq-host} or {@code rabbitmq-port} are set or if all the Reactive Messaging RabbitMQ channel are configured
-     * with
-     * {@code host} or {@code port}.
+     * If Dev Services for RabbitMQ has been explicitly enabled or disabled. Dev Services are generally enabled by
+     * default, unless there is an existing configuration present. For RabbitMQ, Dev Services starts a broker unless
+     * {@code rabbitmq-host} or {@code rabbitmq-port} are set or if all the Reactive Messaging RabbitMQ channel are
+     * configured with {@code host} or {@code port}.
      */
     Optional<Boolean> enabled();
 
@@ -136,21 +135,19 @@ public interface RabbitMQDevServicesBuildTimeConfig {
     OptionalInt httpPort();
 
     /**
-     * The image to use.
-     * Note that only official RabbitMQ images are supported.
-     * Specifically, the image repository must end with {@code rabbitmq}.
+     * The image to use. Note that only official RabbitMQ images are supported. Specifically, the image repository must
+     * end with {@code rabbitmq}.
      */
     @WithDefault("rabbitmq:3.12-management")
     String imageName();
 
     /**
-     * Indicates if the RabbitMQ broker managed by Quarkus Dev Services is shared.
-     * When shared, Quarkus looks for running containers using label-based service discovery.
-     * If a matching container is found, it is used, and so a second one is not started.
-     * Otherwise, Dev Services for RabbitMQ starts a new container.
+     * Indicates if the RabbitMQ broker managed by Quarkus Dev Services is shared. When shared, Quarkus looks for
+     * running containers using label-based service discovery. If a matching container is found, it is used, and so a
+     * second one is not started. Otherwise, Dev Services for RabbitMQ starts a new container.
      * <p>
-     * The discovery uses the {@code quarkus-dev-service-rabbitmq} label.
-     * The value is configured using the {@code service-name} property.
+     * The discovery uses the {@code quarkus-dev-service-rabbitmq} label. The value is configured using the
+     * {@code service-name} property.
      * <p>
      * Container sharing is only used in dev mode.
      */
@@ -158,12 +155,11 @@ public interface RabbitMQDevServicesBuildTimeConfig {
     boolean shared();
 
     /**
-     * The value of the {@code quarkus-dev-service-rabbitmq} label attached to the started container.
-     * This property is used when {@code shared} is set to {@code true}.
-     * In this case, before starting a container, Dev Services for RabbitMQ looks for a container with the
-     * {@code quarkus-dev-service-rabbitmq} label
-     * set to the configured value. If found, it will use this container instead of starting a new one. Otherwise, it
-     * starts a new container with the {@code quarkus-dev-service-rabbitmq} label set to the specified value.
+     * The value of the {@code quarkus-dev-service-rabbitmq} label attached to the started container. This property is
+     * used when {@code shared} is set to {@code true}. In this case, before starting a container, Dev Services for
+     * RabbitMQ looks for a container with the {@code quarkus-dev-service-rabbitmq} label set to the configured value.
+     * If found, it will use this container instead of starting a new one. Otherwise, it starts a new container with the
+     * {@code quarkus-dev-service-rabbitmq} label set to the specified value.
      * <p>
      * This property is used when you need multiple shared RabbitMQ brokers.
      */

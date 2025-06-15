@@ -63,7 +63,7 @@ class MongoOperationsTest {
         Map<String, String> replacementMap = new HashMap<>();
         replacementMap.put("property", "value");
         replacementCache.put(DemoObj.class.getName(), replacementMap);
-        replacementCache.put(Object.class.getName(), Collections.emptyMap());//because the test use Object ...
+        replacementCache.put(Object.class.getName(), Collections.emptyMap());// because the test use Object ...
         MongoPropertyUtil.setReplacementCache(replacementCache);
     }
 
@@ -93,7 +93,7 @@ class MongoOperationsTest {
                 new Object[] { UUID.fromString("7f000101-7370-1f68-8173-70afa71b0000") });
         assertEquals("{'field':UUID('7f000101-7370-1f68-8173-70afa71b0000')}", query);
 
-        //test field replacement
+        // test field replacement
         query = operations.bindFilter(DemoObj.class, "property", new Object[] { "a value" });
         assertEquals("{'value':'a value'}", query);
 
@@ -118,12 +118,11 @@ class MongoOperationsTest {
         query = operations.bindFilter(DemoObj.class, "{'field.sub': ?1}", new Object[] { "a value" });
         assertEquals("{'field.sub': 'a value'}", query);
 
-        //test that there are no field replacement for native queries
+        // test that there are no field replacement for native queries
         query = operations.bindFilter(DemoObj.class, "{'property': ?1}", new Object[] { "a value" });
         assertEquals("{'property': 'a value'}", query);
 
-        query = operations.bindFilter(Object.class, "{'field': ?1}",
-                new Object[] { LocalDate.of(2019, 3, 4) });
+        query = operations.bindFilter(Object.class, "{'field': ?1}", new Object[] { LocalDate.of(2019, 3, 4) });
         assertEquals("{'field': {\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "{'field': ?1}",
@@ -145,7 +144,7 @@ class MongoOperationsTest {
         query = operations.bindFilter(Object.class, "{'field': ?1, 'isOk': ?2}", new Object[] { "a value", true });
         assertEquals("{'field': 'a value', 'isOk': true}", query);
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> list = Arrays.asList("f1", "f2");
         query = operations.bindFilter(DemoObj.class, "{ field: { '$in': ?1 } }", new Object[] { list });
         assertEquals("{ field: { '$in': ['f1', 'f2'] } }", query);
@@ -161,7 +160,8 @@ class MongoOperationsTest {
         query = operations.bindFilter(DemoObj.class,
                 "{ field: { '$in': ?1 }, isOk: ?2, $or: [ {'property': ?3}, {'property': ?4} ] }",
                 new Object[] { list, true, "jpg", "gif" });
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, isOk: true, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }",
+        assertEquals(
+                "{ field: { '$in': ['f1', 'f2'] }, isOk: true, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }",
                 query);
     }
 
@@ -171,13 +171,11 @@ class MongoOperationsTest {
                 Parameters.with("field", "a value").map());
         assertEquals("{'field': 'a value'}", query);
 
-        query = operations.bindFilter(Object.class, "{'field.sub': :field}",
-                Parameters.with("field", "a value").map());
+        query = operations.bindFilter(Object.class, "{'field.sub': :field}", Parameters.with("field", "a value").map());
         assertEquals("{'field.sub': 'a value'}", query);
 
-        //test that there are no field replacement for native queries
-        query = operations.bindFilter(DemoObj.class, "{'property': :field}",
-                Parameters.with("field", "a value").map());
+        // test that there are no field replacement for native queries
+        query = operations.bindFilter(DemoObj.class, "{'property': :field}", Parameters.with("field", "a value").map());
         assertEquals("{'property': 'a value'}", query);
 
         query = operations.bindFilter(Object.class, "{'field': :field}",
@@ -204,7 +202,7 @@ class MongoOperationsTest {
                 Parameters.with("field", "a value").and("isOk", true).map());
         assertEquals("{'field': 'a value', 'isOk': true}", query);
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> ids = Arrays.asList("f1", "f2");
         query = operations.bindFilter(DemoObj.class, "{ field: { '$in': :fields } }",
                 Parameters.with("fields", ids).map());
@@ -221,11 +219,9 @@ class MongoOperationsTest {
 
         query = operations.bindFilter(DemoObj.class,
                 "{ field: { '$in': :fields }, isOk: :isOk, $or: [ {'property': :p1}, {'property': :p2} ] }",
-                Parameters.with("fields", ids)
-                        .and("isOk", true)
-                        .and("p1", "jpg")
-                        .and("p2", "gif").map());
-        assertEquals("{ field: { '$in': ['f1', 'f2'] }, isOk: true, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }",
+                Parameters.with("fields", ids).and("isOk", true).and("p1", "jpg").and("p2", "gif").map());
+        assertEquals(
+                "{ field: { '$in': ['f1', 'f2'] }, isOk: true, $or: [ {'property': 'jpg'}, {'property': 'gif'} ] }",
                 query);
     }
 
@@ -234,18 +230,18 @@ class MongoOperationsTest {
         String query = operations.bindFilter(Object.class, "field = ?1", new Object[] { "a value" });
         assertEquals("{'field':'a value'}", query);
 
-        query = operations.bindFilter(Object.class, "{'field.sub': :field}",
-                Parameters.with("field", "a value").map());
+        query = operations.bindFilter(Object.class, "{'field.sub': :field}", Parameters.with("field", "a value").map());
         assertEquals("{'field.sub': 'a value'}", query);
 
-        //test field replacement
+        // test field replacement
         query = operations.bindFilter(DemoObj.class, "property = ?1", new Object[] { "a value" });
         assertEquals("{'value':'a value'}", query);
 
         query = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDate.of(2019, 3, 4) });
         assertEquals("{'field':{\"$date\": \"2019-03-04T00:00:00.000Z\"} }", query);
 
-        query = operations.bindFilter(Object.class, "field = ?1", new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
+        query = operations.bindFilter(Object.class, "field = ?1",
+                new Object[] { LocalDateTime.of(2019, 3, 4, 1, 1, 1) });
         assertEquals("{'field':{\"$date\": \"2019-03-04T01:01:01.000Z\"} }", query);
 
         query = operations.bindFilter(Object.class, "field = ?1",
@@ -285,7 +281,7 @@ class MongoOperationsTest {
         query = operations.bindFilter(Object.class, "field = 'some hardcoded value'", new Object[] {});
         assertEquals("{'field':'some hardcoded value'}", query);
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> list = Arrays.asList("f1", "f2");
         query = operations.bindFilter(DemoObj.class, "field in ?1", new Object[] { list });
         assertEquals("{'field':{'$in':['f1', 'f2']}}", query);
@@ -293,30 +289,25 @@ class MongoOperationsTest {
         query = operations.bindFilter(DemoObj.class, "field in ?1 and isOk = ?2", new Object[] { list, true });
         assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true}", query);
 
-        query = operations.bindFilter(DemoObj.class,
-                "field in ?1 and (property = ?2 or property = ?3)",
+        query = operations.bindFilter(DemoObj.class, "field in ?1 and (property = ?2 or property = ?3)",
                 new Object[] { list, "jpg", "gif" });
         assertEquals("{'field':{'$in':['f1', 'f2']},'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
 
-        query = operations.bindFilter(DemoObj.class,
-                "field in ?1 and isOk = ?2 and (property = ?3 or property = ?4)",
+        query = operations.bindFilter(DemoObj.class, "field in ?1 and isOk = ?2 and (property = ?3 or property = ?4)",
                 new Object[] { list, true, "jpg", "gif" });
         assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true,'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
     }
 
     @Test
     public void testBindEnhancedFilterByName() {
-        String query = operations.bindFilter(Object.class, "field = :field",
-                Parameters.with("field", "a value").map());
+        String query = operations.bindFilter(Object.class, "field = :field", Parameters.with("field", "a value").map());
         assertEquals("{'field':'a value'}", query);
 
-        query = operations.bindFilter(Object.class, "field.sub = :field",
-                Parameters.with("field", "a value").map());
+        query = operations.bindFilter(Object.class, "field.sub = :field", Parameters.with("field", "a value").map());
         assertEquals("{'field.sub':'a value'}", query);
 
-        //test field replacement
-        query = operations.bindFilter(DemoObj.class, "property = :field",
-                Parameters.with("field", "a value").map());
+        // test field replacement
+        query = operations.bindFilter(DemoObj.class, "property = :field", Parameters.with("field", "a value").map());
         assertEquals("{'value':'a value'}", query);
 
         query = operations.bindFilter(Object.class, "field = :field",
@@ -351,35 +342,28 @@ class MongoOperationsTest {
                 Parameters.with("lower", 5).and("upper", 10).map());
         assertEquals("{'count':{'$gt':5},'count':{'$lte':10}}", query);
 
-        query = operations.bindFilter(Object.class, "field != :field",
-                Parameters.with("field", "a value").map());
+        query = operations.bindFilter(Object.class, "field != :field", Parameters.with("field", "a value").map());
         assertEquals("{'field':{'$ne':'a value'}}", query);
 
-        query = operations.bindFilter(Object.class, "field like :field",
-                Parameters.with("field", "a value").map());
+        query = operations.bindFilter(Object.class, "field like :field", Parameters.with("field", "a value").map());
         assertEquals("{'field':{'$regex':'a value'}}", query);
 
-        //queries related to '$in' operator
+        // queries related to '$in' operator
         List<Object> list = Arrays.asList("f1", "f2");
-        query = operations.bindFilter(DemoObj.class, "field in :fields",
-                Parameters.with("fields", list).map());
+        query = operations.bindFilter(DemoObj.class, "field in :fields", Parameters.with("fields", list).map());
         assertEquals("{'field':{'$in':['f1', 'f2']}}", query);
 
         query = operations.bindFilter(DemoObj.class, "field in :fields and isOk = :isOk",
                 Parameters.with("fields", list).and("isOk", true).map());
         assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true}", query);
 
-        query = operations.bindFilter(DemoObj.class,
-                "field in :fields and (property = :p1 or property = :p2)",
+        query = operations.bindFilter(DemoObj.class, "field in :fields and (property = :p1 or property = :p2)",
                 Parameters.with("fields", list).and("p1", "jpg").and("p2", "gif").map());
         assertEquals("{'field':{'$in':['f1', 'f2']},'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
 
         query = operations.bindFilter(DemoObj.class,
                 "field in :fields and isOk = :isOk and (property = :p1 or property = :p2)",
-                Parameters.with("fields", list)
-                        .and("isOk", true)
-                        .and("p1", "jpg")
-                        .and("p2", "gif").map());
+                Parameters.with("fields", list).and("isOk", true).and("p1", "jpg").and("p2", "gif").map());
         assertEquals("{'field':{'$in':['f1', 'f2']},'isOk':true,'$or':[{'value':'jpg'},{'value':'gif'}]}", query);
     }
 
@@ -390,12 +374,12 @@ class MongoOperationsTest {
         assertEquals("{'$set':{'field': 'a value'}}", update);
 
         // native update by index without $set
-        update = operations.bindUpdate(DemoObj.class, "{'listField': ?1}", new Object[] { List.of("value1", "value2") });
+        update = operations.bindUpdate(DemoObj.class, "{'listField': ?1}",
+                new Object[] { List.of("value1", "value2") });
         assertEquals("{'$set':{'listField': ['value1', 'value2']}}", update);
 
         // native update by name without $set
-        update = operations.bindUpdate(Object.class, "{'field': :field}",
-                Parameters.with("field", "a value").map());
+        update = operations.bindUpdate(Object.class, "{'field': :field}", Parameters.with("field", "a value").map());
         assertEquals("{'$set':{'field': 'a value'}}", update);
 
         // native update by index with $set
@@ -425,8 +409,7 @@ class MongoOperationsTest {
         assertEquals("{'$set':{'field':'a value'}}", update);
 
         // enhanced update by name
-        update = operations.bindUpdate(Object.class, "field = :field",
-                Parameters.with("field", "a value").map());
+        update = operations.bindUpdate(Object.class, "field = :field", Parameters.with("field", "a value").map());
         assertEquals("{'$set':{'field':'a value'}}", update);
     }
 }

@@ -161,7 +161,8 @@ public abstract class RestClientBase implements Closeable {
                     return converter;
                 }
             }
-            // FIXME: this should go in favour of generating them, so we can generate them only if used for dead-code elimination
+            // FIXME: this should go in favour of generating them, so we can generate them only if used for dead-code
+            // elimination
             ParamConverter<T> converter = DEFAULT_PROVIDER.getConverter(type, genericType, annotations);
             if (converter != null) {
                 providerForClass.put(type, DEFAULT_PROVIDER);

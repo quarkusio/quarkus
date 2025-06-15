@@ -22,7 +22,8 @@ public class PathTestHelperTest {
     @Test
     public void getTestClassesLocationForJar() {
 
-        // Choose a class which is likely to be on the classpath, but not in the source tree; this isn't a test class because we don't have many of them in jars, but that should still work
+        // Choose a class which is likely to be on the classpath, but not in the source tree; this isn't a test class
+        // because we don't have many of them in jars, but that should still work
         Path path = PathTestHelper.getTestClassesLocation(org.jboss.logging.Logger.class);
         assertNotNull(path);
         assertTrue(path.toString().contains(".jar"), path.toString());

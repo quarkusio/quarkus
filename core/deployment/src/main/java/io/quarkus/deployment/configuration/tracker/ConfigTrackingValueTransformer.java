@@ -49,7 +49,9 @@ public class ConfigTrackingValueTransformer {
     /**
      * Returns a non-null string value for a given {@link org.eclipse.microprofile.config.ConfigValue} instance.
      *
-     * @param value configuration value
+     * @param value
+     *        configuration value
+     *
      * @return non-null string value for a given {@link org.eclipse.microprofile.config.ConfigValue} instance
      */
     public static String asString(ConfigValue value) {
@@ -71,8 +73,11 @@ public class ConfigTrackingValueTransformer {
     /**
      * Returns a string value that can be persisted to file.
      *
-     * @param name option name
-     * @param value configuration value
+     * @param name
+     *        option name
+     * @param value
+     *        configuration value
+     *
      * @return string value that can be persisted to file
      */
     public String transform(String name, ConfigValue value) {
@@ -82,8 +87,11 @@ public class ConfigTrackingValueTransformer {
     /**
      * Returns a string value that can be persisted to file.
      *
-     * @param name option name
-     * @param original configuration value
+     * @param name
+     *        option name
+     * @param original
+     *        configuration value
+     *
      * @return string value that can be persisted to file
      */
     public String transform(String name, String original) {

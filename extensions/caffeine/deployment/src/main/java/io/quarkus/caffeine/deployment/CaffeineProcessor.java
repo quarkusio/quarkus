@@ -41,14 +41,12 @@ public class CaffeineProcessor {
             effectiveImplementorNames.add(info.name().toString());
         }
         if (!effectiveImplementorNames.isEmpty()) {
-            //Do not force registering any Caffeine classes if we can avoid it: there's a significant chain reaction
+            // Do not force registering any Caffeine classes if we can avoid it: there's a significant chain reaction
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(CACHE_LOADER_CLASS_NAME)
-                    .reason(getClass().getName())
-                    .methods().build());
+                    .reason(getClass().getName()).methods().build());
 
             reflectiveClasses.produce(ReflectiveClassBuildItem.builder(effectiveImplementorNames.toArray(new String[0]))
-                    .reason(getClass().getName())
-                    .methods().build());
+                    .reason(getClass().getName()).methods().build());
         }
     }
 

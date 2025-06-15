@@ -14,7 +14,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 public class ServerBooleanMessageBodyHandler extends BooleanMessageBodyHandler
         implements ServerMessageBodyReader<Boolean> {
 
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return type == Boolean.class;
     }
 

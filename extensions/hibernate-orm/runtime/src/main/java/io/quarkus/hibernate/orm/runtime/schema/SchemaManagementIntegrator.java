@@ -104,17 +104,17 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         Object schemaGenerationDatabaseAction = executionOptions.getConfigurationValues()
                 .get("jakarta.persistence.schema-generation.database.action");
         if (schemaGenerationDatabaseAction != null && !(schemaGenerationDatabaseAction.toString().equals("none"))) {
-            //if this is none we assume another framework is doing this (e.g. flyway)
-            SchemaManagementTool schemaManagementTool = serviceRegistry
-                    .getService(SchemaManagementTool.class);
-            SchemaDropper schemaDropper = schemaManagementTool.getSchemaDropper(executionOptions.getConfigurationValues());
-            schemaDropper.doDrop(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
+            // if this is none we assume another framework is doing this (e.g. flyway)
+            SchemaManagementTool schemaManagementTool = serviceRegistry.getService(SchemaManagementTool.class);
+            SchemaDropper schemaDropper = schemaManagementTool
+                    .getSchemaDropper(executionOptions.getConfigurationValues());
+            schemaDropper.doDrop(holder.metadata, executionOptions, ContributableMatcher.ALL,
+                    new SimpleSourceDescriptor(), new SimpleTargetDescriptor());
+            schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues()).doCreation(holder.metadata,
+                    executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
                     new SimpleTargetDescriptor());
-            schemaManagementTool.getSchemaCreator(executionOptions.getConfigurationValues())
-                    .doCreation(holder.metadata, executionOptions, ContributableMatcher.ALL, new SimpleSourceDescriptor(),
-                            new SimpleTargetDescriptor());
         }
-        //we still clear caches though
+        // we still clear caches though
         holder.sessionFactory.getCache().evictAll();
         holder.sessionFactory.getCache().evictQueries();
     }
@@ -130,17 +130,18 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
                 return;
             }
 
-            //if this is none we assume another framework is doing this (e.g. flyway)
+            // if this is none we assume another framework is doing this (e.g. flyway)
             ServiceRegistry serviceRegistry = val.sessionFactory.getServiceRegistry();
-            SchemaManagementTool schemaManagementTool = serviceRegistry
-                    .getService(SchemaManagementTool.class);
+            SchemaManagementTool schemaManagementTool = serviceRegistry.getService(SchemaManagementTool.class);
             SimpleExecutionOptions executionOptions = new SimpleExecutionOptions(serviceRegistry);
-            SchemaValidator validator = schemaManagementTool.getSchemaValidator(executionOptions.getConfigurationValues());
+            SchemaValidator validator = schemaManagementTool
+                    .getSchemaValidator(executionOptions.getConfigurationValues());
             try {
                 validator.doValidation(val.metadata, executionOptions, ContributableMatcher.ALL);
             } catch (SchemaManagementException e) {
                 log.error("Failed to validate Schema: " + e.getMessage());
-                SchemaMigrator migrator = schemaManagementTool.getSchemaMigrator(executionOptions.getConfigurationValues());
+                SchemaMigrator migrator = schemaManagementTool
+                        .getSchemaMigrator(executionOptions.getConfigurationValues());
 
                 StringWriter writer = new StringWriter();
                 migrator.doMigration(val.metadata, executionOptions, ContributableMatcher.ALL, new TargetDescriptor() {
@@ -172,7 +173,7 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
     public void resetDatabase(String dbName) {
         String name = datasourceToPuMap.get(dbName);
         if (name == null) {
-            //not an hibernate DS
+            // not an hibernate DS
             return;
         }
         recreateDatabase(name);
@@ -188,7 +189,8 @@ public class SchemaManagementIntegrator implements Integrator, DatabaseSchemaPro
         final SessionFactoryImplementor sessionFactory;
         final ServiceRegistryImplementor serviceRegistry;
 
-        Holder(Metadata metadata, SessionFactoryImplementor sessionFactory, ServiceRegistryImplementor serviceRegistry) {
+        Holder(Metadata metadata, SessionFactoryImplementor sessionFactory,
+                ServiceRegistryImplementor serviceRegistry) {
             this.metadata = metadata;
             this.sessionFactory = sessionFactory;
             this.serviceRegistry = serviceRegistry;

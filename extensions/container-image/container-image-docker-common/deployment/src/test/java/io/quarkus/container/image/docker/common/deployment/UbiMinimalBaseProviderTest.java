@@ -21,26 +21,20 @@ class UbiMinimalBaseProviderTest {
 
     private final DockerFileBaseInformationProvider sut = new UbiMinimalBaseProvider();
 
-    @ParameterizedTest(name = DISPLAY_NAME_PLACEHOLDER + "[" + INDEX_PLACEHOLDER + "] (" + ARGUMENTS_WITH_NAMES_PLACEHOLDER
-            + ")")
+    @ParameterizedTest(name = DISPLAY_NAME_PLACEHOLDER + "[" + INDEX_PLACEHOLDER + "] ("
+            + ARGUMENTS_WITH_NAMES_PLACEHOLDER + ")")
     @MethodSource("imageCombinations")
     void testImage(int ubiVersion, int javaVersion, String imageVersion) {
         var path = getPath("ubi%d-java%d".formatted(ubiVersion, javaVersion));
         var result = sut.determine(path);
-        assertThat(result)
-                .isNotNull()
-                .get()
-                .extracting(
-                        DockerFileBaseInformation::baseImage,
-                        DockerFileBaseInformation::javaVersion)
-                .containsExactly(
-                        "registry.access.redhat.com/ubi%d/ubi-minimal:%s".formatted(ubiVersion, imageVersion),
+        assertThat(result).isNotNull().get()
+                .extracting(DockerFileBaseInformation::baseImage, DockerFileBaseInformation::javaVersion)
+                .containsExactly("registry.access.redhat.com/ubi%d/ubi-minimal:%s".formatted(ubiVersion, imageVersion),
                         javaVersion);
     }
 
     static Stream<Arguments> imageCombinations() {
-        return Stream.of(
-                Arguments.of(8, 17, ContainerImages.UBI8_MINIMAL_VERSION),
+        return Stream.of(Arguments.of(8, 17, ContainerImages.UBI8_MINIMAL_VERSION),
                 Arguments.of(8, 21, ContainerImages.UBI8_MINIMAL_VERSION),
                 Arguments.of(9, 17, ContainerImages.UBI9_MINIMAL_VERSION),
                 Arguments.of(9, 21, ContainerImages.UBI9_MINIMAL_VERSION));

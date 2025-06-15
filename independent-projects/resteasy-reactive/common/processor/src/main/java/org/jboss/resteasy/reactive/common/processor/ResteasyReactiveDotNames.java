@@ -4,7 +4,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -163,7 +162,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName PRIORITY = DotName.createSimple(Priority.class.getName());
     public static final DotName APPLICATION = DotName.createSimple(Application.class.getName());
     public static final DotName CONTAINER_REQUEST_FILTER = DotName.createSimple(ContainerRequestFilter.class.getName());
-    public static final DotName CONTAINER_RESPONSE_FILTER = DotName.createSimple(ContainerResponseFilter.class.getName());
+    public static final DotName CONTAINER_RESPONSE_FILTER = DotName
+            .createSimple(ContainerResponseFilter.class.getName());
     public static final DotName EXCEPTION_MAPPER = DotName.createSimple(ExceptionMapper.class.getName());
     public static final DotName CONTEXT_RESOLVER = DotName.createSimple(ContextResolver.class.getName());
     public static final DotName MESSAGE_BODY_WRITER = DotName.createSimple(MessageBodyWriter.class.getName());
@@ -179,7 +179,8 @@ public final class ResteasyReactiveDotNames {
     public static final DotName SINGLETON = DotName.createSimple(Singleton.class.getName());
     public static final DotName REQUEST_SCOPED = DotName.createSimple(RequestScoped.class.getName());
     public static final DotName DEPENDENT = DotName.createSimple(Dependent.class.getName());
-    public static final DotName WEB_APPLICATION_EXCEPTION = DotName.createSimple(WebApplicationException.class.getName());
+    public static final DotName WEB_APPLICATION_EXCEPTION = DotName
+            .createSimple(WebApplicationException.class.getName());
 
     public static final DotName INVOCATION_CALLBACK = DotName.createSimple(InvocationCallback.class.getName());
 
@@ -250,18 +251,21 @@ public final class ResteasyReactiveDotNames {
     public static final DotName JSONP_JSON_VALUE = DotName.createSimple(jakarta.json.JsonValue.class.getName());
     public static final DotName JSONP_JSON_STRING = DotName.createSimple(jakarta.json.JsonString.class.getName());
 
-    public static final DotName CONTAINER_REQUEST_CONTEXT = DotName.createSimple(ContainerRequestContext.class.getName());
-    public static final DotName CONTAINER_RESPONSE_CONTEXT = DotName.createSimple(ContainerResponseContext.class.getName());
+    public static final DotName CONTAINER_REQUEST_CONTEXT = DotName
+            .createSimple(ContainerRequestContext.class.getName());
+    public static final DotName CONTAINER_RESPONSE_CONTEXT = DotName
+            .createSimple(ContainerResponseContext.class.getName());
 
-    public static final DotName DATE_FORMAT = DotName.createSimple(org.jboss.resteasy.reactive.DateFormat.class.getName());
+    public static final DotName DATE_FORMAT = DotName
+            .createSimple(org.jboss.resteasy.reactive.DateFormat.class.getName());
 
     public static final Set<DotName> RESOURCE_CTOR_PARAMS_THAT_NEED_HANDLING = new HashSet<>(
             Arrays.asList(QUERY_PARAM, HEADER_PARAM, PATH_PARAM, MATRIX_PARAM, COOKIE_PARAM));
 
     public static final Set<DotName> JAX_RS_ANNOTATIONS_FOR_FIELDS = new HashSet<>(
-            Arrays.asList(BEAN_PARAM, MULTI_PART_FORM_PARAM, PATH_PARAM, QUERY_PARAM, HEADER_PARAM, FORM_PARAM, MATRIX_PARAM,
-                    COOKIE_PARAM, REST_PATH_PARAM, REST_QUERY_PARAM, REST_HEADER_PARAM, REST_FORM_PARAM, REST_MATRIX_PARAM,
-                    REST_COOKIE_PARAM, CONTEXT, DEFAULT_VALUE, SUSPENDED));
+            Arrays.asList(BEAN_PARAM, MULTI_PART_FORM_PARAM, PATH_PARAM, QUERY_PARAM, HEADER_PARAM, FORM_PARAM,
+                    MATRIX_PARAM, COOKIE_PARAM, REST_PATH_PARAM, REST_QUERY_PARAM, REST_HEADER_PARAM, REST_FORM_PARAM,
+                    REST_MATRIX_PARAM, REST_COOKIE_PARAM, CONTEXT, DEFAULT_VALUE, SUSPENDED));
 
     public static final DotName ENCODED = DotName.createSimple(Encoded.class.getName());
 
@@ -295,8 +299,7 @@ public final class ResteasyReactiveDotNames {
     // Types ignored for reflection used by the RESTEasy and SmallRye REST client extensions.
     private static final Set<DotName> TYPES_IGNORED_FOR_REFLECTION = new HashSet<>(Arrays.asList(
             // jakarta.json
-            DotName.createSimple("jakarta.json.JsonObject"),
-            DotName.createSimple("jakarta.json.JsonArray"),
+            DotName.createSimple("jakarta.json.JsonObject"), DotName.createSimple("jakarta.json.JsonArray"),
             DotName.createSimple("jakarta.json.JsonValue"),
 
             // Jackson
@@ -305,8 +308,7 @@ public final class ResteasyReactiveDotNames {
             // JAX-RS
             DotName.createSimple("jakarta.ws.rs.core.Response"),
             DotName.createSimple("jakarta.ws.rs.container.AsyncResponse"),
-            DotName.createSimple("jakarta.ws.rs.core.StreamingOutput"),
-            DotName.createSimple("jakarta.ws.rs.core.Form"),
+            DotName.createSimple("jakarta.ws.rs.core.StreamingOutput"), DotName.createSimple("jakarta.ws.rs.core.Form"),
             DotName.createSimple("jakarta.ws.rs.core.MultivaluedMap"),
 
             // RESTEasy

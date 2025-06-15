@@ -15,8 +15,7 @@ public class AutoBasicSecurityFilter extends AutoSecurityFilter {
     }
 
     public AutoBasicSecurityFilter(String securitySchemeName, String securitySchemeDescription,
-            Map<String, String> securitySchemeExtensions,
-            String basicSecuritySchemeValue) {
+            Map<String, String> securitySchemeExtensions, String basicSecuritySchemeValue) {
         super(securitySchemeName, securitySchemeDescription, securitySchemeExtensions);
         this.basicSecuritySchemeValue = basicSecuritySchemeValue;
     }

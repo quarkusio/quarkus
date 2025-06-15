@@ -39,9 +39,8 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder<OidcTenantConfigBuilder> {
 
     /**
-     * {@link io.quarkus.oidc.OidcTenantConfig} with documented defaults.
-     * Cached here so that we avoid building the SmallRye Config again and again when no-args builder constructors
-     * are used.
+     * {@link io.quarkus.oidc.OidcTenantConfig} with documented defaults. Cached here so that we avoid building the
+     * SmallRye Config again and again when no-args builder constructors are used.
      */
     private static volatile OidcTenantConfig configWithDefaults = null;
 
@@ -80,7 +79,8 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
             this.introspectionPath = builder.introspectionPath;
             this.jwksPath = builder.jwksPath;
             this.endSessionPath = builder.endSessionPath;
-            this.tenantPaths = builder.tenantPaths.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(builder.tenantPaths));
+            this.tenantPaths = builder.tenantPaths.isEmpty() ? Optional.empty()
+                    : Optional.of(List.copyOf(builder.tenantPaths));
             this.publicKey = builder.publicKey;
             this.introspectionCredentials = builder.introspectionCredentials;
             this.roles = builder.roles;
@@ -276,7 +276,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param tenantId {@link OidcTenantConfig#tenantId()}
+     * @param tenantId
+     *        {@link OidcTenantConfig#tenantId()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder tenantId(String tenantId) {
@@ -303,7 +305,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param tenantEnabled {@link OidcTenantConfig#tenantEnabled()}
+     * @param tenantEnabled
+     *        {@link OidcTenantConfig#tenantEnabled()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder tenantEnabled(boolean tenantEnabled) {
@@ -312,7 +316,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param applicationType {@link OidcTenantConfig#applicationType()}
+     * @param applicationType
+     *        {@link OidcTenantConfig#applicationType()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder applicationType(ApplicationType applicationType) {
@@ -321,7 +327,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param authorizationPath {@link OidcTenantConfig#authorizationPath()}
+     * @param authorizationPath
+     *        {@link OidcTenantConfig#authorizationPath()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder authorizationPath(String authorizationPath) {
@@ -330,7 +338,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param userInfoPath {@link OidcTenantConfig#userInfoPath()}
+     * @param userInfoPath
+     *        {@link OidcTenantConfig#userInfoPath()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder userInfoPath(String userInfoPath) {
@@ -339,7 +349,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param introspectionPath {@link OidcTenantConfig#introspectionPath()}
+     * @param introspectionPath
+     *        {@link OidcTenantConfig#introspectionPath()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder introspectionPath(String introspectionPath) {
@@ -348,7 +360,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param jwksPath {@link OidcTenantConfig#jwksPath()}
+     * @param jwksPath
+     *        {@link OidcTenantConfig#jwksPath()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder jwksPath(String jwksPath) {
@@ -357,7 +371,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param endSessionPath {@link OidcTenantConfig#endSessionPath()}
+     * @param endSessionPath
+     *        {@link OidcTenantConfig#endSessionPath()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder endSessionPath(String endSessionPath) {
@@ -366,7 +382,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param tenantPath {@link OidcTenantConfig#tenantPaths()}
+     * @param tenantPath
+     *        {@link OidcTenantConfig#tenantPaths()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder tenantPath(String tenantPath) {
@@ -377,7 +395,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param tenantPaths {@link OidcTenantConfig#tenantPaths()}
+     * @param tenantPaths
+     *        {@link OidcTenantConfig#tenantPaths()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder tenantPaths(String... tenantPaths) {
@@ -388,7 +408,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param tenantPaths {@link OidcTenantConfig#tenantPaths()}
+     * @param tenantPaths
+     *        {@link OidcTenantConfig#tenantPaths()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder tenantPaths(List<String> tenantPaths) {
@@ -399,7 +421,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param publicKey {@link OidcTenantConfig#publicKey()}
+     * @param publicKey
+     *        {@link OidcTenantConfig#publicKey()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder publicKey(String publicKey) {
@@ -408,7 +432,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param introspectionCredentials {@link OidcTenantConfig#introspectionCredentials()}
+     * @param introspectionCredentials
+     *        {@link OidcTenantConfig#introspectionCredentials()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder introspectionCredentials(IntrospectionCredentials introspectionCredentials) {
@@ -417,8 +443,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param name {@link IntrospectionCredentials#name()}
-     * @param secret {@link IntrospectionCredentials#secret()}
+     * @param name
+     *        {@link IntrospectionCredentials#name()}
+     * @param secret
+     *        {@link IntrospectionCredentials#secret()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder introspectionCredentials(String name, String secret) {
@@ -433,7 +462,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param roles {@link OidcTenantConfig#roles()}
+     * @param roles
+     *        {@link OidcTenantConfig#roles()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder roles(Roles roles) {
@@ -449,8 +480,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param source {@link Roles#source()}
-     * @param roleClaimPaths {@link Roles#roleClaimPath()}
+     * @param source
+     *        {@link Roles#source()}
+     * @param roleClaimPaths
+     *        {@link Roles#roleClaimPath()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder roles(Source source, String... roleClaimPaths) {
@@ -458,7 +492,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param token {@link OidcTenantConfig#token()}
+     * @param token
+     *        {@link OidcTenantConfig#token()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder token(Token token) {
@@ -467,7 +503,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param principalClaim {@link Token#principalClaim()}
+     * @param principalClaim
+     *        {@link Token#principalClaim()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder token(String principalClaim) {
@@ -482,7 +520,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param logout {@link OidcTenantConfig#logout()}
+     * @param logout
+     *        {@link OidcTenantConfig#logout()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder logout(Logout logout) {
@@ -500,7 +540,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param certificateChain {@link OidcTenantConfig#certificateChain()}
+     * @param certificateChain
+     *        {@link OidcTenantConfig#certificateChain()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder certificateChain(CertificateChain certificateChain) {
@@ -516,7 +558,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param authentication {@link OidcTenantConfig#authentication()}
+     * @param authentication
+     *        {@link OidcTenantConfig#authentication()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder authentication(Authentication authentication) {
@@ -532,8 +576,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param headers {@link CodeGrant#headers()}
-     * @param extraParams {@link CodeGrant#extraParams()}
+     * @param headers
+     *        {@link CodeGrant#headers()}
+     * @param extraParams
+     *        {@link CodeGrant#extraParams()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder codeGrant(Map<String, String> headers, Map<String, String> extraParams) {
@@ -541,7 +588,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param headers {@link CodeGrant#headers()}
+     * @param headers
+     *        {@link CodeGrant#headers()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder codeGrant(Map<String, String> headers) {
@@ -556,7 +605,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param codeGrant {@link OidcTenantConfig#codeGrant()}
+     * @param codeGrant
+     *        {@link OidcTenantConfig#codeGrant()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder codeGrant(CodeGrant codeGrant) {
@@ -565,7 +616,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param tokenStateManager {@link OidcTenantConfig#tokenStateManager()}
+     * @param tokenStateManager
+     *        {@link OidcTenantConfig#tokenStateManager()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder tokenStateManager(TokenStateManager tokenStateManager) {
@@ -590,7 +643,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param allowTokenIntrospectionCache {@link OidcTenantConfig#allowTokenIntrospectionCache()}
+     * @param allowTokenIntrospectionCache
+     *        {@link OidcTenantConfig#allowTokenIntrospectionCache()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder allowTokenIntrospectionCache(boolean allowTokenIntrospectionCache) {
@@ -599,7 +654,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param allowUserInfoCache {@link OidcTenantConfig#allowUserInfoCache()}
+     * @param allowUserInfoCache
+     *        {@link OidcTenantConfig#allowUserInfoCache()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder allowUserInfoCache(boolean allowUserInfoCache) {
@@ -617,7 +674,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param cacheUserInfoInIdtoken {@link OidcTenantConfig#cacheUserInfoInIdtoken()}
+     * @param cacheUserInfoInIdtoken
+     *        {@link OidcTenantConfig#cacheUserInfoInIdtoken()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder cacheUserInfoInIdtoken(boolean cacheUserInfoInIdtoken) {
@@ -635,7 +694,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param jwks {@link OidcTenantConfig#jwks()}
+     * @param jwks
+     *        {@link OidcTenantConfig#jwks()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder jwks(Jwks jwks) {
@@ -651,7 +712,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     }
 
     /**
-     * @param provider {@link OidcTenantConfig#provider()}
+     * @param provider
+     *        {@link OidcTenantConfig#provider()}
+     *
      * @return this builder
      */
     public OidcTenantConfigBuilder provider(Provider provider) {
@@ -696,7 +759,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param name {@link IntrospectionCredentials#name()}
+         * @param name
+         *        {@link IntrospectionCredentials#name()}
+         *
          * @return this builder
          */
         public IntrospectionCredentialsBuilder name(String name) {
@@ -705,7 +770,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param secret {@link IntrospectionCredentials#secret()}
+         * @param secret
+         *        {@link IntrospectionCredentials#secret()}
+         *
          * @return this builder
          */
         public IntrospectionCredentialsBuilder secret(String secret) {
@@ -714,7 +781,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param includeClientId {@link IntrospectionCredentials#includeClientId()}
+         * @param includeClientId
+         *        {@link IntrospectionCredentials#includeClientId()}
+         *
          * @return this builder
          */
         public IntrospectionCredentialsBuilder includeClientId(boolean includeClientId) {
@@ -769,7 +838,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param leafCertificateName {@link CertificateChain#leafCertificateName()}
+         * @param leafCertificateName
+         *        {@link CertificateChain#leafCertificateName()}
+         *
          * @return this builder
          */
         public CertificateChainBuilder leafCertificateName(String leafCertificateName) {
@@ -778,7 +849,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param trustStoreFile {@link CertificateChain#trustStoreFile()}
+         * @param trustStoreFile
+         *        {@link CertificateChain#trustStoreFile()}
+         *
          * @return this builder
          */
         public CertificateChainBuilder trustStoreFile(Path trustStoreFile) {
@@ -787,7 +860,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param trustStorePassword {@link CertificateChain#trustStorePassword()}
+         * @param trustStorePassword
+         *        {@link CertificateChain#trustStorePassword()}
+         *
          * @return this builder
          */
         public CertificateChainBuilder trustStorePassword(String trustStorePassword) {
@@ -796,7 +871,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param trustStoreCertAlias {@link CertificateChain#trustStoreCertAlias()}
+         * @param trustStoreCertAlias
+         *        {@link CertificateChain#trustStoreCertAlias()}
+         *
          * @return this builder
          */
         public CertificateChainBuilder trustStoreCertAlias(String trustStoreCertAlias) {
@@ -805,7 +882,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param trustStoreFileType {@link CertificateChain#trustStoreFileType()}
+         * @param trustStoreFileType
+         *        {@link CertificateChain#trustStoreFileType()}
+         *
          * @return this builder
          */
         public CertificateChainBuilder trustStoreFileType(String trustStoreFileType) {
@@ -824,8 +903,8 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
          * @return builds new {@link CertificateChain}
          */
         public CertificateChain build() {
-            return new CertificateChainImpl(leafCertificateName, trustStoreFile, trustStorePassword, trustStoreCertAlias,
-                    trustStoreFileType);
+            return new CertificateChainImpl(leafCertificateName, trustStoreFile, trustStorePassword,
+                    trustStoreCertAlias, trustStoreFileType);
         }
     }
 
@@ -857,7 +936,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param separator {@link Roles#roleClaimSeparator()}
+         * @param separator
+         *        {@link Roles#roleClaimSeparator()}
+         *
          * @return this builder
          */
         public RolesBuilder roleClaimSeparator(String separator) {
@@ -866,7 +947,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param source {@link Roles#source()}
+         * @param source
+         *        {@link Roles#source()}
+         *
          * @return this builder
          */
         public RolesBuilder source(Source source) {
@@ -875,7 +958,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param roleClaimPaths {@link Roles#roleClaimPath()}
+         * @param roleClaimPaths
+         *        {@link Roles#roleClaimPath()}
+         *
          * @return this builder
          */
         public RolesBuilder roleClaimPath(String... roleClaimPaths) {
@@ -886,7 +971,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param roleClaimPaths {@link Roles#roleClaimPath()}
+         * @param roleClaimPaths
+         *        {@link Roles#roleClaimPath()}
+         *
          * @return this builder
          */
         public RolesBuilder roleClaimPath(List<String> roleClaimPaths) {
@@ -952,7 +1039,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param resolveEarly {@link Jwks#resolveEarly()}
+         * @param resolveEarly
+         *        {@link Jwks#resolveEarly()}
+         *
          * @return this builder
          */
         public JwksBuilder resolveEarly(boolean resolveEarly) {
@@ -961,7 +1050,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param cacheSize {@link Jwks#cacheSize()}
+         * @param cacheSize
+         *        {@link Jwks#cacheSize()}
+         *
          * @return this builder
          */
         public JwksBuilder cacheSize(int cacheSize) {
@@ -970,7 +1061,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param cacheTimeToLive {@link Jwks#cacheTimeToLive()}
+         * @param cacheTimeToLive
+         *        {@link Jwks#cacheTimeToLive()}
+         *
          * @return this builder
          */
         public JwksBuilder cacheTimeToLive(Duration cacheTimeToLive) {
@@ -979,7 +1072,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param cleanUpTimerInterval {@link Jwks#cleanUpTimerInterval()}
+         * @param cleanUpTimerInterval
+         *        {@link Jwks#cleanUpTimerInterval()}
+         *
          * @return this builder
          */
         public JwksBuilder cleanUpTimerInterval(Duration cleanUpTimerInterval) {
@@ -997,7 +1092,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param tryAll {@link Jwks#tryAll()}
+         * @param tryAll
+         *        {@link Jwks#tryAll()}
+         *
          * @return this builder
          */
         public JwksBuilder tryAll(boolean tryAll) {
@@ -1026,7 +1123,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
     public static final class TokenStateManagerBuilder {
 
         private record TokenStateManagerImpl(Strategy strategy, boolean splitTokens, boolean encryptionRequired,
-                Optional<String> encryptionSecret, EncryptionAlgorithm encryptionAlgorithm) implements TokenStateManager {
+                Optional<String> encryptionSecret, EncryptionAlgorithm encryptionAlgorithm)
+                implements
+                    TokenStateManager {
 
         }
 
@@ -1052,7 +1151,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param encryptionAlgorithm {@link TokenStateManager#encryptionAlgorithm()}
+         * @param encryptionAlgorithm
+         *        {@link TokenStateManager#encryptionAlgorithm()}
+         *
          * @return this builder
          */
         public TokenStateManagerBuilder encryptionAlgorithm(EncryptionAlgorithm encryptionAlgorithm) {
@@ -1061,7 +1162,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param encryptionSecret {@link TokenStateManager#encryptionSecret()}
+         * @param encryptionSecret
+         *        {@link TokenStateManager#encryptionSecret()}
+         *
          * @return this builder
          */
         public TokenStateManagerBuilder encryptionSecret(String encryptionSecret) {
@@ -1070,7 +1173,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param strategy {@link TokenStateManager#strategy()}
+         * @param strategy
+         *        {@link TokenStateManager#strategy()}
+         *
          * @return this builder
          */
         public TokenStateManagerBuilder strategy(Strategy strategy) {
@@ -1088,7 +1193,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param encryptionRequired {@link TokenStateManager#encryptionRequired()}
+         * @param encryptionRequired
+         *        {@link TokenStateManager#encryptionRequired()}
+         *
          * @return this builder
          */
         public TokenStateManagerBuilder encryptionRequired(boolean encryptionRequired) {
@@ -1106,7 +1213,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param splitTokens {@link TokenStateManager#splitTokens()}
+         * @param splitTokens
+         *        {@link TokenStateManager#splitTokens()}
+         *
          * @return this builder
          */
         public TokenStateManagerBuilder splitTokens(boolean splitTokens) {
@@ -1119,7 +1228,8 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         public TokenStateManager build() {
-            return new TokenStateManagerImpl(strategy, splitTokens, encryptionRequired, encryptionSecret, encryptionAlgorithm);
+            return new TokenStateManagerImpl(strategy, splitTokens, encryptionRequired, encryptionSecret,
+                    encryptionAlgorithm);
         }
     }
 
@@ -1128,7 +1238,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
      */
     public static final class CodeGrantBuilder {
 
-        private record CodeGrantImpl(Map<String, String> extraParams, Map<String, String> headers) implements CodeGrant {
+        private record CodeGrantImpl(Map<String, String> extraParams, Map<String, String> headers)
+                implements
+                    CodeGrant {
         }
 
         private final OidcTenantConfigBuilder builder;
@@ -1147,8 +1259,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param headerName {@link CodeGrant#headers()} key
-         * @param headerValue {@link CodeGrant#headers()} value
+         * @param headerName
+         *        {@link CodeGrant#headers()} key
+         * @param headerValue
+         *        {@link CodeGrant#headers()} value
+         *
          * @return this builder
          */
         public CodeGrantBuilder header(String headerName, String headerValue) {
@@ -1159,7 +1274,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param headers {@link CodeGrant#headers()}
+         * @param headers
+         *        {@link CodeGrant#headers()}
+         *
          * @return this builder
          */
         public CodeGrantBuilder headers(Map<String, String> headers) {
@@ -1170,8 +1287,11 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param extraParamKey {@link CodeGrant#extraParams()} key
-         * @param extraParamValue {@link CodeGrant#extraParams()} value
+         * @param extraParamKey
+         *        {@link CodeGrant#extraParams()} key
+         * @param extraParamValue
+         *        {@link CodeGrant#extraParams()} value
+         *
          * @return this builder
          */
         public CodeGrantBuilder extraParam(String extraParamKey, String extraParamValue) {
@@ -1182,7 +1302,9 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
         }
 
         /**
-         * @param extraParams {@link CodeGrant#extraParams()}
+         * @param extraParams
+         *        {@link CodeGrant#extraParams()}
+         *
          * @return this builder
          */
         public CodeGrantBuilder extraParams(Map<String, String> extraParams) {
@@ -1209,11 +1331,8 @@ public final class OidcTenantConfigBuilder extends OidcClientCommonConfigBuilder
 
     private static io.quarkus.oidc.runtime.OidcTenantConfig getConfigWithDefaults() {
         if (configWithDefaults == null) {
-            final OidcConfig oidcConfig = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withMapping(OidcConfig.class)
-                    .build()
-                    .getConfigMapping(OidcConfig.class);
+            final OidcConfig oidcConfig = new SmallRyeConfigBuilder().addDiscoveredConverters()
+                    .withMapping(OidcConfig.class).build().getConfigMapping(OidcConfig.class);
             configWithDefaults = OidcConfig.getDefaultTenant(oidcConfig);
         }
         return configWithDefaults;

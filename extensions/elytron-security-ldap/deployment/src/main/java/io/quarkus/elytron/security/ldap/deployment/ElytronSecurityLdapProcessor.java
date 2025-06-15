@@ -28,7 +28,7 @@ class ElytronSecurityLdapProcessor {
 
     @BuildStep
     AllowJNDIBuildItem enableJndi() {
-        //unfortunately we can't really use LDAP without JNDI
+        // unfortunately we can't really use LDAP without JNDI
         return new AllowJNDIBuildItem();
     }
 
@@ -41,8 +41,14 @@ class ElytronSecurityLdapProcessor {
     void configureLdapRealmAuthConfig(LdapRecorder recorder,
             LdapSecurityRealmBuildTimeConfig ldapSecurityRealmBuildTimeConfig,
             LdapSecurityRealmRuntimeConfig ldapSecurityRealmRuntimeConfig,
-            BuildProducer<SecurityRealmBuildItem> securityRealm,
-            BeanContainerBuildItem beanContainerBuildItem //we need this to make sure ArC is initialized
+            BuildProducer<SecurityRealmBuildItem> securityRealm, BeanContainerBuildItem beanContainerBuildItem // we
+                                                                                                                                                                                                                                                                                                          // need
+                                                                                                                                                                                                                                                                                                          // this
+                                                                                                                                                                                                                                                                                                          // to
+                                                                                                                                                                                                                                                                                                          // make
+                                                                                                                                                                                                                                                                                                          // sure
+                                                                                                                                                                                                                                                                                                          // ArC is
+                                                                                                                                                                                                                                                                                                          // initialized
     ) throws Exception {
         if (!ldapSecurityRealmBuildTimeConfig.enabled()) {
             return;
@@ -63,12 +69,12 @@ class ElytronSecurityLdapProcessor {
     @BuildStep
     void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflection) {
         // All JDK provided InitialContextFactory impls via the module descriptors:
-        // com.sun.jndi.ldap.LdapCtxFactory, com.sun.jndi.dns.DnsContextFactory and com.sun.jndi.rmi.registry.RegistryContextFactory
+        // com.sun.jndi.ldap.LdapCtxFactory, com.sun.jndi.dns.DnsContextFactory and
+        // com.sun.jndi.rmi.registry.RegistryContextFactory
         reflection.produce(ReflectiveClassBuildItem.builder(QuarkusDirContextFactory.INITIAL_CONTEXT_FACTORY).methods()
                 .fields().build());
-        reflection.produce(
-                ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
-        reflection.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory")
-                .build());
+        reflection.produce(ReflectiveClassBuildItem.builder("com.sun.jndi.dns.DnsContextFactory").build());
+        reflection
+                .produce(ReflectiveClassBuildItem.builder("com.sun.jndi.rmi.registry.RegistryContextFactory").build());
     }
 }

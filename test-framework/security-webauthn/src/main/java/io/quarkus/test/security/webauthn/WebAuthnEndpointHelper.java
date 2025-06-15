@@ -15,18 +15,10 @@ import io.vertx.core.json.JsonObject;
 
 public class WebAuthnEndpointHelper {
     public static String obtainRegistrationChallenge(String username, Filter cookieFilter) {
-        ExtractableResponse<Response> response = RestAssured
-                .given()
-                .contentType(ContentType.URLENC)
-                .filter(cookieFilter)
-                .log().ifValidationFails()
-                .queryParam("username", username)
-                .get("/q/webauthn/register-options-challenge")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(200)
-                .cookie(getChallengeCookie(), Matchers.notNullValue())
-                .extract();
+        ExtractableResponse<Response> response = RestAssured.given().contentType(ContentType.URLENC)
+                .filter(cookieFilter).log().ifValidationFails().queryParam("username", username)
+                .get("/q/webauthn/register-options-challenge").then().log().ifValidationFails().statusCode(200)
+                .cookie(getChallengeCookie(), Matchers.notNullValue()).extract();
         // assert stuff
         JsonObject responseJson = new JsonObject(response.asString());
         String challenge = responseJson.getString("challenge");
@@ -35,47 +27,23 @@ public class WebAuthnEndpointHelper {
     }
 
     public static void invokeLogin(JsonObject login, Filter cookieFilter) {
-        RestAssured
-                .given().body(login.encode())
-                .filter(cookieFilter)
-                .contentType(ContentType.JSON)
-                .log().ifValidationFails()
-                .post("/q/webauthn/login")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(204)
-                .cookie(getChallengeCookie(), Matchers.is(""))
-                .cookie(getMainCookie(), Matchers.notNullValue());
+        RestAssured.given().body(login.encode()).filter(cookieFilter).contentType(ContentType.JSON).log()
+                .ifValidationFails().post("/q/webauthn/login").then().log().ifValidationFails().statusCode(204)
+                .cookie(getChallengeCookie(), Matchers.is("")).cookie(getMainCookie(), Matchers.notNullValue());
     }
 
     public static void invokeRegistration(String username, JsonObject registration, Filter cookieFilter) {
-        RestAssured
-                .given().body(registration.encode())
-                .filter(cookieFilter)
-                .contentType(ContentType.JSON)
-                .log().ifValidationFails()
-                .queryParam("username", username)
-                .post("/q/webauthn/register")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(204)
-                .cookie(getChallengeCookie(), Matchers.is(""))
+        RestAssured.given().body(registration.encode()).filter(cookieFilter).contentType(ContentType.JSON).log()
+                .ifValidationFails().queryParam("username", username).post("/q/webauthn/register").then().log()
+                .ifValidationFails().statusCode(204).cookie(getChallengeCookie(), Matchers.is(""))
                 .cookie(getMainCookie(), Matchers.notNullValue());
     }
 
     public static String obtainLoginChallenge(String username, Filter cookieFilter) {
-        ExtractableResponse<Response> response = RestAssured
-                .given()
-                .contentType(ContentType.URLENC)
-                .filter(cookieFilter)
-                .log().ifValidationFails()
-                .queryParam("username", username)
-                .get("/q/webauthn/login-options-challenge")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(200)
-                .cookie(getChallengeCookie(), Matchers.notNullValue())
-                .extract();
+        ExtractableResponse<Response> response = RestAssured.given().contentType(ContentType.URLENC)
+                .filter(cookieFilter).log().ifValidationFails().queryParam("username", username)
+                .get("/q/webauthn/login-options-challenge").then().log().ifValidationFails().statusCode(200)
+                .cookie(getChallengeCookie(), Matchers.notNullValue()).extract();
         // assert stuff
         JsonObject responseJson = new JsonObject(response.asString());
         String challenge = responseJson.getString("challenge");
@@ -84,35 +52,29 @@ public class WebAuthnEndpointHelper {
     }
 
     public static void addWebAuthnRegistrationFormParameters(RequestSpecification request, JsonObject registration) {
-        request
-                .formParam("webAuthnId", registration.getString("id"))
+        request.formParam("webAuthnId", registration.getString("id"))
                 .formParam("webAuthnRawId", registration.getString("rawId"))
                 .formParam("webAuthnResponseAttestationObject",
                         registration.getJsonObject("response").getString("attestationObject"))
-                .formParam("webAuthnResponseClientDataJSON", registration.getJsonObject("response").getString("clientDataJSON"))
+                .formParam("webAuthnResponseClientDataJSON",
+                        registration.getJsonObject("response").getString("clientDataJSON"))
                 .formParam("webAuthnType", registration.getString("type"));
     }
 
     public static void addWebAuthnLoginFormParameters(RequestSpecification request, JsonObject login) {
-        request
-                .formParam("webAuthnId", login.getString("id"))
-                .formParam("webAuthnRawId", login.getString("rawId"))
-                .formParam("webAuthnResponseAuthenticatorData", login.getJsonObject("response").getString("authenticatorData"))
+        request.formParam("webAuthnId", login.getString("id")).formParam("webAuthnRawId", login.getString("rawId"))
+                .formParam("webAuthnResponseAuthenticatorData",
+                        login.getJsonObject("response").getString("authenticatorData"))
                 .formParam("webAuthnResponseSignature", login.getJsonObject("response").getString("signature"))
                 .formParam("webAuthnResponseUserHandle", login.getJsonObject("response").getString("userHandle"))
-                .formParam("webAuthnResponseClientDataJSON", login.getJsonObject("response").getString("clientDataJSON"))
+                .formParam("webAuthnResponseClientDataJSON",
+                        login.getJsonObject("response").getString("clientDataJSON"))
                 .formParam("webAuthnType", login.getString("type"));
     }
 
     public static void invokeLogout(Filter cookieFilter) {
-        RestAssured.given().filter(cookieFilter)
-                .redirects().follow(false)
-                .when()
-                .log().ifValidationFails()
-                .get("/q/webauthn/logout")
-                .then()
-                .log().ifValidationFails()
-                .statusCode(302)
+        RestAssured.given().filter(cookieFilter).redirects().follow(false).when().log().ifValidationFails()
+                .get("/q/webauthn/logout").then().log().ifValidationFails().statusCode(302)
                 .cookie(getMainCookie(), Matchers.is(""));
     }
 

@@ -22,9 +22,7 @@ public class MutinyResubscriptionTest {
 
     @Test
     public void test() {
-        Uni<String> hello = service.hello()
-                .onFailure().retry().atMost(2)
-                .onFailure().recoverWithItem("hello");
+        Uni<String> hello = service.hello().onFailure().retry().atMost(2).onFailure().recoverWithItem("hello");
 
         assertThat(MutinyHelloService.COUNTER).hasValue(0);
 

@@ -20,8 +20,7 @@ public final class SchemaUtil {
 
     public static Set<String> getColumnNames(EntityManagerFactory entityManagerFactory, Class<?> entityType) {
         Set<String> result = new HashSet<>();
-        var persister = entityManagerFactory.unwrap(SessionFactoryImplementor.class)
-                .getMappingMetamodel()
+        var persister = entityManagerFactory.unwrap(SessionFactoryImplementor.class).getMappingMetamodel()
                 .getEntityDescriptor(entityType);
         if (persister == null) {
             return result;
@@ -34,8 +33,8 @@ public final class SchemaUtil {
 
     public static String getColumnTypeName(EntityManagerFactory entityManagerFactory, Class<?> entityType,
             String columnName) {
-        MappingMetamodel domainModel = entityManagerFactory
-                .unwrap(SessionFactoryImplementor.class).getRuntimeMetamodels().getMappingMetamodel();
+        MappingMetamodel domainModel = entityManagerFactory.unwrap(SessionFactoryImplementor.class)
+                .getRuntimeMetamodels().getMappingMetamodel();
         EntityPersister entityDescriptor = domainModel.findEntityDescriptor(entityType);
         var columnFinder = new SelectableConsumer() {
             private SelectableMapping found;
@@ -52,8 +51,8 @@ public final class SchemaUtil {
     }
 
     public static Generator getGenerator(EntityManagerFactory entityManagerFactory, Class<?> entityType) {
-        MappingMetamodel domainModel = entityManagerFactory
-                .unwrap(SessionFactoryImplementor.class).getRuntimeMetamodels().getMappingMetamodel();
+        MappingMetamodel domainModel = entityManagerFactory.unwrap(SessionFactoryImplementor.class)
+                .getRuntimeMetamodels().getMappingMetamodel();
         EntityPersister entityDescriptor = domainModel.findEntityDescriptor(entityType);
         return entityDescriptor.getGenerator();
     }

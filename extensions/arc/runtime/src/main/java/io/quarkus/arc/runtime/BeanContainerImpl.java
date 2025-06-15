@@ -41,8 +41,8 @@ class BeanContainerImpl implements BeanContainer {
         return createFactory(handleSupplier, fallbackSupplier, type, qualifiers);
     }
 
-    private <T> Factory<T> createFactory(Supplier<InstanceHandle<T>> handleSupplier, Supplier<Factory<T>> fallbackSupplier,
-            Class<T> type, Annotation... qualifiers) {
+    private <T> Factory<T> createFactory(Supplier<InstanceHandle<T>> handleSupplier,
+            Supplier<Factory<T>> fallbackSupplier, Class<T> type, Annotation... qualifiers) {
         if (handleSupplier == null) {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debugf(
@@ -87,7 +87,8 @@ class BeanContainerImpl implements BeanContainer {
      * This factory attempts to create instances of given class by calling their no-arg constructor. Any exceptions
      * related to lack of such constructor of failure to invoke it are simply re-thrown.
      *
-     * @param <T> represents the type that this factory can create
+     * @param <T>
+     *        represents the type that this factory can create
      */
     private static final class DefaultInstanceFactory<T> implements BeanContainer.Factory<T> {
 

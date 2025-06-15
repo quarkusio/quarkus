@@ -16,20 +16,16 @@ public class NotFoundExceptionMapperHttpRootTrailingSlashTestCase {
 
     @RegisterExtension
     static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RootResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(RootResource.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/abc/"), "application.properties")
                     .addAsResource(new StringAsset("index content"), META_INF_RESOURCES + "index.html"));
 
     @Test
     public void testHtmlResourceNotFound() {
         // test the exception mapper provided in dev mode, if no accept, will just return a plain 404
-        RestAssured.given().accept(ContentType.HTML)
-                .when().get("/abc/not_found")
-                .then()
-                .statusCode(404)
-                .contentType(ContentType.HTML)
-                .body(containsString("/abc/index.html")) // check that index.html is displayed
+        RestAssured.given().accept(ContentType.HTML).when().get("/abc/not_found").then().statusCode(404)
+                .contentType(ContentType.HTML).body(containsString("/abc/index.html")) // check that index.html is
+                // displayed
                 .body(Matchers.containsString("<div class=\"callout\">404 - Resource Not Found</div>"));
     }
 }

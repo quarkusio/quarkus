@@ -21,8 +21,11 @@ public class DatabaseListOptions {
     /**
      * Sets the maximum execution time on the server for this operation.
      *
-     * @param maxTime the max time
-     * @param timeUnit the time unit, which may not be null
+     * @param maxTime
+     *        the max time
+     * @param timeUnit
+     *        the time unit, which may not be null
+     *
      * @return this
      */
     public DatabaseListOptions maxTime(long maxTime, TimeUnit timeUnit) {
@@ -34,7 +37,9 @@ public class DatabaseListOptions {
     /**
      * Sets the query filter to apply to the returned database names.
      *
-     * @param filter the filter, which may be null.
+     * @param filter
+     *        the filter, which may be null.
+     *
      * @return this
      */
     public DatabaseListOptions filter(Bson filter) {
@@ -43,11 +48,12 @@ public class DatabaseListOptions {
     }
 
     /**
-     * Sets the nameOnly flag that indicates whether the command should return just the database names or return the database
-     * names and
-     * size information.
+     * Sets the nameOnly flag that indicates whether the command should return just the database names or return the
+     * database names and size information.
      *
-     * @param nameOnly the nameOnly flag, which may be null
+     * @param nameOnly
+     *        the nameOnly flag, which may be null
+     *
      * @return this
      */
     public DatabaseListOptions nameOnly(boolean nameOnly) {

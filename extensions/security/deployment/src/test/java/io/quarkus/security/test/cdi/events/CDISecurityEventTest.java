@@ -45,10 +45,9 @@ public class CDISecurityEventTest {
     SecurityEventObserver observer;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
-                            SecurityTestUtils.class, IdentityMock.class, SecurityEventObserver.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
+                    SecurityTestUtils.class, IdentityMock.class, SecurityEventObserver.class));
 
     @BeforeEach
     public void beforeEach() {

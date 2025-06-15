@@ -19,13 +19,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SelectedAlternativesPackageStartsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SelectedAlternativesPackageStartsTest.class, Alpha.class, Producers.class, Foo.class, Bar.class,
-                            MyStereotype.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.arc.selected-alternatives=io.quarkus.arc.test.**"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(SelectedAlternativesPackageStartsTest.class, Alpha.class, Producers.class, Foo.class, Bar.class,
+                    MyStereotype.class)
+            .addAsResource(new StringAsset("quarkus.arc.selected-alternatives=io.quarkus.arc.test.**"),
+                    "application.properties"));
 
     @Inject
     Instance<Alpha> alpha;

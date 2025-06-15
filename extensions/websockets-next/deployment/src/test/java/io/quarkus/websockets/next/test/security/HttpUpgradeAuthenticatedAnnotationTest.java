@@ -33,9 +33,8 @@ public class HttpUpgradeAuthenticatedAnnotationTest extends SecurityTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            PublicEndpoint.class, PublicEndpoint.SubEndpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class,
+                    TestIdentityController.class, PublicEndpoint.class, PublicEndpoint.SubEndpoint.class));
 
     @TestHTTPResource("public-end")
     URI publicEndUri;

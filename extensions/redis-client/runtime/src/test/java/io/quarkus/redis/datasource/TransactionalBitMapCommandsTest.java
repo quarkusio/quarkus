@@ -62,8 +62,7 @@ public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
             bitmap.setbit(key, 1L, 1); // 2 -> 2
             bitmap.setbit(key, 2L, 1); // 3 -> 3
             tx.discard();
-            assertThatThrownBy(() -> bitmap.bitcount(key, 0, -1))
-                    .isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> bitmap.bitcount(key, 0, -1)).isInstanceOf(IllegalStateException.class);
         });
         assertThat(result.size()).isEqualTo(0);
         assertThat(result.discarded()).isTrue();
@@ -73,11 +72,8 @@ public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
     public void bitMapReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalBitMapCommands<String> bitmap = tx.bitmap(String.class);
-            return bitmap.bitcount(key)
-                    .chain(() -> bitmap.setbit(key, 0L, 1))
-                    .chain(() -> bitmap.setbit(key, 1L, 1))
-                    .chain(() -> bitmap.setbit(key, 2L, 1))
-                    .chain(() -> bitmap.bitcount(key, 0, -1));
+            return bitmap.bitcount(key).chain(() -> bitmap.setbit(key, 0L, 1)).chain(() -> bitmap.setbit(key, 1L, 1))
+                    .chain(() -> bitmap.setbit(key, 2L, 1)).chain(() -> bitmap.bitcount(key, 0, -1));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();
@@ -92,11 +88,8 @@ public class TransactionalBitMapCommandsTest extends DatasourceTestBase {
     public void bitMapReactiveDiscard() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalBitMapCommands<String> bitmap = tx.bitmap(String.class);
-            return bitmap.bitcount(key)
-                    .chain(() -> bitmap.setbit(key, 0L, 1))
-                    .chain(() -> bitmap.setbit(key, 1L, 1))
-                    .chain(() -> bitmap.setbit(key, 2L, 1))
-                    .chain(tx::discard);
+            return bitmap.bitcount(key).chain(() -> bitmap.setbit(key, 0L, 1)).chain(() -> bitmap.setbit(key, 1L, 1))
+                    .chain(() -> bitmap.setbit(key, 2L, 1)).chain(tx::discard);
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(0);
         assertThat(result.discarded()).isTrue();

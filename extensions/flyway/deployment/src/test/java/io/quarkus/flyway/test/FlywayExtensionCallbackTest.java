@@ -29,18 +29,15 @@ public class FlywayExtensionCallbackTest {
     @Inject
     AgroalDataSource defaultDataSource;
 
-    static final FlywayH2TestCustomizer customizer = FlywayH2TestCustomizer
-            .withDbName("quarkus-flyway-callback")
-            .withPort(11303)
-            .withInitSqlFile("src/test/resources/callback-init-data.sql");
+    static final FlywayH2TestCustomizer customizer = FlywayH2TestCustomizer.withDbName("quarkus-flyway-callback")
+            .withPort(11303).withInitSqlFile("src/test/resources/callback-init-data.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setBeforeAllCustomizer(customizer::startH2)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setBeforeAllCustomizer(customizer::startH2)
             .setAfterAllCustomizer(customizer::stopH2)
             .withApplicationRoot((jar) -> jar
-                    .addClasses(FlywayH2TestCustomizer.class,
-                            FlywayExtensionCallback.class, FlywayExtensionCallback2.class, FlywayExtensionCDICallback.class)
+                    .addClasses(FlywayH2TestCustomizer.class, FlywayExtensionCallback.class,
+                            FlywayExtensionCallback2.class, FlywayExtensionCDICallback.class)
                     .addAsResource("db/migration/V1.0.3__Quarkus_Callback.sql")
                     .addAsResource("callback-config.properties", "application.properties"));
 
@@ -53,12 +50,14 @@ public class FlywayExtensionCallbackTest {
         String currentVersion = migrationInfo.getVersion().toString();
         // Expected to be 1.0.3 as migration runs at start
         assertEquals("1.0.3", currentVersion);
-        try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
+        try (Connection connection = defaultDataSource.getConnection();
+                Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select COUNT(name) from quarked_callback")) {
                 assertTrue(executeQuery.next(), "Table exists but it is empty");
                 int count = executeQuery.getInt(1);
                 // Expect one row for each callback invoked by Flyway
-                int expected = FlywayExtensionCallback.DEFAULT_EVENTS.size() + FlywayExtensionCallback2.DEFAULT_EVENTS.size();
+                int expected = FlywayExtensionCallback.DEFAULT_EVENTS.size()
+                        + FlywayExtensionCallback2.DEFAULT_EVENTS.size();
                 assertEquals(expected, count);
             }
         }

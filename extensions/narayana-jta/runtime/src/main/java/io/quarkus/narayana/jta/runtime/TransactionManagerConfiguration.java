@@ -14,8 +14,7 @@ import io.smallrye.config.WithDefault;
 @ConfigMapping(prefix = "quarkus.transaction-manager")
 public interface TransactionManagerConfiguration {
     /**
-     * The node name used by the transaction manager.
-     * Must not exceed a length of 28 bytes.
+     * The node name used by the transaction manager. Must not exceed a length of 28 bytes.
      *
      * @see #shortenNodeNameIfNecessary
      */
@@ -23,10 +22,10 @@ public interface TransactionManagerConfiguration {
     String nodeName();
 
     /**
-     * Whether the node name should be shortened if necessary.
-     * The node name must not exceed a length of 28 bytes. If this property is set to {@code true}, and the node name exceeds 28
-     * bytes, the node name is shortened by calculating the <a href="https://en.wikipedia.org/wiki/SHA-2">SHA-224</a> hash,
-     * which has a length of 28 bytes, encoded to Base64 format and then shortened to 28 bytes.
+     * Whether the node name should be shortened if necessary. The node name must not exceed a length of 28 bytes. If
+     * this property is set to {@code true}, and the node name exceeds 28 bytes, the node name is shortened by
+     * calculating the <a href="https://en.wikipedia.org/wiki/SHA-2">SHA-224</a> hash, which has a length of 28 bytes,
+     * encoded to Base64 format and then shortened to 28 bytes.
      *
      * @see #nodeName
      */
@@ -48,8 +47,8 @@ public interface TransactionManagerConfiguration {
     /**
      * The list of recovery modules.
      */
-    @WithDefault("com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule," +
-            "com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule")
+    @WithDefault("com.arjuna.ats.internal.arjuna.recovery.AtomicActionRecoveryModule,"
+            + "com.arjuna.ats.internal.jta.recovery.arjunacore.XARecoveryModule")
     List<String> recoveryModules();
 
     /**
@@ -61,9 +60,9 @@ public interface TransactionManagerConfiguration {
     /**
      * The list of orphan filters.
      */
-    @WithDefault("com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResourceOrphanFilter," +
-            "com.arjuna.ats.internal.jta.recovery.arjunacore.JTANodeNameXAResourceOrphanFilter," +
-            "com.arjuna.ats.internal.jta.recovery.arjunacore.JTAActionStatusServiceXAResourceOrphanFilter")
+    @WithDefault("com.arjuna.ats.internal.jta.recovery.arjunacore.JTATransactionLogXAResourceOrphanFilter,"
+            + "com.arjuna.ats.internal.jta.recovery.arjunacore.JTANodeNameXAResourceOrphanFilter,"
+            + "com.arjuna.ats.internal.jta.recovery.arjunacore.JTAActionStatusServiceXAResourceOrphanFilter")
     List<String> xaResourceOrphanFilters();
 
     /**
@@ -74,9 +73,8 @@ public interface TransactionManagerConfiguration {
     @ConfigGroup
     public interface ObjectStoreConfig {
         /**
-         * The name of the directory where the transaction logs will be stored when using the {@code file-system} object store.
-         * If the value is not absolute then the directory is relative
-         * to the <em>user.dir</em> system property.
+         * The name of the directory where the transaction logs will be stored when using the {@code file-system} object
+         * store. If the value is not absolute then the directory is relative to the <em>user.dir</em> system property.
          */
         @WithDefault("ObjectStore")
         String directory();
@@ -88,7 +86,8 @@ public interface TransactionManagerConfiguration {
         ObjectStoreType type();
 
         /**
-         * The name of the datasource where the transaction logs will be stored when using the {@code jdbc} object store.
+         * The name of the datasource where the transaction logs will be stored when using the {@code jdbc} object
+         * store.
          * <p>
          * If undefined, it will use the default datasource.
          */

@@ -6,7 +6,8 @@ public class SecureExchangeAttribute implements ExchangeAttribute {
 
     public static final String TOKEN = "%{SECURE}";
 
-    public static final String LEGACY_INCORRECT_TOKEN = "${SECURE}"; //this was a bug, but we still support it for compat
+    public static final String LEGACY_INCORRECT_TOKEN = "${SECURE}"; // this was a bug, but we still support it for
+                                                                     // compat
     public static final ExchangeAttribute INSTANCE = new SecureExchangeAttribute();
 
     @Override

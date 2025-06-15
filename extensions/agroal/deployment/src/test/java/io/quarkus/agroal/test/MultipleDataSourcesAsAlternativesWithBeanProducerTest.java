@@ -17,12 +17,11 @@ import io.quarkus.arc.InjectableInstance;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Tests a use case where multiple datasources are defined at build time,
- * but only one is used at runtime,
- * and a custom bean producer is used to retrieve the active datasource.
+ * Tests a use case where multiple datasources are defined at build time, but only one is used at runtime, and a custom
+ * bean producer is used to retrieve the active datasource.
  * <p>
- * This is mostly useful when each datasource has a distinct db-kind, but in theory that shouldn't matter,
- * so we use the h2 db-kind everywhere here to keep test dependencies simpler.
+ * This is mostly useful when each datasource has a distinct db-kind, but in theory that shouldn't matter, so we use the
+ * h2 db-kind everywhere here to keep test dependencies simpler.
  */
 public abstract class MultipleDataSourcesAsAlternativesWithBeanProducerTest {
 
@@ -45,9 +44,7 @@ public abstract class MultipleDataSourcesAsAlternativesWithBeanProducerTest {
     }
 
     static QuarkusUnitTest runner(String activeDsName) {
-        return new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addClass(MyProducer.class))
+        return new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyProducer.class))
                 .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "h2")
                 .overrideConfigKey("quarkus.datasource.ds-1.active", "false")
                 .overrideConfigKey("quarkus.datasource.ds-2.db-kind", "h2")
@@ -70,7 +67,8 @@ public abstract class MultipleDataSourcesAsAlternativesWithBeanProducerTest {
 
     @Test
     public void testExplicitDatasourceBeanUsable() {
-        doTestDatasource(Arc.container().select(AgroalDataSource.class, new DataSource.DataSourceLiteral(activeDsName)).get());
+        doTestDatasource(
+                Arc.container().select(AgroalDataSource.class, new DataSource.DataSourceLiteral(activeDsName)).get());
     }
 
     @Test
@@ -80,19 +78,17 @@ public abstract class MultipleDataSourcesAsAlternativesWithBeanProducerTest {
 
     @Test
     public void testInactiveDatasourceBeanUnusable() {
-        assertThatThrownBy(
-                () -> Arc.container().select(AgroalDataSource.class, new DataSource.DataSourceLiteral(inactiveDsName)).get()
-                        .getConnection())
-                .hasMessageContaining(
-                        "Datasource '" + inactiveDsName + "' was deactivated through configuration properties.");
+        assertThatThrownBy(() -> Arc.container()
+                .select(AgroalDataSource.class, new DataSource.DataSourceLiteral(inactiveDsName)).get().getConnection())
+                .hasMessageContaining("Datasource '" + inactiveDsName
+                        + "' was deactivated through configuration properties.");
     }
 
     private static void doTestDatasource(AgroalDataSource dataSource) {
         assertThatCode(() -> {
             try (var connection = dataSource.getConnection()) {
             }
-        })
-                .doesNotThrowAnyException();
+        }).doesNotThrowAnyException();
     }
 
     private static class MyProducer {

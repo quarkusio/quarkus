@@ -13,10 +13,8 @@ public class FaultToleranceDevUIProcessor {
     CardPageBuildItem cardPage(FaultToleranceInfoBuildItem faultToleranceInfo) {
         CardPageBuildItem pageBuildItem = new CardPageBuildItem();
 
-        pageBuildItem.addPage(Page.webComponentPageBuilder()
-                .title("Guarded Methods")
-                .icon("font-awesome-solid:life-ring")
-                .componentLink("qwc-fault-tolerance-methods.js")
+        pageBuildItem.addPage(Page.webComponentPageBuilder().title("Guarded Methods")
+                .icon("font-awesome-solid:life-ring").componentLink("qwc-fault-tolerance-methods.js")
                 .staticLabel("" + faultToleranceInfo.getGuardedMethods()));
 
         return pageBuildItem;

@@ -11,8 +11,8 @@ import io.smallrye.config.ConfigMapping;
 public interface OidcClientReactiveFilterConfig {
 
     /**
-     * Name of the configured OidcClient used by the OidcClientRequestReactiveFilter. You can override this configuration
-     * for individual MP RestClients with the `io.quarkus.oidc.client.filter.OidcClientFilter` annotation.
+     * Name of the configured OidcClient used by the OidcClientRequestReactiveFilter. You can override this
+     * configuration for individual MP RestClients with the `io.quarkus.oidc.client.filter.OidcClientFilter` annotation.
      */
     Optional<String> clientName();
 }

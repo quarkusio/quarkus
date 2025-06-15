@@ -48,15 +48,9 @@ public class JsonExporter {
         List<FunctionTimer> functionTimers = new ArrayList<>();
         List<DistributionSummary> distributionSummaries = new ArrayList<>();
         List<Meter> meters = new ArrayList<>();
-        meterRegistry.getMeters().forEach(meter -> meter.match(gauges::add,
-                counters::add,
-                timers::add,
-                distributionSummaries::add,
-                longTaskTimers::add,
-                timeGauges::add,
-                functionCounters::add,
-                functionTimers::add,
-                meters::add));
+        meterRegistry.getMeters()
+                .forEach(meter -> meter.match(gauges::add, counters::add, timers::add, distributionSummaries::add,
+                        longTaskTimers::add, timeGauges::add, functionCounters::add, functionTimers::add, meters::add));
         exportCounters(counters).forEach(root::add);
         exportGauges(gauges).forEach(root::add);
         exportTimeGauges(timeGauges).forEach(root::add);
@@ -91,19 +85,18 @@ public class JsonExporter {
     }
 
     private Map<String, JsonValue> exportCounters(Collection<Counter> counters) {
-        return counters.stream()
-                .collect(Collectors.toMap(counter -> createExportKey(counter.getId()),
-                        counter -> jsonProvider().createValue(counter.count())));
+        return counters.stream().collect(Collectors.toMap(counter -> createExportKey(counter.getId()),
+                counter -> jsonProvider().createValue(counter.count())));
     }
 
     private Map<String, JsonValue> exportFunctionCounters(Collection<FunctionCounter> counters) {
-        return counters.stream()
-                .collect(Collectors.toMap(counter -> createExportKey(counter.getId()),
-                        counter -> jsonProvider().createValue(counter.count())));
+        return counters.stream().collect(Collectors.toMap(counter -> createExportKey(counter.getId()),
+                counter -> jsonProvider().createValue(counter.count())));
     }
 
     private Map<String, JsonValue> exportTimers(Collection<Timer> timers) {
-        Map<String, List<Timer>> groups = timers.stream().collect(Collectors.groupingBy(timer -> timer.getId().getName()));
+        Map<String, List<Timer>> groups = timers.stream()
+                .collect(Collectors.groupingBy(timer -> timer.getId().getName()));
         Map<String, JsonValue> result = new HashMap<>();
         for (Map.Entry<String, List<Timer>> group : groups.entrySet()) {
             JsonObjectBuilder builder = jsonProvider().createObjectBuilder();
@@ -166,12 +159,10 @@ public class JsonExporter {
                 builder.add(createExportKey("mean", summary.getId()), snapshot.mean());
                 for (ValueAtPercentile valueAtPercentile : snapshot.percentileValues()) {
                     if (Math.abs(valueAtPercentile.percentile() - 0.999) < 0.000001) {
-                        builder.add(createExportKey("p999", summary.getId()),
-                                valueAtPercentile.value());
+                        builder.add(createExportKey("p999", summary.getId()), valueAtPercentile.value());
                     } else {
-                        builder.add(
-                                createExportKey("p" + (int) Math.floor(valueAtPercentile.percentile() * 100), summary.getId()),
-                                valueAtPercentile.value());
+                        builder.add(createExportKey("p" + (int) Math.floor(valueAtPercentile.percentile() * 100),
+                                summary.getId()), valueAtPercentile.value());
                     }
                 }
             }
@@ -200,9 +191,7 @@ public class JsonExporter {
         if (tags == null || tags.isEmpty()) {
             return "";
         } else {
-            return ";" + tags.stream()
-                    .map(tag -> tag.getKey() + "=" + tag.getValue()
-                            .replace(";", "_"))
+            return ";" + tags.stream().map(tag -> tag.getKey() + "=" + tag.getValue().replace(";", "_"))
                     .collect(Collectors.joining(";"));
         }
     }

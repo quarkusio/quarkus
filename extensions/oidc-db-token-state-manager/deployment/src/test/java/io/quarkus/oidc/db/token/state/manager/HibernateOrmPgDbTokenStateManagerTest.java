@@ -53,8 +53,8 @@ public class HibernateOrmPgDbTokenStateManagerTest extends AbstractDbTokenStateM
             page = loginForm.getButtonByName("login").click();
             assertEquals(200, page.getWebResponse().getStatusCode());
 
-            WebResponse webResponse = webClient.loadWebResponse(
-                    new WebRequest(URI.create(url.toString() + "greeting").toURL()));
+            WebResponse webResponse = webClient
+                    .loadWebResponse(new WebRequest(URI.create(url.toString() + "greeting").toURL()));
             assertEquals(200, webResponse.getStatusCode());
             assertTrue(webResponse.getContentAsString().contains("Good day"));
 
@@ -73,19 +73,11 @@ public class HibernateOrmPgDbTokenStateManagerTest extends AbstractDbTokenStateM
         assertTokenStateCount(0);
 
         // create 3 tokens
-        RestAssured
-                .given()
-                .body(3)
-                .post("/token-state-manager-generator")
-                .then()
-                .statusCode(204);
+        RestAssured.given().body(3).post("/token-state-manager-generator").then().statusCode(204);
         assertTokenStateCount(3);
 
         // make sure expired tokens are deleted
-        Awaitility
-                .await()
-                .ignoreExceptions()
-                .atMost(Duration.ofSeconds(10))
+        Awaitility.await().ignoreExceptions().atMost(Duration.ofSeconds(10))
                 .untilAsserted(() -> assertTokenStateCount(0));
     }
 }

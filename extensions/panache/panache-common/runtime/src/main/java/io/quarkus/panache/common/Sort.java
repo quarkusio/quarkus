@@ -5,14 +5,12 @@ import java.util.List;
 
 /**
  * <p>
- * Utility class to build and represent SQL sorting specifications. A {@link Sort} instance represents
- * a list of columns to sort on, each with a direction to use for sorting.
+ * Utility class to build and represent SQL sorting specifications. A {@link Sort} instance represents a list of columns
+ * to sort on, each with a direction to use for sorting.
  * </p>
- *
  * <p>
  * Usage:
  * </p>
- *
  * <code><pre>
  * Sort sort = Sort.by("name").and("age", Direction.Descending);
  * Sort sort2 = Sort.ascending("name", "age");
@@ -20,6 +18,7 @@ import java.util.List;
  * </pre></code>
  *
  * @author Stéphane Épardaud
+ *
  * @see Direction
  */
 public class Sort {
@@ -108,8 +107,11 @@ public class Sort {
     /**
      * Sort by the given column, in ascending order.
      *
-     * @param column the column to sort on, in ascending order.
+     * @param column
+     *        the column to sort on, in ascending order.
+     *
      * @return a new Sort instance which sorts on the given column in ascending order.
+     *
      * @see #by(String, Direction)
      * @see #by(String...)
      */
@@ -120,9 +122,13 @@ public class Sort {
     /**
      * Sort by the given column, in the given order.
      *
-     * @param column the column to sort on, in the given order.
-     * @param direction the direction to sort on.
+     * @param column
+     *        the column to sort on, in the given order.
+     * @param direction
+     *        the direction to sort on.
+     *
      * @return a new Sort instance which sorts on the given column in the given order.
+     *
      * @see #by(String)
      * @see #by(String...)
      */
@@ -133,9 +139,13 @@ public class Sort {
     /**
      * Sort by the given column, in the given order and in the given null precedence.
      *
-     * @param column the column to sort on, in the given order.
-     * @param nullPrecedence the null precedence to use.
+     * @param column
+     *        the column to sort on, in the given order.
+     * @param nullPrecedence
+     *        the null precedence to use.
+     *
      * @return a new Sort instance which sorts on the given column in the given order and null precedence.
+     *
      * @see #by(String)
      * @see #by(String...)
      */
@@ -146,10 +156,15 @@ public class Sort {
     /**
      * Sort by the given column, in the given order and in the given null precedence.
      *
-     * @param column the column to sort on, in the given order.
-     * @param direction the direction to sort on.
-     * @param nullPrecedence the null precedence to use.
+     * @param column
+     *        the column to sort on, in the given order.
+     * @param direction
+     *        the direction to sort on.
+     * @param nullPrecedence
+     *        the null precedence to use.
+     *
      * @return a new Sort instance which sorts on the given column in the given order and null precedence.
+     *
      * @see #by(String)
      * @see #by(String...)
      */
@@ -160,8 +175,11 @@ public class Sort {
     /**
      * Sort by the given columns, in ascending order. Equivalent to {@link #ascending(String...)}.
      *
-     * @param columns the columns to sort on, in ascending order.
+     * @param columns
+     *        the columns to sort on, in ascending order.
+     *
      * @return a new Sort instance which sorts on the given columns in ascending order.
+     *
      * @see #by(String, Direction)
      * @see #by(String)
      * @see #ascending(String...)
@@ -178,8 +196,11 @@ public class Sort {
     /**
      * Sort by the given columns, in ascending order. Equivalent to {@link #by(String...)}.
      *
-     * @param columns the columns to sort on, in ascending order.
+     * @param columns
+     *        the columns to sort on, in ascending order.
+     *
      * @return a new Sort instance which sorts on the given columns in ascending order.
+     *
      * @see #by(String, Direction)
      * @see #by(String)
      * @see #by(String...)
@@ -192,8 +213,11 @@ public class Sort {
     /**
      * Sort by the given columns, in descending order.
      *
-     * @param columns the columns to sort on, in descending order.
+     * @param columns
+     *        the columns to sort on, in descending order.
+     *
      * @return a new Sort instance which sorts on the given columns in descending order.
+     *
      * @see #by(String, Direction)
      * @see #by(String)
      * @see #descending(String...)
@@ -210,6 +234,7 @@ public class Sort {
      * Sets the order to descending for all current sort columns.
      *
      * @return this instance, modified.
+     *
      * @see #ascending()
      * @see #direction(Direction)
      */
@@ -221,6 +246,7 @@ public class Sort {
      * Sets the order to ascending for all current sort columns.
      *
      * @return this instance, modified.
+     *
      * @see #descending()
      * @see #direction(Direction)
      */
@@ -231,8 +257,11 @@ public class Sort {
     /**
      * Sets the order to all current sort columns.
      *
-     * @param direction the direction to use for all current sort columns.
+     * @param direction
+     *        the direction to use for all current sort columns.
+     *
      * @return this instance, modified.
+     *
      * @see #descending()
      * @see #ascending()
      */
@@ -246,8 +275,11 @@ public class Sort {
     /**
      * Adds a sort column, in ascending order.
      *
-     * @param name the new column to sort on, in ascending order.
+     * @param name
+     *        the new column to sort on, in ascending order.
+     *
      * @return this instance, modified.
+     *
      * @see #and(String, Direction)
      */
     public Sort and(String name) {
@@ -258,9 +290,13 @@ public class Sort {
     /**
      * Adds a sort column, in the given order.
      *
-     * @param name the new column to sort on, in the given order.
-     * @param direction the direction to sort on.
+     * @param name
+     *        the new column to sort on, in the given order.
+     * @param direction
+     *        the direction to sort on.
+     *
      * @return this instance, modified.
+     *
      * @see #and(String)
      */
     public Sort and(String name, Direction direction) {
@@ -271,9 +307,13 @@ public class Sort {
     /**
      * Adds a sort column, in the given null precedence.
      *
-     * @param name the new column to sort on, in the given null precedence.
-     * @param nullPrecedence the null precedence to use.
+     * @param name
+     *        the new column to sort on, in the given null precedence.
+     * @param nullPrecedence
+     *        the null precedence to use.
+     *
      * @return this instance, modified.
+     *
      * @see #and(String)
      */
     public Sort and(String name, NullPrecedence nullPrecedence) {
@@ -283,10 +323,15 @@ public class Sort {
     /**
      * Adds a sort column, in the given order and null precedence.
      *
-     * @param name the new column to sort on, in the given order and null precedence.
-     * @param direction the direction to sort on.
-     * @param nullPrecedence the null precedence to use.
+     * @param name
+     *        the new column to sort on, in the given order and null precedence.
+     * @param direction
+     *        the direction to sort on.
+     * @param nullPrecedence
+     *        the null precedence to use.
+     *
      * @return this instance, modified.
+     *
      * @see #and(String)
      */
     public Sort and(String name, Direction direction, NullPrecedence nullPrecedence) {
@@ -317,6 +362,7 @@ public class Sort {
      * Creates an Empty Sort instance. Equivalent to {@link #by()}.
      *
      * @return a new empty Sort instance
+     *
      * @see #by(String[])
      */
     public static Sort empty() {

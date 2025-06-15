@@ -24,10 +24,9 @@ import io.vertx.core.http.WebSocketClient;
 public class ServerUnsolicitedPongTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -40,15 +39,13 @@ public class ServerUnsolicitedPongTest {
         WebSocketClient client = vertx.createWebSocketClient();
         try {
             LinkedBlockingDeque<Buffer> message = new LinkedBlockingDeque<>();
-            client
-                    .connect(endUri.getPort(), endUri.getHost(), endUri.getPath())
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            r.result().pongHandler(pong -> message.add(pong));
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
-                    });
+            client.connect(endUri.getPort(), endUri.getHost(), endUri.getPath()).onComplete(r -> {
+                if (r.succeeded()) {
+                    r.result().pongHandler(pong -> message.add(pong));
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertEquals(Buffer.buffer("pong"), message.poll(10, TimeUnit.SECONDS));
         } finally {
             client.close().toCompletionStage().toCompletableFuture().get();

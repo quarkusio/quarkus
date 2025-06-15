@@ -35,7 +35,8 @@ public class QuarkusInjectorFactory extends InjectorFactoryImpl {
     }
 
     @Override
-    public ConstructorInjector createConstructor(ResourceConstructor constructor, ResteasyProviderFactory providerFactory) {
+    public ConstructorInjector createConstructor(ResourceConstructor constructor,
+            ResteasyProviderFactory providerFactory) {
         log.debugf("Create resource constructor: %s", constructor.getConstructor());
         return new QuarkusConstructorInjector(constructor.getConstructor(),
                 super.createConstructor(constructor, providerFactory));
@@ -49,7 +50,8 @@ public class QuarkusInjectorFactory extends InjectorFactoryImpl {
     }
 
     @Override
-    public PropertyInjector createPropertyInjector(ResourceClass resourceClass, ResteasyProviderFactory providerFactory) {
+    public PropertyInjector createPropertyInjector(ResourceClass resourceClass,
+            ResteasyProviderFactory providerFactory) {
         PropertyInjector delegate = super.createPropertyInjector(resourceClass, providerFactory);
         return new UnwrappingPropertyInjector(delegate);
     }
@@ -67,8 +69,8 @@ public class QuarkusInjectorFactory extends InjectorFactoryImpl {
         }
 
         @Override
-        public CompletionStage<Void> inject(HttpRequest request, HttpResponse response, Object target, boolean unwrapAsync)
-                throws Failure, WebApplicationException, ApplicationException {
+        public CompletionStage<Void> inject(HttpRequest request, HttpResponse response, Object target,
+                boolean unwrapAsync) throws Failure, WebApplicationException, ApplicationException {
             return delegate.inject(request, response, ClientProxy.unwrap(target), unwrapAsync);
         }
     }

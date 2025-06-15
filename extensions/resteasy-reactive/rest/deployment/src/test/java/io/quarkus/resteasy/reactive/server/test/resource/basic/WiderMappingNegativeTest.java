@@ -22,8 +22,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Test negative scenario for "resteasy.wider.request.matching" property
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Wider Mapping Negative Test")
@@ -36,15 +39,14 @@ public class WiderMappingNegativeTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, WiderMappingResource.class, WiderMappingDefaultOptions.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, WiderMappingResource.class, WiderMappingDefaultOptions.class);
+            return war;
+        }
+    });
 
     @BeforeAll
     public static void setup() {
@@ -58,6 +60,7 @@ public class WiderMappingNegativeTest {
 
     /**
      * @tpTestDetails Two resources used, more general resource should not be used
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

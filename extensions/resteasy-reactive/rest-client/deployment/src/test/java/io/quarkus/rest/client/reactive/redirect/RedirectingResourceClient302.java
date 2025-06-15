@@ -12,8 +12,9 @@ public interface RedirectingResourceClient302 {
     Response call(@QueryParam("redirects") Integer numberOfRedirects);
 
     /**
-     * By default, the `quarkus.rest-client.follow-redirects` property only works in GET and HEAD resources, so POST resources
-     * are never redirect, unless users register a custom {@link org.jboss.resteasy.reactive.client.handlers.RedirectHandler}.
+     * By default, the `quarkus.rest-client.follow-redirects` property only works in GET and HEAD resources, so POST
+     * resources are never redirect, unless users register a custom
+     * {@link org.jboss.resteasy.reactive.client.handlers.RedirectHandler}.
      */
     @POST
     @Path("/post")

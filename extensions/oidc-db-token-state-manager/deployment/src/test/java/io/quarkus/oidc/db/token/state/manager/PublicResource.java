@@ -23,9 +23,7 @@ public class PublicResource {
     @Path("/db-state-manager-table-content")
     @GET
     public Uni<Long> getDbStateManagerRowsCount() {
-        return Uni.createFrom().completionStage(pool
-                .query("SELECT COUNT(*) FROM oidc_db_token_state_manager")
-                .execute()
+        return Uni.createFrom().completionStage(pool.query("SELECT COUNT(*) FROM oidc_db_token_state_manager").execute()
                 .map(new Function<RowSet<Row>, Long>() {
                     @Override
                     public Long apply(RowSet<Row> rows) {
@@ -37,8 +35,7 @@ public class PublicResource {
                         }
                         return 0L;
                     }
-                })
-                .toCompletionStage());
+                }).toCompletionStage());
     }
 
 }

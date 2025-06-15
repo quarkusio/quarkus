@@ -21,9 +21,8 @@ public interface AccessLogConfig {
      * <p>
      * If this is the string `common`, `combined` or `long` then this will use one of the specified named formats:
      * <p>
-     * - common: `%h %l %u %t "%r" %s %b`
-     * - combined: `%h %l %u %t "%r" %s %b "%{i,Referer}" "%{i,User-Agent}"`
-     * - long: `%r\n%{ALL_REQUEST_HEADERS}`
+     * - common: `%h %l %u %t "%r" %s %b` - combined: `%h %l %u %t "%r" %s %b "%{i,Referer}" "%{i,User-Agent}"` - long:
+     * `%r\n%{ALL_REQUEST_HEADERS}`
      * <p>
      * Otherwise, consult the Quarkus documentation for the full list of variables that can be used.
      */
@@ -37,9 +36,7 @@ public interface AccessLogConfig {
     boolean logToFile();
 
     /**
-     * The access log file base name, defaults to 'quarkus' which will give a log file
-     * name of 'quarkus.log'.
-     *
+     * The access log file base name, defaults to 'quarkus' which will give a log file name of 'quarkus.log'.
      */
     @WithDefault("quarkus")
     String baseFileName();
@@ -58,8 +55,8 @@ public interface AccessLogConfig {
     String logSuffix();
 
     /**
-     * The log category to use if logging is being done via the standard log mechanism (i.e. if base-file-name is empty).
-     *
+     * The log category to use if logging is being done via the standard log mechanism (i.e. if base-file-name is
+     * empty).
      */
     @WithDefault("io.quarkus.http.access-log")
     String category();

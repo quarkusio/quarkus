@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MissingDataSourceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleJobs.class)
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleJobs.class)
                     .addAsResource(new StringAsset("quarkus.quartz.store-type=jdbc-cmt"), "application.properties"));
 
     @Test

@@ -14,8 +14,7 @@ import io.smallrye.mutiny.Uni;
 public class MutinyInjector implements ContextInjector<Uni<Integer>, Integer> {
 
     @Override
-    public Uni<Integer> resolve(Class<? extends Uni<Integer>> rawType, Type genericType,
-            Annotation[] annotations) {
+    public Uni<Integer> resolve(Class<? extends Uni<Integer>> rawType, Type genericType, Annotation[] annotations) {
         boolean async = false;
         for (Annotation annotation : annotations) {
             if (annotation.annotationType() == Async.class) {

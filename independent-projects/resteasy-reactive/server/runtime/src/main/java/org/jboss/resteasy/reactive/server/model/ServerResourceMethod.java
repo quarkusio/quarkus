@@ -24,14 +24,14 @@ public class ServerResourceMethod extends ResourceMethod {
     public ServerResourceMethod() {
     }
 
-    public ServerResourceMethod(String httpMethod, String path, String[] produces, String streamElementType, String[] consumes,
-            Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
-            boolean blocking, boolean suspended, boolean sse, boolean formParamRequired,
-            List<ResourceMethod> subResourceMethods, Supplier<EndpointInvoker> invoker, Set<String> methodAnnotationNames,
-            List<HandlerChainCustomizer> handlerChainCustomizers, ParameterExtractor customerParameterExtractor,
-            boolean encoded) {
-        super(httpMethod, path, produces, streamElementType, consumes, nameBindingNames, name, returnType, simpleReturnType,
-                parameters, blocking, suspended, sse, formParamRequired, subResourceMethods, encoded);
+    public ServerResourceMethod(String httpMethod, String path, String[] produces, String streamElementType,
+            String[] consumes, Set<String> nameBindingNames, String name, String returnType, String simpleReturnType,
+            MethodParameter[] parameters, boolean blocking, boolean suspended, boolean sse, boolean formParamRequired,
+            List<ResourceMethod> subResourceMethods, Supplier<EndpointInvoker> invoker,
+            Set<String> methodAnnotationNames, List<HandlerChainCustomizer> handlerChainCustomizers,
+            ParameterExtractor customerParameterExtractor, boolean encoded) {
+        super(httpMethod, path, produces, streamElementType, consumes, nameBindingNames, name, returnType,
+                simpleReturnType, parameters, blocking, suspended, sse, formParamRequired, subResourceMethods, encoded);
         this.invoker = invoker;
         this.methodAnnotationNames = methodAnnotationNames;
         this.handlerChainCustomizers = handlerChainCustomizers;
@@ -83,8 +83,8 @@ public class ServerResourceMethod extends ResourceMethod {
 
     /**
      * Returns a declaring class name of a resource method annotated with Jakarta REST endpoint defining annotations.
-     * This class can be different to {@link #getActualDeclaringClassName()} when this method is overridden on subclasses,
-     * or when method-level {@link jakarta.ws.rs.Path} is defined on non-default interface method.
+     * This class can be different to {@link #getActualDeclaringClassName()} when this method is overridden on
+     * subclasses, or when method-level {@link jakarta.ws.rs.Path} is defined on non-default interface method.
      *
      * @return declaring class name if different to {@link #getActualDeclaringClassName()} or null
      */
@@ -96,9 +96,11 @@ public class ServerResourceMethod extends ResourceMethod {
      * Sets a declaring class name of a resource method annotated with Jakarta REST endpoint defining annotations.
      * Should only be set when the name is different to {@link #getActualDeclaringClassName()}.
      *
-     * @param classDeclMethodThatHasJaxRsEndpointDefiningAnn class name
+     * @param classDeclMethodThatHasJaxRsEndpointDefiningAnn
+     *        class name
      */
-    public void setClassDeclMethodThatHasJaxRsEndpointDefiningAnn(String classDeclMethodThatHasJaxRsEndpointDefiningAnn) {
+    public void setClassDeclMethodThatHasJaxRsEndpointDefiningAnn(
+            String classDeclMethodThatHasJaxRsEndpointDefiningAnn) {
         this.classDeclMethodThatHasJaxRsEndpointDefiningAnn = classDeclMethodThatHasJaxRsEndpointDefiningAnn;
     }
 }

@@ -22,11 +22,12 @@ public final class OpenTelemetryUtil {
     }
 
     /**
-     * Converts a list of "key=value" pairs into a map.
-     * Empty entries will be removed.
-     * In case of duplicate keys, the latest takes precedence.
+     * Converts a list of "key=value" pairs into a map. Empty entries will be removed. In case of duplicate keys, the
+     * latest takes precedence.
      *
-     * @param headers nullable list of "key=value" pairs
+     * @param headers
+     *        nullable list of "key=value" pairs
+     *
      * @return non-null map of key-value pairs
      */
     public static Map<String, String> convertKeyValueListToMap(List<String> headers) {
@@ -53,8 +54,10 @@ public final class OpenTelemetryUtil {
      * <p>
      * This method is in the hot path and was optimized to not use getSpanData()
      *
-     * @param context opentelemetry context
-     * @param vertxContext vertx context
+     * @param context
+     *        opentelemetry context
+     * @param vertxContext
+     *        vertx context
      */
     public static void setMDCData(Context context, io.vertx.core.Context vertxContext) {
         if (context == null) {
@@ -79,7 +82,8 @@ public final class OpenTelemetryUtil {
     /**
      * Gets current span data from the MDC context.
      *
-     * @param context opentelemetry context
+     * @param context
+     *        opentelemetry context
      */
     public static Map<String, String> getSpanData(Context context) {
         if (context == null) {
@@ -105,7 +109,8 @@ public final class OpenTelemetryUtil {
     /**
      * Clears MDC data related to OpenTelemetry
      *
-     * @param vertxContext vertx context
+     * @param vertxContext
+     *        vertx context
      */
     public static void clearMDCData(io.vertx.core.Context vertxContext) {
         VertxMDC vertxMDC = VertxMDC.INSTANCE;

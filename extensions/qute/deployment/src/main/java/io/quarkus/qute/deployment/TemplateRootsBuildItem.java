@@ -31,6 +31,7 @@ public final class TemplateRootsBuildItem extends SimpleBuildItem implements Ite
      * The path must be relative to the resource root.
      *
      * @param path
+     *
      * @return {@code true} is the given path represents a template root, {@code false} otherwise
      */
     public boolean isRoot(Path path) {
@@ -47,13 +48,13 @@ public final class TemplateRootsBuildItem extends SimpleBuildItem implements Ite
      * The path must be relative to the resource root.
      *
      * @param path
+     *
      * @return {@code true} is the given path may represent a template root, {@code false} otherwise
      */
     public boolean maybeRoot(Path path) {
         String pathStr = normalize(path);
         for (String rootPath : rootPaths) {
-            if ((rootPath.contains("/") && rootPath.startsWith(pathStr))
-                    || rootPath.equals(pathStr)) {
+            if ((rootPath.contains("/") && rootPath.startsWith(pathStr)) || rootPath.equals(pathStr)) {
                 return true;
             }
         }

@@ -21,8 +21,7 @@ import org.jboss.jandex.TypeTarget;
 
 public class ClassComparisonUtil {
     private static final Set<DotName> IGNORED_ANNOTATIONS = Set.of(
-            DotName.createSimple("kotlin.jvm.internal.SourceDebugExtension"),
-            DotName.createSimple("kotlin.Metadata"));
+            DotName.createSimple("kotlin.jvm.internal.SourceDebugExtension"), DotName.createSimple("kotlin.Metadata"));
 
     static boolean isSameStructure(ClassInfo clazz, ClassInfo old) {
         if (clazz.flags() != old.flags()) {
@@ -97,7 +96,7 @@ public class ClassComparisonUtil {
                 }
                 om = i;
             }
-            //no further checks needed, we fully matched in the loop
+            // no further checks needed, we fully matched in the loop
             if (om == null) {
                 return false;
             }

@@ -20,11 +20,10 @@ import io.vertx.mutiny.core.eventbus.Message;
  * <li>{@link Message#headers() MultiMap} headers, {@link Message#body() T} body</li>
  * <li>{@link Message#body() T} body</li>
  * </ul>
- *
- * If it accepts a {@link Message} then the return type must be void. For any other type the {@link Message#body()}
- * is passed as the parameter value and the method may return an object that is passed to {@link Message#reply(Object)},
- * either directly or via {@link java.util.concurrent.CompletionStage#thenAccept(java.util.function.Consumer)}
- * in case of the method returns a completion stage.
+ * If it accepts a {@link Message} then the return type must be void. For any other type the {@link Message#body()} is
+ * passed as the parameter value and the method may return an object that is passed to {@link Message#reply(Object)},
+ * either directly or via {@link java.util.concurrent.CompletionStage#thenAccept(java.util.function.Consumer)} in case
+ * of the method returns a completion stage.
  *
  * <pre>
  * &#64;ApplicationScoped
@@ -52,8 +51,8 @@ import io.vertx.mutiny.core.eventbus.Message;
  * }
  * </pre>
  *
- * If it accepts a {@link Message#headers()} then the first parameters must be the headers
- * and the second parameter must be the {@link Message#body()}.
+ * If it accepts a {@link Message#headers()} then the first parameters must be the headers and the second parameter must
+ * be the {@link Message#body()}.
  *
  * <pre>
  * &#64;ConsumeEvent("echoHeaders")
@@ -70,7 +69,8 @@ import io.vertx.mutiny.core.eventbus.Message;
  * <li>if a reply handler is set the failure is propagated back to the sender via an
  * {@link io.vertx.core.eventbus.ReplyException} with code {@link #FAILURE_CODE} and the exception message,</li>
  * <li>if no reply handler is set then the exception is rethrown (and wrapped in a {@link java.lang.RuntimeException} if
- * necessary) and can be handled by the default exception handler, i.e. {@link io.vertx.core.Vertx#exceptionHandler().}</li>
+ * necessary) and can be handled by the default exception handler, i.e.
+ * {@link io.vertx.core.Vertx#exceptionHandler().}</li>
  * </ul>
  *
  * @see io.vertx.core.eventbus.EventBus
@@ -85,35 +85,34 @@ public @interface ConsumeEvent {
     int FAILURE_CODE = 0x1FF9;
 
     /**
-     * Failure code used when a message consumer explicitly fails an asynchronous processing.
-     *
-     * This status is used when the method annotated with {@link ConsumeEvent} returns a failed
-     * {@link java.util.concurrent.CompletionStage} or {@link io.smallrye.mutiny.Uni}.
+     * Failure code used when a message consumer explicitly fails an asynchronous processing. This status is used when
+     * the method annotated with {@link ConsumeEvent} returns a failed {@link java.util.concurrent.CompletionStage} or
+     * {@link io.smallrye.mutiny.Uni}.
      */
     int EXPLICIT_FAILURE_CODE = 0x1FFF;
 
     /**
-     * The address the consumer will be registered to. By default, the fully qualified name of the declaring bean class is
-     * assumed.
+     * The address the consumer will be registered to. By default, the fully qualified name of the declaring bean class
+     * is assumed.
      * <p>
      * The value can be a config property expression. In this case, the configured value is used instead:
-     * {@code @ConsumeEvent("${my.consumer.address}")}. Additionally, the property expression can specify a default value:
-     * {@code @ConsumeEvent("${my.consumer.address:defaultAddress}")}.
+     * {@code @ConsumeEvent("${my.consumer.address}")}. Additionally, the property expression can specify a default
+     * value: {@code @ConsumeEvent("${my.consumer.address:defaultAddress}")}.
      *
      * @return the address
      */
     String value() default "";
 
     /**
-     *
      * @return {@code true} if the address should not be propagated across the cluster
+     *
      * @see io.vertx.core.eventbus.EventBus#localConsumer(String)
      */
     boolean local() default true;
 
     /**
-     *
      * @return {@code true} if the consumer should be invoked as a blocking operation using a worker thread
+     *
      * @see io.vertx.core.Vertx#executeBlocking(Callable, boolean)
      */
     boolean blocking() default false;
@@ -122,13 +121,14 @@ public @interface ConsumeEvent {
      * @return {@code true} if the <em>blocking</em> consumption of the event must be ordered, meaning that the method
      *         won't be called concurrently. Instead, it serializes all the invocations based on the event order.
      *         {@code ordered} must be used in conjunction with {@code blocking=true} or {@code @Blocking}.
+     *
      * @see io.vertx.core.Vertx#executeBlocking(Callable, boolean)
      */
     boolean ordered() default false;
 
     /**
-     *
      * @return {@code null} if it should use a default MessageCodec
+     *
      * @see io.quarkus.vertx.LocalEventBusCodec
      */
     Class<? extends MessageCodec> codec() default LocalEventBusCodec.class;

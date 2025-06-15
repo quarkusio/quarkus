@@ -21,7 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class XaDataSourceConfigTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     @DataSource("xa")
     AgroalDataSource xaRecoverDS;
@@ -29,7 +29,7 @@ public class XaDataSourceConfigTest {
     @Inject
     @DataSource("xaNoRecover")
     AgroalDataSource xaNoRecoverDS;
-    //end::injection[]
+    // end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
@@ -38,8 +38,10 @@ public class XaDataSourceConfigTest {
     @Test
     @ActivateRequestContext
     public void testEnlistDatasourcesWithRecovery() throws SQLException {
-        AgroalConnectionPoolConfiguration xaRecoverConfig = xaRecoverDS.getConfiguration().connectionPoolConfiguration();
-        AgroalConnectionPoolConfiguration xaNoRecoverConfig = xaNoRecoverDS.getConfiguration().connectionPoolConfiguration();
+        AgroalConnectionPoolConfiguration xaRecoverConfig = xaRecoverDS.getConfiguration()
+                .connectionPoolConfiguration();
+        AgroalConnectionPoolConfiguration xaNoRecoverConfig = xaNoRecoverDS.getConfiguration()
+                .connectionPoolConfiguration();
 
         assertTrue(xaRecoverConfig.recoveryEnable(), "xaRecoverDS datasource should have recover enabled");
         assertFalse(xaNoRecoverConfig.recoveryEnable(), "xaNoRecoverDS datasource should not have recover enabled");

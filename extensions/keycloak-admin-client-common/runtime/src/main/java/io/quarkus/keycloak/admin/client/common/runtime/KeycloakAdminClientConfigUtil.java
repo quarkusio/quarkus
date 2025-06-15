@@ -8,15 +8,15 @@ public class KeycloakAdminClientConfigUtil {
     private static final Logger LOG = Logger.getLogger(KeycloakAdminClientConfigUtil.class);
 
     /**
-     * Validates configuration properties. KeycloakBuilder also validates inputs (our config properties) when build()
-     * is called but that validation is done when the request scoped bean is created and sooner the validation is done, better.
+     * Validates configuration properties. KeycloakBuilder also validates inputs (our config properties) when build() is
+     * called but that validation is done when the request scoped bean is created and sooner the validation is done,
+     * better.
      */
     public static void validate(KeycloakAdminClientConfig config) {
 
         if (config.serverUrl().isEmpty()) {
-            LOG.debug(
-                    "Configuration property 'server-url' is not set, 'Keycloak' admin client injection will fail, "
-                            + "use org.keycloak.admin.client.KeycloakBuilder to create it instead");
+            LOG.debug("Configuration property 'server-url' is not set, 'Keycloak' admin client injection will fail, "
+                    + "use org.keycloak.admin.client.KeycloakBuilder to create it instead");
             return;
         }
 

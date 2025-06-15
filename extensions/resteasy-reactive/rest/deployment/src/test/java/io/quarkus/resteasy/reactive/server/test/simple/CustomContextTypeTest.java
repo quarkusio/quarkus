@@ -23,27 +23,22 @@ import io.restassured.RestAssured;
 public class CustomContextTypeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestResource.class, CustomType.class, CustomTypeProducer.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class, CustomType.class,
+                    CustomTypeProducer.class);
+        }
+    });
 
     @Test
     public void firstTest() {
-        RestAssured.given().headers("foo", "bar")
-                .get("/test")
-                .then().statusCode(200).body(is("bar"));
+        RestAssured.given().headers("foo", "bar").get("/test").then().statusCode(200).body(is("bar"));
     }
 
     @Test
     public void secondTest() {
-        RestAssured.given().headers("foo", "baz")
-                .get("/test")
-                .then().statusCode(200).body(is("baz"));
+        RestAssured.given().headers("foo", "baz").get("/test").then().statusCode(200).body(is("baz"));
     }
 
     @Path("/test")

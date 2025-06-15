@@ -29,8 +29,8 @@ public class KubernetesConfigUtil {
     private static final String DEKORATE_PREFIX = "dekorate.";
 
     /**
-     * Get the explicitly configured deployment target, if any.
-     * The explicit deployment target is determined using: {@code quarkus.kubernetes.deployment-target=<deployment-target>}
+     * Get the explicitly configured deployment target, if any. The explicit deployment target is determined using:
+     * {@code quarkus.kubernetes.deployment-target=<deployment-target>}
      */
     public static Optional<String> getExplicitlyConfiguredDeploymentTarget() {
         Config config = ConfigProvider.getConfig();
@@ -46,25 +46,20 @@ public class KubernetesConfigUtil {
     }
 
     /**
-     * The explicitly configured deployment target list.
-     * The configured deployment targets are determined using: {@code quarkus.kubernetes.deployment-target=<deployment-target>}
+     * The explicitly configured deployment target list. The configured deployment targets are determined using:
+     * {@code quarkus.kubernetes.deployment-target=<deployment-target>}
      */
     public static List<String> getExplicitlyConfiguredDeploymentTargets() {
         return splitDeploymentTargets(getExplicitlyConfiguredDeploymentTarget());
     }
 
     private static List<String> splitDeploymentTargets(Optional<String> commaSeparatedDeploymentTargets) {
-        return commaSeparatedDeploymentTargets
-                .map(s -> Arrays.stream(s.split(","))
-                        .map(String::trim)
-                        .map(String::toLowerCase)
-                        .collect(Collectors.toList()))
-                .orElse(Collections.emptyList());
+        return commaSeparatedDeploymentTargets.map(s -> Arrays.stream(s.split(",")).map(String::trim)
+                .map(String::toLowerCase).collect(Collectors.toList())).orElse(Collections.emptyList());
     }
 
     /**
-     * Get the user configured deployment target, if any.
-     * The configured deployment target is determined using:
+     * Get the user configured deployment target, if any. The configured deployment target is determined using:
      * <ol>
      * <li>the value of {@code quarkus.kubernetes.deployment-target=<deployment-target>}</li>
      * <li>the presence of {@code quarkus.<deployment-target>.deploy=true}</li>
@@ -98,24 +93,24 @@ public class KubernetesConfigUtil {
     }
 
     /*
-     * Collects configuration properties for Kubernetes. Reads all properties and
-     * matches properties that match known Dekorate generators. These properties may
-     * or may not be prefixed with {@code quarkus.} though the prefixed ones take precedence.
-     *
+     * Collects configuration properties for Kubernetes. Reads all properties and matches properties that match known
+     * Dekorate generators. These properties may or may not be prefixed with {@code quarkus.} though the prefixed ones
+     * take precedence.
+     * 
      * @return A map containing the properties.
      */
     public static Map<String, Object> toMap(PlatformConfiguration... platformConfigurations) {
         Map<String, Object> result = new HashMap<>();
 
-        // Most of quarkus prefixed properties are handled directly by the config items (KubernetesConfig, OpenshiftConfig, KnativeConfig)
+        // Most of quarkus prefixed properties are handled directly by the config items (KubernetesConfig,
+        // OpenshiftConfig, KnativeConfig)
         // We just need group, name & version parsed here, as we don't have decorators for these (low level properties).
         Map<String, Object> quarkusPrefixed = new HashMap<>();
 
         Arrays.stream(platformConfigurations).forEach(p -> {
             p.partOf().ifPresent(g -> quarkusPrefixed.put(DEKORATE_PREFIX + p.targetPlatformName() + ".part-of", g));
             p.name().ifPresent(n -> quarkusPrefixed.put(DEKORATE_PREFIX + p.targetPlatformName() + ".name", n));
-            p.version()
-                    .map(v -> v.equals(UNSET_VALUE) ? DEFAULT_TAG : v)
+            p.version().map(v -> v.equals(UNSET_VALUE) ? DEFAULT_TAG : v)
                     .ifPresent(v -> quarkusPrefixed.put(DEKORATE_PREFIX + p.targetPlatformName() + ".version", v));
         });
 

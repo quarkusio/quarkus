@@ -25,10 +25,9 @@ import io.vertx.core.Vertx;
 public class ConnectionUserDataTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(MyEndpoint.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(MyEndpoint.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -43,8 +42,8 @@ public class ConnectionUserDataTest {
     void testConnectionData() {
         try (WSClient client = WSClient.create(vertx).connect(baseUri)) {
             assertEquals("5", client.sendAndAwaitReply("bar").toString());
-            assertNotNull(connections.stream().filter(c -> c.userData().get(TypedKey.forString("username")) != null).findFirst()
-                    .orElse(null));
+            assertNotNull(connections.stream().filter(c -> c.userData().get(TypedKey.forString("username")) != null)
+                    .findFirst().orElse(null));
             assertEquals("FOOMartin", client.sendAndAwaitReply("foo").toString());
             assertEquals("0", client.sendAndAwaitReply("bar").toString());
         }

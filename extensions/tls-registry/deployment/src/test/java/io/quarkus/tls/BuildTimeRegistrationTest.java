@@ -24,8 +24,7 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-registration", password = "password", formats = Format.PKCS12)
-})
+        @Certificate(name = "test-registration", password = "password", formats = Format.PKCS12) })
 public class BuildTimeRegistrationTest {
 
     private static final String configuration = """
@@ -34,8 +33,7 @@ public class BuildTimeRegistrationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"))
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"))
             .addBuildChainCustomizer(buildCustomizer());;
 
     @Inject
@@ -55,12 +53,11 @@ public class BuildTimeRegistrationTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        TlsCertificateBuildItem item = new TlsCertificateBuildItem("named", new MyCertificateSupplier());
+                        TlsCertificateBuildItem item = new TlsCertificateBuildItem("named",
+                                new MyCertificateSupplier());
                         context.produce(item);
                     }
-                })
-                        .produces(TlsCertificateBuildItem.class)
-                        .build();
+                }).produces(TlsCertificateBuildItem.class).build();
             }
         };
     }

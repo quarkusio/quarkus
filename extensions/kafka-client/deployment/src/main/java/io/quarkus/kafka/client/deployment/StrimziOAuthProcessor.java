@@ -11,26 +11,22 @@ public class StrimziOAuthProcessor {
     @BuildStep
     public void handleStrimziOAuth(CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        if (!QuarkusClassLoader.isClassPresentAtRuntime("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")) {
+        if (!QuarkusClassLoader
+                .isClassPresentAtRuntime("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")) {
             return;
         }
 
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(
-                        "io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("io.strimzi.kafka.oauth.client.JaasClientOauthLoginCallbackHandler")
                         .methods().fields().build());
 
-        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream().anyMatch(
-                x -> x.getGroupId().equals("org.keycloak") && x.getArtifactId().equals("keycloak-core"))) {
+        if (curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
+                .anyMatch(x -> x.getGroupId().equals("org.keycloak") && x.getArtifactId().equals("keycloak-core"))) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder("org.keycloak.jose.jws.JWSHeader",
-                    "org.keycloak.representations.AccessToken",
-                    "org.keycloak.representations.AccessToken$Access",
-                    "org.keycloak.representations.AccessTokenResponse",
-                    "org.keycloak.representations.IDToken",
-                    "org.keycloak.representations.JsonWebToken",
-                    "org.keycloak.jose.jwk.JSONWebKeySet",
-                    "org.keycloak.jose.jwk.JWK",
-                    "org.keycloak.json.StringOrArrayDeserializer",
+                    "org.keycloak.representations.AccessToken", "org.keycloak.representations.AccessToken$Access",
+                    "org.keycloak.representations.AccessTokenResponse", "org.keycloak.representations.IDToken",
+                    "org.keycloak.representations.JsonWebToken", "org.keycloak.jose.jwk.JSONWebKeySet",
+                    "org.keycloak.jose.jwk.JWK", "org.keycloak.json.StringOrArrayDeserializer",
                     "org.keycloak.json.StringListMapDeserializer").methods().fields().build());
         }
     }

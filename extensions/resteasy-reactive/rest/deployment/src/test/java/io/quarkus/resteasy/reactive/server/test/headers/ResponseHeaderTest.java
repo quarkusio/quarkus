@@ -37,192 +37,103 @@ public class ResponseHeaderTest {
 
     @Test
     public void testReturnUni() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/uni")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/uni").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testReturnUniAndContainsResponseStatus() {
-        RestAssured
-                .given()
-                .get("/test/uni2")
-                .then()
-                .statusCode(201)
-                .headers(Collections.singletonMap("foo", "bar"));
+        RestAssured.given().get("/test/uni2").then().statusCode(201).headers(Collections.singletonMap("foo", "bar"));
     }
 
     @Test
     public void testReturnMulti() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/multi")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/multi").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testReturnCompletionStage() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/completion")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/completion").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testReturnString() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/plain")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/plain").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testUniThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_uni")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_uni").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
 
     }
 
     @Test
     public void testMultiThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_multi")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_multi").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
 
     @Test
     public void testCompletionStageThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_completion")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_completion").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
 
     @Test
     public void testStringThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_plain")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_plain").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
 
     @Test
     public void testReturnRestMulti() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "foo",
-                "Keep-Alive", "bar");
-        RestAssured
-                .given()
-                .get("/test/rest-multi")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "foo", "Keep-Alive", "bar");
+        RestAssured.given().get("/test/rest-multi").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testReturnRestMulti2() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi2")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "bar"));
+        RestAssured.given().get("/test/rest-multi2").then().statusCode(200)
+                .headers(Map.of("Access-Control-Allow-Origin", "foo", "Keep-Alive", "bar"));
 
-        RestAssured
-                .given()
-                .get("/test/rest-multi2?keepAlive=dummy")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "dummy"));
+        RestAssured.given().get("/test/rest-multi2?keepAlive=dummy").then().statusCode(200)
+                .headers(Map.of("Access-Control-Allow-Origin", "foo", "Keep-Alive", "dummy"));
     }
 
     @Test
     public void testReturnRestMulti3() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi3")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "foo",
-                        "header2", "bar"));
+        RestAssured.given().get("/test/rest-multi3").then().statusCode(200)
+                .headers(Map.of("header1", "foo", "header2", "bar"));
 
-        RestAssured
-                .given()
-                .get("/test/rest-multi3?h1=h1&h2=h2")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "h1",
-                        "header2", "h2"));
+        RestAssured.given().get("/test/rest-multi3?h1=h1&h2=h2").then().statusCode(200)
+                .headers(Map.of("header1", "h1", "header2", "h2"));
     }
 
     @Test
     public void testReturnRestMulti4() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi2")
-                .then()
-                .statusCode(200)
-                .contentType(ContentType.TEXT)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "bar"));
+        RestAssured.given().get("/test/rest-multi2").then().statusCode(200).contentType(ContentType.TEXT)
+                .headers(Map.of("Access-Control-Allow-Origin", "foo", "Keep-Alive", "bar"));
 
-        RestAssured
-                .given()
-                .get("/test/rest-multi2?keepAlive=dummy")
-                .then()
-                .statusCode(200)
+        RestAssured.given().get("/test/rest-multi2?keepAlive=dummy").then().statusCode(200)
                 .contentType(ContentType.TEXT)
-                .headers(Map.of(
-                        "Access-Control-Allow-Origin", "foo",
-                        "Keep-Alive", "dummy"));
+                .headers(Map.of("Access-Control-Allow-Origin", "foo", "Keep-Alive", "dummy"));
     }
 
     @Test
     public void testReturnRestMulti5() {
-        RestAssured
-                .given()
-                .get("/test/rest-multi3")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "foo",
-                        "header2", "bar"));
+        RestAssured.given().get("/test/rest-multi3").then().statusCode(200)
+                .headers(Map.of("header1", "foo", "header2", "bar"));
 
-        RestAssured
-                .given()
-                .get("/test/rest-multi3?h1=h1&h2=h2")
-                .then()
-                .statusCode(200)
-                .headers(Map.of(
-                        "header1", "h1",
-                        "header2", "h2"));
+        RestAssured.given().get("/test/rest-multi3?h1=h1&h2=h2").then().statusCode(200)
+                .headers(Map.of("header1", "h1", "header2", "h2"));
     }
 
     @Path("/test")
@@ -325,8 +236,8 @@ public class ResponseHeaderTest {
         @Path("/rest-multi4")
         public RestMulti<byte[]> getTestRestMulti4(@DefaultValue("bar") @RestQuery String keepAlive) {
             return RestMulti.fromMultiData(Multi.createFrom().item("test".getBytes(StandardCharsets.UTF_8)))
-                    .header("Access-Control-Allow-Origin", "foo")
-                    .header("Keep-Alive", keepAlive).header("Content-Type", MediaType.TEXT_PLAIN).build();
+                    .header("Access-Control-Allow-Origin", "foo").header("Keep-Alive", keepAlive)
+                    .header("Content-Type", MediaType.TEXT_PLAIN).build();
         }
 
         @GET
@@ -343,8 +254,9 @@ public class ResponseHeaderTest {
         }
 
         private Uni<Wrapper> getWrapper(String header1, String header2) {
-            return Uni.createFrom().item(
-                    () -> new Wrapper(Multi.createFrom().item("test".getBytes(StandardCharsets.UTF_8)), header1, header2));
+            return Uni.createFrom()
+                    .item(() -> new Wrapper(Multi.createFrom().item("test".getBytes(StandardCharsets.UTF_8)), header1,
+                            header2));
         }
 
         private static final class Wrapper {

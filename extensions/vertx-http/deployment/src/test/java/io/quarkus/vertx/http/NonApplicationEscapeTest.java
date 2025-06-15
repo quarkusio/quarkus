@@ -31,15 +31,12 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.predicate.ResponsePredicate;
 
 public class NonApplicationEscapeTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.http.root-path=/api\n" +
-            "quarkus.http.non-application-root-path=${quarkus.http.root-path}\n";
+    private static final String APP_PROPS = "" + "quarkus.http.root-path=/api\n"
+            + "quarkus.http.non-application-root-path=${quarkus.http.root-path}\n";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addClasses(MyObserver.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset(APP_PROPS), "application.properties").addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -49,16 +46,12 @@ public class NonApplicationEscapeTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
-                        context.produce(buildItem.routeBuilder()
-                                .route("/non-app-absolute")
-                                .handler(new MyHandler())
-                                .blockingRoute()
-                                .build());
+                        NonApplicationRootPathBuildItem buildItem = context
+                                .consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(buildItem.routeBuilder().route("/non-app-absolute").handler(new MyHandler())
+                                .blockingRoute().build());
                     }
-                }).produces(RouteBuildItem.class)
-                        .consumes(NonApplicationRootPathBuildItem.class)
-                        .build();
+                }).produces(RouteBuildItem.class).consumes(NonApplicationRootPathBuildItem.class).build();
             }
         };
     }
@@ -72,8 +65,7 @@ public class NonApplicationEscapeTest {
     public static class MyHandler implements Handler<RoutingContext> {
         @Override
         public void handle(RoutingContext routingContext) {
-            routingContext.response()
-                    .setStatusCode(200)
+            routingContext.response().setStatusCode(200)
                     .end(routingContext.request().query() != null
                             ? routingContext.request().path() + "?" + routingContext.request().query()
                             : routingContext.request().path());
@@ -84,9 +76,7 @@ public class NonApplicationEscapeTest {
     public void testNonApplicationEndpointEscaped() {
         AtomicReference<String> result = new AtomicReference<>();
 
-        WebClient.create(vertx)
-                .get(uri.getPort(), uri.getHost(), "/non-app-absolute")
-                .expect(ResponsePredicate.SC_OK)
+        WebClient.create(vertx).get(uri.getPort(), uri.getHost(), "/non-app-absolute").expect(ResponsePredicate.SC_OK)
                 .send(ar -> {
                     if (ar.succeeded()) {
                         HttpResponse<Buffer> response = ar.result();
@@ -105,10 +95,8 @@ public class NonApplicationEscapeTest {
     public void testNonApplicationEndpointWithQueryEscaped() {
         AtomicReference<String> result = new AtomicReference<>();
 
-        WebClient.create(vertx)
-                .get(uri.getPort(), uri.getHost(), "/non-app-absolute?query=true")
-                .expect(ResponsePredicate.SC_OK)
-                .send(ar -> {
+        WebClient.create(vertx).get(uri.getPort(), uri.getHost(), "/non-app-absolute?query=true")
+                .expect(ResponsePredicate.SC_OK).send(ar -> {
                     if (ar.succeeded()) {
                         HttpResponse<Buffer> response = ar.result();
                         result.set(response.bodyAsString());
@@ -126,7 +114,7 @@ public class NonApplicationEscapeTest {
     static class MyObserver {
 
         void test(@Observes String event) {
-            //Do Nothing
+            // Do Nothing
         }
 
     }

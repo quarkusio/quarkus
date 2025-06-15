@@ -14,9 +14,8 @@ import org.junit.platform.launcher.TestIdentifier;
 import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 
 /**
- * The earliest hook a test extension can have is BeforeAllCallback.
- * Since we don't know if other extensions might be registered, we want to get in before that callback and set the TCCL to be
- * the classloader of the test class.
+ * The earliest hook a test extension can have is BeforeAllCallback. Since we don't know if other extensions might be
+ * registered, we want to get in before that callback and set the TCCL to be the classloader of the test class.
  */
 public class ExecutionListener implements TestExecutionListener {
 
@@ -33,7 +32,8 @@ public class ExecutionListener implements TestExecutionListener {
     }
 
     private void invokeIfTestIsQuarkusTest(TestIdentifier testIdentifier, Consumer<ClassLoader> consumer) {
-        // This will be called for various levels of containers, only some of which are tests, so check carefully and do not assume
+        // This will be called for various levels of containers, only some of which are tests, so check carefully and do
+        // not assume
         Optional<TestSource> oSource = testIdentifier.getSource();
         if (oSource.isPresent()) {
             TestSource source = oSource.get();
@@ -48,7 +48,8 @@ public class ExecutionListener implements TestExecutionListener {
     }
 
     private static boolean isQuarkusTest(ClassLoader classLoader) {
-        // We could check annotations, but that would be slow, and the assumption that only Quarkus Tests are loaded with the quarkus classloader should be a fair one
+        // We could check annotations, but that would be slow, and the assumption that only Quarkus Tests are loaded
+        // with the quarkus classloader should be a fair one
         return classLoader instanceof QuarkusClassLoader;
     }
 
@@ -59,7 +60,8 @@ public class ExecutionListener implements TestExecutionListener {
 
     private void unsetTCCL(ClassLoader classLoader) {
         ClassLoader cl = origCl.pop();
-        // If execution is parallel this stack logic could produce odd results, but if execution is parallel any kind of TCCL manipulation will be ill-fated
+        // If execution is parallel this stack logic could produce odd results, but if execution is parallel any kind of
+        // TCCL manipulation will be ill-fated
         Thread.currentThread().setContextClassLoader(cl);
     }
 

@@ -9,8 +9,7 @@ import io.smallrye.config.ConfigMapping;
 public interface LambdaConfig {
 
     /**
-     * Configuration for the mock event server that is run
-     * in dev mode and test mode
+     * Configuration for the mock event server that is run in dev mode and test mode
      */
     MockEventServerConfig mockEventServer();
 }

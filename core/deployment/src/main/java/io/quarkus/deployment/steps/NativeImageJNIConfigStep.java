@@ -155,8 +155,7 @@ public class NativeImageJNIConfigStep {
         }
 
         private JniInfo(JniRuntimeAccessBuildItem jniRuntimeAccessBuildItem) {
-            this(jniRuntimeAccessBuildItem.isMethods(),
-                    jniRuntimeAccessBuildItem.isFields(),
+            this(jniRuntimeAccessBuildItem.isMethods(), jniRuntimeAccessBuildItem.isFields(),
                     jniRuntimeAccessBuildItem.isConstructors());
         }
     }

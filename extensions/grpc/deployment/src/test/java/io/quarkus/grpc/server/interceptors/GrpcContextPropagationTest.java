@@ -20,9 +20,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GrpcContextPropagationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage())
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage())
                     .addClasses(MyFirstInterceptor.class, MyInterceptedGreeting.class));
 
     @GrpcClient

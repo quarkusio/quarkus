@@ -52,9 +52,11 @@ public class Buildpack extends BaseImageSubCommand {
         Map<String, String> properties = context.getPropertiesOptions().properties;
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, BUILDPACK);
 
-        builderImage.ifPresent(i -> properties
-                .put(BUILDPACK_CONFIG_PREFIX
-                        + (context.getBuildOptions().buildNative ? NATIVE_BUILDER_IMAGE : JVM_BUILDER_IMAGE), i));
+        builderImage
+                .ifPresent(i -> properties.put(
+                        BUILDPACK_CONFIG_PREFIX
+                                + (context.getBuildOptions().buildNative ? NATIVE_BUILDER_IMAGE : JVM_BUILDER_IMAGE),
+                        i));
         builderRegistryUsername.ifPresent(u -> properties.put(BUILDPACK_CONFIG_PREFIX + BUILDER_REGISTRY_USERNAME, u));
         builderRegistryPassword.ifPresent(p -> properties.put(BUILDPACK_CONFIG_PREFIX + BUILDER_REGISTRY_PASSWORD, p));
         pullTimeout.ifPresent(t -> properties.put(BUILDPACK_CONFIG_PREFIX + PULL_TIMEOUT_SECONDS, t.toString()));
@@ -67,9 +69,9 @@ public class Buildpack extends BaseImageSubCommand {
 
     @Override
     public String toString() {
-        return "Buildpack {imageOptions:'" + imageOptions + "', buildEnv:'" + buildEnv + "'', builderImage:'" + builderImage
-                + "', builderRegistryPassword:'"
-                + builderRegistryPassword + "', builderRegistryUsername:'" + builderRegistryUsername + "', dockerHost:'"
-                + dockerHost + "', parent:'" + parent + "', pullTimeout:'" + pullTimeout + "', runImage:'" + runImage + "'}";
+        return "Buildpack {imageOptions:'" + imageOptions + "', buildEnv:'" + buildEnv + "'', builderImage:'"
+                + builderImage + "', builderRegistryPassword:'" + builderRegistryPassword
+                + "', builderRegistryUsername:'" + builderRegistryUsername + "', dockerHost:'" + dockerHost
+                + "', parent:'" + parent + "', pullTimeout:'" + pullTimeout + "', runImage:'" + runImage + "'}";
     }
 }

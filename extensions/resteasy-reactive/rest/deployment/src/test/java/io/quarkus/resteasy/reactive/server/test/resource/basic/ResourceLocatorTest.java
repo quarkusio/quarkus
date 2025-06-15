@@ -46,8 +46,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resource
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Tests path encoding
+ *
  * @tpSince RESTEasy 3.0.20
  */
 @DisplayName("Resource Locator Test")
@@ -66,8 +69,7 @@ public class ResourceLocatorTest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.http.root-path", "/app")
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().overrideConfigKey("quarkus.http.root-path", "/app")
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
@@ -90,6 +92,7 @@ public class ResourceLocatorTest {
 
     /**
      * @tpTestDetails Resource locator returns proxied resource.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -103,6 +106,7 @@ public class ResourceLocatorTest {
 
     /**
      * @tpTestDetails 1) Resource locator returns resource; 2) Resource locator returns resource locator.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -114,9 +118,11 @@ public class ResourceLocatorTest {
             Assertions.assertEquals(ResourceLocatorSubresource.class.getName(), response.readEntity(String.class));
         }
         {
-            Response response = client.target(generateURL("/base/1/resources/subresource2/stuff/2/bar")).request().get();
+            Response response = client.target(generateURL("/base/1/resources/subresource2/stuff/2/bar")).request()
+                    .get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-            Assertions.assertEquals(ResourceLocatorSubresource2.class.getName() + "-2", response.readEntity(String.class));
+            Assertions.assertEquals(ResourceLocatorSubresource2.class.getName() + "-2",
+                    response.readEntity(String.class));
         }
     }
 
@@ -148,8 +154,8 @@ public class ResourceLocatorTest {
     @Test
     @DisplayName("Test custom explicit HTTP OPTIONS handler in subresource")
     public void testOptionsMethodExplicitInSubresource() {
-        try (Response response = client.target(generateURL("/sub3/something/resources/test-options-method-explicit")).request()
-                .options()) {
+        try (Response response = client.target(generateURL("/sub3/something/resources/test-options-method-explicit"))
+                .request().options()) {
             assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
             var customHeader = response.getHeaderString(ResourceLocatorSubresource2.TEST_PREFLIGHT_HEADER);
@@ -164,6 +170,7 @@ public class ResourceLocatorTest {
 
     /**
      * @tpTestDetails Two matching methods, one a resource locator, the other a resource method.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -176,6 +183,7 @@ public class ResourceLocatorTest {
 
     /**
      * @tpTestDetails Locator returns resource which inherits annotations from an interface.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -186,8 +194,7 @@ public class ResourceLocatorTest {
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(response.readEntity(String.class), "got");
             Assertions.assertNotNull(response.getHeaderString("Content-Type"));
-            Assertions.assertEquals("text/plain;charset=UTF-8",
-                    response.getHeaderString("Content-Type"));
+            Assertions.assertEquals("text/plain;charset=UTF-8", response.getHeaderString("Content-Type"));
         }
         {
             Builder request = client.target(generateURL("/collection/annotation_free_subresource")).request();
@@ -200,9 +207,7 @@ public class ResourceLocatorTest {
     @Test
     @DisplayName("Test @BeanParam annotation in Subresources")
     public void testBeanParamsInSubresource() {
-        given().get("/sub3/first/resources/subresource3?value=second")
-                .then()
-                .body(is("first and second"));
+        given().get("/sub3/first/resources/subresource3?value=second").then().body(is("first and second"));
     }
 
     @Test

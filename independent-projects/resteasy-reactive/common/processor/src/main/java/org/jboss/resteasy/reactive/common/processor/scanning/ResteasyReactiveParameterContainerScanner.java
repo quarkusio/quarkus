@@ -14,7 +14,8 @@ public class ResteasyReactiveParameterContainerScanner {
     public static Set<DotName> scanParameterContainers(IndexView index, ApplicationScanningResult result) {
         Set<DotName> res = new HashSet<DotName>();
         // FIXME: this should discover parameter-containers containing parameter-containers
-        // NOTE: we used to call result.keepClass but the TCK doesn't list bean parameters in their Application.getClasses
+        // NOTE: we used to call result.keepClass but the TCK doesn't list bean parameters in their
+        // Application.getClasses
         // and the docs says this applies to resource, provider or feature which I don't think apply to bean params
         for (DotName fieldAnnotation : ResteasyReactiveDotNames.JAX_RS_ANNOTATIONS_FOR_FIELDS) {
             for (AnnotationInstance annotationInstance : index.getAnnotations(fieldAnnotation)) {

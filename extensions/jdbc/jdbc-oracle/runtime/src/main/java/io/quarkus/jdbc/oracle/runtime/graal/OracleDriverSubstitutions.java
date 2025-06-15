@@ -8,12 +8,12 @@ public final class OracleDriverSubstitutions {
 
     @Substitute
     static void unRegisterMBeans() {
-        //No-op
+        // No-op
     }
 
     @Substitute
     static void registerMBeans() {
-        //No-op
+        // No-op
     }
 
 }

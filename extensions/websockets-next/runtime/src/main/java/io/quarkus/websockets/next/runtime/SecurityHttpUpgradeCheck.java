@@ -36,11 +36,11 @@ public final class SecurityHttpUpgradeCheck implements HttpUpgradeCheck {
     @Override
     public Uni<CheckResult> perform(HttpUpgradeContext context) {
         final SecurityCheck securityCheck = endpointToCheck.get(context.endpointId());
-        return context.securityIdentity().chain(identity -> securityCheck
-                .nonBlockingApply(identity, (MethodDescription) null, null)
-                .replaceWith(() -> permitUpgrade(identity, securityCheck, context))
-                .onFailure(SecurityException.class)
-                .recoverWithItem(t -> rejectUpgrade(t, identity, securityCheck, context)));
+        return context.securityIdentity()
+                .chain(identity -> securityCheck.nonBlockingApply(identity, (MethodDescription) null, null)
+                        .replaceWith(() -> permitUpgrade(identity, securityCheck, context))
+                        .onFailure(SecurityException.class)
+                        .recoverWithItem(t -> rejectUpgrade(t, identity, securityCheck, context)));
     }
 
     @Override
@@ -48,7 +48,8 @@ public final class SecurityHttpUpgradeCheck implements HttpUpgradeCheck {
         return endpointToCheck.containsKey(endpointId);
     }
 
-    private CheckResult permitUpgrade(SecurityIdentity identity, SecurityCheck securityCheck, HttpUpgradeContext context) {
+    private CheckResult permitUpgrade(SecurityIdentity identity, SecurityCheck securityCheck,
+            HttpUpgradeContext context) {
         if (securityEventHelper.fireEventOnSuccess()) {
             String authorizationContext = securityCheck.getClass().getName();
             AuthorizationSuccessEvent successEvent = new AuthorizationSuccessEvent(identity, authorizationContext,
@@ -62,14 +63,14 @@ public final class SecurityHttpUpgradeCheck implements HttpUpgradeCheck {
             HttpUpgradeContext context) {
         if (securityEventHelper.fireEventOnFailure()) {
             String authorizationContext = securityCheck.getClass().getName();
-            AuthorizationFailureEvent failureEvent = new AuthorizationFailureEvent(identity, throwable, authorizationContext,
+            AuthorizationFailureEvent failureEvent = new AuthorizationFailureEvent(identity, throwable,
+                    authorizationContext,
                     Map.of(SECURED_ENDPOINT_ID_KEY, context.endpointId(), HTTP_REQUEST_KEY, context.httpRequest()));
             securityEventHelper.fireFailureEvent(failureEvent);
         }
         if (redirectUrl != null) {
             return CheckResult.rejectUpgradeSync(302,
-                    Map.of(LOCATION.toString(), List.of(redirectUrl),
-                            CACHE_CONTROL.toString(), List.of("no-store")));
+                    Map.of(LOCATION.toString(), List.of(redirectUrl), CACHE_CONTROL.toString(), List.of("no-store")));
         } else if (throwable instanceof ForbiddenException) {
             return CheckResult.rejectUpgradeSync(403);
         } else {

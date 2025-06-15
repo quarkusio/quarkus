@@ -23,8 +23,7 @@ class RedisCommandCondition implements ExecutionCondition {
 
         if (optional.isPresent()) {
             String[] cmd = optional.get().value();
-            List<String> commands = RedisServerExtension.getAvailableCommands()
-                    .stream().map(String::toLowerCase)
+            List<String> commands = RedisServerExtension.getAvailableCommands().stream().map(String::toLowerCase)
                     .collect(Collectors.toList());
             for (String c : cmd) {
                 if (!commands.contains(c.toLowerCase())) {

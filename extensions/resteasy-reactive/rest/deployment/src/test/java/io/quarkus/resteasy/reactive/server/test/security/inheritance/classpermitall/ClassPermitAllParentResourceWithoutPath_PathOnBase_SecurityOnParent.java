@@ -25,8 +25,10 @@ public abstract class ClassPermitAllParentResourceWithoutPath_PathOnBase_Securit
 
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
     @POST
-    public String test_ClassPathOnResource_ImplOnParent_ImplMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    public String test_ClassPathOnResource_ImplOnParent_ImplMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_RESOURCE + IMPL_ON_PARENT + IMPL_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @Override
@@ -36,7 +38,9 @@ public abstract class ClassPermitAllParentResourceWithoutPath_PathOnBase_Securit
 
     @PermitAll
     @Override
-    public String classPathOnResource_ImplOnParent_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_RESOURCE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    public String classPathOnResource_ImplOnParent_InterfaceMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_RESOURCE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 }

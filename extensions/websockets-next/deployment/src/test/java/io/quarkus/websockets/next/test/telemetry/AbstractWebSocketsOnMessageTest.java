@@ -61,8 +61,7 @@ public abstract class AbstractWebSocketsOnMessageTest {
 
     static QuarkusUnitTest createQuarkusUnitTest(String endpointsPackage) {
         return new QuarkusUnitTest()
-                .withApplicationRoot(root -> root
-                        .addPackage(endpointsPackage)
+                .withApplicationRoot(root -> root.addPackage(endpointsPackage)
                         .addClasses(WSClient.class, Connection.class, MetricsAsserter.class,
                                 AbstractWebSocketsOnMessageTest.class, ExpectedServerEndpointResponse.class,
                                 EchoExpectedServerEndpointResponse.class,
@@ -72,9 +71,8 @@ public abstract class AbstractWebSocketsOnMessageTest {
                                 quarkus.websockets-next.server.metrics.enabled=true
                                 quarkus.websockets-next.client.metrics.enabled=true
                                 """), "application.properties"))
-                .setForcedDependencies(
-                        List.of(Dependency.of("io.quarkus", "quarkus-micrometer-registry-prometheus-deployment",
-                                Version.getVersion())));
+                .setForcedDependencies(List.of(Dependency.of("io.quarkus",
+                        "quarkus-micrometer-registry-prometheus-deployment", Version.getVersion())));
     }
 
     protected final MetricsAsserter asserter = new MetricsAsserter();
@@ -133,8 +131,7 @@ public abstract class AbstractWebSocketsOnMessageTest {
 
         // test metrics per all the paths (regardless of the URI tag)
         Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> {
-            getMetrics()
-                    .body(assertServerConnectionOpenedTotal(asserter.serverConnectionOpenedCount))
+            getMetrics().body(assertServerConnectionOpenedTotal(asserter.serverConnectionOpenedCount))
                     .body(assertClientConnectionOpenedTotal(asserter.clientConnectionOpenedCount))
                     .body(assertServerErrorTotal(asserter.serverErrorCount))
                     .body(assertClientErrorTotal(asserter.clientErrorCount))
@@ -146,15 +143,11 @@ public abstract class AbstractWebSocketsOnMessageTest {
                     .body(assertServerMessagesCountReceived(asserter.serverReceivedCount))
                     .body(assertServerMessagesCountSent(asserter.serverSentCount))
                     // test metrics per path tag
-                    .body(assertServerConnectionOpenedTotal(path, 1))
-                    .body(assertServerConnectionClosedTotal(path, 1))
-                    .body(assertClientConnectionOpenedTotal(path, 0))
-                    .body(assertClientConnectionClosedTotal(path, 0))
-                    .body(assertServerErrorTotal(path, 0))
-                    .body(assertClientErrorTotal(path, 0))
+                    .body(assertServerConnectionOpenedTotal(path, 1)).body(assertServerConnectionClosedTotal(path, 1))
+                    .body(assertClientConnectionOpenedTotal(path, 0)).body(assertClientConnectionClosedTotal(path, 0))
+                    .body(assertServerErrorTotal(path, 0)).body(assertClientErrorTotal(path, 0))
                     .body(assertClientMessagesCountBytesSent(path, 0))
-                    .body(assertClientMessagesCountBytesReceived(path, 0))
-                    .body(assertClientMessagesCountSent(path, 0))
+                    .body(assertClientMessagesCountBytesReceived(path, 0)).body(assertClientMessagesCountSent(path, 0))
                     .body(assertServerMessagesCountBytesReceived(path, serverReceivedCountBytesDelta))
                     .body(assertServerMessagesCountBytesSent(path, serverSentCountBytesDelta))
                     .body(assertServerMessagesCountReceived(path, serverReceivedCountDelta));
@@ -315,8 +308,10 @@ public abstract class AbstractWebSocketsOnMessageTest {
         }
 
         // 2 sent: 'clientConn' sends 2 messages
-        // 2 sent, 2 received: 'MultiEndpoint' -> 'Multi<String> echo(Multi<String> messages)' -> accepts and receives message
-        // 2 sent, 2 received: 'MultiClient' -> 'Multi<String> echo(Multi<String> messages)' -> accepts, receives, adds "echo 0: "
+        // 2 sent, 2 received: 'MultiEndpoint' -> 'Multi<String> echo(Multi<String> messages)' -> accepts and receives
+        // message
+        // 2 sent, 2 received: 'MultiClient' -> 'Multi<String> echo(Multi<String> messages)' -> accepts, receives, adds
+        // "echo 0: "
         // 2 received: 'MultiEndpoint' -> accepts and returns empty Multi
         int clientBytesReceived = stringToBytes(msg1, msg2);
         int clientBytesSent = stringToBytes(msg1, msg2, msg1 + "echo 0: ", msg2 + "echo 0: ");
@@ -360,39 +355,35 @@ public abstract class AbstractWebSocketsOnMessageTest {
             AtomicReference<WebSocket> ws2 = new AtomicReference<>();
 
             List<String> messages1 = new CopyOnWriteArrayList<>();
-            client1
-                    .connect(broadcast_Uri.getPort(), broadcast_Uri.getHost(), broadcast_Uri.getPath())
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            WebSocket ws = r.result();
-                            if (binaryMode()) {
-                                ws.binaryMessageHandler(b -> messages1.add(b.toString()));
-                            } else {
-                                ws.textMessageHandler(messages1::add);
-                            }
-                            ws1.set(ws);
-                            connectedLatch.countDown();
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
-                    });
+            client1.connect(broadcast_Uri.getPort(), broadcast_Uri.getHost(), broadcast_Uri.getPath()).onComplete(r -> {
+                if (r.succeeded()) {
+                    WebSocket ws = r.result();
+                    if (binaryMode()) {
+                        ws.binaryMessageHandler(b -> messages1.add(b.toString()));
+                    } else {
+                        ws.textMessageHandler(messages1::add);
+                    }
+                    ws1.set(ws);
+                    connectedLatch.countDown();
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             List<String> messages2 = new CopyOnWriteArrayList<>();
-            client2
-                    .connect(broadcast_Uri.getPort(), broadcast_Uri.getHost(), broadcast_Uri.getPath())
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            WebSocket ws = r.result();
-                            if (binaryMode()) {
-                                ws.binaryMessageHandler(b -> messages2.add(b.toString()));
-                            } else {
-                                ws.textMessageHandler(messages2::add);
-                            }
-                            ws2.set(ws);
-                            connectedLatch.countDown();
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
-                    });
+            client2.connect(broadcast_Uri.getPort(), broadcast_Uri.getHost(), broadcast_Uri.getPath()).onComplete(r -> {
+                if (r.succeeded()) {
+                    WebSocket ws = r.result();
+                    if (binaryMode()) {
+                        ws.binaryMessageHandler(b -> messages2.add(b.toString()));
+                    } else {
+                        ws.textMessageHandler(messages2::add);
+                    }
+                    ws2.set(ws);
+                    connectedLatch.countDown();
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertTrue(connectedLatch.await(5, TimeUnit.SECONDS));
 
             // BROADCAST MESSAGES WITH CLIENT 1
@@ -454,7 +445,8 @@ public abstract class AbstractWebSocketsOnMessageTest {
     @Test
     public void testServerEndpoint_SingleTextReceived_SingleTextSent_MultipleConnections() {
         // endpoint: String onMessage(String message)
-        // testing multiple connections because we need to know that same counter endpoint counter is used by connections
+        // testing multiple connections because we need to know that same counter endpoint counter is used by
+        // connections
         var msg = "Can't Find My Way Home";
         var sentMessages = new String[] { msg };
         var expectedResponses = ECHO_RESPONSE.getExpectedResponse(sentMessages);
@@ -470,36 +462,37 @@ public abstract class AbstractWebSocketsOnMessageTest {
             asserter.serverConnectionOpenedCount += 1;
             int serverSentCountBytesDelta = stringToBytes(connection1.expectedResponses());
             int serverReceivedCountBytesDelta = stringToBytes(connection1.messagesToSend());
-            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta,
-                    serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0,
+                    0, 0, 1, 0);
 
             var connection2 = Connection.of(bounceUri, binaryMode(), sentMessages, expectedResponses);
             connection2.openConnectionThenSend(vertx);
             asserter.serverConnectionOpenedCount += 1;
             serverSentCountBytesDelta = stringToBytes(connection2.expectedResponses());
             serverReceivedCountBytesDelta = stringToBytes(connection2.messagesToSend());
-            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta,
-                    serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0,
+                    0, 0, 1, 0);
 
             var connection3 = Connection.of(bounceUri, binaryMode(), sentMessages, expectedResponses);
             connection3.openConnectionThenSend(vertx);
             asserter.serverConnectionOpenedCount += 1;
             serverSentCountBytesDelta = stringToBytes(connection3.expectedResponses());
             serverReceivedCountBytesDelta = stringToBytes(connection3.messagesToSend());
-            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta,
-                    serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0,
+                    0, 0, 1, 0);
 
             // --- try different endpoint - start
             // endpoint: void onMessage(Multi<String> message)
             var sentMessages2 = new String[] { "I get up in the evening", "I ain't nothing but tired",
                     "I could use just a little help" };
-            var connection = Connection.of(multiTextReceived_NoResponse_Uri_2, binaryMode(), sentMessages2, NO_RESPONSE);
+            var connection = Connection.of(multiTextReceived_NoResponse_Uri_2, binaryMode(), sentMessages2,
+                    NO_RESPONSE);
             connection.openConnectionThenSend(vertx);
             asserter.serverConnectionOpenedCount += 1;
             serverSentCountBytesDelta = stringToBytes(connection.expectedResponses());
             serverReceivedCountBytesDelta = stringToBytes(connection.messagesToSend());
-            asserter.assertTotalMetricsForAllPaths(0, 0, 3, serverReceivedCountBytesDelta,
-                    serverSentCountBytesDelta, 0, 0, 0, 0, 0);
+            asserter.assertTotalMetricsForAllPaths(0, 0, 3, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0,
+                    0, 0, 0, 0);
             // --- try different endpoint - end
 
             var connection4 = Connection.of(bounceUri, binaryMode(), sentMessages, expectedResponses);
@@ -507,8 +500,8 @@ public abstract class AbstractWebSocketsOnMessageTest {
             asserter.serverConnectionOpenedCount += 1;
             serverSentCountBytesDelta = stringToBytes(connection4.expectedResponses());
             serverReceivedCountBytesDelta = stringToBytes(connection4.messagesToSend());
-            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta,
-                    serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0,
+                    0, 0, 1, 0);
 
             // send again message via the first connection that is still open
             if (binaryMode()) {
@@ -518,8 +511,8 @@ public abstract class AbstractWebSocketsOnMessageTest {
             }
             serverSentCountBytesDelta = stringToBytes(connection1.expectedResponses());
             serverReceivedCountBytesDelta = stringToBytes(connection1.messagesToSend());
-            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta,
-                    serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+            asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0,
+                    0, 0, 1, 0);
         }
     }
 

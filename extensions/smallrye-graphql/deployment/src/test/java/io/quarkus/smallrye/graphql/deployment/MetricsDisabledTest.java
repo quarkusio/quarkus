@@ -15,17 +15,15 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Verify that GraphQL metrics are disabled by default even
- * if the SmallRye Metrics extension is present.
+ * Verify that GraphQL metrics are disabled by default even if the SmallRye Metrics extension is present.
  */
 public class MetricsDisabledTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
-                            BusinessException.class, TestUnion.class, TestUnionMember.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestResource.class, TestPojo.class, TestRandom.class, TestGenericsPojo.class,
+                    BusinessException.class, TestUnion.class, TestUnionMember.class)
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
     @RegistryType(type = MetricRegistry.Type.VENDOR)

@@ -17,9 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SuccessfulExecutionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class));
 
     static final CountDownLatch SUCCESS_LATCH = new CountDownLatch(2);
     static SuccessfulExecution successfulExecution;

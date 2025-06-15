@@ -5,7 +5,8 @@ import jakarta.ws.rs.core.Response;
 
 import org.jboss.resteasy.reactive.server.ServerRequestFilter;
 
-@SuppressWarnings("FieldCanBeLocal") // we use the local fields to test the code path where the generated class is @ApplicationScoped
+@SuppressWarnings("FieldCanBeLocal") // we use the local fields to test the code path where the generated class is
+                                     // @ApplicationScoped
 public class ResponseFilter {
 
     private final String headerName = "response-input";

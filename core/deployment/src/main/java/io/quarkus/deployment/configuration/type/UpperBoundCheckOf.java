@@ -47,6 +47,7 @@ public final class UpperBoundCheckOf extends ConverterType {
     }
 
     public boolean equals(final UpperBoundCheckOf obj) {
-        return obj == this || obj != null && upperBound == obj.upperBound && classConverterType.equals(obj.classConverterType);
+        return obj == this
+                || obj != null && upperBound == obj.upperBound && classConverterType.equals(obj.classConverterType);
     }
 }

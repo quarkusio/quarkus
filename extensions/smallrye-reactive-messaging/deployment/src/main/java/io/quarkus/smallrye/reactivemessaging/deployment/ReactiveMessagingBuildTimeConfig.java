@@ -18,11 +18,10 @@ public interface ReactiveMessagingBuildTimeConfig {
 
     /**
      * Whether it should automatically configure the <em>connector</em> attribute of channels that don't have an
-     * upstream source (for incoming channels), or a downstream consumer (for outgoing channels).
-     *
-     * When enabled, it verifies that there is only a single connector on the classpath. In that case, it automatically
-     * associates the <em>orphans</em> channel to the connector, removing the need to add the <code>.connector</code>
-     * attribute in the application configuration.
+     * upstream source (for incoming channels), or a downstream consumer (for outgoing channels). When enabled, it
+     * verifies that there is only a single connector on the classpath. In that case, it automatically associates the
+     * <em>orphans</em> channel to the connector, removing the need to add the <code>.connector</code> attribute in the
+     * application configuration.
      */
     @WithName("auto-connector-attachment")
     @WithDefault("true")

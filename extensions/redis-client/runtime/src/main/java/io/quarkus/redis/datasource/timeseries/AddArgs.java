@@ -27,7 +27,9 @@ public class AddArgs implements RedisCommandExtraArguments {
      * Use it only if you are creating a new time series. It is ignored if you are adding samples to an existing time
      * series.
      *
-     * @param retention the retention, must not be {@code null}
+     * @param retention
+     *        the retention, must not be {@code null}
+     *
      * @return the current {@code AddArgs}
      */
     public AddArgs setRetention(Duration retention) {
@@ -36,9 +38,8 @@ public class AddArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the series sample's encoding format to {@code COMPRESSED}
-     * Use it only if you are creating a new time series. It is ignored if you are adding samples to an existing
-     * time series.
+     * Set the series sample's encoding format to {@code COMPRESSED} Use it only if you are creating a new time series.
+     * It is ignored if you are adding samples to an existing time series.
      *
      * @return the current {@code AddArgs}
      */
@@ -48,9 +49,8 @@ public class AddArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the series sample's encoding format to {@code UNCOMPRESSED}
-     * Use it only if you are creating a new time series. It is ignored if you are adding samples to an existing
-     * time series.
+     * Set the series sample's encoding format to {@code UNCOMPRESSED} Use it only if you are creating a new time
+     * series. It is ignored if you are adding samples to an existing time series.
      *
      * @return the current {@code AddArgs}
      */
@@ -60,11 +60,12 @@ public class AddArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets the memory size, in bytes, allocated for each data chunk.
-     * Use it only if you are creating a new time series. It is ignored if you are adding samples to an existing
-     * time series.
+     * Sets the memory size, in bytes, allocated for each data chunk. Use it only if you are creating a new time series.
+     * It is ignored if you are adding samples to an existing time series.
      *
-     * @param size the chunk size, between 48 and 1048576
+     * @param size
+     *        the chunk size, between 48 and 1048576
+     *
      * @return the current {@code AddArgs}
      */
     public AddArgs chunkSize(int size) {
@@ -76,7 +77,9 @@ public class AddArgs implements RedisCommandExtraArguments {
      * Overwrite key and database configuration for DUPLICATE_POLICY, the policy for handling samples with identical
      * timestamps.
      *
-     * @param policy the policy, must not be {@code null}
+     * @param policy
+     *        the policy, must not be {@code null}
+     *
      * @return the current {@code AddArgs}
      */
     public AddArgs onDuplicate(DuplicatePolicy policy) {
@@ -87,8 +90,11 @@ public class AddArgs implements RedisCommandExtraArguments {
     /**
      * Set a label-value pairs that represent metadata labels of the time series.
      *
-     * @param label the label, must not be {@code null}
-     * @param value the value, must not be {@code  null}
+     * @param label
+     *        the label, must not be {@code null}
+     * @param value
+     *        the value, must not be {@code  null}
+     *
      * @return the current {@code AddArgs}
      */
     public AddArgs label(String label, Object value) {

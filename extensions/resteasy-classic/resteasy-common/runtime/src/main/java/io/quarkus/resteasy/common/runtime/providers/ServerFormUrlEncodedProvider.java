@@ -18,8 +18,8 @@ import org.jboss.resteasy.resteasy_jaxrs.i18n.LogMessages;
 import org.jboss.resteasy.spi.HttpRequest;
 
 /**
- * We maintain a stripped down version of RESTEasy's ServerFormUrlEncodedProvider here because we need a version compatible with
- * our media types discovery i.e. we need a no-args constructor.
+ * We maintain a stripped down version of RESTEasy's ServerFormUrlEncodedProvider here because we need a version
+ * compatible with our media types discovery i.e. we need a no-args constructor.
  */
 @Produces("application/x-www-form-urlencoded")
 @Consumes("application/x-www-form-urlencoded")
@@ -31,8 +31,9 @@ public class ServerFormUrlEncodedProvider extends FormUrlEncodedProvider {
 
     @SuppressWarnings("rawtypes")
     @Override
-    public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
+    public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException {
         LogMessages.LOGGER.debugf("Provider : %s,  Method : readFrom", getClass().getName());
 
         return super.readFrom(type, genericType, annotations, mediaType, httpHeaders, entityStream);

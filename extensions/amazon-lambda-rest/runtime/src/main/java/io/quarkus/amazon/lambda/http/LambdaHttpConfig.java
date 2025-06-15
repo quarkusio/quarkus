@@ -10,10 +10,8 @@ import io.smallrye.config.WithDefault;
 public interface LambdaHttpConfig {
 
     /**
-     * If true, runtime will search Cognito JWT claims for "cognito:groups"
-     * and add them as Quarkus security roles.
-     *
-     * True by default
+     * If true, runtime will search Cognito JWT claims for "cognito:groups" and add them as Quarkus security roles. True
+     * by default
      */
     @WithDefault("true")
     boolean mapCognitoToRoles();
@@ -25,9 +23,8 @@ public interface LambdaHttpConfig {
     String cognitoRoleClaim();
 
     /**
-     * Regular expression to locate role values within a Cognito claim string.
-     * By default, it looks for space delimited strings enclosed in brackets
-     * "[^\[\] \t]+"
+     * Regular expression to locate role values within a Cognito claim string. By default, it looks for space delimited
+     * strings enclosed in brackets "[^\[\] \t]+"
      */
     @WithDefault("[^\\[\\] \\t]+")
     String cognitoClaimMatcher();

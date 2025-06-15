@@ -22,12 +22,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InstanceInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class,
-                            MutinyGreeterGrpc.MutinyGreeterStub.class, MutinyGreeterGrpc.class,
-                            HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreeterGrpc.class,
+                    GreeterGrpc.GreeterBlockingStub.class, MutinyGreeterGrpc.MutinyGreeterStub.class,
+                    MutinyGreeterGrpc.class, HelloRequest.class, HelloReply.class, HelloReplyOrBuilder.class,
+                    HelloRequestOrBuilder.class))
             .withConfigurationResource("hello-config.properties");
 
     @GrpcClient("hello-service")

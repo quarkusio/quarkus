@@ -54,16 +54,14 @@ public abstract class GcurlBaseCommand implements Callable<Integer> {
 
     protected static List<Descriptors.FileDescriptor> getFileDescriptorsFromProtos(List<ByteString> protos) {
         try {
-            Map<String, DescriptorProtos.FileDescriptorProto> all = protos
-                    .stream()
-                    .map(bs -> {
-                        try {
-                            return DescriptorProtos.FileDescriptorProto.parseFrom(bs);
-                        } catch (InvalidProtocolBufferException e) {
-                            throw new RuntimeException(e);
-                        }
-                    })
-                    .collect(Collectors.toMap(DescriptorProtos.FileDescriptorProto::getName, Function.identity(), (a, b) -> a));
+            Map<String, DescriptorProtos.FileDescriptorProto> all = protos.stream().map(bs -> {
+                try {
+                    return DescriptorProtos.FileDescriptorProto.parseFrom(bs);
+                } catch (InvalidProtocolBufferException e) {
+                    throw new RuntimeException(e);
+                }
+            }).collect(
+                    Collectors.toMap(DescriptorProtos.FileDescriptorProto::getName, Function.identity(), (a, b) -> a));
             List<Descriptors.FileDescriptor> fds = new ArrayList<>();
             Map<String, Descriptors.FileDescriptor> resolved = new HashMap<>();
             for (DescriptorProtos.FileDescriptorProto fdp : all.values()) {
@@ -104,7 +102,8 @@ public abstract class GcurlBaseCommand implements Callable<Integer> {
 
         return execute(channel -> {
             try {
-                MutinyServerReflectionGrpc.MutinyServerReflectionStub stub = MutinyServerReflectionGrpc.newMutinyStub(channel);
+                MutinyServerReflectionGrpc.MutinyServerReflectionStub stub = MutinyServerReflectionGrpc
+                        .newMutinyStub(channel);
                 execute(stub);
                 return CommandLine.ExitCode.OK;
             } catch (Exception e) {

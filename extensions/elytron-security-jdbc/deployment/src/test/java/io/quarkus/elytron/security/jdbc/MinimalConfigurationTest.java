@@ -8,9 +8,7 @@ public class MinimalConfigurationTest extends JdbcSecurityRealmTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("minimal-config/import.sql")
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addAsResource("minimal-config/import.sql")
                     .addAsResource("minimal-config/application.properties", "application.properties"));
 
 }

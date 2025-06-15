@@ -3,8 +3,7 @@ package io.quarkus.kubernetes.spi;
 import java.util.List;
 
 /**
- * Produce this build item to request the Kubernetes extension to generate
- * a Kubernetes {@code ClusterRole} resource.
+ * Produce this build item to request the Kubernetes extension to generate a Kubernetes {@code ClusterRole} resource.
  */
 public final class KubernetesClusterRoleBuildItem extends BaseTargetable {
     /**

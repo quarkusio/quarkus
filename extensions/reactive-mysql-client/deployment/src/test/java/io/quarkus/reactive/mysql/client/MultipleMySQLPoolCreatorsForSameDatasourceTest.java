@@ -16,10 +16,8 @@ public class MultipleMySQLPoolCreatorsForSameDatasourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(CustomCredentialsProvider.class)
-                    .addClass(CredentialsTestResource.class)
-                    .addClass(LocalhostMySQLPoolCreator.class)
+            .withApplicationRoot((jar) -> jar.addClass(CustomCredentialsProvider.class)
+                    .addClass(CredentialsTestResource.class).addClass(LocalhostMySQLPoolCreator.class)
                     .addClass(AnotherMySQLPoolCreator.class)
                     .addAsResource("application-credentials-with-erroneous-url.properties", "application.properties"))
             .setExpectedException(DeploymentException.class);

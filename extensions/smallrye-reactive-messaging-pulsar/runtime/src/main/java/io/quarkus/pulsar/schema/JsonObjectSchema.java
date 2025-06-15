@@ -13,9 +13,7 @@ public class JsonObjectSchema extends AbstractSchema<JsonObject> {
 
     public static final JsonObjectSchema INSTANCE = new JsonObjectSchema();
 
-    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder()
-            .name("JsonObject")
-            .type(SchemaType.NONE)
+    private static final SchemaInfo SCHEMA_INFO = SchemaInfoImpl.builder().name("JsonObject").type(SchemaType.NONE)
             .schema(new byte[0]).build();
 
     @Override

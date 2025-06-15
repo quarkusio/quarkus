@@ -19,8 +19,7 @@ public class CommandLineArgumentsProcessor {
         Type stringArray = Type.create(DotName.createSimple(String[].class.getName()), Kind.ARRAY);
         // implClazz is ignored because a provider type is set
         return SyntheticBeanBuildItem.configure(Object.class).providerType(stringArray).addType(stringArray)
-                .addQualifier(CommandLineArguments.class)
-                .setRuntimeInit().supplier(rawCommandLineArgumentsBuildItem)
+                .addQualifier(CommandLineArguments.class).setRuntimeInit().supplier(rawCommandLineArgumentsBuildItem)
                 .unremovable().done();
     }
 

@@ -27,27 +27,27 @@ public class FSWatchUtil {
     /**
      * in a loop, checks for modifications in the files
      *
-     * @param watchers list of {@link Watcher}s
+     * @param watchers
+     *        list of {@link Watcher}s
      */
-    public void observe(Collection<Watcher> watchers,
-            long intervalMs) {
+    public void observe(Collection<Watcher> watchers, long intervalMs) {
         if (watchers.isEmpty()) {
             return;
         }
 
         ThreadFactory tf = (Runnable r) -> new Thread(r, "FSWatchUtil");
         ExecutorService executorService = Executors.newSingleThreadExecutor(tf);
-        executorService.execute(
-                () -> doObserve(watchers, intervalMs));
+        executorService.execute(() -> doObserve(watchers, intervalMs));
         executors.add(executorService);
     }
 
     private void doObserve(Collection<Watcher> watchers, long intervalMs) {
         Map<Path, Long> lastModified = new HashMap<>();
         long lastCheck = 0;
-        // we're assuming no changes between the compilation and first execution, so don't trigger the watcher on first run
+        // we're assuming no changes between the compilation and first execution, so don't trigger the watcher on first
+        // run
         boolean firstRun = true;
-        //noinspection InfiniteLoopStatement
+        // noinspection InfiniteLoopStatement
         while (!closed) {
             for (Watcher watcher : watchers) {
                 try {
@@ -80,7 +80,7 @@ public class FSWatchUtil {
             long toSleep = intervalMs - (System.currentTimeMillis() - lastCheck);
             if (toSleep > 0) {
                 try {
-                    //noinspection BusyWait
+                    // noinspection BusyWait
                     Thread.sleep(toSleep);
                 } catch (InterruptedException e) {
                     log.debug("Watching for code gen interrupted");
@@ -99,8 +99,7 @@ public class FSWatchUtil {
 
     private static boolean hasExtension(Path path, String extension) {
         final String name = path.getFileName().toString();
-        return name.endsWith(extension)
-                && name.length() > extension.length() + 1
+        return name.endsWith(extension) && name.length() > extension.length() + 1
                 && name.charAt(name.length() - 1 - extension.length()) == '.';
     }
 
@@ -110,10 +109,12 @@ public class FSWatchUtil {
         private final Consumer<Collection<Path>> action;
 
         /**
-         *
-         * @param rootPath directory to check for changes
-         * @param fileExtension file extensions to take into account
-         * @param action action to trigger on discovered changes
+         * @param rootPath
+         *        directory to check for changes
+         * @param fileExtension
+         *        file extensions to take into account
+         * @param action
+         *        action to trigger on discovered changes
          */
         public Watcher(Path rootPath, String fileExtension, Consumer<Collection<Path>> action) {
             this.rootPath = rootPath;

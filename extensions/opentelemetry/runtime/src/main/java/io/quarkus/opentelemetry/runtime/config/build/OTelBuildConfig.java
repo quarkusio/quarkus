@@ -17,8 +17,8 @@ import io.smallrye.config.ConfigMapping;
 import io.smallrye.config.WithDefault;
 
 /**
- * Build Time configuration where all the attributes related with
- * classloading must live because of the native image needs
+ * Build Time configuration where all the attributes related with classloading must live because of the native image
+ * needs
  */
 @ConfigMapping(prefix = "quarkus.otel")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
@@ -27,8 +27,7 @@ public interface OTelBuildConfig {
     String INSTRUMENTATION_NAME = "io.quarkus.opentelemetry";
 
     /**
-     * If false, disable the OpenTelemetry usage at build time. All other Otel properties will
-     * be ignored at runtime.
+     * If false, disable the OpenTelemetry usage at build time. All other Otel properties will be ignored at runtime.
      * <p>
      * Will pick up value from legacy property quarkus.opentelemetry.enabled
      * <p>
@@ -38,10 +37,8 @@ public interface OTelBuildConfig {
     boolean enabled();
 
     /**
-     * Should we use simple processor for spans and log records.
-     * This will disable batch processing and the exporter will send
-     * telemetry data right away.
-     * This is recommended for serverless applications.
+     * Should we use simple processor for spans and log records. This will disable batch processing and the exporter
+     * will send telemetry data right away. This is recommended for serverless applications.
      * <p>
      * Defaults to <code>false</code>.
      */

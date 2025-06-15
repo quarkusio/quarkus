@@ -35,7 +35,8 @@ public class FilerUtil {
     }
 
     /**
-     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not
+     * supported.
      */
     public void write(String filePath, Set<String> set) {
         if (set.isEmpty()) {
@@ -60,7 +61,8 @@ public class FilerUtil {
     }
 
     /**
-     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not
+     * supported.
      */
     public void write(String filePath, Properties properties) {
         if (properties.isEmpty()) {
@@ -68,8 +70,8 @@ public class FilerUtil {
         }
 
         try {
-            final FileObject propertiesResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT, "",
-                    filePath.toString());
+            final FileObject propertiesResource = processingEnv.getFiler().createResource(StandardLocation.CLASS_OUTPUT,
+                    "", filePath.toString());
 
             try (BufferedWriter writer = new BufferedWriter(
                     new OutputStreamWriter(propertiesResource.openOutputStream(), StandardCharsets.UTF_8))) {
@@ -82,7 +84,8 @@ public class FilerUtil {
     }
 
     /**
-     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not
+     * supported.
      */
     public void writeJson(String filePath, Object value) {
         if (value == null) {
@@ -103,7 +106,8 @@ public class FilerUtil {
     }
 
     /**
-     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not supported.
+     * This method uses the annotation processor Filer API and we shouldn't use a Path as paths containing \ are not
+     * supported.
      */
     public void writeYaml(String filePath, Object value) {
         if (value == null) {
@@ -145,14 +149,16 @@ public class FilerUtil {
             FileObject dummyFile = processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy");
             return Paths.get(dummyFile.toUri()).getParent().getParent();
         } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR, "Unable to determine the path of target/" + e);
+            processingEnv.getMessager().printMessage(Diagnostic.Kind.ERROR,
+                    "Unable to determine the path of target/" + e);
             throw new UncheckedIOException(e);
         }
     }
 
     public Optional<Path> getPomPath() {
         try {
-            Path pomPath = Paths.get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy").toUri())
+            Path pomPath = Paths
+                    .get(processingEnv.getFiler().getResource(StandardLocation.CLASS_OUTPUT, "", "dummy").toUri())
                     .getParent().getParent().getParent().resolve("pom.xml");
 
             if (!Files.isReadable(pomPath)) {
@@ -177,7 +183,8 @@ public class FilerUtil {
 
             try (InputStream is = fileObject.openInputStream()) {
                 String yamlMetadata = new String(is.readAllBytes(), StandardCharsets.UTF_8);
-                Map<String, Object> extensionMetadata = JacksonMappers.yamlObjectReader().readValue(yamlMetadata, Map.class);
+                Map<String, Object> extensionMetadata = JacksonMappers.yamlObjectReader().readValue(yamlMetadata,
+                        Map.class);
 
                 return Optional.of(extensionMetadata);
             }
@@ -186,9 +193,8 @@ public class FilerUtil {
             // we could get the URI, create a Path and check that the path exists but it seems a bit overkill
             return Optional.empty();
         } catch (IOException e) {
-            processingEnv.getMessager().printMessage(Kind.WARNING,
-                    "Unable to read extension metadata file: " + extensionMetadataDescriptor + " because of "
-                            + e.getClass().getName() + ": " + e.getMessage());
+            processingEnv.getMessager().printMessage(Kind.WARNING, "Unable to read extension metadata file: "
+                    + extensionMetadataDescriptor + " because of " + e.getClass().getName() + ": " + e.getMessage());
             return Optional.empty();
         }
     }

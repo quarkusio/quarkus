@@ -50,8 +50,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     private final Map<String, String> erasures = new HashMap<>();
 
     public PanacheRepositoryClassOperationGenerationVisitor(String className, ClassVisitor outputClassVisitor,
-            IndexView indexView,
-            TypeBundle typeBundle) {
+            IndexView indexView, TypeBundle typeBundle) {
         super(Gizmo.ASM_API_VERSION, outputClassVisitor);
         this.typeBundle = typeBundle;
         daoClassInfo = indexView.getClassByName(DotName.createSimple(className));
@@ -71,9 +70,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         DotName baseType = typeBundle.repositoryBase().dotName();
 
         List<TypeVariable> typeVariables = indexView.getClassByName(baseType).typeParameters();
-        entityUpperBound = !typeVariables.isEmpty()
-                ? new ByteCodeType(typeVariables.get(0).bounds().get(0))
-                : OBJECT;
+        entityUpperBound = !typeVariables.isEmpty() ? new ByteCodeType(typeVariables.get(0).bounds().get(0)) : OBJECT;
 
         discoverTypeParameters(daoClassInfo, indexView, typeBundle, typeBundle.repositoryBase());
 
@@ -83,25 +80,22 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
 
         argMapper = type -> {
             ByteCodeType byteCodeType = typeArguments.get(type);
-            return byteCodeType != null
-                    ? byteCodeType.get()
-                    : null;
+            return byteCodeType != null ? byteCodeType.get() : null;
         };
 
     }
 
-    protected void discoverTypeParameters(ClassInfo classInfo, IndexView indexView, TypeBundle types, ByteCodeType baseType) {
-        List<ByteCodeType> foundTypeArguments = recursivelyFindEntityTypeArguments(indexView,
-                classInfo.name(), baseType.dotName());
+    protected void discoverTypeParameters(ClassInfo classInfo, IndexView indexView, TypeBundle types,
+            ByteCodeType baseType) {
+        List<ByteCodeType> foundTypeArguments = recursivelyFindEntityTypeArguments(indexView, classInfo.name(),
+                baseType.dotName());
 
         ByteCodeType entityType = (foundTypeArguments.size() > 0) ? foundTypeArguments.get(0) : OBJECT;
         ByteCodeType idType = (foundTypeArguments.size() > 1) ? foundTypeArguments.get(1) : OBJECT;
 
         typeArguments.put("Entity", entityType);
         typeArguments.put("Id", idType);
-        typeArguments.keySet().stream()
-                .filter(k -> !k.equals("Id"))
-                .forEach(k -> erasures.put(k, OBJECT.descriptor()));
+        typeArguments.keySet().stream().filter(k -> !k.equals("Id")).forEach(k -> erasures.put(k, OBJECT.descriptor()));
         try {
             ByteCodeType entity = typeArguments.get("Entity");
             erasures.put(entity.dotName().toString(), entityUpperBound.descriptor());
@@ -160,10 +154,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         // make sure we need a bridge
         if (!userMethods.contains(method.name() + "/" + descriptor)) {
             MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC | Opcodes.ACC_BRIDGE,
-                    method.name(),
-                    descriptor,
-                    null,
-                    null);
+                    method.name(), descriptor, null, null);
             List<org.jboss.jandex.Type> parameters = method.parameterTypes();
             AsmUtil.copyParameterNames(mv, method);
             mv.visitCode();
@@ -188,10 +179,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
             }
 
             String targetDescriptor = method.descriptor(argMapper);
-            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL,
-                    daoBinaryName,
-                    method.name(),
-                    targetDescriptor, false);
+            mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, daoBinaryName, method.name(), targetDescriptor, false);
             String targetReturnTypeDescriptor = targetDescriptor.substring(targetDescriptor.indexOf(')') + 1);
             mv.visitInsn(AsmUtil.getReturnInstruction(targetReturnTypeDescriptor));
             mv.visitMaxs(0, 0);
@@ -205,11 +193,8 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         List<org.jboss.jandex.Type> parameters = method.parameterTypes();
 
         // Note: we can't use SYNTHETIC here because otherwise Mockito will never mock these methods
-        MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC,
-                method.name(),
-                method.descriptor(argMapper),
-                method.genericSignature(argMapper),
-                null);
+        MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC, method.name(), method.descriptor(argMapper),
+                method.genericSignature(argMapper), null);
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         loadOperations(mv);
@@ -244,12 +229,13 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
                 : returnType.name().toString();
         operationDescriptor = joiner + erasures.getOrDefault(key, descriptor);
 
-        mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(),
-                operationDescriptor, false);
+        mv.visitMethodInsn(INVOKEVIRTUAL, typeBundle.operations().internalName(), method.name(), operationDescriptor,
+                false);
         if (returnType.kind() != org.jboss.jandex.Type.Kind.PRIMITIVE) {
             String cast;
             if (returnType.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE) {
-                ByteCodeType type = typeArguments.getOrDefault(returnType.asTypeVariable().identifier(), entityUpperBound);
+                ByteCodeType type = typeArguments.getOrDefault(returnType.asTypeVariable().identifier(),
+                        entityUpperBound);
                 cast = type.internalName();
             } else {
                 cast = returnType.name().toString().replace('.', '/');
@@ -262,8 +248,7 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
     private void descriptors(MethodInfo method, StringJoiner joiner) {
         for (org.jboss.jandex.Type parameter : method.parameterTypes()) {
             if (parameter.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
-                    || method.name().endsWith("ById")
-                            && parameter.name().equals(typeArguments.get("Id").dotName())) {
+                    || method.name().endsWith("ById") && parameter.name().equals(typeArguments.get("Id").dotName())) {
                 joiner.add(OBJECT.descriptor());
             } else {
                 joiner.add(mapType(parameter));
@@ -285,7 +270,8 @@ public class PanacheRepositoryClassOperationGenerationVisitor extends ClassVisit
         return descriptor;
     }
 
-    private void loadArguments(List<org.jboss.jandex.Type> parameters, MethodVisitor mv, boolean ignoreEntityTypeParam) {
+    private void loadArguments(List<org.jboss.jandex.Type> parameters, MethodVisitor mv,
+            boolean ignoreEntityTypeParam) {
         if (!ignoreEntityTypeParam) {
             // inject Class
             injectModel(mv);

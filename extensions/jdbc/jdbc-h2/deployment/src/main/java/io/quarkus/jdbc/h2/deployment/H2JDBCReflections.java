@@ -22,8 +22,7 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 import io.quarkus.jdbc.h2.runtime.H2Reflections;
 
 /**
- * Registers the {@code org.h2.Driver} so that it can be loaded
- * by reflection, as commonly expected.
+ * Registers the {@code org.h2.Driver} so that it can be loaded by reflection, as commonly expected.
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
  */
@@ -31,9 +30,9 @@ public final class H2JDBCReflections {
 
     @BuildStep
     void build(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        //Not strictly necessary when using Agroal, as it also registers
-        //any JDBC driver being configured explicitly through its configuration.
-        //We register it for the sake of people not using Agroal.
+        // Not strictly necessary when using Agroal, as it also registers
+        // any JDBC driver being configured explicitly through its configuration.
+        // We register it for the sake of people not using Agroal.
         final String driverName = "org.h2.Driver";
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(driverName).build());
     }
@@ -44,8 +43,7 @@ public final class H2JDBCReflections {
     }
 
     /**
-     * We need to index the H2 database core jar so to include custom extension types it's
-     * loading via reflection.
+     * We need to index the H2 database core jar so to include custom extension types it's loading via reflection.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     IndexDependencyBuildItem indexH2Library() {
@@ -53,9 +51,9 @@ public final class H2JDBCReflections {
     }
 
     /**
-     * All implementors of {@link StatefulDataType.Factory} might get loaded reflectively.
-     * While we could hardcode the list included in H2, we prefer looking them up via Jandex
-     * so to also load custom implementations optionally provided by user code.
+     * All implementors of {@link StatefulDataType.Factory} might get loaded reflectively. While we could hardcode the
+     * list included in H2, we prefer looking them up via Jandex so to also load custom implementations optionally
+     * provided by user code.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     GeneratedResourceBuildItem listStatefulDataTypeFactories(CombinedIndexBuildItem index) {
@@ -64,16 +62,15 @@ public final class H2JDBCReflections {
     }
 
     /**
-     * All implementors of {@link DataType} which have an INSTANCE field
-     * need this field to be accessible via reflection.
-     * While we could hardcode the list included in H2, we prefer looking them up via Jandex
-     * so to also load custom implementations optionally provided by user code.
+     * All implementors of {@link DataType} which have an INSTANCE field need this field to be accessible via
+     * reflection. While we could hardcode the list included in H2, we prefer looking them up via Jandex so to also load
+     * custom implementations optionally provided by user code.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     GeneratedResourceBuildItem listBasicDataTypes(CombinedIndexBuildItem index) {
         return generateListBy(H2Reflections.REZ_NAME_DATA_TYPE_SINGLETONS, index,
-                i -> i.getAllKnownImplementors(DataType.class)
-                        .stream().filter(classInfo -> classInfo.field("INSTANCE") != null));
+                i -> i.getAllKnownImplementors(DataType.class).stream()
+                        .filter(classInfo -> classInfo.field("INSTANCE") != null));
     }
 
     private static GeneratedResourceBuildItem generateListBy(String resourceName, CombinedIndexBuildItem index,

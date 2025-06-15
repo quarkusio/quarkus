@@ -15,13 +15,11 @@ import io.smallrye.config.WithUnnamedKey;
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
 public interface HibernateEnversBuildTimeConfig {
     /**
-     * Whether Hibernate Envers is enabled <strong>during the build</strong>.
-     *
-     * If Hibernate Envers is disabled during the build, all processing related to Hibernate Envers will be skipped,
-     * and the audit entities will not be added to the Hibernate ORM metamodel
-     * nor to the database schema that Hibernate ORM generates,
-     * but it will not be possible to use Hibernate Envers at runtime:
-     * `quarkus.hibernate-envers.active` will default to `false` and setting it to `true` will lead to an error.
+     * Whether Hibernate Envers is enabled <strong>during the build</strong>. If Hibernate Envers is disabled during the
+     * build, all processing related to Hibernate Envers will be skipped, and the audit entities will not be added to
+     * the Hibernate ORM metamodel nor to the database schema that Hibernate ORM generates, but it will not be possible
+     * to use Hibernate Envers at runtime: `quarkus.hibernate-envers.active` will default to `false` and setting it to
+     * `true` will lead to an error.
      *
      * @asciidoclet
      */

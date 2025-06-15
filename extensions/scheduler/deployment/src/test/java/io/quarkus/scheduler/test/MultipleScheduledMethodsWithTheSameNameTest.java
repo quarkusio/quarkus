@@ -12,10 +12,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultipleScheduledMethodsWithTheSameNameTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithInvalidScheduledMethods.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithInvalidScheduledMethods.class));
 
     @Test
     public void test() throws InterruptedException {

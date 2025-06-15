@@ -20,8 +20,8 @@ public interface RouteConfig {
     Optional<String> host();
 
     /**
-     * The target named port. If not provided, it will be deducted from the Service resource ports.
-     * Options are: "http" and "https".
+     * The target named port. If not provided, it will be deducted from the Service resource ports. Options are: "http"
+     * and "https".
      */
     @WithDefault("http")
     String targetPort();

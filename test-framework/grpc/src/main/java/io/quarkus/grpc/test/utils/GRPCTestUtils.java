@@ -65,11 +65,8 @@ public class GRPCTestUtils {
         return GRPCTestUtils.class.getClassLoader().getResourceAsStream(resource);
     }
 
-    public static Map.Entry<GrpcClient, Channel> tls(
-            Vertx vertx,
-            String caPem,
-            String clientPem,
-            String clientKey) throws IOException {
+    public static Map.Entry<GrpcClient, Channel> tls(Vertx vertx, String caPem, String clientPem, String clientKey)
+            throws IOException {
         HttpClientOptions options = new HttpClientOptions();
         options.setUseAlpn(true);
         options.setSsl(true);

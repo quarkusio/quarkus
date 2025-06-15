@@ -18,11 +18,9 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class BeanParamTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(() -> {
-                return ShrinkWrap.create(JavaArchive.class)
-                        .addClasses(MyBeanParamWithFieldsAndProperties.class, Top.class);
-            });
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> {
+        return ShrinkWrap.create(JavaArchive.class).addClasses(MyBeanParamWithFieldsAndProperties.class, Top.class);
+    });
 
     @Test
     void shouldDeployWithoutIssues() {

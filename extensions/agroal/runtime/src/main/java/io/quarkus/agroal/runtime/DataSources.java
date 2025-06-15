@@ -45,15 +45,13 @@ import io.quarkus.narayana.jta.runtime.TransactionManagerConfiguration;
 /**
  * This class is sort of a producer for {@link AgroalDataSource}.
  * <p>
- * It isn't a CDI producer in the literal sense, but it created a synthetic bean
- * from {@code AgroalProcessor}
- * The {@code createDataSource} method is called at runtime (see
- * {@link AgroalRecorder#agroalDataSourceSupplier(String, DataSourcesRuntimeConfig)})
- * in order to produce the actual {@code AgroalDataSource} objects.
+ * It isn't a CDI producer in the literal sense, but it created a synthetic bean from {@code AgroalProcessor} The
+ * {@code createDataSource} method is called at runtime (see
+ * {@link AgroalRecorder#agroalDataSourceSupplier(String, DataSourcesRuntimeConfig)}) in order to produce the actual
+ * {@code AgroalDataSource} objects.
  *
- * @deprecated This class should not be used from applications or other extensions.
- *             For applications, use CDI to retrieve datasources instead.
- *             For extensions, use {@link AgroalDataSourceUtil} instead.
+ * @deprecated This class should not be used from applications or other extensions. For applications, use CDI to
+ *             retrieve datasources instead. For extensions, use {@link AgroalDataSourceUtil} instead.
  */
 @Deprecated(since = "3.16", forRemoval = true)
 @Singleton
@@ -74,10 +72,10 @@ public class DataSources {
     private final Instance<AgroalOpenTelemetryWrapper> agroalOpenTelemetryWrapper;
 
     public DataSources(DataSourcesBuildTimeConfig dataSourcesBuildTimeConfig,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig, DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
+            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            DataSourcesJdbcBuildTimeConfig dataSourcesJdbcBuildTimeConfig,
             DataSourcesJdbcRuntimeConfig dataSourcesJdbcRuntimeConfig,
-            TransactionManagerConfiguration transactionRuntimeConfig,
-            TransactionManager transactionManager,
+            TransactionManagerConfiguration transactionRuntimeConfig, TransactionManager transactionManager,
             XAResourceRecoveryRegistry xaResourceRecoveryRegistry,
             TransactionSynchronizationRegistry transactionSynchronizationRegistry,
             AgroalDataSourceSupport agroalDataSourceSupport,
@@ -97,18 +95,18 @@ public class DataSources {
     }
 
     /**
-     * Meant to be used from recorders that create synthetic beans that need access to {@code Datasource}.
-     * In such using {@code Arc.container.instance(DataSource.class)} is not possible because
-     * {@code Datasource} is itself a synthetic bean.
+     * Meant to be used from recorders that create synthetic beans that need access to {@code Datasource}. In such using
+     * {@code Arc.container.instance(DataSource.class)} is not possible because {@code Datasource} is itself a synthetic
+     * bean.
      * <p>
-     * This method relies on the fact that {@code DataSources} should - given the same input -
-     * always return the same {@code AgroalDataSource} no matter how many times it is invoked
-     * (which makes sense because {@code DataSource} is a {@code Singleton} bean).
+     * This method relies on the fact that {@code DataSources} should - given the same input - always return the same
+     * {@code AgroalDataSource} no matter how many times it is invoked (which makes sense because {@code DataSource} is
+     * a {@code Singleton} bean).
      * <p>
      * This method is thread-safe
      *
-     * @deprecated Use {@link AgroalDataSourceUtil#dataSourceInstance(String)} instead.
-     *             This method should not be used as it can very easily lead to timing issues during bean creation.
+     * @deprecated Use {@link AgroalDataSourceUtil#dataSourceInstance(String)} instead. This method should not be used
+     *             as it can very easily lead to timing issues during bean creation.
      */
     @Deprecated
     public static AgroalDataSource fromName(String dataSourceName) {
@@ -116,8 +114,8 @@ public class DataSources {
     }
 
     /**
-     * @deprecated This shouldn't be needed.
-     *             Use {@link AgroalDataSourceUtil#dataSourceIfActive(String)} to check if a datasource is active.
+     * @deprecated This shouldn't be needed. Use {@link AgroalDataSourceUtil#dataSourceIfActive(String)} to check if a
+     *             datasource is active.
      */
     @Deprecated
     public boolean isDataSourceCreated(String dataSourceName) {
@@ -146,12 +144,12 @@ public class DataSources {
             throw new IllegalArgumentException("No datasource named '" + dataSourceName + "' exists");
         }
 
-        DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig
-                .dataSources().get(dataSourceName).jdbc();
+        DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig = dataSourcesJdbcBuildTimeConfig.dataSources()
+                .get(dataSourceName).jdbc();
         DataSourceRuntimeConfig dataSourceRuntimeConfig = dataSourcesRuntimeConfig.dataSources().get(dataSourceName);
 
-        DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig
-                .dataSources().get(dataSourceName).jdbc();
+        DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig = dataSourcesJdbcRuntimeConfig.dataSources()
+                .get(dataSourceName).jdbc();
         if (!dataSourceJdbcRuntimeConfig.url().isPresent()) {
             throw new IllegalArgumentException(
                     "Datasource " + dataSourceName + " does not have a JDBC URL and should not be created");
@@ -167,7 +165,8 @@ public class DataSources {
             driver = Class.forName(resolvedDriverClass, true, Thread.currentThread().getContextClassLoader());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(
-                    "Unable to load the datasource driver " + resolvedDriverClass + " for datasource " + dataSourceName, e);
+                    "Unable to load the datasource driver " + resolvedDriverClass + " for datasource " + dataSourceName,
+                    e);
         }
 
         String jdbcUrl = dataSourceJdbcRuntimeConfig.url().get();
@@ -184,25 +183,26 @@ public class DataSources {
             dataSourceConfiguration.dataSourceImplementation(DataSourceImplementation.AGROAL_POOLLESS);
         }
 
-        AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration.connectionPoolConfiguration();
+        AgroalConnectionPoolConfigurationSupplier poolConfiguration = dataSourceConfiguration
+                .connectionPoolConfiguration();
         AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration = poolConfiguration
                 .connectionFactoryConfiguration();
 
         boolean mpMetricsPresent = agroalDataSourceSupport.mpMetricsPresent;
-        applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration, connectionFactoryConfiguration,
-                driver, jdbcUrl,
-                dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig, dataSourceJdbcRuntimeConfig, transactionRuntimeConfig,
-                mpMetricsPresent);
+        applyNewConfiguration(dataSourceName, dataSourceConfiguration, poolConfiguration,
+                connectionFactoryConfiguration, driver, jdbcUrl, dataSourceJdbcBuildTimeConfig, dataSourceRuntimeConfig,
+                dataSourceJdbcRuntimeConfig, transactionRuntimeConfig, mpMetricsPresent);
 
         if (agroalDataSourceSupport.disableSslSupport) {
             agroalConnectionConfigurer.disableSslSupport(resolvedDbKind, dataSourceConfiguration,
                     dataSourceJdbcRuntimeConfig.additionalJdbcProperties());
         }
-        //we use a custom cache for two reasons:
-        //fast thread local cache should be faster
-        //and it prevents a thread local leak
+        // we use a custom cache for two reasons:
+        // fast thread local cache should be faster
+        // and it prevents a thread local leak
         try {
-            Class.forName("io.netty.util.concurrent.FastThreadLocal", true, Thread.currentThread().getContextClassLoader());
+            Class.forName("io.netty.util.concurrent.FastThreadLocal", true,
+                    Thread.currentThread().getContextClassLoader());
             dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusNettyConnectionCache());
         } catch (ClassNotFoundException e) {
             dataSourceConfiguration.connectionPoolConfiguration().connectionCache(new QuarkusSimpleConnectionCache());
@@ -213,23 +213,20 @@ public class DataSources {
         // Explicit reference to bypass reflection need of the ServiceLoader used by AgroalDataSource#from
         AgroalDataSourceConfiguration agroalConfiguration = dataSourceConfiguration.get();
         AgroalDataSource dataSource = new io.agroal.pool.DataSource(agroalConfiguration,
-                new AgroalEventLoggingListener(dataSourceName,
-                        agroalConfiguration.connectionPoolConfiguration()
-                                .transactionRequirement() == TransactionRequirement.WARN));
+                new AgroalEventLoggingListener(dataSourceName, agroalConfiguration.connectionPoolConfiguration()
+                        .transactionRequirement() == TransactionRequirement.WARN));
         log.debugv("Started datasource {0} connected to {1}", dataSourceName,
                 agroalConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcUrl());
 
         // Set pool interceptors for this datasource
         Collection<AgroalPoolInterceptor> interceptorList = agroalPoolInterceptors
-                .select(AgroalDataSourceUtil.qualifier(dataSourceName))
-                .stream().collect(Collectors.toList());
+                .select(AgroalDataSourceUtil.qualifier(dataSourceName)).stream().collect(Collectors.toList());
         if (!interceptorList.isEmpty()) {
             dataSource.setPoolInterceptors(interceptorList);
         }
 
-        if (dataSourceJdbcBuildTimeConfig.telemetry() &&
-                dataSourceJdbcRuntimeConfig.telemetry().orElse(true) &&
-                otelEnabled) {
+        if (dataSourceJdbcBuildTimeConfig.telemetry() && dataSourceJdbcRuntimeConfig.telemetry().orElse(true)
+                && otelEnabled) {
             // activate OpenTelemetry JDBC instrumentation by wrapping AgroalDatasource
             // use an optional CDI bean as we can't reference optional OpenTelemetry classes here
             dataSource = agroalOpenTelemetryWrapper.get().apply(dataSource);
@@ -238,29 +235,27 @@ public class DataSources {
         return dataSource;
     }
 
-    private void applyNewConfiguration(String dataSourceName, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
+    private void applyNewConfiguration(String dataSourceName,
+            AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
             AgroalConnectionPoolConfigurationSupplier poolConfiguration,
-            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver, String jdbcUrl,
-            DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig, DataSourceRuntimeConfig dataSourceRuntimeConfig,
-            DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig, TransactionManagerConfiguration transactionRuntimeConfig,
-            boolean mpMetricsPresent) {
+            AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration, Class<?> driver,
+            String jdbcUrl, DataSourceJdbcBuildTimeConfig dataSourceJdbcBuildTimeConfig,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig, DataSourceJdbcRuntimeConfig dataSourceJdbcRuntimeConfig,
+            TransactionManagerConfiguration transactionRuntimeConfig, boolean mpMetricsPresent) {
         connectionFactoryConfiguration.jdbcUrl(jdbcUrl);
         connectionFactoryConfiguration.connectionProviderClass(driver);
         connectionFactoryConfiguration.trackJdbcResources(dataSourceJdbcRuntimeConfig.detectStatementLeaks());
 
         if (dataSourceJdbcRuntimeConfig.transactionIsolationLevel().isPresent()) {
             connectionFactoryConfiguration
-                    .jdbcTransactionIsolation(
-                            dataSourceJdbcRuntimeConfig.transactionIsolationLevel().get());
+                    .jdbcTransactionIsolation(dataSourceJdbcRuntimeConfig.transactionIsolationLevel().get());
         }
 
         if (dataSourceJdbcBuildTimeConfig.transactions() != io.quarkus.agroal.runtime.TransactionIntegration.DISABLED) {
             TransactionIntegration txIntegration = new NarayanaTransactionIntegration(transactionManager,
                     transactionSynchronizationRegistry, null, false,
                     dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
-                            && transactionRuntimeConfig.enableRecovery()
-                                    ? xaResourceRecoveryRegistry
-                                    : null);
+                            && transactionRuntimeConfig.enableRecovery() ? xaResourceRecoveryRegistry : null);
             if (dataSourceJdbcBuildTimeConfig.transactions() == io.quarkus.agroal.runtime.TransactionIntegration.XA
                     && !transactionRuntimeConfig.enableRecovery()) {
                 log.warnv(
@@ -286,13 +281,11 @@ public class DataSources {
         // Authentication
         if (dataSourceRuntimeConfig.username().isPresent()) {
             NamePrincipal username = new NamePrincipal(dataSourceRuntimeConfig.username().get());
-            connectionFactoryConfiguration
-                    .principal(username).recoveryPrincipal(username);
+            connectionFactoryConfiguration.principal(username).recoveryPrincipal(username);
         }
         if (dataSourceRuntimeConfig.password().isPresent()) {
             SimplePassword password = new SimplePassword(dataSourceRuntimeConfig.password().get());
-            connectionFactoryConfiguration
-                    .credential(password).recoveryCredential(password);
+            connectionFactoryConfiguration.credential(password).recoveryCredential(password);
         }
 
         // credentials provider
@@ -312,14 +305,15 @@ public class DataSources {
         // Pool size configuration:
         poolConfiguration.minSize(dataSourceJdbcRuntimeConfig.minSize());
         poolConfiguration.maxSize(dataSourceJdbcRuntimeConfig.maxSize());
-        if (dataSourceJdbcRuntimeConfig.initialSize().isPresent() && dataSourceJdbcRuntimeConfig.initialSize().getAsInt() > 0) {
+        if (dataSourceJdbcRuntimeConfig.initialSize().isPresent()
+                && dataSourceJdbcRuntimeConfig.initialSize().getAsInt() > 0) {
             poolConfiguration.initialSize(dataSourceJdbcRuntimeConfig.initialSize().getAsInt());
         }
 
         // Connection management
         if (dataSourceJdbcRuntimeConfig.validationQueryTimeout().isPresent()) {
-            poolConfiguration.connectionValidator(ConnectionValidator
-                    .defaultValidatorWithTimeout((int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds()));
+            poolConfiguration.connectionValidator(ConnectionValidator.defaultValidatorWithTimeout(
+                    (int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds()));
         } else {
             poolConfiguration.connectionValidator(ConnectionValidator.defaultValidator());
         }
@@ -338,7 +332,8 @@ public class DataSources {
                 public boolean isValid(Connection connection) {
                     try (Statement stmt = connection.createStatement()) {
                         if (dataSourceJdbcRuntimeConfig.validationQueryTimeout().isPresent()) {
-                            stmt.setQueryTimeout((int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds());
+                            stmt.setQueryTimeout(
+                                    (int) dataSourceJdbcRuntimeConfig.validationQueryTimeout().get().toSeconds());
                         }
                         stmt.execute(validationQuery);
                         return true;
@@ -366,12 +361,12 @@ public class DataSources {
     }
 
     /**
-     * Uses the {@link ServiceLoader#load(Class) ServiceLoader to load the JDBC drivers} in context
-     * of the current {@link Thread#getContextClassLoader() TCCL}.
+     * Uses the {@link ServiceLoader#load(Class) ServiceLoader to load the JDBC drivers} in context of the current
+     * {@link Thread#getContextClassLoader() TCCL}.
      * <p>
-     * This is necessary to have JDBC URLs work properly, in particular when using custom drivers,
-     * and in particular when the app gets "restarted" in a single system (?) classloader,
-     * because DriverManager's list of available drivers would get cleared on shutdown.
+     * This is necessary to have JDBC URLs work properly, in particular when using custom drivers, and in particular
+     * when the app gets "restarted" in a single system (?) classloader, because DriverManager's list of available
+     * drivers would get cleared on shutdown.
      * <p>
      * See also https://github.com/quarkusio/quarkus/issues/46324#issuecomment-2687615191
      */

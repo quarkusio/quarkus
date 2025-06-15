@@ -36,8 +36,7 @@ public class DuplicatedContextTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyRoutes.class));
 
     @Test
     public void testThatRoutesAreCalledOnDuplicatedContext() {
@@ -53,9 +52,8 @@ public class DuplicatedContextTest {
             }));
         }
 
-        Uni.join().all(unis).andFailFast()
-                .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                .await().atMost(Duration.ofSeconds(10));
+        Uni.join().all(unis).andFailFast().runSubscriptionOn(Infrastructure.getDefaultExecutor()).await()
+                .atMost(Duration.ofSeconds(10));
     }
 
     @Test
@@ -97,9 +95,7 @@ public class DuplicatedContextTest {
 
             vertx.createHttpClient().request(HttpMethod.GET, 8081, "localhost", "/hey")
                     .compose(request -> request.end().compose(x -> request.response()))
-                    .compose(HttpClientResponse::body)
-                    .map(Buffer::toString)
-                    .onSuccess(msg -> {
+                    .compose(HttpClientResponse::body).map(Buffer::toString).onSuccess(msg -> {
                         Assertions.assertEquals("hey!", msg);
                         Assertions.assertEquals(id, ContextLocals.<String> get("key").orElseThrow());
                         Assertions.assertSame(Vertx.currentContext(), context);

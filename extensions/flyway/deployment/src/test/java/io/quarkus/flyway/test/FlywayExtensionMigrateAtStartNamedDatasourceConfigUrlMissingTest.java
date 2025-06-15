@@ -18,8 +18,7 @@ public class FlywayExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql"))
+            .withApplicationRoot((jar) -> jar.addAsResource("db/migration/V1.0.0__Quarkus.sql"))
             .overrideConfigKey("quarkus.flyway.users.migrate-at-start", "true")
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
@@ -29,8 +28,7 @@ public class FlywayExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest {
             // We need this otherwise the *default* datasource may impact this test
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.username", "sa")
-            .overrideConfigKey("quarkus.datasource.password", "sa")
-            .overrideConfigKey("quarkus.datasource.jdbc.url",
+            .overrideConfigKey("quarkus.datasource.password", "sa").overrideConfigKey("quarkus.datasource.jdbc.url",
                     "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1");
 
     @Inject
@@ -40,13 +38,11 @@ public class FlywayExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest {
     @Test
     @DisplayName("If there is no config for a named datasource, even if migrate-at-start is enabled, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flyway::get)
-                .isInstanceOf(InactiveBeanException.class)
-                .hasMessageContainingAll(
-                        "Flyway for datasource 'users' was deactivated automatically because this datasource was deactivated",
-                        "Datasource 'users' was deactivated automatically because its URL is not set.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                        "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'.",
-                        "Refer to https://quarkus.io/guides/datasource for guidance.");
+        assertThatThrownBy(flyway::get).isInstanceOf(InactiveBeanException.class).hasMessageContainingAll(
+                "Flyway for datasource 'users' was deactivated automatically because this datasource was deactivated",
+                "Datasource 'users' was deactivated automatically because its URL is not set.",
+                "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'.",
+                "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

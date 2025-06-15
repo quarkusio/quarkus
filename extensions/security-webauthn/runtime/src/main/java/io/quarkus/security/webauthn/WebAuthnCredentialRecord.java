@@ -29,9 +29,8 @@ import com.webauthn4j.data.extension.client.RegistrationExtensionClientOutput;
 import com.webauthn4j.util.Base64UrlUtil;
 
 /**
- * This is the internal WebAuthn4J representation for a credential record, augmented with
- * a user name. One user name can be shared among multiple credential records, but each
- * credential record has a unique credential ID.
+ * This is the internal WebAuthn4J representation for a credential record, augmented with a user name. One user name can
+ * be shared among multiple credential records, but each credential record has a unique credential ID.
  */
 public class WebAuthnCredentialRecord extends CredentialRecordImpl {
 
@@ -40,8 +39,7 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
     /*
      * This is used for registering
      */
-    public WebAuthnCredentialRecord(String username,
-            AttestationObject attestationObject,
+    public WebAuthnCredentialRecord(String username, AttestationObject attestationObject,
             CollectedClientData clientData,
             AuthenticationExtensionsClientOutputs<RegistrationExtensionClientOutput> clientExtensions,
             Set<AuthenticatorTransport> transports) {
@@ -52,9 +50,7 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
     /*
      * This is used for login
      */
-    private WebAuthnCredentialRecord(String username,
-            long counter,
-            AttestedCredentialData attestedCredentialData) {
+    private WebAuthnCredentialRecord(String username, long counter, AttestedCredentialData attestedCredentialData) {
         super(null, null, null, null, counter, attestedCredentialData, null, null, null, null);
         this.username = username;
     }
@@ -81,8 +77,8 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
     }
 
     /**
-     * The unique credential ID for this record. This is a convenience method returning a Base64Url-encoded
-     * version of <code>getAttestedCredentialData().getCredentialId()</code>
+     * The unique credential ID for this record. This is a convenience method returning a Base64Url-encoded version of
+     * <code>getAttestedCredentialData().getCredentialId()</code>
      *
      * @return The unique credential ID for this record
      */
@@ -91,24 +87,24 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
     }
 
     /**
-     * Returns the fields of this credential record that are necessary to persist for your users
-     * to be able to log back in using WebAuthn.
+     * Returns the fields of this credential record that are necessary to persist for your users to be able to log back
+     * in using WebAuthn.
      *
      * @return the fields required to be persisted.
      */
     public RequiredPersistedData getRequiredPersistedData() {
-        return new RequiredPersistedData(getUsername(),
-                getCredentialID(),
+        return new RequiredPersistedData(getUsername(), getCredentialID(),
                 getAttestedCredentialData().getAaguid().getValue(),
                 getAttestedCredentialData().getCOSEKey().getPublicKey().getEncoded(),
-                getAttestedCredentialData().getCOSEKey().getAlgorithm().getValue(),
-                getCounter());
+                getAttestedCredentialData().getCOSEKey().getAlgorithm().getValue(), getCounter());
     }
 
     /**
      * Reassembles a credential record from the given required persisted fields.
      *
-     * @param persistedData the required fields to be able to log back in with WebAuthn.
+     * @param persistedData
+     *        the required fields to be able to log back in with WebAuthn.
+     *
      * @return the internal representation of a WebAuthn credential record.
      */
     public static WebAuthnCredentialRecord fromRequiredPersistedData(RequiredPersistedData persistedData) {
@@ -120,18 +116,19 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
         try {
             switch (coseAlgorithm.getKeyType()) {
                 case EC2:
-                    coseKey = EC2COSEKey.create((ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec),
+                    coseKey = EC2COSEKey.create(
+                            (ECPublicKey) KeyFactory.getInstance("EC").generatePublic(x509EncodedKeySpec),
                             coseAlgorithm);
                     break;
                 case OKP:
-                    coseKey = EdDSACOSEKey
-                            .create((EdECPublicKey) KeyFactory.getInstance("EdDSA").generatePublic(x509EncodedKeySpec),
-                                    coseAlgorithm);
+                    coseKey = EdDSACOSEKey.create(
+                            (EdECPublicKey) KeyFactory.getInstance("EdDSA").generatePublic(x509EncodedKeySpec),
+                            coseAlgorithm);
                     break;
                 case RSA:
-                    coseKey = RSACOSEKey
-                            .create((RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(x509EncodedKeySpec),
-                                    coseAlgorithm);
+                    coseKey = RSACOSEKey.create(
+                            (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(x509EncodedKeySpec),
+                            coseAlgorithm);
                     break;
                 default:
                     throw new IllegalArgumentException("Invalid cose algorithm: " + coseAlgorithm);
@@ -177,15 +174,13 @@ public class WebAuthnCredentialRecord extends CredentialRecordImpl {
              */
             long counter) {
         /**
-         * Returns a PEM-encoded representation of the public key. This is a utility method you can use as an alternate for
-         * storing the
-         * binary public key if you do not want to store a <code>byte[]</code> and prefer strings.
+         * Returns a PEM-encoded representation of the public key. This is a utility method you can use as an alternate
+         * for storing the binary public key if you do not want to store a <code>byte[]</code> and prefer strings.
          *
          * @return a PEM-encoded representation of the public key
          */
         public String getPublicKeyPEM() {
-            return "-----BEGIN PUBLIC KEY-----\n"
-                    + Base64.getEncoder().encodeToString(publicKey)
+            return "-----BEGIN PUBLIC KEY-----\n" + Base64.getEncoder().encodeToString(publicKey)
                     + "\n-----END PUBLIC KEY-----\n";
         }
     }

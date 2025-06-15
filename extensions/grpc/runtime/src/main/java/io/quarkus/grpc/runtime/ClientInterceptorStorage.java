@@ -8,8 +8,7 @@ public final class ClientInterceptorStorage {
     private final Set<Class<?>> perClientInterceptors;
     private final Set<Class<?>> globalInterceptors;
 
-    public ClientInterceptorStorage(Set<Class<?>> perClientInterceptors,
-            Set<Class<?>> globalInterceptors) {
+    public ClientInterceptorStorage(Set<Class<?>> perClientInterceptors, Set<Class<?>> globalInterceptors) {
         this.perClientInterceptors = Set.copyOf(perClientInterceptors);
         this.globalInterceptors = Set.copyOf(globalInterceptors);
     }

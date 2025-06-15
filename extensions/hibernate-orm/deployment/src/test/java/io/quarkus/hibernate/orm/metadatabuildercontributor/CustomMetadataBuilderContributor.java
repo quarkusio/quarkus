@@ -19,8 +19,8 @@ import org.hibernate.sql.ast.tree.SqlAstNode;
 import org.hibernate.type.StandardBasicTypes;
 import org.hibernate.type.spi.TypeConfiguration;
 
-public class CustomMetadataBuilderContributor implements org.hibernate.boot.spi.MetadataBuilderContributor,
-        FunctionContributor {
+public class CustomMetadataBuilderContributor
+        implements org.hibernate.boot.spi.MetadataBuilderContributor, FunctionContributor {
 
     @Override
     public void contribute(MetadataBuilder metadataBuilder) {
@@ -30,8 +30,7 @@ public class CustomMetadataBuilderContributor implements org.hibernate.boot.spi.
     @Override
     public void contributeFunctions(FunctionContributions functionContributions) {
         TypeConfiguration typeConfiguration = functionContributions.getTypeConfiguration();
-        functionContributions.getFunctionRegistry().register(
-                "addHardcodedSuffix",
+        functionContributions.getFunctionRegistry().register("addHardcodedSuffix",
                 new HardcodedSuffixFunction(typeConfiguration, "_some_suffix"));
     }
 
@@ -40,18 +39,16 @@ public class CustomMetadataBuilderContributor implements org.hibernate.boot.spi.
         private final String suffix;
 
         private HardcodedSuffixFunction(TypeConfiguration typeConfiguration, String suffix) {
-            super(
-                    "constantSuffix",
-                    StandardArgumentsValidators.exactly(1),
-                    StandardFunctionReturnTypeResolvers.invariant(
-                            typeConfiguration.getBasicTypeRegistry().resolve(StandardBasicTypes.STRING)),
+            super("constantSuffix", StandardArgumentsValidators.exactly(1),
+                    StandardFunctionReturnTypeResolvers
+                            .invariant(typeConfiguration.getBasicTypeRegistry().resolve(StandardBasicTypes.STRING)),
                     StandardFunctionArgumentTypeResolvers.impliedOrInvariant(typeConfiguration, STRING));
             this.suffix = suffix;
         }
 
         @Override
-        public void render(SqlAppender sqlAppender, List<? extends SqlAstNode> sqlAstArguments, ReturnableType<?> returnType,
-                SqlAstTranslator<?> walker) {
+        public void render(SqlAppender sqlAppender, List<? extends SqlAstNode> sqlAstArguments,
+                ReturnableType<?> returnType, SqlAstTranslator<?> walker) {
             sqlAppender.appendSql('(');
             walker.render(sqlAstArguments.get(0), SqlAstNodeRenderingMode.DEFAULT);
             sqlAppender.appendSql(" || '" + suffix + "')");

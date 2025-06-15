@@ -10,6 +10,7 @@ public class ProfileBuildStep {
     @BuildStep
     RunTimeConfigurationDefaultBuildItem defaultProfile(LaunchModeBuildItem launchModeBuildItem) {
         return new RunTimeConfigurationDefaultBuildItem(launchModeBuildItem.getLaunchMode().getProfileKey(),
-                ConfigProvider.getConfig().getConfigValue(launchModeBuildItem.getLaunchMode().getProfileKey()).getValue());
+                ConfigProvider.getConfig().getConfigValue(launchModeBuildItem.getLaunchMode().getProfileKey())
+                        .getValue());
     }
 }

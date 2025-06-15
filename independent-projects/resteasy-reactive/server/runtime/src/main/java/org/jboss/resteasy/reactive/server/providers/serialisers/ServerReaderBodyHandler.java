@@ -18,7 +18,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 public class ServerReaderBodyHandler extends ReaderBodyHandler implements ServerMessageBodyReader<Reader> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return type.equals(Reader.class);
     }
 
@@ -28,7 +29,8 @@ public class ServerReaderBodyHandler extends ReaderBodyHandler implements Server
         return new InputStreamReader(context.getInputStream(), MessageReaderUtil.charsetFromMediaType(mediaType));
     }
 
-    public long getSize(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public long getSize(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType) {
         return -1;
     }
 

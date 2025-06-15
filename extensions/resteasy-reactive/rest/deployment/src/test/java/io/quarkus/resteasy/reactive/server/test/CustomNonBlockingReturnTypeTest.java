@@ -39,48 +39,38 @@ import io.smallrye.common.annotation.Blocking;
 public class CustomNonBlockingReturnTypeTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, CustomType.class, CustomType2.class,
+                    HasMessageMessageBodyWriter.class);
+        }
+    }).addBuildChainCustomizer(new Consumer<>() {
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
                 @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, CustomType.class, CustomType2.class, HasMessageMessageBodyWriter.class);
+                public void execute(BuildContext context) {
+                    context.produce(
+                            new NonBlockingReturnTypeBuildItem(DotName.createSimple(CustomType.class.getName())));
                 }
-            }).addBuildChainCustomizer(new Consumer<>() {
-                @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            context.produce(
-                                    new NonBlockingReturnTypeBuildItem(DotName.createSimple(CustomType.class.getName())));
-                        }
-                    }).produces(NonBlockingReturnTypeBuildItem.class).build();
-                }
-            });
+            }).produces(NonBlockingReturnTypeBuildItem.class).build();
+        }
+    });
 
     @Test
     public void testNoAnnotation() {
-        get("/test/noAnnotation")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("blocking allowed: false"));
+        get("/test/noAnnotation").then().statusCode(200).body(Matchers.equalTo("blocking allowed: false"));
     }
 
     @Test
     public void testOtherNoAnnotation() {
-        get("/test/otherNoAnnotation")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("blocking allowed: true"));
+        get("/test/otherNoAnnotation").then().statusCode(200).body(Matchers.equalTo("blocking allowed: true"));
     }
 
     @Test
     public void testWithBlockingAnnotation() {
-        get("/test/withBlockingAnnotation")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("blocking allowed: true"));
+        get("/test/withBlockingAnnotation").then().statusCode(200).body(Matchers.equalTo("blocking allowed: true"));
     }
 
     @Path("test")
@@ -153,14 +143,13 @@ public class CustomNonBlockingReturnTypeTest {
         }
 
         @Override
-        public void writeResponse(T o, Type genericType, ServerRequestContext context)
-                throws WebApplicationException {
+        public void writeResponse(T o, Type genericType, ServerRequestContext context) throws WebApplicationException {
             context.serverResponse().end(o.getMessage());
         }
 
         @Override
-        public void writeTo(T o, Class<?> type, Type genericType, Annotation[] annotations,
-                MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+        public void writeTo(T o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+                MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
                 throws IOException, WebApplicationException {
             entityStream.write(o.getMessage().getBytes(StandardCharsets.UTF_8));
         }

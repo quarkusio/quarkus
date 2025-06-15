@@ -17,8 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SingleQueryParamWithSeparatorTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(TestResource.class))
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(TestResource.class))
             .setExpectedException(DeploymentException.class);
 
     @Test

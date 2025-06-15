@@ -174,42 +174,28 @@ public class MultiRxInvokerImpl implements MultiRxInvoker {
 
     private <T> Multi<T> eventSourceToMulti(SseEventSourceImpl sseEventSource, Class<T> clazz, String verb,
             Entity<?> entity, MediaType[] mediaTypes) {
-        return eventSourceToMulti(
-                sseEventSource,
-                (InboundSseEventImpl e) -> e.readData(clazz, e.getMediaType()),
-                verb,
-                entity,
-                mediaTypes);
+        return eventSourceToMulti(sseEventSource, (InboundSseEventImpl e) -> e.readData(clazz, e.getMediaType()), verb,
+                entity, mediaTypes);
     }
 
     private <T> Multi<T> eventSourceToMulti(SseEventSourceImpl sseEventSource, GenericType<T> type, String verb,
             Entity<?> entity, MediaType[] mediaTypes) {
-        return eventSourceToMulti(
-                sseEventSource,
-                (InboundSseEventImpl e) -> e.readData(type, e.getMediaType()),
-                verb,
-                entity,
-                mediaTypes);
+        return eventSourceToMulti(sseEventSource, (InboundSseEventImpl e) -> e.readData(type, e.getMediaType()), verb,
+                entity, mediaTypes);
     }
 
-    private <T> Multi<T> eventSourceToMulti(
-            final SseEventSourceImpl sseEventSource,
-            final Function<InboundSseEventImpl, T> tSupplier,
-            final String verb,
-            final Entity<?> entity,
+    private <T> Multi<T> eventSourceToMulti(final SseEventSourceImpl sseEventSource,
+            final Function<InboundSseEventImpl, T> tSupplier, final String verb, final Entity<?> entity,
             final MediaType[] mediaTypes) {
         final Multi<T> multi = Multi.createFrom().emitter(emitter -> {
-            sseEventSource.register(
-                    (InboundSseEvent e) -> emitter.emit(tSupplier.apply((InboundSseEventImpl) e)),
-                    (Throwable t) -> emitter.fail(t),
-                    () -> emitter.complete());
+            sseEventSource.register((InboundSseEvent e) -> emitter.emit(tSupplier.apply((InboundSseEventImpl) e)),
+                    (Throwable t) -> emitter.fail(t), () -> emitter.complete());
             synchronized (monitor) {
                 if (!sseEventSource.isOpen()) {
                     sseEventSource.open(null, verb, entity, mediaTypes);
                 }
             }
-        },
-                backpressureStrategy);
+        }, backpressureStrategy);
         return multi;
     }
 

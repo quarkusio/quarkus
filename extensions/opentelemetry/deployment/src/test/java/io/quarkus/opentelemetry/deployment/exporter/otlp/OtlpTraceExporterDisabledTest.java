@@ -17,8 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OtlpTraceExporterDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.otel.exporter.otlp.enabled", "false");
 
     @Inject

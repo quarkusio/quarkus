@@ -21,12 +21,9 @@ public class LiquibaseExtensionConfigDefaultDataSourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(LiquibaseExtensionConfigFixture.class)
-                    .addAsResource("db/xml/changeLog.xml")
-                    .addAsResource("db/xml/create-tables.xml")
-                    .addAsResource("db/xml/create-views.xml")
-                    .addAsResource("db/xml/test/test.xml")
+            .withApplicationRoot((jar) -> jar.addClass(LiquibaseExtensionConfigFixture.class)
+                    .addAsResource("db/xml/changeLog.xml").addAsResource("db/xml/create-tables.xml")
+                    .addAsResource("db/xml/create-views.xml").addAsResource("db/xml/test/test.xml")
                     .addAsResource("config-for-default-datasource.properties", "application.properties"));
 
     @Test

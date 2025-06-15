@@ -37,15 +37,13 @@ public class OptimisticLockingTest extends DatasourceTestBase {
         OptimisticLockingTransactionResult<Boolean> result = blocking.withTransaction(ds -> {
             HashCommands<String, String, String> hashCommands = ds.hash(String.class);
             return hashCommands.hexists(key, "field");
-        },
-                (i, tx) -> {
-                    if (i) {
-                        tx.hash(String.class).hset(key, "field", "Bar");
-                    } else {
-                        tx.discard();
-                    }
-                },
-                key);
+        }, (i, tx) -> {
+            if (i) {
+                tx.hash(String.class).hset(key, "field", "Bar");
+            } else {
+                tx.discard();
+            }
+        }, key);
 
         assertThat(result.isEmpty()).isTrue();
         assertThat(result.discarded()).isTrue();
@@ -56,15 +54,13 @@ public class OptimisticLockingTest extends DatasourceTestBase {
         result = blocking.withTransaction(ds -> {
             HashCommands<String, String, String> hashCommands = ds.hash(String.class);
             return hashCommands.hexists(key, "field");
-        },
-                (i, tx) -> {
-                    if (i) {
-                        tx.hash(String.class).hset(key, "field", "Bar");
-                    } else {
-                        tx.discard();
-                    }
-                },
-                key);
+        }, (i, tx) -> {
+            if (i) {
+                tx.hash(String.class).hset(key, "field", "Bar");
+            } else {
+                tx.discard();
+            }
+        }, key);
 
         assertThat(result.isEmpty()).isFalse();
         assertThat(result.discarded()).isFalse();
@@ -79,16 +75,13 @@ public class OptimisticLockingTest extends DatasourceTestBase {
         OptimisticLockingTransactionResult<Boolean> result = reactive.withTransaction(ds -> {
             var hashCommands = ds.hash(String.class);
             return hashCommands.hexists(key, "field");
-        },
-                (i, tx) -> {
-                    if (i) {
-                        return tx.hash(String.class).hset(key, "field", "Bar")
-                                .replaceWithVoid();
-                    } else {
-                        return tx.discard();
-                    }
-                },
-                key).await().indefinitely();
+        }, (i, tx) -> {
+            if (i) {
+                return tx.hash(String.class).hset(key, "field", "Bar").replaceWithVoid();
+            } else {
+                return tx.discard();
+            }
+        }, key).await().indefinitely();
 
         assertThat(result.isEmpty()).isTrue();
         assertThat(result.discarded()).isTrue();
@@ -99,16 +92,13 @@ public class OptimisticLockingTest extends DatasourceTestBase {
         result = reactive.withTransaction(ds -> {
             var hashCommands = ds.hash(String.class);
             return hashCommands.hexists(key, "field");
-        },
-                (i, tx) -> {
-                    if (i) {
-                        return tx.hash(String.class).hset(key, "field", "Bar")
-                                .replaceWithVoid();
-                    } else {
-                        return tx.discard();
-                    }
-                },
-                key).await().indefinitely();
+        }, (i, tx) -> {
+            if (i) {
+                return tx.hash(String.class).hset(key, "field", "Bar").replaceWithVoid();
+            } else {
+                return tx.discard();
+            }
+        }, key).await().indefinitely();
 
         assertThat(result.isEmpty()).isFalse();
         assertThat(result.discarded()).isFalse();
@@ -127,15 +117,13 @@ public class OptimisticLockingTest extends DatasourceTestBase {
 
             HashCommands<String, String, String> hashCommands = ds.hash(String.class);
             return hashCommands.hexists(key, "field");
-        },
-                (i, tx) -> {
-                    if (i) {
-                        tx.hash(String.class).hset(key, "field", "Bar");
-                    } else {
-                        tx.discard();
-                    }
-                },
-                key);
+        }, (i, tx) -> {
+            if (i) {
+                tx.hash(String.class).hset(key, "field", "Bar");
+            } else {
+                tx.discard();
+            }
+        }, key);
 
         assertThat(result.isEmpty()).isTrue();
         assertThat(result.discarded()).isTrue();
@@ -149,15 +137,13 @@ public class OptimisticLockingTest extends DatasourceTestBase {
 
             HashCommands<String, String, String> hashCommands = ds.hash(String.class);
             return hashCommands.hexists(key, "field");
-        },
-                (i, tx) -> {
-                    if (i) {
-                        tx.hash(String.class).hset(key, "field", "Bar");
-                    } else {
-                        tx.discard();
-                    }
-                },
-                key);
+        }, (i, tx) -> {
+            if (i) {
+                tx.hash(String.class).hset(key, "field", "Bar");
+            } else {
+                tx.discard();
+            }
+        }, key);
 
         assertThat(result.isEmpty()).isTrue();
         assertThat(result.discarded()).isTrue();
@@ -171,21 +157,17 @@ public class OptimisticLockingTest extends DatasourceTestBase {
     public void hashPutIfPresentReactiveWithModificationOfTheWatchKey() {
         OptimisticLockingTransactionResult<Boolean> result = reactive.withTransaction(ds -> {
             // Using another connection - update the key
-            return reactive.hash(String.class).hset(key, "another", "hello")
-                    .chain(() -> {
-                        var hashCommands = ds.hash(String.class);
-                        return hashCommands.hexists(key, "field");
-                    });
-        },
-                (i, tx) -> {
-                    if (i) {
-                        return tx.hash(String.class).hset(key, "field", "Bar")
-                                .replaceWithVoid();
-                    } else {
-                        return tx.discard();
-                    }
-                },
-                key).await().indefinitely();
+            return reactive.hash(String.class).hset(key, "another", "hello").chain(() -> {
+                var hashCommands = ds.hash(String.class);
+                return hashCommands.hexists(key, "field");
+            });
+        }, (i, tx) -> {
+            if (i) {
+                return tx.hash(String.class).hset(key, "field", "Bar").replaceWithVoid();
+            } else {
+                return tx.discard();
+            }
+        }, key).await().indefinitely();
 
         assertThat(result.isEmpty()).isTrue();
         assertThat(result.discarded()).isTrue();
@@ -195,21 +177,17 @@ public class OptimisticLockingTest extends DatasourceTestBase {
 
         result = reactive.withTransaction(ds -> {
             // Using another connection - update the key
-            return reactive.hash(String.class).hset(key, "another", "hello")
-                    .chain(() -> {
-                        var hashCommands = ds.hash(String.class);
-                        return hashCommands.hexists(key, "field");
-                    });
-        },
-                (i, tx) -> {
-                    if (i) {
-                        return tx.hash(String.class).hset(key, "field", "Bar")
-                                .replaceWithVoid();
-                    } else {
-                        return tx.discard();
-                    }
-                },
-                key).await().indefinitely();
+            return reactive.hash(String.class).hset(key, "another", "hello").chain(() -> {
+                var hashCommands = ds.hash(String.class);
+                return hashCommands.hexists(key, "field");
+            });
+        }, (i, tx) -> {
+            if (i) {
+                return tx.hash(String.class).hset(key, "field", "Bar").replaceWithVoid();
+            } else {
+                return tx.discard();
+            }
+        }, key).await().indefinitely();
 
         assertThat(result.isEmpty()).isTrue();
         assertThat(result.discarded()).isTrue();
@@ -225,31 +203,26 @@ public class OptimisticLockingTest extends DatasourceTestBase {
             Assertions.fail("expected");
             HashCommands<String, String, String> hashCommands = ds.hash(String.class);
             return hashCommands.hexists(key, "field");
-        },
-                (i, tx) -> {
-                    if (i) {
-                        tx.hash(String.class).hset(key, "field", "Bar");
-                    } else {
-                        tx.discard();
-                    }
-                },
-                key)).hasMessageContaining("expected");
+        }, (i, tx) -> {
+            if (i) {
+                tx.hash(String.class).hset(key, "field", "Bar");
+            } else {
+                tx.discard();
+            }
+        }, key)).hasMessageContaining("expected");
     }
 
     @Test
     public void hashPutIfPresentPreBlockProducingAFailure() {
         assertThatThrownBy(() -> reactive.<Boolean> withTransaction(ds -> {
             return Uni.createFrom().failure(new RuntimeException("expected"));
-        },
-                (i, tx) -> {
-                    if (i) {
-                        return tx.hash(String.class).hset(key, "field", "Bar")
-                                .replaceWithVoid();
-                    } else {
-                        return tx.discard();
-                    }
-                },
-                key).await().indefinitely()).hasMessageContaining("expected");
+        }, (i, tx) -> {
+            if (i) {
+                return tx.hash(String.class).hset(key, "field", "Bar").replaceWithVoid();
+            } else {
+                return tx.discard();
+            }
+        }, key).await().indefinitely()).hasMessageContaining("expected");
     }
 
     @Test
@@ -257,16 +230,13 @@ public class OptimisticLockingTest extends DatasourceTestBase {
         assertThatThrownBy(() -> reactive.withTransaction(ds -> {
             Assertions.fail("expected");
             return Uni.createFrom().item(true);
-        },
-                (i, tx) -> {
-                    if (i) {
-                        return tx.hash(String.class).hset(key, "field", "Bar")
-                                .replaceWithVoid();
-                    } else {
-                        return tx.discard();
-                    }
-                },
-                key).await().indefinitely()).hasMessageContaining("expected");
+        }, (i, tx) -> {
+            if (i) {
+                return tx.hash(String.class).hset(key, "field", "Bar").replaceWithVoid();
+            } else {
+                return tx.discard();
+            }
+        }, key).await().indefinitely()).hasMessageContaining("expected");
     }
 
     @Test
@@ -302,13 +272,12 @@ public class OptimisticLockingTest extends DatasourceTestBase {
         list.zadd(key, 3.0, "c");
 
         var res = reactive.withTransaction(ds -> {
-            return ds.sortedSet(String.class).zrange(key, 0, 0)
-                    .map(elements -> {
-                        if (elements.isEmpty()) {
-                            return null;
-                        }
-                        return elements.get(0);
-                    });
+            return ds.sortedSet(String.class).zrange(key, 0, 0).map(elements -> {
+                if (elements.isEmpty()) {
+                    return null;
+                }
+                return elements.get(0);
+            });
         }, (element, tx) -> {
             if (element == null) {
                 return tx.discard();

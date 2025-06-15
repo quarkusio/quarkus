@@ -15,13 +15,9 @@ import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConfigSource;
 import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter;
 
 /**
- * ServiceBindingConverter for MongoDB to support SBO (Service Binding Operator) in Quarkus.
- *
- * This class supports both the <b>Standard</b> and <b>SRV</b> connection string format for
- * MongoDB depending on whether <b>srv</b> property is true or false. If the srv property is
- * missing then it is same as having a value of false.
- *
- * <br>
+ * ServiceBindingConverter for MongoDB to support SBO (Service Binding Operator) in Quarkus. This class supports both
+ * the <b>Standard</b> and <b>SRV</b> connection string format for MongoDB depending on whether <b>srv</b> property is
+ * true or false. If the srv property is missing then it is same as having a value of false. <br>
  * <br>
  * Following individual properties are supported to make the connection string:
  * <ul>
@@ -32,9 +28,7 @@ import io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter;
  * <li>srv</li>
  * <li>options</li>
  * </ul>
- * <i>Other than host all other properties are optional</i>
- *
- * <br>
+ * <i>Other than host all other properties are optional</i> <br>
  * <br>
  * The Quarkus properties set by this class are:
  * <ul>
@@ -95,8 +89,10 @@ public class MongoServiceBindingConverter implements ServiceBindingConverter {
             connectionString = format(CONNECTION_STRING_WITH_ONLY_HOST, prefix, hostPort);
 
             if (isOptionsNotBlank) {
-                // We need a trailing slash before options otherwise Mongo throws "contains options without trailing slash" error
-                // If the database value is not present, then we haven't yet added the trailing slash (and hence add it here)
+                // We need a trailing slash before options otherwise Mongo throws "contains options without trailing
+                // slash" error
+                // If the database value is not present, then we haven't yet added the trailing slash (and hence add it
+                // here)
                 connectionString += "/";
             }
         } else {

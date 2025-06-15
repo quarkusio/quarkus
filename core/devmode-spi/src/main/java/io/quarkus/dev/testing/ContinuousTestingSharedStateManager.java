@@ -7,8 +7,7 @@ import java.util.function.Function;
 public class ContinuousTestingSharedStateManager {
 
     private static final CopyOnWriteArraySet<Consumer<State>> stateListeners = new CopyOnWriteArraySet<>();
-    public static final State INITIAL_STATE = new StateBuilder()
-            .setLastRun(-1).setIsLiveReload(true).build();
+    public static final State INITIAL_STATE = new StateBuilder().setLastRun(-1).setIsLiveReload(true).build();
     private static volatile State lastState = INITIAL_STATE;
 
     public static void addStateListener(Consumer<State> stateListener) {
@@ -104,19 +103,10 @@ public class ContinuousTestingSharedStateManager {
 
         @Override
         public String toString() {
-            return "State{" +
-                    "lastRun=" + lastRun +
-                    ", running=" + running +
-                    ", inProgress=" + inProgress +
-                    ", run=" + run +
-                    ", passed=" + passed +
-                    ", failed=" + failed +
-                    ", skipped=" + skipped +
-                    ", isBrokenOnly=" + isBrokenOnly +
-                    ", isTestOutput=" + isTestOutput +
-                    ", isInstrumentationBasedReload=" + isInstrumentationBasedReload +
-                    ", isLiveReload=" + isLiveReload +
-                    '}';
+            return "State{" + "lastRun=" + lastRun + ", running=" + running + ", inProgress=" + inProgress + ", run="
+                    + run + ", passed=" + passed + ", failed=" + failed + ", skipped=" + skipped + ", isBrokenOnly="
+                    + isBrokenOnly + ", isTestOutput=" + isTestOutput + ", isInstrumentationBasedReload="
+                    + isInstrumentationBasedReload + ", isLiveReload=" + isLiveReload + '}';
         }
     }
 

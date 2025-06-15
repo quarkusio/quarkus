@@ -23,11 +23,12 @@ public class EagerSecurityUniTest extends SecurityTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=true\n" +
-                            "quarkus.http.auth.permission.secured.paths=/end\n" +
-                            "quarkus.http.auth.permission.secured.policy=authenticated\n"), "application.properties")
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class));
+            .withApplicationRoot((jar) -> jar.addAsResource(
+                    new StringAsset(
+                            "quarkus.http.auth.proactive=true\n" + "quarkus.http.auth.permission.secured.paths=/end\n"
+                                    + "quarkus.http.auth.permission.secured.policy=authenticated\n"),
+                    "application.properties").addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class,
+                            TestIdentityController.class));
 
     @Authenticated
     @WebSocket(path = "/end")

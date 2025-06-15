@@ -36,11 +36,10 @@ public class HalWrapperResource {
                 new TestRecordWithIdAndPersistenceIdAndRestLinkId(1, 10, 100, "one"),
                 new TestRecordWithIdAndPersistenceIdAndRestLinkId(2, 20, 200, "two"));
 
-        HalCollectionWrapper<TestRecordWithIdAndPersistenceIdAndRestLinkId> halCollection = halService.toHalCollectionWrapper(
-                items,
-                "collectionName", TestRecordWithIdAndPersistenceIdAndRestLinkId.class);
-        halCollection.addLinks(
-                Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(String.format("/hal/%d", 1))).rel("first-record").build());
+        HalCollectionWrapper<TestRecordWithIdAndPersistenceIdAndRestLinkId> halCollection = halService
+                .toHalCollectionWrapper(items, "collectionName", TestRecordWithIdAndPersistenceIdAndRestLinkId.class);
+        halCollection.addLinks(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(String.format("/hal/%d", 1)))
+                .rel("first-record").build());
 
         return halCollection;
     }
@@ -53,8 +52,8 @@ public class HalWrapperResource {
     public HalEntityWrapper<TestRecordWithIdAndPersistenceIdAndRestLinkId> getRecord(@PathParam("id") int id,
             @Context UriInfo uriInfo) {
 
-        HalEntityWrapper<TestRecordWithIdAndPersistenceIdAndRestLinkId> halEntity = halService.toHalWrapper(
-                new TestRecordWithIdAndPersistenceIdAndRestLinkId(1, 10, 100, "one"));
+        HalEntityWrapper<TestRecordWithIdAndPersistenceIdAndRestLinkId> halEntity = halService
+                .toHalWrapper(new TestRecordWithIdAndPersistenceIdAndRestLinkId(1, 10, 100, "one"));
         halEntity.addLinks(Link.fromUriBuilder(uriInfo.getBaseUriBuilder().path(String.format("/hal/%d/parent", id)))
                 .rel("parent-record").build());
 

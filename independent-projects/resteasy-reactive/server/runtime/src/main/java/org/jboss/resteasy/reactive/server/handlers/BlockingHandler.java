@@ -19,7 +19,7 @@ public class BlockingHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         if (BlockingOperationSupport.isBlockingAllowed()) {
-            return; //already dispatched
+            return; // already dispatched
         }
         if (executor == null) {
             executor = supplier.get();

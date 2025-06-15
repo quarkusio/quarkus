@@ -8,10 +8,12 @@ public enum FunctionType {
     HTTP("io.quarkus.gcp.functions.QuarkusHttpFunction", "http", "quarkus.google-cloud-functions.function"),
 
     /** A function that implements <code>com.google.cloud.functions.BackgroundFunction</code>. **/
-    BACKGROUND("io.quarkus.gcp.functions.QuarkusBackgroundFunction", "event", "quarkus.google-cloud-functions.function"),
+    BACKGROUND("io.quarkus.gcp.functions.QuarkusBackgroundFunction", "event",
+            "quarkus.google-cloud-functions.function"),
 
     /** A function that implements <code>com.google.cloud.functions.RawBackgroundFunction</code>. **/
-    RAW_BACKGROUND("io.quarkus.gcp.functions.QuarkusBackgroundFunction", "event", "quarkus.google-cloud-functions.function"),
+    RAW_BACKGROUND("io.quarkus.gcp.functions.QuarkusBackgroundFunction", "event",
+            "quarkus.google-cloud-functions.function"),
 
     /** A function that implements <code>com.google.cloud.functions.CloudEventsFunction</code>. **/
     CLOUD_EVENTS("io.quarkus.gcp.functions.QuarkusCloudEventsFunction", "cloudevent",

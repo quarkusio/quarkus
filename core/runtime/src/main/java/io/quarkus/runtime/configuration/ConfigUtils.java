@@ -52,8 +52,11 @@ public final class ConfigUtils {
     /**
      * Get the basic configuration builder.
      *
-     * @param runTime {@code true} if the configuration is run time, {@code false} if build time
-     * @param addDiscovered {@code true} if the ConfigSource and Converter objects should be auto-discovered
+     * @param runTime
+     *        {@code true} if the configuration is run time, {@code false} if build time
+     * @param addDiscovered
+     *        {@code true} if the ConfigSource and Converter objects should be auto-discovered
+     *
      * @return the configuration builder
      */
     public static SmallRyeConfigBuilder configBuilder(final boolean runTime, final boolean addDiscovered,
@@ -73,13 +76,9 @@ public final class ConfigUtils {
     }
 
     public static SmallRyeConfigBuilder emptyConfigBuilder() {
-        return new SmallRyeConfigBuilder()
-                .forClassLoader(Thread.currentThread().getContextClassLoader())
-                .withCustomizers(new QuarkusConfigBuilderCustomizer())
-                .addDiscoveredConverters()
-                .addDefaultInterceptors()
-                .addDiscoveredInterceptors()
-                .addDiscoveredSecretKeysHandlers()
+        return new SmallRyeConfigBuilder().forClassLoader(Thread.currentThread().getContextClassLoader())
+                .withCustomizers(new QuarkusConfigBuilderCustomizer()).addDiscoveredConverters()
+                .addDefaultInterceptors().addDiscoveredInterceptors().addDiscoveredSecretKeysHandlers()
                 .addDefaultSources();
     }
 
@@ -101,7 +100,9 @@ public final class ConfigUtils {
      * <p>
      * It may be interesting to expose such API in SmallRyeConfig directly.
      *
-     * @param propertyName the property name.
+     * @param propertyName
+     *        the property name.
+     *
      * @return true if the property is present or false otherwise.
      */
     public static boolean isPropertyPresent(String propertyName) {
@@ -113,7 +114,9 @@ public final class ConfigUtils {
      * <p>
      * This method is similar to {@link #isPropertyPresent(String)}, but does not ignore expression expansion.
      *
-     * @param propertyName the property name.
+     * @param propertyName
+     *        the property name.
+     *
      * @return true if the property is present or false otherwise.
      */
     public static boolean isPropertyNonEmpty(String propertyName) {
@@ -131,7 +134,9 @@ public final class ConfigUtils {
      * <p>
      * It may be interesting to expose such API in SmallRyeConfig directly.
      *
-     * @param propertyNames The configuration property names
+     * @param propertyNames
+     *        The configuration property names
+     *
      * @return true if the property is present or false otherwise.
      */
     public static boolean isAnyPropertyPresent(Collection<String> propertyNames) {
@@ -144,12 +149,16 @@ public final class ConfigUtils {
     }
 
     /**
-     * Get the value of the first given property present in the current Configuration,
-     * or {@link Optional#empty()} if none of the properties is present.
+     * Get the value of the first given property present in the current Configuration, or {@link Optional#empty()} if
+     * none of the properties is present.
      *
-     * @param <T> The property type
-     * @param propertyNames The configuration property names
-     * @param propertyType The type that the resolved property value should be converted to
+     * @param <T>
+     *        The property type
+     * @param propertyNames
+     *        The configuration property names
+     * @param propertyType
+     *        The type that the resolved property value should be converted to
+     *
      * @return true if the property is present or false otherwise.
      */
     public static <T> Optional<T> getFirstOptionalValue(List<String> propertyNames, Class<T> propertyType) {

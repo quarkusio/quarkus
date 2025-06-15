@@ -17,19 +17,15 @@ public class SimpleTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addAsResource("application.properties"));
 
     @Inject
     SearchMapping mapping;
 
     @Test
     public void testMapping() {
-        assertThat(mapping.allIndexedEntities())
-                .hasSize(1)
-                .element(0)
-                .returns(MyEntity.class, SearchIndexedEntity::javaClass);
+        assertThat(mapping.allIndexedEntities()).hasSize(1).element(0).returns(MyEntity.class,
+                SearchIndexedEntity::javaClass);
     }
 
     @Test
@@ -40,13 +36,8 @@ public class SimpleTest {
             session.indexingPlan().add(entity);
         }
         try (var session = mapping.createSession()) {
-            assertThat(session.search(MyEntity.class)
-                    .selectEntityReference()
-                    .where(f -> f.matchAll())
-                    .fetchHits(20))
-                    .hasSize(1)
-                    .element(0)
-                    .returns(entity.getId(), EntityReference::id);
+            assertThat(session.search(MyEntity.class).selectEntityReference().where(f -> f.matchAll()).fetchHits(20))
+                    .hasSize(1).element(0).returns(entity.getId(), EntityReference::id);
         }
     }
 }

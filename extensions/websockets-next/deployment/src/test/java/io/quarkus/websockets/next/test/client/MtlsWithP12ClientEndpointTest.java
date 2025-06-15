@@ -41,8 +41,7 @@ public class MtlsWithP12ClientEndpointTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ServerEndpoint.class, ClientEndpoint.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ServerEndpoint.class, ClientEndpoint.class)
                     .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
                     .addAsResource(new File("target/certs/mtls-test-server-truststore.p12"), "server-truststore.p12")
                     .addAsResource(new File("target/certs/mtls-test-client-keystore.p12"), "client-keystore.p12")
@@ -69,11 +68,9 @@ public class MtlsWithP12ClientEndpointTest {
 
     @Test
     void testClient() throws InterruptedException, SSLPeerUnverifiedException {
-        WebSocketClientConnection connection = connector
-                .baseUri(uri)
+        WebSocketClientConnection connection = connector.baseUri(uri)
                 // The value will be encoded automatically
-                .pathParam("name", "Lu=")
-                .connectAndAwait();
+                .pathParam("name", "Lu=").connectAndAwait();
         assertTrue(connection.isSecure());
         assertNotNull(connection.sslSession());
         assertNotNull(connection.sslSession().getLocalPrincipal());

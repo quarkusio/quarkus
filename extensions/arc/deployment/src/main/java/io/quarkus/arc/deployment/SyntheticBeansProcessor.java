@@ -65,8 +65,8 @@ public class SyntheticBeansProcessor {
     }
 
     @BuildStep
-    void initRegular(List<SyntheticBeanBuildItem> syntheticBeans,
-            BeanRegistrationPhaseBuildItem beanRegistration, BuildProducer<BeanConfiguratorBuildItem> configurators) {
+    void initRegular(List<SyntheticBeanBuildItem> syntheticBeans, BeanRegistrationPhaseBuildItem beanRegistration,
+            BuildProducer<BeanConfiguratorBuildItem> configurators) {
 
         for (SyntheticBeanBuildItem bean : syntheticBeans) {
             if (!bean.hasRecorderInstance()) {
@@ -120,8 +120,8 @@ public class SyntheticBeansProcessor {
                 m.ifNull(function).trueBranch().throwException(CreationException.class,
                         createMessage("Synthetic bean instance for ", name, bean));
                 ResultHandle result = m.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Function.class, "apply", Object.class, Object.class),
-                        function, m.getMethodParam(0));
+                        MethodDescriptor.ofMethod(Function.class, "apply", Object.class, Object.class), function,
+                        m.getMethodParam(0));
                 m.returnValue(result);
             }
         };
@@ -131,15 +131,14 @@ public class SyntheticBeansProcessor {
         return new Consumer<MethodCreator>() {
             @Override
             public void accept(MethodCreator mc) {
-                ResultHandle staticMap = mc.readStaticField(
-                        FieldDescriptor.of(ArcRecorder.class, "syntheticBeanCheckActive", Map.class));
+                ResultHandle staticMap = mc
+                        .readStaticField(FieldDescriptor.of(ArcRecorder.class, "syntheticBeanCheckActive", Map.class));
                 ResultHandle supplier = mc.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class),
-                        staticMap, mc.load(name));
+                        MethodDescriptor.ofMethod(Map.class, "get", Object.class, Object.class), staticMap,
+                        mc.load(name));
                 mc.ifNull(supplier).trueBranch().throwException(CreationException.class,
                         createMessage("ActiveResult of synthetic bean for ", name, bean));
-                mc.returnValue(mc.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
+                mc.returnValue(mc.invokeInterfaceMethod(MethodDescriptor.ofMethod(Supplier.class, "get", Object.class),
                         supplier));
             }
         };
@@ -152,7 +151,8 @@ public class SyntheticBeansProcessor {
         builder.append(" not initialized yet: ");
         builder.append(name);
         if (!bean.isStaticInit()) {
-            builder.append("\n\t- a synthetic bean initialized during RUNTIME_INIT must not be accessed during STATIC_INIT");
+            builder.append(
+                    "\n\t- a synthetic bean initialized during RUNTIME_INIT must not be accessed during STATIC_INIT");
             builder.append(
                     "\n\t- RUNTIME_INIT build steps that require access to synthetic beans initialized during RUNTIME_INIT should consume the SyntheticBeansRuntimeInitBuildItem");
         }

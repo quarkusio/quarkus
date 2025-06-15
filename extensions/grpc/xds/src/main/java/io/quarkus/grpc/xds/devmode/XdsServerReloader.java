@@ -25,8 +25,7 @@ public class XdsServerReloader {
     }
 
     public static void reinitialize(List<ServerServiceDefinition> serviceDefinitions,
-            Map<String, ServerMethodDefinition<?, ?>> methods,
-            List<ServerInterceptor> sortedInterceptors) {
+            Map<String, ServerMethodDefinition<?, ?>> methods, List<ServerInterceptor> sortedInterceptors) {
         server = null;
     }
 

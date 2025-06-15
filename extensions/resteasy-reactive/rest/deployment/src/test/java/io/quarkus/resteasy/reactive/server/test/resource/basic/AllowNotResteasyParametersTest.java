@@ -18,7 +18,9 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Test resources with not all method parameters related to RESTEasy.
  */
 @DisplayName("Allow Not RESTEasy Method Parameters")
@@ -36,25 +38,19 @@ public class AllowNotResteasyParametersTest {
                         }
                     }).produces(AllowNotRestParametersBuildItem.class).build();
                 }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MixedParameterResource.class));
+            }).withApplicationRoot((jar) -> jar.addClass(MixedParameterResource.class));
 
     @Test
     @DisplayName("Test Resource Method with one param not related to RESTEasy")
     public void shouldOkEvenNotResteasyParameterPresence() {
-        given()
-                .body("value")
-                .post("/" + MixedParameterResource.class.getSimpleName() + "/mixed?foo=bar")
-                .then().statusCode(200).body(is("bar.value"));
+        given().body("value").post("/" + MixedParameterResource.class.getSimpleName() + "/mixed?foo=bar").then()
+                .statusCode(200).body(is("bar.value"));
     }
 
     @Test
     @DisplayName("Test Resource Method with only one param not related to RESTEasy")
     public void shouldOkEvenNotResteasySingleParameterPresence() {
-        given()
-                .body("value")
-                .get("/" + MixedParameterResource.class.getSimpleName() + "/single")
-                .then().statusCode(200);
+        given().body("value").get("/" + MixedParameterResource.class.getSimpleName() + "/single").then()
+                .statusCode(200);
     }
 }

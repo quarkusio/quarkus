@@ -94,8 +94,8 @@ public class SseServerResource {
     public static void setLatches() {
         closeLatch = new CountDownLatch(1);
         errorLatch = new CountDownLatch(1);
-        logger.info(String.format("Setting latches: \n  closeLatch:  %s\n  errorLatch: %s",
-                closeLatch.hashCode(), errorLatch.hashCode()));
+        logger.info(String.format("Setting latches: \n  closeLatch:  %s\n  errorLatch: %s", closeLatch.hashCode(),
+                errorLatch.hashCode()));
     }
 
     public static CountDownLatch getCloseLatch() {

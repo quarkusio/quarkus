@@ -65,10 +65,8 @@ public class RuntimeDeploymentManager {
 
     private ArrayList<RequestMapper.RequestPath<RestInitialHandler.InitialMatch>> classMappers;
 
-    public RuntimeDeploymentManager(DeploymentInfo info,
-            Supplier<Executor> executorSupplier,
-            Supplier<Executor> virtualExecutorSupplier,
-            Consumer<Closeable> closeTaskHandler,
+    public RuntimeDeploymentManager(DeploymentInfo info, Supplier<Executor> executorSupplier,
+            Supplier<Executor> virtualExecutorSupplier, Consumer<Closeable> closeTaskHandler,
             RequestContextFactory requestContextFactory, ThreadSetupAction threadSetupAction, String rootPath) {
         this.info = info;
         this.executorSupplier = executorSupplier;
@@ -98,15 +96,15 @@ public class RuntimeDeploymentManager {
 
         RuntimeInterceptorDeployment interceptorDeployment = new RuntimeInterceptorDeployment(info, configurationImpl,
                 closeTaskHandler);
-        ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler(
-                new Function<>() {
-                    @Override
-                    public BeanFactory.BeanInstance<?> apply(Class<?> aClass) {
-                        return info.getFactoryCreator().apply(aClass).createInstance();
-                    }
-                }, info.getClientProxyUnwrapper());
+        ResourceLocatorHandler resourceLocatorHandler = new ResourceLocatorHandler(new Function<>() {
+            @Override
+            public BeanFactory.BeanInstance<?> apply(Class<?> aClass) {
+                return info.getFactoryCreator().apply(aClass).createInstance();
+            }
+        }, info.getClientProxyUnwrapper());
 
-        // sanitise the prefix for our usage to make it either an empty string, or something which starts with a / and does not
+        // sanitise the prefix for our usage to make it either an empty string, or something which starts with a / and
+        // does not
         // end with one
         String prefix = rootPath;
         if (prefix != null) {
@@ -122,10 +120,10 @@ public class RuntimeDeploymentManager {
 
         List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers = new ArrayList<>();
         RuntimeResourceDeployment runtimeResourceDeployment = new RuntimeResourceDeployment(info, executorSupplier,
-                virtualExecutorSupplier,
-                interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler, requestContextFactory.isDefaultBlocking());
+                virtualExecutorSupplier, interceptorDeployment, dynamicEntityWriter, resourceLocatorHandler,
+                requestContextFactory.isDefaultBlocking());
         List<ResourceClass> possibleSubResource = new ArrayList<>(locatableResourceClasses);
-        possibleSubResource.addAll(resourceClasses); //the TCK uses normal resources also as sub resources
+        possibleSubResource.addAll(resourceClasses); // the TCK uses normal resources also as sub resources
         Map<String, List<String>> disabledEndpoints = new HashMap<>();
         for (int i = 0; i < possibleSubResource.size(); i++) {
             ResourceClass clazz = possibleSubResource.get(i);
@@ -134,8 +132,8 @@ public class RuntimeDeploymentManager {
             URITemplate classPathTemplate = clazz.getPath() == null ? null : new URITemplate(clazz.getPath(), true);
             for (int j = 0; j < clazz.getMethods().size(); j++) {
                 ResourceMethod method = clazz.getMethods().get(j);
-                RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
-                        clazz, (ServerResourceMethod) method, true, classPathTemplate, info);
+                RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(clazz,
+                        (ServerResourceMethod) method, true, classPathTemplate, info);
                 addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
 
                 RuntimeMappingDeployment.buildMethodMapper(templates, method, runtimeResource);
@@ -167,8 +165,8 @@ public class RuntimeDeploymentManager {
             }
         }
 
-        //it is possible that multiple resource classes use the same path
-        //we use this map to merge them
+        // it is possible that multiple resource classes use the same path
+        // we use this map to merge them
         Map<MappersKey, Map<String, TreeMap<URITemplate, List<RequestMapper.RequestPath<RuntimeResource>>>>> mappers = new TreeMap<>();
 
         for (int i = 0; i < resourceClasses.size(); i++) {
@@ -186,8 +184,8 @@ public class RuntimeDeploymentManager {
             }
             for (int j = 0; j < clazz.getMethods().size(); j++) {
                 ResourceMethod method = clazz.getMethods().get(j);
-                RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(
-                        clazz, (ServerResourceMethod) method, false, classTemplate, info);
+                RuntimeResource runtimeResource = runtimeResourceDeployment.buildResourceMethod(clazz,
+                        (ServerResourceMethod) method, false, classTemplate, info);
                 addRuntimeConfigurableHandlers(runtimeResource, runtimeConfigurableServerRestHandlers);
 
                 RuntimeMappingDeployment.buildMethodMapper(perClassMappers, method, runtimeResource);
@@ -213,35 +211,29 @@ public class RuntimeDeploymentManager {
         }
         abortHandlingChain.add(new ResponseWriterHandler(dynamicEntityWriter));
 
-        //pre matching interceptors are run first
+        // pre matching interceptors are run first
         List<ServerRestHandler> preMatchHandlers = new ArrayList<>();
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
-            preMatchHandlers
-                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH,
-                            null, null));
+            preMatchHandlers.addAll(info.getGlobalHandlerCustomizers().get(i)
+                    .handlers(HandlerChainCustomizer.Phase.BEFORE_PRE_MATCH, null, null));
         }
         if (!interceptors.getContainerRequestFilters().getPreMatchInterceptors().isEmpty()) {
             preMatchHandlers = new ArrayList<>(interceptorDeployment.getPreMatchContainerRequestFilters().size());
             for (Map.Entry<ResourceInterceptor<ContainerRequestFilter>, ContainerRequestFilter> entry : interceptorDeployment
-                    .getPreMatchContainerRequestFilters()
-                    .entrySet()) {
-                preMatchHandlers
-                        .add(new ResourceRequestFilterHandler(entry.getValue(), true, entry.getKey().isNonBlockingRequired(),
-                                entry.getKey().isWithFormRead()));
+                    .getPreMatchContainerRequestFilters().entrySet()) {
+                preMatchHandlers.add(new ResourceRequestFilterHandler(entry.getValue(), true,
+                        entry.getKey().isNonBlockingRequired(), entry.getKey().isWithFormRead()));
             }
         }
         for (int i = 0; i < info.getGlobalHandlerCustomizers().size(); i++) {
-            preMatchHandlers
-                    .addAll(info.getGlobalHandlerCustomizers().get(i).handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH,
-                            null, null));
+            preMatchHandlers.addAll(info.getGlobalHandlerCustomizers().get(i)
+                    .handlers(HandlerChainCustomizer.Phase.AFTER_PRE_MATCH, null, null));
         }
         return new Deployment(exceptionMapping, info.getCtxResolvers(), serialisers,
-                abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter,
-                prefix, paramConverterProviders, configurationImpl, applicationSupplier,
-                threadSetupAction, requestContextFactory, preMatchHandlers, classMappers,
-                runtimeConfigurableServerRestHandlers, exceptionMapper, info.isServletPresent(),
-                info.getResteasyReactiveConfig(),
-                disabledEndpoints);
+                abortHandlingChain.toArray(EMPTY_REST_HANDLER_ARRAY), dynamicEntityWriter, prefix,
+                paramConverterProviders, configurationImpl, applicationSupplier, threadSetupAction,
+                requestContextFactory, preMatchHandlers, classMappers, runtimeConfigurableServerRestHandlers,
+                exceptionMapper, info.isServletPresent(), info.getResteasyReactiveConfig(), disabledEndpoints);
     }
 
     private void forEachMapperEntry(MappersKey key,
@@ -259,7 +251,8 @@ public class RuntimeDeploymentManager {
             List<GenericRuntimeConfigurableServerRestHandler<?>> runtimeConfigurableServerRestHandlers) {
         for (ServerRestHandler serverRestHandler : runtimeResource.getHandlerChain()) {
             if (serverRestHandler instanceof GenericRuntimeConfigurableServerRestHandler) {
-                runtimeConfigurableServerRestHandlers.add((GenericRuntimeConfigurableServerRestHandler<?>) serverRestHandler);
+                runtimeConfigurableServerRestHandlers
+                        .add((GenericRuntimeConfigurableServerRestHandler<?>) serverRestHandler);
             }
         }
     }
@@ -272,8 +265,8 @@ public class RuntimeDeploymentManager {
             return configuration;
         }
 
-        FeatureContextImpl featureContext = new FeatureContextImpl(interceptors, exceptionMapping,
-                configuration, info.getFactoryCreator());
+        FeatureContextImpl featureContext = new FeatureContextImpl(interceptors, exceptionMapping, configuration,
+                info.getFactoryCreator());
         List<ResourceFeature> resourceFeatures = features.getResourceFeatures();
         for (int i = 0; i < resourceFeatures.size(); i++) {
             ResourceFeature resourceFeature = resourceFeatures.get(i);
@@ -312,7 +305,8 @@ public class RuntimeDeploymentManager {
             if (path.components.length == 0) {
                 this.key = "";
             } else {
-                // create a key without any names. Names of e.g. default regex components can differ, but the component still has the same meaning.
+                // create a key without any names. Names of e.g. default regex components can differ, but the component
+                // still has the same meaning.
                 StringBuilder keyBuilder = new StringBuilder();
                 for (URITemplate.TemplateComponent component : path.components) {
                     int standardLength = component.type.name().length() + 1

@@ -20,11 +20,12 @@ public class Tokens {
     final private JsonObject grantResponse;
     final private String clientId;
 
-    public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration, String refreshToken,
-            Long refreshTokenExpiresAt, JsonObject grantResponse, String clientId) {
+    public Tokens(String accessToken, Long accessTokenExpiresAt, Duration refreshTokenTimeSkewDuration,
+            String refreshToken, Long refreshTokenExpiresAt, JsonObject grantResponse, String clientId) {
         this.accessToken = accessToken;
         this.accessTokenExpiresAt = accessTokenExpiresAt;
-        this.refreshTokenTimeSkew = refreshTokenTimeSkewDuration == null ? null : refreshTokenTimeSkewDuration.getSeconds();
+        this.refreshTokenTimeSkew = refreshTokenTimeSkewDuration == null ? null
+                : refreshTokenTimeSkewDuration.getSeconds();
         this.refreshToken = refreshToken;
         this.refreshTokenExpiresAt = refreshTokenExpiresAt;
         this.grantResponse = grantResponse;
@@ -96,9 +97,11 @@ public class Tokens {
         } else {
             final long expiresIn = expiresAt - nowSecs;
             if (accessToken) {
-                LOG.tracef("Access token for client %s is valid but will expire in about %d seconds", clientId, expiresIn);
+                LOG.tracef("Access token for client %s is valid but will expire in about %d seconds", clientId,
+                        expiresIn);
             } else {
-                LOG.tracef("Refresh token for client %s is valid but will expire in about %d seconds", clientId, expiresIn);
+                LOG.tracef("Refresh token for client %s is valid but will expire in about %d seconds", clientId,
+                        expiresIn);
             }
         }
 

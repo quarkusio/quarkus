@@ -29,9 +29,11 @@ public class CliPluginsSync extends CliPluginsBase implements Callable<Integer> 
         if (pluginManager.sync()) {
             Map<String, Plugin> after = pluginManager.getInstalledPlugins();
 
-            Map<String, PluginListItem> installed = after.entrySet().stream().filter(e -> !before.containsKey(e.getKey()))
+            Map<String, PluginListItem> installed = after.entrySet().stream()
+                    .filter(e -> !before.containsKey(e.getKey()))
                     .collect(Collectors.toMap(e -> e.getKey(), e -> new PluginListItem(true, e.getValue())));
-            Map<String, PluginListItem> uninstalled = before.entrySet().stream().filter(e -> !after.containsKey(e.getKey()))
+            Map<String, PluginListItem> uninstalled = before.entrySet().stream()
+                    .filter(e -> !after.containsKey(e.getKey()))
                     .collect(Collectors.toMap(e -> e.getKey(), e -> new PluginListItem(false, e.getValue())));
             Map<String, PluginListItem> all = new HashMap<>();
             all.putAll(installed);
@@ -47,10 +49,7 @@ public class CliPluginsSync extends CliPluginsBase implements Callable<Integer> 
     }
 
     void dryRunAdd(CommandLine.Help help) {
-        output.printText(new String[] {
-                "\tSync plugin to the CLI\n",
-                "\t" + projectRoot().toString()
-        });
+        output.printText(new String[] { "\tSync plugin to the CLI\n", "\t" + projectRoot().toString() });
         Map<String, String> dryRunOutput = new TreeMap<>();
         output.info(help.createTextTable(dryRunOutput).toString());
     };

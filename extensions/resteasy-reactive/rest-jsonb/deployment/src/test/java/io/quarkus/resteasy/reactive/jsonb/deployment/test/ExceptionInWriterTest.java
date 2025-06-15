@@ -13,18 +13,15 @@ import io.restassured.RestAssured;
 public class ExceptionInWriterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Cheese.class, CheeseEndpoint.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Cheese.class, CheeseEndpoint.class);
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.with().header("Accept", "text/plain", "application/json").get("/cheese")
-                .then().statusCode(500);
+        RestAssured.with().header("Accept", "text/plain", "application/json").get("/cheese").then().statusCode(500);
     }
 }

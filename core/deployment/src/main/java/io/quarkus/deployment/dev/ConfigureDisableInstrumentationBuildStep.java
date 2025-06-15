@@ -31,8 +31,7 @@ public class ConfigureDisableInstrumentationBuildStep {
             if (suppliers.size() == 1) {
                 return suppliers.get(0).get();
             } else {
-                return suppliers.stream().map(Supplier::get)
-                        .reduce((c) -> false, Predicate::or);
+                return suppliers.stream().map(Supplier::get).reduce((c) -> false, Predicate::or);
             }
         }
     }

@@ -24,32 +24,28 @@ public class GraphQLClientCertificateUpdateEventListener {
     public void onCertificateUpdate(@Observes CertificateUpdatedEvent event) {
         String updatedTlsConfigurationName = event.name();
         TlsConfiguration updatedTlsConfiguration = event.tlsConfiguration();
-        graphQLClientsConfig.clients()
-                .forEach((configKey, clientConfig) -> {
-                    GraphQLClientConfiguration graphQLClientConfiguration = GraphQLClientsConfiguration.getInstance()
-                            .getClient(configKey);
-                    clientConfig.tlsConfigurationName().ifPresentOrElse(tlsConfigurationName -> {
-                        if (tlsConfigurationName.equals(updatedTlsConfigurationName)) {
-                            updateConfiguration(updatedTlsConfigurationName, updatedTlsConfiguration,
-                                    graphQLClientConfiguration, configKey);
-                        }
-                    }, () -> {
-                        if (DEFAULT_NAME.equals(updatedTlsConfigurationName)) {
-                            updateConfiguration("default", updatedTlsConfiguration, graphQLClientConfiguration, configKey);
-                        }
-                    });
-                });
+        graphQLClientsConfig.clients().forEach((configKey, clientConfig) -> {
+            GraphQLClientConfiguration graphQLClientConfiguration = GraphQLClientsConfiguration.getInstance()
+                    .getClient(configKey);
+            clientConfig.tlsConfigurationName().ifPresentOrElse(tlsConfigurationName -> {
+                if (tlsConfigurationName.equals(updatedTlsConfigurationName)) {
+                    updateConfiguration(updatedTlsConfigurationName, updatedTlsConfiguration,
+                            graphQLClientConfiguration, configKey);
+                }
+            }, () -> {
+                if (DEFAULT_NAME.equals(updatedTlsConfigurationName)) {
+                    updateConfiguration("default", updatedTlsConfiguration, graphQLClientConfiguration, configKey);
+                }
+            });
+        });
     }
 
     private void updateConfiguration(String tlsBucketName, TlsConfiguration updatedTlsConfiguration,
             GraphQLClientConfiguration graphQLClientConfiguration, String configKey) {
         LOG.infof("Certificate reloaded for the client '%s' using the TLS configuration (bucket) name '%s'", configKey,
                 tlsBucketName);
-        graphQLClientConfiguration
-                .setTlsKeyStoreOptions(updatedTlsConfiguration.getKeyStoreOptions());
-        graphQLClientConfiguration
-                .setTlsTrustStoreOptions(updatedTlsConfiguration.getTrustStoreOptions());
-        graphQLClientConfiguration
-                .setSslOptions(updatedTlsConfiguration.getSSLOptions()); // CLR
+        graphQLClientConfiguration.setTlsKeyStoreOptions(updatedTlsConfiguration.getKeyStoreOptions());
+        graphQLClientConfiguration.setTlsTrustStoreOptions(updatedTlsConfiguration.getTrustStoreOptions());
+        graphQLClientConfiguration.setSslOptions(updatedTlsConfiguration.getSSLOptions()); // CLR
     }
 }

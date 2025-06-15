@@ -20,7 +20,9 @@ public class CollectionListOptions {
     /**
      * Sets the query filter to apply to the query.
      *
-     * @param filter the filter, which may be null.
+     * @param filter
+     *        the filter, which may be null.
+     *
      * @return this
      */
     public CollectionListOptions filter(Bson filter) {
@@ -31,8 +33,11 @@ public class CollectionListOptions {
     /**
      * Sets the maximum execution time on the server for this operation.
      *
-     * @param maxTime the max time
-     * @param timeUnit the time unit, which may not be null
+     * @param maxTime
+     *        the max time
+     * @param timeUnit
+     *        the time unit, which may not be null
+     *
      * @return this
      */
     public CollectionListOptions maxTime(long maxTime, TimeUnit timeUnit) {

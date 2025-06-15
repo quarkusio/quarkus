@@ -22,9 +22,9 @@ public class GenericResourceStudentReader implements MessageBodyReader<GenericRe
         return true;
     }
 
-    public GenericResourceStudent readFrom(Class<GenericResourceStudent> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
-            throws IOException, WebApplicationException {
+    public GenericResourceStudent readFrom(Class<GenericResourceStudent> type, Type genericType,
+            Annotation[] annotations, MediaType mediaType, MultivaluedMap<String, String> httpHeaders,
+            InputStream entityStream) throws IOException, WebApplicationException {
         BufferedReader br = null;
         try {
             br = new BufferedReader(new InputStreamReader(entityStream));

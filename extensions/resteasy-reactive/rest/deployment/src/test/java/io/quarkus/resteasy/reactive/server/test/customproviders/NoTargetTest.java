@@ -29,14 +29,13 @@ import io.restassured.http.Headers;
 public class NoTargetTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class, ThrowingPreMatchFilter.class, DummyExceptionMapper.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class, ThrowingPreMatchFilter.class,
+                    DummyExceptionMapper.class);
+        }
+    });
 
     @Path("hello")
     public static class HelloResource {
@@ -49,8 +48,7 @@ public class NoTargetTest {
 
     @Test
     public void test() {
-        Headers headers = RestAssured.get("/hello")
-                .then().statusCode(200).extract().headers();
+        Headers headers = RestAssured.get("/hello").then().statusCode(200).extract().headers();
         assertEquals("mapper", headers.get("source").getValue());
         assertEquals("NullValues", headers.get("resourceInfoClass").getValue());
     }

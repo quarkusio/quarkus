@@ -46,7 +46,8 @@ public final class UniImplementor {
         FunctionCreator lambda = creator.createFunction(Consumer.class);
         BytecodeCreator body = lambda.getBytecode();
         ResultHandle item = body.getMethodParam(0);
-        body.invokeStaticMethod(ofMethod(CurrentRequestManager.class, "set", void.class, ResteasyReactiveRequestContext.class),
+        body.invokeStaticMethod(
+                ofMethod(CurrentRequestManager.class, "set", void.class, ResteasyReactiveRequestContext.class),
                 rrContext);
 
         function.accept(body, item);
@@ -57,8 +58,7 @@ public final class UniImplementor {
     }
 
     /**
-     * Given a Uni instance, this method implements the `map` method:
-     * uni.map(item -> ...).
+     * Given a Uni instance, this method implements the `map` method: uni.map(item -> ...).
      */
     public static ResultHandle map(BytecodeCreator creator, ResultHandle uniInstance, String messageOnFailure,
             BiConsumer<BytecodeCreator, ResultHandle> function) {
@@ -68,7 +68,8 @@ public final class UniImplementor {
         FunctionCreator lambda = creator.createFunction(Function.class);
         BytecodeCreator body = lambda.getBytecode();
         ResultHandle item = body.getMethodParam(0);
-        body.invokeStaticMethod(ofMethod(CurrentRequestManager.class, "set", void.class, ResteasyReactiveRequestContext.class),
+        body.invokeStaticMethod(
+                ofMethod(CurrentRequestManager.class, "set", void.class, ResteasyReactiveRequestContext.class),
                 rrContext);
 
         function.accept(body, item);
@@ -80,8 +81,7 @@ public final class UniImplementor {
     }
 
     /**
-     * Given a Uni instance, this method implements the `flatMap` method:
-     * uni.flatMap(item -> ...).
+     * Given a Uni instance, this method implements the `flatMap` method: uni.flatMap(item -> ...).
      */
     public static ResultHandle flatMap(BytecodeCreator creator, ResultHandle uniInstance, String messageOnFailure,
             BiConsumer<BytecodeCreator, ResultHandle> function) {
@@ -90,19 +90,19 @@ public final class UniImplementor {
         FunctionCreator lambda = creator.createFunction(Function.class);
         BytecodeCreator body = lambda.getBytecode();
         ResultHandle item = body.getMethodParam(0);
-        body.invokeStaticMethod(ofMethod(CurrentRequestManager.class, "set", void.class, ResteasyReactiveRequestContext.class),
+        body.invokeStaticMethod(
+                ofMethod(CurrentRequestManager.class, "set", void.class, ResteasyReactiveRequestContext.class),
                 rrContext);
         function.accept(body, item);
 
-        ResultHandle resultHandle = creator.invokeInterfaceMethod(ofMethod(Uni.class, "flatMap", Uni.class, Function.class),
-                uniInstance, lambda.getInstance());
+        ResultHandle resultHandle = creator.invokeInterfaceMethod(
+                ofMethod(Uni.class, "flatMap", Uni.class, Function.class), uniInstance, lambda.getInstance());
 
         return onFailure(creator, resultHandle, messageOnFailure);
     }
 
     /**
-     * Given a Uni instance, this method implements the `onFailure` method:
-     * uni.onFailure(ex -> ...).
+     * Given a Uni instance, this method implements the `onFailure` method: uni.onFailure(ex -> ...).
      */
     public static ResultHandle onFailure(BytecodeCreator creator, ResultHandle uniInstance, String message) {
         return onFailure(creator, uniInstance,
@@ -112,8 +112,7 @@ public final class UniImplementor {
     }
 
     /**
-     * Given a Uni instance, this method implements the `onFailure` method:
-     * uni.onFailure().invoke(ex -> ...).
+     * Given a Uni instance, this method implements the `onFailure` method: uni.onFailure().invoke(ex -> ...).
      */
     public static ResultHandle onFailure(BytecodeCreator creator, ResultHandle uniInstance,
             BiFunction<BytecodeCreator, ResultHandle, ResultHandle> exceptionHandler) {

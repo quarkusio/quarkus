@@ -18,8 +18,9 @@ public class TemplateAnalysisTest {
 
     @Test
     public void testSortedParamDeclarations() {
-        List<ParameterDeclaration> sorted = TemplateAnalysis.getSortedParameterDeclarations(List.of(paramDeclaration("foo", -1),
-                paramDeclaration("bar", -1), paramDeclaration("qux", 10), paramDeclaration("baz", 1)));
+        List<ParameterDeclaration> sorted = TemplateAnalysis
+                .getSortedParameterDeclarations(List.of(paramDeclaration("foo", -1), paramDeclaration("bar", -1),
+                        paramDeclaration("qux", 10), paramDeclaration("baz", 1)));
         assertEquals(4, sorted.size());
         assertEquals("baz", sorted.get(0).getKey());
         assertEquals("qux", sorted.get(1).getKey());

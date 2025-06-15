@@ -46,8 +46,8 @@ public class KafkaAdminManager {
     public void createTopic(String topic, int partitions) {
         try {
             if (!admin.listTopics().names().get(2000, TimeUnit.MILLISECONDS).contains(topic)) {
-                admin.createTopics(List.of(new NewTopic(topic, partitions, (short) 1))).all()
-                        .get(2000, TimeUnit.MILLISECONDS);
+                admin.createTopics(List.of(new NewTopic(topic, partitions, (short) 1))).all().get(2000,
+                        TimeUnit.MILLISECONDS);
             }
         } catch (InterruptedException | ExecutionException | TimeoutException e) {
             throw new RuntimeException(e);

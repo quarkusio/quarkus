@@ -27,10 +27,8 @@ import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
 public class NativeImageReflectConfigStep {
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void generateReflectConfig(BuildProducer<GeneratedResourceBuildItem> reflectConfig,
-            NativeConfig nativeConfig,
-            List<ReflectiveMethodBuildItem> reflectiveMethods,
-            List<ReflectiveFieldBuildItem> reflectiveFields,
+    void generateReflectConfig(BuildProducer<GeneratedResourceBuildItem> reflectConfig, NativeConfig nativeConfig,
+            List<ReflectiveMethodBuildItem> reflectiveMethods, List<ReflectiveFieldBuildItem> reflectiveFields,
             List<ReflectiveClassBuildItem> reflectiveClassBuildItems,
             List<ForceNonWeakReflectiveClassBuildItem> nonWeakReflectiveClassBuildItems,
             List<ServiceProviderBuildItem> serviceProviderBuildItems,
@@ -54,13 +52,13 @@ public class NativeImageReflectConfigStep {
         for (ServiceProviderBuildItem i : serviceProviderBuildItems) {
             for (String provider : i.providers()) {
                 // Register the nullary constructor
-                addReflectiveMethod(reflectiveClasses,
-                        new ReflectiveMethodBuildItem("Class registered as provider", provider, "<init>", new String[0]));
-                // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError at run time.
+                addReflectiveMethod(reflectiveClasses, new ReflectiveMethodBuildItem("Class registered as provider",
+                        provider, "<init>", new String[0]));
+                // Register public provider() method for lookkup to avoid throwing a MissingReflectionRegistrationError
+                // at run time.
                 // See ServiceLoader#loadProvider and ServiceLoader#findStaticProviderMethod.
-                addReflectiveMethod(reflectiveClasses,
-                        new ReflectiveMethodBuildItem("Class registered as provider", true, provider, "provider",
-                                new String[0]));
+                addReflectiveMethod(reflectiveClasses, new ReflectiveMethodBuildItem("Class registered as provider",
+                        true, provider, "provider", new String[0]));
             }
         }
 
@@ -165,7 +163,8 @@ public class NativeImageReflectConfigStep {
         }
     }
 
-    public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses, ReflectiveMethodBuildItem methodInfo) {
+    public void addReflectiveMethod(Map<String, ReflectionInfo> reflectiveClasses,
+            ReflectiveMethodBuildItem methodInfo) {
         String cl = methodInfo.getDeclaringClass();
         ReflectionInfo existing = reflectiveClasses.get(cl);
         if (existing == null) {

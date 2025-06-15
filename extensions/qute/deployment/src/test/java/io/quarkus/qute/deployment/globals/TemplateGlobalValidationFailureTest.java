@@ -15,12 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateGlobalValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Globals.class)
-                    .addAsResource(new StringAsset(
-                            "Hello {user.name}!"),
-                            "templates/hello.txt"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Globals.class).addAsResource(new StringAsset("Hello {user.name}!"), "templates/hello.txt"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;
@@ -32,11 +28,9 @@ public class TemplateGlobalValidationFailureTest {
                     e = e.getCause();
                 }
                 assertNotNull(te);
-                assertTrue(
-                        te.getMessage().contains("Found incorrect expressions (1)"), te.getMessage());
-                assertTrue(
-                        te.getMessage().contains(
-                                "Property/method [name] not found on class [java.lang.String] nor handled by an extension method"),
+                assertTrue(te.getMessage().contains("Found incorrect expressions (1)"), te.getMessage());
+                assertTrue(te.getMessage().contains(
+                        "Property/method [name] not found on class [java.lang.String] nor handled by an extension method"),
                         te.getMessage());
             });
 

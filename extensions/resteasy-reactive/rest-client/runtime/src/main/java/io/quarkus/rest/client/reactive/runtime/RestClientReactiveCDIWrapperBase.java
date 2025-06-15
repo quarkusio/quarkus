@@ -20,8 +20,8 @@ public abstract class RestClientReactiveCDIWrapperBase<T extends Closeable> impl
     private T delegate;
     private Object mock;
 
-    public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation,
-            String configKey, boolean lazyDelegate) {
+    public RestClientReactiveCDIWrapperBase(Class<T> jaxrsInterface, String baseUriFromAnnotation, String configKey,
+            boolean lazyDelegate) {
         this.jaxrsInterface = jaxrsInterface;
         this.baseUriFromAnnotation = baseUriFromAnnotation;
         this.configKey = configKey;

@@ -8,12 +8,12 @@ public final class OracleDatasourceSubstitutions {
 
     @Substitute
     public static void unregisterMBean() {
-        //No-op
+        // No-op
     }
 
     @Substitute
     public static void registerMBean() {
-        //No-op
+        // No-op
     }
 
 }

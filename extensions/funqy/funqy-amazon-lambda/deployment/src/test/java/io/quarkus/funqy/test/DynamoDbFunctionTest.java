@@ -23,13 +23,10 @@ import io.restassured.RestAssured;
  */
 public class DynamoDbFunctionTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("item-function.properties", "application.properties")
-                    .addAsResource("events/dynamodb", "events")
-                    .addClasses(TestFunctions.class, Item.class,
-                            BatchItemFailures.class, ItemFailure.class,
-                            EventDataProvider.class, BodyDeserializer.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource("item-function.properties", "application.properties")
+            .addAsResource("events/dynamodb", "events").addClasses(TestFunctions.class, Item.class,
+                    BatchItemFailures.class, ItemFailure.class, EventDataProvider.class, BodyDeserializer.class));
 
     @Inject
     BodyDeserializer deserializer;
@@ -40,9 +37,7 @@ public class DynamoDbFunctionTest {
         var body = getData("ok.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         // It is not supported to transform the DynamoDB event record to an internal model. Therefore, if somebody
@@ -58,9 +53,7 @@ public class DynamoDbFunctionTest {
         var body = getData("pipes-ok.json");
 
         // when
-        var response = RestAssured.given().contentType("application/json")
-                .body(body)
-                .post("/");
+        var response = RestAssured.given().contentType("application/json").body(body).post("/");
 
         // then
         // It is not supported to transform the DynamoDB event record to an internal model. Therefore, if somebody

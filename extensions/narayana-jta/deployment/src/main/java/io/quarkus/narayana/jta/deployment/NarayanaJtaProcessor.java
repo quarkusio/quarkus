@@ -88,59 +88,51 @@ class NarayanaJtaProcessor {
 
     @BuildStep
     public NativeImageSystemPropertyBuildItem nativeImageSystemPropertyBuildItem() {
-        return new NativeImageSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable", "false");
+        return new NativeImageSystemPropertyBuildItem("CoordinatorEnvironmentBean.transactionStatusManagerEnable",
+                "false");
     }
 
     @BuildStep
     @Record(RUNTIME_INIT)
     @Produce(NarayanaInitBuildItem.class)
-    public void build(NarayanaJtaRecorder recorder,
-            CombinedIndexBuildItem indexBuildItem,
+    public void build(NarayanaJtaRecorder recorder, CombinedIndexBuildItem indexBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit,
-            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeInit, BuildProducer<FeatureBuildItem> feature,
             BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures,
-            TransactionManagerConfiguration transactions, TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            Capabilities capabilities) {
+            TransactionManagerConfiguration transactions,
+            TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
+            ShutdownContextBuildItem shutdownContextBuildItem, Capabilities capabilities) {
         recorder.handleShutdown(shutdownContextBuildItem, transactions);
         feature.produce(new FeatureBuildItem(Feature.NARAYANA_JTA));
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaJtaProducers.class));
-        additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf("io.quarkus.narayana.jta.RequestScopedTransaction"));
+        additionalBeans
+                .produce(AdditionalBeanBuildItem.unremovableOf("io.quarkus.narayana.jta.RequestScopedTransaction"));
 
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(
                 "com.arjuna.ats.internal.jta.resources.arjunacore.CommitMarkableResourceRecord"));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(SocketProcessId.class.getName()));
-        runtimeInit.produce(new RuntimeInitializedClassBuildItem(CommitMarkableResourceRecordRecoveryModule.class.getName()));
+        runtimeInit.produce(
+                new RuntimeInitializedClassBuildItem(CommitMarkableResourceRecordRecoveryModule.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(RecoverConnectableAtomicAction.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(TransactionStatusConnectionManager.class.getName()));
-        runtimeInit.produce(new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
+        runtimeInit.produce(
+                new RuntimeInitializedClassBuildItem(JTAActionStatusServiceXAResourceOrphanFilter.class.getName()));
         runtimeInit.produce(new RuntimeInitializedClassBuildItem(AtomicActionExpiryScanner.class.getName()));
 
         indexBuildItem.getIndex().getAllKnownSubclasses(JDBCImple_driver.class).stream()
                 .map(impl -> ReflectiveClassBuildItem.builder(impl.name().toString()).build())
                 .forEach(reflectiveClass::produce);
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(JTAEnvironmentBean.class,
-                UserTransactionImple.class,
-                CheckedActionFactoryImple.class,
-                TransactionManagerImple.class,
-                TransactionSynchronizationRegistryImple.class,
-                ObjectStoreEnvironmentBean.class,
-                ShadowNoFileLockStore.class,
-                JDBCStore.class,
-                SocketProcessId.class,
-                AtomicActionRecoveryModule.class,
-                XARecoveryModule.class,
-                XAResourceRecord.class,
-                JTATransactionLogXAResourceOrphanFilter.class,
-                JTANodeNameXAResourceOrphanFilter.class,
-                JTAActionStatusServiceXAResourceOrphanFilter.class,
-                ExpiredTransactionStatusManagerScanner.class)
-                .publicConstructors()
-                .reason(getClass().getName())
-                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder(JTAEnvironmentBean.class, UserTransactionImple.class, CheckedActionFactoryImple.class,
+                        TransactionManagerImple.class, TransactionSynchronizationRegistryImple.class,
+                        ObjectStoreEnvironmentBean.class, ShadowNoFileLockStore.class, JDBCStore.class,
+                        SocketProcessId.class, AtomicActionRecoveryModule.class, XARecoveryModule.class,
+                        XAResourceRecord.class, JTATransactionLogXAResourceOrphanFilter.class,
+                        JTANodeNameXAResourceOrphanFilter.class, JTAActionStatusServiceXAResourceOrphanFilter.class,
+                        ExpiredTransactionStatusManagerScanner.class)
+                .publicConstructors().reason(getClass().getName()).build());
 
         AdditionalBeanBuildItem.Builder builder = AdditionalBeanBuildItem.builder();
         builder.addBeanClass(TransactionalInterceptorSupports.class);
@@ -157,16 +149,17 @@ class NarayanaJtaProcessor {
             }
         });
 
-        //we want to force Arjuna to init at static init time
+        // we want to force Arjuna to init at static init time
         Properties defaultProperties = PropertiesFactory.getDefaultProperties();
-        //we don't want to store the system properties here
-        //we re-apply them at runtime
+        // we don't want to store the system properties here
+        // we re-apply them at runtime
         for (Object i : System.getProperties().keySet()) {
             defaultProperties.remove(i);
         }
 
         recorder.setDefaultProperties(defaultProperties);
-        // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this property
+        // This must be done before setNodeName as the code in setNodeName will create a TSM based on the value of this
+        // property
         recorder.disableTransactionStatusManager();
         allowUnsafeMultipleLastResources(recorder, transactionManagerBuildTimeConfig, capabilities, logCleanupFilters,
                 nativeImageFeatures);
@@ -192,16 +185,14 @@ class NarayanaJtaProcessor {
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
     public void startRecoveryService(NarayanaJtaRecorder recorder,
             List<JdbcDataSourceBuildItem> jdbcDataSourceBuildItems, TransactionManagerConfiguration transactions) {
-        Map<String, String> configuredDataSourcesConfigKeys = jdbcDataSourceBuildItems.stream()
-                .map(j -> j.getName())
+        Map<String, String> configuredDataSourcesConfigKeys = jdbcDataSourceBuildItems.stream().map(j -> j.getName())
                 .collect(Collectors.toMap(Function.identity(),
                         n -> DataSourceUtil.dataSourcePropertyKey(n, "jdbc.transactions")));
         Set<String> dataSourcesWithTransactionIntegration = jdbcDataSourceBuildItems.stream()
-                .filter(j -> j.isTransactionIntegrationEnabled())
-                .map(j -> j.getName())
-                .collect(Collectors.toSet());
+                .filter(j -> j.isTransactionIntegrationEnabled()).map(j -> j.getName()).collect(Collectors.toSet());
 
-        recorder.startRecoveryService(transactions, configuredDataSourcesConfigKeys, dataSourcesWithTransactionIntegration);
+        recorder.startRecoveryService(transactions, configuredDataSourcesConfigKeys,
+                dataSourcesWithTransactionIntegration);
     }
 
     @BuildStep(onlyIf = IsTest.class)
@@ -212,12 +203,12 @@ class NarayanaJtaProcessor {
             return;
         }
 
-        //generate the annotated interceptor with gizmo
-        //all the logic is in the parent, but we don't have access to the
-        //binding annotation here
+        // generate the annotated interceptor with gizmo
+        // all the logic is in the parent, but we don't have access to the
+        // binding annotation here
         try (ClassCreator c = ClassCreator.builder()
-                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer)).className(
-                        TestTransactionInterceptor.class.getName() + "Generated")
+                .classOutput(new GeneratedBeanGizmoAdaptor(generatedBeanBuildItemBuildProducer))
+                .className(TestTransactionInterceptor.class.getName() + "Generated")
                 .superClass(TestTransactionInterceptor.class).build()) {
             c.addAnnotation(TEST_TRANSACTION);
             c.addAnnotation(Interceptor.class.getName());
@@ -238,8 +229,8 @@ class NarayanaJtaProcessor {
 
     @BuildStep
     public ContextConfiguratorBuildItem transactionContext(ContextRegistrationPhaseBuildItem contextRegistrationPhase) {
-        return new ContextConfiguratorBuildItem(contextRegistrationPhase.getContext()
-                .configure(TransactionScoped.class).normal().contextClass(TransactionContext.class));
+        return new ContextConfiguratorBuildItem(contextRegistrationPhase.getContext().configure(TransactionScoped.class)
+                .normal().contextClass(TransactionContext.class));
     }
 
     @BuildStep
@@ -249,28 +240,31 @@ class NarayanaJtaProcessor {
 
     @BuildStep
     void unremovableBean(BuildProducer<UnremovableBeanBuildItem> unremovableBeans) {
-        // LifecycleManager comes from smallrye-context-propagation-jta and is only used via programmatic lookup in JtaContextProvider
-        unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(JtaContextProvider.LifecycleManager.class.getName()));
+        // LifecycleManager comes from smallrye-context-propagation-jta and is only used via programmatic lookup in
+        // JtaContextProvider
+        unremovableBeans
+                .produce(UnremovableBeanBuildItem.beanClassNames(JtaContextProvider.LifecycleManager.class.getName()));
         // The tx manager is obtained via CDI.current().select(TransactionManager.class) in the JtaContextProvider
         unremovableBeans.produce(UnremovableBeanBuildItem.beanTypes(TransactionManager.class));
     }
 
     @BuildStep
     void logCleanupFilters(BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters) {
-        logCleanupFilters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.jbossatx", "ARJUNA032010:", "ARJUNA032013:"));
+        logCleanupFilters
+                .produce(new LogCleanupFilterBuildItem("com.arjuna.ats.jbossatx", "ARJUNA032010:", "ARJUNA032013:"));
     }
 
     private void allowUnsafeMultipleLastResources(NarayanaJtaRecorder recorder,
-            TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig,
-            Capabilities capabilities, BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
+            TransactionManagerBuildTimeConfig transactionManagerBuildTimeConfig, Capabilities capabilities,
+            BuildProducer<LogCleanupFilterBuildItem> logCleanupFilters,
             BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
         switch (transactionManagerBuildTimeConfig.unsafeMultipleLastResources()
                 .orElse(UnsafeMultipleLastResourcesMode.DEFAULT)) {
             case ALLOW -> {
                 recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), true);
                 // we will handle the warnings ourselves at runtime init when the option is set explicitly
-                logCleanupFilters.produce(
-                        new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139", "ARJUNA012141", "ARJUNA012142"));
+                logCleanupFilters.produce(new LogCleanupFilterBuildItem("com.arjuna.ats.arjuna", "ARJUNA012139",
+                        "ARJUNA012141", "ARJUNA012142"));
             }
             case WARN_FIRST -> {
                 recorder.allowUnsafeMultipleLastResources(capabilities.isPresent(Capability.AGROAL), true);

@@ -31,12 +31,10 @@ import io.quarkus.hibernate.orm.runtime.customized.QuarkusJndiServiceInitiator;
 import io.quarkus.hibernate.orm.runtime.customized.QuarkusJtaPlatformInitiator;
 
 /**
- * Here we define the list of standard Service Initiators to be used by
- * Hibernate ORM when running on Quarkus.
- * WARNING: this is a customized list: we started from a copy of ORM's standard
- * list, then changes have evolved.
- * Also: Hibernate Reactive uses a different list, and there's an additional definition of
- * services in PreconfiguredServiceRegistryBuilder.
+ * Here we define the list of standard Service Initiators to be used by Hibernate ORM when running on Quarkus. WARNING:
+ * this is a customized list: we started from a copy of ORM's standard list, then changes have evolved. Also: Hibernate
+ * Reactive uses a different list, and there's an additional definition of services in
+ * PreconfiguredServiceRegistryBuilder.
  */
 public final class StandardHibernateORMInitiatorListProvider implements InitialInitiatorListProvider {
 
@@ -49,7 +47,7 @@ public final class StandardHibernateORMInitiatorListProvider implements InitialI
 
         final ArrayList<StandardServiceInitiator<?>> serviceInitiators = new ArrayList<>();
 
-        //This one needs to be replaced after Metadata has been recorded:
+        // This one needs to be replaced after Metadata has been recorded:
         serviceInitiators.add(BootstrapOnlyProxyFactoryFactoryInitiator.INSTANCE);
 
         serviceInitiators.add(CfgXmlAccessServiceInitiator.INSTANCE);

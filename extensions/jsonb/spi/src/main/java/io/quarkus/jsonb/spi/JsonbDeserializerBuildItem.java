@@ -6,9 +6,8 @@ import java.util.Collections;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * BuildItem used to register a custom JsonbDeserializer with the default Jsonb bean
- *
- * Serializers and deserializers MUST contain a public no-args constructor
+ * BuildItem used to register a custom JsonbDeserializer with the default Jsonb bean Serializers and deserializers MUST
+ * contain a public no-args constructor
  */
 public final class JsonbDeserializerBuildItem extends MultiBuildItem {
 

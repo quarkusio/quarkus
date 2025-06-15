@@ -19,10 +19,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FailWithAnnotationsInAMethodOfBeanParamTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(GreetingResource.class, NoQueryParamsInFieldsNameData.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class,
+                    NoQueryParamsInFieldsNameData.class));
 
     @Test
     void shouldBeanParamWorkWithoutFieldsAnnotatedWithQueryParam() {

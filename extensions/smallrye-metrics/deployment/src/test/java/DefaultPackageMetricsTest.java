@@ -14,8 +14,7 @@ public class DefaultPackageMetricsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(CountedClassDefaultPackage.class));
+            .withApplicationRoot((jar) -> jar.addClasses(CountedClassDefaultPackage.class));
 
     @Inject
     MetricRegistry metricRegistry;
@@ -25,7 +24,8 @@ public class DefaultPackageMetricsTest {
 
     @Test
     public void test() {
-        MetricID id_constructor = new MetricID(CountedClassDefaultPackage.class.getName() + ".CountedClassDefaultPackage");
+        MetricID id_constructor = new MetricID(
+                CountedClassDefaultPackage.class.getName() + ".CountedClassDefaultPackage");
         assertTrue(metricRegistry.getCounters().containsKey(id_constructor));
         MetricID id_method = new MetricID(CountedClassDefaultPackage.class.getName() + ".foo");
         assertTrue(metricRegistry.getCounters().containsKey(id_method));

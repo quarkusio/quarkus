@@ -50,19 +50,15 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
                             @Override
                             public boolean test(String className) {
                                 return PathTestHelper.isTestClass(className,
-                                        Thread.currentThread()
-                                                .getContextClassLoader(),
-                                        testLocation);
+                                        Thread.currentThread().getContextClassLoader(), testLocation);
                             }
                         }));
                     }
-                })
-                        .produces(TestClassPredicateBuildItem.class)
-                        .build();
+                }).produces(TestClassPredicateBuildItem.class).build();
                 buildChainBuilder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        //we need to make sure all hot reloadable classes are application classes
+                        // we need to make sure all hot reloadable classes are application classes
                         context.produce(new ApplicationClassPredicateBuildItem(new Predicate<String>() {
                             @Override
                             public boolean test(String className) {
@@ -70,55 +66,42 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
                             }
                         }));
                     }
-                })
-                        .produces(ApplicationClassPredicateBuildItem.class)
-                        .build();
+                }).produces(ApplicationClassPredicateBuildItem.class).build();
                 buildChainBuilder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
                         context.produce(new TestAnnotationBuildItem(QuarkusTest.class.getName()));
                     }
-                })
-                        .produces(TestAnnotationBuildItem.class)
-                        .build();
+                }).produces(TestAnnotationBuildItem.class).build();
 
                 List<String> testClassBeans = new ArrayList<>();
 
-                List<AnnotationInstance> extendWith = testClassesIndex
-                        .getAnnotations(DotNames.EXTEND_WITH);
+                List<AnnotationInstance> extendWith = testClassesIndex.getAnnotations(DotNames.EXTEND_WITH);
                 for (AnnotationInstance annotationInstance : extendWith) {
-                    if (annotationInstance.target()
-                            .kind() != AnnotationTarget.Kind.CLASS) {
+                    if (annotationInstance.target().kind() != AnnotationTarget.Kind.CLASS) {
                         continue;
                     }
-                    ClassInfo classInfo = annotationInstance.target()
-                            .asClass();
+                    ClassInfo classInfo = annotationInstance.target().asClass();
                     if (classInfo.isAnnotation()) {
                         continue;
                     }
-                    Type[] extendsWithTypes = annotationInstance.value()
-                            .asClassArray();
+                    Type[] extendsWithTypes = annotationInstance.value().asClassArray();
                     for (Type type : extendsWithTypes) {
                         if (DotNames.QUARKUS_TEST_EXTENSION.equals(type.name())) {
-                            testClassBeans.add(classInfo.name()
-                                    .toString());
+                            testClassBeans.add(classInfo.name().toString());
                         }
                     }
                 }
 
-                List<AnnotationInstance> registerExtension = testClassesIndex.getAnnotations(DotNames.REGISTER_EXTENSION);
+                List<AnnotationInstance> registerExtension = testClassesIndex
+                        .getAnnotations(DotNames.REGISTER_EXTENSION);
                 for (AnnotationInstance annotationInstance : registerExtension) {
-                    if (annotationInstance.target()
-                            .kind() != AnnotationTarget.Kind.FIELD) {
+                    if (annotationInstance.target().kind() != AnnotationTarget.Kind.FIELD) {
                         continue;
                     }
-                    FieldInfo fieldInfo = annotationInstance.target()
-                            .asField();
-                    if (DotNames.QUARKUS_TEST_EXTENSION.equals(fieldInfo.type()
-                            .name())) {
-                        testClassBeans.add(fieldInfo.declaringClass()
-                                .name()
-                                .toString());
+                    FieldInfo fieldInfo = annotationInstance.target().asField();
+                    if (DotNames.QUARKUS_TEST_EXTENSION.equals(fieldInfo.type().name())) {
+                        testClassBeans.add(fieldInfo.declaringClass().name().toString());
                     }
                 }
 
@@ -130,9 +113,7 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
                                 context.produce(new TestClassBeanBuildItem(quarkusExtendWithTestClass));
                             }
                         }
-                    })
-                            .produces(TestClassBeanBuildItem.class)
-                            .build();
+                    }).produces(TestClassBeanBuildItem.class).build();
                 }
 
                 buildChainBuilder.addBuildStep(new BuildStep() {
@@ -143,9 +124,7 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
                             context.produce(new TestProfileBuildItem(testProfile.toString()));
                         }
                     }
-                })
-                        .produces(TestProfileBuildItem.class)
-                        .build();
+                }).produces(TestProfileBuildItem.class).build();
 
             }
         };
@@ -153,8 +132,7 @@ public class TestBuildChainFunction implements Function<Map<String, Object>, Lis
 
         // give other extensions the ability to customize the build chain
         for (TestBuildChainCustomizerProducer testBuildChainCustomizerProducer : ServiceLoader
-                .load(TestBuildChainCustomizerProducer.class, this.getClass()
-                        .getClassLoader())) {
+                .load(TestBuildChainCustomizerProducer.class, this.getClass().getClassLoader())) {
             allCustomizers.add(testBuildChainCustomizerProducer.produce(testClassesIndex));
         }
 

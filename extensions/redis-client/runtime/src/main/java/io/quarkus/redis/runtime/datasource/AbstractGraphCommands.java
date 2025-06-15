@@ -19,8 +19,7 @@ public class AbstractGraphCommands<K> extends AbstractRedisCommands {
         // Validation
         nonNull(key, "key");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.GRAPH_DELETE)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.GRAPH_DELETE).put(marshaller.encode(key));
         return execute(cmd);
     }
 
@@ -29,9 +28,7 @@ public class AbstractGraphCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(query, "query");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.GRAPH_EXPLAIN)
-                .put(marshaller.encode(key))
-                .put(query);
+        RedisCommand cmd = RedisCommand.of(Command.GRAPH_EXPLAIN).put(marshaller.encode(key)).put(query);
         return execute(cmd);
     }
 
@@ -46,9 +43,7 @@ public class AbstractGraphCommands<K> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(query, "query");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.GRAPH_QUERY)
-                .put(marshaller.encode(key))
-                .put(query);
+        RedisCommand cmd = RedisCommand.of(Command.GRAPH_QUERY).put(marshaller.encode(key)).put(query);
         return execute(cmd);
     }
 
@@ -58,10 +53,8 @@ public class AbstractGraphCommands<K> extends AbstractRedisCommands {
         nonNull(query, "query");
         nonNull(timeout, "timeout");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.GRAPH_QUERY)
-                .put(marshaller.encode(key))
-                .put(query)
-                .put("TIMEOUT").put(timeout.toMillis());
+        RedisCommand cmd = RedisCommand.of(Command.GRAPH_QUERY).put(marshaller.encode(key)).put(query).put("TIMEOUT")
+                .put(timeout.toMillis());
         return execute(cmd);
     }
 }

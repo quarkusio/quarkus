@@ -31,19 +31,14 @@ public class VertxHeadersTest {
 
     @Test
     void testVaryHeaderValues() {
-        var headers = when().get("/test")
-                .then()
-                .statusCode(200)
-                .extract().headers();
+        var headers = when().get("/test").then().statusCode(200).extract().headers();
         assertThat(headers.getValues(HttpHeaders.VARY)).containsExactlyInAnyOrder("Origin", "Prefer");
     }
 
     @Test
     void testTransferEncodingHeaderValues() {
-        Headers headers = when().get("/test/response")
-                .then()
-                .statusCode(200)
-                .header("Transfer-Encoding", is("chunked")).extract().headers();
+        Headers headers = when().get("/test/response").then().statusCode(200).header("Transfer-Encoding", is("chunked"))
+                .extract().headers();
 
         assertThat(headers.asList()).noneMatch(h -> h.getName().equals("transfer-encoding"));
     }
@@ -84,9 +79,9 @@ public class VertxHeadersTest {
                 testDTO.setEvenMoreText(testDTO.getEvenMoreText() + text);
             }
 
-            //Simulate getting a chunked response from external microservice
+            // Simulate getting a chunked response from external microservice
             Response response = Response.ok().entity("test").header("Transfer-Encoding", "chunked").build();
-            //Forwarding the response
+            // Forwarding the response
             return Response.fromResponse(response).build();
         }
     }

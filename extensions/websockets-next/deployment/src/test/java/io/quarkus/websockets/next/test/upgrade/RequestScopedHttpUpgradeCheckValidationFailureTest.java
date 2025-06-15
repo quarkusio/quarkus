@@ -16,9 +16,7 @@ public class RequestScopedHttpUpgradeCheckValidationFailureTest {
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(RequestScopedHttpUpgradeCheck.class))
-            .assertException(t -> {
+            .withApplicationRoot(root -> root.addClasses(RequestScopedHttpUpgradeCheck.class)).assertException(t -> {
                 assertTrue(t.getMessage().contains("RequestScopedHttpUpgradeCheck"), t.getMessage());
                 assertTrue(t.getMessage().contains("jakarta.enterprise.context.RequestScoped"), t.getMessage());
                 assertTrue(t.getMessage().contains(

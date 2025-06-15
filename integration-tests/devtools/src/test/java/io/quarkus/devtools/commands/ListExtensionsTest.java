@@ -49,8 +49,8 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     /**
      * When creating a project with Maven, you could have -Dextensions="resteasy, hibernate-validator".
      * <p>
-     * Having a space is not automatically handled by the Maven converter injecting the properties
-     * so we added code for that and we need to test it.
+     * Having a space is not automatically handled by the Maven converter injecting the properties so we added code for
+     * that and we need to test it.
      */
     @Test
     public void listWithBomExtensionWithSpaces() throws Exception {
@@ -62,8 +62,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final Map<ArtifactKey, ArtifactCoords> installed = readByKey(quarkusProject);
 
         Assertions.assertNotNull(installed.get(ArtifactKey.fromString(IO_QUARKUS + ":quarkus-resteasy")));
-        Assertions.assertNotNull(
-                installed.get(ArtifactKey.fromString(IO_QUARKUS + ":quarkus-hibernate-validator")));
+        Assertions.assertNotNull(installed.get(ArtifactKey.fromString(IO_QUARKUS + ":quarkus-hibernate-validator")));
     }
 
     @Test
@@ -72,9 +71,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
         final QuarkusProject quarkusProject = createNewProject(pom);
         Model model = readPom(pom);
 
-        model.getDependencies().stream()
-                .filter(new QuarkusDependencyPredicate())
-                .forEach(d -> d.setVersion("0.0.1"));
+        model.getDependencies().stream().filter(new QuarkusDependencyPredicate()).forEach(d -> d.setVersion("0.0.1"));
 
         MojoUtils.write(model, pom);
 
@@ -85,10 +82,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
         try (final ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 final PrintStream printStream = new PrintStream(baos, true, "UTF-8")) {
-            new ListExtensions(quarkusProject, MessageWriter.info(printStream))
-                    .all(true)
-                    .format("full")
-                    .execute();
+            new ListExtensions(quarkusProject, MessageWriter.info(printStream)).all(true).format("full").execute();
             final String output = baos.toString("UTF-8");
 
             boolean agroal = false;
@@ -102,9 +96,7 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
                 } else if (line.contains("quarkus-resteasy ")) {
                     assertTrue(line.startsWith("✬"), "Resteasy is a platform extension: " + line);
                     resteasy = true;
-                    assertTrue(
-                            line.endsWith(
-                                    String.format("%s", "https://quarkus.io/guides/resteasy")),
+                    assertTrue(line.endsWith(String.format("%s", "https://quarkus.io/guides/resteasy")),
                             "RESTEasy should list as having an guide: " + line);
                 } else if (line.contains("quarkus-hibernate-orm-panache ")) {
                     assertTrue(line.startsWith("✬"), "Panache is a platform extension: " + line);
@@ -129,11 +121,8 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
-            new ListExtensions(quarkusProject, MessageWriter.info(printStream))
-                    .all(true)
-                    .format("full")
-                    .search("unexpectedSearch")
-                    .execute();
+            new ListExtensions(quarkusProject, MessageWriter.info(printStream)).all(true).format("full")
+                    .search("unexpectedSearch").execute();
         }
         final String output = baos.toString("UTF-8");
         Assertions.assertEquals(String.format("No extension found with pattern 'unexpectedSearch'%n"), output,
@@ -147,11 +136,8 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
 
         final ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try (final PrintStream printStream = new PrintStream(baos, false, "UTF-8")) {
-            new ListExtensions(quarkusProject, MessageWriter.info(printStream))
-                    .all(true)
-                    .format("full")
-                    .search("Hibernate")
-                    .execute();
+            new ListExtensions(quarkusProject, MessageWriter.info(printStream)).all(true).format("full")
+                    .search("Hibernate").execute();
         }
         final String output = baos.toString("UTF-8");
         Assertions.assertTrue(output.split("\r?\n").length > 7, "search to unexpected extension must return a message");
@@ -174,19 +160,14 @@ public class ListExtensionsTest extends PlatformAwareTestBase {
     }
 
     private void addExtensions(QuarkusProject quarkusProject, String... extensions) throws Exception {
-        new AddExtensions(quarkusProject)
-                .extensions(new HashSet<>(asList(extensions)))
-                .execute();
+        new AddExtensions(quarkusProject).extensions(new HashSet<>(asList(extensions))).execute();
     }
 
     private QuarkusProject createNewProject(final File pom) throws IOException, QuarkusCommandException {
         SnapshotTesting.deleteTestDirectory(pom.getParentFile());
         final Path projectDirPath = pom.getParentFile().toPath();
         final QuarkusProject project = QuarkusProjectHelper.getProject(projectDirPath, BuildTool.MAVEN);
-        new CreateProject(project)
-                .groupId("org.acme")
-                .artifactId("add-extension-test")
-                .version("0.0.1-SNAPSHOT")
+        new CreateProject(project).groupId("org.acme").artifactId("add-extension-test").version("0.0.1-SNAPSHOT")
                 .execute();
         return project;
     }

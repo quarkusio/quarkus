@@ -36,11 +36,8 @@ abstract class DependencyTreeMojoTestBase {
         workDir = IoUtils.createRandomTmpDir();
         repoHome = IoUtils.mkdirs(workDir.resolve("repo"));
 
-        mvnResolver = MavenArtifactResolver.builder()
-                .setOffline(true)
-                .setLocalRepository(repoHome.toString())
-                .setRemoteRepositories(Collections.emptyList())
-                .build();
+        mvnResolver = MavenArtifactResolver.builder().setOffline(true).setLocalRepository(repoHome.toString())
+                .setRemoteRepositories(Collections.emptyList()).build();
 
         repoBuilder = TsRepoBuilder.getInstance(mvnResolver, workDir);
         initRepo();
@@ -70,9 +67,9 @@ abstract class DependencyTreeMojoTestBase {
 
         final DependencyTreeMojo mojo = new DependencyTreeMojo();
         mojo.project = new MavenProject();
-        mojo.project.setArtifact(new DefaultArtifact(app.getGroupId(), app.getArtifactId(), app.getVersion(),
-                JavaScopes.COMPILE, app.getType(), app.getClassifier(),
-                new DefaultArtifactHandler(ArtifactCoords.TYPE_JAR)));
+        mojo.project.setArtifact(
+                new DefaultArtifact(app.getGroupId(), app.getArtifactId(), app.getVersion(), JavaScopes.COMPILE,
+                        app.getType(), app.getClassifier(), new DefaultArtifactHandler(ArtifactCoords.TYPE_JAR)));
         mojo.project.setModel(appModel);
         mojo.project.setOriginalModel(appModel);
         mojo.resolver = mvnResolver;
@@ -94,8 +91,7 @@ abstract class DependencyTreeMojoTestBase {
         if (isRuntimeOnly()) {
             expectedFileName += ".rt";
         }
-        assertThat(mojoLog).hasSameTextualContentAs(
-                Path.of("").normalize().toAbsolutePath()
-                        .resolve("target").resolve("test-classes").resolve(expectedFileName));
+        assertThat(mojoLog).hasSameTextualContentAs(Path.of("").normalize().toAbsolutePath().resolve("target")
+                .resolve("test-classes").resolve(expectedFileName));
     }
 }

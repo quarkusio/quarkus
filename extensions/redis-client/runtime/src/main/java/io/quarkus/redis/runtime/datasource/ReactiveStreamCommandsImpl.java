@@ -50,14 +50,12 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
 
     @Override
     public Uni<Integer> xack(K key, String group, String... ids) {
-        return super._xack(key, group, ids)
-                .map(Response::toInteger);
+        return super._xack(key, group, ids).map(Response::toInteger);
     }
 
     @Override
     public Uni<String> xadd(K key, Map<F, V> payload) {
-        return super._xadd(key, payload)
-                .map(ReactiveStreamCommandsImpl::getIdOrNull);
+        return super._xadd(key, payload).map(ReactiveStreamCommandsImpl::getIdOrNull);
     }
 
     protected static String getIdOrNull(Response r) {
@@ -69,13 +67,12 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
 
     @Override
     public Uni<String> xadd(K key, XAddArgs args, Map<F, V> payload) {
-        return super._xadd(key, args, payload)
-                .map(ReactiveStreamCommandsImpl::getIdOrNull);
+        return super._xadd(key, args, payload).map(ReactiveStreamCommandsImpl::getIdOrNull);
     }
 
     @Override
-    public Uni<ClaimedMessages<K, F, V>> xautoclaim(K key, String group, String consumer, Duration minIdleTime, String start,
-            int count) {
+    public Uni<ClaimedMessages<K, F, V>> xautoclaim(K key, String group, String consumer, Duration minIdleTime,
+            String start, int count) {
         return super._xautoclaim(key, group, consumer, minIdleTime, start, count)
                 .map(r -> decodeAsClaimedMessages(key, r));
     }
@@ -143,95 +140,83 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
     }
 
     @Override
-    public Uni<ClaimedMessages<K, F, V>> xautoclaim(K key, String group, String consumer, Duration minIdleTime, String start) {
-        return super._xautoclaim(key, group, consumer, minIdleTime, start)
-                .map(r -> decodeAsClaimedMessages(key, r));
+    public Uni<ClaimedMessages<K, F, V>> xautoclaim(K key, String group, String consumer, Duration minIdleTime,
+            String start) {
+        return super._xautoclaim(key, group, consumer, minIdleTime, start).map(r -> decodeAsClaimedMessages(key, r));
     }
 
     @Override
-    public Uni<ClaimedMessages<K, F, V>> xautoclaim(K key, String group, String consumer, Duration minIdleTime, String start,
-            int count, boolean justId) {
+    public Uni<ClaimedMessages<K, F, V>> xautoclaim(K key, String group, String consumer, Duration minIdleTime,
+            String start, int count, boolean justId) {
         return super._xautoclaim(key, group, consumer, minIdleTime, start, count, justId)
                 .map(r -> decodeAsClaimedMessages(key, r));
     }
 
     @Override
-    public Uni<List<StreamMessage<K, F, V>>> xclaim(K key, String group, String consumer, Duration minIdleTime, String... id) {
-        return super._xclaim(key, group, consumer, minIdleTime, id)
-                .map(r -> decodeListOfMessages(key, r));
+    public Uni<List<StreamMessage<K, F, V>>> xclaim(K key, String group, String consumer, Duration minIdleTime,
+            String... id) {
+        return super._xclaim(key, group, consumer, minIdleTime, id).map(r -> decodeListOfMessages(key, r));
     }
 
     @Override
-    public Uni<List<StreamMessage<K, F, V>>> xclaim(K key, String group, String consumer, Duration minIdleTime, XClaimArgs args,
-            String... id) {
-        return super._xclaim(key, group, consumer, minIdleTime, args, id)
-                .map(r -> decodeListOfMessages(key, r));
+    public Uni<List<StreamMessage<K, F, V>>> xclaim(K key, String group, String consumer, Duration minIdleTime,
+            XClaimArgs args, String... id) {
+        return super._xclaim(key, group, consumer, minIdleTime, args, id).map(r -> decodeListOfMessages(key, r));
     }
 
     @Override
     public Uni<Integer> xdel(K key, String... id) {
-        return super._xdel(key, id)
-                .map(Response::toInteger);
+        return super._xdel(key, id).map(Response::toInteger);
     }
 
     @Override
     public Uni<Void> xgroupCreate(K key, String groupname, String from) {
-        return super._xgroupCreate(key, groupname, from)
-                .replaceWithVoid();
+        return super._xgroupCreate(key, groupname, from).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> xgroupCreate(K key, String groupname, String from, XGroupCreateArgs args) {
-        return super._xgroupCreate(key, groupname, from, args)
-                .replaceWithVoid();
+        return super._xgroupCreate(key, groupname, from, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Boolean> xgroupCreateConsumer(K key, String groupname, String consumername) {
-        return super._xgroupCreateConsumer(key, groupname, consumername)
-                .map(Response::toBoolean);
+        return super._xgroupCreateConsumer(key, groupname, consumername).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Long> xgroupDelConsumer(K key, String groupname, String consumername) {
-        return super._xgroupDelConsumer(key, groupname, consumername)
-                .map(Response::toLong);
+        return super._xgroupDelConsumer(key, groupname, consumername).map(Response::toLong);
     }
 
     @Override
     public Uni<Boolean> xgroupDestroy(K key, String groupname) {
-        return super._xgroupDestroy(key, groupname)
-                .map(Response::toBoolean);
+        return super._xgroupDestroy(key, groupname).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Void> xgroupSetId(K key, String groupname, String from) {
-        return super._xgroupSetId(key, groupname, from)
-                .replaceWithVoid();
+        return super._xgroupSetId(key, groupname, from).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> xgroupSetId(K key, String groupname, String from, XGroupSetIdArgs args) {
-        return super._xgroupSetId(key, groupname, from, args)
-                .replaceWithVoid();
+        return super._xgroupSetId(key, groupname, from, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Long> xlen(K key) {
-        return super._xlen(key)
-                .map(Response::toLong);
+        return super._xlen(key).map(Response::toLong);
     }
 
     @Override
     public Uni<List<StreamMessage<K, F, V>>> xrange(K key, StreamRange range, int count) {
-        return super._xrange(key, range, count)
-                .map(r -> decodeListOfMessages(key, r));
+        return super._xrange(key, range, count).map(r -> decodeListOfMessages(key, r));
     }
 
     @Override
     public Uni<List<StreamMessage<K, F, V>>> xrange(K key, StreamRange range) {
-        return super._xrange(key, range)
-                .map(r -> decodeListOfMessages(key, r));
+        return super._xrange(key, range).map(r -> decodeListOfMessages(key, r));
     }
 
     protected List<StreamMessage<K, F, V>> decodeListOfMessages(K key, Response r) {
@@ -268,8 +253,7 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
 
     @Override
     public Uni<List<StreamMessage<K, F, V>>> xread(Map<K, String> lastIdsPerStream) {
-        return super._xread(lastIdsPerStream)
-                .map(this::decodeAsListOfMessagesFromXRead);
+        return super._xread(lastIdsPerStream).map(this::decodeAsListOfMessagesFromXRead);
     }
 
     @Override
@@ -279,8 +263,7 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
 
     @Override
     public Uni<List<StreamMessage<K, F, V>>> xread(Map<K, String> lastIdsPerStream, XReadArgs args) {
-        return super._xread(lastIdsPerStream, args)
-                .map(this::decodeAsListOfMessagesFromXRead);
+        return super._xread(lastIdsPerStream, args).map(this::decodeAsListOfMessagesFromXRead);
     }
 
     @Override
@@ -290,13 +273,14 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
     }
 
     @Override
-    public Uni<List<StreamMessage<K, F, V>>> xreadgroup(String group, String consumer, Map<K, String> lastIdsPerStream) {
-        return super._xreadgroup(group, consumer, lastIdsPerStream)
-                .map(this::decodeAsListOfMessagesFromXRead);
+    public Uni<List<StreamMessage<K, F, V>>> xreadgroup(String group, String consumer,
+            Map<K, String> lastIdsPerStream) {
+        return super._xreadgroup(group, consumer, lastIdsPerStream).map(this::decodeAsListOfMessagesFromXRead);
     }
 
     @Override
-    public Uni<List<StreamMessage<K, F, V>>> xreadgroup(String group, String consumer, K key, String id, XReadGroupArgs args) {
+    public Uni<List<StreamMessage<K, F, V>>> xreadgroup(String group, String consumer, K key, String id,
+            XReadGroupArgs args) {
         return xreadgroup(group, consumer, Map.of(key, id), args);
 
     }
@@ -304,38 +288,32 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
     @Override
     public Uni<List<StreamMessage<K, F, V>>> xreadgroup(String group, String consumer, Map<K, String> lastIdsPerStream,
             XReadGroupArgs args) {
-        return super._xreadgroup(group, consumer, lastIdsPerStream, args)
-                .map(this::decodeAsListOfMessagesFromXRead);
+        return super._xreadgroup(group, consumer, lastIdsPerStream, args).map(this::decodeAsListOfMessagesFromXRead);
     }
 
     @Override
     public Uni<List<StreamMessage<K, F, V>>> xrevrange(K key, StreamRange range, int count) {
-        return super._xrevrange(key, range, count)
-                .map(r -> decodeListOfMessages(key, r));
+        return super._xrevrange(key, range, count).map(r -> decodeListOfMessages(key, r));
     }
 
     @Override
     public Uni<List<StreamMessage<K, F, V>>> xrevrange(K key, StreamRange range) {
-        return super._xrevrange(key, range)
-                .map(r -> decodeListOfMessages(key, r));
+        return super._xrevrange(key, range).map(r -> decodeListOfMessages(key, r));
     }
 
     @Override
     public Uni<Long> xtrim(K key, String threshold) {
-        return super._xtrim(key, new XTrimArgs().minid(threshold))
-                .map(Response::toLong);
+        return super._xtrim(key, new XTrimArgs().minid(threshold)).map(Response::toLong);
     }
 
     @Override
     public Uni<Long> xtrim(K key, XTrimArgs args) {
-        return super._xtrim(key, args)
-                .map(Response::toLong);
+        return super._xtrim(key, args).map(Response::toLong);
     }
 
     @Override
     public Uni<XPendingSummary> xpending(K key, String group) {
-        return super._xpending(key, group)
-                .map(this::decodeAsXPendingSummary);
+        return super._xpending(key, group).map(this::decodeAsXPendingSummary);
     }
 
     @Override
@@ -345,8 +323,7 @@ public class ReactiveStreamCommandsImpl<K, F, V> extends AbstractStreamCommands<
 
     @Override
     public Uni<List<PendingMessage>> xpending(K key, String group, StreamRange range, int count, XPendingArgs args) {
-        return super._xpending(key, group, range, count, args)
-                .map(this::decodeListOfPendingMessages);
+        return super._xpending(key, group, range, count, args).map(this::decodeListOfPendingMessages);
     }
 
     protected List<PendingMessage> decodeListOfPendingMessages(Response r) {

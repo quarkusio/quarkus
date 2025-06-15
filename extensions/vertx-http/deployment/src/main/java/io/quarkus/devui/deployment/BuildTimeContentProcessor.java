@@ -81,8 +81,8 @@ import io.quarkus.vertx.http.deployment.NonApplicationRootPathBuildItem;
 import io.vertx.core.json.jackson.DatabindCodec;
 
 /**
- * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on build
- * time
+ * This creates static content that is used in dev UI. For example the index.html and any other data (json) available on
+ * build time
  */
 public class BuildTimeContentProcessor {
     private static final Logger log = Logger.getLogger(BuildTimeContentProcessor.class);
@@ -94,13 +94,15 @@ public class BuildTimeContentProcessor {
     final Config config = ConfigProvider.getConfig();
 
     /**
-     * Here we create references to internal dev ui files so that they can be imported by ref.
-     * This will be merged into the final importmap
+     * Here we create references to internal dev ui files so that they can be imported by ref. This will be merged into
+     * the final importmap
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    InternalImportMapBuildItem createKnownInternalImportMap(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
+    InternalImportMapBuildItem createKnownInternalImportMap(
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
 
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI
+                + SLASH;
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
@@ -124,10 +126,8 @@ public class BuildTimeContentProcessor {
         internalImportMapBuildItem.add("echarts-pie", contextRoot + "echarts/echarts-pie.js");
         internalImportMapBuildItem.add("echarts-horizontal-stacked-bar",
                 contextRoot + "echarts/echarts-horizontal-stacked-bar.js");
-        internalImportMapBuildItem.add("echarts-force-graph",
-                contextRoot + "echarts/echarts-force-graph.js");
-        internalImportMapBuildItem.add("echarts-bar-stack",
-                contextRoot + "echarts/echarts-bar-stack.js");
+        internalImportMapBuildItem.add("echarts-force-graph", contextRoot + "echarts/echarts-force-graph.js");
+        internalImportMapBuildItem.add("echarts-bar-stack", contextRoot + "echarts/echarts-bar-stack.js");
 
         // Other assets
         internalImportMapBuildItem.add("icon/", contextRoot + "icon/");
@@ -177,43 +177,36 @@ public class BuildTimeContentProcessor {
      * @param buildTimeConstProducer
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void mapPageBuildTimeData(List<CardPageBuildItem> cards,
-            List<MenuPageBuildItem> menus,
-            List<FooterPageBuildItem> footers,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
+    void mapPageBuildTimeData(List<CardPageBuildItem> cards, List<MenuPageBuildItem> menus,
+            List<FooterPageBuildItem> footers, CurateOutcomeBuildItem curateOutcomeBuildItem,
             BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer) {
 
         for (CardPageBuildItem card : cards) {
             String extensionPathName = card.getExtensionPathName(curateOutcomeBuildItem);
             Map<String, Object> buildTimeData = getBuildTimeDataForCard(curateOutcomeBuildItem, card);
             if (!buildTimeData.isEmpty()) {
-                buildTimeConstProducer.produce(
-                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
+                buildTimeConstProducer.produce(new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
             }
         }
         for (MenuPageBuildItem menu : menus) {
             String extensionPathName = menu.getExtensionPathName(curateOutcomeBuildItem);
             Map<String, Object> buildTimeData = getBuildTimeDataForPage(menu);
             if (!buildTimeData.isEmpty()) {
-                buildTimeConstProducer.produce(
-                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
+                buildTimeConstProducer.produce(new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
             }
         }
         for (FooterPageBuildItem footer : footers) {
             String extensionPathName = footer.getExtensionPathName(curateOutcomeBuildItem);
             Map<String, Object> buildTimeData = getBuildTimeDataForPage(footer);
             if (!buildTimeData.isEmpty()) {
-                buildTimeConstProducer.produce(
-                        new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
+                buildTimeConstProducer.produce(new BuildTimeConstBuildItem(extensionPathName, buildTimeData));
             }
         }
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    DeploymentMethodBuildItem mapDeploymentMethods(
-            List<BuildTimeActionBuildItem> buildTimeActions,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            Capabilities capabilities) {
+    DeploymentMethodBuildItem mapDeploymentMethods(List<BuildTimeActionBuildItem> buildTimeActions,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, Capabilities capabilities) {
 
         final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
@@ -282,9 +275,8 @@ public class BuildTimeContentProcessor {
     }
 
     /**
-     * Here we find all build time data and make then available via a const
-     *
-     * js components can import the const with "import {constName} from '{ext}-data';"
+     * Here we find all build time data and make then available via a const js components can import the const with
+     * "import {constName} from '{ext}-data';"
      *
      * @param pageBuildItems
      * @param quteTemplateProducer
@@ -297,10 +289,10 @@ public class BuildTimeContentProcessor {
             BuildProducer<QuteTemplateBuildItem> quteTemplateProducer,
             BuildProducer<InternalImportMapBuildItem> internalImportMapProducer) {
 
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI
+                + SLASH;
 
-        QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(
-                QuteTemplateBuildItem.DEV_UI);
+        QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(QuteTemplateBuildItem.DEV_UI);
 
         InternalImportMapBuildItem internalImportMapBuildItem = new InternalImportMapBuildItem();
 
@@ -353,21 +345,17 @@ public class BuildTimeContentProcessor {
     }
 
     /**
-     * Here we create index.html
-     * We aggregate all import maps into one
-     * This includes import maps from 3rd party libs from mvnpm.org and internal ones defined above
+     * Here we create index.html We aggregate all import maps into one This includes import maps from 3rd party libs
+     * from mvnpm.org and internal ones defined above
      *
      * @return The QuteTemplate Build item that will create the end result
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    QuteTemplateBuildItem createIndexHtmlTemplate(
-            MvnpmBuildItem mvnpmBuildItem,
-            ThemeVarsBuildItem themeVarsBuildItem,
+    QuteTemplateBuildItem createIndexHtmlTemplate(MvnpmBuildItem mvnpmBuildItem, ThemeVarsBuildItem themeVarsBuildItem,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
             List<InternalImportMapBuildItem> internalImportMapBuildItems,
             RelocationImportMapBuildItem relocationImportMapBuildItem) {
-        QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(
-                QuteTemplateBuildItem.DEV_UI);
+        QuteTemplateBuildItem quteTemplateBuildItem = new QuteTemplateBuildItem(QuteTemplateBuildItem.DEV_UI);
 
         Aggregator aggregator = new Aggregator(mvnpmBuildItem.getMvnpmJars());
         for (InternalImportMapBuildItem importMapBuildItem : internalImportMapBuildItems) {
@@ -398,12 +386,8 @@ public class BuildTimeContentProcessor {
         String nonApplicationRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
         String contextRoot = nonApplicationRoot + EndpointsProcessor.DEV_UI + SLASH;
 
-        Map<String, Object> data = Map.of(
-                "nonApplicationRoot", nonApplicationRoot,
-                "contextRoot", contextRoot,
-                "importmap", importmap,
-                "themeVars", themeVars,
-                "esModuleShimsVersion", esModuleShimsVersion);
+        Map<String, Object> data = Map.of("nonApplicationRoot", nonApplicationRoot, "contextRoot", contextRoot,
+                "importmap", importmap, "themeVars", themeVars, "esModuleShimsVersion", esModuleShimsVersion);
 
         quteTemplateBuildItem.add("index.html", data);
 
@@ -431,19 +415,16 @@ public class BuildTimeContentProcessor {
                     if (templateStream != null) {
                         byte[] templateContent = IoUtil.readBytes(templateStream);
                         // Internal runs on "naked" namespace
-                        DevUIContent content = DevUIContent.builder()
-                                .fileName(fileName)
-                                .template(templateContent)
-                                .addData(data)
-                                .build();
+                        DevUIContent content = DevUIContent.builder().fileName(fileName).template(templateContent)
+                                .addData(data).build();
                         contentPerExtension.add(content);
                     }
                 } catch (IOException ioe) {
                     throw new UncheckedIOException("An error occurred while processing " + resourceName, ioe);
                 }
             }
-            buildTimeContentProducer.produce(new StaticContentBuildItem(
-                    StaticContentBuildItem.DEV_UI, contentPerExtension));
+            buildTimeContentProducer
+                    .produce(new StaticContentBuildItem(StaticContentBuildItem.DEV_UI, contentPerExtension));
         }
     }
 
@@ -452,14 +433,10 @@ public class BuildTimeContentProcessor {
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void createBuildTimeData(BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
-            BuildProducer<ThemeVarsBuildItem> themeVarsProducer,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<InternalPageBuildItem> internalPages,
-            ExtensionsBuildItem extensionsBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
-            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
-            DevUIConfig devUIConfig) {
+            BuildProducer<ThemeVarsBuildItem> themeVarsProducer, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<InternalPageBuildItem> internalPages, ExtensionsBuildItem extensionsBuildItem,
+            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem, LaunchModeBuildItem launchModeBuildItem,
+            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem, DevUIConfig devUIConfig) {
 
         BuildTimeConstBuildItem internalBuildTimeData = new BuildTimeConstBuildItem(AbstractDevUIBuildItem.DEV_UI);
 
@@ -507,8 +484,7 @@ public class BuildTimeContentProcessor {
     }
 
     private void addMenuSectionBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
-            List<InternalPageBuildItem> internalPages,
-            ExtensionsBuildItem extensionsBuildItem) {
+            List<InternalPageBuildItem> internalPages, ExtensionsBuildItem extensionsBuildItem) {
         // Menu section
         @SuppressWarnings("unchecked")
         List<Page> sectionMenu = new ArrayList();
@@ -541,27 +517,19 @@ public class BuildTimeContentProcessor {
         // Add the Footer tabs
         @SuppressWarnings("unchecked")
         List<Page> footerTabs = new ArrayList();
-        Page serverLog = Page.webComponentPageBuilder().internal()
-                .namespace("devui-logstream")
-                .title("Server")
-                .icon("font-awesome-solid:server")
-                .componentLink("qwc-server-log.js").build();
+        Page serverLog = Page.webComponentPageBuilder().internal().namespace("devui-logstream").title("Server")
+                .icon("font-awesome-solid:server").componentLink("qwc-server-log.js").build();
         footerTabs.add(serverLog);
 
-        Page testLog = Page.webComponentPageBuilder().internal()
-                .namespace("devui-continuous-testing")
-                .title("Testing")
-                .icon("font-awesome-solid:flask-vial")
-                .componentLink("qwc-test-log.js").build();
+        Page testLog = Page.webComponentPageBuilder().internal().namespace("devui-continuous-testing").title("Testing")
+                .icon("font-awesome-solid:flask-vial").componentLink("qwc-test-log.js").build();
         footerTabs.add(testLog);
 
-        // This is only needed when extension developers work on an extension, so we only included it if you build from source.
+        // This is only needed when extension developers work on an extension, so we only included it if you build from
+        // source.
         if (Version.getVersion().equalsIgnoreCase("999-SNAPSHOT") || devUIConfig.showJsonRpcLog()) {
-            Page devUiLog = Page.webComponentPageBuilder().internal()
-                    .namespace("devui-jsonrpcstream")
-                    .title("Dev UI")
-                    .icon("font-awesome-solid:satellite-dish")
-                    .componentLink("qwc-jsonrpc-messages.js").build();
+            Page devUiLog = Page.webComponentPageBuilder().internal().namespace("devui-jsonrpcstream").title("Dev UI")
+                    .icon("font-awesome-solid:satellite-dish").componentLink("qwc-jsonrpc-messages.js").build();
             footerTabs.add(devUiLog);
         }
         // Add any Footer tabs from extensions
@@ -588,18 +556,19 @@ public class BuildTimeContentProcessor {
         String artifactId = appArtifact.getArtifactId();
         applicationInfo.put("artifactId", artifactId);
         // Add version info
-        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI + SLASH;
+        String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath() + EndpointsProcessor.DEV_UI
+                + SLASH;
         applicationInfo.put("contextRoot", contextRoot);
         applicationInfo.put("quarkusVersion", Version.getVersion());
-        applicationInfo.put("applicationName", config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
+        applicationInfo.put("applicationName",
+                config.getOptionalValue("quarkus.application.name", String.class).orElse(""));
         applicationInfo.put("applicationVersion",
                 config.getOptionalValue("quarkus.application.version", String.class).orElse(""));
         internalBuildTimeData.addBuildTimeData("applicationInfo", applicationInfo);
     }
 
     private void addIdeBuildTimeData(BuildTimeConstBuildItem internalBuildTimeData,
-            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem,
-            LaunchModeBuildItem launchModeBuildItem) {
+            Optional<EffectiveIdeBuildItem> effectiveIdeBuildItem, LaunchModeBuildItem launchModeBuildItem) {
 
         Map<String, Object> ideInfo = new HashMap<>();
         boolean disable = launchModeBuildItem.getDevModeType().orElse(DevModeType.LOCAL) != DevModeType.LOCAL;
@@ -684,11 +653,11 @@ public class BuildTimeContentProcessor {
             String thisDir = dirs.get(0)[j]; // grab the next directory name in the first path
             boolean allMatched = true;
             for (int i = 1; i < dirs.size() && allMatched; i++) { // look at the other paths
-                if (dirs.get(i).length < j) { //there is no directory
+                if (dirs.get(i).length < j) { // there is no directory
                     allMatched = false;
                     break;
                 }
-                allMatched = dirs.get(i)[j].equals(thisDir); //check if it matched
+                allMatched = dirs.get(i)[j].equals(thisDir); // check if it matched
             }
             if (allMatched) {
                 commonPath += thisDir + File.separator;
@@ -699,24 +668,11 @@ public class BuildTimeContentProcessor {
         return commonPath;
     }
 
-    private static final List<String> LEVELS = List.of(
-            OFF.getName(),
-            SEVERE.getName(),
-            ERROR.getName(),
-            FATAL.getName(),
-            WARNING.getName(),
-            WARN.getName(),
-            INFO.getName(),
-            DEBUG.getName(),
-            TRACE.getName(),
-            CONFIG.getName(),
-            FINE.getName(),
-            FINER.getName(),
-            FINEST.getName(),
-            ALL.getName());
+    private static final List<String> LEVELS = List.of(OFF.getName(), SEVERE.getName(), ERROR.getName(),
+            FATAL.getName(), WARNING.getName(), WARN.getName(), INFO.getName(), DEBUG.getName(), TRACE.getName(),
+            CONFIG.getName(), FINE.getName(), FINER.getName(), FINEST.getName(), ALL.getName());
 
-    private static void addQuarkusLogoColors(Map<String, String> dark,
-            Map<String, String> light) {
+    private static void addQuarkusLogoColors(Map<String, String> dark, Map<String, String> light) {
         // Quarkus logo colors
         light.put("--quarkus-blue", QUARKUS_BLUE.toString());
         dark.put("--quarkus-blue", QUARKUS_BLUE.toString());
@@ -732,8 +688,7 @@ public class BuildTimeContentProcessor {
     }
 
     /**
-     * To get back to the original, add this
-     * %dev.quarkus.dev-ui.theme.dark.base-color-light=hsla(0, 100%, 100%, 1)
+     * To get back to the original, add this %dev.quarkus.dev-ui.theme.dark.base-color-light=hsla(0, 100%, 100%, 1)
      * %dev.quarkus.dev-ui.theme.dark.base-color-dark=hsla(210, 10%, 23%, 1)
      * %dev.quarkus.dev-ui.theme.dark.contrast-5pct-light=hsla(214, 61%, 25%, 0.05)
      * %dev.quarkus.dev-ui.theme.dark.contrast-5pct-dark=hsla(214, 65%, 85%, 0.06)
@@ -763,24 +718,22 @@ public class BuildTimeContentProcessor {
      * %dev.quarkus.dev-ui.theme.dark.header-text-color-dark=hsla(214, 100%, 98%, 1)
      */
 
-    private static void computeDefaultColors(Map<String, Map<String, String>> themes,
-            Map<String, String> dark,
-            Map<String, String> light,
-            Optional<DevUIConfig.Theme> theme) {
+    private static void computeDefaultColors(Map<String, Map<String, String>> themes, Map<String, String> dark,
+            Map<String, String> light, Optional<DevUIConfig.Theme> theme) {
 
         addQuarkusLogoColors(dark, light);
 
         // Base Colors
         light.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
                 DevUIConfig.ThemeMode::baseColor, Color.from(0, 0, 100).toString()));
-        dark.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::baseColor,
-                Color.from(0, 0, 13).toString()));
+        dark.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark,
+                DevUIConfig.ThemeMode::baseColor, Color.from(0, 0, 13).toString()));
 
         // Contrast Colors
-        light.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 13).toString()));
-        dark.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 100).toString()));
+        light.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
+                DevUIConfig.ThemeMode::contrast, Color.from(0, 0, 13).toString()));
+        dark.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark,
+                DevUIConfig.ThemeMode::contrast, Color.from(0, 0, 100).toString()));
 
         // Primary Colors
         light.put("--lumo-primary-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
@@ -878,14 +831,10 @@ public class BuildTimeContentProcessor {
             String key = "--lumo-contrast-" + i + "pct";
 
             // Retrieve from theme if available, otherwise use default computed color
-            String lightContrast = getThemeSettingOrDefault(theme,
-                    DevUIConfig.Theme::light,
-                    getContrastPct(i),
+            String lightContrast = getThemeSettingOrDefault(theme, DevUIConfig.Theme::light, getContrastPct(i),
                     Color.from(0, 0, 13, opacity).toString());
 
-            String darkContrast = getThemeSettingOrDefault(theme,
-                    DevUIConfig.Theme::dark,
-                    getContrastPct(i),
+            String darkContrast = getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, getContrastPct(i),
                     Color.from(0, 0, 100, opacity).toString());
 
             light.put(key, lightContrast);
@@ -896,24 +845,22 @@ public class BuildTimeContentProcessor {
         themes.put("light", light);
     }
 
-    private static void computeRedColors(Map<String, Map<String, String>> themes,
-            Map<String, String> dark,
-            Map<String, String> light,
-            Optional<DevUIConfig.Theme> theme) {
+    private static void computeRedColors(Map<String, Map<String, String>> themes, Map<String, String> dark,
+            Map<String, String> light, Optional<DevUIConfig.Theme> theme) {
 
         addQuarkusLogoColors(dark, light);
 
         // Base Colors
         light.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
                 DevUIConfig.ThemeMode::baseColor, Color.from(0, 0, 100).toString()));
-        dark.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::baseColor,
-                Color.from(0, 0, 10).toString()));
+        dark.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark,
+                DevUIConfig.ThemeMode::baseColor, Color.from(0, 0, 10).toString()));
 
         // Contrast Colors
-        light.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 10).toString()));
-        dark.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 100).toString()));
+        light.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
+                DevUIConfig.ThemeMode::contrast, Color.from(0, 0, 10).toString()));
+        dark.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark,
+                DevUIConfig.ThemeMode::contrast, Color.from(0, 0, 100).toString()));
 
         // Primary Colors
         light.put("--lumo-primary-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
@@ -1011,14 +958,10 @@ public class BuildTimeContentProcessor {
             String key = "--lumo-contrast-" + i + "pct";
 
             // Retrieve from theme if available, otherwise use default computed color
-            String lightContrast = getThemeSettingOrDefault(theme,
-                    DevUIConfig.Theme::light,
-                    getContrastPct(i),
+            String lightContrast = getThemeSettingOrDefault(theme, DevUIConfig.Theme::light, getContrastPct(i),
                     Color.from(0, 0, 10, opacity).toString());
 
-            String darkContrast = getThemeSettingOrDefault(theme,
-                    DevUIConfig.Theme::dark,
-                    getContrastPct(i),
+            String darkContrast = getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, getContrastPct(i),
                     Color.from(0, 0, 100, opacity).toString());
 
             light.put(key, lightContrast);
@@ -1029,24 +972,22 @@ public class BuildTimeContentProcessor {
         themes.put("light", light);
     }
 
-    private static void computeBlueColors(Map<String, Map<String, String>> themes,
-            Map<String, String> dark,
-            Map<String, String> light,
-            Optional<DevUIConfig.Theme> theme) {
+    private static void computeBlueColors(Map<String, Map<String, String>> themes, Map<String, String> dark,
+            Map<String, String> light, Optional<DevUIConfig.Theme> theme) {
 
         addQuarkusLogoColors(dark, light);
 
         // Base Colors
         light.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
                 DevUIConfig.ThemeMode::baseColor, Color.from(0, 0, 100).toString()));
-        dark.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::baseColor,
-                Color.from(0, 0, 9).toString()));
+        dark.put("--lumo-base-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark,
+                DevUIConfig.ThemeMode::baseColor, Color.from(0, 0, 9).toString()));
 
         // Contrast Colors
-        light.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 9).toString()));
-        dark.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, DevUIConfig.ThemeMode::contrast,
-                Color.from(0, 0, 100).toString()));
+        light.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
+                DevUIConfig.ThemeMode::contrast, Color.from(0, 0, 9).toString()));
+        dark.put("--lumo-contrast", getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark,
+                DevUIConfig.ThemeMode::contrast, Color.from(0, 0, 100).toString()));
 
         // Primary Colors
         light.put("--lumo-primary-color", getThemeSettingOrDefault(theme, DevUIConfig.Theme::light,
@@ -1144,14 +1085,10 @@ public class BuildTimeContentProcessor {
             String key = "--lumo-contrast-" + i + "pct";
 
             // Retrieve from theme if available, otherwise use default computed color
-            String lightContrast = getThemeSettingOrDefault(theme,
-                    DevUIConfig.Theme::light,
-                    getContrastPct(i),
+            String lightContrast = getThemeSettingOrDefault(theme, DevUIConfig.Theme::light, getContrastPct(i),
                     Color.from(0, 0, 10, opacity).toString());
 
-            String darkContrast = getThemeSettingOrDefault(theme,
-                    DevUIConfig.Theme::dark,
-                    getContrastPct(i),
+            String darkContrast = getThemeSettingOrDefault(theme, DevUIConfig.Theme::dark, getContrastPct(i),
                     Color.from(0, 0, 100, opacity).toString());
 
             light.put(key, lightContrast);
@@ -1194,20 +1131,20 @@ public class BuildTimeContentProcessor {
 
     private static String getThemeSettingOrDefault(Optional<DevUIConfig.Theme> theme,
             Function<DevUIConfig.Theme, Optional<DevUIConfig.ThemeMode>> themeModeExtractor,
-            Function<DevUIConfig.ThemeMode, Optional<String>> settingExtractor,
-            String defaultValue) {
+            Function<DevUIConfig.ThemeMode, Optional<String>> settingExtractor, String defaultValue) {
         return theme.flatMap(themeModeExtractor) // Extract dark or light theme mode
                 .flatMap(settingExtractor) // Extract specific setting
                 .orElse(defaultValue); // Return default if not present
     }
 
     /**
-     * This represents a HSLA color
-     * see https://www.w3schools.com/html/html_colors_hsl.asp
+     * This represents a HSLA color see https://www.w3schools.com/html/html_colors_hsl.asp
      */
     static class Color {
-        private int hue; // Defines a degree on the color wheel (from 0 to 360) - 0 (or 360) is red, 120 is green, 240 is blue
-        private int saturation; // Defines the saturation; 0% is a shade of gray and 100% is the full color (full saturation)
+        private int hue; // Defines a degree on the color wheel (from 0 to 360) - 0 (or 360) is red, 120 is green, 240
+                         // is blue
+        private int saturation; // Defines the saturation; 0% is a shade of gray and 100% is the full color (full
+                                // saturation)
         private int lightness; // Defines the lightness; 0% is black, 50% is normal, and 100% is white
         private double alpha; // Defines the opacity; 0 is fully transparent, 100 is not transparent at all
 

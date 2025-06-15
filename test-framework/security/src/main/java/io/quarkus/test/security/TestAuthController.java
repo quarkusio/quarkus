@@ -17,7 +17,7 @@ public class TestAuthController extends AuthorizationController {
     @PostConstruct
     public void check() {
         if (LaunchMode.current() != LaunchMode.TEST) {
-            //paranoid check
+            // paranoid check
             throw new RuntimeException("TestAuthController can only be used in tests");
         }
     }

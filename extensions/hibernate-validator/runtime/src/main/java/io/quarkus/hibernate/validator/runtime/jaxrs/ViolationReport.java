@@ -5,9 +5,8 @@ import java.util.List;
 import jakarta.ws.rs.core.Response;
 
 /**
- * As spec doesn't say anything about the report format,
- * we just use https://opensource.zalando.com/problem/constraint-violation
- * This also what Reactive Routes uses
+ * As spec doesn't say anything about the report format, we just use
+ * https://opensource.zalando.com/problem/constraint-violation This also what Reactive Routes uses
  */
 public class ViolationReport {
     private String title;
@@ -52,11 +51,8 @@ public class ViolationReport {
 
     @Override
     public String toString() {
-        return "ViolationReport{" +
-                "title='" + title + '\'' +
-                ", status=" + status +
-                ", violations=" + violations +
-                '}';
+        return "ViolationReport{" + "title='" + title + '\'' + ", status=" + status + ", violations=" + violations
+                + '}';
     }
 
     public static class Violation {
@@ -92,10 +88,7 @@ public class ViolationReport {
 
         @Override
         public String toString() {
-            return "Violation{" +
-                    "field='" + field + '\'' +
-                    ", message='" + message + '\'' +
-                    '}';
+            return "Violation{" + "field='" + field + '\'' + ", message='" + message + '\'' + '}';
         }
     }
 }

@@ -40,13 +40,13 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
     private long timerId = -1;
     private boolean receivedClientClose;
 
-    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
-            long reconnectDelay, TimeUnit reconnectUnit) {
+    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder, long reconnectDelay,
+            TimeUnit reconnectUnit) {
         this(webTarget, invocationBuilder, reconnectDelay, reconnectUnit, null);
     }
 
-    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder,
-            long reconnectDelay, TimeUnit reconnectUnit, String defaultContentType) {
+    public SseEventSourceImpl(WebTargetImpl webTarget, Invocation.Builder invocationBuilder, long reconnectDelay,
+            TimeUnit reconnectUnit, String defaultContentType) {
         // tests set a null endpoint
         Objects.requireNonNull(reconnectUnit);
         if (reconnectDelay <= 0)
@@ -74,7 +74,8 @@ public class SseEventSourceImpl implements SseEventSource, Handler<Long> {
     }
 
     @Override
-    public synchronized void register(Consumer<InboundSseEvent> onEvent, Consumer<Throwable> onError, Runnable onComplete) {
+    public synchronized void register(Consumer<InboundSseEvent> onEvent, Consumer<Throwable> onError,
+            Runnable onComplete) {
         consumers.add(onEvent);
         errorListeners.add(onError);
         completionListeners.add(onComplete);

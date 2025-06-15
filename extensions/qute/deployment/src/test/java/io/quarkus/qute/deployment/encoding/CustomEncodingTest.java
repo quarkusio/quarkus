@@ -14,8 +14,8 @@ public class CustomEncodingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource("io/quarkus/qute/deployment/encoding/foo.txt", "templates/foo.txt"))
+            .withApplicationRoot(
+                    root -> root.addAsResource("io/quarkus/qute/deployment/encoding/foo.txt", "templates/foo.txt"))
             .overrideConfigKey("quarkus.qute.default-charset", "windows-1250");
 
     @Inject

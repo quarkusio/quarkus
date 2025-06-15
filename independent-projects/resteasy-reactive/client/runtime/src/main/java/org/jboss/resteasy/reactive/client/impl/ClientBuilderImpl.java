@@ -236,9 +236,7 @@ public class ClientBuilderImpl extends ClientBuilder {
 
         if (proxyHost != null) {
             if (!"none".equals(proxyHost)) {
-                ProxyOptions proxyOptions = new ProxyOptions()
-                        .setHost(proxyHost)
-                        .setPort(proxyPort);
+                ProxyOptions proxyOptions = new ProxyOptions().setHost(proxyHost).setPort(proxyPort);
                 if (proxyPassword != null && !proxyPassword.isBlank()) {
                     proxyOptions.setPassword(proxyPassword);
                 }
@@ -249,27 +247,22 @@ public class ClientBuilderImpl extends ClientBuilder {
                 configureNonProxyHosts(options, nonProxyHosts);
             }
         } else {
-            String proxyHost = options.isSsl()
-                    ? System.getProperty("https.proxyHost", "none")
+            String proxyHost = options.isSsl() ? System.getProperty("https.proxyHost", "none")
                     : System.getProperty("http.proxyHost", "none");
-            String proxyPortAsString = options.isSsl()
-                    ? System.getProperty("https.proxyPort", "443")
+            String proxyPortAsString = options.isSsl() ? System.getProperty("https.proxyPort", "443")
                     : System.getProperty("http.proxyPort", "80");
-            String nonProxyHosts = options.isSsl()
-                    ? System.getProperty("https.nonProxyHosts", "localhost|127.*|[::1]")
+            String nonProxyHosts = options.isSsl() ? System.getProperty("https.nonProxyHosts", "localhost|127.*|[::1]")
                     : System.getProperty("http.nonProxyHosts", "localhost|127.*|[::1]");
             int proxyPort = Integer.parseInt(proxyPortAsString);
 
             if (!"none".equals(proxyHost)) {
                 ProxyOptions proxyOptions = new ProxyOptions().setHost(proxyHost).setPort(proxyPort);
-                proxyUser = options.isSsl()
-                        ? System.getProperty("https.proxyUser")
+                proxyUser = options.isSsl() ? System.getProperty("https.proxyUser")
                         : System.getProperty("http.proxyUser");
                 if (proxyUser != null && !proxyUser.isBlank()) {
                     proxyOptions.setUsername(proxyUser);
                 }
-                proxyPassword = options.isSsl()
-                        ? System.getProperty("https.proxyPassword")
+                proxyPassword = options.isSsl() ? System.getProperty("https.proxyPassword")
                         : System.getProperty("http.proxyPassword");
                 if (proxyPassword != null && !proxyPassword.isBlank()) {
                     proxyOptions.setPassword(proxyPassword);
@@ -288,15 +281,9 @@ public class ClientBuilderImpl extends ClientBuilder {
         clientLogger.setBodySize(loggingBodySize);
 
         options.setMaxChunkSize(maxChunkSize);
-        return new ClientImpl(options,
-                new ConfigurationImpl(configuration),
-                CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()),
-                null,
-                null,
-                followRedirects,
-                multiQueryParamMode,
-                loggingScope,
-                clientLogger, userAgent);
+        return new ClientImpl(options, new ConfigurationImpl(configuration),
+                CLIENT_CONTEXT_RESOLVER.resolve(Thread.currentThread().getContextClassLoader()), null, null,
+                followRedirects, multiQueryParamMode, loggingScope, clientLogger, userAgent);
 
     }
 
@@ -446,18 +433,18 @@ public class ClientBuilderImpl extends ClientBuilder {
     }
 
     /*
-     * Add some custom methods that allow registering MessageBodyReader and MessageBodyWriter classes with all the necessary
-     * information
+     * Add some custom methods that allow registering MessageBodyReader and MessageBodyWriter classes with all the
+     * necessary information
      */
 
-    public ClientBuilderImpl registerMessageBodyReader(MessageBodyReader<?> reader, Class<?> handledType, List<String> consumes,
-            boolean builtin, Integer priority) {
+    public ClientBuilderImpl registerMessageBodyReader(MessageBodyReader<?> reader, Class<?> handledType,
+            List<String> consumes, boolean builtin, Integer priority) {
         configuration.registerMessageBodyReader(reader, handledType, consumes, RuntimeType.CLIENT, builtin, priority);
         return this;
     }
 
-    public ClientBuilderImpl registerMessageBodyWriter(MessageBodyWriter<?> writer, Class<?> handledType, List<String> consumes,
-            boolean builtin, Integer priority) {
+    public ClientBuilderImpl registerMessageBodyWriter(MessageBodyWriter<?> writer, Class<?> handledType,
+            List<String> consumes, boolean builtin, Integer priority) {
         configuration.registerMessageBodyWriter(writer, handledType, consumes, RuntimeType.CLIENT, builtin, priority);
         return this;
     }

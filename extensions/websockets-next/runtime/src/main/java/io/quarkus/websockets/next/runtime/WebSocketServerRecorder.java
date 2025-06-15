@@ -64,7 +64,8 @@ public class WebSocketServerRecorder {
                         return connection;
                     }
                 }
-                throw new WebSocketServerException("Unable to obtain the connection from the Vert.x duplicated context");
+                throw new WebSocketServerException(
+                        "Unable to obtain the connection from the Vert.x duplicated context");
             }
         };
     }
@@ -77,7 +78,8 @@ public class WebSocketServerRecorder {
         Codecs codecs = container.instance(Codecs.class).get();
         HttpUpgradeCheck[] httpUpgradeChecks = getHttpUpgradeChecks(endpointId, container);
         TrafficLogger trafficLogger = TrafficLogger.forServer(config);
-        WebSocketTelemetryProvider telemetryProvider = container.instance(WebSocketTelemetryProvider.class).orElse(null);
+        WebSocketTelemetryProvider telemetryProvider = container.instance(WebSocketTelemetryProvider.class)
+                .orElse(null);
         return new Handler<RoutingContext>() {
 
             @Override
@@ -125,8 +127,8 @@ public class WebSocketServerRecorder {
 
                     SendingInterceptor sendingInterceptor = telemetrySupport == null ? null
                             : telemetrySupport.getSendingInterceptor();
-                    WebSocketConnectionImpl connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId, ws,
-                            connectionManager, codecs, ctx, trafficLogger, sendingInterceptor);
+                    WebSocketConnectionImpl connection = new WebSocketConnectionImpl(generatedEndpointClass, endpointId,
+                            ws, connectionManager, codecs, ctx, trafficLogger, sendingInterceptor);
                     connectionManager.add(generatedEndpointClass, connection);
                     if (trafficLogger != null) {
                         trafficLogger.connectionOpened(connection);
@@ -135,9 +137,9 @@ public class WebSocketServerRecorder {
                     SecuritySupport securitySupport = initializeSecuritySupport(container, ctx, vertx, connection);
 
                     Endpoints.initialize(vertx, container, codecs, connection, ws, generatedEndpointClass,
-                            config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(), trafficLogger,
-                            () -> connectionManager.remove(generatedEndpointClass, connection), activateRequestContext,
-                            activateSessionContext, telemetrySupport);
+                            config.autoPingInterval(), securitySupport, config.unhandledFailureStrategy(),
+                            trafficLogger, () -> connectionManager.remove(generatedEndpointClass, connection),
+                            activateRequestContext, activateSessionContext, telemetrySupport);
                 });
             }
 
@@ -152,8 +154,8 @@ public class WebSocketServerRecorder {
                 return checkHttpUpgrade(new HttpUpgradeContextImpl(ctx, identity, endpointId), httpUpgradeChecks, 0);
             }
 
-            private static Uni<CheckResult> checkHttpUpgrade(HttpUpgradeContext ctx,
-                    HttpUpgradeCheck[] checks, int idx) {
+            private static Uni<CheckResult> checkHttpUpgrade(HttpUpgradeContext ctx, HttpUpgradeCheck[] checks,
+                    int idx) {
                 return checks[idx].perform(ctx).flatMap(res -> {
                     if (res == null) {
                         return Uni.createFrom().failure(new IllegalStateException(
@@ -161,8 +163,7 @@ public class WebSocketServerRecorder {
                                         .formatted(checks[idx])));
                     }
                     if (idx < checks.length - 1 && res.isUpgradePermitted()) {
-                        return checkHttpUpgrade(ctx, checks, idx + 1)
-                                .map(n -> n.withHeaders(res.getResponseHeaders()));
+                        return checkHttpUpgrade(ctx, checks, idx + 1).map(n -> n.withHeaders(res.getResponseHeaders()));
                     }
                     return Uni.createFrom().item(res);
                 });
@@ -186,7 +187,8 @@ public class WebSocketServerRecorder {
 
     SecuritySupport initializeSecuritySupport(ArcContainer container, RoutingContext ctx, Vertx vertx,
             WebSocketConnectionImpl connection) {
-        Instance<CurrentIdentityAssociation> currentIdentityAssociation = container.select(CurrentIdentityAssociation.class);
+        Instance<CurrentIdentityAssociation> currentIdentityAssociation = container
+                .select(CurrentIdentityAssociation.class);
         if (currentIdentityAssociation.isResolvable()) {
             // Security extension is present
             // Obtain the current security identity from the handshake request
@@ -207,11 +209,11 @@ public class WebSocketServerRecorder {
                         Boolean.class);
                 var securityEventHelper = new SecurityEventHelper<>(ctx.getInjectedReference(new TypeLiteral<>() {
                 }), ctx.getInjectedReference(new TypeLiteral<>() {
-                }), AUTHORIZATION_SUCCESS,
-                        AUTHORIZATION_FAILURE, ctx.getInjectedReference(BeanManager.class), securityEventsEnabled);
+                }), AUTHORIZATION_SUCCESS, AUTHORIZATION_FAILURE, ctx.getInjectedReference(BeanManager.class),
+                        securityEventsEnabled);
                 WebSocketsServerRuntimeConfig config = ctx.getInjectedReference(WebSocketsServerRuntimeConfig.class);
-                return new SecurityHttpUpgradeCheck(config.security().authFailureRedirectUrl().orElse(null), endpointToCheck,
-                        securityEventHelper);
+                return new SecurityHttpUpgradeCheck(config.security().authFailureRedirectUrl().orElse(null),
+                        endpointToCheck, securityEventHelper);
             }
         };
     }
@@ -220,11 +222,14 @@ public class WebSocketServerRecorder {
             Map<String, String> classNameToEndpointId) {
         return new Function<SyntheticCreationalContext<HttpUpgradeSecurityInterceptor>, HttpUpgradeSecurityInterceptor>() {
             @Override
-            public HttpUpgradeSecurityInterceptor apply(SyntheticCreationalContext<HttpUpgradeSecurityInterceptor> ctx) {
-                EagerSecurityInterceptorStorage storage = ctx.getInjectedReference(EagerSecurityInterceptorStorage.class);
+            public HttpUpgradeSecurityInterceptor apply(
+                    SyntheticCreationalContext<HttpUpgradeSecurityInterceptor> ctx) {
+                EagerSecurityInterceptorStorage storage = ctx
+                        .getInjectedReference(EagerSecurityInterceptorStorage.class);
                 Map<String, Consumer<RoutingContext>> endpointIdToInterceptor = new HashMap<>();
                 classNameToEndpointId.forEach((className, endpointId) -> {
-                    Consumer<RoutingContext> interceptor = Objects.requireNonNull(storage.getClassInterceptor(className));
+                    Consumer<RoutingContext> interceptor = Objects
+                            .requireNonNull(storage.getClassInterceptor(className));
                     endpointIdToInterceptor.put(endpointId, interceptor);
                 });
                 return new HttpUpgradeSecurityInterceptor(endpointIdToInterceptor);

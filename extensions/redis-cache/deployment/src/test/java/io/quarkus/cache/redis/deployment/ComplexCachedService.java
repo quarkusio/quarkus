@@ -29,9 +29,7 @@ public class ComplexCachedService {
 
     @CacheResult(cacheName = CACHE_NAME_GENERIC_ARRAY)
     public List<? extends CharSequence>[] genericArrayReturnType(String key) {
-        return new List[] {
-                List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString()),
-                List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString())
-        };
+        return new List[] { List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString()),
+                List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString()) };
     }
 }

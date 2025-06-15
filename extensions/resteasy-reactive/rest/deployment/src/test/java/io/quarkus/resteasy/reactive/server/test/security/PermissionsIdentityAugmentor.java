@@ -29,17 +29,18 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder(identity);
         switch (identity.getPrincipal().getName()) {
             case "admin":
-                builder.addPermissionChecker(new PermissionCheckBuilder().addPermission("update").addPermission("create")
-                        .addPermission("read", "resource-admin").addCustomPermission()
+                builder.addPermissionChecker(new PermissionCheckBuilder().addPermission("update")
+                        .addPermission("create").addPermission("read", "resource-admin").addCustomPermission()
                         .addCustomPermission("farewell", "so long", "Nelson", 3, "Ostrava").build());
                 break;
             case "user":
-                builder.addPermissionChecker(new PermissionCheckBuilder().addPermission("update").addPermission("get-identity")
-                        .addCustomPermission("farewell", "so long", "Nelson", 3, "Prague")
+                builder.addPermissionChecker(new PermissionCheckBuilder().addPermission("update")
+                        .addPermission("get-identity").addCustomPermission("farewell", "so long", "Nelson", 3, "Prague")
                         .addPermission("read", "resource-admin").build());
                 break;
             case "viewer":
-                builder.addPermissionChecker(new PermissionCheckBuilder().addPermission("read", "resource-viewer").build());
+                builder.addPermissionChecker(
+                        new PermissionCheckBuilder().addPermission("read", "resource-viewer").build());
                 break;
         }
         return builder.build();
@@ -64,7 +65,8 @@ public class PermissionsIdentityAugmentor implements SecurityIdentityAugmentor {
             return this;
         }
 
-        PermissionCheckBuilder addCustomPermission(String permName, String goodbye, String toWhom, int day, String place) {
+        PermissionCheckBuilder addCustomPermission(String permName, String goodbye, String toWhom, int day,
+                String place) {
             permissionSet.add(new CustomPermissionWithExtraArgs(permName, goodbye, toWhom, day, place));
             return this;
         }

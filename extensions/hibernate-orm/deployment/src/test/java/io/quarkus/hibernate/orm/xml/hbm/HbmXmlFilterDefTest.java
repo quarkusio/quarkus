@@ -18,9 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HbmXmlFilterDefTest {
     @RegisterExtension
     final static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(NonAnnotatedEntity.class)
+            .withApplicationRoot(jar -> jar.addClass(SmokeTestUtils.class).addClass(NonAnnotatedEntity.class)
                     .addAsResource("META-INF/hbm-filterdef.xml", "my-hbm.xml"))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping-files", "my-hbm.xml")
@@ -35,8 +33,7 @@ public class HbmXmlFilterDefTest {
     @Test
     @Transactional
     public void hbmXmlTakenIntoAccount() {
-        assertThat(sessionFactory.getDefinedFilterNames())
-                .contains("idFilter");
+        assertThat(sessionFactory.getDefinedFilterNames()).contains("idFilter");
     }
 
     @Test
@@ -48,14 +45,13 @@ public class HbmXmlFilterDefTest {
         session.persist(secondEntity);
         session.flush();
 
-        assertThat(session.createQuery("select e from " + NonAnnotatedEntity.class.getName() + " e",
-                NonAnnotatedEntity.class).list())
-                .hasSize(2);
-        session.enableFilter("idFilter")
-                .setParameterList("ids", Collections.singletonList(firstEntity.getId()));
-        assertThat(session.createQuery("select e from " + NonAnnotatedEntity.class.getName() + " e",
-                NonAnnotatedEntity.class).list())
-                .hasSize(1);
+        assertThat(session
+                .createQuery("select e from " + NonAnnotatedEntity.class.getName() + " e", NonAnnotatedEntity.class)
+                .list()).hasSize(2);
+        session.enableFilter("idFilter").setParameterList("ids", Collections.singletonList(firstEntity.getId()));
+        assertThat(session
+                .createQuery("select e from " + NonAnnotatedEntity.class.getName() + " e", NonAnnotatedEntity.class)
+                .list()).hasSize(1);
     }
 
 }

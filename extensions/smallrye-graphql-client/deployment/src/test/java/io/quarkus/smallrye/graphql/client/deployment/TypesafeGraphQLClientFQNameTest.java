@@ -22,21 +22,18 @@ import io.quarkus.test.QuarkusUnitTest;
  */
 public class TypesafeGraphQLClientFQNameTest {
 
-    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
-            System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
+    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":"
+            + System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApiWithNoConfigKey.class, Person.class,
-                            PersonDto.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.smallrye-graphql-client.\"io.quarkus.smallrye.graphql." +
-                                            "client.deployment.model.TestingGraphQLClientApiWithNoConfigKey\".url="
-                                            + url),
-                            "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApiWithNoConfigKey.class, Person.class,
+                    PersonDto.class)
+            .addAsResource(
+                    new StringAsset("quarkus.smallrye-graphql-client.\"io.quarkus.smallrye.graphql."
+                            + "client.deployment.model.TestingGraphQLClientApiWithNoConfigKey\".url=" + url),
+                    "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
     TestingGraphQLClientApiWithNoConfigKey client;

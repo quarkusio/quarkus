@@ -22,6 +22,7 @@ import io.vertx.core.http.HttpServerResponse;
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
  * @author Norman Maurer
+ *
  * @version $Revision: 1 $
  */
 public class RequestDispatcher {
@@ -52,10 +53,8 @@ public class RequestDispatcher {
         return providerFactory;
     }
 
-    public void service(Context context,
-            HttpServerRequest req,
-            HttpServerResponse resp,
-            HttpRequest vertxReq, HttpResponse vertxResp, boolean handleNotFound, Throwable throwable) throws IOException {
+    public void service(Context context, HttpServerRequest req, HttpServerResponse resp, HttpRequest vertxReq,
+            HttpResponse vertxResp, boolean handleNotFound, Throwable throwable) throws IOException {
 
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         boolean providerFactoryPushedToThreadLocal = false;

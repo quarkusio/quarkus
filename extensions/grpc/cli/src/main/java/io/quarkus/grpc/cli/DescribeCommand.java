@@ -21,9 +21,7 @@ public class DescribeCommand extends GcurlBaseCommand {
 
     @Override
     protected void execute(MutinyServerReflectionGrpc.MutinyServerReflectionStub stub) {
-        ServerReflectionRequest request = ServerReflectionRequest
-                .newBuilder()
-                .setFileContainingSymbol(unmatched.get(1))
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setFileContainingSymbol(unmatched.get(1))
                 .build();
         Multi<ServerReflectionResponse> response = stub.serverReflectionInfo(Multi.createFrom().item(request));
         response.toUni().map(r -> {

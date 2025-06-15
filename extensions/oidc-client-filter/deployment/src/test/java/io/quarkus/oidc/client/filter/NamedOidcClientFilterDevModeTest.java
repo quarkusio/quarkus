@@ -13,39 +13,28 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class NamedOidcClientFilterDevModeTest {
 
-    private static final Class<?>[] testClasses = {
-            ProtectedResource.class,
-            ProtectedResourceServiceNamedOidcClient.class,
-            ProtectedResourceServiceConfigPropertyOidcClient.class,
-            ProtectedResourceServiceCustomProviderConfigPropOidcClient.class,
-            NamedOidcClientResource.class,
-            ConfigPropertyOidcClientResource.class
-    };
+    private static final Class<?>[] testClasses = { ProtectedResource.class,
+            ProtectedResourceServiceNamedOidcClient.class, ProtectedResourceServiceConfigPropertyOidcClient.class,
+            ProtectedResourceServiceCustomProviderConfigPropOidcClient.class, NamedOidcClientResource.class,
+            ConfigPropertyOidcClientResource.class };
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses)
                     .addAsResource("application-named-oidc-client-filter.properties", "application.properties"));
 
     @Test
     public void testGerUserConfigPropertyAndAnnotation() {
         // OidcClient selected via @OidcClient("clientName")
-        RestAssured.when().get("/named-oidc-client/user-name")
-                .then()
-                .statusCode(200)
-                .body(equalTo("jdoe"));
+        RestAssured.when().get("/named-oidc-client/user-name").then().statusCode(200).body(equalTo("jdoe"));
 
         // @OidcClientFilter: OidcClient selected via `quarkus.oidc-client-filter.client-name=config-property`
-        RestAssured.when().get("/config-property-oidc-client/annotation/user-name")
-                .then()
-                .statusCode(200)
+        RestAssured.when().get("/config-property-oidc-client/annotation/user-name").then().statusCode(200)
                 .body(equalTo("alice"));
 
-        // @RegisterProvider(OidcClientRequestFilter.class): OidcClient selected via `quarkus.oidc-client-filter.client-name=config-property`
-        RestAssured.when().get("/config-property-oidc-client/custom-provider/user-name")
-                .then()
-                .statusCode(200)
+        // @RegisterProvider(OidcClientRequestFilter.class): OidcClient selected via
+        // `quarkus.oidc-client-filter.client-name=config-property`
+        RestAssured.when().get("/config-property-oidc-client/custom-provider/user-name").then().statusCode(200)
                 .body(equalTo("alice"));
     }
 

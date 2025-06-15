@@ -26,8 +26,8 @@ public class FieldInjectedSubClassResource extends FieldInjectedResource {
     @Path("field2")
     @GET
     public String field() {
-        checkInjections("/injection-subclass/field2", query, header, uriInfo, beanParam, queryInSubClass, uriInfoInSubClass,
-                beanParamSubClass);
+        checkInjections("/injection-subclass/field2", query, header, uriInfo, beanParam, queryInSubClass,
+                uriInfoInSubClass, beanParamSubClass);
         return "OK";
     }
 
@@ -43,11 +43,10 @@ public class FieldInjectedSubClassResource extends FieldInjectedResource {
 
     @Path("param2")
     @GET
-    public String param(@QueryParam("query") String query,
-            @HeaderParam("header") String header,
-            @Context UriInfo uriInfo,
-            @BeanParam @NotNull BeanParamSubClass beanParam) {
-        checkInjections("/injection-subclass/param2", query, header, uriInfo, this.beanParam, query, uriInfo, beanParam);
+    public String param(@QueryParam("query") String query, @HeaderParam("header") String header,
+            @Context UriInfo uriInfo, @BeanParam @NotNull BeanParamSubClass beanParam) {
+        checkInjections("/injection-subclass/param2", query, header, uriInfo, this.beanParam, query, uriInfo,
+                beanParam);
         return "OK";
     }
 }

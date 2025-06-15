@@ -24,7 +24,9 @@ public class AggregateDocument {
     /**
      * Gets a property from the document.
      *
-     * @param name the property name, must not be {@code null}
+     * @param name
+     *        the property name, must not be {@code null}
+     *
      * @return the property, {@code null} if not found
      */
     public Document.Property property(String name) {

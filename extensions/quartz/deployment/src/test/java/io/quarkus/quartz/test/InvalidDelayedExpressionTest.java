@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidDelayedExpressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InvalidDelayedExpressionTest.InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(InvalidDelayedExpressionTest.InvalidBean.class));
 
     @Test
     public void test() throws InterruptedException {

@@ -98,21 +98,10 @@ public class AuthMechRequest {
 
     static RequestSpecification requestWithFormAuth(String user) {
         CookieFilter cookies = new CookieFilter();
-        RestAssured
-                .given()
-                .filter(cookies)
-                .when()
-                .formParam("j_username", user)
-                .formParam("j_password", user)
-                .post("/j_security_check")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .cookie("quarkus-credential",
+        RestAssured.given().filter(cookies).when().formParam("j_username", user).formParam("j_password", user)
+                .post("/j_security_check").then().assertThat().statusCode(200).cookie("quarkus-credential",
                         RestAssuredMatchers.detailedCookie().value(notNullValue()).secured(false));
-        return RestAssured
-                .given()
-                .filter(cookies);
+        return RestAssured.given().filter(cookies);
     }
 
     static RequestSpecification requestWithBasicAuthUser() {

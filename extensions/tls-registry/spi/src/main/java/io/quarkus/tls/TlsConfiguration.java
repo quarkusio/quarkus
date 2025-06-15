@@ -64,7 +64,9 @@ public interface TlsConfiguration {
      * Creates and returns the SSL Context.
      *
      * @return the {@link SSLContext}, {@code null} if not configured.
-     * @throws Exception if the SSL Context cannot be created.
+     *
+     * @throws Exception
+     *         if the SSL Context cannot be created.
      */
     SSLContext createSSLContext() throws Exception;
 
@@ -76,25 +78,24 @@ public interface TlsConfiguration {
     boolean isTrustAll();
 
     /**
-     * Returns the hostname verification algorithm for this configuration.
-     * {@code "NONE"} means no hostname verification.
+     * Returns the hostname verification algorithm for this configuration. {@code "NONE"} means no hostname
+     * verification.
      *
      * @return the hostname verification algorithm.
      */
     Optional<String> getHostnameVerificationAlgorithm();
 
     /**
-     * Returns whether the key store is configured to use SNI.
-     * When SNI is used, the client indicate the server name during the TLS handshake, allowing the server to select the
-     * right certificate.
+     * Returns whether the key store is configured to use SNI. When SNI is used, the client indicate the server name
+     * during the TLS handshake, allowing the server to select the right certificate.
      *
      * @return {@code true} if the key store is configured to use SNI, {@code false} otherwise.
      */
     boolean usesSni();
 
     /**
-     * Reloads the configuration.
-     * It usually means reloading the key store and trust store, especially when they are files.
+     * Reloads the configuration. It usually means reloading the key store and trust store, especially when they are
+     * files.
      *
      * @return {@code true} if the configuration has been reloaded, {@code false} otherwise.
      */
@@ -103,8 +104,8 @@ public interface TlsConfiguration {
     /**
      * Returns the name which was associated with this configuration
      * <p>
-     * Note: Although this was made default in order to not break deep integrations, it is strongly recommended that the method
-     * be implemented.
+     * Note: Although this was made default in order to not break deep integrations, it is strongly recommended that the
+     * method be implemented.
      */
     default String getName() {
         return "unset";

@@ -39,10 +39,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BasicTypeDataRepositoryTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(WithDoubleValue.class, BasicTypeData.class, BasicTypeDataRepository.class,
-                            FixedLocaleJavaType.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(WithDoubleValue.class,
+                    BasicTypeData.class, BasicTypeDataRepository.class, FixedLocaleJavaType.class))
             .withConfigurationResource("application.properties");
 
     private static final UUID uuid = UUID.randomUUID();

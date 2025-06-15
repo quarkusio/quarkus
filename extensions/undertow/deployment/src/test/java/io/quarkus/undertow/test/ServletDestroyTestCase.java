@@ -15,10 +15,8 @@ public class ServletDestroyTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PreDestroyServlet.class))
-            .setAllowTestClassOutsideDeployment(true)
-            .setAfterUndeployListener(() -> {
+            .withApplicationRoot((jar) -> jar.addClasses(PreDestroyServlet.class))
+            .setAllowTestClassOutsideDeployment(true).setAfterUndeployListener(() -> {
                 try {
                     Assertions.assertEquals("Servlet Destroyed", Messages.MESSAGES.poll(2, TimeUnit.SECONDS));
                 } catch (InterruptedException e) {
@@ -28,9 +26,7 @@ public class ServletDestroyTestCase {
 
     @Test
     public void testServlet() {
-        RestAssured.when().get("/destroy").then()
-                .statusCode(200)
-                .body(is("pre destroy servlet"));
+        RestAssured.when().get("/destroy").then().statusCode(200).body(is("pre destroy servlet"));
     }
 
 }

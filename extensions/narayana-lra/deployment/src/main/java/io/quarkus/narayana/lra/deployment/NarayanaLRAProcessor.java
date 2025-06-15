@@ -56,16 +56,14 @@ class NarayanaLRAProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void build(NarayanaLRARecorder recorder,
-            LRAConfiguration configuration) {
+    public void build(NarayanaLRARecorder recorder, LRAConfiguration configuration) {
 
         recorder.setConfig(configuration);
     }
 
     @BuildStep()
     @Record(STATIC_INIT)
-    void createLRAParticipantRegistry(NarayanaLRARecorder recorder,
-            BeanArchiveIndexBuildItem beanArchiveIndex) {
+    void createLRAParticipantRegistry(NarayanaLRARecorder recorder, BeanArchiveIndexBuildItem beanArchiveIndex) {
 
         final List<String> classNames = new ArrayList<>();
 
@@ -86,7 +84,8 @@ class NarayanaLRAProcessor {
 
             int modifiers = classInfo.flags();
 
-            if (Modifier.isInterface(modifiers) || Modifier.isAbstract(modifiers) || !isLRAParticipant(index, classInfo)) {
+            if (Modifier.isInterface(modifiers) || Modifier.isAbstract(modifiers)
+                    || !isLRAParticipant(index, classInfo)) {
                 continue;
             }
 
@@ -97,13 +96,13 @@ class NarayanaLRAProcessor {
     }
 
     private boolean isLRAParticipant(IndexView index, ClassInfo classInfo) {
-        Map<DotName, List<AnnotationInstance>> annotations = getAllAnnotationsFromClassInfoHierarchy(classInfo.name(), index);
+        Map<DotName, List<AnnotationInstance>> annotations = getAllAnnotationsFromClassInfoHierarchy(classInfo.name(),
+                index);
 
         if (!annotations.containsKey(DotNames.LRA)) {
             return false;
         } else if (!annotations.containsKey(DotNames.COMPENSATE) && !annotations.containsKey(DotNames.AFTER_LRA)) {
-            throw new IllegalStateException(String.format("%s: %s",
-                    classInfo.name(),
+            throw new IllegalStateException(String.format("%s: %s", classInfo.name(),
                     "The class contains a method annotated with @LRA and no method annotated with @Compensate or @AfterLRA was found."));
         } else {
             return true;
@@ -148,10 +147,8 @@ class NarayanaLRAProcessor {
 
     @BuildStep
     void registerBeans(BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .setUnremovable()
-                .addBeanClass(ParticipantProxyResource.class)
-                .build());
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                .addBeanClass(ParticipantProxyResource.class).build());
         additionalBeans.produce(new AdditionalBeanBuildItem(NarayanaLRAProducers.class));
     }
 
@@ -160,7 +157,8 @@ class NarayanaLRAProcessor {
             Capabilities capabilities, LRABuildTimeConfiguration lraBuildTimeConfig) {
 
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
-            NarayanaLRAOpenAPIFilter lraOpenAPIFilter = new NarayanaLRAOpenAPIFilter(lraBuildTimeConfig.openapiIncluded());
+            NarayanaLRAOpenAPIFilter lraOpenAPIFilter = new NarayanaLRAOpenAPIFilter(
+                    lraBuildTimeConfig.openapiIncluded());
             openAPIProducer.produce(new AddToOpenAPIDefinitionBuildItem(lraOpenAPIFilter));
         }
     }

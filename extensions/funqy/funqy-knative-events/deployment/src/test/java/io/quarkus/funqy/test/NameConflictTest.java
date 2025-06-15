@@ -12,13 +12,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class NameConflictTest {
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClass(NameConflict.class))
-            .setLogRecordPredicate(logRecord -> logRecord.getLevel().intValue() >= Level.WARNING.intValue() &&
-                    logRecord.getLoggerName().startsWith("io.quarkus.funqy"))
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(NameConflict.class))
+            .setLogRecordPredicate(logRecord -> logRecord.getLevel().intValue() >= Level.WARNING.intValue()
+                    && logRecord.getLoggerName().startsWith("io.quarkus.funqy"))
             .assertLogRecords(logRecords -> {
-                boolean match = logRecords
-                        .stream()
+                boolean match = logRecords.stream()
                         .anyMatch(logRecord -> logRecord.getMessage().contains("Name conflict"));
                 if (!match) {
                     fail("Log does not contain message about name conflict.");

@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The ident username, not used, included for apache access log compatibility
- *
  */
 public class IdentUsernameAttribute implements ExchangeAttribute {
 

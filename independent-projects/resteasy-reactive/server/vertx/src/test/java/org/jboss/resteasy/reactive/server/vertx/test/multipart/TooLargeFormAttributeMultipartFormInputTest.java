@@ -33,15 +33,12 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
     private static final java.nio.file.Path uploadDir = Paths.get("file-uploads");
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setUploadPath(uploadDir)
-            .setDeleteUploadedFilesOnEnd(false)
-            .setArchiveProducer(new Supplier<>() {
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setUploadPath(uploadDir)
+            .setDeleteUploadedFilesOnEnd(false).setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, Status.class, FormDataBase.class, OtherPackageFormDataBase.class,
-                                    FormData.class);
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Status.class,
+                            FormDataBase.class, OtherPackageFormDataBase.class, FormData.class);
                 }
             });
 
@@ -69,19 +66,10 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
         }
         fileContents = sb.toString();
         Assertions.assertTrue(fileContents.length() > HttpServerOptions.DEFAULT_MAX_FORM_ATTRIBUTE_SIZE);
-        given()
-                .multiPart("active", "true")
-                .multiPart("num", "25")
-                .multiPart("status", "WORKING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .multiPart("txtFile", TXT_FILE, "text/plain")
-                .multiPart("name", fileContents)
-                .accept("text/plain")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(413);
+        given().multiPart("active", "true").multiPart("num", "25").multiPart("status", "WORKING")
+                .multiPart("htmlFile", HTML_FILE, "text/html").multiPart("xmlFile", XML_FILE, "text/xml")
+                .multiPart("txtFile", TXT_FILE, "text/plain").multiPart("name", fileContents).accept("text/plain")
+                .when().post("/test").then().statusCode(413);
 
         // ensure that no files where created on disk
         // as RESTEasy Reactive doesn't wait for the files to be deleted before returning the HTTP response,

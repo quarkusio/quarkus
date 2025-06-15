@@ -23,10 +23,8 @@ import io.vertx.ext.web.RoutingContext;
 public class RandomPortTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest CONFIG = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.http.test-port=0"),
-                            "application.properties"));
+    static final QuarkusUnitTest CONFIG = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.http.test-port=0"), "application.properties"));
 
     @TestHTTPResource("test")
     URL url;

@@ -18,14 +18,11 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class RestClientExceptionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(
-                            new StringAsset(
-                                    "io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url=${test.url}/downstream"),
-                            "application.properties")
-                    .addClasses(RestClientExceptionTest.class, DownstreamServiceClient.class, FrontendService.class,
-                            DownstreamServiceRedirectEndpoint.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addAsResource(
+            new StringAsset(
+                    "io.quarkus.restclient.exception.DownstreamServiceClient/mp-rest/url=${test.url}/downstream"),
+            "application.properties").addClasses(RestClientExceptionTest.class, DownstreamServiceClient.class,
+                    FrontendService.class, DownstreamServiceRedirectEndpoint.class));
 
     @TestHTTPResource
     URL url;

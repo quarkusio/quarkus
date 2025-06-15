@@ -16,29 +16,22 @@ import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that a missing @Embeddable is reported as failure at the build stage rather than a cryptic error at the runtime.
- * See https://github.com/quarkusio/quarkus/issues/35598
+ * Checks that a missing @Embeddable is reported as failure at the build stage rather than a cryptic error at the
+ * runtime. See https://github.com/quarkusio/quarkus/issues/35598
  */
 class HibernateEntityEnhancerMissingEmbeddableAnnotationTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
-                    .addClasses(
-                            EntityWithEmbedded.class,
-                            EntityWithEmbedded.EmbeddableMissingAnnotation.class,
-                            EntityWithEmbedded.EmbeddableWithAnnotation.class))
+            .withApplicationRoot((jar) -> jar.addClass(TransactionTestUtils.class).addClasses(EntityWithEmbedded.class,
+                    EntityWithEmbedded.EmbeddableMissingAnnotation.class,
+                    EntityWithEmbedded.EmbeddableWithAnnotation.class))
             .withConfigurationResource("application.properties")
-            .assertException(ex -> assertThat(ex)
-                    .isNotNull()
-                    .cause()
-                    .isNotNull()
-                    .hasMessageContainingAll(
-                            "Type " + EntityWithEmbedded.EmbeddableMissingAnnotation.class.getName(),
-                            "must be annotated with @Embeddable, because it is used as an embeddable",
-                            "This type is used in class " + EntityWithEmbedded.EmbeddableWithAnnotation.class.getName(),
-                            "for attribute ", "embeddableMissingAnnotation"));
+            .assertException(ex -> assertThat(ex).isNotNull().cause().isNotNull().hasMessageContainingAll(
+                    "Type " + EntityWithEmbedded.EmbeddableMissingAnnotation.class.getName(),
+                    "must be annotated with @Embeddable, because it is used as an embeddable",
+                    "This type is used in class " + EntityWithEmbedded.EmbeddableWithAnnotation.class.getName(),
+                    "for attribute ", "embeddableMissingAnnotation"));
 
     // Just test that the embedded non-ID works correctly over a persist/retrieve cycle
     @Test

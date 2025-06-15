@@ -199,8 +199,8 @@ public class QuarkusTransactionTest {
     @Test
     public void testCallExceptionHandler() {
         AtomicReference<TestSync> sync = new AtomicReference<>();
-        Assertions.assertThrows(IllegalArgumentException.class,
-                () -> QuarkusTransaction.call(runOptions().exceptionHandler((e) -> RunOptions.ExceptionResult.COMMIT), () -> {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> QuarkusTransaction
+                .call(runOptions().exceptionHandler((e) -> RunOptions.ExceptionResult.COMMIT), () -> {
                     sync.set(register());
                     throw new IllegalArgumentException("foo");
                 }));
@@ -219,9 +219,11 @@ public class QuarkusTransactionTest {
     @ActivateRequestContext
     public void testCallDisallowExisting() {
         RunOptions options = runOptions().semantic(RunOptions.Semantic.DISALLOW_EXISTING);
-        Assertions.assertEquals(Status.STATUS_COMMITTED, QuarkusTransaction.call(options, this::register).completionStatus);
+        Assertions.assertEquals(Status.STATUS_COMMITTED,
+                QuarkusTransaction.call(options, this::register).completionStatus);
         QuarkusTransaction.begin();
-        Assertions.assertThrows(QuarkusTransactionException.class, () -> QuarkusTransaction.call(options, this::register));
+        Assertions.assertThrows(QuarkusTransactionException.class,
+                () -> QuarkusTransaction.call(options, this::register));
     }
 
     @Test
@@ -264,7 +266,7 @@ public class QuarkusTransactionTest {
             try {
                 // 2. The parent thread starts 2 child threads, and propagates the transaction.
                 // 3. The child threads access a @TransactionScoped bean concurrently,
-                //    which has resource intensive producer simulated by sleep.
+                // which has resource intensive producer simulated by sleep.
                 var f1 = executor.submit(threadContext.contextualRunnable(() -> testBean.doWork()));
                 var f2 = executor.submit(threadContext.contextualRunnable(() -> testBean.doWork()));
 
@@ -295,12 +297,10 @@ public class QuarkusTransactionTest {
 
                 // 2. The parent thread starts 2 child threads, and propagates the transaction.
                 // 3. The child threads access a @TransactionScoped bean concurrently,
-                Future<Transaction> f1 = executor
-                        .submit(threadContext
-                                .contextualCallable(() -> testBean.doWorkWithSynchronization(tsr, transactionManager)));
-                Future<Transaction> f2 = executor
-                        .submit(threadContext
-                                .contextualCallable(() -> testBean.doWorkWithSynchronization(tsr, transactionManager)));
+                Future<Transaction> f1 = executor.submit(threadContext
+                        .contextualCallable(() -> testBean.doWorkWithSynchronization(tsr, transactionManager)));
+                Future<Transaction> f2 = executor.submit(threadContext
+                        .contextualCallable(() -> testBean.doWorkWithSynchronization(tsr, transactionManager)));
 
                 Transaction t1 = f1.get();
                 Transaction t2 = f2.get();
@@ -321,26 +321,25 @@ public class QuarkusTransactionTest {
     public void testConcurrentWithSynchronization() {
         // test that Synchronizations registered with concurrent transactions do not interfere
         Collection<Callable<Void>> callables = new ArrayList<>();
-        IntStream.rangeClosed(1, 8)
-                .forEach(i -> callables.add(() -> {
-                    try {
-                        // start a txn
-                        // then register an interposed Synchronization
-                        // then commit the txn
-                        // and then verify the Synchronization ran with the same transaction
-                        TestInterposedSync t = new TestInterposedSync(tsr, transactionManager);
-                        transactionManager.begin();
-                        Transaction txn = transactionManager.getTransaction();
-                        tsr.registerInterposedSynchronization(t);
-                        transactionManager.commit();
-                        // check that the transaction seen by the Synchronization is same as the one we just started
-                        Assertions.assertEquals(txn, t.getContext(), "Synchronization ran with the wrong context");
-                    } catch (NotSupportedException | SystemException | RollbackException | HeuristicMixedException
-                            | HeuristicRollbackException | SecurityException | IllegalStateException e) {
-                        throw new RuntimeException(e);
-                    }
-                    return null;
-                }));
+        IntStream.rangeClosed(1, 8).forEach(i -> callables.add(() -> {
+            try {
+                // start a txn
+                // then register an interposed Synchronization
+                // then commit the txn
+                // and then verify the Synchronization ran with the same transaction
+                TestInterposedSync t = new TestInterposedSync(tsr, transactionManager);
+                transactionManager.begin();
+                Transaction txn = transactionManager.getTransaction();
+                tsr.registerInterposedSynchronization(t);
+                transactionManager.commit();
+                // check that the transaction seen by the Synchronization is same as the one we just started
+                Assertions.assertEquals(txn, t.getContext(), "Synchronization ran with the wrong context");
+            } catch (NotSupportedException | SystemException | RollbackException | HeuristicMixedException
+                    | HeuristicRollbackException | SecurityException | IllegalStateException e) {
+                throw new RuntimeException(e);
+            }
+            return null;
+        }));
 
         ExecutorService executor = Executors.newCachedThreadPool();
 

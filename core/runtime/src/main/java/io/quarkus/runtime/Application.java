@@ -15,11 +15,9 @@ import io.smallrye.common.constraint.Assert;
 
 /**
  * The application base class, which is extended and implemented by a generated class which implements the application
- * setup logic. The base class does some basic error checking, and maintains the application state.
- *
- * Note that this class does not manage the application lifecycle in any way, it is solely responsible for starting and
- * stopping the application.
- *
+ * setup logic. The base class does some basic error checking, and maintains the application state. Note that this class
+ * does not manage the application lifecycle in any way, it is solely responsible for starting and stopping the
+ * application.
  */
 @SuppressWarnings("restriction")
 public abstract class Application implements Closeable {
@@ -44,8 +42,8 @@ public abstract class Application implements Closeable {
     protected static volatile Application currentApplication;
 
     /**
-     * Embedded applications don't set up or modify logging, and don't provide start/
-     * stop notifications to the {@link ApplicationStateNotification}.
+     * Embedded applications don't set up or modify logging, and don't provide start/ stop notifications to the
+     * {@link ApplicationStateNotification}.
      */
     private final boolean auxiliaryApplication;
 
@@ -60,12 +58,14 @@ public abstract class Application implements Closeable {
 
     /**
      * Start the application. If another thread is also trying to start the application, this method waits for that
-     * thread to finish starting. Returns immediately if the application is started already. If the application
-     * fails to start, an exception is thrown.
+     * thread to finish starting. Returns immediately if the application is started already. If the application fails to
+     * start, an exception is thrown.
      *
-     * @param args the command-line arguments
-     * @implNote The command line args are not yet used, but at some point we'll want a facility for overriding config and/or
-     *           letting the user hook into it.
+     * @param args
+     *        the command-line arguments
+     *
+     * @implNote The command line args are not yet used, but at some point we'll want a facility for overriding config
+     *           and/or letting the user hook into it.
      */
     public final void start(String[] args) {
         if (!auxiliaryApplication) {
@@ -137,9 +137,8 @@ public abstract class Application implements Closeable {
             stop();
         } finally {
             try {
-                ConfigProviderResolver.instance()
-                        .releaseConfig(
-                                ConfigProviderResolver.instance().getConfig(Thread.currentThread().getContextClassLoader()));
+                ConfigProviderResolver.instance().releaseConfig(
+                        ConfigProviderResolver.instance().getConfig(Thread.currentThread().getContextClassLoader()));
             } catch (Throwable ignored) {
 
             }
@@ -147,18 +146,18 @@ public abstract class Application implements Closeable {
     }
 
     /**
-     * Stop the application. If another thread is also trying to stop the application, this method waits for that
-     * thread to finish. Returns immediately if the application is already stopped. If an exception is thrown during
-     * stop, that exception is propagated.
+     * Stop the application. If another thread is also trying to stop the application, this method waits for that thread
+     * to finish. Returns immediately if the application is already stopped. If an exception is thrown during stop, that
+     * exception is propagated.
      */
     public final void stop() {
         stop(null);
     }
 
     /**
-     * Stop the application. If another thread is also trying to stop the application, this method waits for that
-     * thread to finish. Returns immediately if the application is already stopped. If an exception is thrown during
-     * stop, that exception is propagated.
+     * Stop the application. If another thread is also trying to stop the application, this method waits for that thread
+     * to finish. Returns immediately if the application is already stopped. If an exception is thrown during stop, that
+     * exception is propagated.
      */
     public final void stop(Runnable afterStopTask) {
         Logger logger = Logger.getLogger(Application.class);
@@ -220,8 +219,8 @@ public abstract class Application implements Closeable {
             stateLock.lock();
             try {
                 state = ST_STOPPED;
-                //note that at the moment if these are started or stopped concurrently
-                //the timing will be off
+                // note that at the moment if these are started or stopped concurrently
+                // the timing will be off
                 Timing.printStopTime(getName(), auxiliaryApplication);
                 stateCond.signalAll();
                 if (!auxiliaryApplication) {

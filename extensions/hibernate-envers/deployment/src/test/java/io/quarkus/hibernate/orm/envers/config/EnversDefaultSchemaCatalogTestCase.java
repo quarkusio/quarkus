@@ -13,16 +13,13 @@ import io.restassured.RestAssured;
 public class EnversDefaultSchemaCatalogTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestDefaultSchemaCatalogResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-default-schema-catalog.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestDefaultSchemaCatalogResource.class,
+                    AbstractEnversResource.class)
+            .addAsResource("application-with-default-schema-catalog.properties", "application.properties"));
 
     @Test
     public void testDefaultSchemaAndCatalog() {
-        RestAssured.when().get("/envers-default-schema-catalog").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-default-schema-catalog").then().body(is("OK"));
     }
 }

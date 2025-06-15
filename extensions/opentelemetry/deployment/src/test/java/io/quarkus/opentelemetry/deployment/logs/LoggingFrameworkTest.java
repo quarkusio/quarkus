@@ -24,17 +24,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LoggingFrameworkTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(JBossLoggingBean.class, SLF4JBean.class, JulBean.class, Log4j2Bean.class)
-                            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
-                            .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.otel.traces.enabled=false\n"),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class)
+            .addClasses(JBossLoggingBean.class, SLF4JBean.class, JulBean.class, Log4j2Bean.class)
+            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
+            .add(new StringAsset("quarkus.otel.logs.enabled=true\n" + "quarkus.otel.traces.enabled=false\n"),
+                    "application.properties"));
 
     @Inject
     InMemoryLogRecordExporter logRecordExporter;
@@ -63,11 +60,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
-                .hasBody(message)
-                .hasAttributesSatisfying(
-                        attributes -> assertThat(attributes)
-                                .containsEntry("log.logger.namespace", "org.jboss.logging.Logger"));
+        assertThat(last).hasBody(message).hasAttributesSatisfying(
+                attributes -> assertThat(attributes).containsEntry("log.logger.namespace", "org.jboss.logging.Logger"));
     }
 
     @Test
@@ -77,11 +71,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
-                .hasBody(message)
-                .hasAttributesSatisfying(
-                        attributes -> assertThat(attributes)
-                                .containsEntry("log.logger.namespace", "org.slf4j.impl.Slf4jLogger"));
+        assertThat(last).hasBody(message).hasAttributesSatisfying(attributes -> assertThat(attributes)
+                .containsEntry("log.logger.namespace", "org.slf4j.impl.Slf4jLogger"));
     }
 
     @Test
@@ -91,11 +82,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
-                .hasBody(message)
-                .hasAttributesSatisfying(
-                        attributes -> assertThat(attributes)
-                                .containsEntry("log.logger.namespace", "org.apache.logging.log4j.spi.AbstractLogger"));
+        assertThat(last).hasBody(message).hasAttributesSatisfying(attributes -> assertThat(attributes)
+                .containsEntry("log.logger.namespace", "org.apache.logging.log4j.spi.AbstractLogger"));
     }
 
     @Test
@@ -105,11 +93,8 @@ public class LoggingFrameworkTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
 
-        assertThat(last)
-                .hasBody(message)
-                .hasAttributesSatisfying(
-                        attributes -> assertThat(attributes)
-                                .containsEntry("log.logger.namespace", "org.jboss.logmanager.Logger"));
+        assertThat(last).hasBody(message).hasAttributesSatisfying(attributes -> assertThat(attributes)
+                .containsEntry("log.logger.namespace", "org.jboss.logmanager.Logger"));
     }
 
     @ApplicationScoped

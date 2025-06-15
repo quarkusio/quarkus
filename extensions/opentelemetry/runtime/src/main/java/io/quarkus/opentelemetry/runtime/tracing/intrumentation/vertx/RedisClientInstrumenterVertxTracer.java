@@ -23,15 +23,14 @@ import io.vertx.core.spi.tracing.SpanKind;
 import io.vertx.core.spi.tracing.TagExtractor;
 import io.vertx.core.tracing.TracingPolicy;
 
-public class RedisClientInstrumenterVertxTracer implements
-        InstrumenterVertxTracer<RedisClientInstrumenterVertxTracer.CommandTrace, Object> {
+public class RedisClientInstrumenterVertxTracer
+        implements InstrumenterVertxTracer<RedisClientInstrumenterVertxTracer.CommandTrace, Object> {
     private final Instrumenter<CommandTrace, Object> redisClientInstrumenter;
 
-    public RedisClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
-        InstrumenterBuilder<CommandTrace, Object> clientInstrumenterBuilder = Instrumenter.builder(
-                openTelemetry,
-                INSTRUMENTATION_NAME,
-                DbClientSpanNameExtractor.create(RedisClientAttributesGetter.INSTANCE));
+    public RedisClientInstrumenterVertxTracer(final OpenTelemetry openTelemetry,
+            final OTelRuntimeConfig runtimeConfig) {
+        InstrumenterBuilder<CommandTrace, Object> clientInstrumenterBuilder = Instrumenter.builder(openTelemetry,
+                INSTRUMENTATION_NAME, DbClientSpanNameExtractor.create(RedisClientAttributesGetter.INSTANCE));
 
         clientInstrumenterBuilder.setEnabled(!runtimeConfig.sdkDisabled());
 
@@ -52,24 +51,17 @@ public class RedisClientInstrumenterVertxTracer implements
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> OpenTelemetryVertxTracer.SpanOperation sendRequest(
-            final Context context,
-            final SpanKind kind,
-            final TracingPolicy policy,
-            final R request,
-            final String operation,
-            final BiConsumer<String, String> headers,
-            final TagExtractor<R> tagExtractor) {
+    public <R> OpenTelemetryVertxTracer.SpanOperation sendRequest(final Context context, final SpanKind kind,
+            final TracingPolicy policy, final R request, final String operation,
+            final BiConsumer<String, String> headers, final TagExtractor<R> tagExtractor) {
         R commandTrace = (R) CommandTrace.commandTrace(tagExtractor.extract(request));
-        return InstrumenterVertxTracer.super.sendRequest(context, kind, policy, commandTrace, operation, headers, tagExtractor);
+        return InstrumenterVertxTracer.super.sendRequest(context, kind, policy, commandTrace, operation, headers,
+                tagExtractor);
     }
 
     @Override
-    public <R> void receiveResponse(
-            final Context context,
-            final R response,
-            final OpenTelemetryVertxTracer.SpanOperation spanOperation,
-            final Throwable failure,
+    public <R> void receiveResponse(final Context context, final R response,
+            final OpenTelemetryVertxTracer.SpanOperation spanOperation, final Throwable failure,
             final TagExtractor<R> tagExtractor) {
 
         InstrumenterVertxTracer.super.receiveResponse(context, response, spanOperation, failure, tagExtractor);
@@ -174,11 +166,8 @@ public class RedisClientInstrumenterVertxTracer implements
         }
 
         @Override
-        public void onEnd(AttributesBuilder attributes,
-                io.opentelemetry.context.Context context,
-                CommandTrace request,
-                Object response,
-                Throwable error) {
+        public void onEnd(AttributesBuilder attributes, io.opentelemetry.context.Context context, CommandTrace request,
+                Object response, Throwable error) {
         }
     }
 }

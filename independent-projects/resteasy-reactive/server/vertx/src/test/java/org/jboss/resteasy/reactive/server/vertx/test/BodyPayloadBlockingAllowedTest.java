@@ -31,8 +31,8 @@ public class BodyPayloadBlockingAllowedTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, TestInterceptor.class, TestRequestScopedBean.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class,
+                    TestInterceptor.class, TestRequestScopedBean.class));
 
     @Test
     void testSmallRequestForNonBlocking() {
@@ -57,10 +57,7 @@ public class BodyPayloadBlockingAllowedTest {
     private static void doTest(int size, String path, boolean blockingAllowed) {
         given() //
                 .body(String.format("{\"data\":\"%s\"}", getBase64String(size)))
-                .header("Content-Type", MediaType.TEXT_PLAIN)
-                .when().post("/test/" + path)
-                .then()
-                .statusCode(200)
+                .header("Content-Type", MediaType.TEXT_PLAIN).when().post("/test/" + path).then().statusCode(200)
                 .body(equalTo("" + blockingAllowed));
     }
 
@@ -89,7 +86,8 @@ public class BodyPayloadBlockingAllowedTest {
 
     }
 
-    // the interceptor is used in order to test that a request scoped bean works properly no matter what thread the payload is read from
+    // the interceptor is used in order to test that a request scoped bean works properly no matter what thread the
+    // payload is read from
 
     @Provider
     public static class TestInterceptor implements ReaderInterceptor {
@@ -98,7 +96,8 @@ public class BodyPayloadBlockingAllowedTest {
         protected TestRequestScopedBean testRequestScopedBean;
 
         @Override
-        public Object aroundReadFrom(final ReaderInterceptorContext context) throws IOException, WebApplicationException {
+        public Object aroundReadFrom(final ReaderInterceptorContext context)
+                throws IOException, WebApplicationException {
             var entity = context.proceed();
             testRequestScopedBean.log((String) entity);
             return entity;

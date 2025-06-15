@@ -26,16 +26,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RestClientUriParameterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Resource.class, Client.class)
-                            .addClasses(InMemoryMetricExporter.class,
-                                    InMemoryMetricExporterProvider.class,
-                                    MetricDataFilter.class)
-                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class,
-                                    MetricDataFilter.class)
-                            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar
+            .addClasses(Resource.class, Client.class)
+            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class, MetricDataFilter.class)
+            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class, MetricDataFilter.class)
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"))
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "in-memory")
             .overrideConfigKey("quarkus.otel.metric.export.interval", "300ms")
@@ -57,8 +53,7 @@ public class RestClientUriParameterTest {
         assertEquals("bar", result);
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("http.client.requests", null, 1);
-        assertEquals(1, metricExporter.find("http.client.requests")
-                .tag("uri", "/example/{id}")
+        assertEquals(1, metricExporter.find("http.client.requests").tag("uri", "/example/{id}")
                 .lastReadingDataPoint(HistogramPointData.class).getCount());
     }
 

@@ -20,8 +20,8 @@ import io.vertx.core.http.impl.HttpServerRequestWrapper;
 public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
 
     /**
-     * Huge hack, to work around the fact that there is no way to directly access this class once it is wrapped,
-     * we use a fake cookie
+     * Huge hack, to work around the fact that there is no way to directly access this class once it is wrapped, we use
+     * a fake cookie
      */
     public static final String FAKE_COOKIE_NAME = "X-quarkus-request-wrapper";
 
@@ -178,8 +178,8 @@ public class QuarkusRequestWrapper extends HttpServerRequestWrapper {
     public class QuarkusCookie implements Cookie {
 
         public QuarkusRequestWrapper getRequestWrapper() {
-            //it does not get much more hacky than this
-            //hopefully we can work around it in the next Vert.x version
+            // it does not get much more hacky than this
+            // hopefully we can work around it in the next Vert.x version
             return QuarkusRequestWrapper.this;
         }
 

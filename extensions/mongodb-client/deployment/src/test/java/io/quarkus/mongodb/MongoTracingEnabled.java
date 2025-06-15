@@ -22,9 +22,9 @@ public class MongoTracingEnabled extends MongoTestBase {
     ReactiveMongoClient reactiveClient;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MongoTestBase.class, MockReactiveContextProvider.class, MockCommandListener.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class,
+                    MockReactiveContextProvider.class, MockCommandListener.class))
             .withConfigurationResource("application-tracing-mongoclient.properties");
 
     @AfterEach
@@ -38,10 +38,8 @@ public class MongoTracingEnabled extends MongoTestBase {
     void invokeReactiveContextProvider() {
         String dbNames = reactiveClient.listDatabaseNames().toUni().await().atMost(Duration.ofSeconds(30L));
         assertThat(dbNames).as("expect db names available").isNotBlank();
-        await().atMost(Duration.ofSeconds(30L)).untilAsserted(
-                () -> assertThat(MockReactiveContextProvider.EVENTS)
-                        .as("reactive context provider must be called")
-                        .isNotEmpty());
+        await().atMost(Duration.ofSeconds(30L)).untilAsserted(() -> assertThat(MockReactiveContextProvider.EVENTS)
+                .as("reactive context provider must be called").isNotEmpty());
         assertThat(MockCommandListener.EVENTS).isNotEmpty();
 
     }

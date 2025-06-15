@@ -52,16 +52,18 @@ class AwtProcessor {
     void supportCheck(BuildProducer<UnsupportedOSBuildItem> unsupported,
             NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
         unsupported.produce(new UnsupportedOSBuildItem(WINDOWS,
-                "Windows AWT integration is not ready in Quarkus native-image and would result in " +
-                        "java.lang.UnsatisfiedLinkError: no awt in java.library.path."));
+                "Windows AWT integration is not ready in Quarkus native-image and would result in "
+                        + "java.lang.UnsatisfiedLinkError: no awt in java.library.path."));
         unsupported.produce(new UnsupportedOSBuildItem(MAC,
-                "MacOS AWT integration is not ready in Quarkus native-image and would result in " +
-                        "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
+                "MacOS AWT integration is not ready in Quarkus native-image and would result in "
+                        + "java.lang.UnsatisfiedLinkError: Can't load library: awt | java.library.path = [.]."));
         final GraalVM.Version v;
         if (nativeImageRunnerBuildItem.getBuildRunner() instanceof NoopNativeImageBuildRunner) {
             v = CURRENT;
-            log.warnf("native-image is not installed. " +
-                    "Using the default %s version as a reference to build native-sources step.", v.getVersionAsString());
+            log.warnf(
+                    "native-image is not installed. "
+                            + "Using the default %s version as a reference to build native-sources step.",
+                    v.getVersionAsString());
         } else {
             v = nativeImageRunnerBuildItem.getBuildRunner().getGraalVMVersion();
         }
@@ -69,30 +71,29 @@ class AwtProcessor {
         if (v.compareTo(io.quarkus.deployment.pkg.steps.GraalVM.Version.VERSION_24_2_0) >= 0
                 && v.compareTo(GraalVM.Version.VERSION_25_0_0) < 0) {
             unsupported.produce(new UnsupportedOSBuildItem(AARCH64,
-                    "AWT needs JDK's JEP 454 FFI/FFM support and that is not available for AArch64 with " +
-                            "GraalVM's native-image prior to JDK 25, see: " +
-                            "https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions"));
+                    "AWT needs JDK's JEP 454 FFI/FFM support and that is not available for AArch64 with "
+                            + "GraalVM's native-image prior to JDK 25, see: "
+                            + "https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions"));
         }
 
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void resources(
-            BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
+    void resources(BuildProducer<NativeImageResourcePatternsBuildItem> resourcePatternsBuildItemBuildProducer) {
         resourcePatternsBuildItemBuildProducer
-                .produce(NativeImageResourcePatternsBuildItem.builder()
-                        .includePattern(".*/iio-plugin.*properties$") // Texts for e.g. exceptions strings
+                .produce(NativeImageResourcePatternsBuildItem.builder().includePattern(".*/iio-plugin.*properties$") // Texts
+                        // for
+                        // e.g.
+                        // exceptions
+                        // strings
                         .includePattern(".*/.*pf$") // Default colour profiles
                         .build());
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     ReflectiveClassBuildItem setupReflectionClasses() {
-        return ReflectiveClassBuildItem.builder(
-                "com.sun.imageio.plugins.common.I18N",
-                "sun.awt.X11.XToolkit",
-                "sun.awt.X11FontManager",
-                "sun.awt.X11GraphicsEnvironment").build();
+        return ReflectiveClassBuildItem.builder("com.sun.imageio.plugins.common.I18N", "sun.awt.X11.XToolkit",
+                "sun.awt.X11FontManager", "sun.awt.X11GraphicsEnvironment").build();
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -121,10 +122,8 @@ class AwtProcessor {
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    void setupAWTInit(BuildProducer<JniRuntimeAccessBuildItem> jc,
-            BuildProducer<JniRuntimeAccessMethodBuildItem> jm,
-            BuildProducer<JniRuntimeAccessFieldBuildItem> jf,
-            NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
+    void setupAWTInit(BuildProducer<JniRuntimeAccessBuildItem> jc, BuildProducer<JniRuntimeAccessMethodBuildItem> jm,
+            BuildProducer<JniRuntimeAccessFieldBuildItem> jf, NativeImageRunnerBuildItem nativeImageRunnerBuildItem,
             Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem) {
         nativeImageRunnerBuildItem.getBuildRunner()
@@ -132,9 +131,8 @@ class AwtProcessor {
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
-        jm.produce(
-                new JniRuntimeAccessMethodBuildItem("java.lang.System", "setProperty", "java.lang.String",
-                        "java.lang.String"));
+        jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "setProperty", "java.lang.String",
+                "java.lang.String"));
         jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLock"));
         jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotify"));
         jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotifyAll"));
@@ -287,14 +285,14 @@ class AwtProcessor {
     }
 
     /*
-     * Moved over here due to: https://github.com/quarkusio/quarkus/pull/32069
-     * A better detection and DarwinAwtFeature handling might be in order.
+     * Moved over here due to: https://github.com/quarkusio/quarkus/pull/32069 A better detection and DarwinAwtFeature
+     * handling might be in order.
      */
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void runtimeInitializedClasses(BuildProducer<RuntimeInitializedPackageBuildItem> runtimeInitilizedPackages) {
         /*
-         * Note that this initialization is not enough if user wants to deserialize actual images
-         * (e.g. from XML). AWT Extension must be loaded for decoding JDK supported image formats.
+         * Note that this initialization is not enough if user wants to deserialize actual images (e.g. from XML). AWT
+         * Extension must be loaded for decoding JDK supported image formats.
          */
         //@formatter:off
         Stream.of(

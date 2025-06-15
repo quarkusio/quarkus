@@ -26,10 +26,9 @@ import io.vertx.core.http.UpgradeRejectedException;
 public class ClientUpgradeFailureTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class, AlwaysFailing.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class, AlwaysFailing.class);
+    });
 
     @Inject
     WebSocketConnector<ClientEndpoint> connector;

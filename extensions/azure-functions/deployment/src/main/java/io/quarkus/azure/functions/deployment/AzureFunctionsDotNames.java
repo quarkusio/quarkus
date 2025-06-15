@@ -24,22 +24,14 @@ public final class AzureFunctionsDotNames {
     public static final DotName HTTP_TRIGGER = DotName.createSimple(HttpTrigger.class.getName());
     public static final DotName KAFKA_TRIGGER = DotName.createSimple(KafkaTrigger.class.getName());
     public static final DotName QUEUE_TRIGGER = DotName.createSimple(QueueTrigger.class.getName());
-    public static final DotName SERVICE_BUS_QUEUE_TRIGGER = DotName.createSimple(ServiceBusQueueTrigger.class.getName());
-    public static final DotName SERVICE_BUS_TOPIC_TRIGGER = DotName.createSimple(ServiceBusTopicTrigger.class.getName());
+    public static final DotName SERVICE_BUS_QUEUE_TRIGGER = DotName
+            .createSimple(ServiceBusQueueTrigger.class.getName());
+    public static final DotName SERVICE_BUS_TOPIC_TRIGGER = DotName
+            .createSimple(ServiceBusTopicTrigger.class.getName());
     public static final DotName TIMER_TRIGGER = DotName.createSimple(TimerTrigger.class.getName());
     public static final DotName WARMUP_TRIGGER = DotName.createSimple(WarmupTrigger.class.getName());
 
-    static final DotName[] PARAMETER_ANNOTATIONS = {
-            BLOB_TRIGGER,
-            COSMOS_DB_TRIGGER,
-            EVENT_GRID_TRIGGER,
-            EVENT_HUB_TRIGGER,
-            HTTP_TRIGGER,
-            KAFKA_TRIGGER,
-            QUEUE_TRIGGER,
-            SERVICE_BUS_QUEUE_TRIGGER,
-            SERVICE_BUS_TOPIC_TRIGGER,
-            TIMER_TRIGGER,
-            WARMUP_TRIGGER
-    };
+    static final DotName[] PARAMETER_ANNOTATIONS = { BLOB_TRIGGER, COSMOS_DB_TRIGGER, EVENT_GRID_TRIGGER,
+            EVENT_HUB_TRIGGER, HTTP_TRIGGER, KAFKA_TRIGGER, QUEUE_TRIGGER, SERVICE_BUS_QUEUE_TRIGGER,
+            SERVICE_BUS_TOPIC_TRIGGER, TIMER_TRIGGER, WARMUP_TRIGGER };
 }

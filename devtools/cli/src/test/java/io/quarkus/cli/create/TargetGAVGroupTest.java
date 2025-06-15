@@ -14,11 +14,11 @@ public class TargetGAVGroupTest {
 
     // Where g:a:v could be any of:
 
-    //     artifact-id or :artifact-id: -- use defaults for group id and version (common/demo)
-    //     my-group:artifact-id or my-group:artifact-id: -- use default version (common/real project)
-    //     my-group:artifact-id:version -- specify all (real project)
-    //     :artifact-id:version -- how common would this be!?
-    //     my-group:: -- use defaults for artifact id and version (rare)
+    // artifact-id or :artifact-id: -- use defaults for group id and version (common/demo)
+    // my-group:artifact-id or my-group:artifact-id: -- use default version (common/real project)
+    // my-group:artifact-id:version -- specify all (real project)
+    // :artifact-id:version -- how common would this be!?
+    // my-group:: -- use defaults for artifact id and version (rare)
 
     @Test
     void testArtifactId() {

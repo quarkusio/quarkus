@@ -21,8 +21,8 @@ public interface AutoScalingConfig {
     Optional<Integer> target();
 
     /**
-     * The exact amount of requests allowed to the replica at a time. Its default value is “0”, which means an
-     * unlimited number of requests are allowed to flow into the replica.
+     * The exact amount of requests allowed to the replica at a time. Its default value is “0”, which means an unlimited
+     * number of requests are allowed to flow into the replica.
      */
     Optional<Integer> containerConcurrency();
 

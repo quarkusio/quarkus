@@ -49,10 +49,8 @@ import io.quarkus.devui.spi.workspace.WorkspaceBuildItem;
 public class WorkspaceProcessor {
 
     @BuildStep
-    void locateWorkspaceItems(BuildSystemTargetBuildItem buildSystemTarget,
-            LaunchModeBuildItem launchModeBuildItem,
-            BuildProducer<WorkspaceBuildItem> workspaceProducer,
-            DevUIConfig devUIConfig) {
+    void locateWorkspaceItems(BuildSystemTargetBuildItem buildSystemTarget, LaunchModeBuildItem launchModeBuildItem,
+            BuildProducer<WorkspaceBuildItem> workspaceProducer, DevUIConfig devUIConfig) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
@@ -83,8 +81,7 @@ public class WorkspaceProcessor {
                     @Override
                     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         String fileName = file.getFileName().toString();
-                        boolean shouldIgnore = Files.isHidden(file)
-                                || file.startsWith(outputDir)
+                        boolean shouldIgnore = Files.isHidden(file) || file.startsWith(outputDir)
                                 || ignoreFilePatterns.stream().anyMatch(p -> p.matcher(fileName).matches());
 
                         if (!shouldIgnore) {
@@ -108,26 +105,17 @@ public class WorkspaceProcessor {
     InternalPageBuildItem createWorkspacePage() {
         InternalPageBuildItem item = new InternalPageBuildItem("Workspace", 25);
 
-        item.addPage(Page.webComponentPageBuilder().internal()
-                .namespace(NAMESPACE)
-                .title("Workspace")
-                .icon("font-awesome-solid:folder-tree")
-                .componentLink("qwc-workspace.js"));
+        item.addPage(Page.webComponentPageBuilder().internal().namespace(NAMESPACE).title("Workspace")
+                .icon("font-awesome-solid:folder-tree").componentLink("qwc-workspace.js"));
 
         return item;
     }
 
     @BuildStep
     void createDefaultWorkspaceActions(BuildProducer<WorkspaceActionBuildItem> workspaceActionProducer) {
-        ActionBuilder actionBuilder = Action.actionBuilder()
-                .label("Preview")
-                .function((t) -> {
-                    return t; // We just return the content, we will markup in the UI
-                })
-                .display(Display.split)
-                .displayType(DisplayType.markdown)
-                .namespace(NAMESPACE)
-                .filter(Patterns.ANY_MD);
+        ActionBuilder actionBuilder = Action.actionBuilder().label("Preview").function((t) -> {
+            return t; // We just return the content, we will markup in the UI
+        }).display(Display.split).displayType(DisplayType.markdown).namespace(NAMESPACE).filter(Patterns.ANY_MD);
 
         workspaceActionProducer.produce(new WorkspaceActionBuildItem(actionBuilder));
     }
@@ -135,8 +123,7 @@ public class WorkspaceProcessor {
     @BuildStep
     void createBuildTimeActions(Optional<WorkspaceBuildItem> workspaceBuildItem,
             List<WorkspaceActionBuildItem> workspaceActionBuildItems,
-            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
-            Capabilities capabilities) {
+            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer, Capabilities capabilities) {
 
         final boolean assistantIsAvailable = capabilities.isPresent(Capability.ASSISTANT);
 
@@ -147,8 +134,7 @@ public class WorkspaceProcessor {
 
             // Workspace Actions
             Map<String, Action> actionMap = workspaceActionBuildItems.stream()
-                    .flatMap(item -> item.getActions().stream())
-                    .map(ActionBuilder::build)
+                    .flatMap(item -> item.getActions().stream()).map(ActionBuilder::build)
                     .collect(Collectors.toMap(Action::getId, action -> action, (a, b) -> a));
 
             buildItemActions.addAction("getWorkspaceItems", (t) -> {
@@ -156,12 +142,10 @@ public class WorkspaceProcessor {
             });
 
             buildItemActions.addAction("getWorkspaceActions", (t) -> {
-                return actionMap.values().stream()
-                        .filter(action -> assistantIsAvailable || !action.isAssistant())
+                return actionMap.values().stream().filter(action -> assistantIsAvailable || !action.isAssistant())
                         .map(action -> new WorkspaceAction(action.getId(), action.getLabel(), action.getFilter(),
                                 action.getDisplay(), action.getDisplayType(), action.isAssistant()))
-                        .sorted(Comparator.comparing(WorkspaceAction::label))
-                        .collect(Collectors.toList());
+                        .sorted(Comparator.comparing(WorkspaceAction::label)).collect(Collectors.toList());
             });
 
             buildItemActions.addAction("executeAction", (Map<String, String> t) -> {
@@ -173,15 +157,16 @@ public class WorkspaceProcessor {
 
                     Object result;
                     if (actionToExecute.isAssistant()) {
-                        Assistant assistant = DevConsoleManager.getGlobal(DevConsoleManager.DEV_MANAGER_GLOBALS_ASSISTANT);
+                        Assistant assistant = DevConsoleManager
+                                .getGlobal(DevConsoleManager.DEV_MANAGER_GLOBALS_ASSISTANT);
                         result = actionToExecute.getAssistantFunction().apply(assistant, t);
                     } else {
                         result = actionToExecute.getFunction().apply(t);
                     }
 
                     if (result != null && result instanceof CompletionStage<?> stage) {
-                        return stage
-                                .thenApply(res -> new WorkspaceActionResult(convertedPath, res, actionToExecute.isAssistant()));
+                        return stage.thenApply(
+                                res -> new WorkspaceActionResult(convertedPath, res, actionToExecute.isAssistant()));
                     } else {
                         return new WorkspaceActionResult(convertedPath, result, actionToExecute.isAssistant());
                     }
@@ -202,7 +187,8 @@ public class WorkspaceProcessor {
                     String content = params.get("content");
                     Path path = Paths.get(URI.create(params.get("path")));
                     writeContent(path, content);
-                    return new SavedResult(workspaceBuildItem.get().getRootPath().relativize(path).toString(), true, null);
+                    return new SavedResult(workspaceBuildItem.get().getRootPath().relativize(path).toString(), true,
+                            null);
                 }
                 return new SavedResult(null, false, "Invalid input");
             });
@@ -253,8 +239,7 @@ public class WorkspaceProcessor {
             Files.createDirectories(path.getParent());
             if (!Files.exists(path))
                 Files.createFile(path);
-            Files.writeString(path, contents, StandardOpenOption.TRUNCATE_EXISTING,
-                    StandardOpenOption.CREATE);
+            Files.writeString(path, contents, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE);
             return path.toString();
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
@@ -288,7 +273,8 @@ public class WorkspaceProcessor {
 
     private WorkspaceContent getEncodedBytes(String mimeType, Path filePath) {
         try {
-            return new WorkspaceContent(mimeType, Base64.getEncoder().encodeToString(Files.readAllBytes(filePath)), true);
+            return new WorkspaceContent(mimeType, Base64.getEncoder().encodeToString(Files.readAllBytes(filePath)),
+                    true);
         } catch (IOException ex) {
             return new WorkspaceContent("text",
                     "Error: Could not read content of " + mimeType + " item. \n [" + ex.getMessage() + "]", false);

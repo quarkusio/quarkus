@@ -76,14 +76,15 @@ public final class JpaSecurityIdentityUtil {
                         .newInstance(MethodDescriptor.ofConstructor(passwordProviderClassStr));
                 trueBranch.writeInstanceField(passwordProviderField, outerMethod.getThis(), passwordProviderInstance);
                 trueBranch.close();
-                ResultHandle objectToInvokeOn = innerMethod.readInstanceField(passwordProviderField, outerMethod.getThis());
+                ResultHandle objectToInvokeOn = innerMethod.readInstanceField(passwordProviderField,
+                        outerMethod.getThis());
 
                 // :getPasswordMethod(:pass);
-                storedPassword = innerMethod.invokeVirtualMethod(
-                        MethodDescriptor.ofMethod(passwordProviderClassStr, passwordProviderMethod,
-                                org.wildfly.security.password.Password.class,
-                                String.class),
-                        objectToInvokeOn, pass);
+                storedPassword = innerMethod
+                        .invokeVirtualMethod(
+                                MethodDescriptor.ofMethod(passwordProviderClassStr, passwordProviderMethod,
+                                        org.wildfly.security.password.Password.class, String.class),
+                                objectToInvokeOn, pass);
                 break;
             case CLEAR:
                 storedPassword = innerMethod.invokeStaticMethod(getUtilMethod("getClearPassword"), pass);
@@ -96,12 +97,9 @@ public final class JpaSecurityIdentityUtil {
         }
 
         // Builder builder = JpaIdentityProviderUtil.checkPassword(storedPassword, request);
-        ResultHandle builder = innerMethod.invokeStaticMethod(
-                MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "checkPassword",
-                        QuarkusSecurityIdentity.Builder.class,
-                        org.wildfly.security.password.Password.class,
-                        UsernamePasswordAuthenticationRequest.class),
-                storedPassword, outerMethod.getMethodParam(1));
+        ResultHandle builder = innerMethod.invokeStaticMethod(MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class,
+                "checkPassword", QuarkusSecurityIdentity.Builder.class, org.wildfly.security.password.Password.class,
+                UsernamePasswordAuthenticationRequest.class), storedPassword, outerMethod.getMethodParam(1));
         AssignableResultHandle builderVar = innerMethod.createVariable(QuarkusSecurityIdentity.Builder.class);
         innerMethod.assign(builderVar, builder);
 
@@ -116,10 +114,9 @@ public final class JpaSecurityIdentityUtil {
             trueBranch.returnValue(trueBranch.loadNull());
         }
         // Builder builder = JpaIdentityProviderUtil.trusted(request);
-        ResultHandle builder = innerMethod.invokeStaticMethod(MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class,
-                "trusted",
-                QuarkusSecurityIdentity.Builder.class,
-                TrustedAuthenticationRequest.class),
+        ResultHandle builder = innerMethod.invokeStaticMethod(
+                MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "trusted",
+                        QuarkusSecurityIdentity.Builder.class, TrustedAuthenticationRequest.class),
                 outerMethod.getMethodParam(1));
         AssignableResultHandle builderVar = innerMethod.createVariable(QuarkusSecurityIdentity.Builder.class);
         innerMethod.assign(builderVar, builder);
@@ -151,17 +148,14 @@ public final class JpaSecurityIdentityUtil {
             case CLASS:
                 if (rolesType.name().equals(DotNames.STRING)) {
                     // JpaIdentityProviderUtil.addRoles(builder, :role)
-                    innerMethod.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "addRoles", void.class,
-                                    QuarkusSecurityIdentity.Builder.class, String.class),
-                            builderVar, role);
+                    innerMethod.invokeStaticMethod(MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "addRoles",
+                            void.class, QuarkusSecurityIdentity.Builder.class, String.class), builderVar, role);
                     handledRole = true;
                 }
                 break;
             case PARAMETERIZED_TYPE:
                 DotName roleType = rolesType.name();
-                if (roleType.equals(DotNames.LIST)
-                        || roleType.equals(DOTNAME_COLLECTION)
+                if (roleType.equals(DotNames.LIST) || roleType.equals(DOTNAME_COLLECTION)
                         || roleType.equals(DOTNAME_SET)) {
                     Type elementType = rolesType.asParameterizedType().arguments().get(0);
                     String elementClassName = elementType.name().toString();
@@ -184,9 +178,9 @@ public final class JpaSecurityIdentityUtil {
                         rolesFieldOrMethod = null;
                     }
                     // for(:elementType roleElement : :role){
-                    //    JpaIdentityProviderUtil.addRoles(:role.roleField);
-                    //    // or for String collections:
-                    //    JpaIdentityProviderUtil.addRoles(:role);
+                    // JpaIdentityProviderUtil.addRoles(:role.roleField);
+                    // // or for String collections:
+                    // JpaIdentityProviderUtil.addRoles(:role);
                     // }
                     foreach(innerMethod, role, elementClassTypeDescriptor, (creator, var) -> {
                         ResultHandle roleElement;
@@ -195,10 +189,9 @@ public final class JpaSecurityIdentityUtil {
                         } else {
                             roleElement = var;
                         }
-                        creator.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "addRoles", void.class,
-                                        QuarkusSecurityIdentity.Builder.class, String.class),
-                                builderVar, roleElement);
+                        creator.invokeStaticMethod(MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "addRoles",
+                                void.class, QuarkusSecurityIdentity.Builder.class, String.class), builderVar,
+                                roleElement);
                     });
                     handledRole = true;
                 }
@@ -209,28 +202,22 @@ public final class JpaSecurityIdentityUtil {
         }
 
         // return builder.build()
-        innerMethod.returnValue(innerMethod.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(QuarkusSecurityIdentity.Builder.class,
-                        "build",
-                        QuarkusSecurityIdentity.class),
-                builderVar));
+        innerMethod.returnValue(innerMethod.invokeVirtualMethod(MethodDescriptor
+                .ofMethod(QuarkusSecurityIdentity.Builder.class, "build", QuarkusSecurityIdentity.class), builderVar));
     }
 
     private static void foreach(BytecodeCreator bytecodeCreator, ResultHandle iterable, String type,
             BiConsumer<BytecodeCreator, AssignableResultHandle> body) {
-        ResultHandle iterator = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class),
-                iterable);
+        ResultHandle iterator = bytecodeCreator
+                .invokeInterfaceMethod(MethodDescriptor.ofMethod(Iterable.class, "iterator", Iterator.class), iterable);
         try (BytecodeCreator loop = bytecodeCreator.createScope()) {
             ResultHandle hasNextValue = loop.invokeInterfaceMethod(
-                    MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class),
-                    iterator);
+                    MethodDescriptor.ofMethod(Iterator.class, "hasNext", boolean.class), iterator);
 
             BranchResult hasNextBranch = loop.ifNonZero(hasNextValue);
             try (BytecodeCreator hasNext = hasNextBranch.trueBranch()) {
                 ResultHandle next = hasNext.invokeInterfaceMethod(
-                        MethodDescriptor.ofMethod(Iterator.class, "next", Object.class),
-                        iterator);
+                        MethodDescriptor.ofMethod(Iterator.class, "next", Object.class), iterator);
 
                 AssignableResultHandle var = hasNext.createVariable(type);
                 hasNext.assign(var, next);
@@ -250,6 +237,7 @@ public final class JpaSecurityIdentityUtil {
     }
 
     private static MethodDescriptor passwordActionMethod() {
-        return MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "passwordAction", void.class, PasswordType.class);
+        return MethodDescriptor.ofMethod(JpaIdentityProviderUtil.class, "passwordAction", void.class,
+                PasswordType.class);
     }
 }

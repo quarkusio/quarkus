@@ -22,9 +22,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_ADD)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value));
+        RedisCommand cmd = RedisCommand.of(Command.CF_ADD).put(marshaller.encode(key)).put(marshaller.encode(value));
 
         return execute(cmd);
     }
@@ -34,9 +32,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_ADDNX)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value));
+        RedisCommand cmd = RedisCommand.of(Command.CF_ADDNX).put(marshaller.encode(key)).put(marshaller.encode(value));
         return execute(cmd);
     }
 
@@ -45,9 +41,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_COUNT)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value));
+        RedisCommand cmd = RedisCommand.of(Command.CF_COUNT).put(marshaller.encode(key)).put(marshaller.encode(value));
         return execute(cmd);
     }
 
@@ -56,9 +50,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_DEL)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value));
+        RedisCommand cmd = RedisCommand.of(Command.CF_DEL).put(marshaller.encode(key)).put(marshaller.encode(value));
         return execute(cmd);
     }
 
@@ -67,9 +59,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_EXISTS)
-                .put(marshaller.encode(key))
-                .put(marshaller.encode(value));
+        RedisCommand cmd = RedisCommand.of(Command.CF_EXISTS).put(marshaller.encode(key)).put(marshaller.encode(value));
         return execute(cmd);
     }
 
@@ -82,8 +72,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         }
 
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_INSERT)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.CF_INSERT).put(marshaller.encode(key));
         for (V value : values) {
             cmd.put(marshaller.encode(value));
         }
@@ -99,10 +88,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_INSERT)
-                .put(marshaller.encode(key))
-                .putArgs(args)
-                .put("ITEMS");
+        RedisCommand cmd = RedisCommand.of(Command.CF_INSERT).put(marshaller.encode(key)).putArgs(args).put("ITEMS");
         for (V value : values) {
             cmd.put(marshaller.encode(value));
         }
@@ -117,9 +103,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_INSERTNX)
-                .put(marshaller.encode(key))
-                .put("ITEMS");
+        RedisCommand cmd = RedisCommand.of(Command.CF_INSERTNX).put(marshaller.encode(key)).put("ITEMS");
         for (V value : values) {
             cmd.put(marshaller.encode(value));
         }
@@ -135,10 +119,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_INSERTNX)
-                .put(marshaller.encode(key))
-                .putArgs(args)
-                .put("ITEMS");
+        RedisCommand cmd = RedisCommand.of(Command.CF_INSERTNX).put(marshaller.encode(key)).putArgs(args).put("ITEMS");
         for (V value : values) {
             cmd.put(marshaller.encode(value));
         }
@@ -153,8 +134,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_MEXISTS)
-                .put(marshaller.encode(key));
+        RedisCommand cmd = RedisCommand.of(Command.CF_MEXISTS).put(marshaller.encode(key));
         for (V value : values) {
             cmd.put(marshaller.encode(value));
         }
@@ -165,9 +145,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         // Validation
         nonNull(key, "key");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_RESERVE)
-                .put(marshaller.encode(key))
-                .put(capacity);
+        RedisCommand cmd = RedisCommand.of(Command.CF_RESERVE).put(marshaller.encode(key)).put(capacity);
         return execute(cmd);
     }
 
@@ -176,10 +154,7 @@ public class AbstractCuckooCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(args, "args");
         // Create command
-        RedisCommand cmd = RedisCommand.of(Command.CF_RESERVE)
-                .put(marshaller.encode(key))
-                .put(capacity)
-                .putArgs(args);
+        RedisCommand cmd = RedisCommand.of(Command.CF_RESERVE).put(marshaller.encode(key)).put(capacity).putArgs(args);
         return execute(cmd);
     }
 }

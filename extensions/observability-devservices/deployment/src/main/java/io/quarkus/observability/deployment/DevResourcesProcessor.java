@@ -35,7 +35,8 @@ class DevResourcesProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public DevResourcesBuildItem shutdownDevResources(DevResourceShutdownRecorder recorder, ShutdownContextBuildItem shutdown) {
+    public DevResourcesBuildItem shutdownDevResources(DevResourceShutdownRecorder recorder,
+            ShutdownContextBuildItem shutdown) {
         recorder.shutdown(shutdown);
         return new DevResourcesBuildItem();
     }

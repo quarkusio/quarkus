@@ -22,27 +22,18 @@ public class OpenTelemetryUtilTest {
 
     @Test
     public void testConvertKeyValueListToMap() {
-        Map<String, String> actual = OpenTelemetryUtil
-                .convertKeyValueListToMap(Arrays.asList(
-                        "service.name=myservice",
-                        "service.version=1.0",
-                        "deployment.environment=production"));
-        Assertions.assertThat(actual).containsExactly(
-                new AbstractMap.SimpleEntry<>("service.name", "myservice"),
+        Map<String, String> actual = OpenTelemetryUtil.convertKeyValueListToMap(
+                Arrays.asList("service.name=myservice", "service.version=1.0", "deployment.environment=production"));
+        Assertions.assertThat(actual).containsExactly(new AbstractMap.SimpleEntry<>("service.name", "myservice"),
                 new AbstractMap.SimpleEntry<>("service.version", "1.0"),
                 new AbstractMap.SimpleEntry<>("deployment.environment", "production"));
     }
 
     @Test
     public void testConvertKeyValueListToMap_skip_empty_values() {
-        Map<String, String> actual = OpenTelemetryUtil
-                .convertKeyValueListToMap(Arrays.asList(
-                        "service.name=myservice",
-                        "service.version=1.0",
-                        "deployment.environment=production",
-                        ""));
-        Assertions.assertThat(actual).containsExactly(
-                new AbstractMap.SimpleEntry<>("service.name", "myservice"),
+        Map<String, String> actual = OpenTelemetryUtil.convertKeyValueListToMap(Arrays.asList("service.name=myservice",
+                "service.version=1.0", "deployment.environment=production", ""));
+        Assertions.assertThat(actual).containsExactly(new AbstractMap.SimpleEntry<>("service.name", "myservice"),
                 new AbstractMap.SimpleEntry<>("service.version", "1.0"),
                 new AbstractMap.SimpleEntry<>("deployment.environment", "production"));
     }
@@ -50,22 +41,16 @@ public class OpenTelemetryUtilTest {
     @Test
     public void testConvertKeyValueListToMap_last_value_takes_precedence() {
         Map<String, String> actual = OpenTelemetryUtil
-                .convertKeyValueListToMap(Arrays.asList(
-                        "service.name=myservice to be overwritten",
-                        "service.version=1.0",
-                        "deployment.environment=production",
-                        "service.name=myservice",
-                        ""));
-        Assertions.assertThat(actual).containsExactly(
-                new AbstractMap.SimpleEntry<>("service.name", "myservice"),
+                .convertKeyValueListToMap(Arrays.asList("service.name=myservice to be overwritten",
+                        "service.version=1.0", "deployment.environment=production", "service.name=myservice", ""));
+        Assertions.assertThat(actual).containsExactly(new AbstractMap.SimpleEntry<>("service.name", "myservice"),
                 new AbstractMap.SimpleEntry<>("service.version", "1.0"),
                 new AbstractMap.SimpleEntry<>("deployment.environment", "production"));
     }
 
     @Test
     public void testConvertKeyValueListToMap_empty_value() {
-        Map<String, String> actual = OpenTelemetryUtil
-                .convertKeyValueListToMap(Collections.emptyList());
+        Map<String, String> actual = OpenTelemetryUtil.convertKeyValueListToMap(Collections.emptyList());
         Assertions.assertThat(actual).containsExactly();
     }
 
@@ -73,9 +58,7 @@ public class OpenTelemetryUtilTest {
     public void testGetSpanData() {
         SpanProcessor mockedSpanProcessor = mock(SpanProcessor.class);
 
-        SdkTracerProvider tracerSdkFactory = SdkTracerProvider.builder()
-                .addSpanProcessor(mockedSpanProcessor)
-                .build();
+        SdkTracerProvider tracerSdkFactory = SdkTracerProvider.builder().addSpanProcessor(mockedSpanProcessor).build();
         Tracer spanBuilderSdkTest = tracerSdkFactory.get("SpanBuilderSdkTest");
         SpanBuilder spanBuilder = spanBuilderSdkTest.spanBuilder("SpanName");
 
@@ -96,9 +79,7 @@ public class OpenTelemetryUtilTest {
     @Test
     public void testGetSpanData_noParent() {
         SpanProcessor mockedSpanProcessor = mock(SpanProcessor.class);
-        SdkTracerProvider tracerSdkFactory = SdkTracerProvider.builder()
-                .addSpanProcessor(mockedSpanProcessor)
-                .build();
+        SdkTracerProvider tracerSdkFactory = SdkTracerProvider.builder().addSpanProcessor(mockedSpanProcessor).build();
         Tracer spanBuilderSdkTest = tracerSdkFactory.get("SpanBuilderSdkTest");
 
         SpanBuilder spanBuilder = spanBuilderSdkTest.spanBuilder("SpanName");

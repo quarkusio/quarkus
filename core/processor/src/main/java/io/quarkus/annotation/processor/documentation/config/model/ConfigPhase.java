@@ -10,9 +10,7 @@ public enum ConfigPhase implements Comparable<ConfigPhase> {
 
     static final Comparator<ConfigPhase> COMPARATOR = new Comparator<ConfigPhase>() {
         /**
-         * Order built time phase first
-         * Then build time run time fixed phase
-         * Then runtime one
+         * Order built time phase first Then build time run time fixed phase Then runtime one
          */
         @Override
         public int compare(ConfigPhase firstPhase, ConfigPhase secondPhase) {

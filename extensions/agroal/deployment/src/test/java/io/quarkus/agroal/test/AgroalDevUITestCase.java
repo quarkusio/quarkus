@@ -18,18 +18,18 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class AgroalDevUITestCase extends DevUIJsonRPCTest {
 
     @RegisterExtension
-    public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(DevModeResource.class)
-                            .add(new StringAsset("quarkus.datasource.db-kind=h2\n" +
-                                    "quarkus.datasource.username=USERNAME-NAMED\n" +
-                                    "quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:testing\n" +
-                                    "quarkus.datasource.jdbc.driver=org.h2.Driver\n"), "application.properties");
-                }
-            });
+    public static final QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap
+                    .create(JavaArchive.class).addClass(DevModeResource.class).add(
+                            new StringAsset(
+                                    "quarkus.datasource.db-kind=h2\n" + "quarkus.datasource.username=USERNAME-NAMED\n"
+                                            + "quarkus.datasource.jdbc.url=jdbc:h2:tcp://localhost/mem:testing\n"
+                                            + "quarkus.datasource.jdbc.driver=org.h2.Driver\n"),
+                            "application.properties");
+        }
+    });
 
     public AgroalDevUITestCase() {
         super("io.quarkus.quarkus-agroal");

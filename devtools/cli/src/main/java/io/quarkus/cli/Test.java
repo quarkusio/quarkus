@@ -30,7 +30,8 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
     @CommandLine.Option(names = "--once", description = "Run the test suite with continuous mode disabled.")
     boolean runOnce = false;
 
-    @CommandLine.Option(names = "--filter", description = { "Run a subset of the test suite that matches the given filter.",
+    @CommandLine.Option(names = "--filter", description = {
+            "Run a subset of the test suite that matches the given filter.",
             "If continuous testing is enabled then the value is a regular expression that is matched against the test class name.",
             "If continuous testing is disabled then the value is passed as-is to the underlying build tool." })
     String filter;
@@ -62,11 +63,12 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
             if (filter != null) {
                 params.add("-Dquarkus.test.include-pattern=" + filter);
             }
-            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(
-                    false, testOptions, debugOptions, params);
+            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(false,
+                    testOptions, debugOptions, params);
 
             if (testOptions.isDryRun()) {
-                dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get(), true);
+                dryRunTest(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get(),
+                        true);
                 return CommandLine.ExitCode.OK;
             }
             int ret = 1;
@@ -78,28 +80,24 @@ public class Test extends BaseBuildCommand implements Callable<Integer> {
             }
             return ret;
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to launch project in test mode: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to launch project in test mode: " + e.getMessage());
         }
     }
 
-    void dryRunTest(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args, boolean isContinuous) {
+    void dryRunTest(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args,
+            boolean isContinuous) {
         output.printText("\nRun current project in" + (isContinuous ? " continuous" : "") + " test mode\n",
                 "\t" + projectRoot().toString());
         Map<String, String> dryRunOutput = new TreeMap<>();
         dryRunOutput.put("Build tool", buildTool.name());
         output.info(help.createTextTable(dryRunOutput).toString());
 
-        output.printText("\nCommand line:\n",
-                args.showCommand());
+        output.printText("\nCommand line:\n", args.showCommand());
     }
 
     @Override
     public String toString() {
-        return "Test [debugOptions=" + debugOptions
-                + ", testOptions=" + testOptions
-                + ", properties=" + propertiesOptions.properties
-                + ", output=" + output
-                + ", params=" + params + "]";
+        return "Test [debugOptions=" + debugOptions + ", testOptions=" + testOptions + ", properties="
+                + propertiesOptions.properties + ", output=" + output + ", params=" + params + "]";
     }
 }

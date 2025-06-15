@@ -12,11 +12,13 @@ import io.quarkus.devservices.common.DatasourceServiceConfigurator;
 
 public class PostgresDatasourceServiceConfigurator implements DatasourceServiceConfigurator {
 
-    private final static String[] USERNAME_ENVS = new String[] { "POSTGRES_USER", "POSTGRESQL_USER", "POSTGRESQL_USERNAME" };
+    private final static String[] USERNAME_ENVS = new String[] { "POSTGRES_USER", "POSTGRESQL_USER",
+            "POSTGRESQL_USERNAME" };
 
     private final static String[] PASSWORD_ENVS = new String[] { "POSTGRES_PASSWORD", "POSTGRESQL_PASSWORD" };
 
-    private final static String[] DATABASE_ENVS = new String[] { "POSTGRES_DB", "POSTGRESQL_DB", "POSTGRESQL_DATABASE" };
+    private final static String[] DATABASE_ENVS = new String[] { "POSTGRES_DB", "POSTGRESQL_DB",
+            "POSTGRESQL_DATABASE" };
 
     public RunningDevServicesDatasource composeRunningService(ContainerAddress containerAddress,
             DevServicesDatasourceContainerConfig containerConfig) {
@@ -26,13 +28,9 @@ public class PostgresDatasourceServiceConfigurator implements DatasourceServiceC
         String effectivePassword = containerConfig.getDbName().orElse(DEFAULT_DATABASE_PASSWORD);
         String jdbcUrl = getJdbcUrl(containerAddress, container.tryGetEnv(DATABASE_ENVS).orElse(effectiveDbName));
         String reactiveUrl = getReactiveUrl(jdbcUrl);
-        return new RunningDevServicesDatasource(
-                containerAddress.getId(),
-                jdbcUrl,
-                reactiveUrl,
+        return new RunningDevServicesDatasource(containerAddress.getId(), jdbcUrl, reactiveUrl,
                 container.tryGetEnv(USERNAME_ENVS).orElse(effectiveUsername),
-                extractPassword(container, effectivePassword),
-                null);
+                extractPassword(container, effectivePassword), null);
     }
 
     private String extractPassword(RunningContainer container, String effectivePassword) {

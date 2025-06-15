@@ -23,10 +23,8 @@ public class LiquibaseExtensionMigrateAtStartDirectoryChangeLogTest {
     LiquibaseFactory liquibaseFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/all/changeLog.xml")
-                    .addAsResource("db/all/test/changeLog.sql")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource("db/all/changeLog.xml").addAsResource("db/all/test/changeLog.sql")
                     .addAsResource("migrate-at-start-directory-config.properties", "application.properties"));
 
     @Test

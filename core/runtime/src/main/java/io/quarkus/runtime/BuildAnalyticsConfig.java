@@ -11,8 +11,8 @@ import io.smallrye.config.WithName;
 /**
  * Build time analytics.
  * <p>
- * This is a dummy config class to hide the warnings on the comment line.
- * All properties in here are actually used in the build tools.
+ * This is a dummy config class to hide the warnings on the comment line. All properties in here are actually used in
+ * the build tools.
  */
 @ConfigMapping(prefix = "quarkus.analytics")
 @ConfigRoot(phase = ConfigPhase.BUILD_AND_RUN_TIME_FIXED)

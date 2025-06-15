@@ -17,9 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RequestScopedFinalMethodsTest {
 
     @RegisterExtension
-    public static QuarkusUnitTest container = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RequestScopedBean.class, OtherRequestScopedBean.class, OtherRequestScopeBeanProducer.class));
+    public static QuarkusUnitTest container = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(RequestScopedBean.class, OtherRequestScopedBean.class, OtherRequestScopeBeanProducer.class));
 
     @Test
     public void testRequestScopedBeanWorksProperly() {

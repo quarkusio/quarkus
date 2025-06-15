@@ -33,8 +33,8 @@ import io.restassured.RestAssured;
 public class OpenTelemetrySpanSecurityEventsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class, EventsResource.class,
                             CustomSecurityEvent.class)
                     .addAsResource(new StringAsset("""
@@ -60,8 +60,8 @@ public class OpenTelemetrySpanSecurityEventsTest {
                 .orElse(null);
         assertNotNull(event);
         assertEquals(1, event.getAttributes().size());
-        assertEquals(CustomSecurityEvent.CUSTOM_VALUE, event.getAttributes().get(AttributeKey
-                .stringKey(SecurityEventUtil.QUARKUS_SECURITY_OTHER_EVENTS_NAMESPACE + CustomSecurityEvent.CUSTOM_KEY)));
+        assertEquals(CustomSecurityEvent.CUSTOM_VALUE, event.getAttributes().get(AttributeKey.stringKey(
+                SecurityEventUtil.QUARKUS_SECURITY_OTHER_EVENTS_NAMESPACE + CustomSecurityEvent.CUSTOM_KEY)));
     }
 
     public static class CustomSecurityEvent extends AbstractSecurityEvent {

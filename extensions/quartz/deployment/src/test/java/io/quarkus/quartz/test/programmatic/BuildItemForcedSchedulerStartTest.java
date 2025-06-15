@@ -21,8 +21,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BuildItemForcedSchedulerStartTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .addBuildChainCustomizer(buildCustomizer());
+    static final QuarkusUnitTest test = new QuarkusUnitTest().addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
         return new Consumer<BuildChainBuilder>() {
@@ -49,10 +48,7 @@ public class BuildItemForcedSchedulerStartTest {
     public void testScheduler() throws InterruptedException {
         assertTrue(scheduler.isRunning());
 
-        scheduler.newJob("foo")
-                .setInterval("1s")
-                .setTask(ec -> SYNC_LATCH.countDown())
-                .schedule();
+        scheduler.newJob("foo").setInterval("1s").setTask(ec -> SYNC_LATCH.countDown()).schedule();
 
         assertTrue(SYNC_LATCH.await(5, TimeUnit.SECONDS));
     }

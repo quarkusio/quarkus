@@ -40,8 +40,7 @@ public class OidcSessionImpl implements OidcSession {
             @Override
             public Uni<Void> apply(OidcTenantConfig oidcConfig) {
                 OidcUtils.setClearSiteData(routingContext, oidcConfig);
-                return OidcUtils.removeSessionCookie(routingContext, oidcConfig,
-                        resolver.getTokenStateManager());
+                return OidcUtils.removeSessionCookie(routingContext, oidcConfig, resolver.getTokenStateManager());
             }
         });
 

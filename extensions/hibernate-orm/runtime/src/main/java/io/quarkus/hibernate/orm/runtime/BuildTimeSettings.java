@@ -11,10 +11,8 @@ public class BuildTimeSettings {
     private Map<String, String> databaseOrmCompatibilitySettings;
     private Map<String, Object> allSettings;
 
-    public BuildTimeSettings(RecordedConfig source,
-            Map<String, Object> quarkusConfigSettings,
-            Map<String, String> databaseOrmCompatibilitySettings,
-            Map<String, Object> allSettings) {
+    public BuildTimeSettings(RecordedConfig source, Map<String, Object> quarkusConfigSettings,
+            Map<String, String> databaseOrmCompatibilitySettings, Map<String, Object> allSettings) {
         this.source = source;
         this.quarkusConfigSettings = Map.copyOf(quarkusConfigSettings);
         this.databaseOrmCompatibilitySettings = Map.copyOf(databaseOrmCompatibilitySettings);

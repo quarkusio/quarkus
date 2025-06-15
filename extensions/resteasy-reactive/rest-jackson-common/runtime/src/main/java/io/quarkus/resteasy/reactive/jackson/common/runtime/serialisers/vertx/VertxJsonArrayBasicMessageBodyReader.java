@@ -23,7 +23,8 @@ public class VertxJsonArrayBasicMessageBodyReader extends PrimitiveBodyHandler i
 
     @Override
     public JsonArray readFrom(Class<JsonArray> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return readFrom(entityStream);
     }
 

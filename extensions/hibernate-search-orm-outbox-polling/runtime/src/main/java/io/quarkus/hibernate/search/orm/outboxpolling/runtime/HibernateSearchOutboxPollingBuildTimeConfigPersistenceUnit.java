@@ -70,12 +70,9 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
         Optional<String> table();
 
         /**
-         * The UUID generator strategy used for the agent table.
-         *
-         * Available strategies:
-         *
-         * * `auto` (the default) is the same as `random` which uses `UUID#randomUUID()`.
-         * * `time` is an IP based strategy consistent with IETF RFC 4122.
+         * The UUID generator strategy used for the agent table. Available strategies: * `auto` (the default) is the
+         * same as `random` which uses `UUID#randomUUID()`. * `time` is an IP based strategy consistent with IETF RFC
+         * 4122.
          *
          * @asciidoclet
          */
@@ -83,13 +80,9 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
         Optional<UuidGenerationStrategy> uuidGenStrategy();
 
         /**
-         * The name of the Hibernate ORM basic type used for representing an UUID in the outbox event table.
-         *
-         * Refer to
-         * link:{hibernate-orm-docs-url}#basic-uuid[this section of the Hibernate ORM documentation]
-         * to see the possible UUID representations.
-         *
-         * Defaults to the special value `default`, which will result into one of `char`/`binary`
+         * The name of the Hibernate ORM basic type used for representing an UUID in the outbox event table. Refer to
+         * link:{hibernate-orm-docs-url}#basic-uuid[this section of the Hibernate ORM documentation] to see the possible
+         * UUID representations. Defaults to the special value `default`, which will result into one of `char`/`binary`
          * depending on the database kind.
          *
          * @asciidoclet
@@ -127,12 +120,9 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
         Optional<String> table();
 
         /**
-         * The UUID generator strategy used for the outbox event table.
-         *
-         * Available strategies:
-         *
-         * * `auto` (the default) is the same as `random` which uses `UUID#randomUUID()`.
-         * * `time` is an IP based strategy consistent with IETF RFC 4122.
+         * The UUID generator strategy used for the outbox event table. Available strategies: * `auto` (the default) is
+         * the same as `random` which uses `UUID#randomUUID()`. * `time` is an IP based strategy consistent with IETF
+         * RFC 4122.
          *
          * @asciidoclet
          */
@@ -140,13 +130,9 @@ public interface HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit {
         Optional<UuidGenerationStrategy> uuidGenStrategy();
 
         /**
-         * The name of the Hibernate ORM basic type used for representing an UUID in the outbox event table.
-         *
-         * Refer to
-         * link:{hibernate-orm-docs-url}#basic-uuid[this section of the Hibernate ORM documentation]
-         * to see the possible UUID representations.
-         *
-         * Defaults to the special value `default`, which will result into one of `char`/`binary`
+         * The name of the Hibernate ORM basic type used for representing an UUID in the outbox event table. Refer to
+         * link:{hibernate-orm-docs-url}#basic-uuid[this section of the Hibernate ORM documentation] to see the possible
+         * UUID representations. Defaults to the special value `default`, which will result into one of `char`/`binary`
          * depending on the database kind.
          *
          * @asciidoclet

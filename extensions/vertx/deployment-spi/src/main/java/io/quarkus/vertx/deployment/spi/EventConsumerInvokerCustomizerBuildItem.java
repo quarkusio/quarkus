@@ -8,8 +8,8 @@ import io.quarkus.arc.processor.InvokerBuilder;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * This build item should be considered private and should not be used outside of core Quarkus.
- * It can be changed without notice.
+ * This build item should be considered private and should not be used outside of core Quarkus. It can be changed
+ * without notice.
  */
 public final class EventConsumerInvokerCustomizerBuildItem extends MultiBuildItem {
     private final BiConsumer<MethodInfo, InvokerBuilder> invokerCustomizer;

@@ -37,11 +37,10 @@ public class HibernateSearchTypesTest {
     public void testNoMissingRootMappingAnnotation() {
         Set<DotName> rootMappingAnnotations = findAnnotationsAnnotatedWith(hibernateSearchPojoBaseIndex,
                 HibernateSearchTypes.ROOT_MAPPING);
-        rootMappingAnnotations
-                .addAll(findAnnotationsAnnotatedWith(hibernateSearchPojoStandaloneIndex, HibernateSearchTypes.ROOT_MAPPING));
+        rootMappingAnnotations.addAll(
+                findAnnotationsAnnotatedWith(hibernateSearchPojoStandaloneIndex, HibernateSearchTypes.ROOT_MAPPING));
 
-        assertThat(HibernateSearchTypes.BUILT_IN_ROOT_MAPPING_ANNOTATIONS)
-                .isNotEmpty()
+        assertThat(HibernateSearchTypes.BUILT_IN_ROOT_MAPPING_ANNOTATIONS).isNotEmpty()
                 .containsExactlyInAnyOrderElementsOf(rootMappingAnnotations);
     }
 

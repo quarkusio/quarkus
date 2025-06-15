@@ -11,9 +11,8 @@ import io.quarkus.deployment.builditem.InitTaskCompletedBuildItem;
 import io.quarkus.runtime.init.InitializationTaskRecorder;
 
 /**
- * A processor that is used to track all {@link io.quarkus.deployment.builditem.InitTaskCompletedBuildItem} in order to exit
- * once they are completed if
- * needed.
+ * A processor that is used to track all {@link io.quarkus.deployment.builditem.InitTaskCompletedBuildItem} in order to
+ * exit once they are completed if needed.
  */
 public class InitializationTaskProcessor {
 

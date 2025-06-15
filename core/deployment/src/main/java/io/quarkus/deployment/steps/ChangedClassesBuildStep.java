@@ -33,7 +33,7 @@ public class ChangedClassesBuildStep {
             DotName name = DotName.createSimple(added);
             ClassInfo clazz = currentIndex.getClassByName(name);
             if (clazz == null) {
-                //should never happen, but we bail out to be paranoid
+                // should never happen, but we bail out to be paranoid
                 return null;
             }
             addedClasses.put(name, clazz);
@@ -42,7 +42,7 @@ public class ChangedClassesBuildStep {
             DotName name = DotName.createSimple(deleted);
             ClassInfo clazz = oldIndex.getClassByName(name);
             if (clazz == null) {
-                //should never happen, but we bail out to be paranoid
+                // should never happen, but we bail out to be paranoid
                 return null;
             }
             addedClasses.put(name, clazz);
@@ -51,20 +51,21 @@ public class ChangedClassesBuildStep {
             DotName name = DotName.createSimple(mod);
             ClassInfo clazz = oldIndex.getClassByName(name);
             if (clazz == null) {
-                //should never happen, but we bail out to be paranoid
+                // should never happen, but we bail out to be paranoid
                 return null;
             }
             changedClassesOldVersion.put(name, clazz);
             clazz = currentIndex.getClassByName(name);
             if (clazz == null) {
-                //should never happen, but we bail out to be paranoid
+                // should never happen, but we bail out to be paranoid
                 return null;
             }
             changedClassesNewVersion.put(name, clazz);
         }
 
         oldIndex = currentIndex;
-        return new ChangedClassesBuildItem(changedClassesNewVersion, changedClassesOldVersion, deletedClasses, addedClasses);
+        return new ChangedClassesBuildItem(changedClassesNewVersion, changedClassesOldVersion, deletedClasses,
+                addedClasses);
     }
 
 }

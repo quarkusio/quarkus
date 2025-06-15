@@ -21,7 +21,8 @@ public class StatusTypeImpl implements StatusType {
     private static String getDefaultReasonPhrase(int providedStatus) {
         for (Response.Status defaultStatus : Response.Status.values()) {
             if (providedStatus == defaultStatus.getStatusCode()) {
-                return defaultStatus.getReasonPhrase() != null ? defaultStatus.getReasonPhrase() : DEFAULT_REASON_PHRASE;
+                return defaultStatus.getReasonPhrase() != null ? defaultStatus.getReasonPhrase()
+                        : DEFAULT_REASON_PHRASE;
             }
         }
         return DEFAULT_REASON_PHRASE;

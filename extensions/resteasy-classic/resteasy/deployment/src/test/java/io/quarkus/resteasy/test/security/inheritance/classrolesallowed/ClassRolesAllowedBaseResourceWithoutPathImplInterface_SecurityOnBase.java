@@ -23,7 +23,6 @@ public class ClassRolesAllowedBaseResourceWithoutPathImplInterface_SecurityOnBas
     @Override
     public ClassRolesAllowedSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnBase_ClassRolesAllowed() {
         return new ClassRolesAllowedSubResourceWithoutPath(
-                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                        + SUB_IMPL_ON_BASE + CLASS_ROLES_ALLOWED_PATH);
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_BASE + CLASS_ROLES_ALLOWED_PATH);
     }
 }

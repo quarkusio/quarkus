@@ -23,8 +23,7 @@ public class StaticInitFailureTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClass(EntityWithIncorrectMapping.class))
+            .withApplicationRoot(jar -> jar.addClass(EntityWithIncorrectMapping.class))
             .withConfigurationResource("application.properties")
             // Expect only one error: the one we triggered
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
@@ -33,11 +32,8 @@ public class StaticInitFailureTest {
             // JPAConfig should not be created in the first place!
             // See https://github.com/quarkusio/quarkus/issues/32188#issuecomment-1488037517
             .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage).isEmpty())
-            .assertException(throwable -> assertThat(throwable)
-                    .hasNoSuppressedExceptions()
-                    .rootCause()
-                    .hasMessageContaining("@SQLDeleteAll")
-                    .hasNoSuppressedExceptions());
+            .assertException(throwable -> assertThat(throwable).hasNoSuppressedExceptions().rootCause()
+                    .hasMessageContaining("@SQLDeleteAll").hasNoSuppressedExceptions());
 
     @Test
     public void test() {

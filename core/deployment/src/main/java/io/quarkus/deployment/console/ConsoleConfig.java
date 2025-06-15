@@ -29,8 +29,7 @@ public interface ConsoleConfig {
     boolean disableInput();
 
     /**
-     * Disable the testing status/prompt message at the bottom of the console
-     * and log these messages to STDOUT instead.
+     * Disable the testing status/prompt message at the bottom of the console and log these messages to STDOUT instead.
      * <p>
      * Use this option if your terminal does not support ANSI escape sequences.
      */

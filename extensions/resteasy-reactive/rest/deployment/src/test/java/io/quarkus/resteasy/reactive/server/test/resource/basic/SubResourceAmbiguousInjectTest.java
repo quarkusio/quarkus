@@ -24,23 +24,22 @@ import io.quarkus.test.QuarkusUnitTest;
 
 class SubResourceAmbiguousInjectTest {
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(PortProviderUtil.class);
-                    war.addClass(EnglishGreeterResource.class);
-                    war.addClass(SpanishGreeterResource.class);
-                    war.addClass(GreeterResource.class);
-                    war.addClass(LanguageResource.class);
-                    war.addClass(LanguageResourceV2.class);
-                    war.addClass(GreeterResourceV2.class);
-                    war.addClass(EnglishGreeterResource.class);
-                    war.addClass(SpanishGreeterResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClass(PortProviderUtil.class);
+            war.addClass(EnglishGreeterResource.class);
+            war.addClass(SpanishGreeterResource.class);
+            war.addClass(GreeterResource.class);
+            war.addClass(LanguageResource.class);
+            war.addClass(LanguageResourceV2.class);
+            war.addClass(GreeterResourceV2.class);
+            war.addClass(EnglishGreeterResource.class);
+            war.addClass(SpanishGreeterResource.class);
+            return war;
+        }
+    });
 
     @Test
     void basicTest() {
@@ -76,8 +75,7 @@ class SubResourceAmbiguousInjectTest {
         private final Map<String, GreeterResource> languages;
 
         @Inject
-        public LanguageResource(
-                final EnglishGreeterResource english, final SpanishGreeterResource spanish) {
+        public LanguageResource(final EnglishGreeterResource english, final SpanishGreeterResource spanish) {
             languages = Map.of("en", english, "es", spanish);
         }
 
@@ -93,8 +91,7 @@ class SubResourceAmbiguousInjectTest {
         private final Map<String, GreeterResourceV2> languages;
 
         @Inject
-        public LanguageResourceV2(
-                final EnglishGreeterResourceV2 english, final SpanishGreeterResourceV2 spanish) {
+        public LanguageResourceV2(final EnglishGreeterResourceV2 english, final SpanishGreeterResourceV2 spanish) {
             languages = Map.of("en", english, "es", spanish);
         }
 

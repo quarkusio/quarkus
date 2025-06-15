@@ -14,18 +14,12 @@ import io.quarkus.kafka.client.runtime.dev.ui.model.response.KafkaMessage;
 
 public class KafkaModelConverter {
     public KafkaMessage convert(ConsumerRecord<Bytes, Bytes> message) {
-        return new KafkaMessage(
-                message.topic(),
-                message.partition(),
-                message.offset(),
-                message.timestamp(),
+        return new KafkaMessage(message.topic(), message.partition(), message.offset(), message.timestamp(),
                 Optional.ofNullable(message.key()).map((t) -> {
                     return new String(t.get(), StandardCharsets.UTF_8);
-                }).orElse(null),
-                Optional.ofNullable(message.value()).map((t) -> {
+                }).orElse(null), Optional.ofNullable(message.value()).map((t) -> {
                     return new String(t.get(), StandardCharsets.UTF_8);
-                }).orElse(null),
-                headers(message));
+                }).orElse(null), headers(message));
     }
 
     private static Map<String, String> headers(ConsumerRecord<Bytes, Bytes> message) {

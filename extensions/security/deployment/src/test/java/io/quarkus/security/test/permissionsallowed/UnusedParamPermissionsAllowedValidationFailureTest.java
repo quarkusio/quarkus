@@ -15,13 +15,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnusedParamPermissionsAllowedValidationFailureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .assertException(t -> {
-                Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
-                Assertions.assertTrue(t.getMessage().contains("nestedParam1.something"));
-                Assertions.assertTrue(t.getMessage().contains("cannot be matched to any constructor"));
-                Assertions.assertTrue(t.getMessage().contains("OrganizationUnitIdPermission' parameter"));
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().assertException(t -> {
+        Assertions.assertEquals(RuntimeException.class, t.getClass(), t.getMessage());
+        Assertions.assertTrue(t.getMessage().contains("nestedParam1.something"));
+        Assertions.assertTrue(t.getMessage().contains("cannot be matched to any constructor"));
+        Assertions.assertTrue(t.getMessage().contains("OrganizationUnitIdPermission' parameter"));
+    });
 
     @Test
     public void test() {

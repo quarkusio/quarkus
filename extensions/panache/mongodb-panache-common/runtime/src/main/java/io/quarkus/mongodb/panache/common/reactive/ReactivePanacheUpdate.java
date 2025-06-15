@@ -8,16 +8,17 @@ import io.quarkus.panache.common.Parameters;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Interface representing an update query.
- *
- * Use one of its methods to perform the update query.
+ * Interface representing an update query. Use one of its methods to perform the update query.
  */
 public interface ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        params optional sequence of indexed parameters
+     *
      * @return the number of entities updated.
      */
     public Uni<Long> where(String query, Object... params);
@@ -25,8 +26,11 @@ public interface ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return the number of entities updated.
      */
     public Uni<Long> where(String query, Map<String, Object> params);
@@ -34,8 +38,11 @@ public interface ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return the number of entities updated.
      */
     public Uni<Long> where(String query, Parameters params);
@@ -43,7 +50,9 @@ public interface ReactivePanacheUpdate {
     /**
      * Execute the update query with the update document.
      *
-     * @param query a {@link Bson} query
+     * @param query
+     *        a {@link Bson} query
+     *
      * @return the number of entities updated.
      */
     public Uni<Long> where(Bson query);

@@ -19,12 +19,11 @@ public class OpenApiStoreSchemaTestCase {
     private static final String OPEN_API_DOT = "openapi.";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class, NamingOASFilter.class)
-                    .addAsResource(new StringAsset("mp.openapi.filter=io.quarkus.smallrye.openapi.test.jaxrs.NamingOASFilter\n"
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class, NamingOASFilter.class).addAsResource(
+                    new StringAsset("mp.openapi.filter=io.quarkus.smallrye.openapi.test.jaxrs.NamingOASFilter\n"
                             + "quarkus.smallrye-openapi.store-schema-directory=" + directory),
-                            "application.properties"));
+                    "application.properties"));
 
     @Test
     public void testOpenApiPathAccessResource() throws IOException {

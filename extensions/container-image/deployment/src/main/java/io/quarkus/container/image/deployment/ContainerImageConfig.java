@@ -18,20 +18,21 @@ public interface ContainerImageConfig {
     /**
      * The group the container image will be part of
      */
-    Optional<@WithConverter(TrimmedStringConverter.class) String> group(); //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
+    Optional<@WithConverter(TrimmedStringConverter.class) String> group(); // used only by ContainerImageProcessor, use
+                                                                           // ContainerImageInfoBuildItem instead
 
     /**
      * The name of the container image. If not set defaults to the application name
      */
     @WithDefault("${quarkus.application.name:unset}")
     @WithConverter(TrimmedStringConverter.class)
-    String name(); //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
+    String name(); // used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * The tag of the container image. If not set defaults to the application version
      */
     @WithDefault("${quarkus.application.version:latest}")
-    String tag(); //used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
+    String tag(); // used only by ContainerImageProcessor, use ContainerImageInfoBuildItem instead
 
     /**
      * Additional tags of the container image.
@@ -50,9 +51,8 @@ public interface ContainerImageConfig {
     Optional<String> registry();
 
     /**
-     * Represents the entire image string.
-     * If set, then {@code group}, {@code name}, {@code registry}, {@code tags}, {@code additionalTags}
-     * are ignored
+     * Represents the entire image string. If set, then {@code group}, {@code name}, {@code registry}, {@code tags},
+     * {@code additionalTags} are ignored
      */
     Optional<String> image();
 
@@ -83,8 +83,8 @@ public interface ContainerImageConfig {
     Optional<Boolean> push();
 
     /**
-     * The name of the container image extension to use (e.g. docker, podman, jib, s2i).
-     * The option will be used in case multiple extensions are present.
+     * The name of the container image extension to use (e.g. docker, podman, jib, s2i). The option will be used in case
+     * multiple extensions are present.
      */
     Optional<String> builder();
 

@@ -11,8 +11,8 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     private final List<AbstractConfigItem> items = new ArrayList<>();
     private final int level;
 
-    public ConfigSection(String sourceType, String sourceElementName, SourceElementType sourceElementType, SectionPath path,
-            String type, int level, boolean generated, Deprecation deprecation) {
+    public ConfigSection(String sourceType, String sourceElementName, SourceElementType sourceElementType,
+            SectionPath path, String type, int level, boolean generated, Deprecation deprecation) {
         super(sourceType, sourceElementName, sourceElementType, path, type, deprecation);
         this.generated = generated;
         this.level = level;
@@ -54,9 +54,8 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
     }
 
     /**
-     * This is used when we merge ConfigSection at the ConfigRoot level.
-     * It can happen when for instance a path is both used at a given level and in an unnamed map.
-     * For instance in: HibernateOrmConfig.
+     * This is used when we merge ConfigSection at the ConfigRoot level. It can happen when for instance a path is both
+     * used at a given level and in an unnamed map. For instance in: HibernateOrmConfig.
      */
     public void appendState(boolean generated, Deprecation deprecation) {
         // we generate the section if at least one of the sections should be generated
@@ -75,7 +74,8 @@ public final class ConfigSection extends AbstractConfigItem implements ConfigIte
 
         for (AbstractConfigItem otherItem : other.getItems()) {
             if (otherItem instanceof ConfigSection otherConfigSection) {
-                ConfigSection similarConfigSection = existingConfigSections.get(otherConfigSection.getPath().property());
+                ConfigSection similarConfigSection = existingConfigSections
+                        .get(otherConfigSection.getPath().property());
                 if (similarConfigSection == null) {
                     this.items.add(otherConfigSection);
                 } else {

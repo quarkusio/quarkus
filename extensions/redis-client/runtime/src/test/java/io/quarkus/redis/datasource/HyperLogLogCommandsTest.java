@@ -50,12 +50,10 @@ public class HyperLogLogCommandsTest extends DatasourceTestBase {
     @SuppressWarnings("ConfusingArgumentToVarargsMethod")
     @Test
     void pfaddNullValues() {
-        assertThatThrownBy(() -> hll.pfadd(key, null))
-                .isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> hll.pfadd(key, null)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("`values`");
 
-        assertThatThrownBy(() -> hll.pfadd(key, Person.person1, null))
-                .isInstanceOf(IllegalArgumentException.class)
+        assertThatThrownBy(() -> hll.pfadd(key, Person.person1, null)).isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("`values`");
     }
 

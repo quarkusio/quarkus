@@ -28,20 +28,17 @@ public class ReactiveBloomCommandsImpl<K, V> extends AbstractBloomCommands<K, V>
 
     @Override
     public Uni<Boolean> bfadd(K key, V value) {
-        return _bfadd(key, value)
-                .map(Response::toBoolean);
+        return _bfadd(key, value).map(Response::toBoolean);
     }
 
     @Override
     public Uni<Boolean> bfexists(K key, V value) {
-        return _bfexists(key, value)
-                .map(Response::toBoolean);
+        return _bfexists(key, value).map(Response::toBoolean);
     }
 
     @Override
     public Uni<List<Boolean>> bfmadd(K key, V... values) {
-        return _bfmadd(key, values)
-                .map(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
+        return _bfmadd(key, values).map(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
     }
 
     static List<Boolean> decodeAsListOfBooleans(Response r) {
@@ -57,8 +54,7 @@ public class ReactiveBloomCommandsImpl<K, V> extends AbstractBloomCommands<K, V>
 
     @Override
     public Uni<List<Boolean>> bfmexists(K key, V... values) {
-        return _bfmexists(key, values)
-                .map(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
+        return _bfmexists(key, values).map(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
     }
 
     @Override
@@ -68,13 +64,11 @@ public class ReactiveBloomCommandsImpl<K, V> extends AbstractBloomCommands<K, V>
 
     @Override
     public Uni<Void> bfreserve(K key, double errorRate, long capacity, BfReserveArgs args) {
-        return _bfreserve(key, errorRate, capacity, args)
-                .replaceWithVoid();
+        return _bfreserve(key, errorRate, capacity, args).replaceWithVoid();
     }
 
     @Override
     public Uni<List<Boolean>> bfinsert(K key, BfInsertArgs args, V... values) {
-        return _bfinsert(key, args, values)
-                .map(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
+        return _bfinsert(key, args, values).map(ReactiveBloomCommandsImpl::decodeAsListOfBooleans);
     }
 }

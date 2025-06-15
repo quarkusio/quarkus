@@ -18,16 +18,13 @@ public class DefaultLocaleMissingMessageTemplateTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class, EnMessages.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Messages.class, EnMessages.class)
                     .addAsResource(new StringAsset("goodbye=auf Wiedersehen"), "messages/msg_de.properties"))
-            .overrideConfigKey("quarkus.default-locale", "cs")
-            .assertException(t -> {
+            .overrideConfigKey("quarkus.default-locale", "cs").assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof MessageBundleException) {
-                    assertTrue(
-                            rootCause.getMessage()
-                                    .contains("Message template for key [goodbye] is missing for default locale"));
+                    assertTrue(rootCause.getMessage()
+                            .contains("Message template for key [goodbye] is missing for default locale"));
                 } else {
                     fail("No message bundle exception thrown: " + t);
                 }

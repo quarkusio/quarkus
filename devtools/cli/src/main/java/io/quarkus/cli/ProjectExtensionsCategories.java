@@ -39,7 +39,8 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
             // Test for an existing project
             BuildTool buildTool = QuarkusProjectHelper.detectExistingBuildTool(projectRoot()); // nullable
 
-            if (buildTool == null || targetQuarkusVersion.isPlatformSpecified() || targetQuarkusVersion.isStreamSpecified()) {
+            if (buildTool == null || targetQuarkusVersion.isPlatformSpecified()
+                    || targetQuarkusVersion.isStreamSpecified()) {
                 if (runMode.isDryRun()) {
                     return dryRunList(spec.commandLine().getHelp(), null);
                 }
@@ -58,8 +59,7 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
                 return exitCode;
             }
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to list extension categories: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to list extension categories: " + e.getMessage());
         }
     }
 
@@ -67,15 +67,11 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
         Map<String, String> dryRunOutput = new TreeMap<>();
 
         if (buildTool == null) {
-            output.printText(new String[] {
-                    "\nList extension categories for specified platform\n",
-                    "\t" + targetQuarkusVersion.dryRun()
-            });
+            output.printText(new String[] { "\nList extension categories for specified platform\n",
+                    "\t" + targetQuarkusVersion.dryRun() });
         } else {
-            output.printText(new String[] {
-                    "\nList extension categories for current project\n",
-                    "\t" + projectRoot().toString()
-            });
+            output.printText(new String[] { "\nList extension categories for current project\n",
+                    "\t" + projectRoot().toString() });
             dryRunOutput.put("Build tool", buildTool.name());
         }
 
@@ -87,14 +83,11 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
     }
 
     Integer listPlatformCategories() throws QuarkusCommandException, RegistryResolutionException {
-        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion,
-                BuildTool.MAVEN, output);
+        QuarkusProject qp = registryClient.createQuarkusProject(projectRoot(), targetQuarkusVersion, BuildTool.MAVEN,
+                output);
 
-        QuarkusCommandOutcome outcome = new ListCategories(qp, output)
-                .fromCli(true)
-                .format(format.getFormatString())
-                .batchMode(runMode.isBatchMode())
-                .execute();
+        QuarkusCommandOutcome outcome = new ListCategories(qp, output).fromCli(true).format(format.getFormatString())
+                .batchMode(runMode.isBatchMode()).execute();
 
         return outcome.isSuccess() ? CommandLine.ExitCode.OK : CommandLine.ExitCode.SOFTWARE;
     }
@@ -117,8 +110,6 @@ public class ProjectExtensionsCategories extends BaseBuildCommand implements Cal
 
     @Override
     public String toString() {
-        return "ProjectExtensionsCategories [output=" + output
-                + ", runMode=" + runMode
-                + "]";
+        return "ProjectExtensionsCategories [output=" + output + ", runMode=" + runMode + "]";
     }
 }

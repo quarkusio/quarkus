@@ -29,8 +29,7 @@ public class HibernateSearchOutboxPollingRecorder {
         return new RuntimeInitListener(puConfig);
     }
 
-    private static final class StaticInitListener
-            implements HibernateOrmIntegrationStaticInitListener {
+    private static final class StaticInitListener implements HibernateOrmIntegrationStaticInitListener {
 
         private final HibernateSearchOutboxPollingBuildTimeConfigPersistenceUnit buildTimeConfig;
 
@@ -90,8 +89,7 @@ public class HibernateSearchOutboxPollingRecorder {
 
     }
 
-    private static final class RuntimeInitListener
-            implements HibernateOrmIntegrationRuntimeInitListener {
+    private static final class RuntimeInitListener implements HibernateOrmIntegrationRuntimeInitListener {
 
         private final HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit runtimeConfig;
 
@@ -109,12 +107,13 @@ public class HibernateSearchOutboxPollingRecorder {
 
             for (Entry<String, HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit.AgentsConfig> tenantEntry : runtimeConfig
                     .coordination().tenants().entrySet()) {
-                contributeCoordinationRuntimeProperties(propertyCollector, tenantEntry.getKey(), tenantEntry.getValue());
+                contributeCoordinationRuntimeProperties(propertyCollector, tenantEntry.getKey(),
+                        tenantEntry.getValue());
             }
         }
 
-        private void contributeCoordinationRuntimeProperties(BiConsumer<String, Object> propertyCollector, String tenantId,
-                HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit.AgentsConfig agentsConfig) {
+        private void contributeCoordinationRuntimeProperties(BiConsumer<String, Object> propertyCollector,
+                String tenantId, HibernateSearchOutboxPollingRuntimeConfigPersistenceUnit.AgentsConfig agentsConfig) {
             HibernateSearchOutboxPollingConfigUtil.addCoordinationConfig(propertyCollector, tenantId,
                     HibernateOrmMapperOutboxPollingSettings.CoordinationRadicals.EVENT_PROCESSOR_ENABLED,
                     agentsConfig.eventProcessor().enabled());

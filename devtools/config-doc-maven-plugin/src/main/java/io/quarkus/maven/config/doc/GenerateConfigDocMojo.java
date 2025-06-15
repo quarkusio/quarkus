@@ -101,7 +101,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         Format normalizedFormat = Format.normalizeFormat(format);
 
         String normalizedTheme = normalizedFormat.normalizeTheme(theme);
-        Formatter formatter = Formatter.getFormatter(generationReport, javadocRepository, enableEnumTooltips, normalizedFormat);
+        Formatter formatter = Formatter.getFormatter(generationReport, javadocRepository, enableEnumTooltips,
+                normalizedFormat);
         Engine quteEngine = initializeQuteEngine(formatter, normalizedFormat, normalizedTheme);
 
         // we generate a file per extension + top level prefix
@@ -119,24 +120,23 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
                 configRootPath = resolvedTargetDirectory.resolve(String.format(CONFIG_ROOT_FILE_FORMAT,
                         extension.artifactId(), topLevelPrefix, normalizedFormat.getExtension()));
-                String summaryTableId = formatter
-                        .toAnchor(extension.artifactId() + "_" + topLevelPrefix);
+                String summaryTableId = formatter.toAnchor(extension.artifactId() + "_" + topLevelPrefix);
                 Context context = new Context(summaryTableId, false);
 
                 try {
                     Files.writeString(configRootPath,
                             generateConfigReference(quteEngine, context, extension, configRoot, "", true));
                 } catch (Exception e) {
-                    throw new MojoExecutionException("Unable to render config roots for top level prefix: " + topLevelPrefix
-                            + " in extension: " + extension, e);
+                    throw new MojoExecutionException("Unable to render config roots for top level prefix: "
+                            + topLevelPrefix + " in extension: " + extension, e);
                 }
             }
 
             // if we have only one top level prefix, we copy the generated file to a file named after the extension
             // for simplicity's sake
             if (extensionConfigRootsEntry.getValue().size() == 1 && configRootPath != null) {
-                Path extensionPath = resolvedTargetDirectory.resolve(String.format(EXTENSION_FILE_FORMAT,
-                        extension.artifactId(), normalizedFormat.getExtension()));
+                Path extensionPath = resolvedTargetDirectory.resolve(
+                        String.format(EXTENSION_FILE_FORMAT, extension.artifactId(), normalizedFormat.getExtension()));
 
                 try {
                     Files.copy(configRootPath, extensionPath, StandardCopyOption.REPLACE_EXISTING);
@@ -147,7 +147,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         }
 
         // we generate the config roots that are saved in a specific file
-        for (Entry<String, ConfigRoot> specificFileConfigRootEntry : mergedModel.getConfigRootsInSpecificFile().entrySet()) {
+        for (Entry<String, ConfigRoot> specificFileConfigRootEntry : mergedModel.getConfigRootsInSpecificFile()
+                .entrySet()) {
             String annotationFileName = specificFileConfigRootEntry.getKey();
             ConfigRoot configRoot = specificFileConfigRootEntry.getValue();
             Extension extension = configRoot.getExtension();
@@ -167,15 +168,17 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 Files.writeString(configRootPath,
                         generateConfigReference(quteEngine, context, extension, configRoot, "", true));
             } catch (Exception e) {
-                throw new MojoExecutionException("Unable to render config roots for specific file: " + fileName
-                        + " in extension: " + extension, e);
+                throw new MojoExecutionException(
+                        "Unable to render config roots for specific file: " + fileName + " in extension: " + extension,
+                        e);
             }
         }
 
         if (!generationReport.getViolations().isEmpty()) {
             StringBuilder report = new StringBuilder(
                     "One or more errors happened during the configuration documentation generation. Here is a full report:\n\n");
-            for (Entry<String, List<GenerationViolation>> violationsEntry : generationReport.getViolations().entrySet()) {
+            for (Entry<String, List<GenerationViolation>> violationsEntry : generationReport.getViolations()
+                    .entrySet()) {
                 report.append("- ").append(violationsEntry.getKey()).append("\n");
                 for (GenerationViolation violation : violationsEntry.getValue()) {
                     report.append("    . ").append(violation.sourceElement()).append(" - ").append(violation.message())
@@ -188,8 +191,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         }
 
         // we generate files for generated sections
-        for (Entry<Extension, List<ConfigSection>> extensionConfigSectionsEntry : mergedModel.getGeneratedConfigSections()
-                .entrySet()) {
+        for (Entry<Extension, List<ConfigSection>> extensionConfigSectionsEntry : mergedModel
+                .getGeneratedConfigSections().entrySet()) {
             Extension extension = extensionConfigSectionsEntry.getKey();
 
             for (ConfigSection generatedConfigSection : extensionConfigSectionsEntry.getValue()) {
@@ -205,14 +208,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
                 Context context = new Context(summaryTableId, false);
 
                 try {
-                    Files.writeString(configSectionPath,
-                            generateConfigReference(quteEngine, context, extension, generatedConfigSection,
-                                    "_" + generatedConfigSection.getPath().property(), false));
+                    Files.writeString(configSectionPath, generateConfigReference(quteEngine, context, extension,
+                            generatedConfigSection, "_" + generatedConfigSection.getPath().property(), false));
                 } catch (Exception e) {
-                    throw new MojoExecutionException(
-                            "Unable to render config section for section: " + generatedConfigSection.getPath().property()
-                                    + " in extension: " + extension,
-                            e);
+                    throw new MojoExecutionException("Unable to render config section for section: "
+                            + generatedConfigSection.getPath().property() + " in extension: " + extension, e);
                 }
             }
         }
@@ -220,8 +220,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
         if (generateAllConfig) {
             // we generate the file centralizing all the config properties
             try {
-                Path allConfigPath = resolvedTargetDirectory.resolve(String.format(ALL_CONFIG_FILE_FORMAT,
-                        normalizedFormat.getExtension()));
+                Path allConfigPath = resolvedTargetDirectory
+                        .resolve(String.format(ALL_CONFIG_FILE_FORMAT, normalizedFormat.getExtension()));
 
                 Context context = new Context("all-config", true);
 
@@ -234,29 +234,27 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
     private static String generateConfigReference(Engine quteEngine, Context context, Extension extension,
             ConfigItemCollection configItemCollection, String additionalAnchorPrefix, boolean searchable) {
-        return quteEngine.getTemplate("configReference")
-                .data("extension", extension)
-                .data("configItemCollection", configItemCollection)
-                .data("searchable", searchable)
-                .data("context", context)
-                .data("summaryTableId", context.summaryTableId()) // for backward compatibility, use context instead
+        return quteEngine.getTemplate("configReference").data("extension", extension)
+                .data("configItemCollection", configItemCollection).data("searchable", searchable)
+                .data("context", context).data("summaryTableId", context.summaryTableId()) // for backward
+                // compatibility, use context
+                // instead
                 .data("additionalAnchorPrefix", additionalAnchorPrefix)
                 .data("includeDurationNote", configItemCollection.hasDurationType())
-                .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType())
-                .render();
+                .data("includeMemorySizeNote", configItemCollection.hasMemorySizeType()).render();
     }
 
     private static String generateAllConfig(Engine quteEngine, Context context,
             Map<Extension, Map<ConfigRootKey, ConfigRoot>> configRootsByExtensions) {
-        return quteEngine.getTemplate("allConfig")
-                .data("configRootsByExtensions", configRootsByExtensions)
-                .data("searchable", true)
-                .data("context", context)
-                .data("summaryTableId", context.summaryTableId()) // for backward compatibility, use context instead
-                .data("additionalAnchorPrefix", "")
-                .data("includeDurationNote", true)
-                .data("includeMemorySizeNote", true)
-                .render();
+        return quteEngine.getTemplate("allConfig").data("configRootsByExtensions", configRootsByExtensions)
+                .data("searchable", true).data("context", context).data("summaryTableId", context.summaryTableId()) // for
+                // backward
+                // compatibility,
+                // use
+                // context
+                // instead
+                .data("additionalAnchorPrefix", "").data("includeDurationNote", true)
+                .data("includeMemorySizeNote", true).render();
     }
 
     private static void initTargetDirectory(Path resolvedTargetDirectory) throws MojoExecutionException {
@@ -297,131 +295,92 @@ public class GenerateConfigDocMojo extends AbstractMojo {
     }
 
     private static Engine initializeQuteEngine(Formatter formatter, Format format, String theme) {
-        EngineBuilder engineBuilder = Engine.builder()
-                .addDefaults()
+        EngineBuilder engineBuilder = Engine.builder().addDefaults()
                 .addSectionHelper(new UserTagSectionHelper.Factory("configProperty", "configProperty"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("configSection", "configSection"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("envVar", "envVar"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("durationNote", "durationNote"))
                 .addSectionHelper(new UserTagSectionHelper.Factory("memorySizeNote", "memorySizeNote"))
                 .addValueResolver(new ReflectionValueResolver())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(String.class)
-                        .applyToName("escapeCellContent")
-                        .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.escapeCellContent((String) ctx.getBase()))
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(String.class)
+                        .applyToName("escapeCellContent").applyToNoParameters()
+                        .resolveSync(ctx -> formatter.escapeCellContent((String) ctx.getBase())).build())
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(String.class).applyToName("toAnchor")
+                        .applyToNoParameters().resolveSync(ctx -> formatter.toAnchor((String) ctx.getBase())).build())
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigRootKey.class)
+                        .applyToName("displayConfigRootDescription").applyToParameters(1)
+                        .resolveSync(ctx -> formatter.displayConfigRootDescription((ConfigRootKey) ctx.getBase(),
+                                (int) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
                         .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(String.class)
-                        .applyToName("toAnchor")
-                        .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.toAnchor((String) ctx.getBase()))
-                        .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigRootKey.class)
-                        .applyToName("displayConfigRootDescription")
-                        .applyToParameters(1)
-                        .resolveSync(ctx -> formatter
-                                .displayConfigRootDescription((ConfigRootKey) ctx.getBase(),
-                                        (int) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
-                        .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("toAnchor")
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigProperty.class).applyToName("toAnchor")
                         .applyToParameters(2)
-                        .resolveSync(ctx -> formatter
-                                .toAnchor(((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
+                        .resolveSync(ctx -> formatter.toAnchor(
+                                ((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
                                         .artifactId() +
                                 // the additional suffix
-                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
-                                        "_" + ((ConfigProperty) ctx.getBase()).getPath().property()))
+                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() + "_"
+                                        + ((ConfigProperty) ctx.getBase()).getPath().property()))
                         .build())
                 // we need a different anchor for sections as otherwise we can have a conflict
                 // (typically when you have an `enabled` property with parent name just under the section level)
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigSection.class)
-                        .applyToName("toAnchor")
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigSection.class).applyToName("toAnchor")
                         .applyToParameters(2)
-                        .resolveSync(ctx -> formatter
-                                .toAnchor(((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
+                        .resolveSync(ctx -> formatter.toAnchor(
+                                ((Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join())
                                         .artifactId() +
                                 // the additional suffix
-                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() +
-                                        "_section_" + ((ConfigSection) ctx.getBase()).getPath().property()))
+                                        ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join() + "_section_"
+                                        + ((ConfigSection) ctx.getBase()).getPath().property()))
                         .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("formatTypeDescription")
-                        .applyToParameters(1)
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatTypeDescription").applyToParameters(1)
                         .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase(),
                                 (Context) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
                         .build())
                 // deprecated, for backward compatibility
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("formatTypeDescription")
-                        .applyToNoParameters()
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatTypeDescription").applyToNoParameters()
                         .resolveSync(ctx -> formatter.formatTypeDescription((ConfigProperty) ctx.getBase(), null))
                         .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("formatDescription")
-                        .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.formatDescription((ConfigProperty) ctx.getBase()))
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatDescription").applyToNoParameters()
+                        .resolveSync(ctx -> formatter.formatDescription((ConfigProperty) ctx.getBase())).build())
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatDescription").applyToParameters(2)
+                        .resolveSync(ctx -> formatter.formatDescription((ConfigProperty) ctx.getBase(),
+                                (Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join(),
+                                (Context) ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join()))
                         .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("formatDescription")
-                        .applyToParameters(2)
-                        .resolveSync(ctx -> formatter
-                                .formatDescription((ConfigProperty) ctx.getBase(),
-                                        (Extension) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join(),
-                                        (Context) ctx.evaluate(ctx.getParams().get(1)).toCompletableFuture().join()))
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigProperty.class)
+                        .applyToName("formatDefaultValue").applyToNoParameters()
+                        .resolveSync(ctx -> formatter.formatDefaultValue((ConfigProperty) ctx.getBase())).build())
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigSection.class)
+                        .applyToName("formatTitle").applyToNoParameters()
+                        .resolveSync(ctx -> formatter.formatSectionTitle((ConfigSection) ctx.getBase())).build())
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(ConfigSection.class)
+                        .applyToName("adjustedLevel").applyToParameters(1)
+                        .resolveSync(ctx -> formatter.adjustedLevel((ConfigSection) ctx.getBase(),
+                                (boolean) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
                         .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigProperty.class)
-                        .applyToName("formatDefaultValue")
-                        .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.formatDefaultValue((ConfigProperty) ctx.getBase()))
-                        .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigSection.class)
-                        .applyToName("formatTitle")
-                        .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.formatSectionTitle((ConfigSection) ctx.getBase()))
-                        .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(ConfigSection.class)
-                        .applyToName("adjustedLevel")
-                        .applyToParameters(1)
-                        .resolveSync(ctx -> formatter
-                                .adjustedLevel((ConfigSection) ctx.getBase(),
-                                        (boolean) ctx.evaluate(ctx.getParams().get(0)).toCompletableFuture().join()))
-                        .build())
-                .addValueResolver(ValueResolver.builder()
-                        .applyToBaseClass(Extension.class)
-                        .applyToName("formatName")
-                        .applyToNoParameters()
-                        .resolveSync(ctx -> formatter.formatName((Extension) ctx.getBase()))
+                .addValueResolver(ValueResolver.builder().applyToBaseClass(Extension.class).applyToName("formatName")
+                        .applyToNoParameters().resolveSync(ctx -> formatter.formatName((Extension) ctx.getBase()))
                         .build());
 
         if (format == Format.asciidoc) {
-            engineBuilder.addSectionHelper(new UserTagSectionHelper.Factory("propertyCopyButton", "propertyCopyButton"));
+            engineBuilder
+                    .addSectionHelper(new UserTagSectionHelper.Factory("propertyCopyButton", "propertyCopyButton"));
         }
 
         Engine engine = engineBuilder.build();
         engine.putTemplate("configReference",
                 engine.parse(getTemplate("templates", format, theme, "configReference", false)));
-        engine.putTemplate("allConfig",
-                engine.parse(getTemplate("templates", format, theme, "allConfig", false)));
+        engine.putTemplate("allConfig", engine.parse(getTemplate("templates", format, theme, "allConfig", false)));
         engine.putTemplate("configProperty",
                 engine.parse(getTemplate("templates", format, theme, "configProperty", true)));
         engine.putTemplate("configSection",
                 engine.parse(getTemplate("templates", format, theme, "configSection", true)));
-        engine.putTemplate("envVar",
-                engine.parse(getTemplate("templates", format, theme, "envVar", true)));
-        engine.putTemplate("durationNote",
-                engine.parse(getTemplate("templates", format, theme, "durationNote", true)));
+        engine.putTemplate("envVar", engine.parse(getTemplate("templates", format, theme, "envVar", true)));
+        engine.putTemplate("durationNote", engine.parse(getTemplate("templates", format, theme, "durationNote", true)));
         engine.putTemplate("memorySizeNote",
                 engine.parse(getTemplate("templates", format, theme, "memorySizeNote", true)));
 
@@ -435,12 +394,11 @@ public class GenerateConfigDocMojo extends AbstractMojo {
 
     private static String getTemplate(String root, Format format, String theme, String template, boolean tag) {
         List<String> candidates = new ArrayList<>();
-        candidates.add(
-                root + "/" + format + "/" + theme + "/" + (tag ? "tags/" : "") + template + ".qute." + format.getExtension());
+        candidates.add(root + "/" + format + "/" + theme + "/" + (tag ? "tags/" : "") + template + ".qute."
+                + format.getExtension());
         if (!Format.DEFAULT_THEME.equals(theme)) {
-            candidates
-                    .add(root + "/" + format + "/" + Format.DEFAULT_THEME + "/" + (tag ? "tags/" : "") + template + ".qute."
-                            + format.getExtension());
+            candidates.add(root + "/" + format + "/" + Format.DEFAULT_THEME + "/" + (tag ? "tags/" : "") + template
+                    + ".qute." + format.getExtension());
         }
 
         InputStream is = null;
@@ -472,8 +430,8 @@ public class GenerateConfigDocMojo extends AbstractMojo {
     /**
      * A section path can contain quotes when being inside a Map.
      * <p>
-     * While not very common, we sometimes have to generate a section inside a Map
-     * e.g. for the XDS config of the gRPC client.
+     * While not very common, we sometimes have to generate a section inside a Map e.g. for the XDS config of the gRPC
+     * client.
      */
     private static String cleanSectionPath(String sectionPath) {
         return sectionPath.replace('"', '-');

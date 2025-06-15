@@ -27,27 +27,20 @@ public class EnabledProactiveAuthFailedExceptionMapperHttp2Test {
             AuthFailedExceptionMapper.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(classes)
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=true\n" +
-                            "quarkus.smallrye-jwt.blocking-authentication=true\n"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(classes)
+            .addAsResource(new StringAsset(
+                    "quarkus.http.auth.proactive=true\n" + "quarkus.smallrye-jwt.blocking-authentication=true\n"),
+                    "application.properties"));
 
     @TestHTTPResource
     URL url;
 
     @Test
     public void testExMapperCustomizedResponse() throws IOException, InterruptedException, URISyntaxException {
-        var client = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_2)
-                .build();
+        var client = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
 
         var response = client.send(
-                HttpRequest.newBuilder()
-                        .GET()
-                        .header("Authorization", "Bearer 12345")
-                        .uri(url.toURI())
-                        .build(),
+                HttpRequest.newBuilder().GET().header("Authorization", "Bearer 12345").uri(url.toURI()).build(),
                 HttpResponse.BodyHandlers.ofString());
 
         assertEquals(401, response.statusCode());
@@ -57,9 +50,7 @@ public class EnabledProactiveAuthFailedExceptionMapperHttp2Test {
 
         @ServerExceptionMapper(value = AuthenticationFailedException.class)
         public Response unauthorized() {
-            return Response
-                    .status(401)
-                    .entity(CUSTOMIZED_RESPONSE).build();
+            return Response.status(401).entity(CUSTOMIZED_RESPONSE).build();
         }
 
     }

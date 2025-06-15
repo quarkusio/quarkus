@@ -21,6 +21,7 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ *
  * @version $Revision: 1 $
  */
 @SuppressWarnings("rawtypes")
@@ -31,7 +32,8 @@ public class ServerFormUrlEncodedProvider extends MapAsFormUrlEncodedProvider
         implements ServerMessageBodyReader<MultivaluedMap>, ServerMessageBodyWriter<MultivaluedMap> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return MultivaluedMap.class.equals(type);
     }
 
@@ -42,12 +44,14 @@ public class ServerFormUrlEncodedProvider extends MapAsFormUrlEncodedProvider
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return MultivaluedMap.class.isAssignableFrom(type);
     }
 
     @Override
-    public void writeResponse(MultivaluedMap o, Type genericType, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(MultivaluedMap o, Type genericType, ServerRequestContext context)
+            throws WebApplicationException {
         try {
             // FIXME: use response encoding
             context.serverResponse().end(multiValuedMapToString(o, MessageReaderUtil.UTF8_CHARSET));

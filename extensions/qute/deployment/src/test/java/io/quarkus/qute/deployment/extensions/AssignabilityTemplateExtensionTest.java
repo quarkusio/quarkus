@@ -23,10 +23,9 @@ public class AssignabilityTemplateExtensionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(Extensions.class)
-                    .addAsResource(new StringAsset(
-                            "{@java.time.LocalDateTime foo} {datetime:formatDate(foo)}"),
-                            "templates/foo.html"));
+            .withApplicationRoot((jar) -> jar.addClass(Extensions.class).addAsResource(
+                    new StringAsset("{@java.time.LocalDateTime foo} {datetime:formatDate(foo)}"),
+                    "templates/foo.html"));
 
     @Inject
     Template foo;

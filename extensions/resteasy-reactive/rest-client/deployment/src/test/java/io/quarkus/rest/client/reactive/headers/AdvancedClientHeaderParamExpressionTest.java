@@ -29,14 +29,11 @@ public class AdvancedClientHeaderParamExpressionTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class, DummyHeaderCalculator.class)
-                    .addAsResource(
-                            new StringAsset("my.property-value=" + HEADER_VALUE),
-                            "application.properties"));
+                    .addAsResource(new StringAsset("my.property-value=" + HEADER_VALUE), "application.properties"));
 
     @Test
     void test() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.call()).isEqualTo("property-foobar-value/method-test-call/foobar-test-method-header");
         assertThat(client.call2()).isEqualTo("property-foobar-value/method-test-call/testtest2");

@@ -53,8 +53,8 @@ public class ConfigAnnotationScanner {
     private final List<ConfigAnnotationListener> configRootListeners;
 
     /**
-     * These are handled specifically as we just want to collect the javadoc.
-     * They are actually consumed as super interfaces in a config root.
+     * These are handled specifically as we just want to collect the javadoc. They are actually consumed as super
+     * interfaces in a config root.
      */
     private final List<ConfigAnnotationListener> configMappingWithoutConfigRootListeners;
 
@@ -72,7 +72,8 @@ public class ConfigAnnotationScanner {
                 configRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
                 configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
 
-                configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
+                configMappingWithoutConfigRootListeners
+                        .add(new JavadocConfigMappingListener(config, utils, configCollector));
             } else {
                 configRootListeners.add(new JavadocLegacyConfigRootListener(config, utils, configCollector));
                 configRootListeners.add(new LegacyConfigRootListener(config, utils, configCollector));
@@ -86,12 +87,14 @@ public class ConfigAnnotationScanner {
                 configRootListeners.add(new ConfigMappingListener(config, utils, configCollector));
                 configRootListeners.add(new LegacyConfigRootListener(config, utils, configCollector));
 
-                configMappingWithoutConfigRootListeners.add(new JavadocConfigMappingListener(config, utils, configCollector));
+                configMappingWithoutConfigRootListeners
+                        .add(new JavadocConfigMappingListener(config, utils, configCollector));
             }
         }
 
         this.configRootListeners = Collections.unmodifiableList(configRootListeners);
-        this.configMappingWithoutConfigRootListeners = Collections.unmodifiableList(configMappingWithoutConfigRootListeners);
+        this.configMappingWithoutConfigRootListeners = Collections
+                .unmodifiableList(configMappingWithoutConfigRootListeners);
     }
 
     public void scanConfigGroups(RoundEnvironment roundEnv, TypeElement annotation) {
@@ -162,12 +165,14 @@ public class ConfigAnnotationScanner {
 
             try {
                 // we need to forge a dummy DiscoveryConfigRoot
-                // it's mostly ignored in the listeners, except for checking if it's a config mapping (for mixed modules)
-                DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), "dummy", "dummy",
-                        utils.element().getBinaryName(configMappingWithoutConfigRoot),
-                        configMappingWithoutConfigRoot.getQualifiedName().toString(),
-                        ConfigPhase.BUILD_TIME, null, true);
-                scanElement(configMappingWithoutConfigRootListeners, discoveryConfigRoot, configMappingWithoutConfigRoot);
+                // it's mostly ignored in the listeners, except for checking if it's a config mapping (for mixed
+                // modules)
+                DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), "dummy",
+                        "dummy", utils.element().getBinaryName(configMappingWithoutConfigRoot),
+                        configMappingWithoutConfigRoot.getQualifiedName().toString(), ConfigPhase.BUILD_TIME, null,
+                        true);
+                scanElement(configMappingWithoutConfigRootListeners, discoveryConfigRoot,
+                        configMappingWithoutConfigRoot);
             } catch (Exception e) {
                 throw new IllegalStateException(
                         "Unable to scan config mapping without config root: " + configMappingWithoutConfigRoot, e);
@@ -232,8 +237,7 @@ public class ConfigAnnotationScanner {
                         TypeElement unwrappedTypeElement = resolvedType.unwrappedTypeElement();
                         if (!utils.element().isJdkClass(unwrappedTypeElement)) {
                             if (!isConfigGroupAlreadyHandled(unwrappedTypeElement)) {
-                                debug("Detected config group: " + resolvedType + " on method: "
-                                        + method, clazz);
+                                debug("Detected config group: " + resolvedType + " on method: " + method, clazz);
 
                                 DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(
                                         l -> l.onConfigGroup(unwrappedTypeElement));
@@ -264,8 +268,7 @@ public class ConfigAnnotationScanner {
                         TypeElement unwrappedTypeElement = resolvedType.unwrappedTypeElement();
                         if (utils.element().isAnnotationPresent(unwrappedTypeElement, Types.ANNOTATION_CONFIG_GROUP)
                                 && !isConfigGroupAlreadyHandled(unwrappedTypeElement)) {
-                            debug("Detected config group: " + resolvedType + " on field: "
-                                    + field, clazz);
+                            debug("Detected config group: " + resolvedType + " on field: " + field, clazz);
 
                             DiscoveryConfigGroup discoveryConfigGroup = applyRootListeners(
                                     l -> l.onConfigGroup(unwrappedTypeElement));
@@ -339,8 +342,7 @@ public class ConfigAnnotationScanner {
 
         boolean optional = qualifiedName.startsWith(Optional.class.getName());
         boolean map = qualifiedName.equals(Map.class.getName());
-        boolean list = qualifiedName.equals(List.class.getName())
-                || qualifiedName.equals(Set.class.getName());
+        boolean list = qualifiedName.equals(List.class.getName()) || qualifiedName.equals(Set.class.getName());
 
         List<? extends TypeMirror> typeArguments = declaredType.getTypeArguments();
         if (!typeArguments.isEmpty()) {
@@ -408,8 +410,7 @@ public class ConfigAnnotationScanner {
             return true;
         }
         // Skip toString method, because mappings can include it and generate it
-        if (method.getSimpleName().contentEquals("toString")
-                && method.getParameters().isEmpty()) {
+        if (method.getSimpleName().contentEquals("toString") && method.getParameters().isEmpty()) {
             return true;
         }
 
@@ -451,7 +452,8 @@ public class ConfigAnnotationScanner {
         return false;
     }
 
-    private void applyListeners(List<ConfigAnnotationListener> listeners, Consumer<ConfigAnnotationListener> listenerFunction) {
+    private void applyListeners(List<ConfigAnnotationListener> listeners,
+            Consumer<ConfigAnnotationListener> listenerFunction) {
         for (ConfigAnnotationListener listener : listeners) {
             listenerFunction.accept(listener);
         }
@@ -465,8 +467,8 @@ public class ConfigAnnotationScanner {
             Optional<T> discoveryRootElementCandidate = listenerFunction.apply(listener);
             if (discoveryRootElementCandidate.isPresent()) {
                 if (discoveryRootElement != null) {
-                    throw new IllegalStateException("Multiple listeners returned discovery root elements for: " +
-                            discoveryRootElement.getQualifiedName());
+                    throw new IllegalStateException("Multiple listeners returned discovery root elements for: "
+                            + discoveryRootElement.getQualifiedName());
                 }
 
                 discoveryRootElement = discoveryRootElementCandidate.get();

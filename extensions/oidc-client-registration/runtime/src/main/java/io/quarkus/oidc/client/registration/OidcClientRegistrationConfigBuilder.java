@@ -14,10 +14,13 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 /**
  * The {@link OidcClientRegistrationConfig} builder. This builder is not thread safe.
  */
-public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigBuilder<OidcClientRegistrationConfigBuilder> {
+public final class OidcClientRegistrationConfigBuilder
+        extends OidcCommonConfigBuilder<OidcClientRegistrationConfigBuilder> {
 
-    private record MetadataImpl(Optional<String> clientName, Optional<String> redirectUri, Optional<String> postLogoutUri,
-            Map<String, String> extraProps) implements OidcClientRegistrationConfig.Metadata {
+    private record MetadataImpl(Optional<String> clientName, Optional<String> redirectUri,
+            Optional<String> postLogoutUri, Map<String, String> extraProps)
+            implements
+                OidcClientRegistrationConfig.Metadata {
 
     }
 
@@ -65,9 +68,8 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * {@link OidcClientRegistrationConfig} with documented defaults.
-     * Cached here so that we avoid building the SmallRye Config again and again when no-args builder constructors
-     * are used.
+     * {@link OidcClientRegistrationConfig} with documented defaults. Cached here so that we avoid building the SmallRye
+     * Config again and again when no-args builder constructors are used.
      */
     private static volatile OidcClientRegistrationConfig configWithDefaults = null;
 
@@ -102,7 +104,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * @param id {@link OidcClientRegistrationConfig#id()}
+     * @param id
+     *        {@link OidcClientRegistrationConfig#id()}
+     *
      * @return this builder
      */
     public OidcClientRegistrationConfigBuilder id(String id) {
@@ -111,7 +115,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * @param registrationEnabled {@link OidcClientRegistrationConfig#registrationEnabled()}
+     * @param registrationEnabled
+     *        {@link OidcClientRegistrationConfig#registrationEnabled()}
+     *
      * @return this builder
      */
     public OidcClientRegistrationConfigBuilder registrationEnabled(boolean registrationEnabled) {
@@ -120,7 +126,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * @param registerEarly {@link OidcClientRegistrationConfig#registerEarly()}
+     * @param registerEarly
+     *        {@link OidcClientRegistrationConfig#registerEarly()}
+     *
      * @return this builder
      */
     public OidcClientRegistrationConfigBuilder registerEarly(boolean registerEarly) {
@@ -129,7 +137,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * @param initialToken {@link OidcClientRegistrationConfig#initialToken()}
+     * @param initialToken
+     *        {@link OidcClientRegistrationConfig#initialToken()}
+     *
      * @return this builder
      */
     public OidcClientRegistrationConfigBuilder initialToken(String initialToken) {
@@ -138,7 +148,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * @param redirectUri {@link OidcClientRegistrationConfig.Metadata#redirectUri()}
+     * @param redirectUri
+     *        {@link OidcClientRegistrationConfig.Metadata#redirectUri()}
+     *
      * @return this builder
      */
     public OidcClientRegistrationConfigBuilder metadata(String redirectUri) {
@@ -146,8 +158,11 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * @param clientName {@link OidcClientRegistrationConfig.Metadata#clientName()}
-     * @param redirectUri {@link OidcClientRegistrationConfig.Metadata#redirectUri()}
+     * @param clientName
+     *        {@link OidcClientRegistrationConfig.Metadata#clientName()}
+     * @param redirectUri
+     *        {@link OidcClientRegistrationConfig.Metadata#redirectUri()}
+     *
      * @return this builder
      */
     public OidcClientRegistrationConfigBuilder metadata(String clientName, String redirectUri) {
@@ -155,7 +170,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     }
 
     /**
-     * @param metadata {@link OidcClientRegistrationConfig#metadata()}
+     * @param metadata
+     *        {@link OidcClientRegistrationConfig#metadata()}
+     *
      * @return this builder
      */
     public OidcClientRegistrationConfigBuilder metadata(OidcClientRegistrationConfig.Metadata metadata) {
@@ -206,7 +223,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
         }
 
         /**
-         * @param clientName {@link OidcClientRegistrationConfig.Metadata#clientName()}
+         * @param clientName
+         *        {@link OidcClientRegistrationConfig.Metadata#clientName()}
+         *
          * @return this builder
          */
         public MetadataBuilder clientName(String clientName) {
@@ -215,7 +234,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
         }
 
         /**
-         * @param redirectUri {@link OidcClientRegistrationConfig.Metadata#redirectUri()}
+         * @param redirectUri
+         *        {@link OidcClientRegistrationConfig.Metadata#redirectUri()}
+         *
          * @return this builder
          */
         public MetadataBuilder redirectUri(String redirectUri) {
@@ -224,7 +245,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
         }
 
         /**
-         * @param postLogoutUri {@link OidcClientRegistrationConfig.Metadata#postLogoutUri()}
+         * @param postLogoutUri
+         *        {@link OidcClientRegistrationConfig.Metadata#postLogoutUri()}
+         *
          * @return this builder
          */
         public MetadataBuilder postLogoutUri(String postLogoutUri) {
@@ -235,8 +258,11 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
         /**
          * Adds extra property to {@link OidcClientRegistrationConfig.Metadata#extraProps()}.
          *
-         * @param key extra property key; must not be null
-         * @param value extra property value; must not be null
+         * @param key
+         *        extra property key; must not be null
+         * @param value
+         *        extra property value; must not be null
+         *
          * @return this builder
          */
         public MetadataBuilder extraProperty(String key, String value) {
@@ -247,7 +273,9 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
         }
 
         /**
-         * @param extraProps {@link OidcClientRegistrationConfig.Metadata#extraProps()}; must not be null
+         * @param extraProps
+         *        {@link OidcClientRegistrationConfig.Metadata#extraProps()}; must not be null
+         *
          * @return this builder
          */
         public MetadataBuilder extraProps(Map<String, String> extraProps) {
@@ -260,9 +288,7 @@ public final class OidcClientRegistrationConfigBuilder extends OidcCommonConfigB
     private static OidcClientRegistrationConfig getConfigWithDefaults() {
         if (configWithDefaults == null) {
             final OidcClientRegistrationsConfig clientRegistrationsConfig = new SmallRyeConfigBuilder()
-                    .addDiscoveredConverters()
-                    .withMapping(OidcClientRegistrationsConfig.class)
-                    .build()
+                    .addDiscoveredConverters().withMapping(OidcClientRegistrationsConfig.class).build()
                     .getConfigMapping(OidcClientRegistrationsConfig.class);
             configWithDefaults = getDefaultClientRegistration(clientRegistrationsConfig);
         }

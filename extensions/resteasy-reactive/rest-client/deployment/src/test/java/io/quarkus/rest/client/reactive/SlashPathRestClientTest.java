@@ -20,12 +20,9 @@ public class SlashPathRestClientTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClientRemovingSlashes.class,
-                            HelloClientUsingConfigKey.class,
-                            HelloClientUsingSimpleName.class,
-                            HelloClientUsingClassName.class,
-                            HelloResource.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(HelloClientRemovingSlashes.class, HelloClientUsingConfigKey.class,
+                            HelloClientUsingSimpleName.class, HelloClientUsingClassName.class, HelloResource.class))
             // disable the removal of trailing slash at client side
             .overrideConfigKey("quarkus.rest-client.test.removes-trailing-slash", "false")
             .overrideConfigKey("quarkus.rest-client.HelloClientUsingSimpleName.removes-trailing-slash", "false")
@@ -34,8 +31,7 @@ public class SlashPathRestClientTest {
                     "false")
             // disable the removal of trailing slash at server side
             .overrideConfigKey("quarkus.rest.removes-trailing-slash", "false")
-            .overrideRuntimeConfigKey("quarkus.rest-client.test.url",
-                    "http://localhost:${quarkus.http.test-port:8081}")
+            .overrideRuntimeConfigKey("quarkus.rest-client.test.url", "http://localhost:${quarkus.http.test-port:8081}")
             .overrideRuntimeConfigKey("quarkus.rest-client.default.url",
                     "http://localhost:${quarkus.http.test-port:8081}")
             .overrideRuntimeConfigKey("quarkus.rest-client.HelloClientUsingSimpleName.url",

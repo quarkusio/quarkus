@@ -30,87 +30,43 @@ import io.smallrye.mutiny.Uni;
 public class CloserTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(PerRequestResource.class, SingletonResource.class, CounterResource.class,
-                                    Counter.class);
-                }
-            }).overrideRuntimeConfigKey("quarkus.thread-pool.max-threads", "1")
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(PerRequestResource.class, SingletonResource.class,
+                    CounterResource.class, Counter.class);
+        }
+    }).overrideRuntimeConfigKey("quarkus.thread-pool.max-threads", "1")
             .overrideRuntimeConfigKey("quarkus.vertx.event-loops-pool-size", "1");
 
     @Test
     public void test() {
-        get("/counter/singleton")
-                .then()
-                .body(equalTo("0"));
-        get("/counter/uni-singleton")
-                .then()
-                .body(equalTo("0"));
-        get("/counter/per-request")
-                .then()
-                .body(equalTo("0"));
+        get("/counter/singleton").then().body(equalTo("0"));
+        get("/counter/uni-singleton").then().body(equalTo("0"));
+        get("/counter/per-request").then().body(equalTo("0"));
 
-        get("/singleton")
-                .then()
-                .statusCode(200)
-                .body(equalTo("0"));
-        get("/singleton")
-                .then()
-                .statusCode(200)
-                .body(equalTo("1"));
+        get("/singleton").then().statusCode(200).body(equalTo("0"));
+        get("/singleton").then().statusCode(200).body(equalTo("1"));
         await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
-            get("/counter/singleton")
-                    .then()
-                    .body(equalTo("2"));
+            get("/counter/singleton").then().body(equalTo("2"));
         });
-        get("/counter/uni-singleton")
-                .then()
-                .body(equalTo("0"));
-        get("/counter/per-request")
-                .then()
-                .body(equalTo("0"));
+        get("/counter/uni-singleton").then().body(equalTo("0"));
+        get("/counter/per-request").then().body(equalTo("0"));
 
-        get("/uni-singleton")
-                .then()
-                .statusCode(200)
-                .body(equalTo("0"));
-        get("/uni-singleton")
-                .then()
-                .statusCode(200)
-                .body(equalTo("1"));
-        get("/counter/singleton")
-                .then()
-                .body(equalTo("2"));
+        get("/uni-singleton").then().statusCode(200).body(equalTo("0"));
+        get("/uni-singleton").then().statusCode(200).body(equalTo("1"));
+        get("/counter/singleton").then().body(equalTo("2"));
         await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
-            get("/counter/uni-singleton")
-                    .then()
-                    .body(equalTo("2"));
+            get("/counter/uni-singleton").then().body(equalTo("2"));
         });
-        get("/counter/per-request")
-                .then()
-                .body(equalTo("0"));
+        get("/counter/per-request").then().body(equalTo("0"));
 
-        get("/per-request")
-                .then()
-                .statusCode(200)
-                .body(equalTo("0"));
-        get("/per-request")
-                .then()
-                .statusCode(200)
-                .body(equalTo("1"));
-        get("/counter/singleton")
-                .then()
-                .body(equalTo("2"));
-        get("/counter/uni-singleton")
-                .then()
-                .body(equalTo("2"));
+        get("/per-request").then().statusCode(200).body(equalTo("0"));
+        get("/per-request").then().statusCode(200).body(equalTo("1"));
+        get("/counter/singleton").then().body(equalTo("2"));
+        get("/counter/uni-singleton").then().body(equalTo("2"));
         await().atMost(2, TimeUnit.SECONDS).untilAsserted(() -> {
-            get("/counter/per-request")
-                    .then()
-                    .body(equalTo("2"));
+            get("/counter/per-request").then().body(equalTo("2"));
         });
     }
 
@@ -173,8 +129,7 @@ public class CloserTest {
         @GET
         public Uni<Integer> get() {
             return Uni.createFrom().completionStage(() -> CompletableFuture.completedStage(null))
-                    .invoke(() -> closer.add(UniSingletonResource.this))
-                    .map(v -> counter.uniSingleton.get());
+                    .invoke(() -> closer.add(UniSingletonResource.this)).map(v -> counter.uniSingleton.get());
         }
 
         @Override

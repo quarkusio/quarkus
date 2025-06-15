@@ -13,9 +13,8 @@ import org.jboss.resteasy.reactive.server.jaxrs.ProvidersImpl;
 import io.vertx.core.http.HttpServerResponse;
 
 /**
- * Provides CDI producers for objects that can be injected via @Context
- * In RESTEasy Reactive this works because @Context is considered an alias for @Inject
- * through the use of {@code AutoInjectAnnotationBuildItem}
+ * Provides CDI producers for objects that can be injected via @Context In RESTEasy Reactive this works because @Context
+ * is considered an alias for @Inject through the use of {@code AutoInjectAnnotationBuildItem}
  */
 @Singleton
 public class QuarkusContextProducers {

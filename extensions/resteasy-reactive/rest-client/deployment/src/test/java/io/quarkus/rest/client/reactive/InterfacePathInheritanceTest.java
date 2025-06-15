@@ -24,17 +24,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InterfacePathInheritanceTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Z.class)
-                    .addClass(Y.class)
-                    .addClass(InheritanceTestClient.class))
+            .withApplicationRoot((jar) -> jar.addClass(Z.class).addClass(Y.class).addClass(InheritanceTestClient.class))
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
                 @Override
                 public void accept(BuildChainBuilder buildChainBuilder) {
                     buildChainBuilder.addBuildStep(new BuildStep() {
                         @Override
                         public void execute(BuildContext context) {
-                            ResourceScanningResultBuildItem consumed = context.consume(ResourceScanningResultBuildItem.class);
+                            ResourceScanningResultBuildItem consumed = context
+                                    .consume(ResourceScanningResultBuildItem.class);
                             context.produce(new FeatureBuildItem("just-here-to-invoke-buildstep"));
 
                             Map<DotName, String> clientInterfaces = consumed.getResult().getClientInterfaces();

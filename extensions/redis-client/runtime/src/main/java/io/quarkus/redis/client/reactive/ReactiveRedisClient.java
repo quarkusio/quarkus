@@ -10,13 +10,10 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.mutiny.redis.client.Response;
 
 /**
- * A Redis client offering reactive Redis commands.
+ * A Redis client offering reactive Redis commands. For more information about how each individual command visit the
+ * <a href="https://redis.io/commands">Redis Commands Page</a>
  *
- * For more information about how each individual command visit
- * the <a href="https://redis.io/commands">Redis Commands Page</a>
- *
- * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or
- *             {@link ReactiveRedisDataSource} instead.
+ * @deprecated Use {@link io.vertx.mutiny.redis.client.RedisAPI} or {@link ReactiveRedisDataSource} instead.
  */
 @Deprecated
 public interface ReactiveRedisClient {

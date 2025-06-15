@@ -34,8 +34,8 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
             output.throwIfUnmatchedArguments(spec.commandLine());
 
             BuildSystemRunner runner = getRunner();
-            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(
-                    true, devOptions, debugOptions, params);
+            List<Supplier<BuildSystemRunner.BuildCommandArgs>> commandArgs = runner.prepareDevTestMode(true, devOptions,
+                    debugOptions, params);
 
             if (devOptions.isDryRun()) {
                 dryRunDev(spec.commandLine().getHelp(), runner.getBuildTool(), commandArgs.iterator().next().get());
@@ -50,32 +50,22 @@ public class Dev extends BaseBuildCommand implements Callable<Integer> {
             }
             return ret;
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to launch project in dev mode: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to launch project in dev mode: " + e.getMessage());
         }
     }
 
     void dryRunDev(CommandLine.Help help, BuildTool buildTool, BuildSystemRunner.BuildCommandArgs args) {
-        output.printText(new String[] {
-                "\nRun current project in dev mode\n",
-                "\t" + projectRoot().toString()
-        });
+        output.printText(new String[] { "\nRun current project in dev mode\n", "\t" + projectRoot().toString() });
         Map<String, String> dryRunOutput = new TreeMap<>();
         dryRunOutput.put("Build tool", buildTool.name());
         output.info(help.createTextTable(dryRunOutput).toString());
 
-        output.printText(new String[] {
-                "\nCommand line:\n",
-                args.showCommand()
-        });
+        output.printText(new String[] { "\nCommand line:\n", args.showCommand() });
     }
 
     @Override
     public String toString() {
-        return "Dev [debugOptions=" + debugOptions
-                + ", devOptions=" + devOptions
-                + ", properties=" + propertiesOptions.properties
-                + ", output=" + output
-                + ", params=" + params + "]";
+        return "Dev [debugOptions=" + debugOptions + ", devOptions=" + devOptions + ", properties="
+                + propertiesOptions.properties + ", output=" + output + ", params=" + params + "]";
     }
 }

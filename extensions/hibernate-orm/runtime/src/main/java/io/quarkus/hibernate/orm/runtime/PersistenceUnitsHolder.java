@@ -23,22 +23,18 @@ public final class PersistenceUnitsHolder {
     private static volatile PersistenceUnits persistenceUnits;
 
     /**
-     * Initialize JPA for use in Quarkus. In a native image. This must be called
-     * from within a static init method.
-     *
-     * The scanner may be null to use the default scanner, or a custom scanner can be
-     * used to stop Hibernate scanning. It is expected that the scanner will be
-     * provided by Quarkus via its hold of Jandex info.
+     * Initialize JPA for use in Quarkus. In a native image. This must be called from within a static init method. The
+     * scanner may be null to use the default scanner, or a custom scanner can be used to stop Hibernate scanning. It is
+     * expected that the scanner will be provided by Quarkus via its hold of Jandex info.
      *
      * @param puDefinitions
      * @param scanner
      */
-    static void initializeJpa(List<QuarkusPersistenceUnitDefinition> puDefinitions,
-            Scanner scanner, Collection<Class<? extends Integrator>> additionalIntegrators,
-            PreGeneratedProxies preGeneratedProxies) {
+    static void initializeJpa(List<QuarkusPersistenceUnitDefinition> puDefinitions, Scanner scanner,
+            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies preGeneratedProxies) {
         final List<QuarkusPersistenceUnitDescriptor> units = convertPersistenceUnits(puDefinitions);
-        final Map<String, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner, additionalIntegrators,
-                preGeneratedProxies);
+        final Map<String, RecordedState> metadata = constructMetadataAdvance(puDefinitions, scanner,
+                additionalIntegrators, preGeneratedProxies);
 
         persistenceUnits = new PersistenceUnits(units, metadata);
     }
@@ -59,14 +55,13 @@ public final class PersistenceUnitsHolder {
 
     private static List<QuarkusPersistenceUnitDescriptor> convertPersistenceUnits(
             final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors) {
-        return parsedPersistenceXmlDescriptors.stream().map(QuarkusPersistenceUnitDefinition::getPersistenceUnitDescriptor)
-                .collect(Collectors.toList());
+        return parsedPersistenceXmlDescriptors.stream()
+                .map(QuarkusPersistenceUnitDefinition::getPersistenceUnitDescriptor).collect(Collectors.toList());
     }
 
     private static Map<String, RecordedState> constructMetadataAdvance(
             final List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors, Scanner scanner,
-            Collection<Class<? extends Integrator>> additionalIntegrators,
-            PreGeneratedProxies proxyClassDefinitions) {
+            Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies proxyClassDefinitions) {
         Map<String, RecordedState> recordedStates = new HashMap<>();
 
         for (QuarkusPersistenceUnitDefinition unit : parsedPersistenceXmlDescriptors) {
@@ -96,8 +91,8 @@ public final class PersistenceUnitsHolder {
 
     public static RecordedState createMetadata(QuarkusPersistenceUnitDefinition unit, Scanner scanner,
             Collection<Class<? extends Integrator>> additionalIntegrators, PreGeneratedProxies proxyDefinitions) {
-        FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder(unit, scanner, additionalIntegrators,
-                proxyDefinitions);
+        FastBootMetadataBuilder fastBootMetadataBuilder = new FastBootMetadataBuilder(unit, scanner,
+                additionalIntegrators, proxyDefinitions);
         return fastBootMetadataBuilder.build();
     }
 

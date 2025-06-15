@@ -10,8 +10,8 @@ public class MongoClientSupport {
     private final List<ConnectionPoolListener> connectionPoolListeners;
     private final boolean disableSslSupport;
 
-    public MongoClientSupport(List<String> bsonDiscriminators,
-            List<ConnectionPoolListener> connectionPoolListeners, boolean disableSslSupport) {
+    public MongoClientSupport(List<String> bsonDiscriminators, List<ConnectionPoolListener> connectionPoolListeners,
+            boolean disableSslSupport) {
         this.bsonDiscriminators = bsonDiscriminators;
         this.connectionPoolListeners = connectionPoolListeners;
         this.disableSslSupport = disableSslSupport;

@@ -5,8 +5,8 @@ import org.jboss.jandex.CompositeIndex;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Provides the Jandex index of the application, combined with the index
- * of additional JPA components that might have been generated.
+ * Provides the Jandex index of the application, combined with the index of additional JPA components that might have
+ * been generated.
  *
  * @author Sanne Grinovero <sanne@hibernate.org>
  */

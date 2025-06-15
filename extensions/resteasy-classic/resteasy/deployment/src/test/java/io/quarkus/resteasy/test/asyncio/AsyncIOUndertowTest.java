@@ -15,8 +15,7 @@ public class AsyncIOUndertowTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AsyncIOResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(AsyncIOResource.class))
             .withConfigurationResource("application-asyncio.properties")
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-undertow", Version.getVersion())));
 

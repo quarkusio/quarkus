@@ -11,16 +11,12 @@ public class CORSRegexWildcardTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanRegisteringRoute.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BeanRegisteringRoute.class)
                     .addAsResource("conf/cors-regex-wildcard.properties", "application.properties"));
 
     @Test
     public void corsRegexValidOriginTest() {
-        given().header("Origin", "https://asdf.domain.com")
-                .when()
-                .get("/test").then()
-                .statusCode(200)
+        given().header("Origin", "https://asdf.domain.com").when().get("/test").then().statusCode(200)
                 .header("Access-Control-Allow-Origin", "https://asdf.domain.com")
                 .header("Access-Control-Allow-Credentials", "false");
     }

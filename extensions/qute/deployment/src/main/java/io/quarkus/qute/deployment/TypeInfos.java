@@ -29,9 +29,8 @@ final class TypeInfos {
     static List<Info> create(Expression expression, IndexView index, Function<String, String> templateIdToPathFun) {
         if (expression.isLiteral()) {
             Expression.Part literalPart = expression.getParts().get(0);
-            return Collections
-                    .singletonList(create(literalPart.getTypeInfo(), literalPart, index,
-                            templateIdToPathFun, expression.getOrigin()));
+            return Collections.singletonList(
+                    create(literalPart.getTypeInfo(), literalPart, index, templateIdToPathFun, expression.getOrigin()));
         }
         List<Info> infos = new ArrayList<>();
         boolean splitParts = true;
@@ -49,8 +48,8 @@ final class TypeInfos {
         return infos;
     }
 
-    static Info create(String typeInfo, Expression.Part part, IndexView index, Function<String, String> templateIdToPathFun,
-            Origin expressionOrigin) {
+    static Info create(String typeInfo, Expression.Part part, IndexView index,
+            Function<String, String> templateIdToPathFun, Origin expressionOrigin) {
         if (typeInfo.startsWith(TYPE_INFO_SEPARATOR)
                 && (typeInfo.endsWith(TYPE_INFO_SEPARATOR) || typeInfo.endsWith(RIGHT_ANGLE))) {
             // |TYPE_INFO| or |TYPE_INFO|<section-hint>
@@ -91,8 +90,8 @@ final class TypeInfos {
                         resolvedType = resolveType(classStr);
                     }
                 }
-                return new TypeInfo(typeInfo, part, helperHint(typeInfo.substring(endIdx, typeInfo.length())), resolvedType,
-                        rawClass);
+                return new TypeInfo(typeInfo, part, helperHint(typeInfo.substring(endIdx, typeInfo.length())),
+                        resolvedType, rawClass);
             }
         } else {
             String hint = helperHint(typeInfo);

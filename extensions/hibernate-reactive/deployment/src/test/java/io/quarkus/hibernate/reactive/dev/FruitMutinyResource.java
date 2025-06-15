@@ -41,9 +41,7 @@ public class FruitMutinyResource {
 
     @GET
     public Uni<List<Fruit>> get() {
-        return sf.withTransaction((s, t) -> s
-                .createNamedQuery("Fruits.findAll", Fruit.class)
-                .getResultList());
+        return sf.withTransaction((s, t) -> s.createNamedQuery("Fruits.findAll", Fruit.class).getResultList());
     }
 
     @GET
@@ -71,11 +69,10 @@ public class FruitMutinyResource {
 
         return sf.withTransaction((s, t) -> s.find(Fruit.class, id)
                 // If entity exists then update it
-                .onItem().ifNotNull().invoke(entity -> entity.setName(fruit.getName()))
-                .onItem().ifNotNull().transform(entity -> Response.ok(entity).build())
+                .onItem().ifNotNull().invoke(entity -> entity.setName(fruit.getName())).onItem().ifNotNull()
+                .transform(entity -> Response.ok(entity).build())
                 // If entity not found return the appropriate response
-                .onItem().ifNull()
-                .continueWith(() -> Response.ok().status(NOT_FOUND).build()));
+                .onItem().ifNull().continueWith(() -> Response.ok().status(NOT_FOUND).build()));
     }
 
     @DELETE
@@ -84,16 +81,13 @@ public class FruitMutinyResource {
         return sf.withTransaction((s, t) -> s.find(Fruit.class, id)
                 // If entity exists then delete it
                 .onItem().ifNotNull()
-                .transformToUni(entity -> s.remove(entity)
-                        .replaceWith(() -> Response.ok().status(NO_CONTENT).build()))
+                .transformToUni(entity -> s.remove(entity).replaceWith(() -> Response.ok().status(NO_CONTENT).build()))
                 // If entity not found return the appropriate response
                 .onItem().ifNull().continueWith(() -> Response.ok().status(NOT_FOUND).build()));
     }
 
     /**
-     * Create a HTTP response from an exception.
-     *
-     * Response Example:
+     * Create a HTTP response from an exception. Response Example:
      *
      * <pre>
      * HTTP/1.1 422 Unprocessable Entity
@@ -130,9 +124,7 @@ public class FruitMutinyResource {
                 exceptionJson.put("error", exception.getMessage());
             }
 
-            return Response.status(code)
-                    .entity(exceptionJson)
-                    .build();
+            return Response.status(code).entity(exceptionJson).build();
         }
 
     }

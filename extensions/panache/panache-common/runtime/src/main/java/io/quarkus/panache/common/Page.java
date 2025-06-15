@@ -4,11 +4,9 @@ package io.quarkus.panache.common;
  * <p>
  * Utility class to represent paging information. Page instances are immutable.
  * </p>
- *
  * <p>
  * Usage:
  * </p>
- *
  * <code><pre>
  * Page page = Page.ofSize(25);
  * Page secondPage = page.next();
@@ -31,8 +29,12 @@ public class Page {
     /**
      * Builds a page of the given size.
      *
-     * @param size the page size
-     * @throws IllegalArgumentException if the page size is less than or equal to 0
+     * @param size
+     *        the page size
+     *
+     * @throws IllegalArgumentException
+     *         if the page size is less than or equal to 0
+     *
      * @see #ofSize(int)
      */
     public Page(int size) {
@@ -42,10 +44,16 @@ public class Page {
     /**
      * Builds a page of the given index and size.
      *
-     * @param index the page index (0-based)
-     * @param size the page size
-     * @throws IllegalArgumentException if the page index is less than 0
-     * @throws IllegalArgumentException if the page size is less than or equal to 0
+     * @param index
+     *        the page index (0-based)
+     * @param size
+     *        the page size
+     *
+     * @throws IllegalArgumentException
+     *         if the page index is less than 0
+     * @throws IllegalArgumentException
+     *         if the page size is less than or equal to 0
+     *
      * @see #of(int, int)
      */
     public Page(int index, int size) {
@@ -60,10 +68,15 @@ public class Page {
     /**
      * Builds a page of the given index and size.
      *
-     * @param index the page index (0-based)
-     * @param size the page size
-     * @throws IllegalArgumentException if the page index is less than 0
-     * @throws IllegalArgumentException if the page size is less than or equal to 0
+     * @param index
+     *        the page index (0-based)
+     * @param size
+     *        the page size
+     *
+     * @throws IllegalArgumentException
+     *         if the page index is less than 0
+     * @throws IllegalArgumentException
+     *         if the page size is less than or equal to 0
      */
     public static Page of(int index, int size) {
         return new Page(index, size);
@@ -72,8 +85,11 @@ public class Page {
     /**
      * Builds a page of the given size.
      *
-     * @param size the page size
-     * @throws IllegalArgumentException if the page size is less than or equal to 0
+     * @param size
+     *        the page size
+     *
+     * @throws IllegalArgumentException
+     *         if the page size is less than or equal to 0
      */
     public static Page ofSize(int size) {
         return new Page(size);
@@ -83,6 +99,7 @@ public class Page {
      * Returns a new page with the next page index and the same size.
      *
      * @return a new page with the next page index and the same size.
+     *
      * @see #previous()
      */
     public Page next() {
@@ -93,6 +110,7 @@ public class Page {
      * Returns a new page with the previous page index and the same size, or this page if it is the first page.
      *
      * @return a new page with the next page index and the same size, or this page if it is the first page.
+     *
      * @see #next()
      */
     public Page previous() {
@@ -111,7 +129,9 @@ public class Page {
     /**
      * Returns a new page at the given page index and the same size, or this page if the page index is the same.
      *
-     * @param newIndex the new page index
+     * @param newIndex
+     *        the new page index
+     *
      * @return a new page at the given page index and the same size, or this page if the page index is the same.
      */
     public Page index(int newIndex) {

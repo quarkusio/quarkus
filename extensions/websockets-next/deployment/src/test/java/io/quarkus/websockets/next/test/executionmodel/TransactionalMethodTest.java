@@ -22,10 +22,9 @@ import io.vertx.core.Vertx;
 public class TransactionalMethodTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -47,7 +46,8 @@ public class TransactionalMethodTest {
         @Transactional
         @OnTextMessage
         Uni<String> message(String ignored) {
-            return Uni.createFrom().item("evenloop:" + Context.isOnEventLoopThread() + ",worker:" + Context.isOnWorkerThread());
+            return Uni.createFrom()
+                    .item("evenloop:" + Context.isOnEventLoopThread() + ",worker:" + Context.isOnWorkerThread());
         }
 
     }

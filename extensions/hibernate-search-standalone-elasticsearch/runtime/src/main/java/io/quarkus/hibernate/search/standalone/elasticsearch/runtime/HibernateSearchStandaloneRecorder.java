@@ -40,8 +40,7 @@ import io.vertx.ext.web.RoutingContext;
 public class HibernateSearchStandaloneRecorder {
 
     public void preBoot(HibernateSearchStandaloneElasticsearchMapperContext mapperContext,
-            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
-            Set<String> rootAnnotationMappedClassNames) {
+            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig, Set<String> rootAnnotationMappedClassNames) {
         Set<Class<?>> rootAnnotationMappedClasses = new LinkedHashSet<>();
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
         for (String className : rootAnnotationMappedClassNames) {
@@ -54,13 +53,11 @@ public class HibernateSearchStandaloneRecorder {
         Map<String, Object> bootProperties = new LinkedHashMap<>();
         new StaticInitListener(mapperContext, buildTimeConfig, rootAnnotationMappedClasses)
                 .contributeBootProperties(bootProperties::put);
-        StandalonePojoIntegrationBooter booter = StandalonePojoIntegrationBooter.builder()
-                .properties(bootProperties)
+        StandalonePojoIntegrationBooter booter = StandalonePojoIntegrationBooter.builder().properties(bootProperties)
                 // MethodHandles don't work at all in GraalVM 20 and below, and seem unreliable on GraalVM 21
                 .valueReadHandleFactory(ValueHandleFactory.usingJavaLangReflect())
                 // Integrate CDI
-                .property(StandalonePojoMapperSpiSettings.BEAN_PROVIDER, new ArcBeanProvider(Arc.container()))
-                .build();
+                .property(StandalonePojoMapperSpiSettings.BEAN_PROVIDER, new ArcBeanProvider(Arc.container())).build();
         booter.preBoot(bootProperties::put);
         HibernateSearchStandalonePreBootState.set(bootProperties);
     }
@@ -73,11 +70,9 @@ public class HibernateSearchStandaloneRecorder {
                     "Hibernate Search Standalone activated explicitly,"
                             + " but the Hibernate Search Standalone extension was disabled at build time."
                             + " If you want Hibernate Search Standalone to be active, you must set '"
-                            + enabledPropertyKey
-                            + "' to 'true' at build time."
+                            + enabledPropertyKey + "' to 'true' at build time."
                             + " If you don't want Hibernate Search Standalone to be active, you must leave '"
-                            + activePropertyKey
-                            + "' unset or set it to 'false'.",
+                            + activePropertyKey + "' unset or set it to 'false'.",
                     Set.of(enabledPropertyKey, activePropertyKey));
         }
     }
@@ -97,11 +92,9 @@ public class HibernateSearchStandaloneRecorder {
                             "Cannot retrieve the SearchMapping: Hibernate Search Standalone was deactivated through configuration properties");
                 }
                 Map<String, Object> bootProperties = new LinkedHashMap<>(HibernateSearchStandalonePreBootState.pop());
-                new RuntimeInitListener(mapperContext, runtimeConfig)
-                        .contributeRuntimeProperties(bootProperties::put);
+                new RuntimeInitListener(mapperContext, runtimeConfig).contributeRuntimeProperties(bootProperties::put);
                 StandalonePojoIntegrationBooter booter = StandalonePojoIntegrationBooter.builder()
-                        .properties(bootProperties)
-                        .build();
+                        .properties(bootProperties).build();
                 return booter.boot();
             }
         };
@@ -127,40 +120,33 @@ public class HibernateSearchStandaloneRecorder {
         private final Set<Class<?>> rootAnnotationMappedClasses;
 
         private StaticInitListener(HibernateSearchStandaloneElasticsearchMapperContext mapperContext,
-                HibernateSearchStandaloneBuildTimeConfig buildTimeConfig,
-                Set<Class<?>> rootAnnotationMappedClasses) {
+                HibernateSearchStandaloneBuildTimeConfig buildTimeConfig, Set<Class<?>> rootAnnotationMappedClasses) {
             this.mapperContext = mapperContext;
             this.buildTimeConfig = buildTimeConfig;
             this.rootAnnotationMappedClasses = rootAnnotationMappedClasses;
         }
 
         public void contributeBootProperties(BiConsumer<String, Object> propertyCollector) {
-            addConfig(propertyCollector,
-                    EngineSettings.BACKGROUND_FAILURE_HANDLER,
+            addConfig(propertyCollector, EngineSettings.BACKGROUND_FAILURE_HANDLER,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
-                            buildTimeConfig == null ? Optional.empty()
-                                    : buildTimeConfig.backgroundFailureHandler(),
+                            buildTimeConfig == null ? Optional.empty() : buildTimeConfig.backgroundFailureHandler(),
                             FailureHandler.class, null, null));
 
-            addConfig(propertyCollector,
-                    StandalonePojoMapperSettings.MAPPING_CONFIGURER,
+            addConfig(propertyCollector, StandalonePojoMapperSettings.MAPPING_CONFIGURER,
                     collectAllStandalonePojoMappingConfigurers());
 
-            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendBuildTimeProperties(
-                    propertyCollector, mapperContext,
-                    buildTimeConfig == null ? Collections.emptyMap() : buildTimeConfig.backends());
+            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendBuildTimeProperties(propertyCollector,
+                    mapperContext, buildTimeConfig == null ? Collections.emptyMap() : buildTimeConfig.backends());
         }
 
         private List<BeanReference<StandalonePojoMappingConfigurer>> collectAllStandalonePojoMappingConfigurers() {
             List<BeanReference<StandalonePojoMappingConfigurer>> configurers = new ArrayList<>();
             // 1. We add the quarkus-specific configurer:
-            configurers.add(BeanReference.ofInstance(
-                    new QuarkusHibernateSearchStandaloneMappingConfigurer(buildTimeConfig.mapping().structure(),
-                            rootAnnotationMappedClasses)));
+            configurers.add(BeanReference.ofInstance(new QuarkusHibernateSearchStandaloneMappingConfigurer(
+                    buildTimeConfig.mapping().structure(), rootAnnotationMappedClasses)));
             // 2. Then we check if any configurers were supplied by a user be it through a property or via an extension:
             Optional<List<BeanReference<StandalonePojoMappingConfigurer>>> beanReferences = HibernateSearchBeanUtil
-                    .multiExtensionBeanReferencesFor(
-                            buildTimeConfig.mapping().configurer(),
+                    .multiExtensionBeanReferencesFor(buildTimeConfig.mapping().configurer(),
                             StandalonePojoMappingConfigurer.class, null, null);
             if (beanReferences.isPresent()) {
                 configurers.addAll(beanReferences.get());
@@ -182,21 +168,18 @@ public class HibernateSearchStandaloneRecorder {
 
         public void contributeRuntimeProperties(BiConsumer<String, Object> propertyCollector) {
             if (runtimeConfig != null) {
-                addConfig(propertyCollector,
-                        StandalonePojoMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
+                addConfig(propertyCollector, StandalonePojoMapperSettings.SCHEMA_MANAGEMENT_STRATEGY,
                         runtimeConfig.schemaManagement().strategy());
             }
 
-            addConfig(propertyCollector,
-                    StandalonePojoMapperSettings.INDEXING_PLAN_SYNCHRONIZATION_STRATEGY,
+            addConfig(propertyCollector, StandalonePojoMapperSettings.INDEXING_PLAN_SYNCHRONIZATION_STRATEGY,
                     HibernateSearchBeanUtil.singleExtensionBeanReferenceFor(
                             runtimeConfig == null ? Optional.empty()
                                     : runtimeConfig.indexing().plan().synchronization().strategy(),
                             IndexingPlanSynchronizationStrategy.class, null, null));
 
-            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendRuntimeProperties(
-                    propertyCollector, mapperContext,
-                    runtimeConfig == null ? Collections.emptyMap() : runtimeConfig.backends());
+            HibernateSearchBackendElasticsearchConfigHandler.contributeBackendRuntimeProperties(propertyCollector,
+                    mapperContext, runtimeConfig == null ? Collections.emptyMap() : runtimeConfig.backends());
         }
     }
 }

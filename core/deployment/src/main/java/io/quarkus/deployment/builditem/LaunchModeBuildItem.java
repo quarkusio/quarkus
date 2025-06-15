@@ -36,8 +36,8 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     /**
      * The development mode type.
      * <p>
-     * Note that even for NORMAL launch modes this could be generating an application for the local side of remote
-     * dev mode, so this may be set even for launch mode normal.
+     * Note that even for NORMAL launch modes this could be generating an application for the local side of remote dev
+     * mode, so this may be set even for launch mode normal.
      */
     public Optional<DevModeType> getDevModeType() {
         return devModeType;
@@ -55,8 +55,7 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     /**
      * An Auxiliary Application is a second application running in the same JVM as a primary application.
      * <p>
-     * Currently, this is done to allow running tests in dev mode, while the main dev mode process continues to
-     * run.
+     * Currently, this is done to allow running tests in dev mode, while the main dev mode process continues to run.
      */
     public boolean isAuxiliaryApplication() {
         return auxiliaryApplication;
@@ -70,8 +69,8 @@ public final class LaunchModeBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * If this is a test. Dev mode tests don't launch with a launch mode TEST, so this
-     * can be used to determine if we are in a dev mode test.
+     * If this is a test. Dev mode tests don't launch with a launch mode TEST, so this can be used to determine if we
+     * are in a dev mode test.
      */
     public boolean isTest() {
         return test;

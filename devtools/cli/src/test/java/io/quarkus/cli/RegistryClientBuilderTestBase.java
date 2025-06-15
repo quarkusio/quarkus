@@ -33,7 +33,8 @@ public abstract class RegistryClientBuilderTestBase {
 
     static Path workDir() {
         if (workDir == null) {
-            var p = Path.of(System.getProperty("user.dir")).resolve("target").resolve("test-classes").resolve("test-work-dir");
+            var p = Path.of(System.getProperty("user.dir")).resolve("target").resolve("test-classes")
+                    .resolve("test-work-dir");
             try {
                 Files.createDirectories(p);
             } catch (IOException e) {
@@ -132,11 +133,7 @@ public abstract class RegistryClientBuilderTestBase {
     }
 
     protected CliDriver.Result run(Path dir, String... args) throws Exception {
-        return CliDriver.builder()
-                .setStartingDir(dir)
-                .setMavenRepoLocal(testRepo.toString())
-                .setMavenSettings(settingsXml.toString())
-                .addArgs(args)
-                .execute();
+        return CliDriver.builder().setStartingDir(dir).setMavenRepoLocal(testRepo.toString())
+                .setMavenSettings(settingsXml.toString()).addArgs(args).execute();
     }
 }

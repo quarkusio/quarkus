@@ -41,7 +41,8 @@ public class CORSFilter implements Handler<RoutingContext> {
         this.corsConfig = corsConfig;
         this.wildcardOrigin = isOriginConfiguredWithWildcard(this.corsConfig.origins());
         this.wildcardMethod = isConfiguredWithWildcard(corsConfig.methods());
-        this.allowedOriginsRegex = this.wildcardOrigin ? List.of() : parseAllowedOriginsRegex(this.corsConfig.origins());
+        this.allowedOriginsRegex = this.wildcardOrigin ? List.of()
+                : parseAllowedOriginsRegex(this.corsConfig.origins());
         this.configuredHttpMethods = createConfiguredHttpMethods(this.corsConfig.methods());
         this.exposedHeaders = createHeaderString(this.corsConfig.exposedHeaders());
         this.allowedHeaders = createHeaderString(this.corsConfig.headers());
@@ -96,6 +97,7 @@ public class CORSFilter implements Handler<RoutingContext> {
      * Parse the provided allowed origins for any regexes
      *
      * @param allowedOrigins
+     *
      * @return a list of compiled regular expressions. If none configured, and empty list is returned
      */
     public static List<Pattern> parseAllowedOriginsRegex(Optional<List<String>> allowedOrigins) {
@@ -115,11 +117,14 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     /**
-     * If any regular expression origins are configured, try to match on them.
-     * Regular expressions must begin and end with '/'
+     * If any regular expression origins are configured, try to match on them. Regular expressions must begin and end
+     * with '/'
      *
-     * @param allowOriginsRegex the configured regex origins.
-     * @param origin the specified origin
+     * @param allowOriginsRegex
+     *        the configured regex origins.
+     * @param origin
+     *        the specified origin
+     *
      * @return true if any configured regular expressions match the specified origin, false otherwise
      */
     public static boolean isOriginAllowedByRegex(List<Pattern> allowOriginsRegex, String origin) {
@@ -144,10 +149,11 @@ public class CORSFilter implements Handler<RoutingContext> {
             event.next();
         } else {
 
-            //for both normal and preflight requests we need to check the origin
+            // for both normal and preflight requests we need to check the origin
             boolean allowsOrigin = wildcardOrigin;
-            boolean originMatches = !wildcardOrigin && corsConfig.origins().isPresent() &&
-                    (corsConfig.origins().get().contains(origin) || isOriginAllowedByRegex(allowedOriginsRegex, origin));
+            boolean originMatches = !wildcardOrigin && corsConfig.origins().isPresent()
+                    && (corsConfig.origins().get().contains(origin)
+                            || isOriginAllowedByRegex(allowedOriginsRegex, origin));
             if (!allowsOrigin) {
                 if (corsConfig.origins().isPresent()) {
                     allowsOrigin = originMatches || isSameOrigin(request, origin);
@@ -168,7 +174,7 @@ public class CORSFilter implements Handler<RoutingContext> {
             if (request.method().equals(HttpMethod.OPTIONS)) {
                 final String requestedMethods = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD);
                 final String requestedHeaders = request.getHeader(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS);
-                //preflight request, handle it specially
+                // preflight request, handle it specially
                 if (requestedHeaders != null || requestedMethods != null) {
                     handlePreflightRequest(event, requestedHeaders, requestedMethods, origin, allowsOrigin);
                     response.end();
@@ -182,12 +188,12 @@ public class CORSFilter implements Handler<RoutingContext> {
                 response.headers().add(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, allowedMethods);
             }
 
-            //always set expose headers if present
+            // always set expose headers if present
             if (exposedHeaders != null) {
                 response.headers().add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, exposedHeaders);
             }
 
-            //we check that the actual request matches the allowed methods and headers
+            // we check that the actual request matches the allowed methods and headers
             if (!isMethodAllowed(request.method())) {
                 LOG.debugf("Method %s is not allowed", request.method());
                 response.setStatusCode(403);
@@ -200,14 +206,14 @@ public class CORSFilter implements Handler<RoutingContext> {
                 return;
             }
 
-            //all good, it can proceed
+            // all good, it can proceed
             event.next();
         }
     }
 
-    private void handlePreflightRequest(RoutingContext event, String requestedHeaders, String requestedMethods, String origin,
-            boolean allowsOrigin) {
-        //see https://fetch.spec.whatwg.org/#http-cors-protocol
+    private void handlePreflightRequest(RoutingContext event, String requestedHeaders, String requestedMethods,
+            String origin, boolean allowsOrigin) {
+        // see https://fetch.spec.whatwg.org/#http-cors-protocol
 
         if (corsConfig.accessControlMaxAge().isPresent()) {
             event.response().putHeader(HttpHeaders.ACCESS_CONTROL_MAX_AGE,
@@ -222,7 +228,7 @@ public class CORSFilter implements Handler<RoutingContext> {
             processPreFlightRequestedHeaders(response, requestedHeaders);
         }
 
-        //always set expose headers if present
+        // always set expose headers if present
         if (exposedHeaders != null) {
             response.headers().add(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, exposedHeaders);
         }
@@ -230,7 +236,7 @@ public class CORSFilter implements Handler<RoutingContext> {
     }
 
     static boolean isSameOrigin(HttpServerRequest request, String origin) {
-        //fast path check, when everything is the same
+        // fast path check, when everything is the same
         if (origin.startsWith(request.scheme())) {
             if (!substringMatch(origin, request.scheme().length(), "://", false)) {
                 LOG.debugf(
@@ -239,7 +245,7 @@ public class CORSFilter implements Handler<RoutingContext> {
                 return false;
             }
             if (substringMatch(origin, request.scheme().length() + 3, request.host(), true)) {
-                //they are a simple match
+                // they are a simple match
                 return true;
             }
             return isSameOriginSlowPath(request, origin);
@@ -250,40 +256,40 @@ public class CORSFilter implements Handler<RoutingContext> {
 
     static boolean isSameOriginSlowPath(HttpServerRequest request, String origin) {
         String absUriString = request.absoluteURI();
-        //we already know the scheme is correct, as the fast path will reject that
+        // we already know the scheme is correct, as the fast path will reject that
         URI baseUri = URI.create(absUriString);
         URI originUri = URI.create(origin);
         if (!originUri.getPath().isEmpty()) {
-            //origin should not contain a path component
-            //just reject it in this case
-            LOG.debugf("Same origin check has failed as the origin contains a path component. Request URI: %s, origin: %s",
+            // origin should not contain a path component
+            // just reject it in this case
+            LOG.debugf(
+                    "Same origin check has failed as the origin contains a path component. Request URI: %s, origin: %s",
                     request.absoluteURI(), origin);
             return false;
         }
         if (!baseUri.getHost().equals(originUri.getHost())) {
             LOG.debugf("Same origin check has failed, the host values do not match. Request URI: %s, origin: %s",
-                    request.absoluteURI(),
-                    origin);
+                    request.absoluteURI(), origin);
             return false;
         }
         if (baseUri.getPort() == originUri.getPort()) {
             return true;
         }
         if (baseUri.getPort() != -1 && originUri.getPort() != -1) {
-            //ports are explictly set
+            // ports are explictly set
             return false;
         }
         if (baseUri.getScheme().equals("http")) {
             if (baseUri.getPort() == 80 || baseUri.getPort() == -1) {
                 if (originUri.getPort() == 80 || originUri.getPort() == -1) {
-                    //port is either unset or 80
+                    // port is either unset or 80
                     return true;
                 }
             }
         } else if (baseUri.getScheme().equals("https")) {
             if (baseUri.getPort() == 443 || baseUri.getPort() == -1) {
                 if (originUri.getPort() == 443 || originUri.getPort() == -1) {
-                    //port is either unset or 443
+                    // port is either unset or 443
                     return true;
                 }
             }
@@ -298,12 +304,12 @@ public class CORSFilter implements Handler<RoutingContext> {
         int strPos = pos;
         int subPos = 0;
         if (pos + subLength > length) {
-            //too long, avoid checking in the loop
+            // too long, avoid checking in the loop
             return false;
         }
         for (;;) {
             if (subPos == subLength) {
-                //if we are at the end return the correct value, depending on if we are also at the end of the origin
+                // if we are at the end return the correct value, depending on if we are also at the end of the origin
                 return !requireFull || strPos == length;
             }
             if (str.charAt(strPos) != substring.charAt(subPos)) {

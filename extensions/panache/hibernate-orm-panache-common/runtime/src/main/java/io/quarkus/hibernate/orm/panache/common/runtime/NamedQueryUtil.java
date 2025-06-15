@@ -24,8 +24,8 @@ public final class NamedQueryUtil {
 
     public static void checkNamedQuery(Class<?> entityClass, String namedQuery) {
         if (!isNamedQuery(entityClass, namedQuery)) {
-            throw new PanacheQueryException("The named query '" + namedQuery +
-                    "' must be defined on your JPA entity or one of its super classes");
+            throw new PanacheQueryException("The named query '" + namedQuery
+                    + "' must be defined on your JPA entity or one of its super classes");
         }
     }
 
@@ -44,12 +44,11 @@ public final class NamedQueryUtil {
     }
 
     public static RuntimeException checkForNamedQueryMistake(RuntimeException x, String originalQuery) {
-        if (originalQuery != null
-                && (isQueryStringException(x)
-                        // JPA APIs return IllegalArgumentException when the query string is invalid,
-                        // which is not helpful but mandated by spec,
-                        // but the cause is actually meaningful.
-                        || x instanceof IllegalArgumentException && isQueryStringException(x.getCause()))
+        if (originalQuery != null && (isQueryStringException(x)
+                // JPA APIs return IllegalArgumentException when the query string is invalid,
+                // which is not helpful but mandated by spec,
+                // but the cause is actually meaningful.
+                || x instanceof IllegalArgumentException && isQueryStringException(x.getCause()))
                 && isNamedQuery(originalQuery)) {
             return new PanacheQueryException("Invalid query '" + originalQuery
                     + "' but it matches a known @NamedQuery, perhaps you should prefix it with a '#' to use it as a named query: '#"
@@ -60,7 +59,6 @@ public final class NamedQueryUtil {
     }
 
     private static boolean isQueryStringException(Throwable x) {
-        return x instanceof SemanticException || x instanceof ParsingException
-                || x instanceof SyntaxException;
+        return x instanceof SemanticException || x instanceof ParsingException || x instanceof SyntaxException;
     }
 }

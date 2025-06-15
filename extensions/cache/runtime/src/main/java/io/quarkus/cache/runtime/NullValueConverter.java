@@ -1,8 +1,8 @@
 package io.quarkus.cache.runtime;
 
 /**
- * This class is used to allow the storage of {@code null} values in the Quarkus cache while it is forbidden by the underlying
- * caching provider.
+ * This class is used to allow the storage of {@code null} values in the Quarkus cache while it is forbidden by the
+ * underlying caching provider.
  */
 public class NullValueConverter {
 

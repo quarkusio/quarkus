@@ -16,8 +16,10 @@ public class PathSegmentImpl implements PathSegment {
     private boolean hasMatrixParams;
 
     /**
-     * @param segment encoded path segment
-     * @param decode whether or not to decode values
+     * @param segment
+     *        encoded path segment
+     * @param decode
+     *        whether or not to decode values
      */
     public PathSegmentImpl(final String segment, final boolean decode) {
         this.original = segment;
@@ -96,7 +98,6 @@ public class PathSegmentImpl implements PathSegment {
 
     /**
      * Used when creating the matching path in ResteasyUriInfo
-     *
      */
     public static class SegmentParse {
         public List<PathSegment> segments;
@@ -105,9 +106,11 @@ public class PathSegmentImpl implements PathSegment {
     }
 
     /**
+     * @param path
+     *        encoded full path
+     * @param decode
+     *        whether or not to decode each segment
      *
-     * @param path encoded full path
-     * @param decode whether or not to decode each segment
      * @return {@link SegmentParse}
      */
     public static SegmentParse parseSegmentsOptimization(String path, boolean decode) {

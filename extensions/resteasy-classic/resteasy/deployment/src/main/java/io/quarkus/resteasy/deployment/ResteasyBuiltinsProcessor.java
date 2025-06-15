@@ -67,16 +67,17 @@ public class ResteasyBuiltinsProcessor {
             providers.produce(new ResteasyJaxrsProviderBuildItem(EagerSecurityFilter.class.getName()));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(EagerSecurityFilter.class));
             transformEagerSecurityNativeMethod(bytecodeTransformerProducer);
-            additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPathMatchingHttpSecurityPolicy.class));
+            additionalBeanBuildItem
+                    .produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPathMatchingHttpSecurityPolicy.class));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(JaxRsPermissionChecker.class));
-            additionalBeanBuildItem.produce(
-                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem
+                    .unremovableOf(StandardSecurityCheckInterceptor.RolesAllowedInterceptor.class));
             additionalBeanBuildItem.produce(AdditionalBeanBuildItem
                     .unremovableOf(StandardSecurityCheckInterceptor.PermissionsAllowedInterceptor.class));
             additionalBeanBuildItem.produce(
                     AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.PermitAllInterceptor.class));
-            additionalBeanBuildItem.produce(
-                    AdditionalBeanBuildItem.unremovableOf(StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class));
+            additionalBeanBuildItem.produce(AdditionalBeanBuildItem
+                    .unremovableOf(StandardSecurityCheckInterceptor.AuthenticatedInterceptor.class));
         }
     }
 
@@ -93,10 +94,11 @@ public class ResteasyBuiltinsProcessor {
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformerProducer) {
 
         // 1. add getResourceFactory() to ResourceMethodInvoker
-        bytecodeTransformerProducer.produce(new BytecodeTransformerBuildItem(ResourceMethodInvoker.class.getName(),
-                (cls, classVisitor) -> {
+        bytecodeTransformerProducer.produce(
+                new BytecodeTransformerBuildItem(ResourceMethodInvoker.class.getName(), (cls, classVisitor) -> {
                     var classTransformer = new ClassTransformer(cls);
-                    try (var getResourceFactory = classTransformer.addMethod("getResourceFactory", ResourceFactory.class)) {
+                    try (var getResourceFactory = classTransformer.addMethod("getResourceFactory",
+                            ResourceFactory.class)) {
                         getResourceFactory.setModifiers(Modifier.PUBLIC);
                         var resourceFieldDesc = FieldDescriptor.of(ResourceMethodInvoker.class, "resource",
                                 ResourceFactory.class);
@@ -108,8 +110,8 @@ public class ResteasyBuiltinsProcessor {
                 }));
 
         // 2. Create method that returns the field
-        bytecodeTransformerProducer.produce(new BytecodeTransformerBuildItem(EagerSecurityFilter.class.getName(),
-                (cls, classVisitor) -> {
+        bytecodeTransformerProducer
+                .produce(new BytecodeTransformerBuildItem(EagerSecurityFilter.class.getName(), (cls, classVisitor) -> {
                     var classTransformer = new ClassTransformer(cls);
                     var methodDescriptor = MethodDescriptor.ofMethod(EagerSecurityFilter.class, "getResourceFactory",
                             ResourceFactory.class, ResourceMethodInvoker.class);
@@ -120,7 +122,7 @@ public class ResteasyBuiltinsProcessor {
 
                     // now create:
                     // static ResourceFactory getResourceFactory(ResourceMethodInvoker invoker) {
-                    //      return invoker.getResourceFactory();
+                    // return invoker.getResourceFactory();
                     // }
                     try (var methodCreator = classTransformer.addMethod(methodDescriptor)) {
                         methodCreator.setModifiers(Opcodes.ACC_STATIC);

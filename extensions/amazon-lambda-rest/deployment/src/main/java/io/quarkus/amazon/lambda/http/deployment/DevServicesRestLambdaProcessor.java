@@ -8,7 +8,6 @@ public class DevServicesRestLambdaProcessor {
 
     @BuildStep
     public EventServerOverrideBuildItem overrideEventServer() {
-        return new EventServerOverrideBuildItem(
-                () -> new MockRestEventServer());
+        return new EventServerOverrideBuildItem(() -> new MockRestEventServer());
     }
 }

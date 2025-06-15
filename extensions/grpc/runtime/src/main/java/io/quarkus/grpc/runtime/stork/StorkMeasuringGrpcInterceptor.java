@@ -18,8 +18,8 @@ import io.smallrye.stork.api.ServiceInstance;
 public class StorkMeasuringGrpcInterceptor implements ClientInterceptor, Prioritized {
 
     @Override
-    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions,
-            Channel next) {
+    public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method,
+            CallOptions callOptions, Channel next) {
         return new StorkMeasuringCall<>(next.newCall(method, callOptions), method.getType());
     }
 
@@ -42,8 +42,7 @@ public class StorkMeasuringGrpcInterceptor implements ClientInterceptor, Priorit
 
         @Override
         public void start(final ClientCall.Listener<RespT> responseListener, final Metadata metadata) {
-            Context context = Context.current().withValues(
-                    STORK_SERVICE_INSTANCE, new AtomicReference<>(),
+            Context context = Context.current().withValues(STORK_SERVICE_INSTANCE, new AtomicReference<>(),
                     STORK_MEASURE_TIME, recordTime);
             Context oldContext = context.attach();
             try {

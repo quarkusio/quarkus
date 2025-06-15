@@ -17,16 +17,13 @@ public class FlywayExtensionBaselineAtStartExistingSchemaHistoryTableTest {
     Flyway flyway;
 
     static final FlywayH2TestCustomizer customizer = FlywayH2TestCustomizer
-            .withDbName("quarkus-baseline-at-start-existing-schema-history")
-            .withPort(11309)
+            .withDbName("quarkus-baseline-at-start-existing-schema-history").withPort(11309)
             .withInitSqlFile("src/test/resources/h2-init-schema-history-table.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setBeforeAllCustomizer(customizer::startH2)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setBeforeAllCustomizer(customizer::startH2)
             .setAfterAllCustomizer(customizer::stopH2)
-            .withApplicationRoot((jar) -> jar
-                    .addClass(FlywayH2TestCustomizer.class)
+            .withApplicationRoot((jar) -> jar.addClass(FlywayH2TestCustomizer.class)
                     .addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("baseline-at-start-existing-schema-history-table-config.properties",
                             "application.properties"));

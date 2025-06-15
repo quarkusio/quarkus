@@ -28,8 +28,7 @@ import io.restassured.RestAssured;
 
 public class UriTagWithHttpApplicationRootTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.http.root-path", "/foo")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
@@ -37,13 +36,9 @@ public class UriTagWithHttpApplicationRootTest {
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Util.class,
-                            PingPongResource.class,
-                            PingPongResource.PingPongRestClient.class,
-                            ServletEndpoint.class,
-                            VertxWebEndpoint.class,
-                            BarApp.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, PingPongResource.class,
+                    PingPongResource.PingPongRestClient.class, ServletEndpoint.class, VertxWebEndpoint.class,
+                    BarApp.class));
 
     @Inject
     MeterRegistry registry;
@@ -83,16 +78,19 @@ public class UriTagWithHttpApplicationRootTest {
 
         // URIs for server should include Application Path: /bar/ping/{message}, /bar/async-ping/{message}
         // URIs for inbound rest client request should include Application Path: /bar/pong/{message}
-        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/bar/ping/{message}").timers().size(),
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/bar/ping/{message}").timers().size(),
                 Util.foundServerRequests(registry, "/bar/ping/{message} should be returned by JAX-RS"));
         Assertions.assertEquals(1,
                 registry.find("http.server.requests").tag("uri", "/bar/async-ping/{message}").timers().size(),
                 Util.foundServerRequests(registry, "/bar/async-ping/{message} should be returned by JAX-RS."));
-        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/bar/pong/{message}").timers().size(),
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/bar/pong/{message}").timers().size(),
                 Util.foundServerRequests(registry, "/bar/pong/{message} should be returned by JAX-RS"));
 
         // URIs For client: /foo/pong/{message}
-        Assertions.assertEquals(1, registry.find("http.client.requests").tag("uri", "/bar/pong/{message}").timers().size(),
+        Assertions.assertEquals(1,
+                registry.find("http.client.requests").tag("uri", "/bar/pong/{message}").timers().size(),
                 Util.foundClientRequests(registry, "/foo/bar/pong/{message} should be returned by Rest client."));
     }
 

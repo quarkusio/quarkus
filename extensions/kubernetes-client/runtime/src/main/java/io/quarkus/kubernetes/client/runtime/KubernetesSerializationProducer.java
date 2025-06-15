@@ -16,8 +16,7 @@ public class KubernetesSerializationProducer {
     @DefaultBean
     @Singleton
     @Produces
-    public KubernetesSerialization kubernetesSerialization(
-            @KubernetesClientObjectMapper ObjectMapper objectMapper,
+    public KubernetesSerialization kubernetesSerialization(@KubernetesClientObjectMapper ObjectMapper objectMapper,
             @KubernetesResources Class[] kubernetesResources) {
         final var kubernetesSerialization = new KubernetesSerialization(objectMapper, false);
         for (var kubernetesResource : kubernetesResources) {

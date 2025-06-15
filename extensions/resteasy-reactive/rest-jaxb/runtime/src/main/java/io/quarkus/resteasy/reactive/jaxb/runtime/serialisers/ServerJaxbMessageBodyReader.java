@@ -37,7 +37,8 @@ public class ServerJaxbMessageBodyReader implements ServerMessageBodyReader<Obje
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws WebApplicationException, IOException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws WebApplicationException, IOException {
         return doReadFrom(type, genericType, entityStream);
     }
 
@@ -53,7 +54,8 @@ public class ServerJaxbMessageBodyReader implements ServerMessageBodyReader<Obje
     }
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return isReadable(mediaType, type);
     }
 
@@ -72,8 +74,7 @@ public class ServerJaxbMessageBodyReader implements ServerMessageBodyReader<Obje
 
     protected Object unmarshal(InputStream entityStream, Class<Object> type) {
         try {
-            JAXBElement<Object> item = getUnmarshall(type)
-                    .unmarshal(new StreamSource(entityStream), type);
+            JAXBElement<Object> item = getUnmarshall(type).unmarshal(new StreamSource(entityStream), type);
             return item.getValue();
         } catch (UnmarshalException e) {
             throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
@@ -87,8 +88,7 @@ public class ServerJaxbMessageBodyReader implements ServerMessageBodyReader<Obje
             return unmarshaller;
         }
 
-        return providers.getContextResolver(JAXBContext.class, MediaType.APPLICATION_XML_TYPE)
-                .getContext(type)
+        return providers.getContextResolver(JAXBContext.class, MediaType.APPLICATION_XML_TYPE).getContext(type)
                 .createUnmarshaller();
     }
 

@@ -76,12 +76,14 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
             ObjectWriter effectiveWriter = getEffectiveWriter(effectiveMapper);
             ResteasyReactiveResourceInfo resourceInfo = context.getResteasyReactiveResourceInfo();
             if (resourceInfo != null) {
-                ObjectWriter writerFromAnnotation = getObjectWriterFromAnnotations(resourceInfo, genericType, effectiveMapper);
+                ObjectWriter writerFromAnnotation = getObjectWriterFromAnnotations(resourceInfo, genericType,
+                        effectiveMapper);
                 if (writerFromAnnotation != null) {
                     effectiveWriter = writerFromAnnotation;
                 }
 
-                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder.jsonViewForMethod(resourceInfo.getMethodId());
+                Class<?> jsonViewValue = ResteasyReactiveServerJacksonRecorder
+                        .jsonViewForMethod(resourceInfo.getMethodId());
                 if (jsonViewValue != null) {
                     effectiveWriter = effectiveWriter.withView(jsonViewValue);
                 } else {
@@ -105,7 +107,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
             }
             effectiveWriter.writeValue(stream, o);
         }
-        // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
+        // we don't use try-with-resources because that results in writing to the http output without the exception
+        // mapping coming into play
         stream.close();
     }
 
@@ -119,7 +122,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
                     new MethodObjectWriterFunction(customSerializationValue, type, mapper));
         }
 
-        // Otherwise, check `@CustomSerialization` annotated in class. In this case, we use the effective type for caching up
+        // Otherwise, check `@CustomSerialization` annotated in class. In this case, we use the effective type for
+        // caching up
         // the object.
         customSerializationValue = ResteasyReactiveServerJacksonRecorder
                 .customSerializationForClass(resourceInfo.getResourceClass());
@@ -149,8 +153,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
     }
 
     /**
-     * Obtains the user configured {@link ObjectMapper} if there is a {@link ContextResolver} configured.
-     * Otherwise, returns the default {@link ObjectMapper}.
+     * Obtains the user configured {@link ObjectMapper} if there is a {@link ContextResolver} configured. Otherwise,
+     * returns the default {@link ObjectMapper}.
      */
     private ObjectMapper getEffectiveMapper(Object o, ServerRequestContext context) {
         ObjectMapper effectiveMapper = originalMapper.get();
@@ -177,7 +181,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
 
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         doLegacyWrite(o, annotations, httpHeaders, entityStream, defaultWriter.get());
     }
 
@@ -186,8 +191,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         private final Type genericType;
         private final ObjectMapper originalMapper;
 
-        public MethodObjectWriterFunction(Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> clazz, Type genericType,
-                ObjectMapper originalMapper) {
+        public MethodObjectWriterFunction(Class<? extends BiFunction<ObjectMapper, Type, ObjectWriter>> clazz,
+                Type genericType, ObjectMapper originalMapper) {
             this.clazz = clazz;
             this.genericType = genericType;
             this.originalMapper = originalMapper;
@@ -196,7 +201,8 @@ public class FullyFeaturedServerJacksonMessageBodyWriter extends ServerMessageBo
         @Override
         public ObjectWriter apply(String methodId) {
             try {
-                BiFunction<ObjectMapper, Type, ObjectWriter> biFunctionInstance = clazz.getDeclaredConstructor().newInstance();
+                BiFunction<ObjectMapper, Type, ObjectWriter> biFunctionInstance = clazz.getDeclaredConstructor()
+                        .newInstance();
                 ObjectWriter objectWriter = biFunctionInstance.apply(originalMapper, genericType);
                 setNecessaryJsonFactoryConfig(objectWriter.getFactory());
                 return objectWriter;

@@ -18,12 +18,10 @@ public class BlankLocateValueTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(CustomLocator.class))
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(CustomLocator.class)).assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof TemplateException) {
-                    assertTrue(rootCause.getMessage().contains(
-                            "'io.quarkus.qute.Locate#value()' must not be blank"));
+                    assertTrue(rootCause.getMessage().contains("'io.quarkus.qute.Locate#value()' must not be blank"));
                 } else {
                     fail("No TemplateException thrown: " + t);
                 }

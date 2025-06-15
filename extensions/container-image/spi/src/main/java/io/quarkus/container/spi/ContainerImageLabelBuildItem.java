@@ -3,9 +3,8 @@ package io.quarkus.container.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A label to be added to the built container image
- * This will only have an effect if the extension building the container image
- * supports adding custom labels (like the Jib extension)
+ * A label to be added to the built container image This will only have an effect if the extension building the
+ * container image supports adding custom labels (like the Jib extension)
  */
 public final class ContainerImageLabelBuildItem extends MultiBuildItem {
 

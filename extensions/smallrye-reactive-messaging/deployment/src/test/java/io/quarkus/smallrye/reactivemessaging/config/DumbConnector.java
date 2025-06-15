@@ -15,7 +15,6 @@ public class DumbConnector implements IncomingConnectorFactory {
     @Override
     public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
         String values = config.getValue("values", String.class);
-        return ReactiveStreams.of(values, values.toUpperCase())
-                .map(Message::of);
+        return ReactiveStreams.of(values, values.toUpperCase()).map(Message::of);
     }
 }

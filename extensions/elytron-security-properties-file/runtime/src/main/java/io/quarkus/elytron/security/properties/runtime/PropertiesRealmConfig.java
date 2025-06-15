@@ -5,13 +5,8 @@ import io.smallrye.config.WithDefault;
 
 /**
  * A configuration object for a properties resource based realm configuration,
- * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm}
- * It consists of a users.properties that has the format:
- * user1=password1
- * user2=password2
- *
- * and a roles.properties that has the format:
- * user1=role1,role2,...,roleN1
+ * {@linkplain org.wildfly.security.auth.realm.LegacyPropertiesSecurityRealm} It consists of a users.properties that has
+ * the format: user1=password1 user2=password2 and a roles.properties that has the format: user1=role1,role2,...,roleN1
  * user2=role21,role2,...,roleN2
  */
 @ConfigGroup
@@ -30,8 +25,8 @@ public interface PropertiesRealmConfig {
     boolean enabled();
 
     /**
-     * If the properties are stored in plain text. If this is false (the default) then it is expected
-     * that the passwords are of the form HEX( MD5( username ":" realm ":" password ) )
+     * If the properties are stored in plain text. If this is false (the default) then it is expected that the passwords
+     * are of the form HEX( MD5( username ":" realm ":" password ) )
      */
     @WithDefault("false")
     boolean plainText();

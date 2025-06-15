@@ -15,10 +15,12 @@ final class GlobalErrorHandlersBuildItem extends SimpleBuildItem {
     }
 
     List<GlobalErrorHandler> forServer() {
-        return handlers.stream().filter(h -> h.callback().isServer() || h.callback().target == Target.UNDEFINED).toList();
+        return handlers.stream().filter(h -> h.callback().isServer() || h.callback().target == Target.UNDEFINED)
+                .toList();
     }
 
     List<GlobalErrorHandler> forClient() {
-        return handlers.stream().filter(h -> h.callback().isClient() || h.callback().target == Target.UNDEFINED).toList();
+        return handlers.stream().filter(h -> h.callback().isClient() || h.callback().target == Target.UNDEFINED)
+                .toList();
     }
 }

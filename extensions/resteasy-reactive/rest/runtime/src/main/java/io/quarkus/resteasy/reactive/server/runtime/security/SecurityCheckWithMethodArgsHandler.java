@@ -34,8 +34,8 @@ final class SecurityCheckWithMethodArgsHandler implements ServerRestHandler {
         // no need to use deferred identity as we require request to be authenticated on pre-match and set identity
         SecurityIdentity securityIdentity = EagerSecurityContext.getCurrentIdentityAssociation().getIdentity();
         EagerSecurityContext.getInstance()
-                .runSecurityCheck(securityCheck, invokedMethodDesc, requestContext, securityIdentity)
-                .subscribe().withSubscriber(new UniSubscriber<Object>() {
+                .runSecurityCheck(securityCheck, invokedMethodDesc, requestContext, securityIdentity).subscribe()
+                .withSubscriber(new UniSubscriber<Object>() {
                     @Override
                     public void onSubscribe(UniSubscription subscription) {
 

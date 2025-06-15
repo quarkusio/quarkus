@@ -18,7 +18,8 @@ public class ServerInputStreamMessageBodyHandler extends InputStreamMessageBodyH
         implements ServerMessageBodyReader<InputStream>, ServerMessageBodyWriter<InputStream> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return true;
     }
 

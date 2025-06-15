@@ -8,9 +8,7 @@ public class MultipleQueriesConfigurationTest extends JdbcSecurityRealmTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("multiple-queries/import.sql")
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses).addAsResource("multiple-queries/import.sql")
                     .addAsResource("multiple-queries/application.properties", "application.properties"));
 
 }

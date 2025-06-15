@@ -12,20 +12,15 @@ public class MySQLPoolLoadBalanceTest {
 
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DevModeResource.class)
-                    .add(new StringAsset("quarkus.datasource.db-kind=mysql\n" +
-                            "quarkus.datasource.reactive.url=vertx-reactive:mysql://localhost:6033/load_balance_test," +
-                            "vertx-reactive:mysql://localhost:6034/load_balance_test," +
-                            "vertx-reactive:mysql://localhost:6035/load_balance_test"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(DevModeResource.class)
+                    .add(new StringAsset("quarkus.datasource.db-kind=mysql\n"
+                            + "quarkus.datasource.reactive.url=vertx-reactive:mysql://localhost:6033/load_balance_test,"
+                            + "vertx-reactive:mysql://localhost:6034/load_balance_test,"
+                            + "vertx-reactive:mysql://localhost:6035/load_balance_test"), "application.properties"));
 
     @Test
     public void testLoadBalance() {
-        RestAssured
-                .get("/dev/error")
-                .then()
-                .statusCode(200)
-                .body(Matchers.anyOf(Matchers.endsWith(":6033"), Matchers.endsWith(":6034"), Matchers.endsWith(":6035")));
+        RestAssured.get("/dev/error").then().statusCode(200).body(
+                Matchers.anyOf(Matchers.endsWith(":6033"), Matchers.endsWith(":6034"), Matchers.endsWith(":6035")));
     }
 }

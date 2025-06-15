@@ -18,9 +18,8 @@ import io.quarkus.test.vertx.UniAsserter;
 /**
  * Tests that DB version checks can be disabled explicitly.
  * <p>
- * This was originally introduced to work around problems with version checks,
- * such as https://github.com/quarkusio/quarkus/issues/43703 /
- * https://github.com/quarkusio/quarkus/issues/42255
+ * This was originally introduced to work around problems with version checks, such as
+ * https://github.com/quarkusio/quarkus/issues/43703 / https://github.com/quarkusio/quarkus/issues/42255
  */
 public class DbVersionCheckDisabledExplicitlyTest {
 
@@ -29,10 +28,8 @@ public class DbVersionCheckDisabledExplicitlyTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(DialectUtils.class)
-                    .addClass(MyEntity.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClass(SmokeTestUtils.class).addClass(DialectUtils.class).addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.db-version", "999.999")
             // We disable the version check explicitly, so Quarkus should boot just fine
@@ -50,9 +47,7 @@ public class DbVersionCheckDisabledExplicitlyTest {
     @Test
     @RunOnVertxContext
     public void smokeTest(UniAsserter asserter) {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(asserter, sessionFactory,
-                MyEntity.class, MyEntity::new,
-                MyEntity::getId,
-                MyEntity::setName, MyEntity::getName);
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(asserter, sessionFactory, MyEntity.class, MyEntity::new,
+                MyEntity::getId, MyEntity::setName, MyEntity::getName);
     }
 }

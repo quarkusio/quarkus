@@ -20,9 +20,7 @@ public class SinglePersistenceUnitCdiEntityManagerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addAsResource("application.properties"));
 
     @Inject
     EntityManager entityManager;
@@ -45,8 +43,7 @@ public class SinglePersistenceUnitCdiEntityManagerTest {
                 .doesNotThrowAnyException();
         // Writes are not
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        assertThatThrownBy(() -> entityManager.persist(defaultEntity))
-                .isInstanceOf(TransactionRequiredException.class)
+        assertThatThrownBy(() -> entityManager.persist(defaultEntity)).isInstanceOf(TransactionRequiredException.class)
                 .hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
     }
@@ -54,8 +51,7 @@ public class SinglePersistenceUnitCdiEntityManagerTest {
     @Test
     public void noRequestNoTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
-        assertThatThrownBy(() -> entityManager.persist(defaultEntity))
-                .isInstanceOf(ContextNotActiveException.class)
+        assertThatThrownBy(() -> entityManager.persist(defaultEntity)).isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
                         "Consider adding @Transactional to your method to automatically activate a transaction",

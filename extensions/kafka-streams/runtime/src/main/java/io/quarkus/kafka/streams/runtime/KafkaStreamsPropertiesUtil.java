@@ -36,7 +36,8 @@ public class KafkaStreamsPropertiesUtil {
             interceptorConfig = interceptorConfig + "," + originalInterceptorConfig;
         }
 
-        kafkaStreamsProperties.put(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG), interceptorConfig);
+        kafkaStreamsProperties.put(StreamsConfig.consumerPrefix(ConsumerConfig.INTERCEPTOR_CLASSES_CONFIG),
+                interceptorConfig);
     }
 
     private static Properties kafkaStreamsProperties(String prefix) {

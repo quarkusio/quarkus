@@ -78,7 +78,8 @@ public class InfinispanRecorder {
 
         @Override
         public T get() {
-            InfinispanClientProducer infinispanClientProducer = Arc.container().instance(InfinispanClientProducer.class).get();
+            InfinispanClientProducer infinispanClientProducer = Arc.container().instance(InfinispanClientProducer.class)
+                    .get();
             return producer.apply(infinispanClientProducer);
         }
     }

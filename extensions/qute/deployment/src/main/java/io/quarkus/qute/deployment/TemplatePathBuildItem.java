@@ -9,12 +9,9 @@ import io.quarkus.qute.runtime.QuteConfig;
 /**
  * Discovered template.
  * <p>
- * Templates backed by files located in a template root are discovered automatically. Furthermore, extensions can produce this
- * build item in order to provide a template that is not backed by a file.
- *
- * <h2>Warning</h2>
- *
- * Extensions should never <i>consume</i> this build item directly. However, they may consume the
+ * Templates backed by files located in a template root are discovered automatically. Furthermore, extensions can
+ * produce this build item in order to provide a template that is not backed by a file.
+ * <h2>Warning</h2> Extensions should never <i>consume</i> this build item directly. However, they may consume the
  * {@link EffectiveTemplatePathsBuildItem} instead.
  *
  * @see TemplateRootBuildItem
@@ -37,7 +34,6 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     public static final int APP_ARCHIVE_PRIORITY = 10;
 
     /**
-     *
      * @return a new builder instance
      */
     public static Builder builder() {
@@ -54,10 +50,10 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     private final int priority;
 
     /**
-     *
      * @param path
      * @param fullPath
      * @param content
+     *
      * @deprecated Use the {@link #builder()} instead
      */
     @Deprecated(forRemoval = true, since = "3.13")
@@ -77,8 +73,8 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     /**
      * The path relative to the template root. The {@code /} is used as a path separator.
      * <p>
-     * The path must be unique, i.e. if there are multiple templates with the same path then the template analysis fails during
-     * build.
+     * The path must be unique, i.e. if there are multiple templates with the same path then the template analysis fails
+     * during build.
      *
      * @return the path relative to the template root
      */
@@ -96,7 +92,6 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the content of the template
      */
     public String getContent() {
@@ -104,7 +99,6 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the extension info
      */
     public String getExtensionInfo() {
@@ -121,7 +115,6 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return {@code true} if it represents a user tag, {@code false} otherwise
      */
     public boolean isTag() {
@@ -129,7 +122,6 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return {@code true} if it does not represent a tag, {@code false} otherwise
      */
     public boolean isRegular() {
@@ -137,7 +129,6 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return {@code true} if it's backed by a file
      */
     public boolean isFileBased() {
@@ -159,10 +150,11 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
         /**
          * Set the path relative to the template root. The {@code /} is used as a path separator.
          * <p>
-         * The path must be unique, i.e. if there are multiple templates with the same path then the template analysis fails
-         * during build.
+         * The path must be unique, i.e. if there are multiple templates with the same path then the template analysis
+         * fails during build.
          *
          * @param path
+         *
          * @return self
          */
         public Builder path(String path) {
@@ -174,6 +166,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
          * Set the content of the template.
          *
          * @param content
+         *
          * @return self
          */
         public Builder content(String content) {
@@ -185,6 +178,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
          * Set the full path of the template for templates that are backed by a file.
          *
          * @param fullPath
+         *
          * @return self
          */
         public Builder fullPath(Path fullPath) {
@@ -196,6 +190,7 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
          * Set the extension info for templates that are not backed by a file.
          *
          * @param info
+         *
          * @return self
          */
         public Builder extensionInfo(String info) {
@@ -207,7 +202,9 @@ public final class TemplatePathBuildItem extends MultiBuildItem {
          * Set the priority of the template.
          *
          * @param priority
+         *
          * @return self
+         *
          * @see QuteConfig#duplicitTemplatesStrategy()
          */
         public Builder priority(int priority) {

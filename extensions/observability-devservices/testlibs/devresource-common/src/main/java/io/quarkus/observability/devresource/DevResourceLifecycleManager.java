@@ -7,8 +7,8 @@ import io.quarkus.observability.common.config.ModulesConfiguration;
 import io.quarkus.test.common.QuarkusTestResourceLifecycleManager;
 
 /**
- * Extends {@link io.quarkus.test.common.QuarkusTestResourceLifecycleManager}
- * so that classes implement both interfaces at the same time - simplifying testing.
+ * Extends {@link io.quarkus.test.common.QuarkusTestResourceLifecycleManager} so that classes implement both interfaces
+ * at the same time - simplifying testing.
  */
 public interface DevResourceLifecycleManager<T extends ContainerConfig> extends QuarkusTestResourceLifecycleManager {
 
@@ -20,12 +20,14 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
     int JAEGER = 20000;
     int OTEL = 20000;
 
-    //----
+    // ----
 
     /**
      * Get resource's config from main observability configuration.
      *
-     * @param configuration main observability configuration
+     * @param configuration
+     *        main observability configuration
+     *
      * @return module's config
      */
     @Deprecated
@@ -34,8 +36,11 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
     /**
      * Get resource's config from main observability configuration and extension catalog
      *
-     * @param configuration main observability configuration
-     * @param catalog observability catalog. If OpenTelemetry or Micrometer are enabled.
+     * @param configuration
+     *        main observability configuration
+     * @param catalog
+     *        observability catalog. If OpenTelemetry or Micrometer are enabled.
+     *
      * @return module's config
      */
     default T config(ModulesConfiguration configuration, ExtensionsCatalog catalog) {
@@ -43,9 +48,8 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
     }
 
     /**
-     * Should we enable / start this dev resource.
-     * e.g. we could already have actual service running
-     * Each impl should provide its own reason on why it disabled dev service.
+     * Should we enable / start this dev resource. e.g. we could already have actual service running Each impl should
+     * provide its own reason on why it disabled dev service.
      *
      * @return true if ok to start new dev service, false otherwise
      */
@@ -56,7 +60,9 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
     /**
      * Create container from config.
      *
-     * @param config the config
+     * @param config
+     *        the config
+     *
      * @return container id
      */
     default Container<T> container(T config) {
@@ -66,8 +72,11 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
     /**
      * Create container from config.
      *
-     * @param config the config
-     * @param root the all modules config
+     * @param config
+     *        the config
+     * @param root
+     *        the all modules config
+     *
      * @return container id
      */
     default Container<T> container(T config, ModulesConfiguration root) {
@@ -75,20 +84,17 @@ public interface DevResourceLifecycleManager<T extends ContainerConfig> extends 
     }
 
     /**
-     * Deduce current config from params.
-     * If port are too dynamic / configured, it's hard to deduce,
-     * since configuration is not part of the devservice state.
-     * e.g. different ports then usual - Grafana UI is 3000, if you do not use 3000,
-     * it's hard or impossible to know which port belongs to certain property.
+     * Deduce current config from params. If port are too dynamic / configured, it's hard to deduce, since configuration
+     * is not part of the devservice state. e.g. different ports then usual - Grafana UI is 3000, if you do not use
+     * 3000, it's hard or impossible to know which port belongs to certain property.
      *
      * @return A map of system properties that should be set for the running dev-mode app
      */
     Map<String, String> config(int privatePort, String host, int publicPort);
 
     /**
-     * Called even before {@link #start()} so that the implementation can prepare itself
-     * to be used as dev resource (as opposed to test resource which uses a different
-     * init() method).
+     * Called even before {@link #start()} so that the implementation can prepare itself to be used as dev resource (as
+     * opposed to test resource which uses a different init() method).
      */
     default void initDev() {
     }

@@ -16,7 +16,7 @@ public class DevServlet extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         if (!BlockingOperationControl.isBlockingAllowed()) {
-            //https://github.com/quarkusio/quarkus/issues/7782
+            // https://github.com/quarkusio/quarkus/issues/7782
             throw new RuntimeException("Must not be on IO thread");
         }
         resp.getWriter().write("Hello World");

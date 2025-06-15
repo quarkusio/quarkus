@@ -19,8 +19,8 @@ public final class ApplicationScanningResult {
     final ClassInfo selectedAppClass;
     final BlockingDefault blocking;
 
-    public ApplicationScanningResult(Set<String> allowedClasses, Set<String> singletonClasses, Set<String> excludedClasses,
-            Set<String> globalNameBindings, boolean filterClasses, Application application,
+    public ApplicationScanningResult(Set<String> allowedClasses, Set<String> singletonClasses,
+            Set<String> excludedClasses, Set<String> globalNameBindings, boolean filterClasses, Application application,
             ClassInfo selectedAppClass, BlockingDefault blocking) {
         this.allowedClasses = allowedClasses;
         this.singletonClasses = singletonClasses;

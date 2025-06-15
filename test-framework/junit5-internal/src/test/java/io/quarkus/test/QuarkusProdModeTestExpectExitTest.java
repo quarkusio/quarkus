@@ -20,11 +20,8 @@ public class QuarkusProdModeTestExpectExitTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest simpleApp = new QuarkusProdModeTest()
-            .withApplicationRoot(jar -> jar.addClass(Main.class))
-            .setApplicationName("simple-app")
-            .setApplicationVersion("0.1-SNAPSHOT")
-            .setExpectExit(true)
-            .setRun(true);
+            .withApplicationRoot(jar -> jar.addClass(Main.class)).setApplicationName("simple-app")
+            .setApplicationVersion("0.1-SNAPSHOT").setExpectExit(true).setRun(true);
 
     private static String startupConsoleOutput;
 

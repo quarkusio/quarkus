@@ -45,9 +45,9 @@ public interface RestClientsConfig {
     Map<String, RestClientConfig> clients();
 
     /**
-     * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
-     * The modes are described in the
-     * <a href="https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
+     * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`. The modes are
+     * described in the <a href=
+     * "https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
      * documentation</a>
      * <p>
      * By default, Rest Client Reactive uses RFC1738.
@@ -57,8 +57,8 @@ public interface RestClientsConfig {
     Optional<String> multipartPostEncoderMode();
 
     /**
-     * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
-     * (or IP address) and port for requests of clients to use.
+     * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname (or IP
+     * address) and port for requests of clients to use.
      * <p>
      * Can be overwritten by client-specific settings.
      */
@@ -83,8 +83,8 @@ public interface RestClientsConfig {
     Optional<String> proxyPassword();
 
     /**
-     * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings.
-     * Please note that unlike the JVM settings, this property is empty by default.
+     * Hosts to access without proxy, similar to the http.nonProxyHosts or https.nonProxyHosts JVM settings. Please note
+     * that unlike the JVM settings, this property is empty by default.
      * <p>
      * Can be overwritten by client-specific settings.
      * <p>
@@ -140,8 +140,8 @@ public interface RestClientsConfig {
     Optional<String> hostnameVerifier();
 
     /**
-     * The time in ms for which a connection remains unused in the connection pool before being evicted and closed.
-     * A timeout of {@code 0} means there is no timeout.
+     * The time in ms for which a connection remains unused in the connection pool before being evicted and closed. A
+     * timeout of {@code 0} means there is no timeout.
      * <p>
      * Can be overwritten by client-specific settings.
      */
@@ -180,15 +180,16 @@ public interface RestClientsConfig {
     Optional<Boolean> followRedirects();
 
     /**
-     * Fully-qualified provider classnames to include in the client. The equivalent of the `@RegisterProvider` annotation.
+     * Fully-qualified provider classnames to include in the client. The equivalent of the `@RegisterProvider`
+     * annotation.
      * <p>
      * Can be overwritten by client-specific settings.
      */
     Optional<String> providers();
 
     /**
-     * The CDI scope to use for injections of REST client instances. Value can be either a fully qualified class name of a CDI
-     * scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such
+     * The CDI scope to use for injections of REST client instances. Value can be either a fully qualified class name of
+     * a CDI scope annotation (such as "jakarta.enterprise.context.ApplicationScoped") or its simple name (such
      * as"ApplicationScoped").
      * <p>
      * Default scope for the rest-client extension is "Dependent" (which is the spec-compliant behavior).
@@ -200,16 +201,16 @@ public interface RestClientsConfig {
     Optional<String> scope();
 
     /**
-     * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
-     * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
+     * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED", or
+     * "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
      * <p>
      * Can be overwritten by client-specific settings.
      */
     Optional<QueryParamStyle> queryParamStyle();
 
     /**
-     * Set whether hostname verification is enabled. Default is enabled.
-     * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
+     * Set whether hostname verification is enabled. Default is enabled. This setting should not be disabled in
+     * production as it makes the client vulnerable to MITM attacks.
      * <p>
      * Can be overwritten by client-specific settings.
      */
@@ -260,9 +261,9 @@ public interface RestClientsConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
-     * The default TLS configuration will be ignored.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but
+     * no TLS configuration is found with that name then an error will be thrown. The default TLS configuration will be
+     * ignored.
      * <p>
      * If no named TLS configuration is set, then the key-store, trust-store, etc. properties will be used.
      * <p>
@@ -291,9 +292,9 @@ public interface RestClientsConfig {
     Optional<MemorySize> maxChunkSize();
 
     /**
-     * Supports receiving compressed messages using GZIP.
-     * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
-     * REST Client will automatically decode the content and proceed with the message handling.
+     * Supports receiving compressed messages using GZIP. When this feature is enabled and a server returns a response
+     * that includes the header {@code Content-Encoding: gzip}, REST Client will automatically decode the content and
+     * proceed with the message handling.
      * <p>
      * This property is not applicable to the RESTEasy Client.
      * <p>
@@ -302,16 +303,15 @@ public interface RestClientsConfig {
     Optional<Boolean> enableCompression();
 
     /**
-     * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
-     * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
-     * use HTTP/1.1.
-     * When the property `http2` is enabled, this flag will be automatically enabled.
+     * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over
+     * the protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
+     * use HTTP/1.1. When the property `http2` is enabled, this flag will be automatically enabled.
      */
     Optional<Boolean> alpn();
 
     /**
-     * If {@code true}, the stacktrace of the invocation of the REST Client method is captured.
-     * This stacktrace will be used if the invocation throws an exception
+     * If {@code true}, the stacktrace of the invocation of the REST Client method is captured. This stacktrace will be
+     * used if the invocation throws an exception
      */
     @WithDefault("false")
     boolean captureStacktrace();
@@ -330,23 +330,21 @@ public interface RestClientsConfig {
         if (RestClientKeysProvider.KEYS.contains(restClientInterface.getName())) {
             return clients().get(restClientInterface.getName());
         }
-        throw new IllegalArgumentException("Unable to lookup configuration for REST Client " + restClientInterface.getName()
-                + ". Please confirm if the REST Client is annotated with @RegisterRestClient");
+        throw new IllegalArgumentException(
+                "Unable to lookup configuration for REST Client " + restClientInterface.getName()
+                        + ". Please confirm if the REST Client is annotated with @RegisterRestClient");
     }
 
     interface RestClientLoggingConfig {
         /**
-         * Scope of logging for the client.
-         * <br/>
-         * WARNING: beware of logging sensitive data
-         * <br/>
+         * Scope of logging for the client. <br/>
+         * WARNING: beware of logging sensitive data <br/>
          * The possible values are:
          * <ul>
          * <li>{@code request-response} - enables logging request and responses, including redirect responses</li>
          * <li>{@code all} - enables logging requests and responses and lower-level logging</li>
          * <li>{@code none} - no additional logging</li>
          * </ul>
-         *
          * This property is applicable to reactive REST clients only.
          */
         Optional<String> scope();
@@ -381,8 +379,8 @@ public interface RestClientsConfig {
         RestClientMultipartConfig multipart();
 
         /**
-         * The base URL to use for this service. This property or the `uri` property is considered required, unless
-         * the `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
+         * The base URL to use for this service. This property or the `uri` property is considered required, unless the
+         * `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
          */
         Optional<String> url();
 
@@ -401,8 +399,8 @@ public interface RestClientsConfig {
         }
 
         /**
-         * The base URI to use for this service. This property or the `url` property is considered required, unless
-         * the `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
+         * The base URI to use for this service. This property or the `url` property is considered required, unless the
+         * `baseUri` attribute is configured in the `@RegisterRestClient` annotation.
          */
         Optional<String> uri();
 
@@ -421,12 +419,11 @@ public interface RestClientsConfig {
         }
 
         /**
-         * This property is only meant to be set by advanced configurations to override whatever value was set for the uri or
-         * url.
-         * The override is done using the REST Client class name configuration syntax.
+         * This property is only meant to be set by advanced configurations to override whatever value was set for the
+         * uri or url. The override is done using the REST Client class name configuration syntax.
          * <p>
-         * This property is not applicable to the RESTEasy Client, only the Quarkus Rest client (formerly RESTEasy Reactive
-         * client).
+         * This property is not applicable to the RESTEasy Client, only the Quarkus Rest client (formerly RESTEasy
+         * Reactive client).
          */
         Optional<String> overrideUri();
 
@@ -452,9 +449,8 @@ public interface RestClientsConfig {
         Optional<Boolean> followRedirects();
 
         /**
-         * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`.
-         * The modes are described in the
-         * <a href=
+         * Mode in which the form data are encoded. Possible values are `HTML5`, `RFC1738` and `RFC3986`. The modes are
+         * described in the <a href=
          * "https://netty.io/4.1/api/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.EncoderMode.html">Netty
          * documentation</a>
          * <p>
@@ -465,8 +461,8 @@ public interface RestClientsConfig {
         Optional<String> multipartPostEncoderMode();
 
         /**
-         * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname
-         * (or IP address) and port for requests of this client to use.
+         * A string value in the form of `<proxyHost>:<proxyPort>` that specifies the HTTP proxy server hostname (or IP
+         * address) and port for requests of this client to use.
          * <p>
          * Use `none` to disable proxy
          */
@@ -494,14 +490,14 @@ public interface RestClientsConfig {
         Optional<String> nonProxyHosts();
 
         /**
-         * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED",
-         * or "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
+         * An enumerated type string value with possible values of "MULTI_PAIRS" (default), "COMMA_SEPARATED", or
+         * "ARRAY_PAIRS" that specifies the format in which multiple values for the same query parameter is used.
          */
         Optional<QueryParamStyle> queryParamStyle();
 
         /**
-         * Set whether hostname verification is enabled. Default is enabled.
-         * This setting should not be disabled in production as it makes the client vulnerable to MITM attacks.
+         * Set whether hostname verification is enabled. Default is enabled. This setting should not be disabled in
+         * production as it makes the client vulnerable to MITM attacks.
          */
         Optional<Boolean> verifyHost();
 
@@ -543,9 +539,9 @@ public interface RestClientsConfig {
         /**
          * The name of the TLS configuration to use.
          * <p>
-         * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-         * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
-         * The default TLS configuration will be ignored.
+         * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured,
+         * but no TLS configuration is found with that name then an error will be thrown. The default TLS configuration
+         * will be ignored.
          * <p>
          * If no named TLS configuration is set, then the key-store, trust-store, etc. properties will be used.
          * <p>
@@ -586,9 +582,8 @@ public interface RestClientsConfig {
         Map<String, String> headers();
 
         /**
-         * Set to true to share the HTTP client between REST clients.
-         * There can be multiple shared clients distinguished by <em>name</em>, when no specific name is set,
-         * the name <code>__vertx.DEFAULT</code> is used.
+         * Set to true to share the HTTP client between REST clients. There can be multiple shared clients distinguished
+         * by <em>name</em>, when no specific name is set, the name <code>__vertx.DEFAULT</code> is used.
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
@@ -626,32 +621,30 @@ public interface RestClientsConfig {
         Optional<MemorySize> maxChunkSize();
 
         /**
-         * Supports receiving compressed messages using GZIP.
-         * When this feature is enabled and a server returns a response that includes the header {@code Content-Encoding: gzip},
-         * REST Client will automatically decode the content and proceed with the message handling.
+         * Supports receiving compressed messages using GZIP. When this feature is enabled and a server returns a
+         * response that includes the header {@code Content-Encoding: gzip}, REST Client will automatically decode the
+         * content and proceed with the message handling.
          * <p>
          * This property is not applicable to the RESTEasy Client.
          */
         Optional<Boolean> enableCompression();
 
         /**
-         * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use over the
-         * protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not enabled, it will
-         * use HTTP/1.1.
-         * When the property `http2` is enabled, this flag will be automatically enabled.
+         * If the Application-Layer Protocol Negotiation is enabled, the client will negotiate which protocol to use
+         * over the protocols exposed by the server. By default, it will try to use HTTP/2 first and if it's not
+         * enabled, it will use HTTP/1.1. When the property `http2` is enabled, this flag will be automatically enabled.
          */
         Optional<Boolean> alpn();
 
         /**
-         * If {@code true}, the stacktrace of the invocation of the REST Client method is captured.
-         * This stacktrace will be used if the invocation throws an exception
+         * If {@code true}, the stacktrace of the invocation of the REST Client method is captured. This stacktrace will
+         * be used if the invocation throws an exception
          */
         Optional<Boolean> captureStacktrace();
 
         /**
-         * If set to {@code true}, then this REST Client will not the default exception mapper which
-         * always throws an exception if HTTP response code >= 400.
-         * This property is not applicable to the RESTEasy Client.
+         * If set to {@code true}, then this REST Client will not the default exception mapper which always throws an
+         * exception if HTTP response code >= 400. This property is not applicable to the RESTEasy Client.
          */
         @WithDefault("${microprofile.rest.client.disable.default.mapper:false}")
         Boolean disableDefaultMapper();

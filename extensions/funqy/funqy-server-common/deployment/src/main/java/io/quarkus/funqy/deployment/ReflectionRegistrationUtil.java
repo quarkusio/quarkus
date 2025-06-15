@@ -42,8 +42,7 @@ final class ReflectionRegistrationUtil {
 
         @Override
         public boolean test(FieldInfo fieldInfo) {
-            return fieldInfo.hasAnnotation(JSON_IGNORE)
-                    || fieldInfo.hasAnnotation(JSONB_TRANSIENT);
+            return fieldInfo.hasAnnotation(JSON_IGNORE) || fieldInfo.hasAnnotation(JSONB_TRANSIENT);
         }
     }
 
@@ -51,13 +50,11 @@ final class ReflectionRegistrationUtil {
 
         @Override
         public boolean test(MethodInfo methodInfo) {
-            return methodInfo.hasAnnotation(JSON_IGNORE)
-                    || methodInfo.hasAnnotation(JSONB_TRANSIENT);
+            return methodInfo.hasAnnotation(JSON_IGNORE) || methodInfo.hasAnnotation(JSONB_TRANSIENT);
         }
     }
 
     private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
             // Mutiny
-            "io.smallrye.mutiny."
-    };
+            "io.smallrye.mutiny." };
 }

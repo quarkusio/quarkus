@@ -102,15 +102,11 @@ public class QuarkusConfigValue {
 
         @Override
         public ConfigValue deserialize(final QuarkusConfigValue obj) {
-            return ConfigValue.builder()
-                    .withName(obj.getName())
-                    .withValue(obj.getValue())
-                    .withRawValue(obj.getRawValue())
-                    .withProfile(obj.getProfile())
+            return ConfigValue.builder().withName(obj.getName()).withValue(obj.getValue())
+                    .withRawValue(obj.getRawValue()).withProfile(obj.getProfile())
                     .withConfigSourceName(obj.getConfigSourceName())
                     .withConfigSourceOrdinal(obj.getConfigSourceOrdinal())
-                    .withConfigSourcePosition(obj.getConfigSourcePosition())
-                    .withLineNumber(obj.getLineNumber())
+                    .withConfigSourcePosition(obj.getConfigSourcePosition()).withLineNumber(obj.getLineNumber())
                     .build();
         }
     }

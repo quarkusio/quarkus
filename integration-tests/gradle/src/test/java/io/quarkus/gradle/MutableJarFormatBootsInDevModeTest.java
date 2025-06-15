@@ -36,11 +36,9 @@ public class MutableJarFormatBootsInDevModeTest extends QuarkusGradleWrapperTest
 
         Process process = launch(jar, output, Collections.singletonMap("QUARKUS_LAUNCH_DEVMODE", "true"));
         try {
-            //Wait until server up
+            // Wait until server up
             dumpFileContentOnFailure(() -> {
-                await()
-                        .pollDelay(1, TimeUnit.SECONDS)
-                        .atMost(1, TimeUnit.MINUTES)
+                await().pollDelay(1, TimeUnit.SECONDS).atMost(1, TimeUnit.MINUTES)
                         .until(() -> devModeClient.isCode("/hello", 200));
                 return null;
             }, output, ConditionTimeoutException.class);

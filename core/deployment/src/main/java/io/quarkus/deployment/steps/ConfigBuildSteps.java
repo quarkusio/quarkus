@@ -30,17 +30,12 @@ class ConfigBuildSteps {
 
     // XXX replace this with constant-folded service loader impl
     @BuildStep
-    void nativeServiceProviders(
-            final BuildProducer<ServiceProviderBuildItem> providerProducer) throws IOException {
+    void nativeServiceProviders(final BuildProducer<ServiceProviderBuildItem> providerProducer) throws IOException {
         providerProducer.produce(new ServiceProviderBuildItem(ConfigProviderResolver.class.getName(),
                 SmallRyeConfigProviderResolver.class.getName()));
         final ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        for (Class<?> serviceClass : Arrays.asList(
-                Converter.class,
-                ConfigSourceInterceptor.class,
-                ConfigSourceInterceptorFactory.class,
-                SecretKeysHandler.class,
-                SecretKeysHandlerFactory.class,
+        for (Class<?> serviceClass : Arrays.asList(Converter.class, ConfigSourceInterceptor.class,
+                ConfigSourceInterceptorFactory.class, SecretKeysHandler.class, SecretKeysHandlerFactory.class,
                 ConfigValidator.class)) {
             final String serviceName = serviceClass.getName();
             final Set<String> names = ServiceUtil.classNamesNamedIn(classLoader, SERVICES_PREFIX + serviceName);
@@ -58,7 +53,8 @@ class ConfigBuildSteps {
     @BuildStep(onlyIf = SystemOnlySources.class)
     void systemOnlySources(BuildProducer<StaticInitConfigBuilderBuildItem> staticInitConfigBuilder,
             BuildProducer<RunTimeConfigBuilderBuildItem> runTimeConfigBuilder) {
-        staticInitConfigBuilder.produce(new StaticInitConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
+        staticInitConfigBuilder
+                .produce(new StaticInitConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
         runTimeConfigBuilder.produce(new RunTimeConfigBuilderBuildItem(SystemOnlySourcesConfigBuilder.class.getName()));
     }
 

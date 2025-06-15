@@ -29,8 +29,7 @@ public class SafeVertxContextTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(MyBean.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyBean.class));
 
     @Inject
     MyBean bean;

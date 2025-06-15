@@ -24,8 +24,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ContextProviderDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().overrideConfigKey("quarkus.arc.context-propagation.enabled",
-            "false");
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .overrideConfigKey("quarkus.arc.context-propagation.enabled", "false");
 
     @Inject
     ManagedExecutor all;
@@ -40,17 +40,16 @@ public class ContextProviderDisabledTest {
         requestContext.activate();
         assertEquals("FOO", bean.getId());
         try {
-            assertEquals("OK",
-                    all.completedFuture("OK").thenApplyAsync(text -> {
-                        // Assertion error would result in an ExecutionException thrown from the CompletableFuture.get()
-                        assertFalse(requestContext.isActive());
-                        try {
-                            bean.getId();
-                            fail();
-                        } catch (ContextNotActiveException expected) {
-                        }
-                        return text;
-                    }).toCompletableFuture().get(5, TimeUnit.SECONDS));
+            assertEquals("OK", all.completedFuture("OK").thenApplyAsync(text -> {
+                // Assertion error would result in an ExecutionException thrown from the CompletableFuture.get()
+                assertFalse(requestContext.isActive());
+                try {
+                    bean.getId();
+                    fail();
+                } catch (ContextNotActiveException expected) {
+                }
+                return text;
+            }).toCompletableFuture().get(5, TimeUnit.SECONDS));
         } finally {
             requestContext.terminate();
         }

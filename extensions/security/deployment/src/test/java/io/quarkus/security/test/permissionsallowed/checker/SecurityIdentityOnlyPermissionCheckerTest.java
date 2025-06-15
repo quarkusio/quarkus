@@ -25,9 +25,8 @@ public class SecurityIdentityOnlyPermissionCheckerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class,
-                            SinglePermissionCheckerTargetBean.class, SecurityIdentityOnlyPermissionChecker.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class,
+                    SinglePermissionCheckerTargetBean.class, SecurityIdentityOnlyPermissionChecker.class));
 
     @Inject
     SinglePermissionCheckerTargetBean bean;

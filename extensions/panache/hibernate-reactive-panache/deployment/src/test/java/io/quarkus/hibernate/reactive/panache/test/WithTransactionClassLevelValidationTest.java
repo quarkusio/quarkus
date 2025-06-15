@@ -15,9 +15,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class WithTransactionClassLevelValidationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Bean.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Bean.class));
 
     @Inject
     Bean bean;

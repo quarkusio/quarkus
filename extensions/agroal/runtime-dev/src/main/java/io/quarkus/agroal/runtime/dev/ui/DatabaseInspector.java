@@ -53,8 +53,7 @@ public final class DatabaseInspector {
         this.isDev = currentMode == LaunchMode.DEVELOPMENT && !LaunchMode.isRemoteDev();
 
         Config config = ConfigProvider.getConfig();
-        this.allowSql = config.getOptionalValue("quarkus.datasource.dev-ui.allow-sql", Boolean.class)
-                .orElse(false);
+        this.allowSql = config.getOptionalValue("quarkus.datasource.dev-ui.allow-sql", Boolean.class).orElse(false);
 
         this.allowedHost = config.getOptionalValue("quarkus.datasource.dev-ui.allowed-db-host", String.class)
                 .orElse(null);
@@ -73,7 +72,8 @@ public final class DatabaseInspector {
             for (String name : agroalSupport.entries.keySet()) {
                 AgroalDataSourceSupport.Entry entry = agroalSupport.entries.get(name);
                 if (entry != null) {
-                    InjectableInstance<AgroalDataSource> dataSourceInstance = AgroalDataSourceUtil.dataSourceInstance(name);
+                    InjectableInstance<AgroalDataSource> dataSourceInstance = AgroalDataSourceUtil
+                            .dataSourceInstance(name);
                     if (dataSourceInstance.isResolvable()) {
                         AgroalDataSource ads = dataSourceInstance.get();
                         if (isAllowedDatabase(ads)) {
@@ -143,9 +143,8 @@ public final class DatabaseInspector {
                                         int columnSize = columns.getInt("COLUMN_SIZE");
                                         String nullable = columns.getString("IS_NULLABLE");
                                         int dataType = columns.getInt("DATA_TYPE");
-                                        columnList
-                                                .add(new Column(columnName, columnType, columnSize, nullable,
-                                                        isBinary(dataType)));
+                                        columnList.add(new Column(columnName, columnType, columnSize, nullable,
+                                                isBinary(dataType)));
 
                                     }
                                 }
@@ -159,7 +158,8 @@ public final class DatabaseInspector {
                                     }
                                 }
 
-                                tableList.add(new Table(tableSchema, tableName, primaryKeyList, columnList, foreignKeyList));
+                                tableList.add(
+                                        new Table(tableSchema, tableName, primaryKeyList, columnList, foreignKeyList));
                             }
                         }
                     }
@@ -186,34 +186,17 @@ public final class DatabaseInspector {
                 StringBuilder fields = new StringBuilder();
                 for (Column col : table.columns()) {
                     boolean isPK = table.primaryKeys().contains(col.columnName());
-                    fields.append(col.columnName())
-                            .append(": ")
-                            .append(col.columnType())
-                            .append(" (")
-                            .append(col.columnSize())
-                            .append(")")
-                            .append(isPK ? " (PK)" : "")
-                            .append("\\l");
+                    fields.append(col.columnName()).append(": ").append(col.columnType()).append(" (")
+                            .append(col.columnSize()).append(")").append(isPK ? " (PK)" : "").append("\\l");
                 }
 
-                dot.append("  ")
-                        .append(escape(table.tableName()))
-                        .append(" [label=\"{")
-                        .append(table.tableName())
-                        .append("|")
-                        .append(fields)
-                        .append("}\"];\n");
+                dot.append("  ").append(escape(table.tableName())).append(" [label=\"{").append(table.tableName())
+                        .append("|").append(fields).append("}\"];\n");
 
                 for (ForeignKey fk : table.foreignKeys()) {
-                    dot.append("  ")
-                            .append(escape(table.tableName()))
-                            .append(" -> ")
-                            .append(escape(fk.referencedTable()))
-                            .append(" [label=\"")
-                            .append(fk.columnName())
-                            .append(" → ")
-                            .append(fk.referencedColumn())
-                            .append("\"];\n");
+                    dot.append("  ").append(escape(table.tableName())).append(" -> ")
+                            .append(escape(fk.referencedTable())).append(" [label=\"").append(fk.columnName())
+                            .append(" → ").append(fk.referencedColumn()).append("\"];\n");
                 }
             }
 
@@ -379,16 +362,18 @@ public final class DatabaseInspector {
             return true;
         } else {
             String lsql = sql.toLowerCase().trim();
-            return lsql.startsWith("select")
-                    && !lsql.contains("update ")
-                    && !lsql.contains("delete ")
-                    && !lsql.contains("insert ")
-                    && !lsql.contains("create ")
-                    && !lsql.contains("drop "); // Having a sql with those nested is invalid anyway
+            return lsql.startsWith("select") && !lsql.contains("update ") && !lsql.contains("delete ")
+                    && !lsql.contains("insert ") && !lsql.contains("create ") && !lsql.contains("drop "); // Having a
+                                                                                                                                                                                                     // sql with
+                                                                                                                                                                                                     // those
+                                                                                                                                                                                                     // nested is
+                                                                                                                                                                                                     // invalid
+                                                                                                                                                                                                     // anyway
         }
     }
 
-    private List<String> getPrimaryKeys(DatabaseMetaData metaData, String tableSchema, String tableName) throws SQLException {
+    private List<String> getPrimaryKeys(DatabaseMetaData metaData, String tableSchema, String tableName)
+            throws SQLException {
         List<String> primaryKeyList = new ArrayList<>();
         try (ResultSet primaryKeys = metaData.getPrimaryKeys(null, tableSchema, tableName)) {
             while (primaryKeys.next()) {
@@ -422,8 +407,8 @@ public final class DatabaseInspector {
 
             String host = uri.getHost();
 
-            return host != null && ((host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1")) ||
-                    (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
+            return host != null && ((host.equals("localhost") || host.equals("127.0.0.1") || host.equals("::1"))
+                    || (allowedHost != null && !allowedHost.isBlank() && host.equalsIgnoreCase(allowedHost)));
 
         } catch (URISyntaxException e) {
             Log.warn(e.getMessage());
@@ -444,15 +429,12 @@ public final class DatabaseInspector {
     }
 
     private boolean isBinary(int dataType) {
-        return dataType == Types.BLOB ||
-                dataType == Types.VARBINARY ||
-                dataType == Types.LONGVARBINARY ||
-                dataType == Types.BINARY ||
-                dataType == Types.JAVA_OBJECT ||
-                dataType == Types.OTHER;
+        return dataType == Types.BLOB || dataType == Types.VARBINARY || dataType == Types.LONGVARBINARY
+                || dataType == Types.BINARY || dataType == Types.JAVA_OBJECT || dataType == Types.OTHER;
     }
 
-    private static record Column(String columnName, String columnType, int columnSize, String nullable, boolean binary) {
+    private static record Column(String columnName, String columnType, int columnSize, String nullable,
+            boolean binary) {
     }
 
     private static record ForeignKey(String columnName, String referencedTable, String referencedColumn) {

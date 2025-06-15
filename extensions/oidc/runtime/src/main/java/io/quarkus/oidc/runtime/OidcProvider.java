@@ -61,16 +61,12 @@ public class OidcProvider implements Closeable {
 
     private static final Logger LOG = Logger.getLogger(OidcProvider.class);
     private static final String ANY_AUDIENCE = "any";
-    private static final String[] ASYMMETRIC_SUPPORTED_ALGORITHMS = new String[] { SignatureAlgorithm.RS256.getAlgorithm(),
-            SignatureAlgorithm.RS384.getAlgorithm(),
-            SignatureAlgorithm.RS512.getAlgorithm(),
-            SignatureAlgorithm.ES256.getAlgorithm(),
-            SignatureAlgorithm.ES384.getAlgorithm(),
-            SignatureAlgorithm.ES512.getAlgorithm(),
-            SignatureAlgorithm.PS256.getAlgorithm(),
-            SignatureAlgorithm.PS384.getAlgorithm(),
-            SignatureAlgorithm.PS512.getAlgorithm(),
-            SignatureAlgorithm.EDDSA.getAlgorithm() };
+    private static final String[] ASYMMETRIC_SUPPORTED_ALGORITHMS = new String[] {
+            SignatureAlgorithm.RS256.getAlgorithm(), SignatureAlgorithm.RS384.getAlgorithm(),
+            SignatureAlgorithm.RS512.getAlgorithm(), SignatureAlgorithm.ES256.getAlgorithm(),
+            SignatureAlgorithm.ES384.getAlgorithm(), SignatureAlgorithm.ES512.getAlgorithm(),
+            SignatureAlgorithm.PS256.getAlgorithm(), SignatureAlgorithm.PS384.getAlgorithm(),
+            SignatureAlgorithm.PS512.getAlgorithm(), SignatureAlgorithm.EDDSA.getAlgorithm() };
     private static final AlgorithmConstraints SYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
             AlgorithmConstraints.ConstraintType.PERMIT, SignatureAlgorithm.HS256.getAlgorithm());
     static final AlgorithmConstraints ASYMMETRIC_ALGORITHM_CONSTRAINTS = new AlgorithmConstraints(
@@ -166,46 +162,46 @@ public class OidcProvider implements Closeable {
     }
 
     private Map<String, Set<String>> checkRequiredClaimsProp() {
-        return oidcConfig != null && !oidcConfig.token().requiredClaims().isEmpty() ? oidcConfig.token().requiredClaims()
+        return oidcConfig != null && !oidcConfig.token().requiredClaims().isEmpty()
+                ? oidcConfig.token().requiredClaims()
                 : null;
     }
 
     public TokenVerificationResult verifySelfSignedJwtToken(String token, Key generatedInternalSignatureKey)
             throws InvalidJwtException {
         return verifyJwtTokenInternal(token, true, false, null, SYMMETRIC_ALGORITHM_CONSTRAINTS,
-                new InternalSignatureKeyResolver(generatedInternalSignatureKey),
-                true, oidcConfig.token().issuedAtRequired());
+                new InternalSignatureKeyResolver(generatedInternalSignatureKey), true,
+                oidcConfig.token().issuedAtRequired());
     }
 
-    public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification, boolean subjectRequired,
-            String nonce)
-            throws InvalidJwtException {
+    public TokenVerificationResult verifyJwtToken(String token, boolean enforceAudienceVerification,
+            boolean subjectRequired, String nonce) throws InvalidJwtException {
         return verifyJwtTokenInternal(customizeJwtToken(token), enforceAudienceVerification, subjectRequired, nonce,
-                (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
+                (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints
+                        : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
                 asymmetricKeyResolver, true, oidcConfig.token().issuedAtRequired());
     }
 
     public TokenVerificationResult verifyLogoutJwtToken(String token) throws InvalidJwtException {
         final boolean enforceExpReq = !oidcConfig.token().age().isPresent();
-        TokenVerificationResult result = verifyJwtTokenInternal(token, true, false, null, ASYMMETRIC_ALGORITHM_CONSTRAINTS,
-                asymmetricKeyResolver, enforceExpReq, oidcConfig.token().issuedAtRequired());
+        TokenVerificationResult result = verifyJwtTokenInternal(token, true, false, null,
+                ASYMMETRIC_ALGORITHM_CONSTRAINTS, asymmetricKeyResolver, enforceExpReq,
+                oidcConfig.token().issuedAtRequired());
         if (!enforceExpReq) {
             // Expiry check was skipped during the initial verification but if the logout token contains the exp claim
             // then it must be verified
             if (isTokenExpired(result.localVerificationResult.getLong(Claims.exp.name()))) {
                 String error = String.format("Logout token for client %s has expired", oidcConfig.clientId().get());
                 LOG.debugf(error);
-                throw new InvalidJwtException(error, List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null);
+                throw new InvalidJwtException(error, List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)),
+                        null);
             }
         }
         return result;
     }
 
-    private TokenVerificationResult verifyJwtTokenInternal(String token,
-            boolean enforceAudienceVerification,
-            boolean subjectRequired,
-            String nonce,
-            AlgorithmConstraints algConstraints,
+    private TokenVerificationResult verifyJwtTokenInternal(String token, boolean enforceAudienceVerification,
+            boolean subjectRequired, String nonce, AlgorithmConstraints algConstraints,
             VerificationKeyResolver verificationKeyResolver, boolean enforceExpReq, boolean issuedAtRequired)
             throws InvalidJwtException {
         JwtConsumerBuilder builder = new JwtConsumerBuilder();
@@ -303,8 +299,7 @@ public class OidcProvider implements Closeable {
 
     private String customizeJwtToken(String token) {
         if (tokenCustomizer != null) {
-            JsonObject headers = AbstractJsonObject.toJsonObject(
-                    OidcUtils.decodeJwtHeadersAsString(token));
+            JsonObject headers = AbstractJsonObject.toJsonObject(OidcUtils.decodeJwtHeadersAsString(token));
             headers = tokenCustomizer.customizeHeaders(headers);
             if (headers != null) {
                 String newHeaders = new String(
@@ -350,8 +345,7 @@ public class OidcProvider implements Closeable {
     }
 
     public Uni<TokenVerificationResult> getKeyResolverAndVerifyJwtToken(TokenCredential tokenCred,
-            boolean enforceAudienceVerification,
-            boolean subjectRequired, String nonce, boolean issuedAtRequired) {
+            boolean enforceAudienceVerification, boolean subjectRequired, String nonce, boolean issuedAtRequired) {
         return keyResolverProvider.resolve(tokenCred).onItem()
                 .transformToUni(new Function<VerificationKeyResolver, Uni<? extends TokenVerificationResult>>() {
 
@@ -360,8 +354,7 @@ public class OidcProvider implements Closeable {
                         try {
                             return Uni.createFrom()
                                     .item(verifyJwtTokenInternal(customizeJwtToken(tokenCred.getToken()),
-                                            enforceAudienceVerification,
-                                            subjectRequired, nonce,
+                                            enforceAudienceVerification, subjectRequired, nonce,
                                             (requiredAlgorithmConstraints != null ? requiredAlgorithmConstraints
                                                     : ASYMMETRIC_ALGORITHM_CONSTRAINTS),
                                             resolver, true, issuedAtRequired));
@@ -376,10 +369,11 @@ public class OidcProvider implements Closeable {
     public Uni<TokenIntrospection> introspectToken(String token, boolean idToken, Long expiresIn,
             boolean fallbackFromJwkMatch) {
         if (client.getMetadata().getIntrospectionUri() == null) {
-            String errorMessage = String.format("Token issued to client %s "
-                    + (fallbackFromJwkMatch ? "does not have a matching verification key and it " : "")
-                    + "can not be introspected because the introspection endpoint address is unknown - "
-                    + "please check if your OpenId Connect Provider supports the token introspection",
+            String errorMessage = String.format(
+                    "Token issued to client %s "
+                            + (fallbackFromJwkMatch ? "does not have a matching verification key and it " : "")
+                            + "can not be introspected because the introspection endpoint address is unknown - "
+                            + "please check if your OpenId Connect Provider supports the token introspection",
                     oidcConfig.clientId().get());
 
             throw new AuthenticationFailedException(errorMessage, tokenMap(token, idToken));
@@ -392,15 +386,16 @@ public class OidcProvider implements Closeable {
                         if (t != null) {
                             throw new AuthenticationFailedException(t, tokenMap(token, idToken));
                         }
-                        Long introspectionExpiresIn = introspectionResult.getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
+                        Long introspectionExpiresIn = introspectionResult
+                                .getLong(OidcConstants.INTROSPECTION_TOKEN_EXP);
                         if (introspectionExpiresIn == null && expiresIn != null) {
                             // expires_in is relative to the current time
                             introspectionExpiresIn = now() + expiresIn;
                         }
                         if (!introspectionResult.isActive()) {
                             verifyTokenExpiry(token, idToken, introspectionExpiresIn);
-                            throw new AuthenticationFailedException(
-                                    String.format("Token issued to client %s is not active", oidcConfig.clientId().get()),
+                            throw new AuthenticationFailedException(String
+                                    .format("Token issued to client %s is not active", oidcConfig.clientId().get()),
                                     tokenMap(token, idToken));
                         }
                         verifyTokenExpiry(token, idToken, introspectionExpiresIn);
@@ -432,7 +427,8 @@ public class OidcProvider implements Closeable {
                                 }
                                 final JsonArray actualClaimValueArray;
                                 try {
-                                    actualClaimValueArray = requireNonNull(introspectionResult.getArray(requiredClaimName));
+                                    actualClaimValueArray = requireNonNull(
+                                            introspectionResult.getArray(requiredClaimName));
                                 } catch (Exception ignored) {
                                     LOG.debugf("Introspection claim %s is neither string or array", requiredClaimName);
                                     throw new AuthenticationFailedException(tokenMap(token, idToken));
@@ -448,7 +444,8 @@ public class OidcProvider implements Closeable {
                                             // try next actual claim value
                                         }
                                     }
-                                    LOG.debugf("Value of the introspection claim %s does not match required value of %s",
+                                    LOG.debugf(
+                                            "Value of the introspection claim %s does not match required value of %s",
                                             requiredClaimName, requiredClaimValue);
                                     throw new AuthenticationFailedException(tokenMap(token, idToken));
                                 }
@@ -465,10 +462,8 @@ public class OidcProvider implements Closeable {
         if (isTokenExpired(exp)) {
             String error = String.format("Token issued to client %s has expired", oidcConfig.clientId().get());
             LOG.debugf(error);
-            throw new AuthenticationFailedException(
-                    new InvalidJwtException(error,
-                            List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null),
-                    tokenMap(token, idToken));
+            throw new AuthenticationFailedException(new InvalidJwtException(error,
+                    List.of(new ErrorCodeValidator.Error(ErrorCodes.EXPIRED, error)), null), tokenMap(token, idToken));
         }
     }
 
@@ -477,9 +472,7 @@ public class OidcProvider implements Closeable {
     }
 
     private int getLifespanGrace() {
-        return oidcConfig.token().lifespanGrace().isPresent()
-                ? oidcConfig.token().lifespanGrace().getAsInt()
-                : 0;
+        return oidcConfig.token().lifespanGrace().isPresent() ? oidcConfig.token().lifespanGrace().getAsInt() : 0;
     }
 
     private static long now() {
@@ -543,8 +536,8 @@ public class OidcProvider implements Closeable {
                     key = getKeyWithS256Thumbprint(thumbprint);
                     if (key == null) {
                         // if only `x5tS256` was set then the key must exist
-                        throw new UnresolvableKeyException(
-                                String.format("JWK with the SHA256 certificate thumbprint '%s' is not available", thumbprint));
+                        throw new UnresolvableKeyException(String.format(
+                                "JWK with the SHA256 certificate thumbprint '%s' is not available", thumbprint));
                     }
                 }
             }
@@ -721,17 +714,20 @@ public class OidcProvider implements Closeable {
                     String actualClaimValue = claims.getStringClaimValue(requiredClaimName);
                     String requiredClaimValue = requiredClaimValues.iterator().next();
                     if (!requiredClaimValue.equals(actualClaimValue)) {
-                        return "claim " + requiredClaimName + " does not match expected value of " + requiredClaimValues;
+                        return "claim " + requiredClaimName + " does not match expected value of "
+                                + requiredClaimValues;
                     }
                 } else {
-                    throw new MalformedClaimException("expected claim " + requiredClaimName + " must be a list of strings");
+                    throw new MalformedClaimException(
+                            "expected claim " + requiredClaimName + " must be a list of strings");
                 }
             } else {
                 if (claims.isClaimValueStringList(requiredClaimName)) {
                     List<String> actualClaimValues = claims.getStringListClaimValue(requiredClaimName);
                     for (String requiredClaimValue : requiredClaimValues) {
                         if (!actualClaimValues.contains(requiredClaimValue)) {
-                            return "claim " + requiredClaimName + " does not match expected value of " + requiredClaimValues;
+                            return "claim " + requiredClaimName + " does not match expected value of "
+                                    + requiredClaimValues;
                         }
                     }
                 } else {

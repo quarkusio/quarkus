@@ -12,19 +12,14 @@ public class VertxInjectionTest {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(VertxEventBusConsumer.class, VertxEventBusProducer.class));
+            .withApplicationRoot((jar) -> jar.addClasses(VertxEventBusConsumer.class, VertxEventBusProducer.class));
 
     @Test
     public void testEditingBeanUsingVertx() {
-        RestAssured.get("/").then()
-                .statusCode(200)
-                .body(containsString("hello"));
+        RestAssured.get("/").then().statusCode(200).body(containsString("hello"));
 
         TEST.modifySourceFile("VertxEventBusConsumer.java", s -> s.replace("hello", "bonjour"));
-        RestAssured.get("/").then()
-                .statusCode(200)
-                .body(containsString("bonjour"));
+        RestAssured.get("/").then().statusCode(200).body(containsString("bonjour"));
     }
 
 }

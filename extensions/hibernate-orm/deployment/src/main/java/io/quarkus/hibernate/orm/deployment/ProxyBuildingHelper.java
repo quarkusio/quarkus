@@ -17,8 +17,8 @@ import net.bytebuddy.matcher.ElementMatchers;
 import net.bytebuddy.pool.TypePool;
 
 /**
- * Makes it slightly more readable to interact with the Hibernate
- * ByteBuddyProxyHelper, while improving resource handling.
+ * Makes it slightly more readable to interact with the Hibernate ByteBuddyProxyHelper, while improving resource
+ * handling.
  */
 final class ProxyBuildingHelper implements AutoCloseable {
 
@@ -39,12 +39,13 @@ final class ProxyBuildingHelper implements AutoCloseable {
         for (String name : interfaceNames) {
             interfaces.add(typePool.describe(name).resolve());
         }
-        return getByteBuddyProxyHelper().buildUnloadedProxy(typePool, typePool.describe(mappedClassName).resolve(), interfaces);
+        return getByteBuddyProxyHelper().buildUnloadedProxy(typePool, typePool.describe(mappedClassName).resolve(),
+                interfaces);
     }
 
     private ByteBuddyProxyHelper getByteBuddyProxyHelper() {
-        //Lazy initialization of Byte Buddy: we'll likely need it, but if we can avoid loading it
-        //in some corner cases it's worth avoiding it.
+        // Lazy initialization of Byte Buddy: we'll likely need it, but if we can avoid loading it
+        // in some corner cases it's worth avoiding it.
         if (this.byteBuddyProxyHelper == null) {
             bytecodeProvider = new BytecodeProviderImpl(ClassFileVersion.JAVA_V11);
             this.byteBuddyProxyHelper = bytecodeProvider.getByteBuddyProxyHelper();
@@ -61,8 +62,7 @@ final class ProxyBuildingHelper implements AutoCloseable {
 
         TypeDescription mappedClass = mappedClassResolution.resolve();
 
-        return !mappedClass.isFinal()
-                && !mappedClass.getDeclaredMethods().filter(NO_ARG_CONSTRUCTOR).isEmpty();
+        return !mappedClass.isFinal() && !mappedClass.getDeclaredMethods().filter(NO_ARG_CONSTRUCTOR).isEmpty();
     }
 
     @Override

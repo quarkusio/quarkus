@@ -41,7 +41,8 @@ public class SetupVerifier {
         jarVerifier.assertThatFileIsNotContained(file);
     }
 
-    public static void assertThatJarContainsFileWithContent(File archive, String path, String... lines) throws Exception {
+    public static void assertThatJarContainsFileWithContent(File archive, String path, String... lines)
+            throws Exception {
         JarVerifier jarVerifier = new JarVerifier(archive);
         jarVerifier.assertThatFileContains(path, lines);
     }
@@ -53,10 +54,11 @@ public class SetupVerifier {
 
         MavenProject project = new MavenProject(model);
 
-        Optional<Plugin> maybe = hasPlugin(project, ToolsConstants.IO_QUARKUS + ":" + ToolsConstants.QUARKUS_MAVEN_PLUGIN);
+        Optional<Plugin> maybe = hasPlugin(project,
+                ToolsConstants.IO_QUARKUS + ":" + ToolsConstants.QUARKUS_MAVEN_PLUGIN);
         assertThat(maybe).isNotEmpty();
 
-        //Check if the properties have been set correctly
+        // Check if the properties have been set correctly
         Properties properties = model.getProperties();
         assertThat(properties.containsKey(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_GROUP_ID_NAME)).isTrue();
         assertThat(properties.containsKey(MojoUtils.TEMPLATE_PROPERTY_QUARKUS_PLATFORM_ARTIFACT_ID_NAME)).isTrue();
@@ -93,13 +95,11 @@ public class SetupVerifier {
 
     public static Optional<Plugin> hasPlugin(MavenProject project, String pluginKey) {
         Optional<Plugin> optPlugin = project.getBuildPlugins().stream()
-                .filter(plugin -> pluginKey.equals(plugin.getKey()))
-                .findFirst();
+                .filter(plugin -> pluginKey.equals(plugin.getKey())).findFirst();
 
         if (!optPlugin.isPresent() && project.getPluginManagement() != null) {
             optPlugin = project.getPluginManagement().getPlugins().stream()
-                    .filter(plugin -> pluginKey.equals(plugin.getKey()))
-                    .findFirst();
+                    .filter(plugin -> pluginKey.equals(plugin.getKey())).findFirst();
         }
         return optPlugin;
     }

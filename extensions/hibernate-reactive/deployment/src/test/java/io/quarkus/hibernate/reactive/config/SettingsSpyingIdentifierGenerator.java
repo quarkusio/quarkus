@@ -16,8 +16,8 @@ import org.hibernate.service.ServiceRegistry;
 import org.hibernate.type.Type;
 
 /**
- * This was the only way I found to get our hands on the settings used during metadata building.
- * Feel free to use some other solution if you find one.
+ * This was the only way I found to get our hands on the settings used during metadata building. Feel free to use some
+ * other solution if you find one.
  */
 public class SettingsSpyingIdentifierGenerator implements IdentifierGenerator {
     public static final List<Map<String, Object>> collectedSettings = new ArrayList<>();

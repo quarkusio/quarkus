@@ -17,7 +17,8 @@ public class BuiltInTypeTest {
 
     @Test
     void invalidPackageType() {
-        assertThatIllegalArgumentException().isThrownBy(() -> PackageConfig.JarConfig.JarType.fromString("not-a-package-type"))
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> PackageConfig.JarConfig.JarType.fromString("not-a-package-type"))
                 .withMessage("Unknown JAR package type 'not-a-package-type'");
     }
 }

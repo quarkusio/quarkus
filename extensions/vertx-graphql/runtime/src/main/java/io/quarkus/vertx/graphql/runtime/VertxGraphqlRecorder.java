@@ -27,8 +27,9 @@ public class VertxGraphqlRecorder {
                 if (event.normalizedPath().length() == (event.currentRoute().getPath().length()
                         + (event.mountPoint() == null ? 0 : event.mountPoint().length() - 1))) {
                     event.response().setStatusCode(302);
-                    event.response().headers().set(HttpHeaders.LOCATION, (event.mountPoint() == null ? "" : event.mountPoint())
-                            + event.currentRoute().getPath().substring(1) + "/");
+                    event.response().headers().set(HttpHeaders.LOCATION,
+                            (event.mountPoint() == null ? "" : event.mountPoint())
+                                    + event.currentRoute().getPath().substring(1) + "/");
                     event.response().end();
                     return;
                 }

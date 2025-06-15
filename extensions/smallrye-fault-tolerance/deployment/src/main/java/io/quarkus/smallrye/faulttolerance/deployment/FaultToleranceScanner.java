@@ -58,7 +58,8 @@ final class FaultToleranceScanner {
     private final FaultToleranceMethodSearch methodSearch;
 
     FaultToleranceScanner(IndexView index, AnnotationStore annotationStore, AnnotationProxyBuildItem proxy,
-            ClassOutput output, RecorderContext recorderContext, BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod) {
+            ClassOutput output, RecorderContext recorderContext,
+            BuildProducer<ReflectiveMethodBuildItem> reflectiveMethod) {
         this.index = index;
         this.annotationStore = annotationStore;
         this.proxy = proxy;
@@ -109,7 +110,8 @@ final class FaultToleranceScanner {
             }
             if (annotationStore.hasAnnotation(method, io.quarkus.arc.processor.DotNames.NO_CLASS_INTERCEPTORS)
                     && !annotationStore.hasAnyAnnotation(method, DotNames.FT_ANNOTATIONS)) {
-                // methods annotated @NoClassInterceptors and not annotated with an interceptor binding are not intercepted
+                // methods annotated @NoClassInterceptors and not annotated with an interceptor binding are not
+                // intercepted
                 continue;
             }
 
@@ -135,45 +137,43 @@ final class FaultToleranceScanner {
         result.beanClass = getClassProxy(beanClass);
         result.method = createMethodDescriptor(method);
 
-        result.applyFaultTolerance = getAnnotation(ApplyFaultTolerance.class, DotNames.APPLY_FAULT_TOLERANCE,
-                method, beanClass, annotationsPresentDirectly);
-        result.applyGuard = getAnnotation(ApplyGuard.class, DotNames.APPLY_GUARD,
-                method, beanClass, annotationsPresentDirectly);
+        result.applyFaultTolerance = getAnnotation(ApplyFaultTolerance.class, DotNames.APPLY_FAULT_TOLERANCE, method,
+                beanClass, annotationsPresentDirectly);
+        result.applyGuard = getAnnotation(ApplyGuard.class, DotNames.APPLY_GUARD, method, beanClass,
+                annotationsPresentDirectly);
 
-        result.asynchronous = getAnnotation(Asynchronous.class, DotNames.ASYNCHRONOUS,
-                method, beanClass, annotationsPresentDirectly);
-        result.asynchronousNonBlocking = getAnnotation(AsynchronousNonBlocking.class, DotNames.ASYNCHRONOUS_NON_BLOCKING,
-                method, beanClass, annotationsPresentDirectly);
-        result.blocking = getAnnotation(Blocking.class, DotNames.BLOCKING,
-                method, beanClass, annotationsPresentDirectly);
-        result.nonBlocking = getAnnotation(NonBlocking.class, DotNames.NON_BLOCKING,
-                method, beanClass, annotationsPresentDirectly);
+        result.asynchronous = getAnnotation(Asynchronous.class, DotNames.ASYNCHRONOUS, method, beanClass,
+                annotationsPresentDirectly);
+        result.asynchronousNonBlocking = getAnnotation(AsynchronousNonBlocking.class,
+                DotNames.ASYNCHRONOUS_NON_BLOCKING, method, beanClass, annotationsPresentDirectly);
+        result.blocking = getAnnotation(Blocking.class, DotNames.BLOCKING, method, beanClass,
+                annotationsPresentDirectly);
+        result.nonBlocking = getAnnotation(NonBlocking.class, DotNames.NON_BLOCKING, method, beanClass,
+                annotationsPresentDirectly);
 
-        result.bulkhead = getAnnotation(Bulkhead.class, DotNames.BULKHEAD,
-                method, beanClass, annotationsPresentDirectly);
-        result.circuitBreaker = getAnnotation(CircuitBreaker.class, DotNames.CIRCUIT_BREAKER,
-                method, beanClass, annotationsPresentDirectly);
-        result.circuitBreakerName = getAnnotation(CircuitBreakerName.class, DotNames.CIRCUIT_BREAKER_NAME,
-                method, beanClass, annotationsPresentDirectly);
-        result.fallback = getAnnotation(Fallback.class, DotNames.FALLBACK,
-                method, beanClass, annotationsPresentDirectly);
-        result.rateLimit = getAnnotation(RateLimit.class, DotNames.RATE_LIMIT,
-                method, beanClass, annotationsPresentDirectly);
-        result.retry = getAnnotation(Retry.class, DotNames.RETRY,
-                method, beanClass, annotationsPresentDirectly);
-        result.timeout = getAnnotation(Timeout.class, DotNames.TIMEOUT,
-                method, beanClass, annotationsPresentDirectly);
+        result.bulkhead = getAnnotation(Bulkhead.class, DotNames.BULKHEAD, method, beanClass,
+                annotationsPresentDirectly);
+        result.circuitBreaker = getAnnotation(CircuitBreaker.class, DotNames.CIRCUIT_BREAKER, method, beanClass,
+                annotationsPresentDirectly);
+        result.circuitBreakerName = getAnnotation(CircuitBreakerName.class, DotNames.CIRCUIT_BREAKER_NAME, method,
+                beanClass, annotationsPresentDirectly);
+        result.fallback = getAnnotation(Fallback.class, DotNames.FALLBACK, method, beanClass,
+                annotationsPresentDirectly);
+        result.rateLimit = getAnnotation(RateLimit.class, DotNames.RATE_LIMIT, method, beanClass,
+                annotationsPresentDirectly);
+        result.retry = getAnnotation(Retry.class, DotNames.RETRY, method, beanClass, annotationsPresentDirectly);
+        result.timeout = getAnnotation(Timeout.class, DotNames.TIMEOUT, method, beanClass, annotationsPresentDirectly);
 
-        result.customBackoff = getAnnotation(CustomBackoff.class, DotNames.CUSTOM_BACKOFF,
-                method, beanClass, annotationsPresentDirectly);
-        result.exponentialBackoff = getAnnotation(ExponentialBackoff.class, DotNames.EXPONENTIAL_BACKOFF,
-                method, beanClass, annotationsPresentDirectly);
-        result.fibonacciBackoff = getAnnotation(FibonacciBackoff.class, DotNames.FIBONACCI_BACKOFF,
-                method, beanClass, annotationsPresentDirectly);
-        result.retryWhen = getAnnotation(RetryWhen.class, DotNames.RETRY_WHEN,
-                method, beanClass, annotationsPresentDirectly);
-        result.beforeRetry = getAnnotation(BeforeRetry.class, DotNames.BEFORE_RETRY,
-                method, beanClass, annotationsPresentDirectly);
+        result.customBackoff = getAnnotation(CustomBackoff.class, DotNames.CUSTOM_BACKOFF, method, beanClass,
+                annotationsPresentDirectly);
+        result.exponentialBackoff = getAnnotation(ExponentialBackoff.class, DotNames.EXPONENTIAL_BACKOFF, method,
+                beanClass, annotationsPresentDirectly);
+        result.fibonacciBackoff = getAnnotation(FibonacciBackoff.class, DotNames.FIBONACCI_BACKOFF, method, beanClass,
+                annotationsPresentDirectly);
+        result.retryWhen = getAnnotation(RetryWhen.class, DotNames.RETRY_WHEN, method, beanClass,
+                annotationsPresentDirectly);
+        result.beforeRetry = getAnnotation(BeforeRetry.class, DotNames.BEFORE_RETRY, method, beanClass,
+                annotationsPresentDirectly);
 
         result.annotationsPresentDirectly = annotationsPresentDirectly;
 
@@ -195,8 +195,8 @@ final class FaultToleranceScanner {
         return result;
     }
 
-    private <A extends Annotation> A getAnnotation(Class<A> annotationType, DotName annotationName,
-            MethodInfo method, ClassInfo beanClass, Set<Class<? extends Annotation>> directlyPresent) {
+    private <A extends Annotation> A getAnnotation(Class<A> annotationType, DotName annotationName, MethodInfo method,
+            ClassInfo beanClass, Set<Class<? extends Annotation>> directlyPresent) {
 
         if (annotationStore.hasAnnotation(method, annotationName)) {
             directlyPresent.add(annotationType);
@@ -212,8 +212,8 @@ final class FaultToleranceScanner {
     private void searchForMethods(FaultToleranceMethod result, ClassInfo beanClass, MethodInfo method,
             Set<Class<? extends Annotation>> annotationsPresentDirectly) {
         if (result.fallback != null) {
-            String fallbackMethod = getMethodNameFromConfig(method, annotationsPresentDirectly,
-                    Fallback.class, "fallbackMethod");
+            String fallbackMethod = getMethodNameFromConfig(method, annotationsPresentDirectly, Fallback.class,
+                    "fallbackMethod");
             if (fallbackMethod == null) {
                 fallbackMethod = result.fallback.fallbackMethod();
             }
@@ -221,8 +221,8 @@ final class FaultToleranceScanner {
                 ClassInfo declaringClass = method.declaringClass();
                 Type[] parameterTypes = method.parameterTypes().toArray(new Type[0]);
                 Type returnType = method.returnType();
-                MethodInfo foundMethod = methodSearch.findFallbackMethod(beanClass,
-                        declaringClass, fallbackMethod, parameterTypes, returnType);
+                MethodInfo foundMethod = methodSearch.findFallbackMethod(beanClass, declaringClass, fallbackMethod,
+                        parameterTypes, returnType);
                 Set<MethodInfo> foundMethods = methodSearch.findFallbackMethodsWithExceptionParameter(beanClass,
                         declaringClass, fallbackMethod, parameterTypes, returnType);
                 result.fallbackMethod = createMethodDescriptorIfNotNull(foundMethod);
@@ -237,14 +237,14 @@ final class FaultToleranceScanner {
         }
 
         if (result.beforeRetry != null) {
-            String beforeRetryMethod = getMethodNameFromConfig(method, annotationsPresentDirectly,
-                    BeforeRetry.class, "methodName");
+            String beforeRetryMethod = getMethodNameFromConfig(method, annotationsPresentDirectly, BeforeRetry.class,
+                    "methodName");
             if (beforeRetryMethod == null) {
                 beforeRetryMethod = result.beforeRetry.methodName();
             }
             if (beforeRetryMethod != null && !beforeRetryMethod.isEmpty()) {
-                MethodInfo foundMethod = methodSearch.findBeforeRetryMethod(beanClass,
-                        method.declaringClass(), beforeRetryMethod);
+                MethodInfo foundMethod = methodSearch.findBeforeRetryMethod(beanClass, method.declaringClass(),
+                        beforeRetryMethod);
                 result.beforeRetryMethod = createMethodDescriptorIfNotNull(foundMethod);
                 if (foundMethod != null) {
                     reflectiveMethod.produce(new ReflectiveMethodBuildItem("@BeforeRetry method", foundMethod));
@@ -255,8 +255,9 @@ final class FaultToleranceScanner {
 
     // copy of generated code to obtain a config value and translation from reflection to Jandex
     // no need to check whether `ftAnnotation` is enabled, this will happen at runtime
-    private String getMethodNameFromConfig(MethodInfo method, Set<Class<? extends Annotation>> annotationsPresentDirectly,
-            Class<? extends Annotation> ftAnnotation, String memberName) {
+    private String getMethodNameFromConfig(MethodInfo method,
+            Set<Class<? extends Annotation>> annotationsPresentDirectly, Class<? extends Annotation> ftAnnotation,
+            String memberName) {
         String result;
         org.eclipse.microprofile.config.Config config = ConfigProvider.getConfig();
         if (annotationsPresentDirectly.contains(ftAnnotation)) {
@@ -265,16 +266,14 @@ final class FaultToleranceScanner {
             // <classname>/<methodname>/<annotation>/<member>
             String oldKey = ConfigUtilJandex.oldKey(ftAnnotation, memberName, method);
             result = config.getOptionalValue(newKey, String.class)
-                    .or(() -> config.getOptionalValue(oldKey, String.class))
-                    .orElse(null);
+                    .or(() -> config.getOptionalValue(oldKey, String.class)).orElse(null);
         } else {
             // smallrye.faulttolerance."<classname>".<annotation>.<member>
             String newKey = ConfigUtilJandex.newKey(ftAnnotation, memberName, method.declaringClass());
             // <classname>/<annotation>/<member>
             String oldKey = ConfigUtilJandex.oldKey(ftAnnotation, memberName, method.declaringClass());
             result = config.getOptionalValue(newKey, String.class)
-                    .or(() -> config.getOptionalValue(oldKey, String.class))
-                    .orElse(null);
+                    .or(() -> config.getOptionalValue(oldKey, String.class)).orElse(null);
         }
         if (result == null) {
             // smallrye.faulttolerance.global.<annotation>.<member>
@@ -282,8 +281,7 @@ final class FaultToleranceScanner {
             // <annotation>/<member>
             String oldKey = ConfigUtilJandex.oldKey(ftAnnotation, memberName);
             result = config.getOptionalValue(newKey, String.class)
-                    .or(() -> config.getOptionalValue(oldKey, String.class))
-                    .orElse(null);
+                    .or(() -> config.getOptionalValue(oldKey, String.class)).orElse(null);
         }
         return result;
     }
@@ -307,7 +305,8 @@ final class FaultToleranceScanner {
 
     // almost all FT annotations are inherited (except `@Blocking` and `@NonBlocking`, which we'll remove soon,
     // and `@CircuitBreakerName`, which can only be put on methods), so no need to test for that here
-    private <A extends Annotation> A getAnnotationFromClass(Class<A> annotationType, DotName annotationName, ClassInfo clazz) {
+    private <A extends Annotation> A getAnnotationFromClass(Class<A> annotationType, DotName annotationName,
+            ClassInfo clazz) {
         if (annotationStore.hasAnnotation(clazz, annotationName)) {
             AnnotationInstance annotation = annotationStore.getAnnotation(clazz, annotationName);
             return createAnnotation(annotationType, annotation);

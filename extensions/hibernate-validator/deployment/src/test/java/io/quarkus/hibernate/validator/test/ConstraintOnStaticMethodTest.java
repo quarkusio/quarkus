@@ -17,8 +17,8 @@ public class ConstraintOnStaticMethodTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class).addClasses(MyUtil.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyUtil.class));
 
     @Test
     public void testStaticMethodIsIgnored() {

@@ -16,9 +16,8 @@ public sealed abstract class AbstractConfigItem implements Comparable<AbstractCo
 
     protected Deprecation deprecation;
 
-    public AbstractConfigItem(String sourceType, String sourceElementName, SourceElementType sourceElementType, Path path,
-            String type,
-            Deprecation deprecation) {
+    public AbstractConfigItem(String sourceType, String sourceElementName, SourceElementType sourceElementType,
+            Path path, String type, Deprecation deprecation) {
         this.sourceType = sourceType;
         this.sourceElementName = sourceElementName;
         this.sourceElementType = sourceElementType;

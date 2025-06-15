@@ -40,12 +40,11 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import org.jboss.logging.Logger;
 
 /**
- * Log Receiver that stores logs in a directory under the specified file name, and rotates them after
- * midnight.
+ * Log Receiver that stores logs in a directory under the specified file name, and rotates them after midnight.
  * <p/>
- * Web threads do not touch the log file, but simply queue messages to be written later by a worker thread.
- * A lightweight CAS based locking mechanism is used to ensure than only 1 thread is active writing messages at
- * any given time
+ * Web threads do not touch the log file, but simply queue messages to be written later by a worker thread. A
+ * lightweight CAS based locking mechanism is used to ensure than only 1 thread is active writing messages at any given
+ * time
  *
  * @author Stuart Douglas
  */
@@ -59,9 +58,9 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
 
     private final Deque<String> pendingMessages;
 
-    //0 = not running
-    //1 = queued
-    //2 = running
+    // 0 = not running
+    // 1 = queued
+    // 2 = running
     @SuppressWarnings("unused")
     private volatile int state = 0;
 
@@ -85,36 +84,38 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
     private final boolean rotate;
     private final LogFileHeaderGenerator fileHeaderGenerator;
 
-    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final File outputDirectory, final String logBaseName) {
+    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final File outputDirectory,
+            final String logBaseName) {
         this(logWriteExecutor, outputDirectory.toPath(), logBaseName, null);
     }
 
-    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final File outputDirectory, final String logBaseName,
-            final String logNameSuffix) {
+    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final File outputDirectory,
+            final String logBaseName, final String logNameSuffix) {
         this(logWriteExecutor, outputDirectory.toPath(), logBaseName, logNameSuffix, true);
     }
 
-    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final File outputDirectory, final String logBaseName,
-            final String logNameSuffix, boolean rotate) {
+    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final File outputDirectory,
+            final String logBaseName, final String logNameSuffix, boolean rotate) {
         this(logWriteExecutor, outputDirectory.toPath(), logBaseName, logNameSuffix, rotate);
     }
 
-    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory, final String logBaseName) {
+    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory,
+            final String logBaseName) {
         this(logWriteExecutor, outputDirectory, logBaseName, null);
     }
 
-    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory, final String logBaseName,
-            final String logNameSuffix) {
+    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory,
+            final String logBaseName, final String logNameSuffix) {
         this(logWriteExecutor, outputDirectory, logBaseName, logNameSuffix, true);
     }
 
-    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory, final String logBaseName,
-            final String logNameSuffix, boolean rotate) {
+    public DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory,
+            final String logBaseName, final String logNameSuffix, boolean rotate) {
         this(logWriteExecutor, outputDirectory, logBaseName, logNameSuffix, rotate, null);
     }
 
-    private DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory, final String logBaseName,
-            final String logNameSuffix, boolean rotate, LogFileHeaderGenerator fileHeader) {
+    private DefaultAccessLogReceiver(final Executor logWriteExecutor, final Path outputDirectory,
+            final String logBaseName, final String logNameSuffix, boolean rotate, LogFileHeaderGenerator fileHeader) {
         this.logWriteExecutor = logWriteExecutor;
         this.outputDirectory = outputDirectory;
         this.logBaseName = logBaseName;
@@ -175,7 +176,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
         if (forceLogRotation) {
             doRotate();
         } else if (initialRun && Files.exists(defaultLogFile)) {
-            //if there is an existing log file check if it should be rotated
+            // if there is an existing log file check if it should be rotated
             long lm = 0;
             try {
                 lm = Files.getLastModifiedTime(defaultLogFile).toMillis();
@@ -192,7 +193,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
         initialRun = false;
         List<String> messages = new ArrayList<>();
         String msg;
-        //only grab at most 1000 messages at a time
+        // only grab at most 1000 messages at a time
         for (int i = 0; i < 1000; ++i) {
             msg = pendingMessages.poll();
             if (msg == null) {
@@ -206,8 +207,8 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
             }
         } finally {
             stateUpdater.set(this, 0);
-            //check to see if there is still more messages
-            //if so then run this again
+            // check to see if there is still more messages
+            // if so then run this again
             if (!pendingMessages.isEmpty() || forceLogRotation) {
                 if (stateUpdater.compareAndSet(this, 0, 1)) {
                     logWriteExecutor.execute(this);
@@ -227,8 +228,7 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
     }
 
     /**
-     * For tests only. Blocks the current thread until all messages are written
-     * Just does a busy wait.
+     * For tests only. Blocks the current thread until all messages are written Just does a busy wait.
      * <p/>
      * DO NOT USE THIS OUTSIDE OF A TEST
      */
@@ -298,8 +298,8 @@ public class DefaultAccessLogReceiver implements AccessLogReceiver, Runnable, Cl
     }
 
     /**
-     * forces a log rotation. This rotation is performed in an async manner, you cannot rely on the rotation
-     * being performed immediately after this method returns.
+     * forces a log rotation. This rotation is performed in an async manner, you cannot rely on the rotation being
+     * performed immediately after this method returns.
      */
     public void rotate() {
         forceLogRotation = true;

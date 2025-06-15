@@ -31,8 +31,7 @@ public class ReaugmentTask {
         try (ObjectInputStream in = new ObjectInputStream(
                 Files.newInputStream(deploymentLib.resolve(JarResultBuildStep.APPMODEL_DAT)))) {
             Properties buildSystemProperties = new Properties();
-            try (InputStream buildIn = Files
-                    .newInputStream(buildSystemProps)) {
+            try (InputStream buildIn = Files.newInputStream(buildSystemProps)) {
                 buildSystemProperties.load(buildIn);
             }
 
@@ -40,7 +39,8 @@ public class ReaugmentTask {
             List<AdditionalDependency> additional = new ArrayList<>();
 
             if (appModel.getUserProvidersDirectory() != null) {
-                System.setProperty("quarkus.package.jar.user-providers-directory", appModel.getUserProvidersDirectory()); //bit of a hack, but keeps things simple
+                System.setProperty("quarkus.package.jar.user-providers-directory",
+                        appModel.getUserProvidersDirectory()); // bit of a hack, but keeps things simple
                 try (Stream<Path> files = Files.list(appRoot.resolve(appModel.getUserProvidersDirectory()))) {
                     files.forEach(new Consumer<Path>() {
                         @Override
@@ -57,15 +57,11 @@ public class ReaugmentTask {
             System.setProperty("quarkus.package.jar.type", "mutable-jar");
             System.setProperty("quarkus.native.enabled", "false");
             try (CuratedApplication bootstrap = QuarkusBootstrap.builder()
-                    .setAppArtifact(existingModel.getAppArtifact())
-                    .setExistingModel(existingModel)
-                    .setRebuild(true)
-                    .setBuildSystemProperties(buildSystemProperties)
-                    .setBaseName(appModel.getBaseName())
+                    .setAppArtifact(existingModel.getAppArtifact()).setExistingModel(existingModel).setRebuild(true)
+                    .setBuildSystemProperties(buildSystemProperties).setBaseName(appModel.getBaseName())
                     .addAdditionalApplicationArchives(additional)
                     .setApplicationRoot(existingModel.getAppArtifact().getResolvedPaths().getSinglePath())
-                    .setTargetDirectory(appRoot.getParent())
-                    .setBaseClassLoader(ReaugmentTask.class.getClassLoader())
+                    .setTargetDirectory(appRoot.getParent()).setBaseClassLoader(ReaugmentTask.class.getClassLoader())
                     .build().bootstrap()) {
                 bootstrap.createAugmentor().createProductionApplication();
             }

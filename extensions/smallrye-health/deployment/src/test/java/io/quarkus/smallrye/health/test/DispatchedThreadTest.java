@@ -22,28 +22,21 @@ import io.restassured.RestAssured;
 class DispatchedThreadTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(LivenessHealthCheckCapturingThread.class, ReadinessHealthCheckCapturingThread.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(LivenessHealthCheckCapturingThread.class, ReadinessHealthCheckCapturingThread.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     void check() {
-        RestAssured.when().get("/q/health/live").then()
-                .body("status", is("UP"),
-                        "checks.status", contains("UP"),
-                        "checks.name", contains("my-liveness-check"),
-                        "checks.data.thread[0]", stringContainsInOrder("executor-thread"),
-                        "checks.data.thread[0]", not(stringContainsInOrder("loop")),
-                        "checks.data.request[0]", is(true));
+        RestAssured.when().get("/q/health/live").then().body("status", is("UP"), "checks.status", contains("UP"),
+                "checks.name", contains("my-liveness-check"), "checks.data.thread[0]",
+                stringContainsInOrder("executor-thread"), "checks.data.thread[0]", not(stringContainsInOrder("loop")),
+                "checks.data.request[0]", is(true));
 
-        RestAssured.when().get("/q/health/ready").then()
-                .body("status", is("UP"),
-                        "checks.status", contains("UP"),
-                        "checks.name", contains("my-readiness-check"),
-                        "checks.data.thread[0]", stringContainsInOrder("executor-thread"),
-                        "checks.data.thread[0]", not(stringContainsInOrder("loop")),
-                        "checks.data.request[0]", is(true));
+        RestAssured.when().get("/q/health/ready").then().body("status", is("UP"), "checks.status", contains("UP"),
+                "checks.name", contains("my-readiness-check"), "checks.data.thread[0]",
+                stringContainsInOrder("executor-thread"), "checks.data.thread[0]", not(stringContainsInOrder("loop")),
+                "checks.data.request[0]", is(true));
     }
 
     @ApplicationScoped
@@ -51,11 +44,9 @@ class DispatchedThreadTest {
     public static class LivenessHealthCheckCapturingThread implements HealthCheck {
         @Override
         public HealthCheckResponse call() {
-            return HealthCheckResponse.named("my-liveness-check")
-                    .up()
+            return HealthCheckResponse.named("my-liveness-check").up()
                     .withData("thread", Thread.currentThread().getName())
-                    .withData("request", Arc.container().requestContext().isActive())
-                    .build();
+                    .withData("request", Arc.container().requestContext().isActive()).build();
         }
     }
 
@@ -64,11 +55,9 @@ class DispatchedThreadTest {
     public static class ReadinessHealthCheckCapturingThread implements HealthCheck {
         @Override
         public HealthCheckResponse call() {
-            return HealthCheckResponse.named("my-readiness-check")
-                    .up()
+            return HealthCheckResponse.named("my-readiness-check").up()
                     .withData("thread", Thread.currentThread().getName())
-                    .withData("request", Arc.container().requestContext().isActive())
-                    .build();
+                    .withData("request", Arc.container().requestContext().isActive()).build();
         }
     }
 

@@ -20,25 +20,19 @@ public abstract class AbstractTrustedXForwarderProxiesTest {
             trustedProxiesAsStr = "quarkus.http.proxy.trusted-proxies=" + String.join(",", trustedProxies) + "\n";
         }
         return new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addClasses(ForwardedHandlerInitializer.class)
-                        .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +
-                                "quarkus.http.proxy.allow-x-forwarded=true\n" +
-                                "quarkus.http.proxy.enable-forwarded-host=true\n" +
-                                "quarkus.http.proxy.enable-forwarded-prefix=true\n" +
-                                trustedProxiesAsStr +
-                                "quarkus.http.proxy.forwarded-host-header=X-Forwarded-Server"),
-                                "application.properties"));
+                .withApplicationRoot((jar) -> jar.addClasses(ForwardedHandlerInitializer.class).addAsResource(
+                        new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n"
+                                + "quarkus.http.proxy.allow-x-forwarded=true\n"
+                                + "quarkus.http.proxy.enable-forwarded-host=true\n"
+                                + "quarkus.http.proxy.enable-forwarded-prefix=true\n" + trustedProxiesAsStr
+                                + "quarkus.http.proxy.forwarded-host-header=X-Forwarded-Server"),
+                        "application.properties"));
     }
 
     protected static ValidatableResponse request() {
-        return RestAssured.given()
-                .header("Forwarded", "proto=http;for=backend2:5555;host=somehost2")
-                .header("X-Forwarded-Ssl", "on")
-                .header("X-Forwarded-For", "backend:4444")
-                .header("X-Forwarded-Server", "somehost")
-                .get("/path")
-                .then();
+        return RestAssured.given().header("Forwarded", "proto=http;for=backend2:5555;host=somehost2")
+                .header("X-Forwarded-Ssl", "on").header("X-Forwarded-For", "backend:4444")
+                .header("X-Forwarded-Server", "somehost").get("/path").then();
     }
 
     static void assertRequestSuccess() {

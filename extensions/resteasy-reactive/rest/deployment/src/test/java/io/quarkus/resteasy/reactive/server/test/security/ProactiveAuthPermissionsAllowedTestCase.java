@@ -10,11 +10,10 @@ public class ProactiveAuthPermissionsAllowedTestCase extends AbstractPermissions
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class, TestIdentityController.class,
-                            NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
-                            PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class,
-                            StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class, PermissionCheckers.class,
-                            PermissionCheckersResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PermissionsAllowedResource.class, TestIdentityProvider.class,
+                    TestIdentityController.class, NonBlockingPermissionsAllowedResource.class, CustomPermission.class,
+                    PermissionsIdentityAugmentor.class, CustomPermissionWithExtraArgs.class,
+                    StringPermissionsAllowedMetaAnnotation.class, CreateOrUpdate.class, PermissionCheckers.class,
+                    PermissionCheckersResource.class));
 
 }

@@ -29,10 +29,9 @@ public class FlywayExtensionConfigMultiDataSourcesWithoutDefaultTest {
     Flyway flywayInventory;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FlywayExtensionConfigFixture.class, FlywayExtensionCallback.class)
-                    .addAsResource("config-for-multiple-datasources-without-default.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FlywayExtensionConfigFixture.class, FlywayExtensionCallback.class).addAsResource(
+                    "config-for-multiple-datasources-without-default.properties", "application.properties"));
 
     @Test
     @DisplayName("Reads flyway configuration for datasource named 'users' without default datasource correctly")

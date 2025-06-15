@@ -35,32 +35,27 @@ public class ReactiveGraphCommandsImpl<K> extends AbstractGraphCommands<K>
 
     @Override
     public Uni<Void> graphDelete(K key) {
-        return super._graphDelete(key)
-                .replaceWithVoid();
+        return super._graphDelete(key).replaceWithVoid();
     }
 
     @Override
     public Uni<String> graphExplain(K key, String query) {
-        return super._graphExplain(key, query)
-                .map(Response::toString); // TODO Check result format
+        return super._graphExplain(key, query).map(Response::toString); // TODO Check result format
     }
 
     @Override
     public Uni<List<K>> graphList() {
-        return super._graphList()
-                .map(r -> marshaller.decodeAsList(r, typeOfKey));
+        return super._graphList().map(r -> marshaller.decodeAsList(r, typeOfKey));
     }
 
     @Override
     public Uni<List<Map<String, GraphQueryResponseItem>>> graphQuery(K key, String query) {
-        return super._graphQuery(key, query)
-                .map(ReactiveGraphCommandsImpl::decodeQueryResponse);
+        return super._graphQuery(key, query).map(ReactiveGraphCommandsImpl::decodeQueryResponse);
     }
 
     @Override
     public Uni<List<Map<String, GraphQueryResponseItem>>> graphQuery(K key, String query, Duration timeout) {
-        return super._graphQuery(key, query, timeout)
-                .map(ReactiveGraphCommandsImpl::decodeQueryResponse);
+        return super._graphQuery(key, query, timeout).map(ReactiveGraphCommandsImpl::decodeQueryResponse);
     }
 
     static List<Map<String, GraphQueryResponseItem>> decodeQueryResponse(Response r) {
@@ -164,10 +159,7 @@ public class ReactiveGraphCommandsImpl<K> extends AbstractGraphCommands<K>
 
         @Override
         public String toString() {
-            return "Node{" +
-                    "key='" + key + '\'' +
-                    ", items=" + items +
-                    '}';
+            return "Node{" + "key='" + key + '\'' + ", items=" + items + '}';
         }
 
         @Override
@@ -216,10 +208,7 @@ public class ReactiveGraphCommandsImpl<K> extends AbstractGraphCommands<K>
 
         @Override
         public String toString() {
-            return "Scalar{" +
-                    "key='" + key + '\'' +
-                    ", val=" + val +
-                    '}';
+            return "Scalar{" + "key='" + key + '\'' + ", val=" + val + '}';
         }
 
         @Override
@@ -275,10 +264,7 @@ public class ReactiveGraphCommandsImpl<K> extends AbstractGraphCommands<K>
 
         @Override
         public String toString() {
-            return "Relation{" +
-                    "key='" + key + '\'' +
-                    ", items=" + items +
-                    '}';
+            return "Relation{" + "key='" + key + '\'' + ", items=" + items + '}';
         }
 
         @Override

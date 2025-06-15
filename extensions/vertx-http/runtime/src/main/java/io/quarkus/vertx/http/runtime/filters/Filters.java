@@ -8,8 +8,8 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Object allowing the register filters, i.e. handler called on every HTTP request.
- * This object is intended to be used as follows:
+ * Object allowing the register filters, i.e. handler called on every HTTP request. This object is intended to be used
+ * as follows:
  *
  * <pre>
  * {@code
@@ -23,8 +23,8 @@ import io.vertx.ext.web.RoutingContext;
  * }
  * </pre>
  * <p>
- * The handler is the filter code. It must call {@link RoutingContext#next()} to invoke the next filter or route.
- * The priority is used to sort the filters. Highest priorities are called first.
+ * The handler is the filter code. It must call {@link RoutingContext#next()} to invoke the next filter or route. The
+ * priority is used to sort the filters. Highest priorities are called first.
  */
 public class Filters {
 
@@ -33,8 +33,11 @@ public class Filters {
     /**
      * Registers a new filter.
      *
-     * @param handler the filter function, must not be {@code null}
-     * @param priority the priority, must not be negative
+     * @param handler
+     *        the filter function, must not be {@code null}
+     * @param priority
+     *        the priority, must not be negative
+     *
      * @return this object to chain registration.
      */
     public Filters register(Handler<RoutingContext> handler, int priority) {

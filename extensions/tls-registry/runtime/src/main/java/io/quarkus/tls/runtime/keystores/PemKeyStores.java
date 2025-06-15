@@ -32,7 +32,8 @@ public class PemKeyStores {
             throw new IllegalStateException("Invalid key/certificate pair configuration for certificate '" + name
                     + "' - cannot read the key/certificate files", e);
         } catch (Exception e) {
-            throw new IllegalStateException("Invalid key/certificate pair configuration for certificate '" + name + "'", e);
+            throw new IllegalStateException("Invalid key/certificate pair configuration for certificate '" + name + "'",
+                    e);
         }
     }
 
@@ -54,7 +55,8 @@ public class PemKeyStores {
             throw new IllegalStateException("Invalid PEM trusted certificates configuration for certificate '" + name
                     + "' - cannot read the PEM certificate files", e);
         } catch (Exception e) {
-            throw new IllegalStateException("Invalid PEM trusted certificates configuration for certificate '" + name + "'", e);
+            throw new IllegalStateException(
+                    "Invalid PEM trusted certificates configuration for certificate '" + name + "'", e);
         }
     }
 }

@@ -41,11 +41,8 @@ public class DependenciesProcessor {
 
             InternalPageBuildItem page = new InternalPageBuildItem("Dependencies", 70);
 
-            page.addPage(Page.webComponentPageBuilder()
-                    .namespace(NAMESPACE)
-                    .icon("font-awesome-solid:diagram-project")
-                    .title("Application Dependencies")
-                    .componentLink("qwc-dependencies.js"));
+            page.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).icon("font-awesome-solid:diagram-project")
+                    .title("Application Dependencies").componentLink("qwc-dependencies.js"));
 
             Root root = new Root();
             root.rootId = curateOutcomeBuildItem.getApplicationModel().getAppArtifact().toCompactCoords();
@@ -72,7 +69,8 @@ public class DependenciesProcessor {
                 if (target == null || target.isBlank()) {
                     buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.empty(), Optional.empty());
                 } else {
-                    buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.empty(), Optional.of(target));
+                    buildTree(curateOutcomeBuildItem.getApplicationModel(), root, Optional.empty(),
+                            Optional.of(target));
                 }
 
                 return root;
@@ -89,7 +87,8 @@ public class DependenciesProcessor {
                 || DefaultValuesConfigSource.NAME.equals(value.getSourceName());
     }
 
-    private void buildTree(ApplicationModel model, Root root, Optional<Set<String>> allGavs, Optional<String> toTarget) {
+    private void buildTree(ApplicationModel model, Root root, Optional<Set<String>> allGavs,
+            Optional<String> toTarget) {
         final Collection<ResolvedDependency> resolvedDeps = model.getDependencies();
         final List<Node> nodes = new ArrayList<>(resolvedDeps.size());
         final List<Link> links = new ArrayList<>();
@@ -139,8 +138,8 @@ public class DependenciesProcessor {
         }
     }
 
-    private static void addDependency(DepNode dep, Root root, List<Node> nodes, List<Link> links, Optional<Set<String>> allGavs,
-            Set<String> visited) {
+    private static void addDependency(DepNode dep, Root root, List<Node> nodes, List<Link> links,
+            Optional<Set<String>> allGavs, Set<String> visited) {
         String id = dep.resolvedDep.toCompactCoords();
         if (!visited.add(id)) {
             return;
@@ -324,8 +323,7 @@ public class DependenciesProcessor {
         DepNode targetDep = null;
         for (var d : all.values()) {
             d.initDependents(all);
-            if (targetDep == null
-                    && d.resolvedDep.getArtifactId().equals(targetCoords.getArtifactId())
+            if (targetDep == null && d.resolvedDep.getArtifactId().equals(targetCoords.getArtifactId())
                     && d.resolvedDep.getGroupId().equals(targetCoords.getGroupId())
                     && d.resolvedDep.getClassifier().equals(targetCoords.getClassifier())
                     && d.resolvedDep.getType().equals(targetCoords.getType())

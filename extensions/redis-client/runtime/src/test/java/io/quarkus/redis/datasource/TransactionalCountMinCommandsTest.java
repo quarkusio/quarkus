@@ -59,12 +59,9 @@ public class TransactionalCountMinCommandsTest extends DatasourceTestBase {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalCountMinCommands<String, String> cm = tx.countmin(String.class);
             assertThat(cm.getDataSource()).isEqualTo(tx);
-            return cm.cmsInitByDim(key, 10, 10)
-                    .chain(() -> cm.cmsIncrBy(key, Map.of("a", 5L, "b", 2L, "c", 4L)))
-                    .chain(() -> cm.cmsIncrBy(key, "a", 2))
-                    .chain(() -> cm.cmsQuery(key, "a"))
-                    .chain(() -> cm.cmsQuery(key, "b", "c"))
-                    .replaceWithVoid();
+            return cm.cmsInitByDim(key, 10, 10).chain(() -> cm.cmsIncrBy(key, Map.of("a", 5L, "b", 2L, "c", 4L)))
+                    .chain(() -> cm.cmsIncrBy(key, "a", 2)).chain(() -> cm.cmsQuery(key, "a"))
+                    .chain(() -> cm.cmsQuery(key, "b", "c")).replaceWithVoid();
         }).await().indefinitely();
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();

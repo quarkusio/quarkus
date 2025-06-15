@@ -64,23 +64,20 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
 
         extensionDescriptorTask.configure(task -> task.dependsOn(validateExtensionTask));
 
-        project.getPlugins().withType(
-                JavaPlugin.class,
-                javaPlugin -> {
-                    tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, task -> task.finalizedBy(extensionDescriptorTask));
-                    tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, task -> task.dependsOn(extensionDescriptorTask));
-                    tasks.withType(Test.class).configureEach(Test::useJUnitPlatform);
-                    addAnnotationProcessorDependency(project);
-                });
+        project.getPlugins().withType(JavaPlugin.class, javaPlugin -> {
+            tasks.named(JavaPlugin.PROCESS_RESOURCES_TASK_NAME, task -> task.finalizedBy(extensionDescriptorTask));
+            tasks.named(JavaPlugin.COMPILE_JAVA_TASK_NAME, task -> task.dependsOn(extensionDescriptorTask));
+            tasks.withType(Test.class).configureEach(Test::useJUnitPlatform);
+            addAnnotationProcessorDependency(project);
+        });
 
         project.afterEvaluate(innerProject -> {
-            //This must be run after the extension has been configured
+            // This must be run after the extension has been configured
             Project deploymentProject = findDeploymentProject(project, quarkusExt);
             if (deploymentProject != null) {
                 deploymentProject.getPlugins().apply(JavaPlugin.class);
                 ApplicationDeploymentClasspathBuilder.initConfigurations(deploymentProject);
-                deploymentProject.getPlugins().withType(
-                        JavaPlugin.class,
+                deploymentProject.getPlugins().withType(JavaPlugin.class,
                         javaPlugin -> addAnnotationProcessorDependency(deploymentProject));
 
                 validateExtensionTask.configure(task -> {
@@ -122,17 +119,17 @@ public class QuarkusExtensionPlugin implements Plugin<Project> {
         project.getConfigurations().getByName(JavaPlugin.ANNOTATION_PROCESSOR_CONFIGURATION_NAME)
                 .withDependencies(annotationProcessors -> {
                     Set<ResolvedArtifact> compileClasspathArtifacts = DependencyUtils
-                            .duplicateConfiguration(project, project.getConfigurations()
-                                    .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
-                            .getResolvedConfiguration()
-                            .getResolvedArtifacts();
+                            .duplicateConfiguration(project,
+                                    project.getConfigurations()
+                                            .getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME))
+                            .getResolvedConfiguration().getResolvedArtifacts();
 
                     for (ResolvedArtifact artifact : compileClasspathArtifacts) {
                         ModuleVersionIdentifier id = artifact.getModuleVersion().getId();
                         if ("io.quarkus".equals(id.getGroup()) && "quarkus-core".equals(id.getName())
                                 && !id.getVersion().isEmpty()) {
-                            annotationProcessors.add(
-                                    project.getDependencies().create(QUARKUS_ANNOTATION_PROCESSOR + ':' + id.getVersion()));
+                            annotationProcessors.add(project.getDependencies()
+                                    .create(QUARKUS_ANNOTATION_PROCESSOR + ':' + id.getVersion()));
                         }
                     }
                 });

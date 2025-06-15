@@ -8,7 +8,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- * @deprecated Use {@link DevModeClient} instead (the methods on that class are non-static to allow ports to be specified).
+ * @deprecated Use {@link DevModeClient} instead (the methods on that class are non-static to allow ports to be
+ *             specified).
  */
 @Deprecated(since = "3.3", forRemoval = true)
 public class DevModeTestUtils {

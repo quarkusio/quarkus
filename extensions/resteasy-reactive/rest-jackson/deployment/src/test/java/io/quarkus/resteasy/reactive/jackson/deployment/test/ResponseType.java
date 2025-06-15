@@ -5,7 +5,6 @@ import jakarta.ws.rs.core.Response;
 import org.jboss.resteasy.reactive.RestResponse;
 
 import io.quarkus.resteasy.reactive.jackson.SecureField;
-import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 public enum ResponseType {
@@ -17,7 +16,7 @@ public enum ResponseType {
      * Returns {@link Multi} with DTOs.
      */
     // TODO: enable when https://github.com/quarkusio/quarkus/issues/40447 gets fixed
-    //MULTI(true, "multi"),
+    // MULTI(true, "multi"),
     /**
      * Returns {@link Uni} with DTOs.
      */

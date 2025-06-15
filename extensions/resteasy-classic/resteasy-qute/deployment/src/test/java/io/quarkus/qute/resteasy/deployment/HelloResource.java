@@ -19,12 +19,12 @@ public class HelloResource {
     @CheckedTemplate
     public static class Templates {
         // GENERATED
-        //        {
-        //            Template template = Arc.container().instance(Engine.class).get().getTemplate("HelloResource/typedTemplate");
-        //            TemplateInstance instance = template.instance();
-        //            instance.data("name", name);
-        //            return instance;
-        //        }
+        // {
+        // Template template = Arc.container().instance(Engine.class).get().getTemplate("HelloResource/typedTemplate");
+        // TemplateInstance instance = template.instance();
+        // instance.data("name", name);
+        // return instance;
+        // }
 
         public static native TemplateInstance typedTemplate(String name, Map<String, Object> other);
 

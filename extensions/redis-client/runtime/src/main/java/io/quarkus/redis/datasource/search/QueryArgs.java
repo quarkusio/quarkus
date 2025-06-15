@@ -80,8 +80,8 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Also returns the relative internal score of each document.
-     * This can be used to merge results from multiple instances.
+     * Also returns the relative internal score of each document. This can be used to merge results from multiple
+     * instances.
      *
      * @return the current {@code QueryArgs}
      */
@@ -101,9 +101,9 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * returns the value of the sorting key, right after the id and score and/or payload, if requested.
-     * This is usually not needed, and exists for distributed search coordination purposes.
-     * This option is relevant only if used in conjunction with {@code SORTBY}.
+     * returns the value of the sorting key, right after the id and score and/or payload, if requested. This is usually
+     * not needed, and exists for distributed search coordination purposes. This option is relevant only if used in
+     * conjunction with {@code SORTBY}.
      *
      * @return the current {@code QueryArgs}
      */
@@ -114,11 +114,13 @@ public class QueryArgs implements RedisCommandExtraArguments {
 
     /**
      * Limits results to those having numeric values ranging between min and max, if {@code numberFilter} is defined as
-     * a numeric attribute in {@code FT.CREATE}.
-     * Min and max follow {@code ZRANGE} syntax, and can be {@code -inf}, {@code +inf}, and use ( for exclusive ranges. Multiple
-     * numeric filters for different attributes are supported in one query.
+     * a numeric attribute in {@code FT.CREATE}. Min and max follow {@code ZRANGE} syntax, and can be {@code -inf},
+     * {@code +inf}, and use ( for exclusive ranges. Multiple numeric filters for different attributes are supported in
+     * one query.
      *
-     * @param filter the filter
+     * @param filter
+     *        the filter
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs filter(NumericFilter filter) {
@@ -128,10 +130,12 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Filters the results to a given radius from lon and lat.
-     * Radius is given as a number and units. See {@code GEORADIUS} for more details.
+     * Filters the results to a given radius from lon and lat. Radius is given as a number and units. See
+     * {@code GEORADIUS} for more details.
      *
-     * @param filter the filter
+     * @param filter
+     *        the filter
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs geoFilter(GeoFilter filter) {
@@ -141,10 +145,12 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Limits the result to a given set of keys specified in the list.
-     * Non-existent keys are ignored, unless all the keys are non-existent.
+     * Limits the result to a given set of keys specified in the list. Non-existent keys are ignored, unless all the
+     * keys are non-existent.
      *
-     * @param keys the list of keys
+     * @param keys
+     *        the list of keys
+     *
      * @return the current {@code QueryArgs}
      */
     public final QueryArgs inKeys(String... keys) {
@@ -156,7 +162,9 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Filters the results to those appearing only in specific attributes of the document, like title or URL.
      *
-     * @param fields the list of fields
+     * @param fields
+     *        the list of fields
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs inFields(String... fields) {
@@ -166,13 +174,16 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Limits the attributes returned from the document.
-     * If no return clauses are passed, it acts like {@code NOCONTENT}.
-     * {@code field} is either an attribute name (for hashes and JSON) or a JSON Path expression (for JSON).
-     * {@code alias} is the optional name used in the result. If not provided, the {@code field} is used in the result.
+     * Limits the attributes returned from the document. If no return clauses are passed, it acts like
+     * {@code NOCONTENT}. {@code field} is either an attribute name (for hashes and JSON) or a JSON Path expression (for
+     * JSON). {@code alias} is the optional name used in the result. If not provided, the {@code field} is used in the
+     * result.
      *
-     * @param field the field
-     * @param alias the alias
+     * @param field
+     *        the field
+     * @param alias
+     *        the alias
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs returnAttribute(String field, String alias) {
@@ -182,12 +193,14 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Limits the attributes returned from the document.
-     * If no return clauses are passed, it acts like {@code NOCONTENT}.
-     * {@code field} is either an attribute name (for hashes and JSON) or a JSON Path expression (for JSON).
-     * {@code alias} is the name used in the result. As it is not provided, the {@code field} is used in the result.
+     * Limits the attributes returned from the document. If no return clauses are passed, it acts like
+     * {@code NOCONTENT}. {@code field} is either an attribute name (for hashes and JSON) or a JSON Path expression (for
+     * JSON). {@code alias} is the name used in the result. As it is not provided, the {@code field} is used in the
+     * result.
      *
-     * @param field the field
+     * @param field
+     *        the field
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs returnAttribute(String field) {
@@ -198,7 +211,9 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Returns only the sections of the attribute that contain the matched text.
      *
-     * @param args the summarize argument
+     * @param args
+     *        the summarize argument
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs summarize(SummarizeArgs args) {
@@ -209,7 +224,9 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * formats occurrences of matched text.
      *
-     * @param args the summarize argument
+     * @param args
+     *        the summarize argument
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs highlight(HighlightArgs args) {
@@ -218,10 +235,12 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Allows a maximum of {@code slop} intervening number of unmatched offsets between phrase terms.
-     * In other words, the slop for exact phrases is 0.
+     * Allows a maximum of {@code slop} intervening number of unmatched offsets between phrase terms. In other words,
+     * the slop for exact phrases is 0.
      *
-     * @param slop the slop
+     * @param slop
+     *        the slop
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs slop(int slop) {
@@ -241,12 +260,13 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Use a stemmer for the supplied language during search for query expansion.
-     * If querying documents in Chinese, set to chinese to properly tokenize the query terms.
-     * Defaults to English.
-     * If an unsupported language is sent, the command returns an error.
+     * Use a stemmer for the supplied language during search for query expansion. If querying documents in Chinese, set
+     * to chinese to properly tokenize the query terms. Defaults to English. If an unsupported language is sent, the
+     * command returns an error.
      *
-     * @param lang the language
+     * @param lang
+     *        the language
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs language(String lang) {
@@ -257,7 +277,9 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Uses a custom query expander instead of the stemmer.
      *
-     * @param expander the expander
+     * @param expander
+     *        the expander
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs expander(String expander) {
@@ -268,7 +290,9 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Uses a custom scoring function you define
      *
-     * @param scorer the scorer
+     * @param scorer
+     *        the scorer
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs scorer(String scorer) {
@@ -277,8 +301,8 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Returns a textual description of how the scores were calculated. Using this options requires
-     * the {@code sCORES} option.
+     * Returns a textual description of how the scores were calculated. Using this options requires the {@code sCORES}
+     * option.
      *
      * @return the current {@code QueryArgs}
      */
@@ -288,13 +312,13 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Orders the results by the value of this attribute.
-     * Use ascending order.
-     * This applies to both text and numeric attributes.
-     * Attributes needed for {@code SORTBY} should be declared as {@code SORTABLE} in the index, in order to be
-     * available with very low latency. Note that this adds memory overhead.
+     * Orders the results by the value of this attribute. Use ascending order. This applies to both text and numeric
+     * attributes. Attributes needed for {@code SORTBY} should be declared as {@code SORTABLE} in the index, in order to
+     * be available with very low latency. Note that this adds memory overhead.
      *
-     * @param field the field
+     * @param field
+     *        the field
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs sortByAscending(String field) {
@@ -303,13 +327,13 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Orders the results by the value of this attribute.
-     * Use descending order.
-     * This applies to both text and numeric attributes.
-     * Attributes needed for {@code SORTBY} should be declared as {@code SORTABLE} in the index, in order to be
-     * available with very low latency. Note that this adds memory overhead.
+     * Orders the results by the value of this attribute. Use descending order. This applies to both text and numeric
+     * attributes. Attributes needed for {@code SORTBY} should be declared as {@code SORTABLE} in the index, in order to
+     * be available with very low latency. Note that this adds memory overhead.
      *
-     * @param field the field
+     * @param field
+     *        the field
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs sortByDescending(String field) {
@@ -318,12 +342,15 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Limits the results to the offset and number of results given.
-     * Note that the offset is zero-indexed. The default is 0 10, which returns 10 items starting from the first result.
-     * You can use {@code LIMIT 0 0} to count the number of documents in the result set without actually returning them.
+     * Limits the results to the offset and number of results given. Note that the offset is zero-indexed. The default
+     * is 0 10, which returns 10 items starting from the first result. You can use {@code LIMIT 0 0} to count the number
+     * of documents in the result set without actually returning them.
      *
-     * @param offset the offset
-     * @param count the count
+     * @param offset
+     *        the offset
+     * @param count
+     *        the count
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs limit(int offset, int count) {
@@ -335,7 +362,9 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Overrides the timeout parameter of the module.
      *
-     * @param timeout the timeout
+     * @param timeout
+     *        the timeout
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs timeout(Duration timeout) {
@@ -344,17 +373,20 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Defines one or more value parameters. Each parameter has a name and a value.
-     * You can reference parameters in the query by a $, followed by the parameter name, for example, $user.
-     * Each such reference in the search query to a parameter name is substituted by the corresponding parameter value.
-     * For example, with parameter definition PARAMS 4 lon 29.69465 lat 34.95126, the expression @loc:[$lon $lat 10 km]
-     * is evaluated to @loc:[29.69465 34.95126 10 km]. You cannot reference parameters in the query string where concrete
-     * values are not allowed, such as in field names, for example, @loc.
+     * Defines one or more value parameters. Each parameter has a name and a value. You can reference parameters in the
+     * query by a $, followed by the parameter name, for example, $user. Each such reference in the search query to a
+     * parameter name is substituted by the corresponding parameter value. For example, with parameter definition PARAMS
+     * 4 lon 29.69465 lat 34.95126, the expression @loc:[$lon $lat 10 km] is evaluated to @loc:[29.69465 34.95126 10
+     * km]. You cannot reference parameters in the query string where concrete values are not allowed, such as in field
+     * names, for example, @loc.
      * <p>
      * To use PARAMS, set DIALECT to 2.
      *
-     * @param name the parameter name
-     * @param value the parameter value as String
+     * @param name
+     *        the parameter name
+     * @param value
+     *        the parameter value as String
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs param(String name, String value) {
@@ -365,8 +397,11 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Defines a parameter with a byte array value.
      *
-     * @param name the parameter name
-     * @param value the parameter value as byte array
+     * @param name
+     *        the parameter name
+     * @param value
+     *        the parameter value as byte array
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs param(String name, byte[] value) {
@@ -377,8 +412,11 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Defines a parameter with a float array value.
      *
-     * @param name the parameter name
-     * @param value the parameter value as array of floats
+     * @param name
+     *        the parameter name
+     * @param value
+     *        the parameter value as array of floats
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs param(String name, float[] value) {
@@ -389,8 +427,11 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Defines a parameter with a double array value.
      *
-     * @param name the parameter name
-     * @param value the parameter value as array of doubles
+     * @param name
+     *        the parameter name
+     * @param value
+     *        the parameter value as array of doubles
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs param(String name, double[] value) {
@@ -401,8 +442,11 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Defines a parameter with an int array value.
      *
-     * @param name the parameter name
-     * @param value the parameter value as array of ints
+     * @param name
+     *        the parameter name
+     * @param value
+     *        the parameter value as array of ints
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs param(String name, int[] value) {
@@ -413,8 +457,11 @@ public class QueryArgs implements RedisCommandExtraArguments {
     /**
      * Defines a parameter with a long array value.
      *
-     * @param name the parameter name
-     * @param value the parameter value as array of longs
+     * @param name
+     *        the parameter name
+     * @param value
+     *        the parameter value as array of longs
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs param(String name, long[] value) {
@@ -423,10 +470,12 @@ public class QueryArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Selects the dialect version under which to execute the query.
-     * If not specified, the query will execute under the default dialect version set during module initial loading.
+     * Selects the dialect version under which to execute the query. If not specified, the query will execute under the
+     * default dialect version set during module initial loading.
      *
-     * @param version the version
+     * @param version
+     *        the version
+     *
      * @return the current {@code QueryArgs}
      */
     public QueryArgs dialect(int version) {

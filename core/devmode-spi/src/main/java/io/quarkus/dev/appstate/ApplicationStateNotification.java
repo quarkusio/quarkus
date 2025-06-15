@@ -1,14 +1,11 @@
 package io.quarkus.dev.appstate;
 
 /**
- * A class that allows for access to the application state, even from outside the runtime class loader.
- *
- * This should generally only be used by dev mode internals that need information about the current
- * application state.
- *
- * This class makes no attempt to verify that an application is starting/stopping when the
- * wait methods are called, this should only be called by a client that is controlling the Quarkus
- * lifecycle, and so knows what the current lifecycle state is.
+ * A class that allows for access to the application state, even from outside the runtime class loader. This should
+ * generally only be used by dev mode internals that need information about the current application state. This class
+ * makes no attempt to verify that an application is starting/stopping when the wait methods are called, this should
+ * only be called by a client that is controlling the Quarkus lifecycle, and so knows what the current lifecycle state
+ * is.
  */
 public class ApplicationStateNotification {
 
@@ -34,11 +31,10 @@ public class ApplicationStateNotification {
     }
 
     /**
-     * Notify of startup failure.
+     * Notify of startup failure. Before this method is called the exception should be logged.
      *
-     * Before this method is called the exception should be logged.
-     *
-     * @param t The exception
+     * @param t
+     *        The exception
      */
     public static synchronized void notifyStartupFailed(Throwable t) {
         startupProblem = t;
@@ -51,7 +47,7 @@ public class ApplicationStateNotification {
             try {
                 ApplicationStateNotification.class.wait();
             } catch (InterruptedException e) {
-                //ignore
+                // ignore
             }
         }
         if (startupProblem != null) {
@@ -69,7 +65,7 @@ public class ApplicationStateNotification {
             try {
                 ApplicationStateNotification.class.wait();
             } catch (InterruptedException e) {
-                //ignore
+                // ignore
             }
         }
     }

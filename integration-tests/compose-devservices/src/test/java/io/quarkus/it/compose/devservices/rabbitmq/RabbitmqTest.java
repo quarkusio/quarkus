@@ -16,25 +16,10 @@ public class RabbitmqTest {
 
     @Test
     public void test() {
-        given()
-                .when()
-                .body("hello")
-                .post("/amqp/send")
-                .then()
-                .statusCode(204);
-        given()
-                .when()
-                .body("world")
-                .post("/amqp/send")
-                .then()
-                .statusCode(204);
+        given().when().body("hello").post("/amqp/send").then().statusCode(204);
+        given().when().body("world").post("/amqp/send").then().statusCode(204);
 
-        await().untilAsserted(() -> given()
-                .accept(ContentType.JSON)
-                .when().get("/amqp/received")
-                .then()
-                .statusCode(200)
-                .body(Matchers.containsString("hello"),
-                        Matchers.containsString("world")));
+        await().untilAsserted(() -> given().accept(ContentType.JSON).when().get("/amqp/received").then().statusCode(200)
+                .body(Matchers.containsString("hello"), Matchers.containsString("world")));
     }
 }

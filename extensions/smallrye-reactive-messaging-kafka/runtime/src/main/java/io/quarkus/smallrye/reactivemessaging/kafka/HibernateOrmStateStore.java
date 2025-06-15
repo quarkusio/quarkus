@@ -56,9 +56,9 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
             if (!CheckpointEntity.class.isAssignableFrom(stateType)) {
                 throw new IllegalArgumentException("State type needs to extend `CheckpointEntity`");
             }
-            String persistenceUnit = config.config().getOptionalValue(KafkaCommitHandler.Strategy.CHECKPOINT + "." +
-                    HIBERNATE_ORM_STATE_STORE + ".persistence-unit", String.class)
-                    .orElse(null);
+            String persistenceUnit = config.config().getOptionalValue(
+                    KafkaCommitHandler.Strategy.CHECKPOINT + "." + HIBERNATE_ORM_STATE_STORE + ".persistence-unit",
+                    String.class).orElse(null);
             SessionFactory sf = persistenceUnit != null
                     ? sessionFactories.select(new PersistenceUnit.PersistenceUnitLiteral(persistenceUnit)).get()
                     : sessionFactories.get();
@@ -69,8 +69,7 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
     @Override
     public Uni<Map<TopicPartition, ProcessingState<?>>> fetchProcessingState(Collection<TopicPartition> partitions) {
         return Uni.createFrom().deferred(() -> {
-            Object[] ids = partitions.stream()
-                    .map(tp -> new CheckpointEntityId(consumerGroupId, tp))
+            Object[] ids = partitions.stream().map(tp -> new CheckpointEntityId(consumerGroupId, tp))
                     .toArray(Object[]::new);
             return Vertx.currentContext().executeBlocking(Uni.createFrom().emitter(emitter -> {
                 List<CheckpointEntity> fetched = new ArrayList<>();
@@ -84,9 +83,8 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
                         }
                     }
                     Map<TopicPartition, ProcessingState<?>> stateMap = fetched.stream()
-                            .filter(e -> e != null && CheckpointEntity.topicPartition(e) != null)
-                            .collect(Collectors.toMap(CheckpointEntity::topicPartition,
-                                    e -> new ProcessingState<>(e, e.offset)));
+                            .filter(e -> e != null && CheckpointEntity.topicPartition(e) != null).collect(Collectors
+                                    .toMap(CheckpointEntity::topicPartition, e -> new ProcessingState<>(e, e.offset)));
                     session.flush();
                     tx.commit();
                     emitter.complete(stateMap);
@@ -104,8 +102,7 @@ public class HibernateOrmStateStore implements CheckpointStateStore {
     @Override
     public Uni<Void> persistProcessingState(Map<TopicPartition, ProcessingState<?>> state) {
         return Uni.createFrom().deferred(() -> {
-            Object[] entities = state.entrySet().stream()
-                    .filter(e -> !ProcessingState.isEmptyOrNull(e.getValue()))
+            Object[] entities = state.entrySet().stream().filter(e -> !ProcessingState.isEmptyOrNull(e.getValue()))
                     .map(e -> CheckpointEntity.from((ProcessingState<? extends CheckpointEntity>) e.getValue(),
                             new CheckpointEntityId(consumerGroupId, e.getKey())))
                     .toArray();

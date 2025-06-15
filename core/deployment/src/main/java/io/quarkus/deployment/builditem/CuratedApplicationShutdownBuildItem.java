@@ -8,12 +8,13 @@ import io.quarkus.bootstrap.classloading.QuarkusClassLoader;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Build Item that can be used to queue shutdown tasks that are run when the {@link io.quarkus.bootstrap.app.CuratedApplication}
- * is closed.
+ * Build Item that can be used to queue shutdown tasks that are run when the
+ * {@link io.quarkus.bootstrap.app.CuratedApplication} is closed.
  * <p>
- * For production applications, this will be at the end of the Maven/Gradle build. For dev mode applications, this will be
- * when dev mode shuts down. For tests, it will generally be at the end of the test run. However, for continuous testing this
- * will be when the outer dev mode process shuts down. For unit style tests, this will usually be the end of the test.
+ * For production applications, this will be at the end of the Maven/Gradle build. For dev mode applications, this will
+ * be when dev mode shuts down. For tests, it will generally be at the end of the test run. However, for continuous
+ * testing this will be when the outer dev mode process shuts down. For unit style tests, this will usually be the end
+ * of the test.
  */
 public final class CuratedApplicationShutdownBuildItem extends SimpleBuildItem {
 
@@ -32,9 +33,11 @@ public final class CuratedApplicationShutdownBuildItem extends SimpleBuildItem {
     /**
      * Adds a task to run when the application is closed.
      *
-     * @param task The task
-     * @param firstRunOnly If this should only be added for the first augment step. This makes it possible to prevent tasks
-     *        being added for every build.
+     * @param task
+     *        The task
+     * @param firstRunOnly
+     *        If this should only be added for the first augment step. This makes it possible to prevent tasks being
+     *        added for every build.
      */
     public synchronized void addCloseTask(Runnable task, boolean firstRunOnly) {
         if (firstRunOnly || firstRun) {

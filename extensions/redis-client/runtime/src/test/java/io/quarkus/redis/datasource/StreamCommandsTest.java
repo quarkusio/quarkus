@@ -64,18 +64,16 @@ public class StreamCommandsTest extends DatasourceTestBase {
         stream.xadd("my-stream", Map.of("duration", 1534, "event-id", 7, "user-id", 77788));
 
         List<StreamMessage<String, String, Integer>> messages = stream.xread("my-stream", "0-0");
-        assertThat(messages).hasSize(3)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo("my-stream");
-                    assertThat(m.id()).isNotEmpty().contains("-");
-                    assertThat(m.payload()).contains(entry("user-id", 77788)).containsKey("event-id").containsKey("duration");
-                });
+        assertThat(messages).hasSize(3).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo("my-stream");
+            assertThat(m.id()).isNotEmpty().contains("-");
+            assertThat(m.payload()).contains(entry("user-id", 77788)).containsKey("event-id").containsKey("duration");
+        });
     }
 
     @Test
     void xAdd() {
-        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19)))
-                .isNotBlank().contains("-");
+        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19))).isNotBlank().contains("-");
 
         long now = System.currentTimeMillis();
         assertThat(stream.xadd("mystream", new XAddArgs().id(now + 1000 + "-0"),
@@ -91,8 +89,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     @Test
     @RequiresRedis7OrHigher
     void xAddWithRedis7() {
-        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19)))
-                .isNotBlank().contains("-");
+        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19))).isNotBlank().contains("-");
 
         long now = System.currentTimeMillis();
         assertThat(stream.xadd("mystream", new XAddArgs().id(now + 1000 + "-0"),
@@ -105,8 +102,8 @@ public class StreamCommandsTest extends DatasourceTestBase {
         assertThat(stream.xlen("my-second-stream")).isEqualTo(5);
 
         for (int i = 0; i < 10; i++) {
-            assertThat(stream.xadd("my-third-stream", new XAddArgs().minid("12345-0").nearlyExactTrimming()
-                    .limit(3).id("12346-" + i),
+            assertThat(stream.xadd("my-third-stream",
+                    new XAddArgs().minid("12345-0").nearlyExactTrimming().limit(3).id("12346-" + i),
                     Map.of("sensor-id", 1234, "temperature", 19))).isNotBlank();
         }
         assertThat(stream.xlen("my-third-stream")).isEqualTo(10);
@@ -116,8 +113,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
     @Test
     void xLen() {
         assertThat(stream.xlen("missing")).isEqualTo(0);
-        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19)))
-                .isNotBlank().contains("-");
+        assertThat(stream.xadd("mystream", Map.of("sensor-id", 1234, "temperature", 19))).isNotBlank().contains("-");
         assertThat(stream.xlen("mystream")).isEqualTo(1);
     }
 
@@ -130,59 +126,47 @@ public class StreamCommandsTest extends DatasourceTestBase {
         }
         assertThat(stream.xlen(key)).isEqualTo(3);
 
-        assertThat(stream.xrange(key, StreamRange.of("-", "+")))
-                .hasSize(3)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.id()).isNotBlank();
-                    assertThat(ids).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xrange(key, StreamRange.of("-", "+"))).hasSize(3).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.id()).isNotBlank();
+            assertThat(ids).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xrange(key, StreamRange.of(ids.get(1), ids.get(2))))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.id()).isNotBlank();
-                    assertThat(ids).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xrange(key, StreamRange.of(ids.get(1), ids.get(2)))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.id()).isNotBlank();
+            assertThat(ids).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xrange(key, StreamRange.of("-", "+"), 2))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.id()).isNotBlank();
-                    assertThat(ids).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xrange(key, StreamRange.of("-", "+"), 2)).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.id()).isNotBlank();
+            assertThat(ids).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xrevrange(key, StreamRange.of("+", "-")))
-                .hasSize(3)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.id()).isNotBlank();
-                    assertThat(ids).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xrevrange(key, StreamRange.of("+", "-"))).hasSize(3).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.id()).isNotBlank();
+            assertThat(ids).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xrevrange(key, StreamRange.of(ids.get(2), ids.get(1))))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.id()).isNotBlank();
-                    assertThat(ids).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xrevrange(key, StreamRange.of(ids.get(2), ids.get(1)))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.id()).isNotBlank();
+            assertThat(ids).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xrevrange(key, StreamRange.of("+", "-"), 2))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.id()).isNotBlank();
-                    assertThat(ids).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xrevrange(key, StreamRange.of("+", "-"), 2)).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.id()).isNotBlank();
+            assertThat(ids).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
     }
 
@@ -199,21 +183,17 @@ public class StreamCommandsTest extends DatasourceTestBase {
         assertThat(stream.xlen(key)).isEqualTo(3);
         assertThat(stream.xlen(key2)).isEqualTo(3);
 
-        assertThat(stream.xread(key, "0", new XReadArgs().count(2)))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(ids1).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xread(key, "0", new XReadArgs().count(2))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(ids1).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xread(key2, "0"))
-                .hasSize(3)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key2);
-                    assertThat(ids2).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xread(key2, "0")).hasSize(3).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key2);
+            assertThat(ids2).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
     }
 
     @Test
@@ -228,16 +208,14 @@ public class StreamCommandsTest extends DatasourceTestBase {
         assertThat(stream.xlen(key)).isEqualTo(3);
         assertThat(stream.xlen(key2)).isEqualTo(3);
 
-        assertThat(stream.xread(Map.of(key2, "0", key, "0")))
-                .hasSize(6)
-                .allSatisfy(m -> {
-                    assertThat(m.key().equals(key) || m.key().equals(key2)).isTrue();
-                    assertThat(ids).contains(m.id());
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xread(Map.of(key2, "0", key, "0"))).hasSize(6).allSatisfy(m -> {
+            assertThat(m.key().equals(key) || m.key().equals(key2)).isTrue();
+            assertThat(ids).contains(m.id());
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xread(Map.of(key2, "0", key, "0"), new XReadArgs().count(2)))
-                .hasSize(4) // the count is per stream
+        assertThat(stream.xread(Map.of(key2, "0", key, "0"), new XReadArgs().count(2))).hasSize(4) // the count is per
+                // stream
                 .allSatisfy(m -> {
                     assertThat(m.key().equals(key) || m.key().equals(key2)).isTrue();
                     assertThat(ids).contains(m.id());
@@ -251,8 +229,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
         CountDownLatch latch = new CountDownLatch(1);
         new Thread(() -> {
-            assertThat(stream.xread(key, "$", new XReadArgs().block(Duration.ofSeconds(10))))
-                    .isNotEmpty()
+            assertThat(stream.xread(key, "$", new XReadArgs().block(Duration.ofSeconds(10)))).isNotEmpty()
                     .allSatisfy(m -> {
                         assertThat(m.key()).isEqualTo(key);
                         assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
@@ -260,12 +237,10 @@ public class StreamCommandsTest extends DatasourceTestBase {
             latch.countDown();
         }).start();
 
-        await()
-                .pollDelay(10, TimeUnit.MILLISECONDS)
-                .until(() -> {
-                    stream.xadd(key, payload);
-                    return latch.getCount() == 0;
-                });
+        await().pollDelay(10, TimeUnit.MILLISECONDS).until(() -> {
+            stream.xadd(key, payload);
+            return latch.getCount() == 0;
+        });
 
     }
 
@@ -277,21 +252,18 @@ public class StreamCommandsTest extends DatasourceTestBase {
         CountDownLatch latch = new CountDownLatch(1);
         new Thread(() -> {
             assertThat(stream.xread(Map.of(key, "$", key2, "$"), new XReadArgs().block(Duration.ofSeconds(10))))
-                    .isNotEmpty()
-                    .allSatisfy(m -> {
+                    .isNotEmpty().allSatisfy(m -> {
                         assertThat(m.key().equals(key) || m.key().equals(key2)).isTrue();
                         assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
                     });
             latch.countDown();
         }).start();
 
-        await()
-                .pollDelay(10, TimeUnit.MILLISECONDS)
-                .until(() -> {
-                    stream.xadd(key2, payload);
-                    stream.xadd(key, payload);
-                    return latch.getCount() == 0;
-                });
+        await().pollDelay(10, TimeUnit.MILLISECONDS).until(() -> {
+            stream.xadd(key2, payload);
+            stream.xadd(key, payload);
+            return latch.getCount() == 0;
+        });
     }
 
     @Test
@@ -311,39 +283,31 @@ public class StreamCommandsTest extends DatasourceTestBase {
             stream.xadd(key2, payload);
         }
 
-        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(1)))
-                .hasSize(1)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                });
+        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(1))).hasSize(1).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+        });
 
-        assertThat(stream.xreadgroup(g1, "c2", key, ">"))
-                .hasSize(4)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    assertThat(stream.xack(m.key(), g1, m.id())).isEqualTo(1);
-                });
+        assertThat(stream.xreadgroup(g1, "c2", key, ">")).hasSize(4).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            assertThat(stream.xack(m.key(), g1, m.id())).isEqualTo(1);
+        });
 
-        assertThat(stream.xreadgroup(g2, "c2", key, ">"))
-                .hasSize(5)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    assertThat(stream.xack(m.key(), g2, m.id())).isEqualTo(1);
-                });
+        assertThat(stream.xreadgroup(g2, "c2", key, ">")).hasSize(5).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            assertThat(stream.xack(m.key(), g2, m.id())).isEqualTo(1);
+        });
 
-        assertThat(stream.xreadgroup(g2, "c2", key, ">"))
-                .hasSize(0);
+        assertThat(stream.xreadgroup(g2, "c2", key, ">")).hasSize(0);
 
-        assertThat(stream.xreadgroup(g3, "c1", Map.of(key, ">", key2, ">"), new XReadGroupArgs().count(1)))
-                .hasSize(2); // 1 per stream
+        assertThat(stream.xreadgroup(g3, "c1", Map.of(key, ">", key2, ">"), new XReadGroupArgs().count(1))).hasSize(2); // 1
+                                                                                                                        // per
+                                                                                                                        // stream
         assertThat(stream.xreadgroup(g3, "c1", Map.of(key, ">", key2, ">"),
-                new XReadGroupArgs().block(Duration.ofSeconds(1)).noack()))
-                .hasSize(8);
-        assertThat(stream.xreadgroup(g3, "c1", Map.of(key, ">", key2, ">")))
-                .hasSize(0);
+                new XReadGroupArgs().block(Duration.ofSeconds(1)).noack())).hasSize(8);
+        assertThat(stream.xreadgroup(g3, "c1", Map.of(key, ">", key2, ">"))).hasSize(0);
     }
 
     @Test
@@ -359,9 +323,9 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
         CountDownLatch latch = new CountDownLatch(1);
         new Thread(() -> {
-            assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().block(Duration.ofSeconds(10)).count(1)))
-                    .isNotEmpty()
-                    .allSatisfy(m -> {
+            assertThat(
+                    stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().block(Duration.ofSeconds(10)).count(1)))
+                    .isNotEmpty().allSatisfy(m -> {
                         assertThat(m.key()).isEqualTo(key);
                         assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
                     });
@@ -370,29 +334,24 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
         stream.xadd(key, payload);
 
-        await()
-                .pollDelay(10, TimeUnit.MILLISECONDS)
-                .until(() -> {
-                    stream.xadd(key, payload);
-                    return latch.getCount() == 0;
-                });
+        await().pollDelay(10, TimeUnit.MILLISECONDS).until(() -> {
+            stream.xadd(key, payload);
+            return latch.getCount() == 0;
+        });
         CountDownLatch latch2 = new CountDownLatch(1);
 
         new Thread(() -> {
             assertThat(stream.xreadgroup(g3, "c1", Map.of(key, ">", key2, ">"),
-                    new XReadGroupArgs().block(Duration.ofSeconds(10))))
-                    .isNotEmpty();
+                    new XReadGroupArgs().block(Duration.ofSeconds(10)))).isNotEmpty();
             latch2.countDown();
         }).start();
 
         stream.xadd(key2, payload);
 
-        await()
-                .pollDelay(10, TimeUnit.MILLISECONDS)
-                .until(() -> {
-                    stream.xadd(key2, payload);
-                    return latch.getCount() == 0;
-                });
+        await().pollDelay(10, TimeUnit.MILLISECONDS).until(() -> {
+            stream.xadd(key2, payload);
+            return latch.getCount() == 0;
+        });
     }
 
     @Test
@@ -406,31 +365,26 @@ public class StreamCommandsTest extends DatasourceTestBase {
         }
 
         List<String> pending = new ArrayList<>();
-        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(2)))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    // Do not ack
-                    pending.add(m.id());
-                });
+        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(2))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            // Do not ack
+            pending.add(m.id());
+        });
 
         List<String> read = new ArrayList<>();
-        assertThat(stream.xreadgroup(g1, "c2", key, ">", new XReadGroupArgs().count(2)))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    read.add(m.id());
-                });
+        assertThat(stream.xreadgroup(g1, "c2", key, ">", new XReadGroupArgs().count(2))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            read.add(m.id());
+        });
 
         assertThat(stream.xack(key, g1, read.toArray(new String[0]))).isEqualTo(2);
 
         // Make sure that the message are pending for a bit of time before claiming the ownership
         Thread.sleep(5);
 
-        assertThat(stream.xclaim(key, g1, "c2", Duration.ofMillis(1), pending.toArray(new String[0])))
-                .hasSize(2)
+        assertThat(stream.xclaim(key, g1, "c2", Duration.ofMillis(1), pending.toArray(new String[0]))).hasSize(2)
                 .allSatisfy(m -> {
                     assertThat(m.key()).isEqualTo(key);
                     assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
@@ -452,33 +406,28 @@ public class StreamCommandsTest extends DatasourceTestBase {
         }
 
         List<String> pending = new ArrayList<>();
-        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(2)))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    // Do not ack
-                    pending.add(m.id());
-                });
+        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(2))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            // Do not ack
+            pending.add(m.id());
+        });
 
         List<String> read = new ArrayList<>();
-        assertThat(stream.xreadgroup(g1, "c2", key, ">", new XReadGroupArgs().count(2)))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    read.add(m.id());
-                });
+        assertThat(stream.xreadgroup(g1, "c2", key, ">", new XReadGroupArgs().count(2))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            read.add(m.id());
+        });
 
         assertThat(stream.xack(key, g1, read.toArray(new String[0]))).isEqualTo(2);
 
         // Make sure that the message are pending for a bit of time before claiming the ownership
         Thread.sleep(5);
 
-        assertThat(stream.xclaim(key, g1, "c2", Duration.ofMillis(1), new XClaimArgs()
-                .force().retryCount(5).idle(Duration.ofMillis(1)).justId(), pending.toArray(new String[0])))
-                .hasSize(2)
-                .allSatisfy(m -> {
+        assertThat(stream.xclaim(key, g1, "c2", Duration.ofMillis(1),
+                new XClaimArgs().force().retryCount(5).idle(Duration.ofMillis(1)).justId(),
+                pending.toArray(new String[0]))).hasSize(2).allSatisfy(m -> {
                     assertThat(m.key()).isEqualTo(key);
                     assertThat(m.payload()).isEmpty(); // Justid
                     stream.xack(key, g1, m.id());
@@ -499,22 +448,18 @@ public class StreamCommandsTest extends DatasourceTestBase {
             stream.xadd(key, payload);
         }
 
-        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(4)))
-                .hasSize(4)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    // Do not ack
-                });
+        assertThat(stream.xreadgroup(g1, "c1", key, ">", new XReadGroupArgs().count(4))).hasSize(4).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            // Do not ack
+        });
 
         List<String> read = new ArrayList<>();
-        assertThat(stream.xreadgroup(g1, "c2", key, ">", new XReadGroupArgs().count(2)))
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    read.add(m.id());
-                });
+        assertThat(stream.xreadgroup(g1, "c2", key, ">", new XReadGroupArgs().count(2))).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            read.add(m.id());
+        });
 
         assertThat(stream.xack(key, g1, read.toArray(new String[0]))).isEqualTo(2);
 
@@ -522,31 +467,25 @@ public class StreamCommandsTest extends DatasourceTestBase {
         Thread.sleep(5);
 
         var claimed = stream.xautoclaim(key, g1, "c2", Duration.ofMillis(1), "0", 1);
-        assertThat(claimed.getMessages())
-                .hasSize(1)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    stream.xack(key, g1, m.id());
-                });
+        assertThat(claimed.getMessages()).hasSize(1).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            stream.xack(key, g1, m.id());
+        });
 
         claimed = stream.xautoclaim(key, g1, "c2", Duration.ofMillis(1), "0", 2, true);
-        assertThat(claimed.getMessages())
-                .hasSize(2)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).isEmpty();
-                    stream.xack(key, g1, m.id());
-                });
+        assertThat(claimed.getMessages()).hasSize(2).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).isEmpty();
+            stream.xack(key, g1, m.id());
+        });
 
         claimed = stream.xautoclaim(key, g1, "c2", Duration.ofMillis(1), claimed.getId());
-        assertThat(claimed.getMessages())
-                .hasSize(1)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo(key);
-                    assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
-                    stream.xack(key, g1, m.id());
-                });
+        assertThat(claimed.getMessages()).hasSize(1).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo(key);
+            assertThat(m.payload()).containsExactlyInAnyOrderEntriesOf(payload);
+            stream.xack(key, g1, m.id());
+        });
     }
 
     @Test
@@ -596,8 +535,7 @@ public class StreamCommandsTest extends DatasourceTestBase {
         assertThat(stream.xgroupCreateConsumer(key, "g1", "c2")).isTrue();
         assertThat(stream.xgroupCreateConsumer(key, "g1", "c1")).isFalse();
 
-        assertThatThrownBy(() -> stream.xgroupCreateConsumer(key, "missing", "c3"))
-                .hasMessageContaining("missing");
+        assertThatThrownBy(() -> stream.xgroupCreateConsumer(key, "missing", "c3")).hasMessageContaining("missing");
 
         assertThat(stream.xgroupDelConsumer(key, "g1", "c1")).isEqualTo(0);
 
@@ -735,7 +673,8 @@ public class StreamCommandsTest extends DatasourceTestBase {
             assertThat(msg.getConsumer()).isEqualTo("consumer-123");
         });
 
-        pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10, new XPendingArgs().consumer("consumer-456"));
+        pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10,
+                new XPendingArgs().consumer("consumer-456"));
         assertThat(pending).isEmpty();
 
         pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10,
@@ -769,9 +708,8 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
         AtomicReference<List<PendingMessage>> reference = new AtomicReference<>();
         await().untilAsserted(() -> {
-            List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10, new XPendingArgs()
-                    .idle(Duration.ofSeconds(1))
-                    .consumer("consumer-123"));
+            List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10,
+                    new XPendingArgs().idle(Duration.ofSeconds(1)).consumer("consumer-123"));
             assertThat(pending).hasSize(10);
             reference.set(pending);
         });
@@ -796,8 +734,8 @@ public class StreamCommandsTest extends DatasourceTestBase {
 
         AtomicReference<List<PendingMessage>> reference = new AtomicReference<>();
         await().untilAsserted(() -> {
-            List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10, new XPendingArgs()
-                    .idle(Duration.ofSeconds(1)));
+            List<PendingMessage> pending = stream.xpending(key, "my-group", StreamRange.of("-", "+"), 10,
+                    new XPendingArgs().idle(Duration.ofSeconds(1)));
             assertThat(pending).hasSize(10);
             reference.set(pending);
         });
@@ -819,13 +757,12 @@ public class StreamCommandsTest extends DatasourceTestBase {
         stream.xadd("my-stream", Map.of("duration", List.of(1534), "event-id", List.of(7), "user-id", List.of(77788)));
 
         List<StreamMessage<String, String, List<Integer>>> messages = stream.xread("my-stream", "0-0");
-        assertThat(messages).hasSize(3)
-                .allSatisfy(m -> {
-                    assertThat(m.key()).isEqualTo("my-stream");
-                    assertThat(m.id()).isNotEmpty().contains("-");
-                    assertThat(m.payload()).contains(entry("user-id", List.of(77788))).containsKey("event-id")
-                            .containsKey("duration");
-                });
+        assertThat(messages).hasSize(3).allSatisfy(m -> {
+            assertThat(m.key()).isEqualTo("my-stream");
+            assertThat(m.id()).isNotEmpty().contains("-");
+            assertThat(m.payload()).contains(entry("user-id", List.of(77788))).containsKey("event-id")
+                    .containsKey("duration");
+        });
     }
 
 }

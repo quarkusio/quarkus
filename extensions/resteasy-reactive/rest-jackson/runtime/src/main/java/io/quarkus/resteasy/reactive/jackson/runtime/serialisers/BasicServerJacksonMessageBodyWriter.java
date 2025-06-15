@@ -84,13 +84,15 @@ public class BasicServerJacksonMessageBodyWriter extends ServerMessageBodyWriter
         } else {
             getWriter(genericType, o).writeValue(stream, o);
         }
-        // we don't use try-with-resources because that results in writing to the http output without the exception mapping coming into play
+        // we don't use try-with-resources because that results in writing to the http output without the exception
+        // mapping coming into play
         stream.close();
     }
 
     @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         doLegacyWrite(o, annotations, httpHeaders, entityStream, getWriter(genericType, o));
     }
 

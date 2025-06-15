@@ -39,8 +39,10 @@ public class BasicCompositeBuildQuarkusBuildTest extends QuarkusGradleWrapperTes
         assertThat(libB.resolve("libraryB-1.0-SNAPSHOT.jar")).exists();
 
         final Path applicationLib = projectDir.toPath().resolve("application").resolve("build").resolve("quarkus-app");
-        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryA-1.0-SNAPSHOT.jar")).exists();
-        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryB-1.0-SNAPSHOT.jar")).exists();
+        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryA-1.0-SNAPSHOT.jar"))
+                .exists();
+        assertThat(applicationLib.resolve("lib").resolve("main").resolve("org.acme.libs.libraryB-1.0-SNAPSHOT.jar"))
+                .exists();
 
         assertThat(applicationLib.resolve("app").resolve("application-1.0-SNAPSHOT.jar")).exists();
     }

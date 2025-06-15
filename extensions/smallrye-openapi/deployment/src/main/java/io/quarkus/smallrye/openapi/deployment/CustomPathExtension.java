@@ -20,9 +20,9 @@ import org.jboss.jandex.DotName;
  */
 public class CustomPathExtension {
 
-    static final Set<DotName> APPLICATION_PATH = new TreeSet<>(Arrays.asList(
-            DotName.createSimple("jakarta.ws.rs.ApplicationPath"),
-            DotName.createSimple("javax.ws.rs.ApplicationPath")));
+    static final Set<DotName> APPLICATION_PATH = new TreeSet<>(
+            Arrays.asList(DotName.createSimple("jakarta.ws.rs.ApplicationPath"),
+                    DotName.createSimple("javax.ws.rs.ApplicationPath")));
 
     private final String rootPath;
     private final String appPath;
@@ -34,15 +34,12 @@ public class CustomPathExtension {
 
     public String resolveContextRoot(Collection<ClassInfo> applications) {
         Optional<String> appPathAnnotationValue = applications.stream()
-                .flatMap(app -> APPLICATION_PATH.stream().map(app::declaredAnnotation))
-                .filter(Objects::nonNull)
-                .map(AnnotationInstance::value)
-                .map(AnnotationValue::asString)
-                .findFirst();
+                .flatMap(app -> APPLICATION_PATH.stream().map(app::declaredAnnotation)).filter(Objects::nonNull)
+                .map(AnnotationInstance::value).map(AnnotationValue::asString).findFirst();
 
         /*
-         * If the @ApplicationPath was found, ignore the appPath given in configuration and only
-         * use the rootPath for the contextRoot.
+         * If the @ApplicationPath was found, ignore the appPath given in configuration and only use the rootPath for
+         * the contextRoot.
          */
         String contextRoot = appPathAnnotationValue.map(path -> buildContextRoot(rootPath))
                 .orElseGet(() -> buildContextRoot(rootPath, this.appPath));
@@ -51,12 +48,8 @@ public class CustomPathExtension {
     }
 
     static String buildContextRoot(String... segments) {
-        String path = Stream.of(segments)
-                .filter(Objects::nonNull)
-                .map(CustomPathExtension::stripSlashes)
-                .filter(Predicate.not(String::isEmpty))
-                .map("/"::concat)
-                .collect(Collectors.joining());
+        String path = Stream.of(segments).filter(Objects::nonNull).map(CustomPathExtension::stripSlashes)
+                .filter(Predicate.not(String::isEmpty)).map("/"::concat).collect(Collectors.joining());
 
         return path.isEmpty() ? "/" : path;
     }

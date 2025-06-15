@@ -18,7 +18,7 @@ public class QuarkusStorkInfrastructure extends DefaultStorkInfrastructure {
     @Override
     public <T> T get(Class<T> utilityClass, Supplier<T> defaultSupplier) {
         if (utilityClass.isInstance(vertx)) {
-            //noinspection unchecked
+            // noinspection unchecked
             return (T) vertx;
         }
         return super.get(utilityClass, defaultSupplier);

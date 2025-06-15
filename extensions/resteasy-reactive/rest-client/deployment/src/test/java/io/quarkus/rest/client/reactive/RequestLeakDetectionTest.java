@@ -37,24 +37,18 @@ import io.vertx.core.Vertx;
 public class RequestLeakDetectionTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRestAPI.class, MyRequestScopeBean.class, Barrier.class, Task.class, RemoteClient.class,
-                            RemoteService.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-                    .addAsResource(
-                            new StringAsset(setUrlForClass(RemoteClient.class)), "application.properties"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyRestAPI.class, MyRequestScopeBean.class, Barrier.class, Task.class, RemoteClient.class,
+                    RemoteService.class)
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+            .addAsResource(new StringAsset(setUrlForClass(RemoteClient.class)), "application.properties"));
 
     @Inject
     Barrier barrier;
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "reactive-server-and-client",
-            "blocking-server-and-reactive-client",
-            "blocking-server-and-client",
-            "reactive-server-and-blocking-client"
-    })
+    @ValueSource(strings = { "reactive-server-and-client", "blocking-server-and-reactive-client",
+            "blocking-server-and-client", "reactive-server-and-blocking-client" })
     public void testWithConcurrentCallsWithReactiveClientAndServer(String path) {
         List<String> results = new CopyOnWriteArrayList<>();
         int count = 100;
@@ -98,15 +92,14 @@ public class RequestLeakDetectionTest {
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
                     Assertions.assertEquals(bean.getValue(), val);
                     int rBefore = Vertx.currentContext().getLocal("count");
-                    client.invokeReactive(Integer.toString(val))
-                            .invoke(s -> {
-                                Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                                int rAfter = Vertx.currentContext().getLocal("count");
-                                Assertions.assertEquals(s, "hello " + rAfter);
-                                Assertions.assertEquals(rBefore, rAfter);
-                                Assertions.assertEquals(rAfter, val);
-                                Assertions.assertEquals(bean.getValue(), val);
-                            }).subscribe().with(x -> e.complete(val), e::fail);
+                    client.invokeReactive(Integer.toString(val)).invoke(s -> {
+                        Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+                        int rAfter = Vertx.currentContext().getLocal("count");
+                        Assertions.assertEquals(s, "hello " + rAfter);
+                        Assertions.assertEquals(rBefore, rAfter);
+                        Assertions.assertEquals(rAfter, val);
+                        Assertions.assertEquals(bean.getValue(), val);
+                    }).subscribe().with(x -> e.complete(val), e::fail);
                 });
             }).map(i -> {
                 Assertions.assertEquals(bean.getValue(), val);
@@ -126,21 +119,19 @@ public class RequestLeakDetectionTest {
                     Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
                     int rBefore = Vertx.currentContext().getLocal("count");
                     Assertions.assertEquals(bean.getValue(), val);
-                    client.invokeReactive(Integer.toString(val))
-                            .invoke(s -> {
-                                Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
-                                int rAfter = Vertx.currentContext().getLocal("count");
-                                Assertions.assertEquals(s, "hello " + rAfter);
-                                Assertions.assertEquals(rBefore, rAfter);
-                                Assertions.assertEquals(rAfter, val);
-                                Assertions.assertEquals(bean.getValue(), val);
-                            }).subscribe().with(x -> e.complete(val), e::fail);
+                    client.invokeReactive(Integer.toString(val)).invoke(s -> {
+                        Assertions.assertTrue(VertxContext.isOnDuplicatedContext());
+                        int rAfter = Vertx.currentContext().getLocal("count");
+                        Assertions.assertEquals(s, "hello " + rAfter);
+                        Assertions.assertEquals(rBefore, rAfter);
+                        Assertions.assertEquals(rAfter, val);
+                        Assertions.assertEquals(bean.getValue(), val);
+                    }).subscribe().with(x -> e.complete(val), e::fail);
                 });
             }).map(i -> {
                 Assertions.assertEquals(bean.getValue(), val);
                 return new Foo(Integer.toString(i));
-            })
-                    .await().indefinitely();
+            }).await().indefinitely();
         }
 
         @GET
@@ -167,8 +158,7 @@ public class RequestLeakDetectionTest {
             }).map(i -> {
                 Assertions.assertEquals(bean.getValue(), val);
                 return new Foo(Integer.toString(i));
-            })
-                    .await().indefinitely();
+            }).await().indefinitely();
         }
 
         @GET

@@ -99,7 +99,8 @@ public class EventsMonitor {
         if (eventMetadata.getQualifiers().size() > 1) {
             for (Annotation qualifier : eventMetadata.getQualifiers()) {
                 // Skip @Any and @Default
-                if (!qualifier.annotationType().equals(Any.class) && !qualifier.annotationType().equals(Default.class)) {
+                if (!qualifier.annotationType().equals(Any.class)
+                        && !qualifier.annotationType().equals(Default.class)) {
                     q.add(qualifier.toString());
                 }
             }

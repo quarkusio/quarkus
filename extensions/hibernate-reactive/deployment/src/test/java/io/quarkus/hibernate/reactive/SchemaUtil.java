@@ -16,9 +16,7 @@ public final class SchemaUtil {
     private SchemaUtil() {
     }
 
-    public static Set<String> getColumnNames(
-            Class<?> entityType,
-            MappingMetamodel metamodel) {
+    public static Set<String> getColumnNames(Class<?> entityType, MappingMetamodel metamodel) {
         Set<String> result = new HashSet<>();
 
         var persister = metamodel.getEntityDescriptor(entityType);
@@ -31,10 +29,7 @@ public final class SchemaUtil {
         return result;
     }
 
-    public static String getColumnTypeName(
-            Class<?> entityType,
-            String columnName,
-            MappingMetamodel mappingMetaModel) {
+    public static String getColumnTypeName(Class<?> entityType, String columnName, MappingMetamodel mappingMetaModel) {
         EntityPersister entityDescriptor = mappingMetaModel.findEntityDescriptor(entityType);
         var columnFinder = new SelectableConsumer() {
             private SelectableMapping found;

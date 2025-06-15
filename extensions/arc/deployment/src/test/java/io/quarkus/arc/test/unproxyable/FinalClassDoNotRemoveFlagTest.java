@@ -14,11 +14,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FinalClassDoNotRemoveFlagTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FinalClassDoNotRemoveFlagTest.class, MyBean.class)
-                    .addAsResource(new StringAsset("quarkus.arc.transform-unproxyable-classes=false"),
-                            "application.properties"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FinalClassDoNotRemoveFlagTest.class, MyBean.class).addAsResource(
+                    new StringAsset("quarkus.arc.transform-unproxyable-classes=false"), "application.properties"))
             .setExpectedException(DeploymentException.class);
 
     @Test

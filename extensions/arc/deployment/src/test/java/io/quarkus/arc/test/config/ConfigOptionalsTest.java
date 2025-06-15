@@ -25,8 +25,7 @@ public class ConfigOptionalsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UsingOptionals.class)
+            .withApplicationRoot((jar) -> jar.addClasses(UsingOptionals.class)
                     .addAsResource(new StringAsset("foo=42\nbar=4.2"), "application.properties"));
 
     @Inject

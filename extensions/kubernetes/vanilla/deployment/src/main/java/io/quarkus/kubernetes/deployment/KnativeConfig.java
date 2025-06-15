@@ -22,23 +22,21 @@ public interface KnativeConfig extends PlatformConfiguration {
     }
 
     /**
-     * Whether this service is cluster-local.
-     * Cluster local services are not exposed to the outside world.
-     * More information in <a href="https://knative.dev/docs/serving/services/private-services/">this link</a>.
+     * Whether this service is cluster-local. Cluster local services are not exposed to the outside world. More
+     * information in <a href="https://knative.dev/docs/serving/services/private-services/">this link</a>.
      */
     @WithDefault("false")
     boolean clusterLocal();
 
     /**
-     * This value controls the minimum number of replicas each revision should have.
-     * Knative will attempt to never have less than this number of replicas at any point in time.
+     * This value controls the minimum number of replicas each revision should have. Knative will attempt to never have
+     * less than this number of replicas at any point in time.
      */
     Optional<Integer> minScale();
 
     /**
-     * This value controls the maximum number of replicas each revision should have.
-     * Knative will attempt to never have more than this number of replicas running, or in the process of being created, at any
-     * point in time.
+     * This value controls the maximum number of replicas each revision should have. Knative will attempt to never have
+     * more than this number of replicas running, or in the process of being created, at any point in time.
      **/
     Optional<Integer> maxScale();
 

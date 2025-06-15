@@ -21,7 +21,8 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
  */
 @TestMethodOrder(OrderAnnotation.class)
 public class CliHelpTest {
-    static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath().resolve("target/test-project");
+    static Path workspaceRoot = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
+            .resolve("target/test-project");
 
     @Test
     @Order(1)

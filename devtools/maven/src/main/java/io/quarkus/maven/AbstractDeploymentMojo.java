@@ -30,8 +30,7 @@ public class AbstractDeploymentMojo extends BuildMojo {
     protected void doExecute() throws MojoExecutionException {
         if (dryRun) {
             getLog().info("Deployment configuration:");
-            systemProperties.entrySet().stream()
-                    .filter(e -> e.getKey().contains("quarkus.deployment"))
+            systemProperties.entrySet().stream().filter(e -> e.getKey().contains("quarkus.deployment"))
                     .forEach(e -> getLog().info(" - " + e.getKey() + ": " + e.getValue()));
         } else {
             super.doExecute();
@@ -43,8 +42,7 @@ public class AbstractDeploymentMojo extends BuildMojo {
     }
 
     public Deployer getDeployer(Deployer defaultDeployer) {
-        return Deployer.getDeployer(mavenProject())
-                .orElse(defaultDeployer);
+        return Deployer.getDeployer(mavenProject()).orElse(defaultDeployer);
     }
 
     @Override
@@ -56,8 +54,8 @@ public class AbstractDeploymentMojo extends BuildMojo {
         Deployer deployer = getDeployer();
         deployer.getExtensionArtifact(project).ifPresent(dependencies::add);
         if (this.imageBuild || this.imageBuilder != null) {
-            Set<ImageBuilder> projectBuilders = ImageBuilder.getProjectBuilder(project).stream().map(ImageBuilder::valueOf)
-                    .collect(Collectors.toSet());
+            Set<ImageBuilder> projectBuilders = ImageBuilder.getProjectBuilder(project).stream()
+                    .map(ImageBuilder::valueOf).collect(Collectors.toSet());
             Optional<ImageBuilder> imageBuilder = ImageBuilder.getBuilder(this.imageBuilder, projectBuilders);
             imageBuilder.filter(b -> !projectBuilders.contains(b)).flatMap(b -> b.getExtensionArtifact(project))
                     .ifPresent(dependencies::add);

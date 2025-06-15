@@ -24,8 +24,7 @@ public class SseServerTestCase {
 
     @RegisterExtension
     static final ResteasyReactiveUnitTest config = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SseServerResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SseServerResource.class));
 
     @Test
     public void shouldCallOnCloseOnServer() throws InterruptedException {
@@ -45,10 +44,7 @@ public class SseServerTestCase {
             Assertions.assertEquals(1, results.size());
             sse.close();
             System.out.println("called sse.close() from client");
-            RestAssured.get("/sse/onclose-callback")
-                    .then()
-                    .statusCode(200)
-                    .body(Matchers.equalTo("true"));
+            RestAssured.get("/sse/onclose-callback").then().statusCode(200).body(Matchers.equalTo("true"));
         }
     }
 
@@ -69,17 +65,9 @@ public class SseServerTestCase {
             Assertions.assertTrue(openingLatch.await(3, TimeUnit.SECONDS));
             Assertions.assertEquals(1, results.size());
             sse.close();
-            RestAssured.get("/sse/onclose-callback")
-                    .then()
-                    .statusCode(200)
-                    .body(Matchers.equalTo("true"));
-            RestAssured.post("/sse/broadcast")
-                    .then()
-                    .statusCode(200);
-            RestAssured.get("/sse/onerror-callback")
-                    .then()
-                    .statusCode(200)
-                    .body(Matchers.equalTo("false"));
+            RestAssured.get("/sse/onclose-callback").then().statusCode(200).body(Matchers.equalTo("true"));
+            RestAssured.post("/sse/broadcast").then().statusCode(200);
+            RestAssured.get("/sse/onerror-callback").then().statusCode(200).body(Matchers.equalTo("false"));
         }
     }
 }

@@ -26,10 +26,8 @@ import io.netty.util.AbstractReferenceCounted;
 import io.netty.util.internal.ObjectUtil;
 
 /**
- * A copy of Netty's InternalAttribute which is not public
- *
- * This Attribute is only for Encoder use to insert special command between object if needed
- * (like Multipart Mixed mode)
+ * A copy of Netty's InternalAttribute which is not public This Attribute is only for Encoder use to insert special
+ * command between object if needed (like Multipart Mixed mode)
  */
 final class QuarkusInternalAttribute extends AbstractReferenceCounted implements InterfaceHttpData {
     private final List<ByteBuf> value = new ArrayList<>();
@@ -87,8 +85,7 @@ final class QuarkusInternalAttribute extends AbstractReferenceCounted implements
     @Override
     public int compareTo(InterfaceHttpData o) {
         if (!(o instanceof QuarkusInternalAttribute)) {
-            throw new ClassCastException("Cannot compare " + getHttpDataType() +
-                    " with " + o.getHttpDataType());
+            throw new ClassCastException("Cannot compare " + getHttpDataType() + " with " + o.getHttpDataType());
         }
         return compareTo((QuarkusInternalAttribute) o);
     }

@@ -177,11 +177,9 @@ final class Target_DefaultSslContextFactory {
             builder.ciphers(cipherSuites);
         }
         if (useAlpn && applicationProtocols != null && applicationProtocols.size() > 0) {
-            builder.applicationProtocolConfig(new ApplicationProtocolConfig(
-                    ApplicationProtocolConfig.Protocol.ALPN,
+            builder.applicationProtocolConfig(new ApplicationProtocolConfig(ApplicationProtocolConfig.Protocol.ALPN,
                     ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
-                    ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
-                    applicationProtocols));
+                    ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT, applicationProtocols));
         }
         if (clientAuth != null) {
             builder.clientAuth(clientAuth);

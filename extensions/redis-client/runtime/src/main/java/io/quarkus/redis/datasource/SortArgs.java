@@ -38,7 +38,9 @@ public class SortArgs implements RedisCommandExtraArguments {
     /**
      * Sets the limit option.
      *
-     * @param limit the limit value
+     * @param limit
+     *        the limit value
+     *
      * @return the current {@code SortArgs}
      **/
     public SortArgs limit(Limit limit) {
@@ -49,8 +51,11 @@ public class SortArgs implements RedisCommandExtraArguments {
     /**
      * Sets the limit option using the offset and count.
      *
-     * @param offset the offset (zero-based)
-     * @param count the number of element
+     * @param offset
+     *        the offset (zero-based)
+     * @param count
+     *        the number of element
+     *
      * @return the current {@code SortArgs}
      **/
     public SortArgs limit(long offset, long count) {
@@ -61,7 +66,9 @@ public class SortArgs implements RedisCommandExtraArguments {
     /**
      * Sets the limit option with only the number of elements.
      *
-     * @param count the number of elements
+     * @param count
+     *        the number of elements
+     *
      * @return the current {@code SortArgs}
      **/
     public SortArgs limit(long count) {
@@ -82,7 +89,9 @@ public class SortArgs implements RedisCommandExtraArguments {
     /**
      * Sets the {@code BY} pattern.
      *
-     * @param by the by value
+     * @param by
+     *        the by value
+     *
      * @return the current {@code SortArgs}
      **/
     public SortArgs by(String by) {
@@ -91,17 +100,14 @@ public class SortArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets the {@code GET} option.
+     * Sets the {@code GET} option. Retrieving external keys based on the elements in a list, set or sorted set can be
+     * done using the {code GET} options. The {@code GET} option can be used multiple times in order to get more keys
+     * for every element of the original list, set or sorted set. It is also possible to {@code GET} the element itself
+     * using the special pattern {@code #}
      *
-     * Retrieving external keys based on the elements in a list, set or sorted set can be done using the {code GET}
-     * options.
+     * @param get
+     *        the get value
      *
-     * The {@code GET} option can be used multiple times in order to get more keys for every element of the original
-     * list, set or sorted set.
-     *
-     * It is also possible to {@code GET} the element itself using the special pattern {@code #}
-     *
-     * @param get the get value
      * @return the current {@code SortArgs}
      **/
     public SortArgs get(List<String> get) {
@@ -110,17 +116,14 @@ public class SortArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Adds a {@code GET} option.
+     * Adds a {@code GET} option. Retrieving external keys based on the elements in a list, set or sorted set can be
+     * done using the {code GET} options. The {@code GET} option can be used multiple times in order to get more keys
+     * for every element of the original list, set or sorted set. It is also possible to {@code GET} the element itself
+     * using the special pattern {@code #}
      *
-     * Retrieving external keys based on the elements in a list, set or sorted set can be done using the {code GET}
-     * options.
+     * @param get
+     *        the get value
      *
-     * The {@code GET} option can be used multiple times in order to get more keys for every element of the original
-     * list, set or sorted set.
-     *
-     * It is also possible to {@code GET} the element itself using the special pattern {@code #}
-     *
-     * @param get the get value
      * @return the current {@code SortArgs}
      **/
     public SortArgs get(String get) {
@@ -163,13 +166,11 @@ public class SortArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Represent a limit.
-     * From the Redis SORT command:
-     * The number of returned elements can be limited using the {@code LIMIT} modifier. This modifier takes the
-     * offset argument, specifying the number of elements to skip and the count argument, specifying the number of
-     * elements to return from starting at offset. The following example will return 10 elements of the sorted version
-     * of mylist, starting at element 0 (offset is zero-based): {@code SORT mylist LIMIT 0 10}
-     *
+     * Represent a limit. From the Redis SORT command: The number of returned elements can be limited using the
+     * {@code LIMIT} modifier. This modifier takes the offset argument, specifying the number of elements to skip and
+     * the count argument, specifying the number of elements to return from starting at offset. The following example
+     * will return 10 elements of the sorted version of mylist, starting at element 0 (offset is zero-based):
+     * {@code SORT mylist LIMIT 0 10}
      */
     public static class Limit {
 
@@ -186,8 +187,10 @@ public class SortArgs implements RedisCommandExtraArguments {
         /**
          * Creates a {@link Limit} object.
          *
-         * @param offset the offset (0 based)
-         * @param count the limit count.
+         * @param offset
+         *        the offset (0 based)
+         * @param count
+         *        the limit count.
          */
         public Limit(long offset, long count) {
             this.offset = offset;
@@ -197,7 +200,8 @@ public class SortArgs implements RedisCommandExtraArguments {
         /**
          * Creates a {@link Limit} object with just a count (offset is 0)
          *
-         * @param count the limit count.
+         * @param count
+         *        the limit count.
          */
 
         public Limit(long count) {

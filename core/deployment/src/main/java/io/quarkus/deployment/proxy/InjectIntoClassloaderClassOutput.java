@@ -7,10 +7,9 @@ import io.quarkus.deployment.util.ClassOutputUtil;
 import io.quarkus.gizmo.ClassOutput;
 
 /**
- * A Gizmo {@link ClassOutput} that is able to inject the bytecode directly into the classloader
- *
- * The {@link ClassLoader} passed to the constructor MUST contain a public visibleDefineClass method
- * This ensures that generating proxies works in any JDK version
+ * A Gizmo {@link ClassOutput} that is able to inject the bytecode directly into the classloader The {@link ClassLoader}
+ * passed to the constructor MUST contain a public visibleDefineClass method This ensures that generating proxies works
+ * in any JDK version
  */
 class InjectIntoClassloaderClassOutput implements ClassOutput {
 
@@ -26,8 +25,8 @@ class InjectIntoClassloaderClassOutput implements ClassOutput {
                     byte[].class, int.class, int.class);
         } catch (NoSuchMethodException | SecurityException e) {
             throw new IllegalStateException(
-                    "Unable to initialize InjectIntoClassloaderClassOutput - Incorrect classloader (" + classLoader.getClass()
-                            + ") usage detected");
+                    "Unable to initialize InjectIntoClassloaderClassOutput - Incorrect classloader ("
+                            + classLoader.getClass() + ") usage detected");
         }
     }
 

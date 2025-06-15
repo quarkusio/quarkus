@@ -22,8 +22,7 @@ public class WebSocketTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WebSocketResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(WebSocketResource.class));
 
     @Test
     public void testWebSocket() throws Exception {

@@ -30,8 +30,8 @@ public class EntityField {
         this(name, descriptor, visibility, null, null);
     }
 
-    public EntityField(String name, String descriptor, Visibility visibility,
-            String librarySpecificGetterName, String librarySpecificSetterName) {
+    public EntityField(String name, String descriptor, Visibility visibility, String librarySpecificGetterName,
+            String librarySpecificSetterName) {
         this.name = name;
         this.descriptor = descriptor;
         this.visibility = visibility;

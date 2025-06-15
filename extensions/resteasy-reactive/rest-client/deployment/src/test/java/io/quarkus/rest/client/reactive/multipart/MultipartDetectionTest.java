@@ -36,9 +36,8 @@ public class MultipartDetectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    jar -> jar.addClasses(Resource.class, Client.class, Person.class, TestJacksonBasicMessageBodyReader.class,
-                            TestJacksonBasicMessageBodyWriter.class));
+            .withApplicationRoot(jar -> jar.addClasses(Resource.class, Client.class, Person.class,
+                    TestJacksonBasicMessageBodyReader.class, TestJacksonBasicMessageBodyWriter.class));
 
     @Test
     void shouldCallExplicitEndpoints() throws IOException {
@@ -111,8 +110,7 @@ public class MultipartDetectionTest {
             public String charSet() {
                 return "";
             }
-        }))
-                .isEqualTo("Foo " + file.getName() + " Hello");
+        })).isEqualTo("Foo " + file.getName() + " Hello");
     }
 
     @Path("form")
@@ -128,7 +126,8 @@ public class MultipartDetectionTest {
         @Path("multipart-entity")
         @POST
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String uploadMultipart(@RestForm String name, @PartType(MediaType.APPLICATION_JSON) @RestForm Person entity) {
+        public String uploadMultipart(@RestForm String name,
+                @PartType(MediaType.APPLICATION_JSON) @RestForm Person entity) {
             return name + " " + entity.firstName + ":" + entity.lastName;
         }
 

@@ -58,13 +58,10 @@ public class SecuritySupport {
             SecurityIdentity identity) {
         if (identity.getAttribute("quarkus.identity.expire-time") instanceof Long expireAt) {
             long timerId = vertx.setTimer(TimeUnit.SECONDS.toMillis(expireAt) - System.currentTimeMillis(),
-                    ignored -> connection
-                            .close(new CloseReason(1008, "Authentication expired"))
-                            .subscribe()
-                            .with(
-                                    v -> LOG.tracef("Closed connection due to expired authentication: %s", connection),
-                                    e -> LOG.errorf("Unable to close connection [%s] after authentication "
-                                            + "expired due to unhandled failure: %s", connection, e)));
+                    ignored -> connection.close(new CloseReason(1008, "Authentication expired")).subscribe().with(
+                            v -> LOG.tracef("Closed connection due to expired authentication: %s", connection),
+                            e -> LOG.errorf("Unable to close connection [%s] after authentication "
+                                    + "expired due to unhandled failure: %s", connection, e)));
             return () -> vertx.cancelTimer(timerId);
         }
         return null;

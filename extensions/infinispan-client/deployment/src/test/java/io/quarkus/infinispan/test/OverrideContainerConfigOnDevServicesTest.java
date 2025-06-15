@@ -18,8 +18,7 @@ public class OverrideContainerConfigOnDevServicesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("server-config-override.xml"))
+            .withApplicationRoot((jar) -> jar.addAsResource("server-config-override.xml"))
             .withConfigurationResource("dev-services-adds-server-config.properties");
 
     @Test

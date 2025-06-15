@@ -14,12 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateGlobalInvalidNameTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Globals.class)
-                    .addAsResource(new StringAsset(
-                            "Hello {user.name}!"),
-                            "templates/hello.txt"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Globals.class).addAsResource(new StringAsset("Hello {user.name}!"), "templates/hello.txt"))
             .assertException(t -> {
                 Throwable e = t;
                 IllegalArgumentException iae = null;
@@ -31,12 +27,9 @@ public class TemplateGlobalInvalidNameTest {
                     e = e.getCause();
                 }
                 assertNotNull(iae);
-                assertTrue(
-                        iae.getMessage().contains("Invalid global variable name found: -name!"),
-                        iae.getMessage());
-                assertTrue(
-                        iae.getMessage().contains(
-                                "supplied by io.quarkus.qute.deployment.globals.TemplateGlobalInvalidNameTest$Globals.user"),
+                assertTrue(iae.getMessage().contains("Invalid global variable name found: -name!"), iae.getMessage());
+                assertTrue(iae.getMessage().contains(
+                        "supplied by io.quarkus.qute.deployment.globals.TemplateGlobalInvalidNameTest$Globals.user"),
                         iae.getMessage());
             });
 

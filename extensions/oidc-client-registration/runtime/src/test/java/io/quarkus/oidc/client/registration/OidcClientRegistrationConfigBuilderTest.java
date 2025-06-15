@@ -69,30 +69,14 @@ public class OidcClientRegistrationConfigBuilderTest {
     public void testSetEveryProperty() {
         var config = OidcClientRegistrationConfig.builder()
                 // OidcClientRegistrationConfig methods
-                .id("pink")
-                .registrationEnabled(false)
-                .registerEarly(false)
-                .initialToken("floyd")
-                .metadata()
-                .clientName("another")
-                .redirectUri("brick")
-                .postLogoutUri("in")
-                .extraProps(Map.of("the", "wall"))
-                .extraProperty("hey", "teacher")
-                .end()
+                .id("pink").registrationEnabled(false).registerEarly(false).initialToken("floyd").metadata()
+                .clientName("another").redirectUri("brick").postLogoutUri("in").extraProps(Map.of("the", "wall"))
+                .extraProperty("hey", "teacher").end()
                 // OidcCommonConfig methods
-                .authServerUrl("we")
-                .discoveryEnabled(false)
-                .registrationPath("don't")
-                .connectionDelay(Duration.ofSeconds(656))
-                .connectionRetryCount(565)
-                .connectionTimeout(Duration.ofSeconds(673))
-                .useBlockingDnsLookup(true)
-                .maxPoolSize(376)
-                .followRedirects(false)
-                .proxy("need", 55, "no", "education")
-                .tlsConfigurationName("Teacher!")
-                .build();
+                .authServerUrl("we").discoveryEnabled(false).registrationPath("don't")
+                .connectionDelay(Duration.ofSeconds(656)).connectionRetryCount(565)
+                .connectionTimeout(Duration.ofSeconds(673)).useBlockingDnsLookup(true).maxPoolSize(376)
+                .followRedirects(false).proxy("need", 55, "no", "education").tlsConfigurationName("Teacher!").build();
 
         // OidcClientRegistrationConfig methods
         assertEquals("pink", config.id().orElse(null));
@@ -140,12 +124,8 @@ public class OidcClientRegistrationConfigBuilderTest {
 
     @Test
     public void testCopyProxyProperties() {
-        var previousConfig = OidcClientRegistrationConfig.builder()
-                .proxy("need", 55, "no", "education")
-                .build();
-        var newConfig = OidcClientRegistrationConfig.builder(previousConfig)
-                .proxy("fast-car", 22)
-                .build();
+        var previousConfig = OidcClientRegistrationConfig.builder().proxy("need", 55, "no", "education").build();
+        var newConfig = OidcClientRegistrationConfig.builder(previousConfig).proxy("fast-car", 22).build();
 
         assertNotNull(previousConfig.proxy());
         assertEquals("fast-car", newConfig.proxy().host().orElse(null));
@@ -157,18 +137,9 @@ public class OidcClientRegistrationConfigBuilderTest {
     @Test
     public void testCopyClientRegistrationConfigProperties() {
         var previousConfigBuilder = OidcClientRegistrationConfig.builder();
-        var previousConfig = new MetadataBuilder(previousConfigBuilder)
-                .clientName("another")
-                .redirectUri("brick")
-                .postLogoutUri("in")
-                .extraProps(Map.of("the", "wall"))
-                .extraProperty("hey", "teacher")
-                .end()
-                .id("pink")
-                .registrationEnabled(false)
-                .registerEarly(false)
-                .initialToken("floyd")
-                .build();
+        var previousConfig = new MetadataBuilder(previousConfigBuilder).clientName("another").redirectUri("brick")
+                .postLogoutUri("in").extraProps(Map.of("the", "wall")).extraProperty("hey", "teacher").end().id("pink")
+                .registrationEnabled(false).registerEarly(false).initialToken("floyd").build();
         assertNotNull(previousConfig.metadata());
         assertEquals("another", previousConfig.metadata().clientName().orElse(null));
         assertEquals("brick", previousConfig.metadata().redirectUri().orElse(null));
@@ -177,16 +148,10 @@ public class OidcClientRegistrationConfigBuilderTest {
         assertEquals("wall", previousConfig.metadata().extraProps().get("the"));
         assertEquals("teacher", previousConfig.metadata().extraProps().get("hey"));
 
-        var metadata = new MetadataBuilder()
-                .clientName("place")
-                .postLogoutUri("is")
-                .extraProperty("better", "starting")
+        var metadata = new MetadataBuilder().clientName("place").postLogoutUri("is").extraProperty("better", "starting")
                 .build();
-        var newConfig = OidcClientRegistrationConfig.builder(previousConfig)
-                .id("any")
-                .registerEarly(true)
-                .metadata(metadata)
-                .build();
+        var newConfig = OidcClientRegistrationConfig.builder(previousConfig).id("any").registerEarly(true)
+                .metadata(metadata).build();
 
         assertEquals("any", newConfig.id().orElse(null));
         assertFalse(newConfig.registrationEnabled());
@@ -203,26 +168,13 @@ public class OidcClientRegistrationConfigBuilderTest {
 
     @Test
     public void testCopyOidcCommonConfigProperties() {
-        var previousConfig = OidcClientRegistrationConfig.builder()
-                .authServerUrl("we")
-                .discoveryEnabled(false)
-                .registrationPath("don't")
-                .connectionDelay(Duration.ofSeconds(656))
-                .connectionRetryCount(565)
-                .connectionTimeout(Duration.ofSeconds(673))
-                .useBlockingDnsLookup(true)
-                .maxPoolSize(376)
-                .followRedirects(false)
-                .proxy("need", 55, "no", "education")
-                .tlsConfigurationName("Teacher!")
-                .build();
-        var newConfig = OidcClientRegistrationConfig.builder(previousConfig)
-                .discoveryEnabled(true)
-                .connectionDelay(Duration.ofSeconds(753))
-                .connectionTimeout(Duration.ofSeconds(357))
-                .maxPoolSize(1988)
-                .proxy("cross", 44, "the", "boarder")
-                .build();
+        var previousConfig = OidcClientRegistrationConfig.builder().authServerUrl("we").discoveryEnabled(false)
+                .registrationPath("don't").connectionDelay(Duration.ofSeconds(656)).connectionRetryCount(565)
+                .connectionTimeout(Duration.ofSeconds(673)).useBlockingDnsLookup(true).maxPoolSize(376)
+                .followRedirects(false).proxy("need", 55, "no", "education").tlsConfigurationName("Teacher!").build();
+        var newConfig = OidcClientRegistrationConfig.builder(previousConfig).discoveryEnabled(true)
+                .connectionDelay(Duration.ofSeconds(753)).connectionTimeout(Duration.ofSeconds(357)).maxPoolSize(1988)
+                .proxy("cross", 44, "the", "boarder").build();
 
         assertEquals("we", newConfig.authServerUrl().orElse(null));
         assertTrue(newConfig.discoveryEnabled().orElse(false));
@@ -256,17 +208,13 @@ public class OidcClientRegistrationConfigBuilderTest {
 
     @Test
     public void testCreateBuilderShortcuts() {
-        OidcClientRegistrationConfig config = OidcClientRegistrationConfig
-                .authServerUrl("auth-server-url")
-                .metadata("Dynamic Client", "http://localhost:8081/protected/new-oidc-client-reg")
-                .build();
-        assertEquals("http://localhost:8081/protected/new-oidc-client-reg", config.metadata().redirectUri().orElse(null));
+        OidcClientRegistrationConfig config = OidcClientRegistrationConfig.authServerUrl("auth-server-url")
+                .metadata("Dynamic Client", "http://localhost:8081/protected/new-oidc-client-reg").build();
+        assertEquals("http://localhost:8081/protected/new-oidc-client-reg",
+                config.metadata().redirectUri().orElse(null));
         assertEquals("Dynamic Client", config.metadata().clientName().orElse(null));
 
-        config = OidcClientRegistrationConfig
-                .registrationPath("registration-path")
-                .metadata("redirect-uri")
-                .build();
+        config = OidcClientRegistrationConfig.registrationPath("registration-path").metadata("redirect-uri").build();
         assertEquals("registration-path", config.registrationPath().orElse(null));
         assertEquals("redirect-uri", config.metadata().redirectUri().orElse(null));
     }

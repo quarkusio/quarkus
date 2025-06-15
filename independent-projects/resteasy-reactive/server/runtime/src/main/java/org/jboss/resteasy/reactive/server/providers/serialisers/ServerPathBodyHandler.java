@@ -19,7 +19,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRequestContext;
 public class ServerPathBodyHandler extends PathBodyHandler implements ServerMessageBodyWriter<java.nio.file.Path> {
 
     @Override
-    public long getSize(java.nio.file.Path o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
+    public long getSize(java.nio.file.Path o, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType) {
         try {
             return Files.size(o);
         } catch (IOException e) {
@@ -28,7 +29,8 @@ public class ServerPathBodyHandler extends PathBodyHandler implements ServerMess
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return java.nio.file.Path.class.isAssignableFrom(type);
     }
 

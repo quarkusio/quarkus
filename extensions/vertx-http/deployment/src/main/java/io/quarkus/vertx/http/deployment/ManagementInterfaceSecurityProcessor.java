@@ -31,15 +31,12 @@ public class ManagementInterfaceSecurityProcessor {
 
     @BuildStep(onlyIfNot = IsApplicationBasicAuthRequired.class)
     @Record(ExecutionTime.STATIC_INIT)
-    SyntheticBeanBuildItem initBasicAuth(
-            ManagementSecurityRecorder recorder,
+    SyntheticBeanBuildItem initBasicAuth(ManagementSecurityRecorder recorder,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig) {
         if (managementBuildTimeConfig.auth().basic().orElse(false)) {
             SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                    .configure(BasicAuthenticationMechanism.class)
-                    .types(HttpAuthenticationMechanism.class)
-                    .scope(Singleton.class)
-                    .supplier(recorder.setupBasicAuth());
+                    .configure(BasicAuthenticationMechanism.class).types(HttpAuthenticationMechanism.class)
+                    .scope(Singleton.class).supplier(recorder.setupBasicAuth());
             return configurator.done();
         }
 
@@ -48,31 +45,25 @@ public class ManagementInterfaceSecurityProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void setupAuthenticationMechanisms(
-            ManagementSecurityRecorder recorder,
+    void setupAuthenticationMechanisms(ManagementSecurityRecorder recorder,
             BuildProducer<ManagementInterfaceFilterBuildItem> filterBuildItemBuildProducer,
             BuildProducer<AdditionalBeanBuildItem> beanProducer,
             Optional<ManagementAuthenticationHandlerBuildItem> managementAuthenticationHandlerBuildItem) {
         if (managementAuthenticationHandlerBuildItem.isPresent()) {
-            beanProducer
-                    .produce(AdditionalBeanBuildItem.builder().setUnremovable()
-                            .addBeanClass(HttpAuthenticator.class)
-                            .addBeanClass(ManagementPathMatchingHttpSecurityPolicy.class)
-                            .addBeanClass(ManagementInterfaceHttpAuthorizer.class).build());
-            filterBuildItemBuildProducer
-                    .produce(new ManagementInterfaceFilterBuildItem(
-                            recorder.getAuthenticationHandler(managementAuthenticationHandlerBuildItem.get().handler),
-                            ManagementInterfaceFilterBuildItem.AUTHENTICATION));
-            filterBuildItemBuildProducer
-                    .produce(new ManagementInterfaceFilterBuildItem(recorder.permissionCheckHandler(),
-                            ManagementInterfaceFilterBuildItem.AUTHORIZATION));
+            beanProducer.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClass(HttpAuthenticator.class).addBeanClass(ManagementPathMatchingHttpSecurityPolicy.class)
+                    .addBeanClass(ManagementInterfaceHttpAuthorizer.class).build());
+            filterBuildItemBuildProducer.produce(new ManagementInterfaceFilterBuildItem(
+                    recorder.getAuthenticationHandler(managementAuthenticationHandlerBuildItem.get().handler),
+                    ManagementInterfaceFilterBuildItem.AUTHENTICATION));
+            filterBuildItemBuildProducer.produce(new ManagementInterfaceFilterBuildItem(
+                    recorder.permissionCheckHandler(), ManagementInterfaceFilterBuildItem.AUTHORIZATION));
         }
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void createManagementAuthMechHandler(
-            ManagementSecurityRecorder recorder, Capabilities capabilities,
+    void createManagementAuthMechHandler(ManagementSecurityRecorder recorder, Capabilities capabilities,
             ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
             BuildProducer<ManagementAuthenticationHandlerBuildItem> managementAuthMechHandlerProducer) {
         if (managementBuildTimeConfig.auth().enabled() && capabilities.isPresent(Capability.SECURITY)) {
@@ -84,8 +75,10 @@ public class ManagementInterfaceSecurityProcessor {
     @Produce(PreRouterFinalizationBuildItem.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void initializeAuthMechanismHandler(Optional<ManagementAuthenticationHandlerBuildItem> managementAuthenticationHandler,
-            ManagementSecurityRecorder recorder, ManagementConfig managementConfig, BeanContainerBuildItem containerBuildItem) {
+    void initializeAuthMechanismHandler(
+            Optional<ManagementAuthenticationHandlerBuildItem> managementAuthenticationHandler,
+            ManagementSecurityRecorder recorder, ManagementConfig managementConfig,
+            BeanContainerBuildItem containerBuildItem) {
         if (managementAuthenticationHandler.isPresent()) {
             recorder.initializeAuthenticationHandler(managementAuthenticationHandler.get().handler, managementConfig,
                     containerBuildItem.getValue());

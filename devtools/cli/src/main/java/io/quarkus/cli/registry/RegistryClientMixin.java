@@ -45,18 +45,17 @@ public class RegistryClientMixin {
     }
 
     public RegistriesConfig resolveConfig() throws RegistryResolutionException {
-        return config == null
-                ? RegistriesConfig.resolveConfig()
-                : RegistriesConfig.resolveFromFile(Path.of(config));
+        return config == null ? RegistriesConfig.resolveConfig() : RegistriesConfig.resolveFromFile(Path.of(config));
     }
 
-    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusPlatformGroup targetVersion, BuildTool buildTool,
-            OutputOptionMixin log) throws RegistryResolutionException {
+    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusPlatformGroup targetVersion,
+            BuildTool buildTool, OutputOptionMixin log) throws RegistryResolutionException {
         return createQuarkusProject(projectRoot, targetVersion, buildTool, log, List.of());
     }
 
-    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusPlatformGroup targetVersion, BuildTool buildTool,
-            OutputOptionMixin log, Collection<String> extensions) throws RegistryResolutionException {
+    public QuarkusProject createQuarkusProject(Path projectRoot, TargetQuarkusPlatformGroup targetVersion,
+            BuildTool buildTool, OutputOptionMixin log, Collection<String> extensions)
+            throws RegistryResolutionException {
         ExtensionCatalog catalog = getExtensionCatalog(targetVersion, log);
         if (VALIDATE && catalog.getQuarkusCoreVersion().startsWith("1.")) {
             throw new UnsupportedOperationException("The version 2 CLI can not be used with Quarkus 1.x projects.\n"
@@ -76,8 +75,8 @@ public class RegistryClientMixin {
 
         if (VALIDATE && targetVersion.isStreamSpecified() && !enabled()) {
             throw new UnsupportedOperationException(
-                    "Specifying a stream (--stream) requires the registry client to resolve resources. " +
-                            "Please try again with the registry client enabled (--registry-client)");
+                    "Specifying a stream (--stream) requires the registry client to resolve resources. "
+                            + "Please try again with the registry client enabled (--registry-client)");
         }
 
         if (targetVersion.isPlatformSpecified()) {
@@ -90,12 +89,10 @@ public class RegistryClientMixin {
         try {
             catalogResolver = getExtensionCatalogResolver(log);
         } catch (RegistryResolutionException e) {
-            log.warn(
-                    "Configured Quarkus extension registries appear to be unavailable at the moment. "
-                            + "It should still be possible to create a project by providing the groupId:artifactId:version of the desired Quarkus platform BOM, "
-                            + "e.g. 'quarkus create -P "
-                            + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
-                            + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":" + Version.clientVersion() + "'");
+            log.warn("Configured Quarkus extension registries appear to be unavailable at the moment. "
+                    + "It should still be possible to create a project by providing the groupId:artifactId:version of the desired Quarkus platform BOM, "
+                    + "e.g. 'quarkus create -P " + ToolsConstants.DEFAULT_PLATFORM_BOM_GROUP_ID + ":"
+                    + ToolsConstants.DEFAULT_PLATFORM_BOM_ARTIFACT_ID + ":" + Version.clientVersion() + "'");
             throw e;
         }
 
@@ -114,7 +111,8 @@ public class RegistryClientMixin {
         return catalogResolver.resolveExtensionCatalog();
     }
 
-    public ExtensionCatalogResolver getExtensionCatalogResolver(OutputOptionMixin log) throws RegistryResolutionException {
+    public ExtensionCatalogResolver getExtensionCatalogResolver(OutputOptionMixin log)
+            throws RegistryResolutionException {
         return QuarkusProjectHelper.getCatalogResolver(enabled(), log);
     }
 

@@ -31,7 +31,8 @@ public class JsonObjectReader implements MessageBodyReader<JsonObject> {
 
     @Override
     public JsonObject readFrom(Class<JsonObject> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         byte[] bytes = getBytes(entityStream);
         if (bytes.length == 0) {
             throw new NoContentException("Cannot create JsonObject");

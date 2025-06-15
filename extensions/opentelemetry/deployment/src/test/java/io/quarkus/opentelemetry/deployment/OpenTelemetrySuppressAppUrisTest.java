@@ -25,16 +25,15 @@ import io.restassured.RestAssured;
 
 public class OpenTelemetrySuppressAppUrisTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(InMemoryExporter.class.getPackage())
-                    .addAsResource("resource-config/application.properties", "application.properties")
-                    .addAsResource(
-                            "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                    .addClasses(TracerRouter.class, TraceMeResource.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addPackage(InMemoryExporter.class.getPackage())
+            .addAsResource("resource-config/application.properties", "application.properties")
+            .addAsResource(
+                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .addClasses(TracerRouter.class, TraceMeResource.class))
             .overrideConfigKey("quarkus.otel.traces.suppress-application-uris", "tracer,/hello/Itachi");
 
     @Inject
@@ -48,40 +47,24 @@ public class OpenTelemetrySuppressAppUrisTest {
     @Test
     @DisplayName("Should not trace when the using configuration quarkus.otel.traces.suppress-application-uris without slash")
     void testingSuppressAppUrisWithoutSlash() {
-        RestAssured.when()
-                .get("/tracer").then()
-                .statusCode(200)
-                .body(is("Hello Tracer!"));
+        RestAssured.when().get("/tracer").then().statusCode(200).body(is("Hello Tracer!"));
 
-        RestAssured.when()
-                .get("/trace-me").then()
-                .statusCode(200)
-                .body(is("trace-me"));
+        RestAssured.when().get("/trace-me").then().statusCode(200).body(is("trace-me"));
 
         List<SpanData> spans = exporter.getSpanExporter().getFinishedSpanItems(1);
 
-        assertThat(spans)
-                .hasSize(1)
-                .satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
+        assertThat(spans).hasSize(1).satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
     }
 
     @Test
     @DisplayName("Should not trace when the using configuration quarkus.otel.traces.suppress-application-uris with slash")
     void testingSuppressAppUrisWithSlash() {
-        RestAssured.when()
-                .get("/hello/Itachi").then()
-                .statusCode(200)
-                .body(is("Amaterasu!"));
+        RestAssured.when().get("/hello/Itachi").then().statusCode(200).body(is("Amaterasu!"));
 
-        RestAssured.when()
-                .get("/trace-me").then()
-                .statusCode(200)
-                .body(is("trace-me"));
+        RestAssured.when().get("/trace-me").then().statusCode(200).body(is("trace-me"));
 
         List<SpanData> spans = exporter.getSpanExporter().getFinishedSpanItems(1);
 
-        assertThat(spans)
-                .hasSize(1)
-                .satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
+        assertThat(spans).hasSize(1).satisfiesOnlyOnce(span -> assertThat(span.getName()).containsOnlyOnce("trace-me"));
     }
 }

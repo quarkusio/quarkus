@@ -24,17 +24,11 @@ public class InitTaskProcessor {
 
     private static final String INIT_CONTAINER_WAITER_NAME = "wait-for-";
 
-    public static void process(
-            String target, // kubernetes, openshift, etc.
-            String name,
-            ContainerImageInfoBuildItem image,
-            List<InitTaskBuildItem> initTasks,
-            InitTaskConfig initTaskDefaults,
-            Map<String, InitTaskConfig> initTasksConfig,
-            BuildProducer<KubernetesJobBuildItem> jobs,
-            BuildProducer<KubernetesInitContainerBuildItem> initContainers,
-            BuildProducer<KubernetesEnvBuildItem> env,
-            BuildProducer<KubernetesRoleBuildItem> roles,
+    public static void process(String target, // kubernetes, openshift, etc.
+            String name, ContainerImageInfoBuildItem image, List<InitTaskBuildItem> initTasks,
+            InitTaskConfig initTaskDefaults, Map<String, InitTaskConfig> initTasksConfig,
+            BuildProducer<KubernetesJobBuildItem> jobs, BuildProducer<KubernetesInitContainerBuildItem> initContainers,
+            BuildProducer<KubernetesEnvBuildItem> env, BuildProducer<KubernetesRoleBuildItem> roles,
             BuildProducer<KubernetesRoleBindingBuildItem> roleBindings,
             BuildProducer<KubernetesServiceAccountBuildItem> serviceAccount,
             BuildProducer<DecoratorBuildItem> decorators) {
@@ -42,46 +36,36 @@ public class InitTaskProcessor {
         boolean generateRoleForJobs = false;
         for (InitTaskBuildItem task : initTasks) {
             String taskName = task.getName()
-                    //Strip appplication.name prefix and init suffix (for compatibility with previous versions)
-                    .replaceAll("^" + Pattern.quote(name + "-"), "")
-                    .replaceAll(Pattern.quote("-init") + "$", "");
+                    // Strip appplication.name prefix and init suffix (for compatibility with previous versions)
+                    .replaceAll("^" + Pattern.quote(name + "-"), "").replaceAll(Pattern.quote("-init") + "$", "");
             String jobName = name + "-" + taskName + "-init";
 
             InitTaskConfig config = initTasksConfig.getOrDefault(taskName, initTaskDefaults);
             if (config == null || config.enabled()) {
                 generateRoleForJobs = true;
-                jobs.produce(KubernetesJobBuildItem.create(image.getImage())
-                        .withName(task.getName())
-                        .withTarget(target)
-                        .withEnvVars(task.getTaskEnvVars())
-                        .withCommand(task.getCommand())
-                        .withArguments(task.getArguments())
-                        .withSharedEnvironment(task.isSharedEnvironment())
+                jobs.produce(KubernetesJobBuildItem.create(image.getImage()).withName(task.getName()).withTarget(target)
+                        .withEnvVars(task.getTaskEnvVars()).withCommand(task.getCommand())
+                        .withArguments(task.getArguments()).withSharedEnvironment(task.isSharedEnvironment())
                         .withSharedFilesystem(task.isSharedFilesystem()));
 
                 task.getAppEnvVars().forEach((k, v) -> {
-                    decorators.produce(new DecoratorBuildItem(target,
-                            new AddEnvVarDecorator(ApplicationContainerDecorator.ANY, name, new EnvBuilder()
-                                    .withName(k)
-                                    .withValue(v)
-                                    .build())));
+                    decorators.produce(
+                            new DecoratorBuildItem(target, new AddEnvVarDecorator(ApplicationContainerDecorator.ANY,
+                                    name, new EnvBuilder().withName(k).withValue(v).build())));
                 });
 
                 String waitForImage = config.image().orElse(config.waitForContainer().image());
-                initContainers
-                        .produce(KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME + taskName, waitForImage)
+                initContainers.produce(
+                        KubernetesInitContainerBuildItem.create(INIT_CONTAINER_WAITER_NAME + taskName, waitForImage)
                                 .withImagePullPolicy(config.waitForContainer().imagePullPolicy().name())
-                                .withTarget(target)
-                                .withArguments(List.of("job", jobName)));
+                                .withTarget(target).withArguments(List.of("job", jobName)));
             }
         }
 
         if (generateRoleForJobs) {
-            roles.produce(new KubernetesRoleBuildItem("view-jobs", Collections.singletonList(
-                    new PolicyRule(
-                            Collections.singletonList("batch"),
-                            Collections.singletonList("jobs"),
-                            List.of("get"))),
+            roles.produce(new KubernetesRoleBuildItem("view-jobs",
+                    Collections.singletonList(new PolicyRule(Collections.singletonList("batch"),
+                            Collections.singletonList("jobs"), List.of("get"))),
                     target));
             roleBindings.produce(new KubernetesRoleBindingBuildItem(null, "view-jobs", false, target));
             serviceAccount.produce(new KubernetesServiceAccountBuildItem(true));

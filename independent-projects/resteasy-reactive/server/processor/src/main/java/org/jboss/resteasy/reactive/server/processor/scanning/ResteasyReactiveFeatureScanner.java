@@ -72,8 +72,7 @@ public class ResteasyReactiveFeatureScanner {
     }
 
     public static Set<String> scanForFeatures(IndexView index, ApplicationScanningResult applicationScanningResult) {
-        Collection<ClassInfo> features = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.FEATURE);
+        Collection<ClassInfo> features = index.getAllKnownImplementors(ResteasyReactiveDotNames.FEATURE);
         Set<String> ret = new HashSet<>();
         for (ClassInfo featureClass : features) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationScanningResult
@@ -85,9 +84,9 @@ public class ResteasyReactiveFeatureScanner {
         return ret;
     }
 
-    public static Set<String> scanForDynamicFeatures(IndexView index, ApplicationScanningResult applicationScanningResult) {
-        Collection<ClassInfo> features = index
-                .getAllKnownImplementors(ResteasyReactiveDotNames.DYNAMIC_FEATURE);
+    public static Set<String> scanForDynamicFeatures(IndexView index,
+            ApplicationScanningResult applicationScanningResult) {
+        Collection<ClassInfo> features = index.getAllKnownImplementors(ResteasyReactiveDotNames.DYNAMIC_FEATURE);
         Set<String> ret = new HashSet<>();
         for (ClassInfo featureClass : features) {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationScanningResult

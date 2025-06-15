@@ -29,17 +29,18 @@ public class AutoAddScopeProcessor {
     void annotationTransformer(List<AutoAddScopeBuildItem> autoScopes, CustomScopeAnnotationsBuildItem scopes,
             List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformers,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
-            BeanArchiveIndexBuildItem beanArchiveIndex) throws Exception {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeans, BeanArchiveIndexBuildItem beanArchiveIndex)
+            throws Exception {
         if (autoScopes.isEmpty()) {
             return;
         }
 
         List<AutoAddScopeBuildItem> sortedAutoScopes = autoScopes.stream()
-                .sorted(Comparator.comparingInt(AutoAddScopeBuildItem::getPriority).reversed()).collect(Collectors.toList());
+                .sorted(Comparator.comparingInt(AutoAddScopeBuildItem::getPriority).reversed())
+                .collect(Collectors.toList());
 
-        Set<DotName> containerAnnotationNames = autoInjectAnnotations.stream().flatMap(a -> a.getAnnotationNames().stream())
-                .collect(Collectors.toSet());
+        Set<DotName> containerAnnotationNames = autoInjectAnnotations.stream()
+                .flatMap(a -> a.getAnnotationNames().stream()).collect(Collectors.toSet());
         containerAnnotationNames.add(DotNames.POST_CONSTRUCT);
         containerAnnotationNames.add(DotNames.PRE_DESTROY);
         containerAnnotationNames.add(DotNames.INJECT);
@@ -99,7 +100,8 @@ public class AutoAddScopeProcessor {
                         if (unremovables != null && autoScope.isUnremovable()) {
                             unremovables.put(clazz.name(), autoScope);
                         }
-                        LOGGER.debugf("Automatically added scope %s to class %s: %s", scope, clazz, autoScope.getReason());
+                        LOGGER.debugf("Automatically added scope %s to class %s: %s", scope, clazz,
+                                autoScope.getReason());
                     }
                 }
             }

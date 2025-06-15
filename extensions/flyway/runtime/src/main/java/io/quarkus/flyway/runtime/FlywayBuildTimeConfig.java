@@ -18,9 +18,8 @@ import io.smallrye.config.WithUnnamedKey;
 public interface FlywayBuildTimeConfig {
 
     /**
-     * Whether Flyway is enabled *during the build*.
-     *
-     * If Flyway is disabled, the Flyway beans won't be created and Flyway won't be usable.
+     * Whether Flyway is enabled *during the build*. If Flyway is disabled, the Flyway beans won't be created and Flyway
+     * won't be usable.
      *
      * @asciidoclet
      */

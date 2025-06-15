@@ -29,8 +29,7 @@ public class MockServiceDiscoveryProviderLoader implements io.smallrye.stork.spi
     @Override
     public ServiceDiscovery createServiceDiscovery(ConfigWithType config, String serviceName,
             ServiceConfig serviceConfig, StorkInfrastructure storkInfrastructure) {
-        MockServiceDiscoveryConfiguration typedConfig = new MockServiceDiscoveryConfiguration(
-                config.parameters());
+        MockServiceDiscoveryConfiguration typedConfig = new MockServiceDiscoveryConfiguration(config.parameters());
         return provider.createServiceDiscovery(typedConfig, serviceName, serviceConfig, storkInfrastructure);
     }
 

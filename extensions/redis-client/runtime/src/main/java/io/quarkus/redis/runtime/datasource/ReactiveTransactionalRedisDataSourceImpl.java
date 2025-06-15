@@ -41,9 +41,7 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
 
     @Override
     public Uni<Void> discard() {
-        return reactive.execute(Command.DISCARD)
-                .invoke(tx::discard)
-                .replaceWithVoid();
+        return reactive.execute(Command.DISCARD).invoke(tx::discard).replaceWithVoid();
     }
 
     @Override
@@ -55,8 +53,7 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     public <K, F, V> ReactiveTransactionalHashCommands<K, F, V> hash(Class<K> redisKeyType, Class<F> typeOfField,
             Class<V> typeOfValue) {
         return new ReactiveTransactionalHashCommandsImpl<>(this,
-                (ReactiveHashCommandsImpl<K, F, V>) this.reactive.hash(redisKeyType, typeOfField, typeOfValue),
-                tx);
+                (ReactiveHashCommandsImpl<K, F, V>) this.reactive.hash(redisKeyType, typeOfField, typeOfValue), tx);
     }
 
     @Override
@@ -96,7 +93,8 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
     }
 
     @Override
-    public <K, V> ReactiveTransactionalHyperLogLogCommands<K, V> hyperloglog(Class<K> redisKeyType, Class<V> memberType) {
+    public <K, V> ReactiveTransactionalHyperLogLogCommands<K, V> hyperloglog(Class<K> redisKeyType,
+            Class<V> memberType) {
         return new ReactiveTransactionalHyperLogLogCommandsImpl<>(this,
                 (ReactiveHyperLogLogCommandsImpl<K, V>) this.reactive.hyperloglog(redisKeyType, memberType), tx);
     }
@@ -188,16 +186,14 @@ public class ReactiveTransactionalRedisDataSourceImpl implements ReactiveTransac
         command = CommandMap.normalize(command);
         RedisCommand c = RedisCommand.of(command).putAll(Arrays.asList(args));
 
-        return reactive.execute(c.toRequest())
-                .map(r -> {
-                    if (r == null || !r.toString().equals("QUEUED")) {
-                        this.tx.discard();
-                        return Uni.createFrom()
-                                .failure(new IllegalStateException("Unable to enqueue command into the current transaction"));
-                    }
-                    return r;
-                })
-                .replaceWithVoid();
+        return reactive.execute(c.toRequest()).map(r -> {
+            if (r == null || !r.toString().equals("QUEUED")) {
+                this.tx.discard();
+                return Uni.createFrom()
+                        .failure(new IllegalStateException("Unable to enqueue command into the current transaction"));
+            }
+            return r;
+        }).replaceWithVoid();
     }
 
     @Override

@@ -88,17 +88,15 @@ class VertxProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     VertxBuildItem build(CoreVertxBuildItem vertx, VertxEventBusConsumerRecorder recorder,
             List<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
-            BuildProducer<GeneratedClassBuildItem> generatedClass,
-            AnnotationProxyBuildItem annotationProxy, LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
-            BuildProducer<ServiceStartBuildItem> serviceStart,
-            List<MessageCodecBuildItem> codecs, LocalCodecSelectorTypesBuildItem localCodecSelectorTypes,
-            RecorderContext recorderContext) {
+            BuildProducer<GeneratedClassBuildItem> generatedClass, AnnotationProxyBuildItem annotationProxy,
+            LaunchModeBuildItem launchMode, ShutdownContextBuildItem shutdown,
+            BuildProducer<ServiceStartBuildItem> serviceStart, List<MessageCodecBuildItem> codecs,
+            LocalCodecSelectorTypesBuildItem localCodecSelectorTypes, RecorderContext recorderContext) {
         List<EventConsumerInfo> messageConsumerConfigurations = new ArrayList<>();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedClass, true);
         for (EventConsumerBusinessMethodItem businessMethod : messageConsumerBusinessMethods) {
             ConsumeEvent annotation = annotationProxy.builder(businessMethod.getConsumeEvent(), ConsumeEvent.class)
-                    .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString())
-                    .build(classOutput);
+                    .withDefaultValue("value", businessMethod.getBean().getBeanClass().toString()).build(classOutput);
 
             messageConsumerConfigurations.add(new EventConsumerInfo(annotation, businessMethod.isBlockingAnnotation(),
                     businessMethod.isRunOnVirtualThreadAnnotation(), businessMethod.isSplitHeadersBodyParams(),
@@ -116,9 +114,8 @@ class VertxProcessor {
             selectorTypes.add(tryLoad(name, tccl));
         }
 
-        recorder.configureVertx(vertx.getVertx(), messageConsumerConfigurations,
-                launchMode.getLaunchMode(),
-                shutdown, codecByClass, selectorTypes);
+        recorder.configureVertx(vertx.getVertx(), messageConsumerConfigurations, launchMode.getLaunchMode(), shutdown,
+                codecByClass, selectorTypes);
         serviceStart.produce(new ServiceStartBuildItem("vertx"));
         return new VertxBuildItem(recorder.forceStart(vertx.getVertx()));
     }
@@ -138,10 +135,8 @@ class VertxProcessor {
     }
 
     @BuildStep
-    void collectEventConsumers(
-            BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            InvokerFactoryBuildItem invokerFactory,
-            List<EventConsumerInvokerCustomizerBuildItem> invokerCustomizers,
+    void collectEventConsumers(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
+            InvokerFactoryBuildItem invokerFactory, List<EventConsumerInvokerCustomizerBuildItem> invokerCustomizers,
             BuildProducer<EventConsumerBusinessMethodItem> messageConsumerBusinessMethods,
             BuildProducer<BeanConfiguratorBuildItem> errors) {
         // We need to collect all business methods annotated with @ConsumeEvent first
@@ -189,8 +184,7 @@ class VertxProcessor {
                                 method, bean));
                     }
 
-                    InvokerBuilder builder = invokerFactory.createInvoker(bean, method)
-                            .withInstanceLookup();
+                    InvokerBuilder builder = invokerFactory.createInvoker(bean, method).withInstanceLookup();
 
                     if (parametersCount == 1 && method.parameterType(0).name().equals(MESSAGE)) {
                         // io.vertx.core.eventbus.Message
@@ -237,8 +231,8 @@ class VertxProcessor {
     void registerVerticleClasses(CombinedIndexBuildItem indexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         // Mutiny Verticles
-        for (ClassInfo ci : indexBuildItem.getIndex()
-                .getAllKnownSubclasses(DotName.createSimple(io.smallrye.mutiny.vertx.core.AbstractVerticle.class.getName()))) {
+        for (ClassInfo ci : indexBuildItem.getIndex().getAllKnownSubclasses(
+                DotName.createSimple(io.smallrye.mutiny.vertx.core.AbstractVerticle.class.getName()))) {
             reflectiveClass.produce(ReflectiveClassBuildItem.builder(ci.toString()).build());
         }
     }
@@ -246,8 +240,7 @@ class VertxProcessor {
     @BuildStep
     void faultToleranceIntegration(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         if (capabilities.isPresent(Capability.SMALLRYE_FAULT_TOLERANCE)) {
-            serviceProvider.produce(new ServiceProviderBuildItem(
-                    "io.smallrye.faulttolerance.core.event.loop.EventLoop",
+            serviceProvider.produce(new ServiceProviderBuildItem("io.smallrye.faulttolerance.core.event.loop.EventLoop",
                     "io.smallrye.faulttolerance.vertx.VertxEventLoop"));
         }
     }
@@ -288,8 +281,8 @@ class VertxProcessor {
     @BuildStep
     void registerReflectivelyAccessedMethods(BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods) {
         // Accessed by io.vertx.core.impl.VertxImpl.<init>
-        reflectiveMethods.produce(new ReflectiveMethodBuildItem("java.lang.Thread$Builder$OfVirtual", "name",
-                String.class, long.class));
+        reflectiveMethods.produce(
+                new ReflectiveMethodBuildItem("java.lang.Thread$Builder$OfVirtual", "name", String.class, long.class));
         reflectiveMethods.produce(new ReflectiveMethodBuildItem("java.lang.Thread$Builder", "factory", new Class[0]));
     }
 }

@@ -12,8 +12,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 /**
- * Reproducer for <a href="https://github.com/quarkusio/quarkus/pull/38607">{@code IllegalStateException} when
- * Quarkus project is in an <em>included</em> Gradle build</a>.
+ * Reproducer for <a href="https://github.com/quarkusio/quarkus/pull/38607">{@code IllegalStateException} when Quarkus
+ * project is in an <em>included</em> Gradle build</a>.
  */
 @ExtendWith(SoftAssertionsExtension.class)
 public class IncludedQuarkusBuildTest extends QuarkusGradleWrapperTestBase {
@@ -33,8 +33,7 @@ public class IncludedQuarkusBuildTest extends QuarkusGradleWrapperTestBase {
         Files.copy(prjDir.resolve("gradle.properties"), target1);
         Files.copy(prjDir.resolve("gradle.properties"), target2);
 
-        soft.assertThat(runGradleWrapper(projectDir, "clean", "jar", "--no-build-cache").unsuccessfulTasks())
-                .isEmpty();
+        soft.assertThat(runGradleWrapper(projectDir, "clean", "jar", "--no-build-cache").unsuccessfulTasks()).isEmpty();
 
         try {
             soft.assertAll();

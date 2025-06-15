@@ -36,9 +36,9 @@ public enum Ide {
     }
 
     /**
-     * Attempts to launch the default IDE script. If it succeeds, then that command is used (as the command is on the $PATH),
-     * otherwise the full path of the command (determined earlier in the process by looking at the running processes)
-     * is used.
+     * Attempts to launch the default IDE script. If it succeeds, then that command is used (as the command is on the
+     * $PATH), otherwise the full path of the command (determined earlier in the process by looking at the running
+     * processes) is used.
      */
     public String getEffectiveCommand() {
         if (effectiveCommand != null) {
@@ -61,8 +61,7 @@ public enum Ide {
                     log.debugf("Checking if IDE available with %s", command);
                     new ProcessBuilder(command).redirectError(ProcessBuilder.Redirect.DISCARD.file())
                             .redirectOutput(ProcessBuilder.Redirect.DISCARD.file()).start()
-                            .waitFor(10,
-                                    TimeUnit.SECONDS);
+                            .waitFor(10, TimeUnit.SECONDS);
                     return defaultCommand;
                 } catch (Exception e) {
                     return machineSpecificCommand;
@@ -83,12 +82,12 @@ public enum Ide {
         // we don't know the syntax for opening a file at a given line
         // so we just open the file
         if (lineNumberArgs.isEmpty()) {
-            log.debug("No syntax provided for opening the file at a given line for this IDE so we will just open the file");
+            log.debug(
+                    "No syntax provided for opening the file at a given line for this IDE so we will just open the file");
             return Collections.singletonList(fileName);
         }
 
-        return lineNumberArgs.stream()
-                .map(arg -> arg.replace("{fileName}", fileName).replace("{lineNumber}", line))
+        return lineNumberArgs.stream().map(arg -> arg.replace("{fileName}", fileName).replace("{lineNumber}", line))
                 .collect(Collectors.toList());
     }
 
@@ -99,7 +98,9 @@ public enum Ide {
     /**
      * Finds the location of a source file given the path from the source root
      *
-     * @param fileName The file name
+     * @param fileName
+     *        The file name
+     *
      * @return The path or null if it could not be found
      */
     public static Path findSourceFile(String fileName) {
@@ -122,8 +123,6 @@ public enum Ide {
 
     @Override
     public String toString() {
-        return "Ide{" +
-                "defaultCommand='" + defaultCommand + '\'' +
-                '}';
+        return "Ide{" + "defaultCommand='" + defaultCommand + '\'' + '}';
     }
 }

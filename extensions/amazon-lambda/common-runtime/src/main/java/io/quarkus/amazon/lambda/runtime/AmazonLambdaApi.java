@@ -84,9 +84,9 @@ public class AmazonLambdaApi {
     }
 
     public static boolean isTestMode() {
-        //need this config check for native tests
-        return LaunchMode.current() == LaunchMode.TEST
-                || ConfigProvider.getConfig().getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class).isPresent();
+        // need this config check for native tests
+        return LaunchMode.current() == LaunchMode.TEST || ConfigProvider.getConfig()
+                .getOptionalValue(QUARKUS_INTERNAL_AWS_LAMBDA_TEST_API, String.class).isPresent();
     }
 
     private static String runtimeApi() {

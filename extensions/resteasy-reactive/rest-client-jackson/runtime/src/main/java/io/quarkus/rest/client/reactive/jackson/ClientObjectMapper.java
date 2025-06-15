@@ -6,13 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to easily define a custom object mapper for the specific REST Client on which it's used.
- *
- * The annotation MUST be placed on a method of the REST Client interface that meets the following criteria:
+ * Used to easily define a custom object mapper for the specific REST Client on which it's used. The annotation MUST be
+ * placed on a method of the REST Client interface that meets the following criteria:
  * <ul>
  * <li>Is a {@code static} method</li>
  * </ul>
- *
  * An example method could look like the following:
  *
  * <pre>

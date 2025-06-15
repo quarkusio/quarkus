@@ -12,30 +12,25 @@ import io.smallrye.graphql.client.impl.GraphQLClientConfiguration;
 import io.smallrye.graphql.client.impl.GraphQLClientsConfiguration;
 
 /**
- * Verify that various configuration through `quarkus.*` properties is correctly taken into account
- * for GraphQL clients.
+ * Verify that various configuration through `quarkus.*` properties is correctly taken into account for GraphQL clients.
  */
 public class GraphQLClientConfigurationTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.smallrye-graphql-client.client1.url=https://localhost:8080\n" +
-                                            "quarkus.smallrye-graphql-client.client1.key-store=classpath:my.keystore\n" +
-                                            "quarkus.smallrye-graphql-client.client1.key-store-password=secret\n" +
-                                            "quarkus.smallrye-graphql-client.client1.key-store-type=PKCS12\n" +
-                                            "quarkus.smallrye-graphql-client.client1.trust-store=classpath:my.truststore\n" +
-                                            "quarkus.smallrye-graphql-client.client1.trust-store-password=secret2\n" +
-                                            "quarkus.smallrye-graphql-client.client1.trust-store-type=JKS\n" +
-                                            "quarkus.smallrye-graphql-client.client1.proxy-host=myproxy\n" +
-                                            "quarkus.smallrye-graphql-client.client1.proxy-port=1234\n" +
-                                            "quarkus.smallrye-graphql-client.client1.proxy-username=dave\n" +
-                                            "quarkus.smallrye-graphql-client.client1.proxy-password=secret\n" +
-                                            "quarkus.smallrye-graphql-client.client1.max-redirects=6\n"),
-                            "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.smallrye-graphql-client.client1.url=https://localhost:8080\n"
+                    + "quarkus.smallrye-graphql-client.client1.key-store=classpath:my.keystore\n"
+                    + "quarkus.smallrye-graphql-client.client1.key-store-password=secret\n"
+                    + "quarkus.smallrye-graphql-client.client1.key-store-type=PKCS12\n"
+                    + "quarkus.smallrye-graphql-client.client1.trust-store=classpath:my.truststore\n"
+                    + "quarkus.smallrye-graphql-client.client1.trust-store-password=secret2\n"
+                    + "quarkus.smallrye-graphql-client.client1.trust-store-type=JKS\n"
+                    + "quarkus.smallrye-graphql-client.client1.proxy-host=myproxy\n"
+                    + "quarkus.smallrye-graphql-client.client1.proxy-port=1234\n"
+                    + "quarkus.smallrye-graphql-client.client1.proxy-username=dave\n"
+                    + "quarkus.smallrye-graphql-client.client1.proxy-password=secret\n"
+                    + "quarkus.smallrye-graphql-client.client1.max-redirects=6\n"), "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void checkSslConfiguration() {

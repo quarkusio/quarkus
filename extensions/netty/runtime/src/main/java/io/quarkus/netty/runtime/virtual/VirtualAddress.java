@@ -20,8 +20,7 @@ import java.net.SocketAddress;
 import io.netty.channel.Channel;
 
 /**
- * An endpoint in the local transport. Each endpoint is identified by a unique
- * case-insensitive string.
+ * An endpoint in the local transport. Each endpoint is identified by a unique case-insensitive string.
  */
 public final class VirtualAddress extends SocketAddress implements Comparable<VirtualAddress> {
 
@@ -33,9 +32,9 @@ public final class VirtualAddress extends SocketAddress implements Comparable<Vi
     private final String strVal;
 
     /**
-     * Creates a new ephemeral port based on the ID of the specified channel.
-     * Note that we prepend an upper-case character so that it never conflicts with
-     * the addresses created by a user, which are always lower-cased on construction time.
+     * Creates a new ephemeral port based on the ID of the specified channel. Note that we prepend an upper-case
+     * character so that it never conflicts with the addresses created by a user, which are always lower-cased on
+     * construction time.
      */
     VirtualAddress(Channel channel) {
         StringBuilder buf = new StringBuilder(16);

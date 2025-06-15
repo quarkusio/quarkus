@@ -48,15 +48,9 @@ public class CDIAccessDefaultTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithSecuredMethods.class,
-                            IdentityMock.class,
-                            AuthData.class,
-                            SubclassWithDenyAll.class,
-                            SubclassWithoutAnnotations.class,
-                            TestException.class,
-                            SubclassWithPermitAll.class,
-                            SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithSecuredMethods.class, IdentityMock.class,
+                    AuthData.class, SubclassWithDenyAll.class, SubclassWithoutAnnotations.class, TestException.class,
+                    SubclassWithPermitAll.class, SecurityTestUtils.class));
 
     @Test
     public void shouldFailToAccessForbidden() {

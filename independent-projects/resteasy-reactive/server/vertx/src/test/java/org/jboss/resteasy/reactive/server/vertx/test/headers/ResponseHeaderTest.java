@@ -30,92 +30,59 @@ public class ResponseHeaderTest {
 
     @Test
     public void testReturnUni() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/uni")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/uni").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testReturnUniAndContainsResponseStatus() {
-        RestAssured
-                .given()
-                .get("/test/uni2")
-                .then()
-                .statusCode(201)
-                .headers(Collections.singletonMap("foo", "bar"));
+        RestAssured.given().get("/test/uni2").then().statusCode(201).headers(Collections.singletonMap("foo", "bar"));
     }
 
     @Test
     public void testReturnMulti() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/multi")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/multi").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testReturnCompletionStage() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/completion")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/completion").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testReturnString() {
-        Map<String, String> expectedHeaders = Map.of(
-                "Access-Control-Allow-Origin", "*",
-                "Keep-Alive", "timeout=5, max=997");
-        RestAssured
-                .given()
-                .get("/test/plain")
-                .then()
-                .statusCode(200)
-                .headers(expectedHeaders);
+        Map<String, String> expectedHeaders = Map.of("Access-Control-Allow-Origin", "*", "Keep-Alive",
+                "timeout=5, max=997");
+        RestAssured.given().get("/test/plain").then().statusCode(200).headers(expectedHeaders);
     }
 
     @Test
     public void testUniThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_uni")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_uni").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
 
     }
 
     @Test
     public void testMultiThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_multi")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_multi").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
 
     @Test
     public void testCompletionStageThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_completion")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_completion").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
 
     @Test
     public void testStringThrowsException() {
-        Headers headers = RestAssured.given().get("/test/exception_plain")
-                .then().extract().headers();
+        Headers headers = RestAssured.given().get("/test/exception_plain").then().extract().headers();
         assertFalse(headers.hasHeaderWithName("Access-Control-Allow-Origin"));
     }
 

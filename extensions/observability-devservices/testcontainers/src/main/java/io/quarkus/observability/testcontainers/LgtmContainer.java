@@ -112,14 +112,12 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-prometheus.json"),
                 "/otel-lgtm/grafana-dashboard-quarkus-micrometer-prometheus.json");
-        withCopyFileToContainer(
-                MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-otlp.json"),
+        withCopyFileToContainer(MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-otlp.json"),
                 "/otel-lgtm/grafana-dashboard-quarkus-micrometer-otlp.json");
         withCopyFileToContainer(
                 MountableFile.forClasspathResource("/grafana-dashboard-quarkus-micrometer-opentelemetry.json"),
                 "/otel-lgtm/grafana-dashboard-quarkus-micrometer-opentelemetry.json");
-        withCopyFileToContainer(
-                MountableFile.forClasspathResource("/grafana-dashboard-opentelemetry-logging.json"),
+        withCopyFileToContainer(MountableFile.forClasspathResource("/grafana-dashboard-opentelemetry-logging.json"),
                 "/otel-lgtm/grafana-dashboard-opentelemetry-logging.json");
 
         addFileToContainer(getPrometheusConfig().getBytes(), "/otel-lgtm/prometheus.yaml");
@@ -127,13 +125,11 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
 
     @Override
     protected WaitStrategy waitStrategy() {
-        return new WaitAllStrategy()
-                .withStartupTimeout(config.timeout())
-                .withStrategy(super.waitStrategy())
-                .withStrategy(
-                        Wait.forLogMessage(".*(The OpenTelemetry collector and the Grafana LGTM stack are up and running|" +
-                                "All components are up and running).*", 1)
-                                .withStartupTimeout(config.timeout()));
+        return new WaitAllStrategy().withStartupTimeout(config.timeout()).withStrategy(super.waitStrategy())
+                .withStrategy(Wait
+                        .forLogMessage(".*(The OpenTelemetry collector and the Grafana LGTM stack are up and running|"
+                                + "All components are up and running).*", 1)
+                        .withStartupTimeout(config.timeout()));
     }
 
     @Override
@@ -180,15 +176,14 @@ public class LgtmContainer extends GrafanaContainer<LgtmContainer, LgtmConfig> {
 
             // On Linux, you can’t automatically resolve host.docker.internal,
             // you need to provide the following run flag when you start the container:
-            //--add-host=host.docker.internal:host-gateway
+            // --add-host=host.docker.internal:host-gateway
             if (OS.determineOS() == OS.LINUX) {
-                withCreateContainerCmdModifier(cmd -> cmd
-                        .getHostConfig()
-                        .withExtraHosts("host.docker.internal:host-gateway"));
+                withCreateContainerCmdModifier(
+                        cmd -> cmd.getHostConfig().withExtraHosts("host.docker.internal:host-gateway"));
             }
 
-            prometheusConfig += String.format(PROMETHEUS_CONFIG_SCRAPE, config.serviceName(), rootPath, metricsPath, scraping,
-                    "host.docker.internal", httpPort);
+            prometheusConfig += String.format(PROMETHEUS_CONFIG_SCRAPE, config.serviceName(), rootPath, metricsPath,
+                    scraping, "host.docker.internal", httpPort);
         }
         return prometheusConfig;
     }

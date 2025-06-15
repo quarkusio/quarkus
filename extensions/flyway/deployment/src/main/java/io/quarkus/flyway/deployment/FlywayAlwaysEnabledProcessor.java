@@ -23,8 +23,7 @@ public class FlywayAlwaysEnabledProcessor {
      */
     @BuildStep
     public RuntimeReinitializedClassBuildItem reinitInsertRowLock() {
-        return new RuntimeReinitializedClassBuildItem(
-                "org.flywaydb.core.internal.database.InsertRowLock");
+        return new RuntimeReinitializedClassBuildItem("org.flywaydb.core.internal.database.InsertRowLock");
     }
 
     @BuildStep

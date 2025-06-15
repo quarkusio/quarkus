@@ -23,8 +23,7 @@ import io.smallrye.certs.junit5.Certificates;
 @Certificates(baseDir = "target/certs", certificates = {
         @Certificate(name = "test-alias-p12", password = "password", formats = { Format.PKCS12 }, aliases = {
                 @Alias(name = "alias1", password = "alias-password", subjectAlternativeNames = "dns:acme.org"),
-                @Alias(name = "alias2", password = "alias-password-2", subjectAlternativeNames = "dns:example.com") })
-})
+                @Alias(name = "alias2", password = "alias-password-2", subjectAlternativeNames = "dns:example.com") }) })
 public class DefaultP12KeyStoreWithAliasTest {
 
     private static final String configuration = """
@@ -36,8 +35,7 @@ public class DefaultP12KeyStoreWithAliasTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;

@@ -61,8 +61,8 @@ class HandlerDescriptor {
     }
 
     /**
-     * @return {@code true} if the method is annotated with a constraint or {@code @Valid} or any parameter has such kind of
-     *         annotation.
+     * @return {@code true} if the method is annotated with a constraint or {@code @Valid} or any parameter has such
+     *         kind of annotation.
      */
     boolean requireValidation() {
         if (validationAnnotations == null) {

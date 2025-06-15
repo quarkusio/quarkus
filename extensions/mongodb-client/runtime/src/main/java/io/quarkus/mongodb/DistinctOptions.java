@@ -17,7 +17,9 @@ public class DistinctOptions {
     /**
      * Sets the query filter to apply to the query.
      *
-     * @param filter the filter, which may be null.
+     * @param filter
+     *        the filter, which may be null.
+     *
      * @return this
      */
     public DistinctOptions filter(Bson filter) {
@@ -28,8 +30,11 @@ public class DistinctOptions {
     /**
      * Sets the maximum execution time on the server for this operation.
      *
-     * @param maxTime the max time
-     * @param timeUnit the time unit, which may not be null
+     * @param maxTime
+     *        the max time
+     * @param timeUnit
+     *        the time unit, which may not be null
+     *
      * @return this
      */
     public DistinctOptions maxTime(long maxTime, TimeUnit timeUnit) {
@@ -40,12 +45,13 @@ public class DistinctOptions {
 
     /**
      * Sets the collation options
-     *
      * <p>
      * A null value represents the server default.
      * </p>
      *
-     * @param collation the collation options to use
+     * @param collation
+     *        the collation options to use
+     *
      * @return this
      */
     public DistinctOptions collation(Collation collation) {

@@ -11,11 +11,9 @@ import io.quarkus.websockets.next.WebSocketException;
 public class TooManyOnMessageTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(TooManyOnMessage.class);
-            })
-            .setExpectedException(WebSocketException.class);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(TooManyOnMessage.class);
+    }).setExpectedException(WebSocketException.class);
 
     @Test
     void verifyThatEndpointWithMultipleOnMessageMethodsFailsToDeploy() {

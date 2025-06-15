@@ -13,14 +13,12 @@ public class MyTestResource {
 
     @GET
     public CompletionStage<String> compute() {
-        return ReactiveStreams.of(1, 2, 3)
-                .map(i -> i + 1) // 2, 3, 4
+        return ReactiveStreams.of(1, 2, 3).map(i -> i + 1) // 2, 3, 4
                 .flatMapRsPublisher(x -> ReactiveStreams.of(x, x).buildRs()) // 2,2,3,3,4,4
                 .distinct() // 2, 3, 4
                 .limit(2) // 2, 3
                 .collect(AtomicInteger::new, AtomicInteger::addAndGet)// 5
-                .run()
-                .thenApply(i -> Integer.toString(i.get())); // "5"
+                .run().thenApply(i -> Integer.toString(i.get())); // "5"
     }
 
 }

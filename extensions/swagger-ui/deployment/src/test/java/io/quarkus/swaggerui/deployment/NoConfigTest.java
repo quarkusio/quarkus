@@ -11,8 +11,7 @@ import io.restassured.RestAssured;
 public class NoConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication();
 
     @Test
     public void shouldUseDefaultConfig() {

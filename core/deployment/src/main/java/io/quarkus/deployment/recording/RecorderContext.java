@@ -16,9 +16,12 @@ public interface RecorderContext {
      * Registers a way to construct an object via a non-default constructor. Each object may only have at most one
      * non-default constructor registered
      *
-     * @param constructor The constructor
-     * @param parameters A function that maps the object to a list of constructor parameters
-     * @param <T> The type of the object
+     * @param constructor
+     *        The constructor
+     * @param parameters
+     *        A function that maps the object to a list of constructor parameters
+     * @param <T>
+     *        The type of the object
      */
     <T> void registerNonDefaultConstructor(Constructor<T> constructor, Function<T, List<Object>> parameters);
 
@@ -26,9 +29,12 @@ public interface RecorderContext {
      * Registers a substitution to allow objects that are not serializable to bytecode to be substituted for an object
      * that is.
      *
-     * @param from The class of the non-serializable object
-     * @param to The class to serialize to
-     * @param substitution The subclass of {@link ObjectSubstitution} that performs the substitution
+     * @param from
+     *        The class of the non-serializable object
+     * @param to
+     *        The class to serialize to
+     * @param substitution
+     *        The subclass of {@link ObjectSubstitution} that performs the substitution
      */
     <F, T> void registerSubstitution(Class<F> from, Class<T> to,
             Class<? extends ObjectSubstitution<? super F, ? super T>> substitution);
@@ -36,7 +42,8 @@ public interface RecorderContext {
     /**
      * Register an object loader.
      *
-     * @param loader the object loader (must not be {@code null})
+     * @param loader
+     *        the object loader (must not be {@code null})
      */
     void registerObjectLoader(ObjectLoader loader);
 
@@ -44,11 +51,14 @@ public interface RecorderContext {
      * Creates a Class instance that can be passed to a recording proxy as a substitute for a class that is not loadable
      * at processing time. At runtime the actual class will be passed into the invoked method.
      *
-     * @param name The fully-qualified class name
+     * @param name
+     *        The fully-qualified class name
+     *
      * @return A Class instance that can be passed to a recording proxy
-     * @deprecated This construct should not be needed in most use cases since directly loading deployment/application classes
-     *             at processing time in build steps is safe. However, there are use cases where this method comes in handy,
-     *             such as referring to classes that were generated in previous build steps using
+     *
+     * @deprecated This construct should not be needed in most use cases since directly loading deployment/application
+     *             classes at processing time in build steps is safe. However, there are use cases where this method
+     *             comes in handy, such as referring to classes that were generated in previous build steps using
      *             {@link io.quarkus.deployment.builditem.GeneratedClassBuildItem}.
      */
     @Deprecated(forRemoval = false)
@@ -59,8 +69,11 @@ public interface RecorderContext {
      * <p>
      * This object can be passed into recorders, but must not be used directly at deployment time
      *
-     * @param name The name of the class
-     * @param <T> The type of the class
+     * @param name
+     *        The name of the class
+     * @param <T>
+     *        The type of the class
+     *
      * @return The class instance proxy
      */
     <T> RuntimeValue<T> newInstance(String name);

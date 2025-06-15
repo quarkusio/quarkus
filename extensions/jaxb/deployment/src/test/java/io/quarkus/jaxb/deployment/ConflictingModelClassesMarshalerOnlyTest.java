@@ -26,11 +26,8 @@ public class ConflictingModelClassesMarshalerOnlyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-enable-validation.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            io.quarkus.jaxb.deployment.one.Model.class,
-                            io.quarkus.jaxb.deployment.two.Model.class))
+            .withConfigurationResource("application-enable-validation.properties").withApplicationRoot((jar) -> jar
+                    .addClasses(io.quarkus.jaxb.deployment.one.Model.class, io.quarkus.jaxb.deployment.two.Model.class))
             .assertException(e -> {
                 assertThat(e).isInstanceOf(DeploymentException.class);
                 assertThat(e.getMessage()).isEqualTo("Failed to create or validate the default JAXBContext");

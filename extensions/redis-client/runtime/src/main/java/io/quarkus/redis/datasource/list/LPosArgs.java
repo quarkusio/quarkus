@@ -17,7 +17,9 @@ public class LPosArgs implements RedisCommandExtraArguments {
     /**
      * The RANK option specifies the "rank" of the first element to return, in case there are multiple matches.
      *
-     * @param rank the rank value, can be negative
+     * @param rank
+     *        the rank value, can be negative
+     *
      * @return the current {@code LPosArgs}
      **/
     public LPosArgs rank(long rank) {
@@ -30,7 +32,9 @@ public class LPosArgs implements RedisCommandExtraArguments {
      * items. So for instance specifying MAXLEN 1000 will make sure that the command performs only 1000 comparisons,
      * effectively running the algorithm on a subset of the list.
      *
-     * @param max the max value, must be positive
+     * @param max
+     *        the max value, must be positive
+     *
      * @return the current {@code LPosArgs}
      **/
     public LPosArgs maxlen(long max) {

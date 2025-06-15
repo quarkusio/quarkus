@@ -63,8 +63,8 @@ public class TransactionalAutoSuggestCommandsTest extends DatasourceTestBase {
         assertThat((List<?>) result.get(7)).hasSize(1);
 
         List<Suggestion> sug1 = result.get(6);
-        assertThat(sug1.stream().map(Suggestion::suggestion).collect(Collectors.toList())).containsExactlyInAnyOrder("abcd",
-                "abcde");
+        assertThat(sug1.stream().map(Suggestion::suggestion).collect(Collectors.toList()))
+                .containsExactlyInAnyOrder("abcd", "abcde");
         List<Suggestion> sug2 = result.get(7);
         assertThat(sug2.get(0).suggestion()).isEqualTo("abcde");
         assertThat(sug2.get(0).score()).isEqualTo(1.0);
@@ -86,8 +86,8 @@ public class TransactionalAutoSuggestCommandsTest extends DatasourceTestBase {
             var u7 = auto.ftSugget(key, "abcd");
             var u8 = auto.ftSugget(key, "ab", new GetArgs().max(1).withScores());
 
-            return u1.chain(() -> u2).chain(() -> u3).chain(() -> u4).chain(() -> u5)
-                    .chain(() -> u6).chain(() -> u7).chain(() -> u8);
+            return u1.chain(() -> u2).chain(() -> u3).chain(() -> u4).chain(() -> u5).chain(() -> u6).chain(() -> u7)
+                    .chain(() -> u8);
         }).await().indefinitely();
 
         assertThat(result.size()).isEqualTo(8);
@@ -102,8 +102,8 @@ public class TransactionalAutoSuggestCommandsTest extends DatasourceTestBase {
         assertThat((List<?>) result.get(7)).hasSize(1);
 
         List<Suggestion> sug1 = result.get(6);
-        assertThat(sug1.stream().map(Suggestion::suggestion).collect(Collectors.toList())).containsExactlyInAnyOrder("abcd",
-                "abcde");
+        assertThat(sug1.stream().map(Suggestion::suggestion).collect(Collectors.toList()))
+                .containsExactlyInAnyOrder("abcd", "abcde");
         List<Suggestion> sug2 = result.get(7);
         assertThat(sug2.get(0).suggestion()).isEqualTo("abcde");
         assertThat(sug2.get(0).score()).isEqualTo(1.0);

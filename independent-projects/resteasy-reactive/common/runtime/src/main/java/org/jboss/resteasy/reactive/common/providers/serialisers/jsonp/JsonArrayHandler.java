@@ -20,7 +20,8 @@ public class JsonArrayHandler implements MessageBodyReader<JsonArray>, MessageBo
     }
 
     public void writeTo(JsonArray o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         try (JsonWriter writer = JsonpUtil.writer(entityStream, mediaType)) {
             writer.writeArray(o);
         }
@@ -33,7 +34,8 @@ public class JsonArrayHandler implements MessageBodyReader<JsonArray>, MessageBo
 
     @Override
     public JsonArray readFrom(Class<JsonArray> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return JsonpUtil.reader(entityStream, mediaType).readArray();
     }
 }

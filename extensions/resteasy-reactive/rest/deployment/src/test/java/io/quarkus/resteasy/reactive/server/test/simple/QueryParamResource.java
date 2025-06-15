@@ -11,7 +11,8 @@ public class QueryParamResource {
 
     private final String queryParamValue;
 
-    public QueryParamResource(HelloService helloService, @QueryParam("q1") String queryParamValue, @Context UriInfo uriInfo) {
+    public QueryParamResource(HelloService helloService, @QueryParam("q1") String queryParamValue,
+            @Context UriInfo uriInfo) {
         this.queryParamValue = queryParamValue;
     }
 

@@ -21,11 +21,9 @@ import io.vertx.mutiny.core.datagram.DatagramSocket;
 public class VertxUdpMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ParticipantA.class, ParticipantB.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ParticipantA.class, ParticipantB.class));
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
@@ -55,14 +53,12 @@ public class VertxUdpMetricsTest {
         clientB.start();
         try {
             await().until(clientB::isDone);
-            Assertions.assertTrue(registry.find("udp.bytes.read").tags("address", "127.0.0.1:8888").summary()
-                    .totalAmount() > 0);
-            Assertions.assertTrue(registry.find("udp.bytes.read").tags("address", "127.0.0.1:8889").summary()
-                    .totalAmount() > 0);
-            Assertions.assertNotNull(
-                    registry.find("udp.bytes.written").tags("address", "127.0.0.1:8889").summary());
-            Assertions.assertNotNull(
-                    registry.find("udp.bytes.written").tags("address", "127.0.0.1:8888").summary());
+            Assertions.assertTrue(
+                    registry.find("udp.bytes.read").tags("address", "127.0.0.1:8888").summary().totalAmount() > 0);
+            Assertions.assertTrue(
+                    registry.find("udp.bytes.read").tags("address", "127.0.0.1:8889").summary().totalAmount() > 0);
+            Assertions.assertNotNull(registry.find("udp.bytes.written").tags("address", "127.0.0.1:8889").summary());
+            Assertions.assertNotNull(registry.find("udp.bytes.written").tags("address", "127.0.0.1:8888").summary());
         } finally {
             clientA.stop();
             clientB.stop();
@@ -77,12 +73,10 @@ public class VertxUdpMetricsTest {
         private DatagramSocket server;
 
         public void start() {
-            server = vertx.createDatagramSocket()
-                    .handler(packet -> {
-                        server.sendAndForget(packet.data().toString().toUpperCase(), packet.sender().port(),
-                                packet.sender().host());
-                    })
-                    .listenAndAwait(8888, "localhost");
+            server = vertx.createDatagramSocket().handler(packet -> {
+                server.sendAndForget(packet.data().toString().toUpperCase(), packet.sender().port(),
+                        packet.sender().host());
+            }).listenAndAwait(8888, "localhost");
         }
 
         public void stop() {
@@ -101,9 +95,7 @@ public class VertxUdpMetricsTest {
         private volatile boolean received;
 
         public void start() {
-            server = vertx.createDatagramSocket()
-                    .handler(packet -> received = true)
-                    .listenAndAwait(8889, "localhost");
+            server = vertx.createDatagramSocket().handler(packet -> received = true).listenAndAwait(8889, "localhost");
 
             server.sendAndAwait("hello", 8888, "localhost");
         }

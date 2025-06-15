@@ -66,10 +66,8 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
 
     private final AtomicBoolean closed;
 
-    public QuarkusProxyInvocationHandler(final Class<?> restClientInterface,
-            final Object target,
-            final Set<Object> providerInstances,
-            final ResteasyClient client, final BeanManager beanManager) {
+    public QuarkusProxyInvocationHandler(final Class<?> restClientInterface, final Object target,
+            final Set<Object> providerInstances, final ResteasyClient client, final BeanManager beanManager) {
         this.target = target;
         this.providerInstances = providerInstances;
         this.client = client;
@@ -113,15 +111,16 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
 
                     int index = 0;
                     for (Object arg : args) {
-                        // ParamConverter's are not allowed to be passed null values. If we have a null value do not process
+                        // ParamConverter's are not allowed to be passed null values. If we have a null value do not
+                        // process
                         // it through the provider.
                         if (arg == null) {
                             continue;
                         }
 
                         if (parameterAnnotations[index].length > 0) { // does a parameter converter apply?
-                            ParamConverter<?> converter = ((ParamConverterProvider) p).getConverter(arg.getClass(), null,
-                                    parameterAnnotations[index]);
+                            ParamConverter<?> converter = ((ParamConverterProvider) p).getConverter(arg.getClass(),
+                                    null, parameterAnnotations[index]);
                             if (converter != null) {
                                 Type[] genericTypes = getGenericTypes(converter.getClass());
                                 if (genericTypes.length == 1) {
@@ -167,7 +166,8 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
         List<QuarkusInvocationContextImpl.InterceptorInvocation> chain = interceptorChains.get(method);
         if (chain != null) {
             // Invoke business method interceptors
-            return new QuarkusInvocationContextImpl(target, method, args, chain, interceptorBindingsMap.get(method)).proceed();
+            return new QuarkusInvocationContextImpl(target, method, args, chain, interceptorBindingsMap.get(method))
+                    .proceed();
         } else {
             try {
                 final Object result = method.invoke(target, args);
@@ -188,7 +188,8 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
                         }
                     }
                     if (!hasHttpMethod && hasPath) {
-                        // Create a proxy of the return type re-using the providers and client, but do not add the required
+                        // Create a proxy of the return type re-using the providers and client, but do not add the
+                        // required
                         // interfaces for the sub-resource.
                         return createProxy(returnType, result, false, providerInstances, client);
                     }
@@ -211,8 +212,8 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
                         throw cause;
                     }
                 } else {
-                    if (cause instanceof ProcessingException &&
-                            cause.getCause() instanceof ClientHeaderFillingException) {
+                    if (cause instanceof ProcessingException
+                            && cause.getCause() instanceof ClientHeaderFillingException) {
                         throw cause.getCause().getCause();
                     }
                     if (cause instanceof RuntimeException) {
@@ -231,16 +232,21 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
      * {@link RestClientProxy} and {@link Closeable}.
      * </p>
      *
-     * @param resourceInterface the resource interface to create the proxy for
-     * @param target the target object for the proxy
-     * @param addExtendedInterfaces {@code true} if the proxy should also implement {@link RestClientProxy} and
-     *        {@link Closeable}
-     * @param providers the providers for the client
-     * @param client the client to use
+     * @param resourceInterface
+     *        the resource interface to create the proxy for
+     * @param target
+     *        the target object for the proxy
+     * @param addExtendedInterfaces
+     *        {@code true} if the proxy should also implement {@link RestClientProxy} and {@link Closeable}
+     * @param providers
+     *        the providers for the client
+     * @param client
+     *        the client to use
+     *
      * @return the new proxy
      */
-    static Object createProxy(final Class<?> resourceInterface, final Object target, final boolean addExtendedInterfaces,
-            final Set<Object> providers, final ResteasyClient client) {
+    static Object createProxy(final Class<?> resourceInterface, final Object target,
+            final boolean addExtendedInterfaces, final Set<Object> providers, final ResteasyClient client) {
         final Class<?>[] interfaces;
         if (addExtendedInterfaces) {
             interfaces = new Class<?>[3];
@@ -352,8 +358,7 @@ public class QuarkusProxyInvocationHandler implements InvocationHandler {
     }
 
     private static Annotation[] merge(List<Annotation> methodLevelBindings, List<Annotation> classLevelBindings) {
-        Set<Class<? extends Annotation>> types = methodLevelBindings.stream()
-                .map(a -> a.annotationType())
+        Set<Class<? extends Annotation>> types = methodLevelBindings.stream().map(a -> a.annotationType())
                 .collect(Collectors.toSet());
         List<Annotation> merged = new ArrayList<>(methodLevelBindings);
         for (Annotation annotation : classLevelBindings) {

@@ -17,7 +17,8 @@ import org.jboss.resteasy.reactive.common.processor.DefaultProducesHandler;
 
 public class JsonDefaultProducersHandler implements DefaultProducesHandler {
 
-    private static final List<MediaType> PRODUCES_APPLICATION_JSON = Collections.singletonList(MediaType.APPLICATION_JSON_TYPE);
+    private static final List<MediaType> PRODUCES_APPLICATION_JSON = Collections
+            .singletonList(MediaType.APPLICATION_JSON_TYPE);
 
     private static final Set<DotName> SUPPORTED_JAVA_TYPES = Set.of(COLLECTION, LIST, SET, MAP);
 

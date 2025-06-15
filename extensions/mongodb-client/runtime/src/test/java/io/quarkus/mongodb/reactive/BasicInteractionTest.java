@@ -50,9 +50,7 @@ class BasicInteractionTest extends MongoTestBase {
 
     @Test
     void testConnection() {
-        assertThat(client.listDatabases()
-                .collect().first()
-                .await().indefinitely()).isNotNull();
+        assertThat(client.listDatabases().collect().first().await().indefinitely()).isNotNull();
     }
 
     @Test
@@ -70,12 +68,9 @@ class BasicInteractionTest extends MongoTestBase {
     @Test
     void testDocumentInsertion() {
         List<Integer> books = Arrays.asList(27464, 747854);
-        DBObject person = new BasicDBObject("_id", "jo")
-                .append("name", "Jo Bloggs")
-                .append("address", new BasicDBObject("street", "123 Fake St")
-                        .append("city", "Faketon")
-                        .append("state", "MA")
-                        .append("zip", 12345))
+        DBObject person = new BasicDBObject("_id", "jo").append("name", "Jo Bloggs")
+                .append("address", new BasicDBObject("street", "123 Fake St").append("city", "Faketon")
+                        .append("state", "MA").append("zip", 12345))
                 .append("books", books);
 
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
@@ -90,12 +85,9 @@ class BasicInteractionTest extends MongoTestBase {
     @Test
     void testDocumentInsertionWithOptions() {
         List<Integer> books = Arrays.asList(27464, 747854);
-        DBObject person = new BasicDBObject("_id", "jo")
-                .append("name", "Jo Bloggs")
-                .append("address", new BasicDBObject("street", "123 Fake St")
-                        .append("city", "Faketon")
-                        .append("state", "MA")
-                        .append("zip", 12345))
+        DBObject person = new BasicDBObject("_id", "jo").append("name", "Jo Bloggs")
+                .append("address", new BasicDBObject("street", "123 Fake St").append("city", "Faketon")
+                        .append("state", "MA").append("zip", 12345))
                 .append("books", books);
 
         ReactiveMongoDatabase database = client.getDatabase(DATABASE);
@@ -119,12 +111,12 @@ class BasicInteractionTest extends MongoTestBase {
 
         collection.insertMany(documents).await().indefinitely();
         Long count = collection.countDocuments().await().indefinitely();
-        Long countWithOption = collection.countDocuments(new Document(), new CountOptions().limit(10))
-                .await().indefinitely();
+        Long countWithOption = collection.countDocuments(new Document(), new CountOptions().limit(10)).await()
+                .indefinitely();
         Long estimated = collection.estimatedDocumentCount().await().indefinitely();
         Long estimatedWithOptions = collection
-                .estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(10, TimeUnit.SECONDS))
-                .await().indefinitely();
+                .estimatedDocumentCount(new EstimatedDocumentCountOptions().maxTime(10, TimeUnit.SECONDS)).await()
+                .indefinitely();
         assertThat(count).isEqualTo(100);
         assertThat(countWithOption).isEqualTo(10);
         assertThat(estimated).isEqualTo(100);
@@ -190,8 +182,8 @@ class BasicInteractionTest extends MongoTestBase {
         Long count = collection.countDocuments().await().indefinitely();
         assertThat(count).isEqualTo(100);
 
-        UpdateResult result = collection.updateOne(eq("i", 10), new Document("$set", new Document("i", 110)))
-                .await().indefinitely();
+        UpdateResult result = collection.updateOne(eq("i", 10), new Document("$set", new Document("i", 110))).await()
+                .indefinitely();
         assertThat(result.getModifiedCount()).isEqualTo(1);
         assertThat(result.getMatchedCount()).isEqualTo(1);
 
@@ -253,9 +245,9 @@ class BasicInteractionTest extends MongoTestBase {
         }
         collection.insertMany(documents).await().indefinitely();
 
-        DeleteResult result = collection.deleteOne(eq("i", 10),
-                new DeleteOptions().collation(
-                        Collation.builder().locale("en").caseLevel(true).build()))
+        DeleteResult result = collection
+                .deleteOne(eq("i", 10),
+                        new DeleteOptions().collation(Collation.builder().locale("en").caseLevel(true).build()))
                 .await().indefinitely();
         assertThat(result.getDeletedCount()).isEqualTo(1);
         assertThat(collection.find(eq("i", 10)).collect().first().await().indefinitely()).isNull();
@@ -292,8 +284,9 @@ class BasicInteractionTest extends MongoTestBase {
         }
         collection.insertMany(documents).await().indefinitely();
 
-        DeleteResult result = collection.deleteMany(gte("i", 90), new DeleteOptions().collation(
-                Collation.builder().locale("en").caseLevel(true).build()))
+        DeleteResult result = collection
+                .deleteMany(gte("i", 90),
+                        new DeleteOptions().collation(Collation.builder().locale("en").caseLevel(true).build()))
                 .await().indefinitely();
         assertThat(result.getDeletedCount()).isEqualTo(10);
         assertThat(collection.find(eq("i", 90)).collect().first().await().asOptional().indefinitely()).isEmpty();
@@ -315,8 +308,8 @@ class BasicInteractionTest extends MongoTestBase {
         // It contains the default index on _id.
         assertThat(collection.listIndexes().collect().asList().await().indefinitely()).hasSize(1);
 
-        String i = collection.createIndex(new Document("i", 1), new IndexOptions().name("my-index"))
-                .await().indefinitely();
+        String i = collection.createIndex(new Document("i", 1), new IndexOptions().name("my-index")).await()
+                .indefinitely();
         assertThat(i).isEqualTo("my-index");
         assertThat(collection.listIndexes().collect().asList().await().indefinitely()).hasSize(2);
 

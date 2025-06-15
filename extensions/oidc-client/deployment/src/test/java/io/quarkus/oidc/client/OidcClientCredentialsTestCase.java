@@ -14,17 +14,12 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KeycloakRealmClientCredentialsManager.class)
 public class OidcClientCredentialsTestCase {
 
-    private static Class<?>[] testClasses = {
-            OidcClientsResource.class,
-            ProtectedResource.class,
-            SecretProvider.class
-    };
+    private static Class<?>[] testClasses = { OidcClientsResource.class, ProtectedResource.class,
+            SecretProvider.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-oidc-client-credentials.properties", "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("application-oidc-client-credentials.properties", "application.properties"));
 
     @Test
     public void testGetTokenDefaultClient() {
@@ -41,19 +36,13 @@ public class OidcClientCredentialsTestCase {
         String[] tokens = RestAssured.when().get("/clients/tokenOnDemand").body().asString().split(" ");
         assertTokensNotNull(tokens);
 
-        RestAssured.given().auth().oauth2(tokens[0])
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(tokens[0]).when().get("/protected").then().statusCode(200)
                 .body(equalTo("service-account-quarkus-app"));
     }
 
     private void doTestGetTokenClient(String clientId) {
         String token = RestAssured.when().get("/clients/token/" + clientId).body().asString();
-        RestAssured.given().auth().oauth2(token)
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(token).when().get("/protected").then().statusCode(200)
                 .body(equalTo("service-account-quarkus-app"));
 
     }
@@ -62,10 +51,7 @@ public class OidcClientCredentialsTestCase {
         String[] tokens = RestAssured.when().get("/clients/tokens/" + clientId).body().asString().split(" ");
         assertTokensNotNull(tokens);
 
-        RestAssured.given().auth().oauth2(tokens[0])
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(tokens[0]).when().get("/protected").then().statusCode(200)
                 .body(equalTo("service-account-quarkus-app"));
     }
 

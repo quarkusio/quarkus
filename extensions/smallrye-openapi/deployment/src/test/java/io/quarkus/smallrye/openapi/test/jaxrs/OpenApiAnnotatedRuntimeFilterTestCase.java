@@ -11,15 +11,12 @@ public class OpenApiAnnotatedRuntimeFilterTestCase {
     private static final String OPEN_API_PATH = "/q/openapi";
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class, MyRunTimeFilter.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class, MyRunTimeFilter.class));
 
     @Test
     public void testOpenApiFilterResource() {
-        RestAssured.given().header("Accept", "application/json")
-                .when().get(OPEN_API_PATH)
-                .then()
+        RestAssured.given().header("Accept", "application/json").when().get(OPEN_API_PATH).then()
                 .header("Content-Type", "application/json;charset=UTF-8")
                 .body("info.description", Matchers.startsWith("Created from Annotated Runtime filter"));
 

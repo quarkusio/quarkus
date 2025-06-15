@@ -29,8 +29,8 @@ public class MultipartResourceWithAllUploads {
             throw new RuntimeException("should not have dispatched");
         }
         FileUpload txtFile = formData.getUploads().stream().filter(f -> f.name().equals("txtFile")).findFirst().get();
-        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - " + formData.getStatus()
-                + " - " + formData.getUploads().size() + " - " + txtFile.contentType();
+        return formData.getName() + " - " + formData.active + " - " + times * formData.getNum() + " - "
+                + formData.getStatus() + " - " + formData.getUploads().size() + " - " + txtFile.contentType();
     }
 
     @POST
@@ -38,20 +38,17 @@ public class MultipartResourceWithAllUploads {
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @NonBlocking
     @Path("/param/simple/{times}")
-    public String simple(
-            @RestForm
-            // don't set a part type, use the default
-            String name,
-            @RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
+    public String simple(@RestForm
+    // don't set a part type, use the default
+    String name, @RestForm @PartType(MediaType.TEXT_PLAIN) Status status,
             @RestForm(FileUpload.ALL) List<FileUpload> uploads,
-            @RestForm @PartType(MediaType.TEXT_PLAIN) boolean active,
-            @RestForm @PartType(MediaType.TEXT_PLAIN) int num,
+            @RestForm @PartType(MediaType.TEXT_PLAIN) boolean active, @RestForm @PartType(MediaType.TEXT_PLAIN) int num,
             Integer times) {
         if (BlockingOperationControl.isBlockingAllowed()) {
             throw new RuntimeException("should not have dispatched");
         }
         FileUpload txtFile = uploads.stream().filter(f -> f.name().equals("txtFile")).findFirst().get();
-        return name + " - " + active + " - " + times * num + " - " + status
-                + " - " + uploads.size() + " - " + txtFile.contentType();
+        return name + " - " + active + " - " + times * num + " - " + status + " - " + uploads.size() + " - "
+                + txtFile.contentType();
     }
 }

@@ -37,12 +37,12 @@ public class SecurityContextOverrideHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         if (!requestContext.isSecurityContextSet()) {
-            //nothing to do
+            // nothing to do
             return;
         }
         SecurityContext modified = requestContext.getSecurityContext();
         if (modified instanceof ResteasyReactiveSecurityContext) {
-            //an original security context, it has not been modified
+            // an original security context, it has not been modified
             return;
         }
         updateIdentity(requestContext, modified);

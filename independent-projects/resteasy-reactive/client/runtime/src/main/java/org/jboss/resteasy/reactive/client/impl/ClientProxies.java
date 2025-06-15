@@ -35,13 +35,14 @@ public class ClientProxies {
                     throw new IllegalStateException("REST client interface: " + clazz
                             + " was not indexed at build time. See https://quarkus.io/guides/cdi-reference#bean_discovery for information on how to index the module that contains it.");
                 } else {
-                    throw new IllegalArgumentException("Not a REST client interface: " + clazz + ". No @Path annotation " +
-                            "found on the class or any methods of the interface and no HTTP method annotations " +
-                            "(@POST, @PUT, @GET, @HEAD, @DELETE, etc) found on any of the methods");
+                    throw new IllegalArgumentException("Not a REST client interface: " + clazz
+                            + ". No @Path annotation "
+                            + "found on the class or any methods of the interface and no HTTP method annotations "
+                            + "(@POST, @PUT, @GET, @HEAD, @DELETE, etc) found on any of the methods");
                 }
             }
         }
-        //noinspection unchecked
+        // noinspection unchecked
         return (T) function.apply(webTarget, providers);
     }
 
@@ -63,8 +64,8 @@ public class ClientProxies {
 
     private boolean isRestClientAnnotation(Annotation annotation) {
         String annClassName = annotation.annotationType().getName();
-        if (annClassName.startsWith("jakarta.ws.rs") || annClassName.startsWith(
-                "org.eclipse.microprofile.rest.client")) {
+        if (annClassName.startsWith("jakarta.ws.rs")
+                || annClassName.startsWith("org.eclipse.microprofile.rest.client")) {
             return true;
         }
         return false;

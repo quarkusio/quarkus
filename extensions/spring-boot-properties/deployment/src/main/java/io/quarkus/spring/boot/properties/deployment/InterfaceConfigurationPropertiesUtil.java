@@ -54,9 +54,9 @@ final class InterfaceConfigurationPropertiesUtil {
     private final BuildProducer<ConfigPropertyBuildItem> configProperties;
     private final BuildProducer<ReflectiveClassBuildItem> reflectiveClasses;
 
-    InterfaceConfigurationPropertiesUtil(IndexView index, YamlListObjectHandler yamlListObjectHandler, ClassOutput classOutput,
-            ClassCreator classCreator,
-            Capabilities capabilities, BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
+    InterfaceConfigurationPropertiesUtil(IndexView index, YamlListObjectHandler yamlListObjectHandler,
+            ClassOutput classOutput, ClassCreator classCreator, Capabilities capabilities,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> defaultConfigValues,
             BuildProducer<ConfigPropertyBuildItem> configProperties,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses) {
         this.index = index;
@@ -79,7 +79,8 @@ final class InterfaceConfigurationPropertiesUtil {
      *  }
      * </pre>
      */
-    void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix, GeneratedClass generatedClass) {
+    void addProducerMethodForInterfaceConfigProperties(DotName interfaceName, String prefix,
+            GeneratedClass generatedClass) {
         String methodName = "produce" + interfaceName.withoutPackagePrefix();
         try (MethodCreator method = classCreator.getMethodCreator(methodName, interfaceName.toString(),
                 Config.class.getName())) {
@@ -88,22 +89,20 @@ final class InterfaceConfigurationPropertiesUtil {
             if (generatedClass.isUnremovable()) {
                 method.addAnnotation(Unremovable.class);
             }
-            method.returnValue(method.newInstance(MethodDescriptor.ofConstructor(generatedClass.getName(), Config.class),
-                    method.getMethodParam(0)));
+            method.returnValue(method.newInstance(
+                    MethodDescriptor.ofConstructor(generatedClass.getName(), Config.class), method.getMethodParam(0)));
         }
     }
 
-    void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface,
-            String prefixStr, ConfigMapping.NamingStrategy namingStrategy,
-            Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
+    void generateImplementationForInterfaceConfigProperties(ClassInfo originalInterface, String prefixStr,
+            ConfigMapping.NamingStrategy namingStrategy, Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
-        generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface,
-                prefixStr, namingStrategy, interfaceToGeneratedClass);
+        generateImplementationForInterfaceConfigPropertiesRec(originalInterface, originalInterface, prefixStr,
+                namingStrategy, interfaceToGeneratedClass);
     }
 
     private String generateImplementationForInterfaceConfigPropertiesRec(ClassInfo originalInterface,
-            ClassInfo currentInterface,
-            String prefixStr, ConfigMapping.NamingStrategy namingStrategy,
+            ClassInfo currentInterface, String prefixStr, ConfigMapping.NamingStrategy namingStrategy,
             Map<DotName, GeneratedClass> interfaceToGeneratedClass) {
 
         Set<DotName> allInterfaces = new HashSet<>();
@@ -118,12 +117,10 @@ final class InterfaceConfigurationPropertiesUtil {
         }
 
         try (ClassCreator interfaceImplClassCreator = ClassCreator.builder().classOutput(classOutput)
-                .interfaces(currentInterface.name().toString()).className(generatedClassName)
-                .build()) {
+                .interfaces(currentInterface.name().toString()).className(generatedClassName).build()) {
 
             FieldDescriptor configField = interfaceImplClassCreator.getFieldCreator("config", Config.class)
-                    .setModifiers(Modifier.PRIVATE)
-                    .getFieldDescriptor();
+                    .setModifiers(Modifier.PRIVATE).getFieldDescriptor();
 
             // generate a constructor that takes MP Config as an argument
             try (MethodCreator ctor = interfaceImplClassCreator.getMethodCreator("<init>", void.class, Config.class)) {
@@ -154,7 +151,8 @@ final class InterfaceConfigurationPropertiesUtil {
                                 + " is not a getter method since it returns void");
                     }
 
-                    NameAndDefaultValue nameAndDefaultValue = determinePropertyNameAndDefaultValue(method, namingStrategy);
+                    NameAndDefaultValue nameAndDefaultValue = determinePropertyNameAndDefaultValue(method,
+                            namingStrategy);
                     String fullConfigName = prefixStr + "." + nameAndDefaultValue.getName();
                     try (MethodCreator methodCreator = interfaceImplClassCreator.getMethodCreator(method.name(),
                             method.returnType().name().toString())) {
@@ -163,12 +161,11 @@ final class InterfaceConfigurationPropertiesUtil {
                             ClassInfo returnTypeClassInfo = index.getClassByName(returnType.name());
                             if ((returnTypeClassInfo != null) && Modifier.isInterface(returnTypeClassInfo.flags())) {
                                 String generatedSubInterfaceImp = generateImplementationForInterfaceConfigPropertiesRec(
-                                        originalInterface, returnTypeClassInfo,
-                                        fullConfigName, namingStrategy, interfaceToGeneratedClass);
+                                        originalInterface, returnTypeClassInfo, fullConfigName, namingStrategy,
+                                        interfaceToGeneratedClass);
 
-                                ResultHandle arcContainer = methodCreator
-                                        .invokeStaticMethod(
-                                                MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
+                                ResultHandle arcContainer = methodCreator.invokeStaticMethod(
+                                        MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class));
                                 ResultHandle configInstanceHandle = methodCreator.invokeInterfaceMethod(
                                         ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class,
                                                 Annotation[].class),
@@ -177,9 +174,8 @@ final class InterfaceConfigurationPropertiesUtil {
                                 ResultHandle config = methodCreator.invokeInterfaceMethod(
                                         ofMethod(InstanceHandle.class, "get", Object.class), configInstanceHandle);
 
-                                ResultHandle interImpl = methodCreator
-                                        .newInstance(MethodDescriptor.ofConstructor(generatedSubInterfaceImp,
-                                                Config.class.getName()), config);
+                                ResultHandle interImpl = methodCreator.newInstance(MethodDescriptor
+                                        .ofConstructor(generatedSubInterfaceImp, Config.class.getName()), config);
                                 methodCreator.returnValue(interImpl);
                                 continue;
                             }
@@ -190,9 +186,9 @@ final class InterfaceConfigurationPropertiesUtil {
                         if (DotNames.OPTIONAL.equals(returnType.name())) {
                             if (defaultValueStr != null) {
                                 /*
-                                 * it doesn't make to use @ConfigProperty(defaultValue="whatever") on a method that returns
-                                 * Optional
-                                 * since the result in this case isn't "optional", but there is always a value
+                                 * it doesn't make to use @ConfigProperty(defaultValue="whatever") on a method that
+                                 * returns Optional since the result in this case isn't "optional", but there is always
+                                 * a value
                                  */
                                 throw new IllegalArgumentException(
                                         "Annotating a method returning Optional with @ConfigProperty and setting defaultValue is not supported. Offending method is "
@@ -208,17 +204,15 @@ final class InterfaceConfigurationPropertiesUtil {
                                 ConfigurationPropertiesUtil.registerImplicitConverter(genericType, reflectiveClasses);
                                 ResultHandle result = methodCreator.invokeInterfaceMethod(
                                         MethodDescriptor.ofMethod(Config.class, "getOptionalValue", Optional.class,
-                                                String.class,
-                                                Class.class),
+                                                String.class, Class.class),
                                         config, methodCreator.load(fullConfigName),
                                         methodCreator.loadClassFromTCCL(genericType.name().toString()));
                                 methodCreator.returnValue(result);
                             } else {
                                 // convert the String value and populate an Optional with it
                                 ConfigurationPropertiesUtil.ReadOptionalResponse readOptionalResponse = ConfigurationPropertiesUtil
-                                        .createReadOptionalValueAndConvertIfNeeded(
-                                                fullConfigName,
-                                                genericType, method.declaringClass().name(), methodCreator, config);
+                                        .createReadOptionalValueAndConvertIfNeeded(fullConfigName, genericType,
+                                                method.declaringClass().name(), methodCreator, config);
 
                                 // return Optional.empty() if no config value was read
                                 readOptionalResponse.getIsPresentFalse()
@@ -227,9 +221,10 @@ final class InterfaceConfigurationPropertiesUtil {
 
                                 // return Optional.of() using the converted value
                                 readOptionalResponse.getIsPresentTrue()
-                                        .returnValue(readOptionalResponse.getIsPresentTrue().invokeStaticMethod(
-                                                MethodDescriptor.ofMethod(Optional.class, "of", Optional.class, Object.class),
-                                                readOptionalResponse.getValue()));
+                                        .returnValue(readOptionalResponse.getIsPresentTrue()
+                                                .invokeStaticMethod(MethodDescriptor.ofMethod(Optional.class, "of",
+                                                        Optional.class, Object.class),
+                                                        readOptionalResponse.getValue()));
                             }
                         } else if (ConfigurationPropertiesUtil.isListOfObject(method.returnType())) {
                             if (!capabilities.isPresent(Capability.CONFIG_YAML)) {
@@ -245,22 +240,22 @@ final class InterfaceConfigurationPropertiesUtil {
                         } else {
                             if (defaultValueStr != null) {
                                 /*
-                                 * The effect this will have is to add a ConfigSource with a lower priority
-                                 * This ensures that when we try to read the property value using
-                                 * config.getValue(fullConfigName), the default value will be returned if none is set
+                                 * The effect this will have is to add a ConfigSource with a lower priority This ensures
+                                 * that when we try to read the property value using config.getValue(fullConfigName),
+                                 * the default value will be returned if none is set
                                  */
-                                defaultConfigValues
-                                        .produce(new RunTimeConfigurationDefaultBuildItem(fullConfigName, defaultValueStr));
+                                defaultConfigValues.produce(
+                                        new RunTimeConfigurationDefaultBuildItem(fullConfigName, defaultValueStr));
                             }
-                            // use config.getValue to obtain and return the result taking  converting it to collection if needed
+                            // use config.getValue to obtain and return the result taking converting it to collection if
+                            // needed
                             ConfigurationPropertiesUtil.registerImplicitConverter(returnType, reflectiveClasses);
                             ResultHandle value = ConfigurationPropertiesUtil.createReadMandatoryValueAndConvertIfNeeded(
-                                    fullConfigName, returnType,
-                                    method.declaringClass().name(), methodCreator, config);
+                                    fullConfigName, returnType, method.declaringClass().name(), methodCreator, config);
                             methodCreator.returnValue(value);
                             if (defaultValueStr == null || ConfigProperty.UNCONFIGURED_VALUE.equals(defaultValueStr)) {
-                                configProperties.produce(
-                                        ConfigPropertyBuildItem.runtimeInit(fullConfigName, returnType, defaultValueStr));
+                                configProperties.produce(ConfigPropertyBuildItem.runtimeInit(fullConfigName, returnType,
+                                        defaultValueStr));
                             }
                         }
                     }
@@ -289,12 +284,12 @@ final class InterfaceConfigurationPropertiesUtil {
 
     /**
      * The interface implementations needs to be in the same package as the generated utility class that they extend.
-     * The name also needs to be unique so there are no clashes if there are multiple interfaces
-     * annotated with @ConfigProperties
+     * The name also needs to be unique so there are no clashes if there are multiple interfaces annotated
+     * with @ConfigProperties
      */
     private static String createName(DotName ifaceName, String prefixStr) {
-        return ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + "." + ifaceName.withoutPackagePrefix() + "_"
-                + HashUtil.sha1(ifaceName.toString()) + "_" + HashUtil.sha1(prefixStr);
+        return ConfigurationPropertiesUtil.PACKAGE_TO_PLACE_GENERATED_CLASSES + "." + ifaceName.withoutPackagePrefix()
+                + "_" + HashUtil.sha1(ifaceName.toString()) + "_" + HashUtil.sha1(prefixStr);
     }
 
     private static boolean isDefault(short flags) {
@@ -306,7 +301,8 @@ final class InterfaceConfigurationPropertiesUtil {
         AnnotationInstance configPropertyAnnotation = method.annotation(DotNames.CONFIG_PROPERTY);
         if (configPropertyAnnotation != null) {
             AnnotationValue nameValue = configPropertyAnnotation.value("name");
-            String name = (nameValue == null) || nameValue.asString().isEmpty() ? getPropertyName(method, namingStrategy)
+            String name = (nameValue == null) || nameValue.asString().isEmpty()
+                    ? getPropertyName(method, namingStrategy)
                     : nameValue.asString();
             AnnotationValue defaultValue = configPropertyAnnotation.value("defaultValue");
 

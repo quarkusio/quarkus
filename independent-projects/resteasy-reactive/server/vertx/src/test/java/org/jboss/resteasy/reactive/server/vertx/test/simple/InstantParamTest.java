@@ -25,39 +25,36 @@ public class InstantParamTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class));
 
     @Test
     public void instantAsQueryParam() {
-        RestAssured.get("/hello?instant=1984-08-08T01:02:03Z")
-                .then().statusCode(200).body(Matchers.equalTo("hello#1984-08-09T01:02:03Z"));
+        RestAssured.get("/hello?instant=1984-08-08T01:02:03Z").then().statusCode(200)
+                .body(Matchers.equalTo("hello#1984-08-09T01:02:03Z"));
     }
 
     @Test
     public void instantAsPathParam() {
-        RestAssured.get("/hello/1984-08-08T01:02:03Z")
-                .then().statusCode(200).body(Matchers.equalTo("hello@1984-08-09T01:02:03Z"));
+        RestAssured.get("/hello/1984-08-08T01:02:03Z").then().statusCode(200)
+                .body(Matchers.equalTo("hello@1984-08-09T01:02:03Z"));
     }
 
     @Test
     public void instantAsFormParam() {
-        RestAssured.given().formParam("instant", "1984-08-08T01:02:03Z").post("/hello")
-                .then().statusCode(200).body(Matchers.equalTo("hello:1984-08-09T01:02:03Z"));
+        RestAssured.given().formParam("instant", "1984-08-08T01:02:03Z").post("/hello").then().statusCode(200)
+                .body(Matchers.equalTo("hello:1984-08-09T01:02:03Z"));
     }
 
     @Test
     public void instantAsHeader() {
-        RestAssured.with().header("instant", "1984-08-08T01:02:03Z")
-                .get("/hello/header")
-                .then().statusCode(200).body(Matchers.equalTo("hello=1984-08-09T01:02:03Z"));
+        RestAssured.with().header("instant", "1984-08-08T01:02:03Z").get("/hello/header").then().statusCode(200)
+                .body(Matchers.equalTo("hello=1984-08-09T01:02:03Z"));
     }
 
     @Test
     public void instantAsCookie() {
-        RestAssured.with().cookie("instant", "1984-08-08T01:02:03Z")
-                .get("/hello/cookie")
-                .then().statusCode(200).body(Matchers.equalTo("hello/1984-08-09T01:02:03Z"));
+        RestAssured.with().cookie("instant", "1984-08-08T01:02:03Z").get("/hello/cookie").then().statusCode(200)
+                .body(Matchers.equalTo("hello/1984-08-09T01:02:03Z"));
     }
 
     @Path("hello")

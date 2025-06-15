@@ -43,10 +43,7 @@ public class JwtCallerPrincipalUnitTest {
         String sub = principal.getSubject();
         Assertions.assertEquals("24400320", sub);
         Set<String> groups = principal.getGroups();
-        String[] expectedGroups = { "Echoer",
-                "Tester",
-                "group1",
-                "group2" };
+        String[] expectedGroups = { "Echoer", "Tester", "group1", "group2" };
         Assertions.assertEquals(new HashSet<String>(Arrays.asList(expectedGroups)), groups);
 
         /*
@@ -86,28 +83,8 @@ public class JwtCallerPrincipalUnitTest {
         Assertions.assertEquals(Json.createValue(3), customIntegerArray.getJsonNumber(3));
 
         /*
-         * "customObject": {
-         * "my-service": {
-         * "groups": [
-         * "group1",
-         * "group2"
-         * ],
-         * "roles": [
-         * "role-in-my-service"
-         * ]
-         * },
-         * "service-B": {
-         * "roles": [
-         * "role-in-B"
-         * ]
-         * },
-         * "service-C": {
-         * "groups": [
-         * "groupC",
-         * "web-tier"
-         * ]
-         * }
-         * }
+         * "customObject": { "my-service": { "groups": [ "group1", "group2" ], "roles": [ "role-in-my-service" ] },
+         * "service-B": { "roles": [ "role-in-B" ] }, "service-C": { "groups": [ "groupC", "web-tier" ] } }
          */
         JsonObject customObject = principal.getClaim("customObject");
         String[] keys = { "my-service", "service-B", "service-C" };

@@ -17,8 +17,7 @@ public class ClassicServerRecorder {
     private RestPeriodEvent durationEvent;
 
     public ClassicServerRecorder(String httpMethod, String uri, String resourceClass, String resourceMethod,
-            String client,
-            IdProducer idProducer) {
+            String client, IdProducer idProducer) {
         this.httpMethod = httpMethod;
         this.uri = uri;
         this.resourceClass = resourceClass;

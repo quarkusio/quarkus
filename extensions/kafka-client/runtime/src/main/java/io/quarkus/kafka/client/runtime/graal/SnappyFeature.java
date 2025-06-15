@@ -9,9 +9,8 @@ import org.xerial.snappy.OSInfo;
 public class SnappyFeature implements Feature {
 
     /**
-     * This method uses code from org.xerial.snappy.SnappyLoader#findNativeLibrary
-     * to load the Snappy native library. The original code is licensed under the
-     * Apache License, Version 2.0 and includes the following notice:
+     * This method uses code from org.xerial.snappy.SnappyLoader#findNativeLibrary to load the Snappy native library.
+     * The original code is licensed under the Apache License, Version 2.0 and includes the following notice:
      *
      * <pre>
      *--------------------------------------------------------------------------
@@ -36,7 +35,7 @@ public class SnappyFeature implements Feature {
         final String KEY_SNAPPY_LIB_PATH = "org.xerial.snappy.lib.path";
         final String KEY_SNAPPY_LIB_NAME = "org.xerial.snappy.lib.name";
 
-        // Try to load the library in org.xerial.snappy.lib.path  */
+        // Try to load the library in org.xerial.snappy.lib.path */
         String snappyNativeLibraryPath = System.getProperty(KEY_SNAPPY_LIB_PATH);
         String snappyNativeLibraryName = System.getProperty(KEY_SNAPPY_LIB_NAME);
 

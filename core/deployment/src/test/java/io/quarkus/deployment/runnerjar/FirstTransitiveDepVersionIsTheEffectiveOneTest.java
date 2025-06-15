@@ -26,11 +26,8 @@ public class FirstTransitiveDepVersionIsTheEffectiveOneTest extends BootstrapFro
         final TsArtifact directAppDep = TsArtifact.jar("direct-dep").addDependency(common3);
         addToExpectedLib(directAppDep);
 
-        final TsArtifact appJar = TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(ext1)
-                .addDependency(directAppDep)
+        final TsArtifact appJar = TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(ext1).addDependency(directAppDep)
                 .addDependency(ext2);
         return appJar;
     }

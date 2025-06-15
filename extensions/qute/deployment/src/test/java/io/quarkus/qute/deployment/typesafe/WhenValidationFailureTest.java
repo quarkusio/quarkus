@@ -15,14 +15,10 @@ public class WhenValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Machine.class, MachineStatus.class)
-                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Machine machine}"
-                            + "{#when machine.status}"
-                            + "{#is WRONG} 1"
-                            + "{#is item.name} 2"
-                            + "{#is OFF} 0"
-                            + "{/when}"), "templates/machine.html"))
+            .withApplicationRoot((jar) -> jar.addClasses(Machine.class, MachineStatus.class).addAsResource(
+                    new StringAsset("{@io.quarkus.qute.deployment.typesafe.Machine machine}" + "{#when machine.status}"
+                            + "{#is WRONG} 1" + "{#is item.name} 2" + "{#is OFF} 0" + "{/when}"),
+                    "templates/machine.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

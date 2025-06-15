@@ -11,14 +11,10 @@ abstract class OIDCSecurityTestBase {
 
     @Test
     void testOIDCAuthentication() {
-        RestAssured.given().header("Accept", "application/json")
-                .when().get("/q/openapi")
-                .then().body("components.securitySchemes.OIDCCompanyAuthentication",
-                        allOf(
-                                hasEntry("type", "openIdConnect"),
-                                hasEntry("description", "OIDC Authentication"),
-                                hasEntry("openIdConnectUrl",
-                                        "http://localhost:8081/auth/realms/OpenAPIOIDC/.well-known/openid-configuration")));
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then()
+                .body("components.securitySchemes.OIDCCompanyAuthentication", allOf(hasEntry("type", "openIdConnect"),
+                        hasEntry("description", "OIDC Authentication"), hasEntry("openIdConnectUrl",
+                                "http://localhost:8081/auth/realms/OpenAPIOIDC/.well-known/openid-configuration")));
     }
 
 }

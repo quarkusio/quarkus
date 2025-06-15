@@ -5,7 +5,6 @@ import java.util.HashSet;
 
 /**
  * Value can be any primitive, primitive object, string, or bean style class
- *
  */
 class QuerySetReader extends BaseCollectionReader {
 

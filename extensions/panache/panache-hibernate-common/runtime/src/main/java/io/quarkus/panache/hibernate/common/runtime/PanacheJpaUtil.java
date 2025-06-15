@@ -14,8 +14,7 @@ public class PanacheJpaUtil {
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     // match FROM
-    static final Pattern FROM_PATTERN = Pattern.compile("^\\s*FROM\\s+.*",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+    static final Pattern FROM_PATTERN = Pattern.compile("^\\s*FROM\\s+.*", Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
 
     public static String getEntityName(Class<?> entityClass) {
         // FIXME: not true?
@@ -25,10 +24,10 @@ public class PanacheJpaUtil {
     }
 
     /**
-     * Removes \n, \r and outside spaces, and turns to lower case. DO NOT USE the result to pass it on to ORM,
-     * because the query is likely to be invalid since we replace newlines even if they
-     * are in quoted strings. This is only useful to analyse the start of the query for
-     * quick processing. NEVER use this to pass it to the DB or to replace user queries.
+     * Removes \n, \r and outside spaces, and turns to lower case. DO NOT USE the result to pass it on to ORM, because
+     * the query is likely to be invalid since we replace newlines even if they are in quoted strings. This is only
+     * useful to analyse the start of the query for quick processing. NEVER use this to pass it to the DB or to replace
+     * user queries.
      */
     public static String trimForAnalysis(String query) {
         // first replace single chars \n\r\t to spaces
@@ -52,13 +51,11 @@ public class PanacheJpaUtil {
             return "FROM " + getEntityName(entityClass);
         }
 
-        if (trimmedForAnalysis.startsWith("from ")
-                || trimmedForAnalysis.startsWith("select ")
+        if (trimmedForAnalysis.startsWith("from ") || trimmedForAnalysis.startsWith("select ")
                 || trimmedForAnalysis.startsWith("with ")) {
             return query;
         }
-        if (trimmedForAnalysis.startsWith("order by ")
-                || trimmedForAnalysis.startsWith("where ")) {
+        if (trimmedForAnalysis.startsWith("order by ") || trimmedForAnalysis.startsWith("where ")) {
             return "FROM " + getEntityName(entityClass) + " " + query;
         }
         if (trimmedForAnalysis.indexOf(' ') == -1 && trimmedForAnalysis.indexOf('=') == -1 && paramCount == 1) {
@@ -83,8 +80,7 @@ public class PanacheJpaUtil {
             return "FROM " + getEntityName(entityClass);
 
         // assume these have valid select clauses and let them through
-        if (trimmedForAnalysis.startsWith("select ")
-                || trimmedForAnalysis.startsWith("with ")
+        if (trimmedForAnalysis.startsWith("select ") || trimmedForAnalysis.startsWith("with ")
                 || trimmedForAnalysis.startsWith("from ")) {
             return query;
         }
@@ -204,13 +200,14 @@ public class PanacheJpaUtil {
 
     private static String unquoteColumnName(String columnName) {
         String unquotedColumnName;
-        //Note HQL uses backticks to escape/quote special words that are used as identifiers
+        // Note HQL uses backticks to escape/quote special words that are used as identifiers
         if (columnName.charAt(0) == '`' && columnName.charAt(columnName.length() - 1) == '`') {
             unquotedColumnName = columnName.substring(1, columnName.length() - 1);
         } else {
             unquotedColumnName = columnName;
         }
-        // Note we're not dealing with columns but with entity attributes so no backticks expected in unquoted column name
+        // Note we're not dealing with columns but with entity attributes so no backticks expected in unquoted column
+        // name
         if (unquotedColumnName.indexOf('`') >= 0) {
             throw new PanacheQueryException("Sort column name cannot have backticks");
         }

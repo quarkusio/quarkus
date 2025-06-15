@@ -87,8 +87,8 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
     private <T> Uni<T> runOnWorkerThread(Context msgContext, Uni<T> uni, String workerName, boolean ordered) {
         WorkerExecutor worker = getWorker(workerName);
         if (msgContext != null) {
-            return worker.executeBlocking(uniOnMessageContext(uni, msgContext), ordered)
-                    .onItemOrFailure().transformToUni((item, failure) -> {
+            return worker.executeBlocking(uniOnMessageContext(uni, msgContext), ordered).onItemOrFailure()
+                    .transformToUni((item, failure) -> {
                         return Uni.createFrom().emitter(emitter -> {
                             if (failure != null) {
                                 msgContext.runOnContext(() -> emitter.fail(failure));
@@ -102,32 +102,31 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
     }
 
     private static <T> Uni<T> uniOnMessageContext(Uni<T> uni, Context msgContext) {
-        return msgContext != Vertx.currentContext() ? uni
-                .runSubscriptionOn(r -> new ContextPreservingRunnable(r, msgContext).run())
+        return msgContext != Vertx.currentContext()
+                ? uni.runSubscriptionOn(r -> new ContextPreservingRunnable(r, msgContext).run())
                 : uni;
     }
 
     private <T> Uni<T> runOnVirtualThread(Context msgContext, Uni<T> uni) {
         ExecutorService vtExecutor = VirtualThreadsRecorder.getCurrent();
-        return uniOnMessageContext(uni, msgContext, vtExecutor)
-                .onItemOrFailure().transformToUni((item, failure) -> {
-                    return Uni.createFrom().emitter(emitter -> {
-                        if (msgContext != null) {
-                            if (failure != null) {
-                                msgContext.runOnContext(() -> emitter.fail(failure));
-                            } else {
-                                msgContext.runOnContext(() -> emitter.complete(item));
-                            }
-                        } else {
-                            // Some method do not have a context (generator methods)
-                            if (failure != null) {
-                                emitter.fail(failure);
-                            } else {
-                                emitter.complete(item);
-                            }
-                        }
-                    });
-                });
+        return uniOnMessageContext(uni, msgContext, vtExecutor).onItemOrFailure().transformToUni((item, failure) -> {
+            return Uni.createFrom().emitter(emitter -> {
+                if (msgContext != null) {
+                    if (failure != null) {
+                        msgContext.runOnContext(() -> emitter.fail(failure));
+                    } else {
+                        msgContext.runOnContext(() -> emitter.complete(item));
+                    }
+                } else {
+                    // Some method do not have a context (generator methods)
+                    if (failure != null) {
+                        emitter.fail(failure);
+                    } else {
+                        emitter.complete(item);
+                    }
+                }
+            });
+        });
     }
 
     private static <T> Uni<T> uniOnMessageContext(Uni<T> uni, Context msgContext, ExecutorService vtExecutor) {

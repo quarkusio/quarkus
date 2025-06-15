@@ -36,12 +36,8 @@ public class ConditionalDependencyWithTwoConditionsTest extends BootstrapFromOri
         addToExpectedLib(extC.getRuntime());
         addToExpectedLib(extD.getRuntime());
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extC)
-                .addDependency(extA)
-                .addDependency(extD);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extC).addDependency(extA).addDependency(extD);
     }
 
     @Override
@@ -49,20 +45,16 @@ public class ConditionalDependencyWithTwoConditionsTest extends BootstrapFromOri
         final Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-c-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-a-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-b-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-d-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, getDeploymentOnlyDeps(model));
     }
 }

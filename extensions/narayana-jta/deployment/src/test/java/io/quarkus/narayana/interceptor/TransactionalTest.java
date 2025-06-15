@@ -21,9 +21,9 @@ public class TransactionalTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TransactionalTest.TransactionalBean.class, TestXAResource.class,
-                            TxAssertionData.class, TestException.class, AnnotatedTestException.class, AnnotatedError.class))
+            .withApplicationRoot((jar) -> jar.addClasses(TransactionalTest.TransactionalBean.class,
+                    TestXAResource.class, TxAssertionData.class, TestException.class, AnnotatedTestException.class,
+                    AnnotatedError.class))
             .addClassLoaderEventListener(ClassLoaderLimiter.builder()
                     .neverLoadedRuntimeClassName("javax.xml.stream.XMLInputFactory").build());
 
@@ -195,8 +195,7 @@ public class TransactionalTest {
         private TxAssertionData txAssertionData;
 
         private void enlist() throws SystemException, RollbackException {
-            transactionManager.getTransaction()
-                    .enlistResource(new TestXAResource(txAssertionData));
+            transactionManager.getTransaction().enlistResource(new TestXAResource(txAssertionData));
         }
 
         @Transactional
@@ -217,7 +216,8 @@ public class TransactionalTest {
         }
 
         @Transactional(dontRollbackOn = RuntimeException.class)
-        public void executeTransactionalDontRollbackOnRuntimeException(Class<? extends Throwable> throwable) throws Throwable {
+        public void executeTransactionalDontRollbackOnRuntimeException(Class<? extends Throwable> throwable)
+                throws Throwable {
             enlist();
             throw throwable.getDeclaredConstructor().newInstance();
         }

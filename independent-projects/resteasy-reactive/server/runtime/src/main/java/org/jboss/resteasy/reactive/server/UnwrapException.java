@@ -9,8 +9,8 @@ import java.lang.annotation.Target;
  * Used to configure that an exception (or exceptions) should be unwrapped during exception handling.
  * <p>
  * Unwrapping means that when an {@link Exception} of the configured type is thrown and no
- * {@code jakarta.ws.rs.ext.ExceptionMapper} exists,
- * then RESTEasy Reactive will attempt to locate an {@code ExceptionMapper} for the cause of the Exception.
+ * {@code jakarta.ws.rs.ext.ExceptionMapper} exists, then RESTEasy Reactive will attempt to locate an
+ * {@code ExceptionMapper} for the cause of the Exception.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

@@ -29,15 +29,16 @@ import io.quarkus.scheduler.deployment.ScheduledBusinessMethodItem;
 
 /**
  * A simple processor that search for Spring Scheduled annotations in Beans and produce
- * {@code @io.quarkus.spring.scheduled.deployment.SpringScheduledAnnotatedMethodBuildItem}
- * to be consumed by Quarkus Scheduler extension
+ * {@code @io.quarkus.spring.scheduled.deployment.SpringScheduledAnnotatedMethodBuildItem} to be consumed by Quarkus
+ * Scheduler extension
  */
 public class SpringScheduledProcessor {
 
     static final DotName SPRING_SCHEDULED = DotName.createSimple("org.springframework.scheduling.annotation.Scheduled");
     static final DotName SPRING_SCHEDULES = DotName.createSimple("org.springframework.scheduling.annotation.Schedules");
 
-    private static final DotName QUARKUS_SCHEDULED = DotName.createSimple(io.quarkus.scheduler.Scheduled.class.getName());
+    private static final DotName QUARKUS_SCHEDULED = DotName
+            .createSimple(io.quarkus.scheduler.Scheduled.class.getName());
     private static final Logger LOGGER = Logger.getLogger(SpringScheduledProcessor.class);
 
     @BuildStep
@@ -49,8 +50,10 @@ public class SpringScheduledProcessor {
     public List<UnremovableBeanBuildItem> unremovableBeans() {
         // Beans annotated with @Scheduled should never be removed
         return Arrays.asList(
-                new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassAnnotationExclusion(SPRING_SCHEDULED)),
-                new UnremovableBeanBuildItem(new UnremovableBeanBuildItem.BeanClassAnnotationExclusion(SPRING_SCHEDULES)));
+                new UnremovableBeanBuildItem(
+                        new UnremovableBeanBuildItem.BeanClassAnnotationExclusion(SPRING_SCHEDULED)),
+                new UnremovableBeanBuildItem(
+                        new UnremovableBeanBuildItem.BeanClassAnnotationExclusion(SPRING_SCHEDULES)));
     }
 
     @BuildStep
@@ -100,13 +103,11 @@ public class SpringScheduledProcessor {
                     } else if (annotationsValuesContain(springAnnotationValues, "fixedDelay")
                             || annotationsValuesContain(springAnnotationValues, "fixedDelayString")) {
                         throw new IllegalArgumentException(
-                                "Invalid @Scheduled method '" + method.name()
-                                        + "': 'fixedDelay' not supported");
+                                "Invalid @Scheduled method '" + method.name() + "': 'fixedDelay' not supported");
                     } else if (annotationsValuesContain(springAnnotationValues, "cron")) {
                         if (annotationsValuesContain(springAnnotationValues, "initialDelay")) {
-                            throw new IllegalArgumentException(
-                                    "Invalid @Scheduled method '" + method.name()
-                                            + "': 'initialDelay' not supported for cron triggers");
+                            throw new IllegalArgumentException("Invalid @Scheduled method '" + method.name()
+                                    + "': 'initialDelay' not supported for cron triggers");
                         }
                         confValues.add(buildCronParam(springAnnotationValues));
                     }
@@ -142,8 +143,7 @@ public class SpringScheduledProcessor {
         long delay = getLongValueFromParam(springAnnotationValues, "initialDelay");
         confValues.add(AnnotationValue.createLongValue("delay", delay));
         confValues.add(AnnotationValue.createEnumValue("delayUnit",
-                DotName.createSimple("java.util.concurrent.TimeUnit"),
-                TimeUnit.MILLISECONDS.name()));
+                DotName.createSimple("java.util.concurrent.TimeUnit"), TimeUnit.MILLISECONDS.name()));
         return confValues;
     }
 
@@ -152,9 +152,8 @@ public class SpringScheduledProcessor {
         String paramValueString = "";
         if (annotationsValuesContain(springAnnotationValues, paramName)) {
             paramValue = getAnnotationValueByName(springAnnotationValues, paramName).get().asLong();
-        } else { //param value as String e.g. a placeholder ${value.from.conf} or java.time.Duration compliant value
-            paramValueString = getAnnotationValueByName(springAnnotationValues, paramName + "String")
-                    .get().asString();
+        } else { // param value as String e.g. a placeholder ${value.from.conf} or java.time.Duration compliant value
+            paramValueString = getAnnotationValueByName(springAnnotationValues, paramName + "String").get().asString();
             paramValue = valueOf(paramName, paramValueString);
 
         }
@@ -180,7 +179,8 @@ public class SpringScheduledProcessor {
         return springAnnotationValues.stream().filter(spv -> spv.name().equals(valueName)).findAny().isPresent();
     }
 
-    private Optional<AnnotationValue> getAnnotationValueByName(List<AnnotationValue> springAnnotationValues, String valueName) {
+    private Optional<AnnotationValue> getAnnotationValueByName(List<AnnotationValue> springAnnotationValues,
+            String valueName) {
         return springAnnotationValues.stream().filter(spv -> spv.name().equals(valueName)).findAny();
     }
 }

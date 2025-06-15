@@ -13,29 +13,23 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GrpcMetricsDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.grpc-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.grpc-server.enabled", "true")
 
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withEmptyApplication();
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withEmptyApplication();
 
     @Inject
     BeanManager beans;
 
     @Test
     void testNoInstancePresentIfNoGrpcClasses() {
-        assertTrue(
-                beans.createInstance().select()
-                        .stream().filter(this::isClientMetricInterceptor).findAny().isEmpty(),
+        assertTrue(beans.createInstance().select().stream().filter(this::isClientMetricInterceptor).findAny().isEmpty(),
                 "No io.quarkus.micrometer.runtime.binder.grpc.ClientGrpcMetrics expected, because we don't have dependency to grpc");
 
-        assertTrue(
-                beans.createInstance().select()
-                        .stream().filter(this::isServerMetricInterceptor).findAny().isEmpty(),
+        assertTrue(beans.createInstance().select().stream().filter(this::isServerMetricInterceptor).findAny().isEmpty(),
                 "No io.quarkus.micrometer.runtime.binder.grpc.ServerGrpcMetrics expected, because we don't have dependency to grpc");
     }
 

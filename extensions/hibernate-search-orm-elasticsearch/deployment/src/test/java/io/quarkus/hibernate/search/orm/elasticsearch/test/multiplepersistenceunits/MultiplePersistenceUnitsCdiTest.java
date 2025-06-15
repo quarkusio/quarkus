@@ -30,12 +30,9 @@ public class MultiplePersistenceUnitsCdiTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionUtils.class)
-                    .addPackage(DefaultPUEntity.class.getPackage())
-                    .addPackage(PU1Entity.class.getPackage())
-                    .addPackage(PU2Entity.class.getPackage())
-                    .addPackage(PU3Entity.class.getPackage())
+            .withApplicationRoot((jar) -> jar.addClass(TransactionUtils.class)
+                    .addPackage(DefaultPUEntity.class.getPackage()).addPackage(PU1Entity.class.getPackage())
+                    .addPackage(PU2Entity.class.getPackage()).addPackage(PU3Entity.class.getPackage())
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Inject
@@ -69,10 +66,8 @@ public class MultiplePersistenceUnitsCdiTest {
 
     @Test
     public void testDefaultMapping() {
-        assertThat(defaultPUMapping.allIndexedEntities())
-                .hasSize(1)
-                .element(0)
-                .returns(DefaultPUEntity.class, SearchIndexedEntity::javaClass);
+        assertThat(defaultPUMapping.allIndexedEntities()).hasSize(1).element(0).returns(DefaultPUEntity.class,
+                SearchIndexedEntity::javaClass);
     }
 
     @Test
@@ -80,20 +75,15 @@ public class MultiplePersistenceUnitsCdiTest {
     public void testDefaultSession() {
         DefaultPUEntity entity = new DefaultPUEntity("someText");
         inTransaction(() -> defaultPUSession.toEntityManager().persist(entity));
-        inTransaction(() -> assertThat(defaultPUSession.search(DefaultPUEntity.class)
-                .where(f -> f.matchAll())
-                .fetchHits(20))
-                .hasSize(1)
-                .element(0)
-                .returns(entity.getId(), DefaultPUEntity::getId));
+        inTransaction(
+                () -> assertThat(defaultPUSession.search(DefaultPUEntity.class).where(f -> f.matchAll()).fetchHits(20))
+                        .hasSize(1).element(0).returns(entity.getId(), DefaultPUEntity::getId));
     }
 
     @Test
     public void testPU1Mapping() {
-        assertThat(pu1Mapping.allIndexedEntities())
-                .hasSize(1)
-                .element(0)
-                .returns(PU1Entity.class, SearchIndexedEntity::javaClass);
+        assertThat(pu1Mapping.allIndexedEntities()).hasSize(1).element(0).returns(PU1Entity.class,
+                SearchIndexedEntity::javaClass);
     }
 
     @Test
@@ -101,20 +91,14 @@ public class MultiplePersistenceUnitsCdiTest {
     public void testPU1Session() {
         PU1Entity entity = new PU1Entity("someText");
         inTransaction(() -> pu1Session.toEntityManager().persist(entity));
-        inTransaction(() -> assertThat(pu1Session.search(PU1Entity.class)
-                .where(f -> f.matchAll())
-                .fetchHits(20))
-                .hasSize(1)
-                .element(0)
-                .returns(entity.getId(), PU1Entity::getId));
+        inTransaction(() -> assertThat(pu1Session.search(PU1Entity.class).where(f -> f.matchAll()).fetchHits(20))
+                .hasSize(1).element(0).returns(entity.getId(), PU1Entity::getId));
     }
 
     @Test
     public void testPU2Mapping() {
-        assertThat(pu2Mapping.allIndexedEntities())
-                .hasSize(1)
-                .element(0)
-                .returns(PU2Entity.class, SearchIndexedEntity::javaClass);
+        assertThat(pu2Mapping.allIndexedEntities()).hasSize(1).element(0).returns(PU2Entity.class,
+                SearchIndexedEntity::javaClass);
     }
 
     @Test
@@ -122,12 +106,8 @@ public class MultiplePersistenceUnitsCdiTest {
     public void testPU2Session() {
         PU2Entity entity = new PU2Entity("someText");
         inTransaction(() -> pu2Session.toEntityManager().persist(entity));
-        inTransaction(() -> assertThat(pu2Session.search(PU2Entity.class)
-                .where(f -> f.matchAll())
-                .fetchHits(20))
-                .hasSize(1)
-                .element(0)
-                .returns(entity.getId(), PU2Entity::getId));
+        inTransaction(() -> assertThat(pu2Session.search(PU2Entity.class).where(f -> f.matchAll()).fetchHits(20))
+                .hasSize(1).element(0).returns(entity.getId(), PU2Entity::getId));
     }
 
     @Test
@@ -139,8 +119,7 @@ public class MultiplePersistenceUnitsCdiTest {
         assertThat(pu3MappingInstance.isUnsatisfied()).isTrue();
 
         assertThatThrownBy(() -> Search.mapping(pu3EntityManager.getEntityManagerFactory()))
-                .isInstanceOf(SearchException.class)
-                .hasMessageContaining("Hibernate Search was not initialized");
+                .isInstanceOf(SearchException.class).hasMessageContaining("Hibernate Search was not initialized");
     }
 
     @Test
@@ -153,8 +132,7 @@ public class MultiplePersistenceUnitsCdiTest {
         assertThat(pu3SessionInstance.isUnsatisfied()).isTrue();
 
         inTransaction(() -> assertThatThrownBy(() -> Search.session(pu3EntityManager).search(PU3Entity.class))
-                .isInstanceOf(SearchException.class)
-                .hasMessageContaining("Hibernate Search was not initialized"));
+                .isInstanceOf(SearchException.class).hasMessageContaining("Hibernate Search was not initialized"));
     }
 
     private void inTransaction(Runnable runnable) {

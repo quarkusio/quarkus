@@ -48,13 +48,13 @@ public class OidcTokenPropagationBuildStep {
             BuildProducer<RestClientAnnotationProviderBuildItem> restAnnotationProvider) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(AccessTokenRequestFilter.class));
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(JsonWebTokenRequestFilter.class));
-        reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder(AccessTokenRequestFilter.class, JsonWebTokenRequestFilter.class)
-                        .reason(getClass().getName())
-                        .methods().fields().build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder(AccessTokenRequestFilter.class, JsonWebTokenRequestFilter.class)
+                        .reason(getClass().getName()).methods().fields().build());
 
         if (config.registerFilter()) {
-            Class<?> filterClass = config.jsonWebToken() ? JsonWebTokenRequestFilter.class : AccessTokenRequestFilter.class;
+            Class<?> filterClass = config.jsonWebToken() ? JsonWebTokenRequestFilter.class
+                    : AccessTokenRequestFilter.class;
             jaxrsProviders.produce(new ResteasyJaxrsProviderBuildItem(filterClass.getName()));
         } else {
             restAnnotationProvider.produce(new RestClientAnnotationProviderBuildItem(JWT_ACCESS_TOKEN_CREDENTIAL,
@@ -83,9 +83,8 @@ public class OidcTokenPropagationBuildStep {
 
         throw new ConfigurationException(
                 "Configuration property 'quarkus.resteasy-client-oidc-token-propagation.enabled-during-authentication' is set to "
-                        +
-                        "'true', however this configuration property is only supported when either 'quarkus-oidc' or " +
-                        "'quarkus-smallrye-jwt' extensions are present.");
+                        + "'true', however this configuration property is only supported when either 'quarkus-oidc' or "
+                        + "'quarkus-smallrye-jwt' extensions are present.");
     }
 
     public static class IsEnabled implements BooleanSupplier {

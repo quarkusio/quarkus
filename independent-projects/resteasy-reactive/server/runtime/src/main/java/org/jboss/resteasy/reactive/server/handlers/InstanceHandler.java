@@ -8,7 +8,6 @@ public class InstanceHandler implements ServerRestHandler {
 
     /**
      * CDI Manages the lifecycle
-     *
      */
     private volatile Object instance;
     private final BeanFactory<Object> factory;

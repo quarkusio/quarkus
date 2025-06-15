@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class OtlpExporterOverrideConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.otel.traces.exporter", "cdi")
             .overrideConfigKey("quarkus.otel.exporter.otlp.protocol", "http/protobuf")
             .overrideConfigKey("quarkus.otel.exporter.otlp.endpoint", "http://localhost ")

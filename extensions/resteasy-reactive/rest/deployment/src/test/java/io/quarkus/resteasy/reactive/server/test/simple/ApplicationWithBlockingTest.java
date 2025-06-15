@@ -20,28 +20,26 @@ import io.smallrye.common.annotation.NonBlocking;
 public class ApplicationWithBlockingTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(BlockingApplication.class, ThreadNameResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(BlockingApplication.class, ThreadNameResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.get("/tname/blocking")
-                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("loop")));
+        RestAssured.get("/tname/blocking").then().body(Matchers.containsString("executor"),
+                Matchers.not(Matchers.containsString("loop")));
 
-        RestAssured.get("/tname/nonblocking")
-                .then().body(Matchers.containsString("loop"), Matchers.not(Matchers.containsString("executor")));
+        RestAssured.get("/tname/nonblocking").then().body(Matchers.containsString("loop"),
+                Matchers.not(Matchers.containsString("executor")));
 
-        RestAssured.get("/tname2/blocking")
-                .then().body(Matchers.containsString("executor"), Matchers.not(Matchers.containsString("loop")));
+        RestAssured.get("/tname2/blocking").then().body(Matchers.containsString("executor"),
+                Matchers.not(Matchers.containsString("loop")));
 
-        RestAssured.get("/tname2/nonblocking")
-                .then().body(Matchers.containsString("loop"), Matchers.not(Matchers.containsString("executor")));
+        RestAssured.get("/tname2/nonblocking").then().body(Matchers.containsString("loop"),
+                Matchers.not(Matchers.containsString("executor")));
     }
 
     @Blocking

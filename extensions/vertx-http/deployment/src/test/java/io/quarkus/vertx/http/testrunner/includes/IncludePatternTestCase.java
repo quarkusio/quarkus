@@ -18,22 +18,19 @@ import io.quarkus.vertx.http.testrunner.HelloResource;
 public class IncludePatternTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class)
-                            .add(new StringAsset(
-                                    ContinuousTestingTestUtils.appProperties("quarkus.test.include-pattern=.*BarET")),
-                                    "application.properties");
-                }
-            })
-            .setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClasses(FooET.class, BarET.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class).add(
+                    new StringAsset(ContinuousTestingTestUtils.appProperties("quarkus.test.include-pattern=.*BarET")),
+                    "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(FooET.class, BarET.class);
+        }
+    });
 
     @Test
     public void checkTestsAreRun() throws InterruptedException {

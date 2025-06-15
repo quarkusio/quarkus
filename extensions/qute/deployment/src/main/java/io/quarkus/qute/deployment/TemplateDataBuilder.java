@@ -29,8 +29,8 @@ public final class TemplateDataBuilder {
     }
 
     /**
-     *
      * @see TemplateData#ignore()
+     *
      * @return self
      */
     public TemplateDataBuilder addIgnore(String value) {
@@ -39,8 +39,8 @@ public final class TemplateDataBuilder {
     }
 
     /**
-     *
      * @see TemplateData#ignoreSuperclasses()
+     *
      * @return self
      */
     public TemplateDataBuilder ignoreSuperclasses(boolean value) {
@@ -74,14 +74,15 @@ public final class TemplateDataBuilder {
             }
             ignoreValue = AnnotationValue.createArrayValue(ValueResolverGenerator.IGNORE, values);
         }
-        AnnotationValue propertiesValue = AnnotationValue.createBooleanValue(ValueResolverGenerator.PROPERTIES, properties);
-        AnnotationValue ignoreSuperclassesValue = AnnotationValue.createBooleanValue(ValueResolverGenerator.IGNORE_SUPERCLASSES,
-                ignoreSuperclasses);
+        AnnotationValue propertiesValue = AnnotationValue.createBooleanValue(ValueResolverGenerator.PROPERTIES,
+                properties);
+        AnnotationValue ignoreSuperclassesValue = AnnotationValue
+                .createBooleanValue(ValueResolverGenerator.IGNORE_SUPERCLASSES, ignoreSuperclasses);
         AnnotationValue namespaceValue = AnnotationValue.createStringValue("namespace", namespace);
         AnnotationValue targetValue = AnnotationValue.createClassValue("target",
                 Type.create(ValueResolverGenerator.TEMPLATE_DATA, Kind.CLASS));
-        return AnnotationInstance.create(ValueResolverGenerator.TEMPLATE_DATA, annotationTarget,
-                new AnnotationValue[] { targetValue, ignoreValue, propertiesValue, ignoreSuperclassesValue, namespaceValue });
+        return AnnotationInstance.create(ValueResolverGenerator.TEMPLATE_DATA, annotationTarget, new AnnotationValue[] {
+                targetValue, ignoreValue, propertiesValue, ignoreSuperclassesValue, namespaceValue });
     }
 
 }

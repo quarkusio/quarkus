@@ -18,13 +18,10 @@ import io.vertx.core.Vertx;
 public class ServerTrafficLoggerTest extends TrafficLoggerTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class);
-                TrafficLoggerTest.addApplicationProperties(root, true);
-            })
-            .setLogRecordPredicate(TrafficLoggerTest::isTrafficLogRecord)
-            .assertLogRecords(logRecordsConsumer(false));
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, WSClient.class);
+        TrafficLoggerTest.addApplicationProperties(root, true);
+    }).setLogRecordPredicate(TrafficLoggerTest::isTrafficLogRecord).assertLogRecords(logRecordsConsumer(false));
 
     @Inject
     Vertx vertx;

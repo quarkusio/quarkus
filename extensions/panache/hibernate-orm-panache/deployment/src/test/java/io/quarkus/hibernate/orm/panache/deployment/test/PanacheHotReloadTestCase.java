@@ -12,11 +12,9 @@ import io.restassured.RestAssured;
 
 public class PanacheHotReloadTestCase {
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, MyTestResource.class)
-                    .addAsResource("application-test.properties", "application.properties")
-                    .addAsResource("import.sql"));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyEntity.class, MyTestResource.class)
+            .addAsResource("application-test.properties", "application.properties").addAsResource("import.sql"));
 
     @Test
     public void testAddNewFieldToEntity() {

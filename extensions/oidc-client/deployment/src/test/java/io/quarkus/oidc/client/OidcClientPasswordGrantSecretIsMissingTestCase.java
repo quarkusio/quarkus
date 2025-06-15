@@ -14,15 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OidcClientPasswordGrantSecretIsMissingTestCase {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "quarkus.oidc-client.token-path=http://localhost:8180/oidc/tokens\n"
-                                    + "quarkus.oidc-client.client-id=quarkus\n"
-                                    + "quarkus.oidc-client.credentials.secret=secret\n"
-                                    + "quarkus.oidc-client.grant.type=password\n"
-                                    + "quarkus.oidc-client.grant-options.password.user=alice\n"),
-                            "application.properties"))
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.oidc-client.token-path=http://localhost:8180/oidc/tokens\n"
+                    + "quarkus.oidc-client.client-id=quarkus\n" + "quarkus.oidc-client.credentials.secret=secret\n"
+                    + "quarkus.oidc-client.grant.type=password\n"
+                    + "quarkus.oidc-client.grant-options.password.user=alice\n"), "application.properties"))
             .assertException(t -> {
                 Throwable e = t;
                 ConfigurationException te = null;
@@ -34,9 +30,7 @@ public class OidcClientPasswordGrantSecretIsMissingTestCase {
                     e = e.getCause();
                 }
                 assertNotNull(te, "Expected ConfigurationException, but got: " + t);
-                assertTrue(
-                        te.getMessage()
-                                .contains("Username and password must be set when a password grant is used"),
+                assertTrue(te.getMessage().contains("Username and password must be set when a password grant is used"),
                         te.getMessage());
             });
 

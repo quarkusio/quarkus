@@ -49,12 +49,8 @@ public class ContainerLogForwarder implements Closeable {
                 if (running.get())
                     logger.errorf("[%s] %s", shortId, updateTimestamp(frame));
             });
-            DockerClientFactory.lazyClient().logContainerCmd(devService.getContainerInfo().id())
-                    .withFollowStream(true)
-                    .withStdErr(true)
-                    .withStdOut(true)
-                    .withSince(timestamp.intValue())
-                    .exec(resultCallback);
+            DockerClientFactory.lazyClient().logContainerCmd(devService.getContainerInfo().id()).withFollowStream(true)
+                    .withStdErr(true).withStdOut(true).withSince(timestamp.intValue()).exec(resultCallback);
         }
     }
 

@@ -13,8 +13,7 @@ public class VertxConstants {
 
     static final DotName MESSAGE = DotName.createSimple(Message.class.getName());
     static final DotName MESSAGE_HEADERS = DotName.createSimple(io.vertx.core.MultiMap.class.getName());
-    static final DotName MUTINY_MESSAGE = DotName
-            .createSimple(io.vertx.mutiny.core.eventbus.Message.class.getName());
+    static final DotName MUTINY_MESSAGE = DotName.createSimple(io.vertx.mutiny.core.eventbus.Message.class.getName());
     static final DotName MUTINY_MESSAGE_HEADERS = DotName.createSimple(io.vertx.mutiny.core.MultiMap.class.getName());
     static final DotName COMPLETION_STAGE = DotName.createSimple(CompletionStage.class.getName());
     static final DotName UNI = DotName.createSimple(Uni.class.getName());

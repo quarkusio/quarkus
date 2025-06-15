@@ -20,11 +20,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class OpenTelemetrySamplerConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClass(TestUtil.class)
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClass(TestUtil.class).addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .withConfigurationResource("resource-config/application-no-metrics.properties")
             .overrideConfigKey("quarkus.otel.traces.sampler", "traceidratio")
             .overrideConfigKey("quarkus.otel.traces.sampler.arg", "0.5")

@@ -17,14 +17,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplatePathExcludeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    // excluded
-                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/.foo.txt")
-                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/foo/bar/.hidden")
-                    // not excluded
-                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/_foo.txt")
-                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/bar/foo.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            // excluded
+            .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/.foo.txt")
+            .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/foo/bar/.hidden")
+            // not excluded
+            .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/_foo.txt")
+            .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/bar/foo.txt"));
 
     @Inject
     Engine engine;

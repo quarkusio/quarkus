@@ -22,12 +22,9 @@ class CustomPathExtensionTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "'/root', 'app-from-config'  , '/root/app-from-config'",
-            "'/'    , '/app-from-config/', '/app-from-config'",
-            "''     , '/app-from-config/', '/app-from-config'",
-            "       , 'app-from-config'  , '/app-from-config'",
-    })
+    @CsvSource({ "'/root', 'app-from-config'  , '/root/app-from-config'",
+            "'/'    , '/app-from-config/', '/app-from-config'", "''     , '/app-from-config/', '/app-from-config'",
+            "       , 'app-from-config'  , '/app-from-config'", })
     void testContextPathGenerationWithoutApplicationPathAnnotation(String rootPath, String appPath, String expected) {
         CustomPathExtension ext = new CustomPathExtension(rootPath, appPath);
         String contextRoot = ext.resolveContextRoot(Collections.emptyList());
@@ -35,14 +32,10 @@ class CustomPathExtensionTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-            "'/root', 'app-from-config'  , 1, '/root'",
-            "'/'    , '/app-from-config/', 0, ",
-            "''     , '/app-from-config/', 0, ",
-            "       , 'app-from-config'  , 0, ",
-    })
-    void testContextPathGenerationWithApplicationPathAnnotation(String rootPath, String appPath, int times, String expected)
-            throws IOException {
+    @CsvSource({ "'/root', 'app-from-config'  , 1, '/root'", "'/'    , '/app-from-config/', 0, ",
+            "''     , '/app-from-config/', 0, ", "       , 'app-from-config'  , 0, ", })
+    void testContextPathGenerationWithApplicationPathAnnotation(String rootPath, String appPath, int times,
+            String expected) throws IOException {
         @jakarta.ws.rs.ApplicationPath("app-path-from-anno")
         class TestApp extends jakarta.ws.rs.core.Application {
         }

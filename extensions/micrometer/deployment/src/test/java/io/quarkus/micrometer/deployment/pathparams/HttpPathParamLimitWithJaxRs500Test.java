@@ -18,16 +18,13 @@ import io.restassured.RestAssured;
 
 public class HttpPathParamLimitWithJaxRs500Test {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Util.class,
-                            Resource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, Resource.class));
 
     @Inject
     MeterRegistry registry;
@@ -47,10 +44,10 @@ public class HttpPathParamLimitWithJaxRs500Test {
         // Verify metrics
         Util.waitForMeters(registry.find("http.server.requests").timers(), COUNT);
 
-        Assertions.assertEquals(COUNT, registry.find("http.server.requests")
-                .tag("uri", "/jaxrs").timers().iterator().next().count());
-        Assertions.assertEquals(COUNT, registry.find("http.server.requests")
-                .tag("uri", "/jaxrs/{message}").timers().iterator().next().count());
+        Assertions.assertEquals(COUNT,
+                registry.find("http.server.requests").tag("uri", "/jaxrs").timers().iterator().next().count());
+        Assertions.assertEquals(COUNT, registry.find("http.server.requests").tag("uri", "/jaxrs/{message}").timers()
+                .iterator().next().count());
 
         // Verify method producing a 400
         for (int i = 0; i < COUNT; i++) {
@@ -60,10 +57,10 @@ public class HttpPathParamLimitWithJaxRs500Test {
 
         Util.waitForMeters(registry.find("http.server.requests").timers(), COUNT * 2);
 
-        Assertions.assertEquals(COUNT, registry.find("http.server.requests")
-                .tag("uri", "/fail").tag("method", "GET").timers().iterator().next().count());
-        Assertions.assertEquals(4, registry.find("http.server.requests")
-                .tag("method", "GET").timers().size()); // Pattern recognized
+        Assertions.assertEquals(COUNT, registry.find("http.server.requests").tag("uri", "/fail").tag("method", "GET")
+                .timers().iterator().next().count());
+        Assertions.assertEquals(4, registry.find("http.server.requests").tag("method", "GET").timers().size()); // Pattern
+                                                                                                                // recognized
     }
 
     @Path("/")

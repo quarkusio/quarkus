@@ -9,10 +9,9 @@ import io.quarkus.arc.processor.InvokerFactory;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Provides access to {@link InvokerFactory}. May only be used in the bean registration phase,
- * observer registration phase, and validation phase (basically, until ArC generates
- * the classes). Afterwards, any attempt to call {@link #createInvoker(BeanInfo, MethodInfo)}
- * throws an exception.
+ * Provides access to {@link InvokerFactory}. May only be used in the bean registration phase, observer registration
+ * phase, and validation phase (basically, until ArC generates the classes). Afterwards, any attempt to call
+ * {@link #createInvoker(BeanInfo, MethodInfo)} throws an exception.
  */
 public final class InvokerFactoryBuildItem extends SimpleBuildItem {
     private final BeanDeployment beanDeployment;

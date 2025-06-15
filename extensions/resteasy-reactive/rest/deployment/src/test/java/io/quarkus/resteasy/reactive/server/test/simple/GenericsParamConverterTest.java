@@ -23,27 +23,18 @@ import io.quarkus.test.QuarkusUnitTest;
 public class GenericsParamConverterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestEnum.class, Wrapper.class,
-                            WrapperParamConverterProvider.class, WrapperParamConverterProvider.WrapperParamConverter.class,
-                            TestResource.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestEnum.class, Wrapper.class, WrapperParamConverterProvider.class,
+                    WrapperParamConverterProvider.WrapperParamConverter.class, TestResource.class));
 
     @Test
     public void wrapper() {
-        given()
-                .when().get("/test/single?wrapper=ACTIVE")
-                .then()
-                .statusCode(200)
-                .body(is("ACTIVE"));
+        given().when().get("/test/single?wrapper=ACTIVE").then().statusCode(200).body(is("ACTIVE"));
     }
 
     @Test
     public void wrapperList() {
-        given()
-                .when().get("/test/list?wrapperList=INACTIVE&wrapperList=ACTIVE")
-                .then()
-                .statusCode(200)
+        given().when().get("/test/list?wrapperList=INACTIVE&wrapperList=ACTIVE").then().statusCode(200)
                 .body(is("INACTIVE,ACTIVE"));
     }
 

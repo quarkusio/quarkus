@@ -52,14 +52,12 @@ public class ConsoleProcessor {
     /**
      * Installs the interactive console for continuous testing (and other usages)
      * <p>
-     * This is only installed for dev and test mode, and runs in the build process rather than
-     * a recorder to install this as early as possible
+     * This is only installed for dev and test mode, and runs in the build process rather than a recorder to install
+     * this as early as possible
      */
     @BuildStep(onlyIf = IsDevelopment.class)
     @Produce(TestSetupBuildItem.class)
-    ConsoleInstalledBuildItem setupConsole(
-            final TestConfig config,
-            final ConsoleConfig consoleConfig,
+    ConsoleInstalledBuildItem setupConsole(final TestConfig config, final ConsoleConfig consoleConfig,
             final LaunchModeBuildItem launchModeBuildItem,
             final BuildProducer<TestListenerBuildItem> testListenerBuildItemBuildProducer) {
 
@@ -70,7 +68,7 @@ public class ConsoleProcessor {
         if (config.console().orElse(consoleConfig.enabled())) {
             ConsoleHelper.installConsole(config, consoleConfig, launchModeBuildItem.isTest());
             ConsoleStateManager.init(QuarkusConsole.INSTANCE, launchModeBuildItem.getDevModeType().get());
-            //note that this bit needs to be refactored so it is no longer tied to continuous testing
+            // note that this bit needs to be refactored so it is no longer tied to continuous testing
             if (TestSupport.instance().isEmpty() || config.continuousTesting() == TestConfig.Mode.DISABLED
                     || config.flatClassPath()) {
                 return ConsoleInstalledBuildItem.INSTANCE;
@@ -93,24 +91,25 @@ public class ConsoleProcessor {
         if (devUIConsoleContext == null) {
             devUIConsoleContext = ConsoleStateManager.INSTANCE.createContext("HTTP");
         }
-        devUIConsoleContext.reset(new ConsoleCommand('d', "Dev UI", new ConsoleCommand.HelpState(new Supplier<String>() {
-            @Override
-            public String get() {
-                return MessageFormat.RED;
-            }
-        }, new Supplier<String>() {
-            @Override
-            public String get() {
-                return "unavailable";
-            }
-        }), new Runnable() {
-            @Override
-            public void run() {
-                System.out.println("\n" + RED
-                        + "For a Quarkus application to have access to the Dev UI, it needs to directly or transitively include the 'quarkus-vertx-http' extension"
-                        + RESET + "\n");
-            }
-        }));
+        devUIConsoleContext
+                .reset(new ConsoleCommand('d', "Dev UI", new ConsoleCommand.HelpState(new Supplier<String>() {
+                    @Override
+                    public String get() {
+                        return MessageFormat.RED;
+                    }
+                }, new Supplier<String>() {
+                    @Override
+                    public String get() {
+                        return "unavailable";
+                    }
+                }), new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("\n" + RED
+                                + "For a Quarkus application to have access to the Dev UI, it needs to directly or transitively include the 'quarkus-vertx-http' extension"
+                                + RESET + "\n");
+                    }
+                }));
     }
 
     @Consume(ConsoleInstalledBuildItem.class)
@@ -132,48 +131,45 @@ public class ConsoleProcessor {
             exceptionsConsoleContext = ConsoleStateManager.INSTANCE.createContext("Exceptions");
         }
 
-        exceptionsConsoleContext.reset(
-                new ConsoleCommand('x', "Open last exception (or project) in IDE",
-                        new ConsoleCommand.HelpState(new Supplier<String>() {
-                            @Override
-                            public String get() {
-                                return MessageFormat.RED;
-                            }
-                        }, new Supplier<String>() {
-                            @Override
-                            public String get() {
-                                StackTraceElement throwable = lastUserCode.get();
-                                if (throwable == null) {
-                                    return "none";
-                                }
-                                return throwable.getFileName() + ":" + throwable.getLineNumber();
-                            }
-                        }), new Runnable() {
-                            @Override
-                            public void run() {
-                                StackTraceElement throwable = lastUserCode.get();
-                                if (throwable == null) {
-                                    launchInIDE(ideSupport.getIde(), List.of("."));
-                                    return;
-                                }
-                                String className = throwable.getClassName();
-                                String file = throwable.getFileName();
-                                if (className.contains(".")) {
-                                    file = className.substring(0, className.lastIndexOf('.') + 1).replace('.',
-                                            File.separatorChar)
-                                            + file;
-                                }
-                                Path fileName = Ide.findSourceFile(file);
-                                if (fileName == null) {
-                                    log.error("Unable to find file: " + file);
-                                    return;
-                                }
-                                List<String> args = ideSupport.getIde().createFileOpeningArgs(
-                                        fileName.toAbsolutePath().toString(),
-                                        "" + throwable.getLineNumber());
-                                launchInIDE(ideSupport.getIde(), args);
-                            }
-                        }));
+        exceptionsConsoleContext.reset(new ConsoleCommand('x', "Open last exception (or project) in IDE",
+                new ConsoleCommand.HelpState(new Supplier<String>() {
+                    @Override
+                    public String get() {
+                        return MessageFormat.RED;
+                    }
+                }, new Supplier<String>() {
+                    @Override
+                    public String get() {
+                        StackTraceElement throwable = lastUserCode.get();
+                        if (throwable == null) {
+                            return "none";
+                        }
+                        return throwable.getFileName() + ":" + throwable.getLineNumber();
+                    }
+                }), new Runnable() {
+                    @Override
+                    public void run() {
+                        StackTraceElement throwable = lastUserCode.get();
+                        if (throwable == null) {
+                            launchInIDE(ideSupport.getIde(), List.of("."));
+                            return;
+                        }
+                        String className = throwable.getClassName();
+                        String file = throwable.getFileName();
+                        if (className.contains(".")) {
+                            file = className.substring(0, className.lastIndexOf('.') + 1).replace('.',
+                                    File.separatorChar) + file;
+                        }
+                        Path fileName = Ide.findSourceFile(file);
+                        if (fileName == null) {
+                            log.error("Unable to find file: " + file);
+                            return;
+                        }
+                        List<String> args = ideSupport.getIde().createFileOpeningArgs(
+                                fileName.toAbsolutePath().toString(), "" + throwable.getLineNumber());
+                        launchInIDE(ideSupport.getIde(), args);
+                    }
+                }));
     }
 
     protected void launchInIDE(Ide ide, List<String> args) {
@@ -190,8 +186,7 @@ public class ConsoleProcessor {
                     command.addAll(args);
                     log.debugf("Opening IDE with %s", command);
                     new ProcessBuilder(command).redirectOutput(ProcessBuilder.Redirect.DISCARD)
-                            .redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(10,
-                                    TimeUnit.SECONDS);
+                            .redirectError(ProcessBuilder.Redirect.DISCARD).start().waitFor(10, TimeUnit.SECONDS);
                 } catch (Exception e) {
                     log.error("Failed to open IDE", e);
                 }
@@ -202,8 +197,8 @@ public class ConsoleProcessor {
     @BuildStep
     @Produce(ServiceStartBuildItem.class)
     void installCliCommands(List<ConsoleCommandBuildItem> commands) {
-        ConsoleCliManager
-                .setCommands(commands.stream().map(ConsoleCommandBuildItem::getConsoleCommand).collect(Collectors.toList()));
+        ConsoleCliManager.setCommands(
+                commands.stream().map(ConsoleCommandBuildItem::getConsoleCommand).collect(Collectors.toList()));
     }
 
     @BuildStep
@@ -215,7 +210,8 @@ public class ConsoleProcessor {
     public static class QuitCommand implements Command {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
+        public CommandResult execute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
             QuarkusConsole.INSTANCE.exitCliMode();
             return CommandResult.SUCCESS;
         }
@@ -230,11 +226,13 @@ public class ConsoleProcessor {
     public static class HelpCommand implements Command {
 
         @Override
-        public CommandResult execute(CommandInvocation commandInvocation) throws CommandException, InterruptedException {
-            commandInvocation.getShell().writeln("The following commands are available, run them with -h for more info:\n");
+        public CommandResult execute(CommandInvocation commandInvocation)
+                throws CommandException, InterruptedException {
+            commandInvocation.getShell()
+                    .writeln("The following commands are available, run them with -h for more info:\n");
             for (var c : ConsoleCliManager.commands) {
-                commandInvocation.getShell().writeln(
-                        c.getParser().getProcessedCommand().name() + "\t" + c.getParser().getProcessedCommand().description());
+                commandInvocation.getShell().writeln(c.getParser().getProcessedCommand().name() + "\t"
+                        + c.getParser().getProcessedCommand().description());
             }
 
             return CommandResult.SUCCESS;

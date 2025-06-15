@@ -51,12 +51,12 @@ public class DevServicesRestClientHttpProxyProcessor {
 
     @BuildStep
     public DevServicesRestClientProxyProvider.BuildItem registerDefaultProvider() {
-        return new DevServicesRestClientProxyProvider.BuildItem(VertxHttpProxyDevServicesRestClientProxyProvider.INSTANCE);
+        return new DevServicesRestClientProxyProvider.BuildItem(
+                VertxHttpProxyDevServicesRestClientProxyProvider.INSTANCE);
     }
 
     @BuildStep
-    public void determineRequiredProxies(
-            RestClientsBuildTimeConfig clientsConfig,
+    public void determineRequiredProxies(RestClientsBuildTimeConfig clientsConfig,
             CombinedIndexBuildItem combinedIndexBuildItem,
             ResourceScanningResultBuildItem resourceScanningResultBuildItem,
             List<RegisteredRestClientBuildItem> registeredRestClientBuildItems,
@@ -65,9 +65,10 @@ public class DevServicesRestClientHttpProxyProcessor {
         List<RegisteredRestClient> registeredRestClients = new ArrayList<>(
                 toRegisteredRestClients(registeredRestClientBuildItems));
         resourceScanningResultBuildItem.getResult().getClientInterfaces().forEach((restClient, path) -> {
-            if (registeredRestClients.stream()
-                    .noneMatch(registeredRestClient -> registeredRestClient.getFullName().equals(restClient.toString()))) {
-                registeredRestClients.add(new RegisteredRestClient(restClient.toString(), restClient.withoutPackagePrefix()));
+            if (registeredRestClients.stream().noneMatch(
+                    registeredRestClient -> registeredRestClient.getFullName().equals(restClient.toString()))) {
+                registeredRestClients
+                        .add(new RegisteredRestClient(restClient.toString(), restClient.withoutPackagePrefix()));
             }
             ;
         });
@@ -95,8 +96,8 @@ public class DevServicesRestClientHttpProxyProcessor {
                 log.debug("Unable to determine uri or url for REST Client '" + restClient + "'");
                 continue;
             }
-            producer.produce(
-                    new RestClientHttpProxyBuildItem(restClient, baseUri.get(), restClientBuildConfig.localProxyProvider()));
+            producer.produce(new RestClientHttpProxyBuildItem(restClient, baseUri.get(),
+                    restClientBuildConfig.localProxyProvider()));
         }
     }
 
@@ -131,10 +132,8 @@ public class DevServicesRestClientHttpProxyProcessor {
             if (toStart.getProvider().isPresent()) {
                 String requestedProviderName = toStart.getProvider().get();
 
-                var maybeProviderBI = restClientProxyProviderBuildItems
-                        .stream()
-                        .filter(pbi -> requestedProviderName.equals(pbi.getProvider().name()))
-                        .findFirst();
+                var maybeProviderBI = restClientProxyProviderBuildItems.stream()
+                        .filter(pbi -> requestedProviderName.equals(pbi.getProvider().name())).findFirst();
                 if (maybeProviderBI.isEmpty()) {
                     throw new RuntimeException("Unable to find provider for REST Client '" + toStart.getClassName()
                             + "' with name '" + requestedProviderName + "'");
@@ -147,8 +146,9 @@ public class DevServicesRestClientHttpProxyProcessor {
                 // if there is only one besides the default, use it
                 // if there are multiple ones, fail
 
-                List<DevServicesRestClientProxyProvider.BuildItem> nonDefault = restClientProxyProviderBuildItems.stream()
-                        .filter(pib -> !pib.getProvider().name().equals(VertxHttpProxyDevServicesRestClientProxyProvider.NAME))
+                List<DevServicesRestClientProxyProvider.BuildItem> nonDefault = restClientProxyProviderBuildItems
+                        .stream().filter(pib -> !pib.getProvider().name()
+                                .equals(VertxHttpProxyDevServicesRestClientProxyProvider.NAME))
                         .toList();
                 if (nonDefault.isEmpty()) {
                     provider = VertxHttpProxyDevServicesRestClientProxyProvider.INSTANCE;
@@ -156,9 +156,8 @@ public class DevServicesRestClientHttpProxyProcessor {
                     // TODO: this part of the algorithm is questionable...
                     provider = nonDefault.iterator().next().getProvider();
                 } else {
-                    String availableProviders = restClientProxyProviderBuildItems.stream().map(bi -> bi.getProvider().name())
-                            .collect(
-                                    Collectors.joining(","));
+                    String availableProviders = restClientProxyProviderBuildItems.stream()
+                            .map(bi -> bi.getProvider().name()).collect(Collectors.joining(","));
                     throw new RuntimeException("Multiple providers found for REST Client '" + toStart.getClassName()
                             + "'. Please specify one by setting 'quarkus.rest-client.\"" + toStart.getClassName()
                             + "\".local-proxy-provider' to one the following providers: " + availableProviders);
@@ -199,10 +198,8 @@ public class DevServicesRestClientHttpProxyProcessor {
                 urlKeyValue = urlKeyValue + "/" + basePath;
             }
 
-            devServicePropertiesProducer.produce(
-                    new DevServicesResultBuildItem("rest-client-" + bi.getClassName() + "-proxy",
-                            null,
-                            Map.of(urlKeyName, urlKeyValue)));
+            devServicePropertiesProducer.produce(new DevServicesResultBuildItem(
+                    "rest-client-" + bi.getClassName() + "-proxy", null, Map.of(urlKeyName, urlKeyValue)));
         }
 
         closeBuildItem.addCloseTask(new CloseTask(runningProxies, providerCloseables, runningProviders), true);

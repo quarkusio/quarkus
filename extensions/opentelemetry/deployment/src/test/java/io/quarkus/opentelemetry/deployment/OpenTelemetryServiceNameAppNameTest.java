@@ -12,11 +12,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OpenTelemetryServiceNameAppNameTest extends OpenTelemetryServiceNameBaseTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(TestSpanExporter.class)
-                    .addClass(TestSpanExporterProvider.class)
-                    .addAsResource(new StringAsset("" +
-                            "quarkus.otel.bsp.schedule.delay=50\n" +
-                            "quarkus.application.name=" + SERVICE_NAME + "\n"), "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClass(TestSpanExporter.class).addClass(TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(
+                    "" + "quarkus.otel.bsp.schedule.delay=50\n" + "quarkus.application.name=" + SERVICE_NAME + "\n"),
+                    "application.properties"));
 }

@@ -4,14 +4,10 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.recording.BytecodeRecorderImpl;
 
 /**
- * The definition of a constant
- * that can be injected into recorders via their {@code @Inject}-annotated constructor.
- *
- * Compared to simply passing the value to a recorder proxy,
- * this build item allows for injecting values into recorders
- * without introducing new dependencies from build steps
- * that use the recorder to build steps that create the constant value.
- * This can be useful in complex dependency graphs.
+ * The definition of a constant that can be injected into recorders via their {@code @Inject}-annotated constructor.
+ * Compared to simply passing the value to a recorder proxy, this build item allows for injecting values into recorders
+ * without introducing new dependencies from build steps that use the recorder to build steps that create the constant
+ * value. This can be useful in complex dependency graphs.
  */
 public final class BytecodeRecorderConstantDefinitionBuildItem extends MultiBuildItem {
 

@@ -11,8 +11,8 @@ public class UriNormalizationUtil {
     }
 
     /**
-     * Create a URI path from a string. The specified path can not contain
-     * relative {@literal ..} segments or {@literal %} characters.
+     * Create a URI path from a string. The specified path can not contain relative {@literal ..} segments or
+     * {@literal %} characters.
      * <p>
      * Examples:
      * <ul>
@@ -24,10 +24,13 @@ public class UriNormalizationUtil {
      * <li>{@code toUri("foo/", false)} will return a URI with an empty path {@literal foo}</li>
      * </ul>
      *
+     * @param path
+     *        String to convert into a URI
+     * @param trailingSlash
+     *        true if resulting URI must end with a '/'
      *
-     * @param path String to convert into a URI
-     * @param trailingSlash true if resulting URI must end with a '/'
-     * @throws IllegalArgumentException if the path contains invalid characters or path segments.
+     * @throws IllegalArgumentException
+     *         if the path contains invalid characters or path segments.
      */
     public static URI toURI(String path, boolean trailingSlash) {
         try {
@@ -54,47 +57,46 @@ public class UriNormalizationUtil {
     }
 
     /**
-     * Resolve a string path against a URI base. The specified path can not contain
-     * relative {@literal ..} segments or {@literal %} characters.
-     *
-     * Relative paths will be resolved against the specified base URI.
-     * Absolute paths will be normalized and returned.
+     * Resolve a string path against a URI base. The specified path can not contain relative {@literal ..} segments or
+     * {@literal %} characters. Relative paths will be resolved against the specified base URI. Absolute paths will be
+     * normalized and returned.
      * <p>
      * Examples:
      * <ul>
-     * <li>{@code normalizeWithBase(new URI("/"), "example", true)}
-     * will return a URI with path {@literal /example/}</li>
-     * <li>{@code normalizeWithBase(new URI("/"), "example", false)}
-     * will return a URI with an empty path {@literal /example}</li>
-     * <li>{@code normalizeWithBase(new URI("/"), "/example", true)}
-     * will return a URI with path {@literal /example/}</li>
-     * <li>{@code normalizeWithBase(new URI("/"), "/example", false)}
-     * will return a URI with an empty {@literal /example</li>
-     *
-     * <li>{@code normalizeWithBase(new URI("/prefix/"), "example", true)}
-     * will return a URI with path {@literal /prefix/example/}</li>
-     * <li>{@code normalizeWithBase(new URI("/prefix/"), "example", false)}
-     * will return a URI with an empty path {@literal /prefix/example}</li>
-     * <li>{@code normalizeWithBase(new URI("/prefix/"), "/example", true)}
-     * will return a URI with path {@literal /example/}</li>
-     * <li>{@code normalizeWithBase(new URI("/prefix/"), "/example", false)}
-     * will return a URI with an empty path {@literal /example}</li>
-     *
-     * <li>{@code normalizeWithBase(new URI("foo/"), "example", true)}
-     * will return a URI with path {@literal foo/example/}</li>
-     * <li>{@code normalizeWithBase(new URI("foo/"), "example", false)}
-     * will return a URI with an empty path {@literal foo/example}</li>
-     * <li>{@code normalizeWithBase(new URI("foo/"), "/example", true)}
-     * will return a URI with path {@literal /example/}</li>
-     * <li>{@code normalizeWithBase(new URI("foo/"), "/example", false)}
-     * will return a URI with an empty path {@literal /example}</li>
+     * <li>{@code normalizeWithBase(new URI("/"), "example", true)} will return a URI with path
+     * {@literal /example/}</li>
+     * <li>{@code normalizeWithBase(new URI("/"), "example", false)} will return a URI with an empty path
+     * {@literal /example}</li>
+     * <li>{@code normalizeWithBase(new URI("/"), "/example", true)} will return a URI with path
+     * {@literal /example/}</li>
+     * <li>{@code normalizeWithBase(new URI("/"), "/example", false)} will return a URI with an empty
+     * {@literal /example</li>
+     * <li>{@code normalizeWithBase(new URI("/prefix/"), "example", true)} will return a URI with path {@literal
+     * /prefix/example/}</li>
+     * <li>{@code normalizeWithBase(new URI("/prefix/"), "example", false)} will return a URI with an empty path
+     * {@literal /prefix/example}</li>
+     * <li>{@code normalizeWithBase(new URI("/prefix/"), "/example", true)} will return a URI with path {@literal
+     * /example/}</li>
+     * <li>{@code normalizeWithBase(new URI("/prefix/"), "/example", false)} will return a URI with an empty path
+     * {@literal /example}</li>
+     * <li>{@code normalizeWithBase(new URI("foo/"), "example", true)} will return a URI with path {@literal
+     * foo/example/}</li>
+     * <li>{@code normalizeWithBase(new URI("foo/"), "example", false)} will return a URI with an empty path {@literal
+     * foo/example}</li>
+     * <li>{@code normalizeWithBase(new URI("foo/"), "/example", true)} will return a URI with path {@literal
+     * /example/}</li>
+     * <li>{@code normalizeWithBase(new URI("foo/"), "/example", false)} will return a URI with an empty path {@literal
+     * /example}</li>
      * </ul>
-     *
      * @param base URI to resolve relative paths. Use {@link #toURI(String, boolean)} to construct this parameter.
      *
-     * @param segment Relative or absolute path
-     * @param trailingSlash true if resulting URI must end with a '/'
-     * @throws IllegalArgumentException if the path contains invalid characters or path segments.
+     * @param segment
+     *        Relative or absolute path
+     * @param trailingSlash
+     *        true if resulting URI must end with a '/'
+     *
+     * @throws IllegalArgumentException
+     *         if the path contains invalid characters or path segments.
      */
     public static URI normalizeWithBase(URI base, String segment, boolean trailingSlash) {
         if (segment == null || segment.trim().isEmpty()) {

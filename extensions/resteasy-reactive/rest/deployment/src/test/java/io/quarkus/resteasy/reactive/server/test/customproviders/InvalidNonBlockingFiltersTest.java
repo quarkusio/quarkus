@@ -27,15 +27,13 @@ import io.smallrye.common.annotation.NonBlocking;
 public class InvalidNonBlockingFiltersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(StandardBlockingRequestFilter.class, StandardNonBlockingRequestFilter.class,
-                                    DummyResource.class);
-                }
-            }).assertException(t -> Assertions.assertTrue(t.getMessage().contains("StandardNonBlockingRequestFilter")));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(StandardBlockingRequestFilter.class,
+                    StandardNonBlockingRequestFilter.class, DummyResource.class);
+        }
+    }).assertException(t -> Assertions.assertTrue(t.getMessage().contains("StandardNonBlockingRequestFilter")));
 
     @Test
     public void test() {

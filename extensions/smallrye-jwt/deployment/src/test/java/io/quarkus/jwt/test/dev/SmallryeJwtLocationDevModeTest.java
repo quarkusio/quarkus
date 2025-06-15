@@ -22,14 +22,10 @@ public class SmallryeJwtLocationDevModeTest {
 
     @RegisterExtension
     static QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource(new StringAsset(
-                            """
-                                    smallrye.jwt.encrypt.key.location=/publicKey.pem
-                                    mp.jwt.decrypt.key.location=/privateKey.pem
-                                    """), "application.properties")
-                    .addAsResource("publicKey.pem")
-                    .addAsResource("privateKey.pem"))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addAsResource(new StringAsset("""
+                    smallrye.jwt.encrypt.key.location=/publicKey.pem
+                    mp.jwt.decrypt.key.location=/privateKey.pem
+                    """), "application.properties").addAsResource("publicKey.pem").addAsResource("privateKey.pem"))
             .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
                 @Override
                 public void accept(BuildChainBuilder chain) {
@@ -38,19 +34,14 @@ public class SmallryeJwtLocationDevModeTest {
                         public void execute(BuildContext context) {
                             List<DevServicesResultBuildItem> buildItems = context
                                     .consumeMulti(DevServicesResultBuildItem.class);
-                            assertThat(buildItems).filteredOn(item -> item.getName().equals("SMALLRYE_JWT"))
-                                    .first()
+                            assertThat(buildItems).filteredOn(item -> item.getName().equals("SMALLRYE_JWT")).first()
                                     .satisfies(item -> {
-                                        assertThat(item.getConfig())
-                                                .containsEntry("mp.jwt.verify.publickey", "NONE")
+                                        assertThat(item.getConfig()).containsEntry("mp.jwt.verify.publickey", "NONE")
                                                 .containsEntry("smallrye.jwt.sign.key", "NONE");
                                     });
                             context.produce(new FeatureBuildItem("dummy"));
                         }
-                    })
-                            .consumes(DevServicesResultBuildItem.class)
-                            .produces(FeatureBuildItem.class)
-                            .build();
+                    }).consumes(DevServicesResultBuildItem.class).produces(FeatureBuildItem.class).build();
                 }
             });
 

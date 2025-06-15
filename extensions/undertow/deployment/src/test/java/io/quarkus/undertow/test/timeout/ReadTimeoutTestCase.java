@@ -23,10 +23,8 @@ import io.restassured.RestAssured;
 
 public class ReadTimeoutTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.http.read-timeout", "0.5S")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TimeoutTestServlet.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().overrideConfigKey("quarkus.http.read-timeout", "0.5S")
+            .withApplicationRoot((jar) -> jar.addClasses(TimeoutTestServlet.class));
 
     private String host;
     private SocketChannel client;
@@ -73,8 +71,7 @@ public class ReadTimeoutTestCase {
         assertTrue(TimeoutTestServlet.read);
     }
 
-    private void requestWithDelay(long sleepTime, String... headers)
-            throws IOException, InterruptedException {
+    private void requestWithDelay(long sleepTime, String... headers) throws IOException, InterruptedException {
         String content = "message content";
         writeToChannel("POST /timeout HTTP/1.1\r\n");
         writeToChannel("Content-Length: " + ("The \r\n" + content).getBytes("UTF-8").length);

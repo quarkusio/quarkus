@@ -11,8 +11,7 @@ public class MutinyHelloService implements Greeter {
 
     @Override
     public Uni<HelloReply> sayHello(HelloRequest request) {
-        return Uni.createFrom().item(request.getName())
-                .map(s -> "Hello " + s)
+        return Uni.createFrom().item(request.getName()).map(s -> "Hello " + s)
                 .map(s -> HelloReply.newBuilder().setMessage(s).build());
     }
 

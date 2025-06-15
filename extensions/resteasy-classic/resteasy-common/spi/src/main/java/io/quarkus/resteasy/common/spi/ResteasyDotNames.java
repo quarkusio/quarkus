@@ -52,8 +52,7 @@ public final class ResteasyDotNames {
             .createSimple("org.jboss.resteasy.annotations.SseElementType");
     public static final DotName RESTEASY_PART_TYPE = DotName
             .createSimple("org.jboss.resteasy.annotations.providers.multipart.PartType");
-    public static final DotName CDI_INJECT = DotName
-            .createSimple(Inject.class.getName());
+    public static final DotName CDI_INJECT = DotName.createSimple(Inject.class.getName());
     public static final DotName JSON_IGNORE = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
     public static final DotName JSONB_TRANSIENT = DotName.createSimple("jakarta.json.bind.annotation.JsonbTransient");
     public static final DotName XML_TRANSIENT = DotName.createSimple("jakarta.xml.bind.annotation.XmlTransient");
@@ -86,8 +85,7 @@ public final class ResteasyDotNames {
 
         @Override
         public boolean test(FieldInfo fieldInfo) {
-            return fieldInfo.hasAnnotation(JSON_IGNORE)
-                    || fieldInfo.hasAnnotation(JSONB_TRANSIENT)
+            return fieldInfo.hasAnnotation(JSON_IGNORE) || fieldInfo.hasAnnotation(JSONB_TRANSIENT)
                     || fieldInfo.hasAnnotation(XML_TRANSIENT);
         }
     }
@@ -96,8 +94,7 @@ public final class ResteasyDotNames {
 
         @Override
         public boolean test(MethodInfo methodInfo) {
-            return methodInfo.hasAnnotation(JSON_IGNORE)
-                    || methodInfo.hasAnnotation(JSONB_TRANSIENT)
+            return methodInfo.hasAnnotation(JSON_IGNORE) || methodInfo.hasAnnotation(JSONB_TRANSIENT)
                     || methodInfo.hasAnnotation(XML_TRANSIENT);
         }
     }
@@ -109,8 +106,7 @@ public final class ResteasyDotNames {
 
     private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
             // JSON-P
-            "jakarta.json.",
-            "jakarta.json.",
+            "jakarta.json.", "jakarta.json.",
             // Jackson
             "com.fasterxml.jackson.databind.",
             // JAX-RS
@@ -120,6 +116,5 @@ public final class ResteasyDotNames {
             // Vert.x JSON layer
             "io.vertx.core.json.",
             // Mutiny
-            "io.smallrye.mutiny."
-    };
+            "io.smallrye.mutiny." };
 }

@@ -14,8 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FunqMethodVisibilityTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(Hello.class))
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Hello.class))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 if (rootCause instanceof RuntimeException) {

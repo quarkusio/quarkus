@@ -33,10 +33,10 @@ import io.vertx.core.net.impl.KeyStoreHelper;
  * <li>If the {@code $JAVA_HOME/lib/security/cacerts} is a regular file, then it is used
  * </ol>
  * <p>
- * For native image, be aware that the default trust material is stored inside the native image.
- * Therefore it is not loaded anew at application start unless the application is started with
- * {@code -Djavax.net.ssl.trustStore=path/to/trust-store} - see
- * <a href="https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/CertificateManagement/">Certificate
+ * For native image, be aware that the default trust material is stored inside the native image. Therefore it is not
+ * loaded anew at application start unless the application is started with
+ * {@code -Djavax.net.ssl.trustStore=path/to/trust-store} - see <a href=
+ * "https://www.graalvm.org/latest/reference-manual/native-image/dynamic-features/CertificateManagement/">Certificate
  * Management</a> in GraalVM reference manual.
  *
  * @since 3.18.0
@@ -45,7 +45,8 @@ public class JavaxNetSslTrustStoreProvider {
 
     public static TrustStoreAndTrustOptions getTrustStore(Vertx vertx) {
         JavaNetSslTrustOptions options = new JavaNetSslTrustOptions();
-        return new TrustStoreAndTrustOptions(options.keystore, new ExpiryTrustOptions(options, CertificateExpiryPolicy.WARN));
+        return new TrustStoreAndTrustOptions(options.keystore,
+                new ExpiryTrustOptions(options, CertificateExpiryPolicy.WARN));
     }
 
     static class JavaNetSslTrustOptions implements TrustOptions {
@@ -55,7 +56,8 @@ public class JavaxNetSslTrustStoreProvider {
 
         JavaNetSslTrustOptions() {
             try {
-                final TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                final TrustManagerFactory tmf = TrustManagerFactory
+                        .getInstance(TrustManagerFactory.getDefaultAlgorithm());
                 tmf.init((KeyStore) null);
 
                 final KeyStore cacerts = copyCerts(tmf);
@@ -67,8 +69,8 @@ public class JavaxNetSslTrustStoreProvider {
             }
         }
 
-        static KeyStore copyCerts(final TrustManagerFactory tmf)
-                throws KeyStoreException, IOException, NoSuchAlgorithmException, CertificateException, InvalidNameException {
+        static KeyStore copyCerts(final TrustManagerFactory tmf) throws KeyStoreException, IOException,
+                NoSuchAlgorithmException, CertificateException, InvalidNameException {
             final String tsType = System.getProperty("javax.net.ssl.trustStoreType", KeyStore.getDefaultType());
             final KeyStore cacerts = KeyStore.getInstance(tsType);
             cacerts.load(null, null);
@@ -77,15 +79,10 @@ public class JavaxNetSslTrustStoreProvider {
                 for (X509Certificate c : ((X509TrustManager) tm).getAcceptedIssuers()) {
                     final String dn = c.getSubjectX500Principal().getName();
                     final List<Rdn> rdns = new LdapName(dn).getRdns();
-                    String alias = rdns.stream()
-                            .filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
-                            .map(rdn -> rdn.getValue().toString())
-                            .findFirst()
-                            .orElseGet(() -> rdns.stream()
-                                    .filter(rdn -> rdn.getType().equalsIgnoreCase("ou"))
-                                    .map(rdn -> rdn.getValue().toString())
-                                    .findFirst()
-                                    .orElse(dn));
+                    String alias = rdns.stream().filter(rdn -> rdn.getType().equalsIgnoreCase("cn"))
+                            .map(rdn -> rdn.getValue().toString()).findFirst()
+                            .orElseGet(() -> rdns.stream().filter(rdn -> rdn.getType().equalsIgnoreCase("ou"))
+                                    .map(rdn -> rdn.getValue().toString()).findFirst().orElse(dn));
                     alias = alias.replace(" ", "");
                     alias = alias.toLowerCase(Locale.ROOT);
                     if (aliases.contains(alias)) {

@@ -9,8 +9,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProactiveAuthPermissionCheckerRestMultiTest extends AbstractPermissionCheckerRestMultiTest {
 
     @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, TestIdentityController.class,
-                    TestIdentityProvider.class));
+    static QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestResource.class, TestIdentityController.class, TestIdentityProvider.class));
 
 }

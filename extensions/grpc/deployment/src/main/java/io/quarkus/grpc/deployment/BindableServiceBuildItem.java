@@ -18,11 +18,12 @@ public final class BindableServiceBuildItem extends MultiBuildItem {
     }
 
     /**
-     * A method from {@code serviceClass} is annotated with {@link io.smallrye.common.annotation.Blocking}.
-     * Stores the method name so the runtime interceptor can recognize it.
-     * Note: gRPC method have unique names - overloading is not permitted.
+     * A method from {@code serviceClass} is annotated with {@link io.smallrye.common.annotation.Blocking}. Stores the
+     * method name so the runtime interceptor can recognize it. Note: gRPC method have unique names - overloading is not
+     * permitted.
      *
-     * @param method the method name
+     * @param method
+     *        the method name
      */
     public void registerBlockingMethod(String method) {
         blockingMethods.add(method);
@@ -30,10 +31,11 @@ public final class BindableServiceBuildItem extends MultiBuildItem {
 
     /**
      * A method from {@code serviceClass} is annotated with {@link io.smallrye.common.annotation.RunOnVirtualThread}.
-     * Stores the method name so the runtime interceptor can recognize it.
-     * Note: gRPC method have unique names - overloading is not permitted.
+     * Stores the method name so the runtime interceptor can recognize it. Note: gRPC method have unique names -
+     * overloading is not permitted.
      *
-     * @param method the method name
+     * @param method
+     *        the method name
      */
     public void registerVirtualMethod(String method) {
         virtualMethods.add(method);

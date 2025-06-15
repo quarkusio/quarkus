@@ -29,8 +29,11 @@ final class Target_org_wildfly_security_x500_util_X500PrincipalUtil {
     /**
      * Only handle the case of converting a {@linkplain Principal#getName()} to {@linkplain X500Principal}
      *
-     * @param principal - Principal with name that maps to valid DN
-     * @param convert - whether one should convert to X500Principal
+     * @param principal
+     *        - Principal with name that maps to valid DN
+     * @param convert
+     *        - whether one should convert to X500Principal
+     *
      * @return X500Principal if convert is true and valid DN is seen, null otherwise
      */
     @Substitute

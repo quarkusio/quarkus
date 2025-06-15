@@ -12,8 +12,8 @@ public final class ResteasyJaxrsConfigBuildItem extends SimpleBuildItem {
     private final String defaultPath;
 
     /**
-     * rootPath can be different from the defaultPath if {@code @ApplicationPath} is used.
-     * rootPath will not contain the {@code @ApplicationPath} while defaultPath will contain it.
+     * rootPath can be different from the defaultPath if {@code @ApplicationPath} is used. rootPath will not contain the
+     * {@code @ApplicationPath} while defaultPath will contain it.
      */
     public ResteasyJaxrsConfigBuildItem(String rootPath, String defaultPath) {
         this.rootPath = rootPath;

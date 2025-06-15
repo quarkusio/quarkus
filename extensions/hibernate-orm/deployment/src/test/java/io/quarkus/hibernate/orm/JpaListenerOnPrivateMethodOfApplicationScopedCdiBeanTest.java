@@ -21,9 +21,7 @@ public class JpaListenerOnPrivateMethodOfApplicationScopedCdiBeanTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("application.properties"))
-            .assertException(e -> {
+            .withApplicationRoot((jar) -> jar.addAsResource("application.properties")).assertException(e -> {
                 assertThat(e).isInstanceOf(IllegalArgumentException.class)
                         .hasMessageContaining("SomeEntityListener#postPersist");
             });

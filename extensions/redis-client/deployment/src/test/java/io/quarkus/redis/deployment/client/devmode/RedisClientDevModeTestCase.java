@@ -21,28 +21,20 @@ import io.restassured.RestAssured;
 public class RedisClientDevModeTestCase {
 
     @RegisterExtension
-    static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addAsResource(new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}"),
-                                    "application.properties")
-                            .addClass(IncrementResource.class);
-                }
-            });
+    static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class)
+                    .addAsResource(new StringAsset("quarkus.redis.hosts=${quarkus.redis.tr}"), "application.properties")
+                    .addClass(IncrementResource.class);
+        }
+    });
 
     @Test
     public void testSourceFileUpdateInDevMode() {
-        RestAssured.get("/inc")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("1"));
+        RestAssured.get("/inc").then().statusCode(200).body(Matchers.equalTo("1"));
 
-        RestAssured.get("/inc")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("2"));
+        RestAssured.get("/inc").then().statusCode(200).body(Matchers.equalTo("2"));
         test.modifySourceFile(IncrementResource.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -53,18 +45,9 @@ public class RedisClientDevModeTestCase {
         Awaitility.await()
                 .untilAsserted(() -> Assertions.assertEquals("2", RestAssured.get("/inc/val").andReturn().asString()));
 
-        RestAssured.get("/inc")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("12"));
-        RestAssured.get("/inc")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("22"));
+        RestAssured.get("/inc").then().statusCode(200).body(Matchers.equalTo("12"));
+        RestAssured.get("/inc").then().statusCode(200).body(Matchers.equalTo("22"));
 
-        RestAssured.get("/inc")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("32"));
+        RestAssured.get("/inc").then().statusCode(200).body(Matchers.equalTo("32"));
     }
 }

@@ -51,10 +51,8 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
     protected final ByteCodeType entityUpperBound;
     private final Map<String, String> erasures = new HashMap<>();
 
-    public PanacheEntityClassOperationGenerationVisitor(ClassVisitor outputClassVisitor,
-            TypeBundle typeBundle,
-            ClassInfo entityInfo,
-            List<PanacheMethodCustomizer> methodCustomizers, IndexView indexView) {
+    public PanacheEntityClassOperationGenerationVisitor(ClassVisitor outputClassVisitor, TypeBundle typeBundle,
+            ClassInfo entityInfo, List<PanacheMethodCustomizer> methodCustomizers, IndexView indexView) {
         super(Gizmo.ASM_API_VERSION, outputClassVisitor);
 
         String className = entityInfo.name().toString();
@@ -75,9 +73,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         discoverTypeParameters(entityInfo, indexView, typeBundle, baseType);
         argMapper = type -> {
             ByteCodeType byteCodeType = typeArguments.get(type);
-            return byteCodeType != null
-                    ? byteCodeType.get()
-                    : OBJECT.get();
+            return byteCodeType != null ? byteCodeType.get() : OBJECT.get();
         };
     }
 
@@ -86,16 +82,13 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
             String[] exceptions) {
         userMethods.add(methodName + "/" + descriptor);
         MethodVisitor superVisitor = super.visitMethod(access, methodName, descriptor, signature, exceptions);
-        if (Modifier.isStatic(access)
-                && Modifier.isPublic(access)
-                && (access & Opcodes.ACC_SYNTHETIC) == 0
+        if (Modifier.isStatic(access) && Modifier.isPublic(access) && (access & Opcodes.ACC_SYNTHETIC) == 0
                 && !methodCustomizers.isEmpty()) {
             org.jboss.jandex.Type[] argTypes = AsmUtil.getParameterTypes(descriptor);
             MethodInfo method = this.entityInfo.method(methodName, argTypes);
             if (method == null) {
-                throw new IllegalStateException(
-                        "Could not find indexed method: " + thisClass + "." + methodName + " with descriptor " + descriptor
-                                + " and arg types " + Arrays.toString(argTypes));
+                throw new IllegalStateException("Could not find indexed method: " + thisClass + "." + methodName
+                        + " with descriptor " + descriptor + " and arg types " + Arrays.toString(argTypes));
             }
             superVisitor = new PanacheMethodCustomizerVisitor(superVisitor, method, thisClass, methodCustomizers);
         }
@@ -120,18 +113,17 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         super.visitEnd();
     }
 
-    protected void discoverTypeParameters(ClassInfo classInfo, IndexView indexView, TypeBundle types, ByteCodeType baseType) {
-        List<ByteCodeType> foundTypeArguments = recursivelyFindEntityTypeArguments(indexView,
-                classInfo.name(), baseType.dotName());
+    protected void discoverTypeParameters(ClassInfo classInfo, IndexView indexView, TypeBundle types,
+            ByteCodeType baseType) {
+        List<ByteCodeType> foundTypeArguments = recursivelyFindEntityTypeArguments(indexView, classInfo.name(),
+                baseType.dotName());
 
         ByteCodeType entityType = (foundTypeArguments.size() > 0) ? foundTypeArguments.get(0) : OBJECT;
         ByteCodeType idType = (foundTypeArguments.size() > 1) ? foundTypeArguments.get(1) : OBJECT;
 
         typeArguments.put("Entity", entityType);
         typeArguments.put("Id", idType);
-        typeArguments.keySet().stream()
-                .filter(k -> !k.equals("Id"))
-                .forEach(k -> erasures.put(k, OBJECT.descriptor()));
+        typeArguments.keySet().stream().filter(k -> !k.equals("Id")).forEach(k -> erasures.put(k, OBJECT.descriptor()));
         try {
             ByteCodeType entity = typeArguments.get("Entity");
             if (entity != null) {
@@ -143,14 +135,12 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
         }
     }
 
-    protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased, AnnotationValue callSuperMethod) {
+    protected void generateMethod(MethodInfo method, AnnotationValue targetReturnTypeErased,
+            AnnotationValue callSuperMethod) {
         List<org.jboss.jandex.Type> parameters = method.parameterTypes();
 
         MethodVisitor mv = super.visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_STATIC | Opcodes.ACC_SYNTHETIC,
-                method.name(),
-                method.descriptor(),
-                method.genericSignature(),
-                null);
+                method.name(), method.descriptor(), method.genericSignature(), null);
         AsmUtil.copyParameterNames(mv, method);
         mv.visitCode();
         for (PanacheMethodCustomizer customizer : methodCustomizers) {
@@ -230,8 +220,7 @@ public class PanacheEntityClassOperationGenerationVisitor extends ClassVisitor {
     private void descriptors(MethodInfo method, StringJoiner joiner) {
         for (org.jboss.jandex.Type parameter : method.parameterTypes()) {
             if (parameter.kind() == org.jboss.jandex.Type.Kind.TYPE_VARIABLE
-                    || method.name().endsWith("ById")
-                            && parameter.name().equals(typeArguments.get("Id").dotName())) {
+                    || method.name().endsWith("ById") && parameter.name().equals(typeArguments.get("Id").dotName())) {
                 joiner.add(OBJECT.descriptor());
             } else {
                 joiner.add(mapType(parameter));

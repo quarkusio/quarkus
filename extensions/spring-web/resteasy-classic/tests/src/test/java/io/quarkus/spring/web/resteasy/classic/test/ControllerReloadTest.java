@@ -12,8 +12,7 @@ public class ControllerReloadTest {
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleSpringController.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleSpringController.class));
 
     @Test
     public void testRepositoryIsReloaded() {

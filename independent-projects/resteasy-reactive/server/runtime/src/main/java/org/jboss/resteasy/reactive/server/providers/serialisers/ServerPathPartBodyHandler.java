@@ -30,7 +30,8 @@ public class ServerPathPartBodyHandler extends PathPartBodyHandler implements Se
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return PathPart.class.isAssignableFrom(type);
     }
 

@@ -23,10 +23,8 @@ import io.vertx.ext.web.RoutingContext;
 public class GraphQLTerminateContextTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((JavaArchive jar) -> jar
-                    .addClasses(TestTerminateContextResource.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((JavaArchive jar) -> jar
+            .addClasses(TestTerminateContextResource.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testWhoAmI() {
@@ -36,24 +34,11 @@ public class GraphQLTerminateContextTest extends AbstractGraphQLTest {
     }
 
     public void runTestWith(String expectedUser) {
-        String fooRequest = getPayload("{\n" +
-                "  whoami {\n" +
-                "    name\n" +
-                "  }\n" +
-                "}");
+        String fooRequest = getPayload("{\n" + "  whoami {\n" + "    name\n" + "  }\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(fooRequest)
-                .with().header("X-Test", expectedUser)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .log().body().and()
-                .body("data.whoami.name", Matchers.equalTo(expectedUser));
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(fooRequest).with()
+                .header("X-Test", expectedUser).post("/graphql").then().assertThat().statusCode(200).and().log().body()
+                .and().body("data.whoami.name", Matchers.equalTo(expectedUser));
     }
 
     @GraphQLApi

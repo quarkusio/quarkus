@@ -19,10 +19,7 @@ public class MultiModuleKotlinProjectDevModeTest extends QuarkusDevGradleTestBas
 
     protected void testDevMode() throws Exception {
 
-        assertThat(getHttpResponse())
-                .contains("ready")
-                .contains("quarkusmm")
-                .contains("org.acme")
+        assertThat(getHttpResponse()).contains("ready").contains("quarkusmm").contains("org.acme")
                 .contains("1.0.0-SNAPSHOT");
 
         assertThat(getHttpResponse("/hello")).contains("howdy");

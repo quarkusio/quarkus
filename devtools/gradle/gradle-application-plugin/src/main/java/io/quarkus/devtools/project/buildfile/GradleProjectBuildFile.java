@@ -37,18 +37,18 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
         boms.forEach(d -> {
             coords.add(ArtifactCoords.pom(d.getGroup(), d.getName(), d.getVersion()));
         });
-        project.getConfigurations()
-                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).getIncoming().getDependencies().forEach(d -> {
+        project.getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).getIncoming()
+                .getDependencies().forEach(d -> {
                     if (!(d instanceof ModuleDependency)) {
                         return;
                     }
                     final ModuleDependency module = (ModuleDependency) d;
                     coords.add(ArtifactCoords.jar(module.getGroup(), module.getName(), module.getVersion()));
                     // why is the following code does not return any artifact?
-                    //module.getArtifacts().forEach(a -> {
-                    //    coords.add(new ArtifactCoords(module.getGroup(), module.getName(), a.getClassifier(),
-                    //            a.getExtension(), module.getVersion()));
-                    //});
+                    // module.getArtifacts().forEach(a -> {
+                    // coords.add(new ArtifactCoords(module.getGroup(), module.getName(), a.getClassifier(),
+                    // a.getExtension(), module.getVersion()));
+                    // });
                 });
         return coords;
     }
@@ -74,8 +74,7 @@ public abstract class GradleProjectBuildFile extends AbstractGradleBuildFile {
     private List<Dependency> boms() {
         final List<Dependency> boms = new ArrayList<>();
         // collect enforced platforms
-        final Configuration impl = project.getConfigurations()
-                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
+        final Configuration impl = project.getConfigurations().getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME);
         for (Dependency d : impl.getAllDependencies()) {
             if (!(d instanceof ModuleDependency)) {
                 continue;

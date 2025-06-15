@@ -15,12 +15,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ParamDeclarationDefaultValueTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEnum.class)
-                    .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.ParamDeclarationDefaultValueTest$MyEnum myEnum=MyEnum:BAR}{myEnum}"),
-                            "templates/myEnum.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyEnum.class)
+            .addAsResource(new StringAsset(
+                    "{@io.quarkus.qute.deployment.typesafe.ParamDeclarationDefaultValueTest$MyEnum myEnum=MyEnum:BAR}{myEnum}"),
+                    "templates/myEnum.html"));
 
     @Inject
     Template myEnum;

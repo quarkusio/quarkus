@@ -54,7 +54,8 @@ class HibernateOrmPanacheRestProcessor {
     @BuildStep
     void findResourceMethodListeners(CombinedIndexBuildItem index,
             BuildProducer<ResourceMethodListenerBuildItem> resourceMethodListeners) {
-        for (ClassInfo classInfo : index.getIndex().getKnownDirectImplementors(REST_DATA_RESOURCE_METHOD_LISTENER_INTERFACE)) {
+        for (ClassInfo classInfo : index.getIndex()
+                .getKnownDirectImplementors(REST_DATA_RESOURCE_METHOD_LISTENER_INTERFACE)) {
             List<Type> generics = getGenericTypes(classInfo);
             Type entityType = generics.get(0);
             resourceMethodListeners.produce(new ResourceMethodListenerBuildItem(classInfo, entityType));
@@ -85,7 +86,8 @@ class HibernateOrmPanacheRestProcessor {
             List<ResourceMethodListenerBuildItem> resourceMethodListeners,
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer) {
-        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getComputingIndex()));
+        ResourceImplementor resourceImplementor = new ResourceImplementor(
+                new EntityClassHelper(index.getComputingIndex()));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
         for (ClassInfo resourceInterface : index.getComputingIndex()
@@ -99,12 +101,11 @@ class HibernateOrmPanacheRestProcessor {
             List<ClassInfo> listenersForEntityType = getListenersByEntityType(index.getIndex(), resourceMethodListeners,
                     entityType);
             DataAccessImplementor dataAccessImplementor = new EntityDataAccessImplementor(entityType);
-            String resourceClass = resourceImplementor.implement(
-                    classOutput, dataAccessImplementor, resourceInterface, entityType, listenersForEntityType);
+            String resourceClass = resourceImplementor.implement(classOutput, dataAccessImplementor, resourceInterface,
+                    entityType, listenersForEntityType);
 
-            restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index.getIndex(), entityType))));
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(new ResourceMetadata(resourceClass,
+                    resourceInterface, entityType, idType, getEntityFields(index.getIndex(), entityType))));
         }
     }
 
@@ -117,7 +118,8 @@ class HibernateOrmPanacheRestProcessor {
             BuildProducer<GeneratedBeanBuildItem> implementationsProducer,
             BuildProducer<RestDataResourceBuildItem> restDataResourceProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeansProducer) {
-        ResourceImplementor resourceImplementor = new ResourceImplementor(new EntityClassHelper(index.getComputingIndex()));
+        ResourceImplementor resourceImplementor = new ResourceImplementor(
+                new EntityClassHelper(index.getComputingIndex()));
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(implementationsProducer);
 
         for (ClassInfo resourceInterface : index.getComputingIndex()
@@ -132,15 +134,14 @@ class HibernateOrmPanacheRestProcessor {
             List<ClassInfo> listenersForEntityType = getListenersByEntityType(index.getIndex(), resourceMethodListeners,
                     entityType);
             DataAccessImplementor dataAccessImplementor = new RepositoryDataAccessImplementor(repositoryClassName);
-            String resourceClass = resourceImplementor.implement(
-                    classOutput, dataAccessImplementor, resourceInterface, entityType, listenersForEntityType);
+            String resourceClass = resourceImplementor.implement(classOutput, dataAccessImplementor, resourceInterface,
+                    entityType, listenersForEntityType);
             // Make sure that repository bean is not removed and will be injected to the generated resource
             unremovableBeansProducer.produce(new UnremovableBeanBuildItem(
                     new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
 
-            restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index.getIndex(), entityType))));
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(new ResourceMetadata(resourceClass,
+                    resourceInterface, entityType, idType, getEntityFields(index.getIndex(), entityType))));
         }
     }
 
@@ -159,11 +160,8 @@ class HibernateOrmPanacheRestProcessor {
     }
 
     private List<Type> getGenericTypes(ClassInfo classInfo) {
-        return classInfo.interfaceTypes()
-                .stream()
-                .findFirst()
+        return classInfo.interfaceTypes().stream().findFirst()
                 .orElseThrow(() -> new RuntimeException(classInfo.toString() + " does not have generic types"))
-                .asParameterizedType()
-                .arguments();
+                .asParameterizedType().arguments();
     }
 }

@@ -43,13 +43,10 @@ import io.smallrye.mutiny.operators.multi.processors.UnicastProcessor;
 public class GrpcReflectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(HealthGrpc.class.getPackage())
-                    .addPackage(MutinyReflectableServiceGrpc.class.getPackage())
-                    .addClass(MyReflectionService.class))
-            .setFlatClassPath(true)
-            .withConfigurationResource("reflection-config.properties");
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addPackage(HealthGrpc.class.getPackage())
+                    .addPackage(MutinyReflectableServiceGrpc.class.getPackage()).addClass(MyReflectionService.class))
+            .setFlatClassPath(true).withConfigurationResource("reflection-config.properties");
 
     @GrpcClient("reflection-service")
     MutinyServerReflectionGrpc.MutinyServerReflectionStub reflection;
@@ -71,8 +68,8 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingListOfServices() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
-                .setListServices("").build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost").setListServices("")
+                .build();
 
         ServerReflectionResponse response = invoke(request);
         List<ServiceResponse> list = response.getListServicesResponse().getServiceList();
@@ -83,19 +80,14 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingFilesByFileName() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setFileByFilename("reflection/reflection_test_depth_three.proto")
-                .build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setFileByFilename("reflection/reflection_test_depth_three.proto").build();
 
-        ServerReflectionResponse expected = ServerReflectionResponse.newBuilder()
-                .setValidHost("localhost")
+        ServerReflectionResponse expected = ServerReflectionResponse.newBuilder().setValidHost("localhost")
                 .setOriginalRequest(request)
-                .setFileDescriptorResponse(
-                        FileDescriptorResponse.newBuilder()
-                                .addFileDescriptorProto(
-                                        ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString())
-                                .build())
+                .setFileDescriptorResponse(FileDescriptorResponse.newBuilder()
+                        .addFileDescriptorProto(ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString())
+                        .build())
                 .build();
 
         ServerReflectionResponse response = invoke(request);
@@ -104,10 +96,8 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingFilesByFileNameWithUnknownFileName() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setFileByFilename("reflection/unknown.proto")
-                .build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setFileByFilename("reflection/unknown.proto").build();
 
         ServerReflectionResponse response = invoke(request);
         assertThat(response.getErrorResponse().getErrorCode()).isEqualTo(Status.Code.NOT_FOUND.value());
@@ -124,13 +114,10 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingFilesContainingSymbol() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setFileContainingSymbol("grpc.reflection.testing.ReflectableService.Method")
-                .build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setFileContainingSymbol("grpc.reflection.testing.ReflectableService.Method").build();
 
-        List<ByteString> responses = Arrays.asList(
-                ReflectionTestProto.getDescriptor().toProto().toByteString(),
+        List<ByteString> responses = Arrays.asList(ReflectionTestProto.getDescriptor().toProto().toByteString(),
                 ReflectionTestDepthTwoProto.getDescriptor().toProto().toByteString(),
                 ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString());
 
@@ -141,10 +128,8 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingFilesContainingUnknownSymbol() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setFileContainingSymbol("grpc.reflection.testing.ReflectableService.UnknownMethod")
-                .build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setFileContainingSymbol("grpc.reflection.testing.ReflectableService.UnknownMethod").build();
 
         ServerReflectionResponse response = invoke(request);
         List<ByteString> list = response.getFileDescriptorResponse().getFileDescriptorProtoList();
@@ -155,18 +140,13 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingFilesContainingNestedSymbol() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setFileContainingSymbol("grpc.reflection.testing.NestedTypeOuter.Middle.Inner")
-                .build();
-        ServerReflectionResponse expected = ServerReflectionResponse.newBuilder()
-                .setValidHost("localhost")
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setFileContainingSymbol("grpc.reflection.testing.NestedTypeOuter.Middle.Inner").build();
+        ServerReflectionResponse expected = ServerReflectionResponse.newBuilder().setValidHost("localhost")
                 .setOriginalRequest(request)
-                .setFileDescriptorResponse(
-                        FileDescriptorResponse.newBuilder()
-                                .addFileDescriptorProto(
-                                        ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString())
-                                .build())
+                .setFileDescriptorResponse(FileDescriptorResponse.newBuilder()
+                        .addFileDescriptorProto(ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString())
+                        .build())
                 .build();
         ServerReflectionResponse resp = invoke(request);
         assertThat(resp).isEqualTo(expected);
@@ -174,17 +154,12 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingFilesContainingExtension() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setFileContainingExtension(
-                        ExtensionRequest.newBuilder()
-                                .setContainingType("grpc.reflection.testing.ThirdLevelType")
-                                .setExtensionNumber(100)
-                                .build())
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setFileContainingExtension(ExtensionRequest.newBuilder()
+                        .setContainingType("grpc.reflection.testing.ThirdLevelType").setExtensionNumber(100).build())
                 .build();
 
-        List<ByteString> expected = Arrays.asList(
-                ReflectionTestProto.getDescriptor().toProto().toByteString(),
+        List<ByteString> expected = Arrays.asList(ReflectionTestProto.getDescriptor().toProto().toByteString(),
                 ReflectionTestDepthTwoProto.getDescriptor().toProto().toByteString(),
                 ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString());
 
@@ -195,25 +170,17 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingFilesContainingNestedExtension() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setFileContainingExtension(
-                        ExtensionRequest.newBuilder()
-                                .setContainingType("grpc.reflection.testing.ThirdLevelType")
-                                .setExtensionNumber(101)
-                                .build())
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setFileContainingExtension(ExtensionRequest.newBuilder()
+                        .setContainingType("grpc.reflection.testing.ThirdLevelType").setExtensionNumber(101).build())
                 .build();
 
-        ServerReflectionResponse expected = ServerReflectionResponse.newBuilder()
-                .setValidHost("localhost")
+        ServerReflectionResponse expected = ServerReflectionResponse.newBuilder().setValidHost("localhost")
                 .setOriginalRequest(request)
-                .setFileDescriptorResponse(
-                        FileDescriptorResponse.newBuilder()
-                                .addFileDescriptorProto(
-                                        ReflectionTestDepthTwoProto.getDescriptor().toProto().toByteString())
-                                .addFileDescriptorProto(
-                                        ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString())
-                                .build())
+                .setFileDescriptorResponse(FileDescriptorResponse.newBuilder()
+                        .addFileDescriptorProto(ReflectionTestDepthTwoProto.getDescriptor().toProto().toByteString())
+                        .addFileDescriptorProto(ReflectionTestDepthThreeProto.getDescriptor().toProto().toByteString())
+                        .build())
                 .build();
 
         ServerReflectionResponse response = invoke(request);
@@ -222,10 +189,8 @@ public class GrpcReflectionTest {
 
     @Test
     public void testRetrievingAllExtensionNumbersOfType() {
-        ServerReflectionRequest request = ServerReflectionRequest.newBuilder()
-                .setHost("localhost")
-                .setAllExtensionNumbersOfType("grpc.reflection.testing.ThirdLevelType")
-                .build();
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setHost("localhost")
+                .setAllExtensionNumbersOfType("grpc.reflection.testing.ThirdLevelType").build();
 
         List<Integer> expected = Arrays.asList(100, 101);
 

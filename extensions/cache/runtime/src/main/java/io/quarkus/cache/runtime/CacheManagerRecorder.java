@@ -82,7 +82,8 @@ public class CacheManagerRecorder {
 
             @Override
             public Supplier<CacheManager> get(Context context) {
-                return CaffeineCacheManagerBuilder.buildWithMicrometerMetrics(context.cacheNames(), cacheConfigRV.getValue());
+                return CaffeineCacheManagerBuilder.buildWithMicrometerMetrics(context.cacheNames(),
+                        cacheConfigRV.getValue());
             }
         };
     }

@@ -7,9 +7,8 @@ import java.util.List;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A build item that represents a {@link java.lang.reflect.Proxy} definition
- * that will be required in native mode. This definition takes the form of an ordered
- * list of interfaces that this proxy will implement.
+ * A build item that represents a {@link java.lang.reflect.Proxy} definition that will be required in native mode. This
+ * definition takes the form of an ordered list of interfaces that this proxy will implement.
  */
 public final class NativeImageProxyDefinitionBuildItem extends MultiBuildItem {
 

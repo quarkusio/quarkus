@@ -13,10 +13,7 @@ public class IsPodmanWorking extends IsContainerRuntimeWorking {
     }
 
     public IsPodmanWorking(boolean silent) {
-        super(List.of(
-                new TestContainersStrategy(silent),
-                new DockerHostStrategy(),
-                new PodmanBinaryStrategy()));
+        super(List.of(new TestContainersStrategy(silent), new DockerHostStrategy(), new PodmanBinaryStrategy()));
     }
 
     private static class PodmanBinaryStrategy implements Strategy {

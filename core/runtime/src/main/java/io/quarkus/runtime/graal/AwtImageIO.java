@@ -18,8 +18,8 @@ import com.oracle.svm.core.annotate.TargetElement;
 
 public class AwtImageIO {
     // The wording would be IS_WINDOWS and IS_MAC specific.
-    public static String AWT_EXTENSION_HINT = "Add AWT Quarkus extension to enable Java2D/ImageIO. " +
-            "Additional system libraries such as `freetype' and `fontconfig' might be needed.";
+    public static String AWT_EXTENSION_HINT = "Add AWT Quarkus extension to enable Java2D/ImageIO. "
+            + "Additional system libraries such as `freetype' and `fontconfig' might be needed.";
     static final Logger LOGGER = Logger.getLogger(AwtImageIO.class);
 
     /**

@@ -56,9 +56,8 @@ public class GeneratedJaxRsResourceTest {
                 builder.addBuildStep(context -> {
                     BuildProducer<GeneratedJaxRsResourceBuildItem> producer = context::produce;
                     ClassOutput classOutput = new GeneratedJaxRsResourceGizmoAdaptor(producer);
-                    try (ClassCreator classCreator = ClassCreator.builder()
-                            .classOutput(classOutput).className("com.example.TestResource")
-                            .build()) {
+                    try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
+                            .className("com.example.TestResource").build()) {
                         classCreator.addAnnotation(Path.class).addValue("value", "test");
                         MethodCreator methodCreator = classCreator.getMethodCreator("test", String.class);
                         methodCreator.addAnnotation(GET.class);

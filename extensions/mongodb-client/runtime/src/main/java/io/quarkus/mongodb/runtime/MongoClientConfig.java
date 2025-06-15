@@ -16,8 +16,7 @@ import io.smallrye.config.WithName;
 public interface MongoClientConfig {
 
     /**
-     * Configures the connection string.
-     * The format is:
+     * Configures the connection string. The format is:
      * {@code  mongodb://[username:password@]host1[:port1][,host2[:port2],...[,hostN[:portN]]][/[database.collection][?options]]}
      * <p>
      * {@code mongodb://} is a required prefix to identify that this is a string in the standard connection format.
@@ -47,10 +46,10 @@ public interface MongoClientConfig {
      * <li>{@code username:password@} are optional. If given, the driver will attempt to login to a database after
      * connecting to a database server. For some authentication mechanisms, only the username is specified and the
      * password is not, in which case the ":" after the username is left off as well</li>
-     * <li>{@code host} is the only required part of the URI. It identifies a single host name for which SRV records
-     * are looked up from a Domain Name Server after prefixing the host name with {@code "_mongodb._tcp"}. The
-     * host/port for each SRV record becomes the seed list used to connect, as if each one were provided as host/port
-     * pair in a URI using the normal mongodb protocol.</li>
+     * <li>{@code host} is the only required part of the URI. It identifies a single host name for which SRV records are
+     * looked up from a Domain Name Server after prefixing the host name with {@code "_mongodb._tcp"}. The host/port for
+     * each SRV record becomes the seed list used to connect, as if each one were provided as host/port pair in a URI
+     * using the normal mongodb protocol.</li>
      * <li>{@code /database} is the name of the database to login to and thus is only relevant if the
      * {@code username:password@} syntax is used. If not specified the "admin" database will be used by default.</li>
      * <li>{@code ?options} are connection options. Note that if {@code database} is absent there is still a {@code /}
@@ -64,8 +63,7 @@ public interface MongoClientConfig {
     Optional<String> connectionString();
 
     /**
-     * Configures the MongoDB server addresses (one if single mode).
-     * The addresses are passed as {@code host:port}.
+     * Configures the MongoDB server addresses (one if single mode). The addresses are passed as {@code host:port}.
      */
     @WithDefault("127.0.0.1:27017")
     List<String> hosts();
@@ -123,8 +121,8 @@ public interface MongoClientConfig {
     /**
      * If connecting with TLS, this option enables insecure TLS connections.
      *
-     * @deprecated in favor of configuration at the tls registry level. See {@link #tlsConfigurationName()}
-     *             and quarkus tls registry hostname verification configuration
+     * @deprecated in favor of configuration at the tls registry level. See {@link #tlsConfigurationName()} and quarkus
+     *             tls registry hostname verification configuration
      *             {@code quarkus.tls.hostname-verification-algorithm=NONE}.
      */
     @WithDefault("false")
@@ -140,8 +138,8 @@ public interface MongoClientConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but
+     * no TLS configuration is found with that name then an error will be thrown.
      * <p>
      * The default TLS configuration is <strong>not</strong> used by default.
      */
@@ -175,14 +173,13 @@ public interface MongoClientConfig {
     WriteConcernConfig writeConcern();
 
     /**
-     * Configures the read concern.
-     * Supported values are: {@code local|majority|linearizable|snapshot|available}
+     * Configures the read concern. Supported values are: {@code local|majority|linearizable|snapshot|available}
      */
     Optional<String> readConcern();
 
     /**
-     * Configures the read preference.
-     * Supported values are: {@code primary|primaryPreferred|secondary|secondaryPreferred|nearest}
+     * Configures the read preference. Supported values are:
+     * {@code primary|primaryPreferred|secondary|secondaryPreferred|nearest}
      */
     Optional<String> readPreference();
 
@@ -200,8 +197,8 @@ public interface MongoClientConfig {
     String healthDatabase();
 
     /**
-     * Configures the UUID representation to use when encoding instances of {@link java.util.UUID}
-     * and when decoding BSON binary values with subtype of 3.
+     * Configures the UUID representation to use when encoding instances of {@link java.util.UUID} and when decoding
+     * BSON binary values with subtype of 3.
      */
     Optional<UuidRepresentation> uuidRepresentation();
 

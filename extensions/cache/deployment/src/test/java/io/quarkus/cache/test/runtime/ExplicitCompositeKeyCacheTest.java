@@ -19,7 +19,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Tests a cache with <b>explicit composite</b> cache keys.<br>
- * All methods with {@link CacheKey @CacheKey}-annotated arguments also have another argument which is not part of the key.
+ * All methods with {@link CacheKey @CacheKey}-annotated arguments also have another argument which is not part of the
+ * key.
  */
 public class ExplicitCompositeKeyCacheTest {
 
@@ -29,7 +30,8 @@ public class ExplicitCompositeKeyCacheTest {
     private static final BigDecimal KEY_2_ELEMENT_2 = new BigDecimal(456);
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -38,7 +40,8 @@ public class ExplicitCompositeKeyCacheTest {
     public void testAllCacheAnnotations() {
 
         // In most of the cached service methods calls below, a changing third argument will be passed to the methods.
-        // The fact that it changes each time should not have any effect on the cache because it is not part of the cache key.
+        // The fact that it changes each time should not have any effect on the cache because it is not part of the
+        // cache key.
 
         // STEP 1
         // Action: @CacheResult-annotated method call.
@@ -121,7 +124,8 @@ public class ExplicitCompositeKeyCacheTest {
         private static final String CACHE_NAME = "test-cache";
 
         @CacheResult(cacheName = CACHE_NAME)
-        public String cachedMethod(@CacheKey Locale keyElement1, @CacheKey BigDecimal keyElement2, Object notPartOfTheKey) {
+        public String cachedMethod(@CacheKey Locale keyElement1, @CacheKey BigDecimal keyElement2,
+                Object notPartOfTheKey) {
             return new String();
         }
 

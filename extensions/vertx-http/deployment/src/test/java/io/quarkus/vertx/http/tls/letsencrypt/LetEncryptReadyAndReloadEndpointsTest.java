@@ -52,8 +52,7 @@ public class LetEncryptReadyAndReloadEndpointsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, LetsEncryptFlowTestBase.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, LetsEncryptFlowTestBase.class)
                     .addAsResource(new StringAsset((configuration)), "application.properties"));
 
     @Inject
@@ -74,7 +73,7 @@ public class LetEncryptReadyAndReloadEndpointsTest {
                 .setTrustOptions(new PemTrustOptions().addCertPath(SELF_SIGNED_CA.getAbsolutePath()));
         WebClient client = WebClient.create(vertx, options);
 
-        //  Verify the application is serving the application
+        // Verify the application is serving the application
         HttpResponse<Buffer> response = await(client.getAbs(endpoint).send());
         Assertions.assertThat(response.statusCode()).isEqualTo(200);
 

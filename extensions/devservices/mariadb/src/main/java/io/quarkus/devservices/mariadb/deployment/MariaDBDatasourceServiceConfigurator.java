@@ -26,13 +26,9 @@ public class MariaDBDatasourceServiceConfigurator implements DatasourceServiceCo
         String effectivePassword = containerConfig.getDbName().orElse(DEFAULT_DATABASE_PASSWORD);
         String jdbcUrl = getJdbcUrl(containerAddress, container.tryGetEnv(DATABASE_ENVS).orElse(effectiveDbName));
         String reactiveUrl = getReactiveUrl(jdbcUrl);
-        return new RunningDevServicesDatasource(
-                containerAddress.getId(),
-                jdbcUrl,
-                reactiveUrl,
+        return new RunningDevServicesDatasource(containerAddress.getId(), jdbcUrl, reactiveUrl,
                 container.tryGetEnv(USERNAME_ENVS).orElse(effectiveUsername),
-                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword),
-                null);
+                container.tryGetEnv(PASSWORD_ENVS).orElse(effectivePassword), null);
     }
 
     @Override

@@ -46,18 +46,15 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
                 Arrays.stream(method.getParameterTypes()).map(Class::getName).toArray(String[]::new));
     }
 
-    public ReflectiveMethodBuildItem(String declaringClass, String name,
-            String... params) {
+    public ReflectiveMethodBuildItem(String declaringClass, String name, String... params) {
         this(null, false, declaringClass, name, params);
     }
 
-    public ReflectiveMethodBuildItem(String reason, String declaringClass, String name,
-            String... params) {
+    public ReflectiveMethodBuildItem(String reason, String declaringClass, String name, String... params) {
         this(reason, false, declaringClass, name, params);
     }
 
-    public ReflectiveMethodBuildItem(boolean queryOnly, String declaringClass, String name,
-            String... params) {
+    public ReflectiveMethodBuildItem(boolean queryOnly, String declaringClass, String name, String... params) {
         this(null, queryOnly, declaringClass, name, params);
     }
 
@@ -70,18 +67,15 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         this.reason = reason;
     }
 
-    public ReflectiveMethodBuildItem(String reason, String declaringClass, String name,
-            Class<?>... params) {
+    public ReflectiveMethodBuildItem(String reason, String declaringClass, String name, Class<?>... params) {
         this(reason, false, declaringClass, name, Arrays.stream(params).map(Class::getName).toArray(String[]::new));
     }
 
-    public ReflectiveMethodBuildItem(String declaringClass, String name,
-            Class<?>... params) {
+    public ReflectiveMethodBuildItem(String declaringClass, String name, Class<?>... params) {
         this(false, declaringClass, name, params);
     }
 
-    public ReflectiveMethodBuildItem(boolean queryOnly, String declaringClass, String name,
-            Class<?>... params) {
+    public ReflectiveMethodBuildItem(boolean queryOnly, String declaringClass, String name, Class<?>... params) {
         this(null, queryOnly, declaringClass, name, Arrays.stream(params).map(Class::getName).toArray(String[]::new));
     }
 
@@ -112,9 +106,8 @@ public final class ReflectiveMethodBuildItem extends MultiBuildItem {
         if (o == null || getClass() != o.getClass())
             return false;
         ReflectiveMethodBuildItem that = (ReflectiveMethodBuildItem) o;
-        return Objects.equals(declaringClass, that.declaringClass) &&
-                Objects.equals(name, that.name) &&
-                Arrays.equals(params, that.params);
+        return Objects.equals(declaringClass, that.declaringClass) && Objects.equals(name, that.name)
+                && Arrays.equals(params, that.params);
     }
 
     @Override

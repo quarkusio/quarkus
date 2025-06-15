@@ -15,8 +15,8 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * CDI qualifier for beans representing an "extension" of Hibernate Search Standalone,
- * i.e. beans injected into Hibernate Search as part of its configuration.
+ * CDI qualifier for beans representing an "extension" of Hibernate Search Standalone, i.e. beans injected into
+ * Hibernate Search as part of its configuration.
  * <p>
  * See the reference documentation for information about extensions that supports this annotation.
  */
@@ -37,9 +37,7 @@ public @interface SearchExtension {
      */
     String index() default "";
 
-    class Literal
-            extends AnnotationLiteral<SearchExtension>
-            implements SearchExtension {
+    class Literal extends AnnotationLiteral<SearchExtension> implements SearchExtension {
 
         private final String backend;
         private final String index;

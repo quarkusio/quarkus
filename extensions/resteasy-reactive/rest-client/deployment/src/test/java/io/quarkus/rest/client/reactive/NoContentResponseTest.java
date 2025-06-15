@@ -23,11 +23,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NoContentResponseTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class)
-                    .addAsResource(
-                            new StringAsset(setUrlForClass(Client.class)),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class)
+                    .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
 
     @RestClient
     Client client;

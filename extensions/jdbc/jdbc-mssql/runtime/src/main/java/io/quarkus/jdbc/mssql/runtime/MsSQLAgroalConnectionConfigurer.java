@@ -14,7 +14,8 @@ public class MsSQLAgroalConnectionConfigurer implements AgroalConnectionConfigur
     @Override
     public void disableSslSupport(String databaseKind, AgroalDataSourceConfigurationSupplier dataSourceConfiguration,
             Map<String, String> additionalProperties) {
-        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcProperty("encrypt", "false");
+        dataSourceConfiguration.connectionPoolConfiguration().connectionFactoryConfiguration().jdbcProperty("encrypt",
+                "false");
     }
 
     @Override

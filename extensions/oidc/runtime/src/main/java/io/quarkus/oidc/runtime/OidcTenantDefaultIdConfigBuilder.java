@@ -12,9 +12,8 @@ import io.smallrye.config.Priorities;
 import io.smallrye.config.SmallRyeConfigBuilder;
 
 /**
- * Sets default {@link OidcTenantConfig#tenantId()} to the tenant's named key.
- * For example, the configuration property 'quarkus.oidc.<<named-key>>.tenant-id' is set to the '<<named-key>>' if
- * user did not configure any value.
+ * Sets default {@link OidcTenantConfig#tenantId()} to the tenant's named key. For example, the configuration property
+ * 'quarkus.oidc.<<named-key>>.tenant-id' is set to the '<<named-key>>' if user did not configure any value.
  */
 public class OidcTenantDefaultIdConfigBuilder implements ConfigBuilder {
 
@@ -30,7 +29,8 @@ public class OidcTenantDefaultIdConfigBuilder implements ConfigBuilder {
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
 
             @Override
-            public ConfigSourceInterceptor getInterceptor(ConfigSourceInterceptorContext configSourceInterceptorContext) {
+            public ConfigSourceInterceptor getInterceptor(
+                    ConfigSourceInterceptorContext configSourceInterceptorContext) {
                 return configSourceInterceptor;
             }
 
@@ -65,7 +65,8 @@ public class OidcTenantDefaultIdConfigBuilder implements ConfigBuilder {
                     if (name.equals(DEFAULT_TENANT_ID_PROPERTY_KEY)) {
                         return createConfigValue(name, OidcUtils.DEFAULT_TENANT_ID);
                     } else {
-                        var maybeTenantName = name.substring(OIDC_PREFIX.length(), name.length() - TENANT_ID_POSTFIX.length());
+                        var maybeTenantName = name.substring(OIDC_PREFIX.length(),
+                                name.length() - TENANT_ID_POSTFIX.length());
                         // this is additional named tenant, now we know that OIDC tenant extension validates
                         // the 'tenant-id' always equals named key, so we can preset this for users
                         if (maybeTenantName.startsWith(DOUBLE_QUOTE) && maybeTenantName.endsWith(DOUBLE_QUOTE)) {

@@ -27,8 +27,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * {@link BasicAuthCache} used in the {@link RestClient} is using
- * serialization which is not supported by GraalVM.
+ * {@link BasicAuthCache} used in the {@link RestClient} is using serialization which is not supported by GraalVM.
  * <p>
  * We substitute it with an implementation which does not use serialization.
  */

@@ -12,7 +12,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
 /**
- * This is only used in the generated ExceptionMappers when the Spring @RestControllerAdvice method returns a ResponseEntity
+ * This is only used in the generated ExceptionMappers when the Spring @RestControllerAdvice method returns a
+ * ResponseEntity
  */
 public class ResponseEntityConverter {
 

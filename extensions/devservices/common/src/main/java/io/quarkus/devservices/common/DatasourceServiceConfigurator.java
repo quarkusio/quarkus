@@ -11,11 +11,8 @@ public interface DatasourceServiceConfigurator {
     }
 
     default String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
-        return String.format("jdbc:%s://%s:%d/%s%s",
-                getJdbcPrefix(),
-                containerAddress.getHost(),
-                containerAddress.getPort(),
-                databaseName,
+        return String.format("jdbc:%s://%s:%d/%s%s", getJdbcPrefix(), containerAddress.getHost(),
+                containerAddress.getPort(), databaseName,
                 getParameters(containerAddress.getRunningContainer().containerInfo().labels()));
     }
 

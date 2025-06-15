@@ -14,7 +14,9 @@ public interface CredentialsProvider {
     /**
      * Returns the credentials for a given credentials provider
      *
-     * @param credentialsProviderName the name of the credentials provider, which can be used to retrieve custom configuration
+     * @param credentialsProviderName
+     *        the name of the credentials provider, which can be used to retrieve custom configuration
+     *
      * @return the credentials
      */
     Map<String, String> getCredentials(String credentialsProviderName);

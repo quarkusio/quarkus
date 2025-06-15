@@ -12,10 +12,9 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMechanism;
 
 /**
- * Bears collected intercepted classes annotated with registered security annotation
- * if and only if class-level security is applied due
- * to the matching {@link io.quarkus.security.spi.ClassSecurityAnnotationBuildItem} annotation.
- * Security interceptor needs to be created and applied for each intercepted class.
+ * Bears collected intercepted classes annotated with registered security annotation if and only if class-level security
+ * is applied due to the matching {@link io.quarkus.security.spi.ClassSecurityAnnotationBuildItem} annotation. Security
+ * interceptor needs to be created and applied for each intercepted class.
  *
  * @see EagerSecurityInterceptorBindingBuildItem for more information on security filters
  */
@@ -38,11 +37,7 @@ public final class EagerSecurityInterceptorClassesBuildItem extends MultiBuildIt
     }
 
     public static Set<String> collectInterceptedClasses(List<EagerSecurityInterceptorClassesBuildItem> items) {
-        return items.stream()
-                .map(i -> i.bindingValueToInterceptedClasses)
-                .map(Map::values)
-                .flatMap(Collection::stream)
-                .flatMap(Collection::stream)
-                .collect(Collectors.toSet());
+        return items.stream().map(i -> i.bindingValueToInterceptedClasses).map(Map::values).flatMap(Collection::stream)
+                .flatMap(Collection::stream).collect(Collectors.toSet());
     }
 }

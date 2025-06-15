@@ -6,8 +6,7 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.annotations.ConfigPhase;
 
 /**
- * A build item that is not part of the standard build, but is only used to generate
- * example config files and docs.
+ * A build item that is not part of the standard build, but is only used to generate example config files and docs.
  */
 public final class ConfigDescriptionBuildItem extends MultiBuildItem implements Comparable<ConfigDescriptionBuildItem> {
     private final String propertyName;

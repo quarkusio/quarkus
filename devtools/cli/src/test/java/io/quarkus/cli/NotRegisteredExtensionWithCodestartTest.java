@@ -14,21 +14,11 @@ public class NotRegisteredExtensionWithCodestartTest extends RegistryClientBuild
 
     @BeforeAll
     static void configureRegistryAndMavenRepo() {
-        TestRegistryClientBuilder.newInstance()
-                .baseDir(registryConfigDir())
-                .newRegistry("registry.acme.org")
-                .newPlatform("org.acme.quarkus.platform")
-                .newStream("2.0")
-                .newRelease("2.0.0")
-                .quarkusVersion(getCurrentQuarkusVersion())
-                .addCoreMember()
-                .alignPluginsOnQuarkusVersion()
-                .addDefaultCodestartExtensions()
-                .registry()
-                .clientBuilder()
-                .addExternalExtensionWithCodestart("org.acme.quarkus", "acme-outlaw", "6.6.6")
-                .clientBuilder()
-                .build();
+        TestRegistryClientBuilder.newInstance().baseDir(registryConfigDir()).newRegistry("registry.acme.org")
+                .newPlatform("org.acme.quarkus.platform").newStream("2.0").newRelease("2.0.0")
+                .quarkusVersion(getCurrentQuarkusVersion()).addCoreMember().alignPluginsOnQuarkusVersion()
+                .addDefaultCodestartExtensions().registry().clientBuilder()
+                .addExternalExtensionWithCodestart("org.acme.quarkus", "acme-outlaw", "6.6.6").clientBuilder().build();
     }
 
     @Test

@@ -18,27 +18,30 @@ public class ContinuousTestingTestUtils {
 
     public TestStatus waitForNextCompletion() {
         try {
-            Awaitility.waitAtMost(1, TimeUnit.MINUTES).pollInterval(50, TimeUnit.MILLISECONDS).until(new Callable<Boolean>() {
-                @Override
-                public Boolean call() throws Exception {
-                    ContinuousTestingSharedStateManager.State ts = ContinuousTestingSharedStateManager.getLastState();
-                    if (ts.lastRun > runToWaitFor) {
-                        //sometimes we can run spuriously, because of the way file systems work
-                        //we just roll with it, and take the updated results
-                        runToWaitFor = ts.lastRun;
-                    }
-                    boolean runComplete = ts.lastRun == runToWaitFor;
-                    if (runComplete && ts.inProgress) {
-                        //there is a small chance of a race, where changes are picked up twice, due to how filesystems work
-                        //this works around it by waiting for the next run
-                        runToWaitFor = ts.lastRun + 1;
-                        return false;
-                    } else if (runComplete) {
-                        runToWaitFor++;
-                    }
-                    return runComplete;
-                }
-            });
+            Awaitility.waitAtMost(1, TimeUnit.MINUTES).pollInterval(50, TimeUnit.MILLISECONDS)
+                    .until(new Callable<Boolean>() {
+                        @Override
+                        public Boolean call() throws Exception {
+                            ContinuousTestingSharedStateManager.State ts = ContinuousTestingSharedStateManager
+                                    .getLastState();
+                            if (ts.lastRun > runToWaitFor) {
+                                // sometimes we can run spuriously, because of the way file systems work
+                                // we just roll with it, and take the updated results
+                                runToWaitFor = ts.lastRun;
+                            }
+                            boolean runComplete = ts.lastRun == runToWaitFor;
+                            if (runComplete && ts.inProgress) {
+                                // there is a small chance of a race, where changes are picked up twice, due to how
+                                // filesystems work
+                                // this works around it by waiting for the next run
+                                runToWaitFor = ts.lastRun + 1;
+                                return false;
+                            } else if (runComplete) {
+                                runToWaitFor++;
+                            }
+                            return runComplete;
+                        }
+                    });
         } catch (Exception e) {
             ContinuousTestingSharedStateManager.State ts = ContinuousTestingSharedStateManager.getLastState();
             throw new ConditionTimeoutException("Failed to wait for test run " + runToWaitFor + " " + ts, e);
@@ -76,8 +79,8 @@ public class ContinuousTestingTestUtils {
         public TestStatus() {
         }
 
-        public TestStatus(long lastRun, long running, long testsRun, long testsPassed, long testsFailed, long testsSkipped,
-                long totalTestsPassed, long totalTestsFailed, long totalTestsSkipped) {
+        public TestStatus(long lastRun, long running, long testsRun, long testsPassed, long testsFailed,
+                long testsSkipped, long totalTestsPassed, long totalTestsFailed, long totalTestsSkipped) {
             this.lastRun = lastRun;
             this.running = running;
             this.testsRun = testsRun;
@@ -173,14 +176,9 @@ public class ContinuousTestingTestUtils {
 
         @Override
         public String toString() {
-            return "TestStatus{" +
-                    "lastRun=" + lastRun +
-                    ", running=" + running +
-                    ", testsRun=" + testsRun +
-                    ", testsPassed=" + testsPassed +
-                    ", testsFailed=" + testsFailed +
-                    ", testsSkipped=" + testsSkipped +
-                    '}';
+            return "TestStatus{" + "lastRun=" + lastRun + ", running=" + running + ", testsRun=" + testsRun
+                    + ", testsPassed=" + testsPassed + ", testsFailed=" + testsFailed + ", testsSkipped=" + testsSkipped
+                    + '}';
         }
     }
 }

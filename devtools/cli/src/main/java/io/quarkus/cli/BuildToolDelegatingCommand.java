@@ -67,8 +67,8 @@ public class BuildToolDelegatingCommand implements Callable<Integer> {
     }
 
     public BuildSystemRunner getRunner(BuildToolContext context) {
-        return BuildSystemRunner.getRunner(output, context.getPropertiesOptions(), registryClient, context.getProjectRoot(),
-                context.getBuildTool());
+        return BuildSystemRunner.getRunner(output, context.getPropertiesOptions(), registryClient,
+                context.getProjectRoot(), context.getBuildTool());
     }
 
     public void populateContext(BuildToolContext context) {
@@ -124,12 +124,11 @@ public class BuildToolDelegatingCommand implements Callable<Integer> {
     public void prepareMaven(BuildToolContext context) {
         BuildSystemRunner runner = getRunner(context);
         BuildSystemRunner.BuildCommandArgs compileArgs = runner.prepareAction("resources:resources",
-                context.getBuildOptions(),
-                context.getRunModeOption(),
-                context.getParams());
+                context.getBuildOptions(), context.getRunModeOption(), context.getParams());
 
-        //Let's check if we need to precompile and if so, include the command to the dry-run output.
-        //Note, that if the command should delegate to a the parent command dry-run output should be handled by the parent.
+        // Let's check if we need to precompile and if so, include the command to the dry-run output.
+        // Note, that if the command should delegate to a the parent command dry-run output should be handled by the
+        // parent.
         if (getParentCommand().isPresent()) {
             return;
         } else if (context.getRunModeOption().isDryRun()) {

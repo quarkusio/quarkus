@@ -9,11 +9,11 @@ import java.sql.SQLException;
 public class QuarkusHSQLDBDelegate extends org.quartz.impl.jdbcjobstore.HSQLDBDelegate {
     /**
      * See the javadoc in {@link QuarkusObjectInputStream#resolveClass(ObjectStreamClass)} and
-     * {@link DBDelegateUtils#getObjectFromInput(InputStream)}
-     * on why this is needed
+     * {@link DBDelegateUtils#getObjectFromInput(InputStream)} on why this is needed
      */
     @Override
-    protected Object getObjectFromBlob(ResultSet rs, String colName) throws ClassNotFoundException, IOException, SQLException {
+    protected Object getObjectFromBlob(ResultSet rs, String colName)
+            throws ClassNotFoundException, IOException, SQLException {
         InputStream binaryInput = rs.getBinaryStream(colName);
         return DBDelegateUtils.getObjectFromInput(binaryInput);
     }

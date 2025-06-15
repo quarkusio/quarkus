@@ -61,14 +61,8 @@ public abstract class AbstractAuthFailureResponseBodyDevModeTest {
     private static void assertExceptionBody(AuthFailure failure, boolean challenge) {
         int statusCode = challenge ? 302 : 401;
         boolean expectBody = failure.expectBody && statusCode == 401;
-        RestAssured
-                .given()
-                .redirects().follow(false)
-                .header("auth-failure", failure.toString())
-                .header("challenge-data", challenge)
-                .get("/secured")
-                .then()
-                .statusCode(statusCode)
+        RestAssured.given().redirects().follow(false).header("auth-failure", failure.toString())
+                .header("challenge-data", challenge).get("/secured").then().statusCode(statusCode)
                 .body(expectBody ? Matchers.equalTo(RESPONSE_BODY)
                         : Matchers.not(Matchers.containsString(RESPONSE_BODY)));
     }
@@ -88,7 +82,8 @@ public abstract class AbstractAuthFailureResponseBodyDevModeTest {
     public static class FailingAuthenticator implements HttpAuthenticationMechanism {
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             return Uni.createFrom().failure(getFailureProducer(context));
         }
 

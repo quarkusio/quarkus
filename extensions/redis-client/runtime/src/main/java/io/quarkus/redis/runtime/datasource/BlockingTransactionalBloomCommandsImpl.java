@@ -14,51 +14,43 @@ public class BlockingTransactionalBloomCommandsImpl<K, V> extends AbstractTransa
     private final ReactiveTransactionalBloomCommands<K, V> reactive;
 
     public BlockingTransactionalBloomCommandsImpl(TransactionalRedisDataSource ds,
-            ReactiveTransactionalBloomCommands<K, V> reactive,
-            Duration timeout) {
+            ReactiveTransactionalBloomCommands<K, V> reactive, Duration timeout) {
         super(ds, timeout);
         this.reactive = reactive;
     }
 
     @Override
     public void bfadd(K key, V value) {
-        this.reactive.bfadd(key, value)
-                .await().atMost(this.timeout);
+        this.reactive.bfadd(key, value).await().atMost(this.timeout);
     }
 
     @Override
     public void bfexists(K key, V value) {
-        this.reactive.bfexists(key, value)
-                .await().atMost(this.timeout);
+        this.reactive.bfexists(key, value).await().atMost(this.timeout);
     }
 
     @Override
     public void bfmadd(K key, V... values) {
-        this.reactive.bfmadd(key, values)
-                .await().atMost(this.timeout);
+        this.reactive.bfmadd(key, values).await().atMost(this.timeout);
     }
 
     @Override
     public void bfmexists(K key, V... values) {
-        this.reactive.bfmexists(key, values)
-                .await().atMost(this.timeout);
+        this.reactive.bfmexists(key, values).await().atMost(this.timeout);
     }
 
     @Override
     public void bfreserve(K key, double errorRate, long capacity) {
-        this.reactive.bfreserve(key, errorRate, capacity)
-                .await().atMost(this.timeout);
+        this.reactive.bfreserve(key, errorRate, capacity).await().atMost(this.timeout);
     }
 
     @Override
     public void bfreserve(K key, double errorRate, long capacity, BfReserveArgs args) {
-        this.reactive.bfreserve(key, errorRate, capacity, args)
-                .await().atMost(this.timeout);
+        this.reactive.bfreserve(key, errorRate, capacity, args).await().atMost(this.timeout);
     }
 
     @Override
     public void bfinsert(K key, BfInsertArgs args, V... values) {
-        this.reactive.bfinsert(key, args, values)
-                .await().atMost(this.timeout);
+        this.reactive.bfinsert(key, args, values).await().atMost(this.timeout);
     }
 }

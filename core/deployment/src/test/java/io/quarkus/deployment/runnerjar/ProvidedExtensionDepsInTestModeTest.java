@@ -35,11 +35,9 @@ public class ProvidedExtensionDepsInTestModeTest extends BootstrapFromOriginalJa
 
         final TsQuarkusExt extA = new TsQuarkusExt("ext-a");
         addToExpectedLib(extA.getRuntime());
-        extA.getRuntime()
-                .addDependency(new TsDependency(extADep))
+        extA.getRuntime().addDependency(new TsDependency(extADep))
                 .addDependency(new TsDependency(extAProvidedDep, "provided"));
-        extA.getDeployment()
-                .addDependency(new TsDependency(extADeploymentDep))
+        extA.getDeployment().addDependency(new TsDependency(extADeploymentDep))
                 .addDependency(new TsDependency(extAOptionalDeploymentDep, "provided"));
 
         final TsQuarkusExt extB = new TsQuarkusExt("ext-b");
@@ -49,11 +47,8 @@ public class ProvidedExtensionDepsInTestModeTest extends BootstrapFromOriginalJa
         final TsArtifact someProvidedDep = TsArtifact.jar("some-provided-dep");
         addToExpectedLib(someProvidedDep);
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA)
-                .addDependency(extB, "provided")
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA).addDependency(extB, "provided")
                 .addDependency(new TsDependency(someProvidedDep, "provided"));
     }
 
@@ -62,8 +57,8 @@ public class ProvidedExtensionDepsInTestModeTest extends BootstrapFromOriginalJa
         final Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-deployment", "1"), "compile",
                 DependencyFlags.DEPLOYMENT_CP));
-        expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"), "compile",
-                DependencyFlags.DEPLOYMENT_CP));
+        expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"),
+                "compile", DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(new GACTV("io.quarkus.bootstrap.test", "ext-b-deployment", "1"), "provided",
                 DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, getDeploymentOnlyDeps(model));

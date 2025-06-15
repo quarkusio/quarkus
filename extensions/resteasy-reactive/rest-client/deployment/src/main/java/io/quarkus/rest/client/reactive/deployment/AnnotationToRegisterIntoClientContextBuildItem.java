@@ -5,7 +5,8 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A Build Item that is used to register annotations that are used by the client to register services into the client context.
+ * A Build Item that is used to register annotations that are used by the client to register services into the client
+ * context.
  */
 public final class AnnotationToRegisterIntoClientContextBuildItem extends MultiBuildItem {
 

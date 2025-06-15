@@ -79,8 +79,8 @@ public class SseUtil extends CommonSseUtil {
         return sb.toString();
     }
 
-    private static void serialiseField(ResteasyReactiveRequestContext context, StringBuilder sb, String field, String value,
-            boolean multiLine) {
+    private static void serialiseField(ResteasyReactiveRequestContext context, StringBuilder sb, String field,
+            String value, boolean multiLine) {
         sb.append(field).append(":");
         // if not multi-line, just ignore whatever is after any \n, \r or \n\r, which ever comes first
         int n = value.indexOf('\n');
@@ -116,8 +116,7 @@ public class SseUtil extends CommonSseUtil {
     }
 
     private static String serialiseDataToString(ResteasyReactiveRequestContext context, OutboundSseEvent event,
-            MediaType eventMediaType)
-            throws IOException {
+            MediaType eventMediaType) throws IOException {
         ServerSerialisers serialisers = context.getDeployment().getSerialisers();
         Object entity = event.getData();
         Class<?> entityClass = event.getType();
@@ -129,8 +128,7 @@ public class SseUtil extends CommonSseUtil {
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
-                .findWriters(null, entityClass, mediaType)
-                .toArray(ServerSerialisers.NO_WRITER);
+                .findWriters(null, entityClass, mediaType).toArray(ServerSerialisers.NO_WRITER);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {

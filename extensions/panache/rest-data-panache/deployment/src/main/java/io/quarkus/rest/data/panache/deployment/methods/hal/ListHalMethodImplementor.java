@@ -59,8 +59,8 @@ public final class ListHalMethodImplementor extends ListMethodImplementor {
         ResultHandle wrapper = wrapHalEntities(creator, value, resourceMetadata.getEntityType(),
                 resourceProperties.getHalCollectionName());
 
-        creator.invokeVirtualMethod(
-                ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper, links);
+        creator.invokeVirtualMethod(ofMethod(HalCollectionWrapper.class, "addLinks", void.class, Link[].class), wrapper,
+                links);
         creator.returnValue(responseImplementor.ok(creator, wrapper, links));
     }
 
@@ -77,14 +77,14 @@ public final class ListHalMethodImplementor extends ListMethodImplementor {
         ResultHandle arcContainer = creator.invokeStaticMethod(ofMethod(Arc.class, "container", ArcContainer.class));
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
-                arcContainer,
-                creator.loadClassFromTCCL(ResteasyReactiveHalService.class),
+                arcContainer, creator.loadClassFromTCCL(ResteasyReactiveHalService.class),
                 creator.newArray(Annotation.class, 0));
-        ResultHandle halService = creator.invokeInterfaceMethod(
-                ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+        ResultHandle halService = creator.invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class),
+                instanceHandle);
 
-        return creator.invokeVirtualMethod(MethodDescriptor.ofMethod(HalService.class, "toHalCollectionWrapper",
-                HalCollectionWrapper.class, Collection.class, String.class, Class.class),
+        return creator.invokeVirtualMethod(
+                MethodDescriptor.ofMethod(HalService.class, "toHalCollectionWrapper", HalCollectionWrapper.class,
+                        Collection.class, String.class, Class.class),
                 halService, entities, creator.load(collectionName), creator.loadClassFromTCCL(entityType));
     }
 }

@@ -7,8 +7,8 @@ import java.util.NoSuchElementException;
 import io.quarkus.vertx.http.runtime.security.ImmutablePathMatcher.PathMatch;
 
 /**
- * A string keyed map that can be accessed as a substring, eliminating the need to allocate a new string
- * to do a key comparison against.
+ * A string keyed map that can be accessed as a substring, eliminating the need to allocate a new string to do a key
+ * comparison against.
  */
 public class ImmutableSubstringMap<V> {
 

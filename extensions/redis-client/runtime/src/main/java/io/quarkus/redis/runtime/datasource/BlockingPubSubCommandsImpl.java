@@ -22,8 +22,7 @@ public class BlockingPubSubCommandsImpl<V> extends AbstractRedisCommandGroup imp
 
     @Override
     public void publish(String channel, V message) {
-        reactive.publish(channel, message)
-                .await().atMost(timeout);
+        reactive.publish(channel, message).await().atMost(timeout);
     }
 
     @Override
@@ -64,53 +63,46 @@ public class BlockingPubSubCommandsImpl<V> extends AbstractRedisCommandGroup imp
     public RedisSubscriber subscribeToPatterns(List<String> patterns, Consumer<V> onMessage, Runnable onEnd,
             Consumer<Throwable> onException) {
         return reactive.subscribeToPatterns(patterns, onMessage, onEnd, onException)
-                .map(rs -> new BlockingRedisSubscriber(rs))
-                .await().atMost(timeout);
+                .map(rs -> new BlockingRedisSubscriber(rs)).await().atMost(timeout);
     }
 
     @Override
     public RedisSubscriber subscribe(List<String> channels, Consumer<V> onMessage, Runnable onEnd,
             Consumer<Throwable> onException) {
-        return reactive.subscribe(channels, onMessage, onEnd, onException)
-                .map(r -> new BlockingRedisSubscriber(r))
+        return reactive.subscribe(channels, onMessage, onEnd, onException).map(r -> new BlockingRedisSubscriber(r))
                 .await().atMost(timeout);
     }
 
     @Override
     public RedisSubscriber subscribeToPattern(String pattern, BiConsumer<String, V> onMessage) {
-        return reactive.subscribeToPattern(pattern, onMessage)
-                .map(r -> new BlockingRedisSubscriber(r))
-                .await().atMost(timeout);
+        return reactive.subscribeToPattern(pattern, onMessage).map(r -> new BlockingRedisSubscriber(r)).await()
+                .atMost(timeout);
     }
 
     @Override
     public RedisSubscriber subscribeToPatterns(List<String> patterns, BiConsumer<String, V> onMessage) {
-        return reactive.subscribeToPatterns(patterns, onMessage)
-                .map(r -> new BlockingRedisSubscriber(r))
-                .await().atMost(timeout);
+        return reactive.subscribeToPatterns(patterns, onMessage).map(r -> new BlockingRedisSubscriber(r)).await()
+                .atMost(timeout);
     }
 
     @Override
     public RedisSubscriber subscribeToPattern(String pattern, BiConsumer<String, V> onMessage, Runnable onEnd,
             Consumer<Throwable> onException) {
         return reactive.subscribeToPattern(pattern, onMessage, onEnd, onException)
-                .map(r -> new BlockingRedisSubscriber(r))
-                .await().atMost(timeout);
+                .map(r -> new BlockingRedisSubscriber(r)).await().atMost(timeout);
     }
 
     @Override
     public RedisSubscriber subscribeToPatterns(List<String> patterns, BiConsumer<String, V> onMessage, Runnable onEnd,
             Consumer<Throwable> onException) {
         return reactive.subscribeToPatterns(patterns, onMessage, onEnd, onException)
-                .map(r -> new BlockingRedisSubscriber(r))
-                .await().atMost(timeout);
+                .map(r -> new BlockingRedisSubscriber(r)).await().atMost(timeout);
     }
 
     @Override
     public RedisSubscriber subscribe(List<String> channels, BiConsumer<String, V> onMessage, Runnable onEnd,
             Consumer<Throwable> onException) {
-        return reactive.subscribe(channels, onMessage, onEnd, onException)
-                .map(r -> new BlockingRedisSubscriber(r))
+        return reactive.subscribe(channels, onMessage, onEnd, onException).map(r -> new BlockingRedisSubscriber(r))
                 .await().atMost(timeout);
     }
 
@@ -123,14 +115,12 @@ public class BlockingPubSubCommandsImpl<V> extends AbstractRedisCommandGroup imp
 
         @Override
         public void unsubscribe(String... channels) {
-            reactiveRedisSubscriber.unsubscribe(channels)
-                    .await().atMost(timeout);
+            reactiveRedisSubscriber.unsubscribe(channels).await().atMost(timeout);
         }
 
         @Override
         public void unsubscribe() {
-            reactiveRedisSubscriber.unsubscribe()
-                    .await().atMost(timeout);
+            reactiveRedisSubscriber.unsubscribe().await().atMost(timeout);
         }
     }
 }

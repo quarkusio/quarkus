@@ -13,7 +13,6 @@ public class BouncyCastleFipsJsseEndpoint {
     @GET
     @Path("listProviders")
     public String listProviders() {
-        return Arrays.asList(Security.getProviders()).stream()
-                .map(p -> p.getName()).collect(Collectors.joining(","));
+        return Arrays.asList(Security.getProviders()).stream().map(p -> p.getName()).collect(Collectors.joining(","));
     }
 }

@@ -28,9 +28,9 @@ public class RangeArgs implements RedisCommandExtraArguments {
 
     /**
      * Used when a time series is a compaction. With LATEST, TS.MRANGE also reports the compacted value of the latest
-     * possibly partial bucket, given that this bucket's start time falls within [fromTimestamp, toTimestamp].
-     * Without LATEST, TS.MRANGE does not report the latest possibly partial bucket. When a time series is not a
-     * compaction, LATEST is ignored.
+     * possibly partial bucket, given that this bucket's start time falls within [fromTimestamp, toTimestamp]. Without
+     * LATEST, TS.MRANGE does not report the latest possibly partial bucket. When a time series is not a compaction,
+     * LATEST is ignored.
      *
      * @return the current {@code MRangeArgs}
      */
@@ -40,10 +40,12 @@ public class RangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Filters samples by a list of specific timestamps.
-     * A sample passes the filter if its exact timestamp is specified and falls within [fromTimestamp, toTimestamp].
+     * Filters samples by a list of specific timestamps. A sample passes the filter if its exact timestamp is specified
+     * and falls within [fromTimestamp, toTimestamp].
      *
-     * @param timestamps the timestamps
+     * @param timestamps
+     *        the timestamps
+     *
      * @return the current {@code MRangeArgs}
      */
     public RangeArgs filterByTimestamp(long... timestamps) {
@@ -62,8 +64,11 @@ public class RangeArgs implements RedisCommandExtraArguments {
     /**
      * Filters samples by minimum and maximum values.
      *
-     * @param min the min value of the sample
-     * @param max the max value of the sample
+     * @param min
+     *        the min value of the sample
+     * @param max
+     *        the max value of the sample
+     *
      * @return the current {@code MRangeArgs}
      */
     public RangeArgs filterByValue(double min, double max) {
@@ -77,7 +82,9 @@ public class RangeArgs implements RedisCommandExtraArguments {
     /**
      * Limits the number of returned samples.
      *
-     * @param count the max number of samples to return
+     * @param count
+     *        the max number of samples to return
+     *
      * @return the current {@code MRangeArgs}
      */
     public RangeArgs count(int count) {
@@ -86,10 +93,12 @@ public class RangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the time bucket alignment control for AGGREGATION.
-     * It controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
+     * Set the time bucket alignment control for AGGREGATION. It controls the time bucket timestamps by changing the
+     * reference timestamp on which a bucket is defined.
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code MRangeArgs}
      */
     public RangeArgs align(long timestamp) {
@@ -98,8 +107,8 @@ public class RangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the time bucket alignment control for AGGREGATION to the query start interval time (fromTimestamp).
-     * It controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
+     * Set the time bucket alignment control for AGGREGATION to the query start interval time (fromTimestamp). It
+     * controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
      *
      * @return the current {@code MRangeArgs}
      */
@@ -109,8 +118,8 @@ public class RangeArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the time bucket alignment control for AGGREGATION to the query end interval time (toTimestamp).
-     * It controls the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
+     * Set the time bucket alignment control for AGGREGATION to the query end interval time (toTimestamp). It controls
+     * the time bucket timestamps by changing the reference timestamp on which a bucket is defined.
      *
      * @return the current {@code MRangeArgs}
      */
@@ -122,8 +131,11 @@ public class RangeArgs implements RedisCommandExtraArguments {
     /**
      * Aggregates results into time buckets.
      *
-     * @param aggregation the aggregation function, must not be {@code null}
-     * @param bucketDuration the duration of each bucket, must not be {@code null}
+     * @param aggregation
+     *        the aggregation function, must not be {@code null}
+     * @param bucketDuration
+     *        the duration of each bucket, must not be {@code null}
+     *
      * @return the current {@code MRangeArgs}
      */
     public RangeArgs aggregation(Aggregation aggregation, Duration bucketDuration) {
@@ -135,7 +147,9 @@ public class RangeArgs implements RedisCommandExtraArguments {
     /**
      * Controls how bucket timestamps are reported.
      *
-     * @param ts the bucket timestamp configuration, must not be {@code null}
+     * @param ts
+     *        the bucket timestamp configuration, must not be {@code null}
+     *
      * @return the current {@code MRangeArgs}
      */
     public RangeArgs bucketTimestamp(BucketTimestamp ts) {

@@ -4,11 +4,8 @@ import java.security.Principal;
 import java.util.Map;
 
 /**
- * Allocated when a custom authorizer (i.e. Lambda) is used to authenticate user
- *
- * Will only be allocated if requestContext.authorizer.principalId is set
- * in the http event sent by API Gateway
- *
+ * Allocated when a custom authorizer (i.e. Lambda) is used to authenticate user Will only be allocated if
+ * requestContext.authorizer.principalId is set in the http event sent by API Gateway
  */
 public class CustomPrincipal implements Principal {
     private String name;

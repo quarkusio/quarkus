@@ -22,13 +22,12 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         final Extension resteasy = findExtension(catalog, "quarkus-resteasy");
         final ExtensionProcessor extensionProcessor = ExtensionProcessor.of(resteasy);
 
-        assertThat(extensionProcessor.getSyntheticMetadata())
-                .containsEntry("status", List.of("stable"))
-                .containsEntry("with", List.of("starter-code"))
-                .containsEntry("origin", List.of("platform"));
+        assertThat(extensionProcessor.getSyntheticMetadata()).containsEntry("status", List.of("stable"))
+                .containsEntry("with", List.of("starter-code")).containsEntry("origin", List.of("platform"));
         assertThat(extensionProcessor.getShortName()).contains("jax-rs");
         assertThat(extensionProcessor.getCategories()).contains("web");
-        assertThat(extensionProcessor.getCodestartKind()).isEqualTo(ExtensionProcessor.CodestartKind.EXTENSION_CODESTART);
+        assertThat(extensionProcessor.getCodestartKind())
+                .isEqualTo(ExtensionProcessor.CodestartKind.EXTENSION_CODESTART);
         assertThat(extensionProcessor.getCodestartName()).isEqualTo("resteasy");
         assertThat(extensionProcessor.getCodestartArtifact())
                 .isEqualTo("io.quarkus:quarkus-project-core-extension-codestarts::jar:" + getQuarkusCoreVersion());
@@ -58,8 +57,7 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
         final ExtensionCatalog catalog = getExtensionsCatalog();
         final Extension kotlin = findExtension(catalog, "quarkus-kotlin");
         final ExtensionProcessor extensionProcessor = ExtensionProcessor.of(kotlin);
-        assertThat(extensionProcessor.getSyntheticMetadata())
-                .containsEntry("status", List.of("stable"))
+        assertThat(extensionProcessor.getSyntheticMetadata()).containsEntry("status", List.of("stable"))
                 .containsEntry("origin", List.of("platform"));
         assertThat(extensionProcessor.getShortName()).contains("");
         assertThat(extensionProcessor.getCategories()).contains("alt-languages");
@@ -75,15 +73,11 @@ public class ExtensionProcessorTest extends PlatformAwareTestBase {
 
     @Test
     void testExtendedKeywords() {
-        assertThat(ExtendedKeywords.extendsKeywords(
-                "quarkus-something-reactive-cool",
-                "RESTEasy Reactive test",
-                "ola-reactive",
-                List.of("web", "bar", "foo bar"),
-                "reactive rest http service of the",
-                List.of("foo", "bar"))).containsExactlyInAnyOrder(
-                        "resteasy", "reactive", "test", "http", "ola", "web", "rest", "bar", "foo",
-                        "cool", "quarkus-something-reactive-cool", "ola-reactive", "foo-bar", "something", "service");
+        assertThat(ExtendedKeywords.extendsKeywords("quarkus-something-reactive-cool", "RESTEasy Reactive test",
+                "ola-reactive", List.of("web", "bar", "foo bar"), "reactive rest http service of the",
+                List.of("foo", "bar"))).containsExactlyInAnyOrder("resteasy", "reactive", "test", "http", "ola", "web",
+                        "rest", "bar", "foo", "cool", "quarkus-something-reactive-cool", "ola-reactive", "foo-bar",
+                        "something", "service");
     }
 
     private Extension findExtension(ExtensionCatalog catalog, String id) {

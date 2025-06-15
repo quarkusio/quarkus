@@ -18,9 +18,7 @@ final class AggregatedDataSourceBuildTimeConfigBuildItem extends MultiBuildItem 
     private final String resolvedDriverClass;
 
     AggregatedDataSourceBuildTimeConfigBuildItem(String name, DataSourceBuildTimeConfig dataSourceConfig,
-            DataSourceJdbcBuildTimeConfig jdbcConfig,
-            String dbKind,
-            String resolvedDriverClass) {
+            DataSourceJdbcBuildTimeConfig jdbcConfig, String dbKind, String resolvedDriverClass) {
         this.name = name;
         this.dataSourceConfig = dataSourceConfig;
         this.jdbcConfig = jdbcConfig;

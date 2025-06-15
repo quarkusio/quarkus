@@ -20,8 +20,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigActiveFalseAndEntityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.active", "false");
 
@@ -35,11 +34,9 @@ public class ConfigActiveFalseAndEntityTest {
         assertThat(entityManagerFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
         CreationException e = assertThrows(CreationException.class, () -> entityManagerFactory.getMetamodel());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
-                        "Hibernate ORM was deactivated through configuration properties");
+        assertThat(e.getCause()).isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
+                "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
+                "Hibernate ORM was deactivated through configuration properties");
     }
 
     @Test
@@ -52,11 +49,9 @@ public class ConfigActiveFalseAndEntityTest {
         assertThat(sessionFactory).isNotNull();
         // However, any attempt to use it at runtime will fail.
         CreationException e = assertThrows(CreationException.class, () -> sessionFactory.getMetamodel());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
-                        "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
-                        "Hibernate ORM was deactivated through configuration properties");
+        assertThat(e.getCause()).isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
+                "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
+                "Hibernate ORM was deactivated through configuration properties");
     }
 
     @Test
@@ -71,9 +66,9 @@ public class ConfigActiveFalseAndEntityTest {
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> entityManager.find(MyEntity.class, 0L))
                 // Note that unlike for EntityManagerFactory/SessionFactory we get an IllegalStateException because
-                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in HibernateOrmRecorder.sessionSupplier()
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
+                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in
+                // HibernateOrmRecorder.sessionSupplier()
+                .isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
                         "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
                         "Hibernate ORM was deactivated through configuration properties");
     }
@@ -90,9 +85,9 @@ public class ConfigActiveFalseAndEntityTest {
         // However, any attempt to use it at runtime will fail.
         assertThatThrownBy(() -> session.find(MyEntity.class, 0L))
                 // Note that unlike for EntityManagerFactory/SessionFactory we get an IllegalStateException because
-                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in HibernateOrmRecorder.sessionSupplier()
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
+                // the real Session/EntityManager instance is created lazily through SessionLazyDelegator in
+                // HibernateOrmRecorder.sessionSupplier()
+                .isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
                         "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit <default>",
                         "Hibernate ORM was deactivated through configuration properties");
     }

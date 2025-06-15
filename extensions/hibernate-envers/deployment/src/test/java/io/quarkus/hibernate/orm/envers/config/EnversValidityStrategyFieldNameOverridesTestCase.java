@@ -13,16 +13,14 @@ import io.restassured.RestAssured;
 public class EnversValidityStrategyFieldNameOverridesTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestValidityStrategyFieldNameOverridesResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-validity-strategy-field-name-overrides.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestValidityStrategyFieldNameOverridesResource.class,
+                    AbstractEnversResource.class)
+            .addAsResource("application-with-validity-strategy-field-name-overrides.properties",
+                    "application.properties"));
 
     @Test
     public void testValidityStrategyFieldNameOverrides() {
-        RestAssured.when().get("/envers-validity-strategy-field-name-overrides").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-validity-strategy-field-name-overrides").then().body(is("OK"));
     }
 }

@@ -19,8 +19,8 @@ public class SmallryeJwtPersistentDevModeEncryptedTest {
 
     @RegisterExtension
     static QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(GreetingResource.class, SmallryeJwtPersistentDevModeSignedTest.PersistentJwtChainBuilder.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingResource.class,
+                    SmallryeJwtPersistentDevModeSignedTest.PersistentJwtChainBuilder.class))
             .addBuildChainCustomizer(new SmallryeJwtPersistentDevModeSignedTest.PersistentJwtChainBuilder() {
                 @Override
                 public void accept(BuildChainBuilder chain) {
@@ -30,22 +30,16 @@ public class SmallryeJwtPersistentDevModeEncryptedTest {
                         public void execute(BuildContext context) {
                             context.produce(new GenerateEncryptedDevModeJwtKeysBuildItem());
                         }
-                    })
-                            .produces(GenerateEncryptedDevModeJwtKeysBuildItem.class)
-                            .build();
+                    }).produces(GenerateEncryptedDevModeJwtKeysBuildItem.class).build();
                 }
             });
 
     @Test
     void canBeEncrypted() {
         // make sure we can sign JWT tokens recognised by the server, since they use the same config
-        String token = Jwt.upn("jdoe@quarkus.io")
-                .groups("User")
-                .innerSign().encrypt();
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200);
+        String token = Jwt.upn("jdoe@quarkus.io").groups("User").innerSign().encrypt();
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200);
     }
 
 }

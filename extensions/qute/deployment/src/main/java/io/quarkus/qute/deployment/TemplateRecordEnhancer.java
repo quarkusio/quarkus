@@ -39,7 +39,8 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
     private final CheckedTemplateAdapter adapter;
 
     TemplateRecordEnhancer(ClassInfo interfaceToImplement, ClassInfo recordClass, String templateId, String fragmentId,
-            String canonicalConstructorDescriptor, List<MethodParameterInfo> parameters, CheckedTemplateAdapter adapter) {
+            String canonicalConstructorDescriptor, List<MethodParameterInfo> parameters,
+            CheckedTemplateAdapter adapter) {
         this.interfaceToImplement = interfaceToImplement;
         this.recordClassName = recordClass.name().toString();
         this.templateId = templateId;
@@ -61,7 +62,8 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor ret = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (name.equals(MethodDescriptor.INIT) && descriptor.equals(canonicalConstructorDescriptor)) {
                 return new TemplateRecordConstructorVisitor(ret);
@@ -74,11 +76,10 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
             String interfaceName = interfaceToImplement.name().toString();
 
             // private final TemplateInstance qute$templateInstance;
-            FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName, "qute$templateInstance",
-                    interfaceName);
+            FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName,
+                    "qute$templateInstance", interfaceName);
             FieldVisitor quteTemplateInstance = super.visitField(ACC_PRIVATE | ACC_FINAL,
-                    quteTemplateInstanceDescriptor.getName(),
-                    quteTemplateInstanceDescriptor.getType(), null, null);
+                    quteTemplateInstanceDescriptor.getName(), quteTemplateInstanceDescriptor.getType(), null, null);
             quteTemplateInstance.visitEnd();
 
             for (MethodInfo method : interfaceToImplement.methods()) {
@@ -105,8 +106,8 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
         }
 
         private void readQuteTemplateInstance(MethodVisitor methodVisitor) {
-            FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName, "qute$templateInstance",
-                    interfaceToImplement.name().toString());
+            FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName,
+                    "qute$templateInstance", interfaceToImplement.name().toString());
             methodVisitor.visitVarInsn(Opcodes.ALOAD, 0);
             methodVisitor.visitFieldInsn(Opcodes.GETFIELD, quteTemplateInstanceDescriptor.getDeclaringClass(),
                     quteTemplateInstanceDescriptor.getName(), quteTemplateInstanceDescriptor.getType());
@@ -134,9 +135,10 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                 MethodDescriptor arcContainer = MethodDescriptor.ofMethod(Arc.class, "container", ArcContainer.class);
                 MethodDescriptor arcContainerInstance = MethodDescriptor.ofMethod(ArcContainer.class, "instance",
                         InstanceHandle.class, Class.class, Annotation[].class);
-                MethodDescriptor instanceHandleGet = MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class);
-                MethodDescriptor templateProducerGetInjectableTemplate = MethodDescriptor.ofMethod(TemplateProducer.class,
-                        "getInjectableTemplate", Template.class, String.class);
+                MethodDescriptor instanceHandleGet = MethodDescriptor.ofMethod(InstanceHandle.class, "get",
+                        Object.class);
+                MethodDescriptor templateProducerGetInjectableTemplate = MethodDescriptor
+                        .ofMethod(TemplateProducer.class, "getInjectableTemplate", Template.class, String.class);
                 MethodDescriptor templateInstance = MethodDescriptor.ofMethod(Template.class, "instance",
                         TemplateInstance.class);
                 MethodDescriptor templateGetFragment = MethodDescriptor.ofMethod(Template.class, "getFragment",
@@ -144,10 +146,10 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                 MethodDescriptor templateInstanceData = MethodDescriptor.ofMethod(TemplateInstance.class, "data",
                         TemplateInstance.class, String.class, Object.class);
 
-                // Template template = Arc.container().instance(TemplateProducer.class).get().getInjectableTemplate("HelloResource/typedTemplate");
+                // Template template =
+                // Arc.container().instance(TemplateProducer.class).get().getInjectableTemplate("HelloResource/typedTemplate");
                 visitMethodInsn(Opcodes.INVOKESTATIC, arcContainer.getDeclaringClass(), arcContainer.getName(),
-                        arcContainer.getDescriptor(),
-                        false);
+                        arcContainer.getDescriptor(), false);
                 visitLdcInsn(org.objectweb.asm.Type.getType(TemplateProducer.class));
                 visitLdcInsn(0);
                 visitTypeInsn(Opcodes.ANEWARRAY, toInternalClassName(Annotation.class));
@@ -183,8 +185,8 @@ class TemplateRecordEnhancer implements BiFunction<String, ClassVisitor, ClassVi
                     slot += AsmUtil.getParameterSize(paramType);
                 }
 
-                FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName, "qute$templateInstance",
-                        interfaceToImplement.name().toString());
+                FieldDescriptor quteTemplateInstanceDescriptor = FieldDescriptor.of(recordClassName,
+                        "qute$templateInstance", interfaceToImplement.name().toString());
                 visitFieldInsn(Opcodes.PUTFIELD, quteTemplateInstanceDescriptor.getDeclaringClass(),
                         quteTemplateInstanceDescriptor.getName(), quteTemplateInstanceDescriptor.getType());
                 super.visitInsn(Opcodes.RETURN);

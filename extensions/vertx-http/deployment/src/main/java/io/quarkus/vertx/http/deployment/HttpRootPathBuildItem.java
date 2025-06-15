@@ -19,8 +19,7 @@ import io.vertx.ext.web.RoutingContext;
 public final class HttpRootPathBuildItem extends SimpleBuildItem {
 
     /**
-     * Normalized from quarkus.http.root-path.
-     * This path will always end in a slash
+     * Normalized from quarkus.http.root-path. This path will always end in a slash
      */
     private final URI rootPath;
 
@@ -29,12 +28,13 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Return normalized Http root path configured from {@literal quarkus.http.root-path}.
-     * This path will always end in a slash.
+     * Return normalized Http root path configured from {@literal quarkus.http.root-path}. This path will always end in
+     * a slash.
      * <p>
      * Use {@link #resolvePath(String)} if you need to construct a Uri from the Http root path.
      *
      * @return Normalized Http root path ending with a slash
+     *
      * @see #resolvePath(String)
      */
     public String getRootPath() {
@@ -42,9 +42,8 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Resolve path into an absolute path.
-     * If path is relative, it will be resolved against `quarkus.http.root-path`.
-     * An absolute path will be normalized and returned.
+     * Resolve path into an absolute path. If path is relative, it will be resolved against `quarkus.http.root-path`. An
+     * absolute path will be normalized and returned.
      * <p>
      * Given {@literal quarkus.http.root-path=/}
      * <ul>
@@ -61,8 +60,11 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
      * <p>
      * The returned path will not end with a slash.
      *
-     * @param path Path to be resolved to an absolute path.
+     * @param path
+     *        Path to be resolved to an absolute path.
+     *
      * @return An absolute path not ending with a slash
+     *
      * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
      */
     public String resolvePath(String path) {
@@ -71,9 +73,8 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Resolve path that is always relative into an absolute path.
-     * Whether the path is relative or absolute, it will be resolved against `quarkus.http.root-path`,
-     * by removing the '/' in the latter case.
+     * Resolve path that is always relative into an absolute path. Whether the path is relative or absolute, it will be
+     * resolved against `quarkus.http.root-path`, by removing the '/' in the latter case.
      * <p>
      * Given {@literal quarkus.http.root-path=/}
      * <ul>
@@ -88,8 +89,11 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
      * <p>
      * The returned path will not end with a slash.
      *
-     * @param path Path to be resolved to an absolute path.
+     * @param path
+     *        Path to be resolved to an absolute path.
+     *
      * @return An absolute path not ending with a slash
+     *
      * @see UriNormalizationUtil#normalizeWithBase(URI, String, boolean)
      */
     public String relativePath(String path) {

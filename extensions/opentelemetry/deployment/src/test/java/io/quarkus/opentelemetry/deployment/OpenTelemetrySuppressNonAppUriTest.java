@@ -22,50 +22,29 @@ import io.restassured.RestAssured;
 public class OpenTelemetrySuppressNonAppUriTest {
 
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, TestSpanExporter.class, TestSpanExporterProvider.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .add(new StringAsset(
-                            """
-                                    quarkus.otel.traces.exporter=test-span-exporter
-                                    quarkus.otel.metrics.exporter=none
-                                    quarkus.otel.bsp.export.timeout=1s
-                                    quarkus.otel.bsp.schedule.delay=50
-                                    """),
-                            "application.properties"));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(HelloResource.class, TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .add(new StringAsset("""
+                    quarkus.otel.traces.exporter=test-span-exporter
+                    quarkus.otel.metrics.exporter=none
+                    quarkus.otel.bsp.export.timeout=1s
+                    quarkus.otel.bsp.schedule.delay=50
+                    """), "application.properties"));
 
     @Test
     void test() {
 
         // Must not be traced
-        RestAssured.given()
-                .get("/q/health/")
-                .then()
-                .statusCode(200);
-        RestAssured.given()
-                .get("/q/dev-ui/")
-                .then()
-                .statusCode(200);
-        RestAssured.given()
-                .get("/q/dev-ui/icon/font-awesome.js")
-                .then()
-                .statusCode(200);
+        RestAssured.given().get("/q/health/").then().statusCode(200);
+        RestAssured.given().get("/q/dev-ui/").then().statusCode(200);
+        RestAssured.given().get("/q/dev-ui/icon/font-awesome.js").then().statusCode(200);
         // Valid trace
-        RestAssured.given()
-                .get("/hello")
-                .then()
-                .statusCode(200);
+        RestAssured.given().get("/hello").then().statusCode(200);
         // Get span names
         List<String> spans = Arrays.asList(
-                RestAssured.given()
-                        .get("/hello/spans")
-                        .then()
-                        .statusCode(200)
-                        .extract().body()
-                        .asString()
-                        .split(";"));
+                RestAssured.given().get("/hello/spans").then().statusCode(200).extract().body().asString().split(";"));
 
         assertThat(spans).containsExactly("GET /hello");
     }
@@ -89,8 +68,7 @@ public class OpenTelemetrySuppressNonAppUriTest {
         @GET
         @Path("/spans")
         public String greetingsInsertAtLeast() {
-            String spanNames = spanExporter.getFinishedSpanItemsAtLeast(1).stream()
-                    .map(SpanData::getName)
+            String spanNames = spanExporter.getFinishedSpanItemsAtLeast(1).stream().map(SpanData::getName)
                     .reduce((s1, s2) -> s1 + ";" + s2).orElse("");
             System.out.println(spanNames);
             return spanNames;

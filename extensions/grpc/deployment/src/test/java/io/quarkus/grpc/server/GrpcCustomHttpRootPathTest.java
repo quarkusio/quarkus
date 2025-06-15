@@ -17,18 +17,16 @@ import io.quarkus.grpc.server.services.HelloService;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Test to check whether grpc service is still accessible when
- * custom quarkus.http.root-path is used other than '/'
+ * Test to check whether grpc service is still accessible when custom quarkus.http.root-path is used other than '/'
  * Refer: https://github.com/quarkusio/quarkus/issues/34261
  */
 public class GrpcCustomHttpRootPathTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(GreeterGrpc.class, GreeterGrpc.GreeterBlockingStub.class,
-                            HelloService.class, HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(GreeterGrpc.class,
+                    GreeterGrpc.GreeterBlockingStub.class, HelloService.class, HelloRequest.class, HelloReply.class,
+                    HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
             .withConfigurationResource("grpc-server-custom-http-rootpath-config.properties");
 
     @GrpcClient("hello-service")
@@ -37,8 +35,7 @@ public class GrpcCustomHttpRootPathTest {
     @Test
     public void grpcAndCustomHttpRootPathTest() {
 
-        String response = service.sayHello(HelloRequest.newBuilder().setName("World!").build())
-                .getMessage();
+        String response = service.sayHello(HelloRequest.newBuilder().setName("World!").build()).getMessage();
         assertThat(response).isEqualTo("Hello World!");
     }
 }

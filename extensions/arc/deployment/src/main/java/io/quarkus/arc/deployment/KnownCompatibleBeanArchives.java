@@ -29,8 +29,7 @@ final class KnownCompatibleBeanArchives {
                 return false;
             }
             Key key = (Key) o;
-            return Objects.equals(groupId, key.groupId)
-                    && Objects.equals(artifactId, key.artifactId)
+            return Objects.equals(groupId, key.groupId) && Objects.equals(artifactId, key.artifactId)
                     && Objects.equals(classifier, key.classifier);
         }
 

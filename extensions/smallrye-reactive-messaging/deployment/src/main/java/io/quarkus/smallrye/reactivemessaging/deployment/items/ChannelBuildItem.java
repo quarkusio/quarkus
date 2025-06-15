@@ -5,10 +5,8 @@ import java.util.Objects;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Represents an application channel.
- *
- * These channels can be declared using {@code @Incoming}, {@code @Outgoing} or injected {@code Emitter},
- * and {@code @Channel}.
+ * Represents an application channel. These channels can be declared using {@code @Incoming}, {@code @Outgoing} or
+ * injected {@code Emitter}, and {@code @Channel}.
  */
 public final class ChannelBuildItem extends MultiBuildItem {
 
@@ -25,8 +23,11 @@ public final class ChannelBuildItem extends MultiBuildItem {
     /**
      * Creates a new instance of {@link ChannelBuildItem} for an incoming channel.
      *
-     * @param name the name of the channel
-     * @param connector the connector managing this channel if any.
+     * @param name
+     *        the name of the channel
+     * @param connector
+     *        the connector managing this channel if any.
+     *
      * @return the new {@link ChannelBuildItem}
      */
     public static ChannelBuildItem incoming(String name, String connector) {
@@ -36,8 +37,11 @@ public final class ChannelBuildItem extends MultiBuildItem {
     /**
      * Creates a new instance of {@link ChannelBuildItem} for an outgoing channel.
      *
-     * @param name the name of the channel
-     * @param connector the connector managing this channel if any.
+     * @param name
+     *        the name of the channel
+     * @param connector
+     *        the connector managing this channel if any.
+     *
      * @return the new {@link ChannelBuildItem}
      */
     public static ChannelBuildItem outgoing(String name, String connector) {

@@ -16,8 +16,8 @@ import io.smallrye.config.WithDefault;
 public interface OidcClientConfig extends OidcClientCommonConfig {
 
     /**
-     * A unique OIDC client identifier. It must be set when OIDC clients are created dynamically
-     * and is optional in all other cases.
+     * A unique OIDC client identifier. It must be set when OIDC clients are created dynamically and is optional in all
+     * other cases.
      */
     Optional<String> id();
 
@@ -33,17 +33,15 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     Optional<List<String>> scopes();
 
     /**
-     * Refresh token time skew.
-     * If this property is enabled then the configured duration is converted to seconds and is added to the current time
-     * when checking whether the access token should be refreshed. If the sum is greater than this access token's
-     * expiration time then a refresh is going to happen.
+     * Refresh token time skew. If this property is enabled then the configured duration is converted to seconds and is
+     * added to the current time when checking whether the access token should be refreshed. If the sum is greater than
+     * this access token's expiration time then a refresh is going to happen.
      */
     Optional<Duration> refreshTokenTimeSkew();
 
     /**
-     * Access token expiration period relative to the current time.
-     * This property is only checked when an access token grant response
-     * does not include an access token expiration property.
+     * Access token expiration period relative to the current time. This property is only checked when an access token
+     * grant response does not include an access token expiration property.
      */
     Optional<Duration> accessTokenExpiresIn();
 
@@ -53,8 +51,8 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     Optional<Duration> accessTokenExpirySkew();
 
     /**
-     * If the access token 'expires_in' property should be checked as an absolute time value
-     * as opposed to a duration relative to the current time.
+     * If the access token 'expires_in' property should be checked as an absolute time value as opposed to a duration
+     * relative to the current time.
      */
     @WithDefault("false")
     boolean absoluteExpiresIn();
@@ -75,39 +73,36 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
              */
             PASSWORD("password"),
             /**
-             * 'authorization_code' grant requiring an OIDC client authentication as well as
-             * at least 'code' and 'redirect_uri' parameters which must be passed to OidcClient at the token request time.
+             * 'authorization_code' grant requiring an OIDC client authentication as well as at least 'code' and
+             * 'redirect_uri' parameters which must be passed to OidcClient at the token request time.
              */
             CODE("authorization_code"),
             /**
-             * 'urn:ietf:params:oauth:grant-type:token-exchange' grant requiring an OIDC client authentication as well as
-             * at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
+             * 'urn:ietf:params:oauth:grant-type:token-exchange' grant requiring an OIDC client authentication as well
+             * as at least 'subject_token' parameter which must be passed to OidcClient at the token request time.
              */
             EXCHANGE("urn:ietf:params:oauth:grant-type:token-exchange"),
             /**
-             * 'urn:ietf:params:oauth:grant-type:jwt-bearer' grant requiring an OIDC client authentication as well as
-             * at least an 'assertion' parameter which must be passed to OidcClient at the token request time.
+             * 'urn:ietf:params:oauth:grant-type:jwt-bearer' grant requiring an OIDC client authentication as well as at
+             * least an 'assertion' parameter which must be passed to OidcClient at the token request time.
              */
             JWT("urn:ietf:params:oauth:grant-type:jwt-bearer"),
             /**
-             * 'refresh_token' grant requiring an OIDC client authentication and a refresh token.
-             * Note, OidcClient supports this grant by default if an access token acquisition response contained a refresh
-             * token.
+             * 'refresh_token' grant requiring an OIDC client authentication and a refresh token. Note, OidcClient
+             * supports this grant by default if an access token acquisition response contained a refresh token.
              * However, in some cases, the refresh token is provided out of band, for example, it can be shared between
-             * several of the confidential client's services, etc.
-             * If 'quarkus.oidc-client.grant-type' is set to 'refresh' then `OidcClient` will only support refreshing the
-             * tokens.
+             * several of the confidential client's services, etc. If 'quarkus.oidc-client.grant-type' is set to
+             * 'refresh' then `OidcClient` will only support refreshing the tokens.
              */
             REFRESH("refresh_token"),
             /**
-             * 'urn:openid:params:grant-type:ciba' grant requiring an OIDC client authentication as well as 'auth_req_id'
-             * parameter which must be passed to OidcClient at the token request time.
+             * 'urn:openid:params:grant-type:ciba' grant requiring an OIDC client authentication as well as
+             * 'auth_req_id' parameter which must be passed to OidcClient at the token request time.
              */
             CIBA("urn:openid:params:grant-type:ciba"),
             /**
              * 'urn:ietf:params:oauth:grant-type:device_code' grant requiring an OIDC client authentication as well as
-             * 'device_code'
-             * parameter which must be passed to OidcClient at the token request time.
+             * 'device_code' parameter which must be passed to OidcClient at the token request time.
              */
             DEVICE("urn:ietf:params:oauth:grant-type:device_code");
 
@@ -161,9 +156,8 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
 
     /**
      * Requires that all filters which use 'OidcClient' acquire the tokens at the post-construct initialization time,
-     * possibly long before these tokens are used.
-     * This property should be disabled if the access token may expire before it is used for the first time and no refresh token
-     * is available.
+     * possibly long before these tokens are used. This property should be disabled if the access token may expire
+     * before it is used for the first time and no refresh token is available.
      */
     @WithDefault("true")
     boolean earlyTokensAcquisition();
@@ -174,12 +168,11 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     Map<String, String> headers();
 
     /**
-     * Token refresh interval.
-     * By default, OIDC client refreshes the token during the current request, when it detects that it has expired,
-     * or nearly expired if the {@link #refreshTokenTimeSkew()} is configured.
-     * But, when this property is configured, OIDC client can refresh the token asynchronously in the configured interval.
-     * This property is only effective with OIDC client filters and other {@link AbstractTokensProducer} extensions,
-     * but not when you use the {@link OidcClient#getTokens()} API directly.
+     * Token refresh interval. By default, OIDC client refreshes the token during the current request, when it detects
+     * that it has expired, or nearly expired if the {@link #refreshTokenTimeSkew()} is configured. But, when this
+     * property is configured, OIDC client can refresh the token asynchronously in the configured interval. This
+     * property is only effective with OIDC client filters and other {@link AbstractTokensProducer} extensions, but not
+     * when you use the {@link OidcClient#getTokens()} API directly.
      */
     Optional<Duration> refreshInterval();
 
@@ -195,7 +188,9 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     /**
      * Creates {@link OidcClientConfigBuilder} builder populated with {@code config} values.
      *
-     * @param config client config; must not be null
+     * @param config
+     *        client config; must not be null
+     *
      * @return OidcClientConfigBuilder
      */
     static OidcClientConfigBuilder builder(OidcClientConfig config) {
@@ -205,7 +200,9 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     /**
      * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
      *
-     * @param authServerUrl {@link OidcCommonConfig#authServerUrl()}
+     * @param authServerUrl
+     *        {@link OidcCommonConfig#authServerUrl()}
+     *
      * @return OidcClientConfigBuilder builder
      */
     static OidcClientConfigBuilder authServerUrl(String authServerUrl) {
@@ -215,7 +212,9 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     /**
      * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
      *
-     * @param registrationPath {@link OidcCommonConfig#registrationPath()}
+     * @param registrationPath
+     *        {@link OidcCommonConfig#registrationPath()}
+     *
      * @return OidcClientConfigBuilder builder
      */
     static OidcClientConfigBuilder registrationPath(String registrationPath) {
@@ -225,7 +224,9 @@ public interface OidcClientConfig extends OidcClientCommonConfig {
     /**
      * Creates {@link OidcClientConfigBuilder} builder populated with documented default values.
      *
-     * @param tokenPath {@link OidcClientCommonConfig#tokenPath()}
+     * @param tokenPath
+     *        {@link OidcClientCommonConfig#tokenPath()}
+     *
      * @return OidcClientConfigBuilder builder
      */
     static OidcClientConfigBuilder tokenPath(String tokenPath) {

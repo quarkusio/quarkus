@@ -26,10 +26,9 @@ public class WebAuthnManualTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WebAuthnManualTestUserProvider.class, WebAuthnTestUserProvider.class,
-                            WebAuthnTestUserProvider.class, WebAuthnHardware.class,
-                            TestResource.class, ManualResource.class, TestUtil.class));
+            .withApplicationRoot((jar) -> jar.addClasses(WebAuthnManualTestUserProvider.class,
+                    WebAuthnTestUserProvider.class, WebAuthnTestUserProvider.class, WebAuthnHardware.class,
+                    TestResource.class, ManualResource.class, TestUtil.class));
 
     @Inject
     WebAuthnManualTestUserProvider userProvider;
@@ -46,15 +45,9 @@ public class WebAuthnManualTest {
     public void test() throws Exception {
 
         RestAssured.get("/open").then().statusCode(200).body(Matchers.is("Hello"));
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/secure").then().statusCode(302);
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/admin").then().statusCode(302);
-        RestAssured
-                .given().redirects().follow(false)
-                .get("/cheese").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/secure").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/admin").then().statusCode(302);
+        RestAssured.given().redirects().follow(false).get("/cheese").then().statusCode(302);
 
         Assertions.assertTrue(userProvider.findByUsername("stef").await().indefinitely().isEmpty());
         CookieFilter cookieFilter = new CookieFilter();
@@ -63,18 +56,10 @@ public class WebAuthnManualTest {
         JsonObject registration = hardwareKey.makeRegistrationJson(challenge);
 
         // now finalise
-        RequestSpecification request = RestAssured
-                .given()
-                .filter(cookieFilter);
+        RequestSpecification request = RestAssured.given().filter(cookieFilter);
         WebAuthnEndpointHelper.addWebAuthnRegistrationFormParameters(request, registration);
-        request
-                .log().ifValidationFails()
-                .queryParam("username", "stef")
-                .post("/register")
-                .then().statusCode(200)
-                .log().ifValidationFails()
-                .body(Matchers.is("OK"))
-                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
+        request.log().ifValidationFails().queryParam("username", "stef").post("/register").then().statusCode(200).log()
+                .ifValidationFails().body(Matchers.is("OK")).cookie("_quarkus_webauthn_challenge", Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we stored the user
@@ -93,17 +78,10 @@ public class WebAuthnManualTest {
         JsonObject login = hardwareKey.makeLoginJson(challenge);
 
         // now finalise
-        request = RestAssured
-                .given()
-                .filter(cookieFilter);
+        request = RestAssured.given().filter(cookieFilter);
         WebAuthnEndpointHelper.addWebAuthnLoginFormParameters(request, login);
-        request
-                .log().ifValidationFails()
-                .post("/login")
-                .then().statusCode(200)
-                .log().ifValidationFails()
-                .body(Matchers.is("OK"))
-                .cookie("_quarkus_webauthn_challenge", Matchers.is(""))
+        request.log().ifValidationFails().post("/login").then().statusCode(200).log().ifValidationFails()
+                .body(Matchers.is("OK")).cookie("_quarkus_webauthn_challenge", Matchers.is(""))
                 .cookie("quarkus-credential", Matchers.notNullValue());
 
         // make sure we bumped the user
@@ -150,22 +128,10 @@ public class WebAuthnManualTest {
     }
 
     private void checkLoggedIn(CookieFilter cookieFilter) {
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .get("/secure")
-                .then()
-                .statusCode(200)
+        RestAssured.given().filter(cookieFilter).get("/secure").then().statusCode(200)
                 .body(Matchers.is("stef: [admin]"));
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .redirects().follow(false)
-                .get("/admin").then().statusCode(200).body(Matchers.is("OK"));
-        RestAssured
-                .given()
-                .filter(cookieFilter)
-                .redirects().follow(false)
-                .get("/cheese").then().statusCode(403);
+        RestAssured.given().filter(cookieFilter).redirects().follow(false).get("/admin").then().statusCode(200)
+                .body(Matchers.is("OK"));
+        RestAssured.given().filter(cookieFilter).redirects().follow(false).get("/cheese").then().statusCode(403);
     }
 }

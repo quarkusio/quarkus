@@ -15,11 +15,9 @@ public class ReflectionResolverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloReflect.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "{age}:{ping}:{noMatch ?: 'NOT_FOUND'}:{active}:{isActive}:{hasItem}:{item}:{age2}"),
+            .withApplicationRoot((jar) -> jar.addClasses(HelloReflect.class)
+                    .addAsResource(new StringAsset(
+                            "{age}:{ping}:{noMatch ?: 'NOT_FOUND'}:{active}:{isActive}:{hasItem}:{item}:{age2}"),
                             "templates/reflect.txt"));
 
     @Inject

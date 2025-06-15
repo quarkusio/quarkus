@@ -57,16 +57,14 @@ public class WebDependencyLocatorProcessor {
                 hotDeploymentWatchedProducer
                         .produce(new HotDeploymentWatchedFileBuildItem(config.webRoot() + SLASH + STAR + STAR));
                 // Find all css and js (under /app)
-                Path app = web
-                        .resolve(config.appRoot());
+                Path app = web.resolve(config.appRoot());
 
                 List<Path> cssFiles = new ArrayList<>();
                 List<Path> jsFiles = new ArrayList<>();
 
                 if (Files.exists(app)) {
-                    hotDeploymentWatchedProducer
-                            .produce(new HotDeploymentWatchedFileBuildItem(
-                                    config.webRoot() + SLASH + config.appRoot() + SLASH + STAR + STAR));
+                    hotDeploymentWatchedProducer.produce(new HotDeploymentWatchedFileBuildItem(
+                            config.webRoot() + SLASH + config.appRoot() + SLASH + STAR + STAR));
                     try (Stream<Path> appstream = Files.walk(app)) {
                         appstream.forEach(path -> {
                             if (Files.isRegularFile(path) && path.toString().endsWith(DOT_CSS)) {
@@ -91,7 +89,8 @@ public class WebDependencyLocatorProcessor {
                                     generatedStaticProducer.produce(new GeneratedStaticResourceBuildItem(endpoint,
                                             processHtml(path, cssFiles, jsFiles)));
                                 } else {
-                                    generatedStaticProducer.produce(new GeneratedStaticResourceBuildItem(endpoint, path));
+                                    generatedStaticProducer
+                                            .produce(new GeneratedStaticResourceBuildItem(endpoint, path));
                                 }
                             } catch (IOException e) {
                                 throw new UncheckedIOException(e);
@@ -106,9 +105,7 @@ public class WebDependencyLocatorProcessor {
 
     }
 
-    private byte[] processHtml(
-            Path path, List<Path> cssFiles, List<Path> jsFiles)
-            throws IOException {
+    private byte[] processHtml(Path path, List<Path> cssFiles, List<Path> jsFiles) throws IOException {
         StringJoiner modifiedContent = new StringJoiner(System.lineSeparator());
 
         Files.lines(path).forEach(line -> {
@@ -139,7 +136,8 @@ public class WebDependencyLocatorProcessor {
                     sw.write(System.lineSeparator());
                     sw.write(TAB2 + "<script type='module'>" + System.lineSeparator());
                     for (Path js : jsFiles) {
-                        sw.write(TAB2 + TAB + "import '" + js.toString().replace("\\", "/") + "';" + System.lineSeparator());
+                        sw.write(TAB2 + TAB + "import '" + js.toString().replace("\\", "/") + "';"
+                                + System.lineSeparator());
                     }
                     sw.write(TAB2 + "</script>");
                 }
@@ -153,12 +151,9 @@ public class WebDependencyLocatorProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void findWebDependenciesAndCreateHandler(
-            WebDependencyLocatorConfig config,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            BuildProducer<RouteBuildItem> routes,
-            BuildProducer<ImportMapBuildItem> im,
-            CurateOutcomeBuildItem curateOutcome,
+    public void findWebDependenciesAndCreateHandler(WebDependencyLocatorConfig config,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, BuildProducer<RouteBuildItem> routes,
+            BuildProducer<ImportMapBuildItem> im, CurateOutcomeBuildItem curateOutcome,
             WebDependencyLocatorRecorder recorder) throws Exception {
 
         LibInfo webjarsLibInfo = getLibInfo(curateOutcome, WEBJARS_PREFIX, WEBJARS_NAME);
@@ -168,14 +163,14 @@ public class WebDependencyLocatorProcessor {
 
             if (webjarsLibInfo != null) {
                 if (config.versionReroute()) {
-                    routes.produce(
-                            createRouteBuildItem(recorder, httpBuildTimeConfig, WEBJARS_PATH, webjarsLibInfo.nameVersionMap));
+                    routes.produce(createRouteBuildItem(recorder, httpBuildTimeConfig, WEBJARS_PATH,
+                            webjarsLibInfo.nameVersionMap));
                 }
             }
             if (mvnpmNameLibInfo != null) {
                 if (config.versionReroute()) {
-                    routes.produce(
-                            createRouteBuildItem(recorder, httpBuildTimeConfig, MVNPM_PATH, mvnpmNameLibInfo.nameVersionMap));
+                    routes.produce(createRouteBuildItem(recorder, httpBuildTimeConfig, MVNPM_PATH,
+                            mvnpmNameLibInfo.nameVersionMap));
                 }
                 // Also create a importmap endpoint
                 Aggregator aggregator = new Aggregator(mvnpmNameLibInfo.jars);
@@ -191,11 +186,9 @@ public class WebDependencyLocatorProcessor {
                 String importMap = aggregator.aggregateAsJson(false);
                 im.produce(new ImportMapBuildItem(importMap));
                 String path = getRootPath(httpBuildTimeConfig, IMPORTMAP_ROOT) + IMPORTMAP_FILENAME;
-                Handler<RoutingContext> importMapHandler = recorder.getImportMapHandler(path,
-                        importMap);
-                routes.produce(
-                        RouteBuildItem.builder().route(SLASH + IMPORTMAP_ROOT + SLASH + IMPORTMAP_FILENAME)
-                                .handler(importMapHandler).build());
+                Handler<RoutingContext> importMapHandler = recorder.getImportMapHandler(path, importMap);
+                routes.produce(RouteBuildItem.builder().route(SLASH + IMPORTMAP_ROOT + SLASH + IMPORTMAP_FILENAME)
+                        .handler(importMapHandler).build());
             }
         } else {
             log.warn(
@@ -205,10 +198,8 @@ public class WebDependencyLocatorProcessor {
     }
 
     private RouteBuildItem createRouteBuildItem(WebDependencyLocatorRecorder recorder,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
-            String path, Map<String, String> nameVersionMap) {
-        Handler<RoutingContext> handler = recorder.getHandler(getRootPath(httpBuildTimeConfig, path),
-                nameVersionMap);
+            VertxHttpBuildTimeConfig httpBuildTimeConfig, String path, Map<String, String> nameVersionMap) {
+        Handler<RoutingContext> handler = recorder.getHandler(getRootPath(httpBuildTimeConfig, path), nameVersionMap);
         return RouteBuildItem.builder().route(SLASH + path + SLASH + STAR).handler(handler).build();
     }
 
@@ -247,7 +238,8 @@ public class WebDependencyLocatorProcessor {
                                     + tree.getOriginalTree().getRoots());
                             return null;
                         }
-                        final String version = Files.isDirectory(nameDir.resolve(dep.getVersion())) ? dep.getVersion() : null;
+                        final String version = Files.isDirectory(nameDir.resolve(dep.getVersion())) ? dep.getVersion()
+                                : null;
                         map.put(nameDir.getFileName().toString(), version);
                         try {
                             jars.add(dep.getResolvedPaths().getSinglePath().toUri().toURL());

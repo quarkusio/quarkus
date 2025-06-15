@@ -22,10 +22,9 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class ClientIdConfigBaseUriTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    });
 
     @TestHTTPResource("/")
     URI uri;

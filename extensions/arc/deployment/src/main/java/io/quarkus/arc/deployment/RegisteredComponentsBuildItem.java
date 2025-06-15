@@ -12,9 +12,8 @@ import io.quarkus.arc.processor.ObserverInfo;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * It's made public so that you can make use of the abstraction.
- * e.g. if you need to do a similar inspection over {@link BeanDiscoveryFinishedBuildItem} and
- * {@link SynthesisFinishedBuildItem}
+ * It's made public so that you can make use of the abstraction. e.g. if you need to do a similar inspection over
+ * {@link BeanDiscoveryFinishedBuildItem} and {@link SynthesisFinishedBuildItem}
  */
 public abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
 
@@ -52,7 +51,6 @@ public abstract class RegisteredComponentsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @return a convenient {@link Stream} wrapper that can be used to filter a set of beans
      */
     public BeanStream beanStream() {

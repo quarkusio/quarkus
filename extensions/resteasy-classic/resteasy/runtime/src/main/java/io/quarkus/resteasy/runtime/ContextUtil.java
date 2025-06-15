@@ -10,8 +10,8 @@ import io.vertx.ext.web.RoutingContext;
 
 public class ContextUtil {
     /**
-     * Used to push context objects from virtual http plugins like AWS Lambda and Azure Functions.
-     * We keep this code here because it is used in multiple places.
+     * Used to push context objects from virtual http plugins like AWS Lambda and Azure Functions. We keep this code
+     * here because it is used in multiple places.
      *
      * @param routingContext
      */

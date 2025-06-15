@@ -30,8 +30,7 @@ public class TestResource {
     @Path("/echo")
     @Produces(MediaType.TEXT_PLAIN)
     @Consumes(MediaType.TEXT_PLAIN)
-    public String echo(@QueryParam("message") String message,
-            @HeaderParam("foo") String foo) {
+    public String echo(@QueryParam("message") String message, @HeaderParam("foo") String foo) {
         return message + (foo == null ? "_null_" : foo);
     }
 

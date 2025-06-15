@@ -9,9 +9,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 
 @CommandLine.Command(name = "registry", header = "Configure Quarkus registry client", subcommands = {
-        RegistryListCommand.class,
-        RegistryAddCommand.class,
-        RegistryRemoveCommand.class })
+        RegistryListCommand.class, RegistryAddCommand.class, RegistryRemoveCommand.class })
 public class Registry implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")
@@ -29,6 +27,7 @@ public class Registry implements Callable<Integer> {
     public Integer call() throws Exception {
         final ParseResult result = spec.commandLine().getParseResult();
         final CommandLine appCommand = spec.subcommands().get("list");
-        return appCommand.execute(result.originalArgs().stream().filter(x -> !"registry".equals(x)).toArray(String[]::new));
+        return appCommand
+                .execute(result.originalArgs().stream().filter(x -> !"registry".equals(x)).toArray(String[]::new));
     }
 }

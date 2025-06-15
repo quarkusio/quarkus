@@ -45,17 +45,11 @@ public class CDIAccessDenyUnannotatedTest {
     BeanWithNoSecurityAnnotations noAnnoBean;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithNoSecurityAnnotations.class,
-                            BeanWithSecurityAnnotations.class,
-                            BeanWithSecurityAnnotationsSubBean.class,
-                            PermitAllBean.class,
-                            PermitAllSubBean.class,
-                            SecurityTestUtils.class,
-                            IdentityMock.class)
-                    .addAsResource("application-deny-unannotated.properties",
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
+                    BeanWithSecurityAnnotationsSubBean.class, PermitAllBean.class, PermitAllSubBean.class,
+                    SecurityTestUtils.class, IdentityMock.class)
+            .addAsResource("application-deny-unannotated.properties", "application.properties"));
 
     @Test
     public void shouldDenyUnannotated() {

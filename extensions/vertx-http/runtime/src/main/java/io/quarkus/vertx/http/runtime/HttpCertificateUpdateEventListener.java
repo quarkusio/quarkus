@@ -41,8 +41,8 @@ public class HttpCertificateUpdateEventListener {
         }
         CountDownLatch latch = new CountDownLatch(registrations.size());
         for (ServerRegistration server : registrations) {
-            server.server.updateSSLOptions(event.tlsConfiguration().getSSLOptions())
-                    .toCompletionStage().whenComplete(new BiConsumer<Boolean, Throwable>() {
+            server.server.updateSSLOptions(event.tlsConfiguration().getSSLOptions()).toCompletionStage()
+                    .whenComplete(new BiConsumer<Boolean, Throwable>() {
                         @Override
                         public void accept(Boolean v, Throwable t) {
                             if (t == null) {
@@ -50,8 +50,7 @@ public class HttpCertificateUpdateEventListener {
                                         event.name(), server.id);
                             } else {
                                 LOG.warnf(t, "Failed to update TLS configuration `%s` for the HTTP server `%s`",
-                                        event.name(),
-                                        server.id);
+                                        event.name(), server.id);
                             }
                             latch.countDown();
                         }

@@ -78,8 +78,7 @@ public class RestResponseBuilderImpl<T> extends AbstractRestResponseBuilder<T> {
                     if (!path.startsWith("/")) {
                         path = "/" + path;
                     }
-                    location = new URI(req.getRequestScheme(), null, host, port, null, null, null)
-                            .resolve(path);
+                    location = new URI(req.getRequestScheme(), null, host, port, null, null, null).resolve(path);
                 } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }

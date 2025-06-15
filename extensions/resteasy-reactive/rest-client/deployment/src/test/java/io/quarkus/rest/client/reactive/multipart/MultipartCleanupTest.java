@@ -37,7 +37,9 @@ public class MultipartCleanupTest {
 
     @BeforeAll
     static void getTempDir() throws IOException {
-        java.nio.file.Path tempFilePath = Files.createTempFile("jvm_tempfile_helper_", ".tmp"); // create temp file to get reference to jvm temp dir
+        java.nio.file.Path tempFilePath = Files.createTempFile("jvm_tempfile_helper_", ".tmp"); // create temp file to
+                                                                                                // get reference to jvm
+                                                                                                // temp dir
         tempFilePath.toFile().deleteOnExit(); // cleanup file after test is finished
         tempDir = tempFilePath.getParent(); // now we can get the root temp dir
     }

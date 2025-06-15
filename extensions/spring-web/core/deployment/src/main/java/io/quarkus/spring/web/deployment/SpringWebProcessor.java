@@ -46,13 +46,13 @@ public class SpringWebProcessor {
 
     private static final DotName REQUEST_MAPPING = DotName
             .createSimple("org.springframework.web.bind.annotation.RequestMapping");
-    private static final DotName PATH_VARIABLE = DotName.createSimple("org.springframework.web.bind.annotation.PathVariable");
+    private static final DotName PATH_VARIABLE = DotName
+            .createSimple("org.springframework.web.bind.annotation.PathVariable");
 
     private static final List<DotName> MAPPING_ANNOTATIONS;
 
     static {
-        MAPPING_ANNOTATIONS = Arrays.asList(
-                REQUEST_MAPPING,
+        MAPPING_ANNOTATIONS = Arrays.asList(REQUEST_MAPPING,
                 DotName.createSimple("org.springframework.web.bind.annotation.GetMapping"),
                 DotName.createSimple("org.springframework.web.bind.annotation.PostMapping"),
                 DotName.createSimple("org.springframework.web.bind.annotation.PutMapping"),
@@ -75,8 +75,8 @@ public class SpringWebProcessor {
     private static final DotName HTTP_ENTITY = DotName.createSimple("org.springframework.http.HttpEntity");
     private static final DotName RESPONSE_ENTITY = DotName.createSimple("org.springframework.http.ResponseEntity");
 
-    private static final Set<DotName> DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES = new HashSet<>(Arrays.asList(
-            MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY));
+    private static final Set<DotName> DISALLOWED_EXCEPTION_CONTROLLER_RETURN_TYPES = new HashSet<>(
+            Arrays.asList(MODEL_AND_VIEW, VIEW, MODEL, HTTP_ENTITY));
 
     @BuildStep
     FeatureBuildItem registerFeature() {
@@ -93,8 +93,7 @@ public class SpringWebProcessor {
         Predicate<ClassInfo> predicate = new Predicate<>() {
             @Override
             public boolean test(ClassInfo classInfo) {
-                return classInfo
-                        .declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null;
+                return classInfo.declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null;
             }
         };
         return new EndpointValidationPredicatesBuildItem(predicate);
@@ -105,8 +104,7 @@ public class SpringWebProcessor {
         Predicate<ClassInfo> predicate = new Predicate<>() {
             @Override
             public boolean test(ClassInfo classInfo) {
-                return classInfo
-                        .declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null;
+                return classInfo.declaredAnnotation(REST_CONTROLLER_ANNOTATION) == null;
             }
         };
         return new io.quarkus.resteasy.reactive.spi.EndpointValidationPredicatesBuildItem(predicate);
@@ -116,18 +114,18 @@ public class SpringWebProcessor {
     public void ignoreReflectionHierarchy(BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> ignore) {
         ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
                 new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(RESPONSE_ENTITY)));
-        ignore.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+        ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
+                new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
                         DotName.createSimple("org.springframework.util.MimeType"))));
-        ignore.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+        ignore.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
+                new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
                         DotName.createSimple("org.springframework.util.MultiValueMap"))));
     }
 
     @BuildStep
     public void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(REST_CONTROLLER_ANNOTATION, BuiltinScope.SINGLETON.getName()));
+        beanDefiningAnnotations.produce(
+                new BeanDefiningAnnotationBuildItem(REST_CONTROLLER_ANNOTATION, BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
                 .produce(new BeanDefiningAnnotationBuildItem(REST_CONTROLLER_ADVICE, BuiltinScope.SINGLETON.getName()));
     }
@@ -138,8 +136,7 @@ public class SpringWebProcessor {
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
             BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassProducer,
-            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer,
-            Capabilities capabilities) {
+            BuildProducer<UnremovableBeanBuildItem> unremovableBeanProducer, Capabilities capabilities) {
 
         boolean isResteasyClassicAvailable = capabilities.isPresent(Capability.RESTEASY_JSON_JACKSON);
         boolean isResteasyReactiveAvailable = capabilities.isPresent(Capability.RESTEASY_REACTIVE_JSON_JACKSON);
@@ -156,18 +153,17 @@ public class SpringWebProcessor {
         IndexView indexView = index.getIndex();
         ClassOutput classOutput = new GeneratedClassGizmoAdaptor(generatedExceptionMappers, true);
         generateMappersForResponseStatusOnException(providersProducer, exceptionMapperProducer, indexView, classOutput,
-                typesUtil,
-                isResteasyClassicAvailable);
-        generateMappersForExceptionHandlerInControllerAdvice(providersProducer, exceptionMapperProducer,
-                reflectiveClassProducer, unremovableBeanProducer, indexView, classOutput,
                 typesUtil, isResteasyClassicAvailable);
+        generateMappersForExceptionHandlerInControllerAdvice(providersProducer, exceptionMapperProducer,
+                reflectiveClassProducer, unremovableBeanProducer, indexView, classOutput, typesUtil,
+                isResteasyClassicAvailable);
     }
 
-    private void generateMappersForResponseStatusOnException(BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
-            BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer,
-            IndexView index, ClassOutput classOutput, TypesUtil typesUtil, boolean isResteasyClassic) {
-        Collection<AnnotationInstance> responseStatusInstances = index
-                .getAnnotations(RESPONSE_STATUS);
+    private void generateMappersForResponseStatusOnException(
+            BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer,
+            BuildProducer<ExceptionMapperBuildItem> exceptionMapperProducer, IndexView index, ClassOutput classOutput,
+            TypesUtil typesUtil, boolean isResteasyClassic) {
+        Collection<AnnotationInstance> responseStatusInstances = index.getAnnotations(RESPONSE_STATUS);
 
         if (responseStatusInstances.isEmpty()) {
             return;
@@ -182,11 +178,11 @@ public class SpringWebProcessor {
                 continue;
             }
 
-            String name = new ResponseStatusOnExceptionGenerator(instance.target().asClass(), classOutput, isResteasyClassic)
-                    .generate();
+            String name = new ResponseStatusOnExceptionGenerator(instance.target().asClass(), classOutput,
+                    isResteasyClassic).generate();
             providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));
-            exceptionMapperProducer.produce(
-                    new ExceptionMapperBuildItem(name, dotName.toString(), Priorities.USER, false));
+            exceptionMapperProducer
+                    .produce(new ExceptionMapperBuildItem(name, dotName.toString(), Priorities.USER, false));
         }
     }
 
@@ -232,17 +228,16 @@ public class SpringWebProcessor {
                 String name = new ControllerAdviceExceptionMapperGenerator(method, handledExceptionType.name(),
                         classOutput, typesUtil, isResteasyClassic).generate();
                 providersProducer.produce(new ResteasyJaxrsProviderBuildItem(name));
-                exceptionMapperProducer.produce(
-                        new ExceptionMapperBuildItem(name, handledExceptionType.name().toString(), Priorities.USER, false));
+                exceptionMapperProducer.produce(new ExceptionMapperBuildItem(name,
+                        handledExceptionType.name().toString(), Priorities.USER, false));
             }
 
         }
 
         // allow access to HttpHeaders from Arc.container()
         if (!isResteasyClassic) {
-            unremovableBeanProducer.produce(
-                    UnremovableBeanBuildItem.beanClassNames("org.jboss.resteasy.reactive.server.injection.ContextProducers",
-                            HttpHeaders.class.getName()));
+            unremovableBeanProducer.produce(UnremovableBeanBuildItem.beanClassNames(
+                    "org.jboss.resteasy.reactive.server.injection.ContextProducers", HttpHeaders.class.getName()));
         }
     }
 

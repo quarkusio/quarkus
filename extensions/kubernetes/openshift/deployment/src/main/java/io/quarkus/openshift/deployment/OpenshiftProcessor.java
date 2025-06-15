@@ -15,17 +15,13 @@ import io.quarkus.kubernetes.spi.KubernetesResourceMetadataBuildItem;
 public class OpenshiftProcessor {
 
     @BuildStep
-    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities, OpenShiftConfig config,
-            BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
+    public void checkOpenshift(ApplicationInfoBuildItem applicationInfo, Capabilities capabilities,
+            OpenShiftConfig config, BuildProducer<KubernetesDeploymentTargetBuildItem> deploymentTargets,
             BuildProducer<KubernetesResourceMetadataBuildItem> resourceMeta) {
 
         DeploymentResourceKind deploymentResourceKind = config.getDeploymentResourceKind(capabilities);
-        deploymentTargets
-                .produce(
-                        new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.getKind(),
-                                deploymentResourceKind.getGroup(),
-                                deploymentResourceKind.getVersion(), true,
-                                config.deployStrategy()));
+        deploymentTargets.produce(new KubernetesDeploymentTargetBuildItem(OPENSHIFT, deploymentResourceKind.getKind(),
+                deploymentResourceKind.getGroup(), deploymentResourceKind.getVersion(), true, config.deployStrategy()));
 
         String name = ResourceNameUtil.getResourceName(config, applicationInfo);
         resourceMeta.produce(new KubernetesResourceMetadataBuildItem(OPENSHIFT, deploymentResourceKind.getGroup(),

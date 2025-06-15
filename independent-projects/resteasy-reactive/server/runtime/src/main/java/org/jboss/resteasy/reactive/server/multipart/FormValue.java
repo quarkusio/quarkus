@@ -9,7 +9,9 @@ public interface FormValue {
 
     /**
      * @return the simple string value.
-     * @throws IllegalStateException If the body of the part is not a simple string value
+     *
+     * @throws IllegalStateException
+     *         If the body of the part is not a simple string value
      */
     String getValue();
 

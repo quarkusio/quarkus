@@ -21,16 +21,12 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 public class ManagementWithMainServerDisabledTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.management.enabled=true\n" +
-            "quarkus.management.root-path=/management\n" +
-            "quarkus.http.host-enabled=false\n";
+    private static final String APP_PROPS = "" + "quarkus.management.enabled=true\n"
+            + "quarkus.management.root-path=/management\n" + "quarkus.http.host-enabled=false\n";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
-                    .addClasses(MyObserver.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset(APP_PROPS), "application.properties").addClasses(MyObserver.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -40,17 +36,12 @@ public class ManagementWithMainServerDisabledTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
-                        context.produce(buildItem.routeBuilder()
-                                .management()
-                                .route("my-route")
-                                .handler(new MyHandler())
-                                .blockingRoute()
-                                .build());
+                        NonApplicationRootPathBuildItem buildItem = context
+                                .consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(buildItem.routeBuilder().management().route("my-route").handler(new MyHandler())
+                                .blockingRoute().build());
                     }
-                }).produces(RouteBuildItem.class)
-                        .consumes(NonApplicationRootPathBuildItem.class)
-                        .build();
+                }).produces(RouteBuildItem.class).consumes(NonApplicationRootPathBuildItem.class).build();
             }
         };
     }
@@ -64,16 +55,15 @@ public class ManagementWithMainServerDisabledTest {
 
     @Test
     public void testManagementWithoutMain() {
-        RestAssured.given()
-                .get("http://localhost:9001/management/my-route")
-                .then().statusCode(200).body(Matchers.equalTo("ok"));
+        RestAssured.given().get("http://localhost:9001/management/my-route").then().statusCode(200)
+                .body(Matchers.equalTo("ok"));
     }
 
     @Singleton
     static class MyObserver {
 
         void test(@Observes String event) {
-            //Do Nothing
+            // Do Nothing
         }
 
     }

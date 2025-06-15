@@ -12,9 +12,9 @@ class SmallRyeGraphQLConfigMappingTest {
     @Test
     void graphQlRelocates() {
         SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withDefaultValue("quarkus.smallrye-graphql.show-runtime-exception-message", "org.acme.CustomRuntimeException")
-                .withInterceptors(new SmallRyeGraphQLConfigMapping())
-                .build();
+                .withDefaultValue("quarkus.smallrye-graphql.show-runtime-exception-message",
+                        "org.acme.CustomRuntimeException")
+                .withInterceptors(new SmallRyeGraphQLConfigMapping()).build();
 
         assertEquals("org.acme.CustomRuntimeException", config.getRawValue("mp.graphql.showErrorMessage"));
     }
@@ -22,9 +22,9 @@ class SmallRyeGraphQLConfigMappingTest {
     @Test
     void graphQlRelocatesDiscovered() {
         SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withDefaultValue("quarkus.smallrye-graphql.show-runtime-exception-message", "org.acme.CustomRuntimeException")
-                .addDiscoveredInterceptors()
-                .build();
+                .withDefaultValue("quarkus.smallrye-graphql.show-runtime-exception-message",
+                        "org.acme.CustomRuntimeException")
+                .addDiscoveredInterceptors().build();
 
         assertEquals("org.acme.CustomRuntimeException", config.getRawValue("mp.graphql.showErrorMessage"));
     }

@@ -44,25 +44,21 @@ public class MtlsWithP12Test {
     URL urlNoTls;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addAsResource(new StringAsset(configuration), "application.properties")
-                    .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
-                    .addAsResource(new File("target/certs/mtls-test-server-truststore.p12"), "server-truststore.p12"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBean.class).addAsResource(new StringAsset(configuration), "application.properties")
+            .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
+            .addAsResource(new File("target/certs/mtls-test-server-truststore.p12"), "server-truststore.p12"));
 
     @Test
     public void testClientAuthentication() {
-        RestAssured.given()
-                .keyStore("target/certs/mtls-test-client-keystore.jks", "secret")
-                .trustStore("target/certs/mtls-test-client-truststore.jks", "secret")
-                .get(url).then().statusCode(200).body(is("CN=localhost"));
+        RestAssured.given().keyStore("target/certs/mtls-test-client-keystore.jks", "secret")
+                .trustStore("target/certs/mtls-test-client-truststore.jks", "secret").get(url).then().statusCode(200)
+                .body(is("CN=localhost"));
     }
 
     @Test
     public void testNoClientCert() {
-        RestAssured.given()
-                .get(urlNoTls).then().statusCode(401);
+        RestAssured.given().get(urlNoTls).then().statusCode(401);
     }
 
     @ApplicationScoped

@@ -93,37 +93,26 @@ public class NativeImageBuildStep {
     }
 
     @BuildStep(onlyIf = NativeBuild.class)
-    ArtifactResultBuildItem result(NativeImageBuildItem image,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+    ArtifactResultBuildItem result(NativeImageBuildItem image, CurateOutcomeBuildItem curateOutcomeBuildItem) {
         NativeImageBuildItem.GraalVMVersion graalVMVersion = image.getGraalVMInfo();
-        return new ArtifactResultBuildItem(image.getPath(), "native",
-                graalVMVersion.toMap(),
-                ApplicationManifestConfig.builder()
-                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
-                        .setMainComponent(ApplicationComponent.builder()
-                                .setPath(image.getPath())
-                                .setDependencies(List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact())))
-                        .setRunnerPath(image.getPath())
-                        .build());
+        return new ArtifactResultBuildItem(image.getPath(), "native", graalVMVersion.toMap(),
+                ApplicationManifestConfig.builder().setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                        .setMainComponent(ApplicationComponent.builder().setPath(image.getPath()).setDependencies(
+                                List.of(curateOutcomeBuildItem.getApplicationModel().getAppArtifact())))
+                        .setRunnerPath(image.getPath()).build());
     }
 
     @BuildStep(onlyIf = NativeSourcesBuild.class)
     ArtifactResultBuildItem nativeSourcesResult(NativeConfig nativeConfig,
-            LocalesBuildTimeConfig localesBuildTimeConfig,
-            BuildSystemTargetBuildItem buildSystemTargetBuildItem,
-            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
-            PackageConfig packageConfig,
-            List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
+            LocalesBuildTimeConfig localesBuildTimeConfig, BuildSystemTargetBuildItem buildSystemTargetBuildItem,
+            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem, OutputTargetBuildItem outputTargetBuildItem,
+            PackageConfig packageConfig, List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
             List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
-            List<NativeImageEnableModule> enableModules,
-            List<JPMSExportBuildItem> jpmsExportBuildItems,
+            List<NativeImageEnableModule> enableModules, List<JPMSExportBuildItem> jpmsExportBuildItems,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
-            List<NativeImageFeatureBuildItem> nativeImageFeatures,
-            NativeImageRunnerBuildItem nativeImageRunner,
-            List<NativeMonitoringBuildItem> nativeMonitoringBuildItems,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            List<NativeImageFeatureBuildItem> nativeImageFeatures, NativeImageRunnerBuildItem nativeImageRunner,
+            List<NativeMonitoringBuildItem> nativeMonitoringBuildItems, CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         Path outputDir;
         try {
@@ -138,32 +127,26 @@ public class NativeImageBuildStep {
 
         String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
 
-        NativeImageInvokerInfo nativeImageArgs = new NativeImageInvokerInfo.Builder()
-                .setNativeConfig(nativeConfig)
-                .setLocalesBuildTimeConfig(localesBuildTimeConfig)
-                .setOutputTargetBuildItem(outputTargetBuildItem)
-                .setNativeImageProperties(nativeImageProperties)
-                .setExcludeConfigs(excludeConfigs)
-                .setJPMSExportBuildItems(jpmsExportBuildItems)
-                .setEnableModules(enableModules)
+        NativeImageInvokerInfo nativeImageArgs = new NativeImageInvokerInfo.Builder().setNativeConfig(nativeConfig)
+                .setLocalesBuildTimeConfig(localesBuildTimeConfig).setOutputTargetBuildItem(outputTargetBuildItem)
+                .setNativeImageProperties(nativeImageProperties).setExcludeConfigs(excludeConfigs)
+                .setJPMSExportBuildItems(jpmsExportBuildItems).setEnableModules(enableModules)
                 .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
-                .setNativeImageSecurityProviders(nativeImageSecurityProviders)
-                .setOutputDir(outputDir)
+                .setNativeImageSecurityProviders(nativeImageSecurityProviders).setOutputDir(outputDir)
                 .setRunnerJarName(runnerJar.getFileName().toString())
-                // the path to native-image is not known now, it is only known at the time the native-sources will be consumed
-                .setNativeImageName(nativeImageName)
-                .setGraalVMVersion(GraalVM.Version.CURRENT)
-                .setNativeImageFeatures(nativeImageFeatures)
-                .setContainerBuild(nativeImageRunner.isContainerBuild())
-                .setNativeMonitoringOptions(nativeMonitoringBuildItems)
-                .build();
+                // the path to native-image is not known now, it is only known at the time the native-sources will be
+                // consumed
+                .setNativeImageName(nativeImageName).setGraalVMVersion(GraalVM.Version.CURRENT)
+                .setNativeImageFeatures(nativeImageFeatures).setContainerBuild(nativeImageRunner.isContainerBuild())
+                .setNativeMonitoringOptions(nativeMonitoringBuildItems).build();
         List<String> command = nativeImageArgs.getArgs();
 
         try {
             Files.writeString(outputDir.resolve("native-image.args"), String.join(" ", command));
             Files.writeString(outputDir.resolve("graalvm.version"), GraalVM.Version.CURRENT.getVersionAsString());
             if (nativeImageRunner.isContainerBuild()) {
-                Files.writeString(outputDir.resolve("native-builder.image"), nativeConfig.builderImage().getEffectiveImage());
+                Files.writeString(outputDir.resolve("native-builder.image"),
+                        nativeConfig.builderImage().getEffectiveImage());
             }
         } catch (IOException | RuntimeException e) {
             throw new RuntimeException("Failed to build native image sources", e);
@@ -175,38 +158,29 @@ public class NativeImageBuildStep {
         // drop the original output to avoid confusion
         IoUtils.recursiveDelete(nativeImageSourceJarBuildItem.getPath().getParent());
 
-        return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(),
-                "native-sources",
+        return new ArtifactResultBuildItem(nativeImageSourceJarBuildItem.getPath(), "native-sources",
                 Collections.emptyMap(),
-                ApplicationManifestConfig.builder()
-                        .setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
+                ApplicationManifestConfig.builder().setApplicationModel(curateOutcomeBuildItem.getApplicationModel())
                         .setMainComponent(ApplicationComponent.builder()
                                 .setPath(nativeImageSourceJarBuildItem.getPath())
                                 .setResolvedDependency(curateOutcomeBuildItem.getApplicationModel().getAppArtifact()))
-                        .setRunnerPath(nativeImageSourceJarBuildItem.getPath())
-                        .build());
+                        .setRunnerPath(nativeImageSourceJarBuildItem.getPath()).build());
     }
 
     @BuildStep
     public NativeImageBuildItem build(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig,
-            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem,
-            OutputTargetBuildItem outputTargetBuildItem,
-            PackageConfig packageConfig,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            List<NativeImageSystemPropertyBuildItem> nativeImageProperties,
-            List<ExcludeConfigBuildItem> excludeConfigs,
+            NativeImageSourceJarBuildItem nativeImageSourceJarBuildItem, OutputTargetBuildItem outputTargetBuildItem,
+            PackageConfig packageConfig, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            List<NativeImageSystemPropertyBuildItem> nativeImageProperties, List<ExcludeConfigBuildItem> excludeConfigs,
             NativeImageAllowIncompleteClasspathAggregateBuildItem incompleteClassPathAllowed,
             List<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
-            List<JPMSExportBuildItem> jpmsExportBuildItems,
-            List<NativeImageEnableModule> enableModules,
+            List<JPMSExportBuildItem> jpmsExportBuildItems, List<NativeImageEnableModule> enableModules,
             List<NativeMinimalJavaVersionBuildItem> nativeMinimalJavaVersions,
-            List<UnsupportedOSBuildItem> unsupportedOses,
-            Optional<ProcessInheritIODisabled> processInheritIODisabled,
+            List<UnsupportedOSBuildItem> unsupportedOses, Optional<ProcessInheritIODisabled> processInheritIODisabled,
             Optional<ProcessInheritIODisabledBuildItem> processInheritIODisabledBuildItem,
             List<NativeImageFeatureBuildItem> nativeImageFeatures,
             Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectoryBuildItem,
-            List<NativeMonitoringBuildItem> nativeMonitoringItems,
-            NativeImageRunnerBuildItem nativeImageRunner) {
+            List<NativeMonitoringBuildItem> nativeMonitoringItems, NativeImageRunnerBuildItem nativeImageRunner) {
         if (nativeConfig.debug().enabled()) {
             copyJarSourcesToLib(outputTargetBuildItem, curateOutcomeBuildItem);
             copySourcesToSourceCache(outputTargetBuildItem);
@@ -229,13 +203,13 @@ public class NativeImageBuildStep {
         }
 
         String nativeImageName = getNativeImageName(outputTargetBuildItem, packageConfig);
-        String resultingExecutableName = getResultingExecutableName(nativeImageName, nativeImageRunner.isContainerBuild());
+        String resultingExecutableName = getResultingExecutableName(nativeImageName,
+                nativeImageRunner.isContainerBuild());
         Path generatedExecutablePath = outputDir.resolve(resultingExecutableName);
         Path finalExecutablePath = outputTargetBuildItem.getOutputDirectory().resolve(resultingExecutableName);
         if (nativeConfig.reuseExisting()) {
             if (Files.exists(finalExecutablePath)) {
-                return new NativeImageBuildItem(finalExecutablePath,
-                        NativeImageBuildItem.GraalVMVersion.unknown(),
+                return new NativeImageBuildItem(finalExecutablePath, NativeImageBuildItem.GraalVMVersion.unknown(),
                         true);
             }
         }
@@ -248,42 +222,28 @@ public class NativeImageBuildStep {
 
         try {
             if (nativeConfig.cleanupServer()) {
-                log.warn(
-                        "Your application is setting the deprecated 'quarkus.native.cleanup-server' configuration key"
-                                + " to true. Please consider removing this configuration key as it is ignored"
-                                + " (The Native image build server is always disabled) and it will be removed in a"
-                                + " future Quarkus version.");
+                log.warn("Your application is setting the deprecated 'quarkus.native.cleanup-server' configuration key"
+                        + " to true. Please consider removing this configuration key as it is ignored"
+                        + " (The Native image build server is always disabled) and it will be removed in a"
+                        + " future Quarkus version.");
             }
 
             NativeImageInvokerInfo commandAndExecutable = new NativeImageInvokerInfo.Builder()
-                    .setNativeConfig(nativeConfig)
-                    .setLocalesBuildTimeConfig(localesBuildTimeConfig)
-                    .setOutputTargetBuildItem(outputTargetBuildItem)
-                    .setNativeImageProperties(nativeImageProperties)
-                    .setExcludeConfigs(excludeConfigs)
-                    .setBrokenClasspath(incompleteClassPathAllowed.isAllow())
+                    .setNativeConfig(nativeConfig).setLocalesBuildTimeConfig(localesBuildTimeConfig)
+                    .setOutputTargetBuildItem(outputTargetBuildItem).setNativeImageProperties(nativeImageProperties)
+                    .setExcludeConfigs(excludeConfigs).setBrokenClasspath(incompleteClassPathAllowed.isAllow())
                     .setNativeImageSecurityProviders(nativeImageSecurityProviders)
-                    .setJPMSExportBuildItems(jpmsExportBuildItems)
-                    .setNativeMonitoringOptions(nativeMonitoringItems)
-                    .setEnableModules(enableModules)
-                    .setNativeMinimalJavaVersions(nativeMinimalJavaVersions)
-                    .setUnsupportedOSes(unsupportedOses)
-                    .setOutputDir(outputDir)
-                    .setRunnerJarName(runnerJarName)
-                    .setNativeImageName(nativeImageName)
-                    .setPIE(pie)
-                    .setGraalVMVersion(graalVMVersion)
-                    .setNativeImageFeatures(nativeImageFeatures)
-                    .setContainerBuild(isContainerBuild)
-                    .setNativeImageAgentConfigDirectory(nativeImageAgentConfigDirectoryBuildItem)
-                    .build();
+                    .setJPMSExportBuildItems(jpmsExportBuildItems).setNativeMonitoringOptions(nativeMonitoringItems)
+                    .setEnableModules(enableModules).setNativeMinimalJavaVersions(nativeMinimalJavaVersions)
+                    .setUnsupportedOSes(unsupportedOses).setOutputDir(outputDir).setRunnerJarName(runnerJarName)
+                    .setNativeImageName(nativeImageName).setPIE(pie).setGraalVMVersion(graalVMVersion)
+                    .setNativeImageFeatures(nativeImageFeatures).setContainerBuild(isContainerBuild)
+                    .setNativeImageAgentConfigDirectory(nativeImageAgentConfigDirectoryBuildItem).build();
 
             List<String> nativeImageArgs = commandAndExecutable.args;
 
-            NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs,
-                    nativeImageName,
-                    resultingExecutableName, outputDir,
-                    graalVMVersion, nativeConfig.debug().enabled(),
+            NativeImageBuildRunner.Result buildNativeResult = buildRunner.build(nativeImageArgs, nativeImageName,
+                    resultingExecutableName, outputDir, graalVMVersion, nativeConfig.debug().enabled(),
                     processInheritIODisabled.isPresent() || processInheritIODisabledBuildItem.isPresent());
             if (buildNativeResult.getExitCode() != 0) {
                 throw imageGenerationFailed(buildNativeResult.getExitCode(), isContainerBuild);
@@ -321,8 +281,7 @@ public class NativeImageBuildStep {
 
             return new NativeImageBuildItem(finalExecutablePath,
                     new NativeImageBuildItem.GraalVMVersion(graalVMVersion.getFullVersion(),
-                            graalVMVersion.getVersionAsString(),
-                            graalVMVersion.javaVersion.feature(),
+                            graalVMVersion.getVersionAsString(), graalVMVersion.javaVersion.feature(),
                             graalVMVersion.getDistribution().name()),
                     false);
         } catch (ImageGenerationFailureException e) {
@@ -344,7 +303,7 @@ public class NativeImageBuildStep {
     private String getResultingExecutableName(String nativeImageName, boolean isContainerBuild) {
         String resultingExecutableName = nativeImageName;
         if (OS.WINDOWS.isCurrent() && !isContainerBuild) {
-            //once image is generated it gets added .exe on Windows
+            // once image is generated it gets added .exe on Windows
             resultingExecutableName = resultingExecutableName + ".exe";
         }
         return resultingExecutableName;
@@ -378,8 +337,8 @@ public class NativeImageBuildStep {
     }
 
     /**
-     * Creates a dummy runner for native-sources builds. This allows the creation of native-source jars without requiring
-     * podman/docker or a local native-image installation.
+     * Creates a dummy runner for native-sources builds. This allows the creation of native-source jars without
+     * requiring podman/docker or a local native-image installation.
      */
     @BuildStep(onlyIf = NativeSourcesBuild.class)
     public NativeImageRunnerBuildItem dummyNativeImageBuildRunner(NativeConfig nativeConfig) {
@@ -391,14 +350,10 @@ public class NativeImageBuildStep {
     public void ignoreBuildPropertyChanges(BuildProducer<SuppressNonRuntimeConfigChangedWarningBuildItem> producer) {
         // Don't produce warnings on static init for properties that are overridden through environment variables
         // if they are clearly only relevant when building.
-        for (String propertyKey : new String[] {
-                "quarkus.native.container-build",
-                "quarkus.native.remote-container-build",
-                "quarkus.native.builder-image.image",
-                "quarkus.native.builder-image.pull",
-                "quarkus.native.container-runtime",
-                "quarkus.native.container-runtime-options"
-        }) {
+        for (String propertyKey : new String[] { "quarkus.native.container-build",
+                "quarkus.native.remote-container-build", "quarkus.native.builder-image.image",
+                "quarkus.native.builder-image.pull", "quarkus.native.container-runtime",
+                "quarkus.native.container-runtime-options" }) {
             producer.produce(new SuppressNonRuntimeConfigChangedWarningBuildItem(propertyKey));
         }
     }
@@ -426,7 +381,8 @@ public class NativeImageBuildStep {
                             try {
                                 Files.copy(jarSourceDep, targetPath, StandardCopyOption.REPLACE_EXISTING);
                             } catch (IOException e) {
-                                throw new RuntimeException("Unable to copy from " + jarSourceDep + " to " + targetPath, e);
+                                throw new RuntimeException("Unable to copy from " + jarSourceDep + " to " + targetPath,
+                                        e);
                             }
                         }
                     }
@@ -448,8 +404,7 @@ public class NativeImageBuildStep {
                 .resolve(outputTargetBuildItem.getBaseName() + "-native-image-source-jar");
         Path libDir = targetDirectory.resolve(JarResultBuildStep.LIB);
 
-        final File[] jarSources = libDir.toFile()
-                .listFiles((file, name) -> name.endsWith("-sources.jar"));
+        final File[] jarSources = libDir.toFile().listFiles((file, name) -> name.endsWith("-sources.jar"));
         Stream.of(Objects.requireNonNull(jarSources)).forEach(File::delete);
     }
 
@@ -463,8 +418,8 @@ public class NativeImageBuildStep {
             targetSrcFile.mkdirs();
         }
 
-        final Path javaSourcesPath = outputTargetBuildItem.getOutputDirectory().resolve(
-                Paths.get("..", "src", "main", "java"));
+        final Path javaSourcesPath = outputTargetBuildItem.getOutputDirectory()
+                .resolve(Paths.get("..", "src", "main", "java"));
 
         if (Files.exists(javaSourcesPath)) {
             try (Stream<Path> paths = Files.walk(javaSourcesPath)) {
@@ -503,10 +458,9 @@ public class NativeImageBuildStep {
         log.info("Running Quarkus native-image plugin on " + version.getDistribution().name() + " "
                 + version.getVersionAsString() + " JDK " + version.javaVersion);
         if (version.isObsolete()) {
-            throw new IllegalStateException(
-                    "Out of date version of GraalVM or Mandrel detected: " + version.getVersionAsString() + "."
-                            + " Quarkus currently supports " + GraalVM.Version.CURRENT.getVersionAsString()
-                            + ". Please upgrade to this version.");
+            throw new IllegalStateException("Out of date version of GraalVM or Mandrel detected: "
+                    + version.getVersionAsString() + "." + " Quarkus currently supports "
+                    + GraalVM.Version.CURRENT.getVersionAsString() + ". Please upgrade to this version.");
         }
         if (!version.isSupported()) {
             log.warn("You are using an older version of GraalVM or Mandrel : " + version.getVersionAsString() + "."
@@ -624,7 +578,8 @@ public class NativeImageBuildStep {
             private String nativeImageName;
             private boolean classpathIsBroken;
             private boolean containerBuild;
-            private Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectory = Optional.empty();
+            private Optional<NativeImageAgentConfigDirectoryBuildItem> nativeImageAgentConfigDirectory = Optional
+                    .empty();
 
             public Builder setNativeConfig(NativeConfig nativeConfig) {
                 this.nativeConfig = nativeConfig;
@@ -689,8 +644,7 @@ public class NativeImageBuildStep {
                 return this;
             }
 
-            public Builder setUnsupportedOSes(
-                    List<UnsupportedOSBuildItem> unsupportedOSes) {
+            public Builder setUnsupportedOSes(List<UnsupportedOSBuildItem> unsupportedOSes) {
                 this.unsupportedOSes = unsupportedOSes;
                 return this;
             }
@@ -738,21 +692,24 @@ public class NativeImageBuildStep {
                 boolean addAllCharsets = nativeConfig.addAllCharsets();
                 boolean enableHttpsUrlHandler = nativeConfig.enableHttpsUrlHandler();
                 for (NativeImageSystemPropertyBuildItem prop : nativeImageProperties) {
-                    //todo: this should be specific build items
+                    // todo: this should be specific build items
                     if (prop.getKey().equals("quarkus.ssl.native") && prop.getValue() != null) {
                         enableSslNative = Boolean.parseBoolean(prop.getValue());
                     } else if (prop.getKey().equals("quarkus.jni.enable") && prop.getValue().equals("false")) {
-                        log.warn("Your application is setting the deprecated 'quarkus.jni.enable' configuration key to false."
-                                + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
-                                + " will be removed in a future Quarkus version.");
-                    } else if (prop.getKey().equals("quarkus.native.enable-all-security-services") && prop.getValue() != null) {
+                        log.warn(
+                                "Your application is setting the deprecated 'quarkus.jni.enable' configuration key to false."
+                                        + " Please consider removing this configuration key as it is ignored (JNI is always enabled) and it"
+                                        + " will be removed in a future Quarkus version.");
+                    } else if (prop.getKey().equals("quarkus.native.enable-all-security-services")
+                            && prop.getValue() != null) {
                         log.warn(
                                 "Your application is setting the deprecated 'quarkus.native.enable-all-security-services' configuration key."
                                         + " Please consider removing this configuration key as it is ignored and it"
                                         + " will be removed in a future Quarkus version.");
                     } else if (prop.getKey().equals("quarkus.native.enable-all-charsets") && prop.getValue() != null) {
                         addAllCharsets |= Boolean.parseBoolean(prop.getValue());
-                    } else if (prop.getKey().equals("quarkus.native.inline-before-analysis") && prop.getValue() != null) {
+                    } else if (prop.getKey().equals("quarkus.native.inline-before-analysis")
+                            && prop.getValue() != null) {
                         inlineBeforeAnalysis = Boolean.parseBoolean(prop.getValue());
                     } else {
                         // todo maybe just -D is better than -J-D in this case
@@ -763,12 +720,13 @@ public class NativeImageBuildStep {
                         }
                     }
                 }
-                final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig, localesBuildTimeConfig);
+                final String includeLocales = LocaleProcessor.nativeImageIncludeLocales(nativeConfig,
+                        localesBuildTimeConfig);
                 if (!includeLocales.isEmpty()) {
                     if ("all".equals(includeLocales)) {
                         log.warn(
-                                "Your application is setting the 'quarkus.locales' configuration key to include 'all'. " +
-                                        "All JDK locales, languages, currencies, etc. will be included, inflating the size of the executable.");
+                                "Your application is setting the 'quarkus.locales' configuration key to include 'all'. "
+                                        + "All JDK locales, languages, currencies, etc. will be included, inflating the size of the executable.");
                         addExperimentalVMOption(nativeImageArgs, "-H:+IncludeAllLocales");
                     } else {
                         addExperimentalVMOption(nativeImageArgs, "-H:IncludeLocales=" + includeLocales);
@@ -791,19 +749,19 @@ public class NativeImageBuildStep {
                 if (!nativeConfig.autoServiceLoaderRegistration()) {
                     featuresList.add("io.quarkus.runtime.graal.SkipConsoleServiceProvidersFeature");
                     // required by the feature
-                    nativeImageArgs.add("-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED");
+                    nativeImageArgs
+                            .add("-J--add-exports=org.graalvm.nativeimage.builder/com.oracle.svm.core.jdk=ALL-UNNAMED");
                 }
                 nativeImageArgs.add("--features=" + String.join(",", featuresList));
 
                 if (nativeConfig.debug().enabled()) {
                     /*
-                     * Instruct GraalVM / Mandrel to keep more accurate information about source locations when generating
-                     * debug info for debugging and monitoring tools. This parameter may break compatibility with Truffle.
-                     * Affected users should explicitly pass {@code -H:-TrackNodeSourcePosition} through
-                     * {@code quarkus.native.additional-build-args} or {@code quarkus.native.additional-build-args-append}
-                     * to override it.
-                     *
-                     * See https://github.com/quarkusio/quarkus/issues/30772 for more details.
+                     * Instruct GraalVM / Mandrel to keep more accurate information about source locations when
+                     * generating debug info for debugging and monitoring tools. This parameter may break compatibility
+                     * with Truffle. Affected users should explicitly pass {@code -H:-TrackNodeSourcePosition} through
+                     * {@code quarkus.native.additional-build-args} or {@code
+                     * quarkus.native.additional-build-args-append} to override it. See
+                     * https://github.com/quarkusio/quarkus/issues/30772 for more details.
                      */
                     addExperimentalVMOption(nativeImageArgs, "-H:+TrackNodeSourcePosition");
                     /* See https://github.com/Karm/mandrel-integration-tests/issues/154 for more details. */
@@ -811,16 +769,15 @@ public class NativeImageBuildStep {
                 }
 
                 /**
-                 * This makes sure the Kerberos integration module is made available in case any library
-                 * refers to it (e.g. the PostgreSQL JDBC requires it, seems plausible that many others will as well):
-                 * the module is not available by default on Java 17.
-                 * No flag was introduced as this merely exposes the visibility of the module, it doesn't
-                 * control its actual inclusion which will depend on the usual analysis.
+                 * This makes sure the Kerberos integration module is made available in case any library refers to it
+                 * (e.g. the PostgreSQL JDBC requires it, seems plausible that many others will as well): the module is
+                 * not available by default on Java 17. No flag was introduced as this merely exposes the visibility of
+                 * the module, it doesn't control its actual inclusion which will depend on the usual analysis.
                  */
                 nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED");
                 nativeImageArgs.add("-J--add-exports=java.security.jgss/sun.security.jgss=ALL-UNNAMED");
 
-                //address https://github.com/quarkusio/quarkus-quickstarts/issues/993
+                // address https://github.com/quarkusio/quarkus-quickstarts/issues/993
                 nativeImageArgs.add("-J--add-opens=java.base/java.text=ALL-UNNAMED");
                 // kogito-dmn-quickstart is failing if we don't have this
                 nativeImageArgs.add("-J--add-opens=java.base/java.io=ALL-UNNAMED");
@@ -849,8 +806,8 @@ public class NativeImageBuildStep {
                 }
 
                 /*
-                 * Always install exit handlers, it will become the default and the flag will be deprecated
-                 * in GraalVM for JDK 25 see https://github.com/quarkusio/quarkus/issues/47799
+                 * Always install exit handlers, it will become the default and the flag will be deprecated in GraalVM
+                 * for JDK 25 see https://github.com/quarkusio/quarkus/issues/47799
                  */
                 if (graalVMVersion.compareTo(GraalVM.Version.VERSION_25_0_0) < 0) {
                     nativeImageArgs.add("--install-exit-handlers");
@@ -858,8 +815,8 @@ public class NativeImageBuildStep {
 
                 /*
                  * Any parameters following this call are forced over the user provided parameters in
-                 * quarkus.native.additional-build-args or quarkus.native.additional-build-args-append. So if you need
-                 * a parameter to be overridable through quarkus.native.additional-build-args or
+                 * quarkus.native.additional-build-args or quarkus.native.additional-build-args-append. So if you need a
+                 * parameter to be overridable through quarkus.native.additional-build-args or
                  * quarkus.native.additional-build-args-append please make sure to add it before this call.
                  */
                 handleAdditionalProperties(nativeImageArgs);
@@ -875,8 +832,9 @@ public class NativeImageBuildStep {
                  * https://www.graalvm.org/latest/reference-manual/native-image/native-code-interoperability/foreign-interface/#foreign-functions
                  * @formatter:on
                  */
-                if ((graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_2_0) >= 0 && AMD64.active) ||
-                        graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) >= 0) {
+                if ((graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_24_2_0) >= 0
+                        && AMD64.active)
+                        || graalVMVersion.compareTo(io.quarkus.runtime.graal.GraalVM.Version.VERSION_25_0_0) >= 0) {
                     addExperimentalVMOption(nativeImageArgs, "-H:+ForeignAPISupport");
                 }
 
@@ -887,8 +845,8 @@ public class NativeImageBuildStep {
                 if (nativeConfig.enableFallbackImages()) {
                     nativeImageArgs.add("--auto-fallback");
                 } else {
-                    //Default: be strict as those fallback images aren't very useful
-                    //and tend to cover up real problems.
+                    // Default: be strict as those fallback images aren't very useful
+                    // and tend to cover up real problems.
                     nativeImageArgs.add("--no-fallback");
                 }
 
@@ -913,9 +871,8 @@ public class NativeImageBuildStep {
                     } else {
                         debugBuildProcessHost = "localhost";
                     }
-                    nativeImageArgs
-                            .add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildProcessHost + ":"
-                                    + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
+                    nativeImageArgs.add("-J-Xrunjdwp:transport=dt_socket,address=" + debugBuildProcessHost + ":"
+                            + DEBUG_BUILD_PROCESS_PORT + ",server=y,suspend=y");
                 }
                 if (nativeConfig.dumpProxies()) {
                     nativeImageArgs.add("-Dsun.misc.ProxyGenerator.saveGeneratedFiles=true");
@@ -975,8 +932,7 @@ public class NativeImageBuildStep {
                 }
 
                 if (nativeMonitoringItems != null && !nativeMonitoringItems.isEmpty()) {
-                    monitoringOptions.addAll(nativeMonitoringItems.stream()
-                            .map(NativeMonitoringBuildItem::getOption)
+                    monitoringOptions.addAll(nativeMonitoringItems.stream().map(NativeMonitoringBuildItem::getOption)
                             .collect(Collectors.toSet()));
                 }
 
@@ -1014,39 +970,35 @@ public class NativeImageBuildStep {
 
                 if (nativeImageSecurityProviders != null && !nativeImageSecurityProviders.isEmpty()) {
                     String additionalSecurityProviders = nativeImageSecurityProviders.stream()
-                            .map(p -> p.getSecurityProvider())
-                            .collect(Collectors.joining(","));
-                    addExperimentalVMOption(nativeImageArgs, "-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
+                            .map(p -> p.getSecurityProvider()).collect(Collectors.joining(","));
+                    addExperimentalVMOption(nativeImageArgs,
+                            "-H:AdditionalSecurityProviders=" + additionalSecurityProviders);
                 }
 
                 if (jpmsExports != null) {
                     HashSet<JPMSExportBuildItem> deduplicatedJpmsExport = new HashSet<>(jpmsExports);
                     for (JPMSExportBuildItem jpmsExport : deduplicatedJpmsExport) {
                         if (jpmsExport.isRequired(graalVMVersion)) {
-                            nativeImageArgs.add(
-                                    "-J--add-exports=" + jpmsExport.getModule() + "/" + jpmsExport.getPackage()
-                                            + "=ALL-UNNAMED");
+                            nativeImageArgs.add("-J--add-exports=" + jpmsExport.getModule() + "/"
+                                    + jpmsExport.getPackage() + "=ALL-UNNAMED");
                         }
                     }
                 }
                 if (enableModules != null && enableModules.size() > 0) {
-                    String modules = enableModules.stream().map(NativeImageEnableModule::getModuleName).distinct().sorted()
-                            .collect(Collectors.joining(","));
+                    String modules = enableModules.stream().map(NativeImageEnableModule::getModuleName).distinct()
+                            .sorted().collect(Collectors.joining(","));
                     nativeImageArgs.add("--add-modules=" + modules);
                 }
 
                 if (nativeMinimalJavaVersions != null && !nativeMinimalJavaVersions.isEmpty()) {
-                    nativeMinimalJavaVersions.stream()
-                            .filter(a -> !graalVMVersion.jdkVersionGreaterOrEqualTo(a))
-                            .forEach(a -> log.warnf("Expected: Java %s, Actual: Java %s. %s",
-                                    a.minVersion, graalVMVersion.javaVersion, a.warning));
+                    nativeMinimalJavaVersions.stream().filter(a -> !graalVMVersion.jdkVersionGreaterOrEqualTo(a))
+                            .forEach(a -> log.warnf("Expected: Java %s, Actual: Java %s. %s", a.minVersion,
+                                    graalVMVersion.javaVersion, a.warning));
                 }
 
                 if (unsupportedOSes != null && !unsupportedOSes.isEmpty()) {
-                    final String errs = unsupportedOSes.stream()
-                            .filter(o -> o.triggerError(containerBuild))
-                            .map(o -> o.error)
-                            .collect(Collectors.joining(", "));
+                    final String errs = unsupportedOSes.stream().filter(o -> o.triggerError(containerBuild))
+                            .map(o -> o.error).collect(Collectors.joining(", "));
                     if (!errs.isEmpty()) {
                         throw new UnsupportedOperationException(errs);
                     }
@@ -1063,7 +1015,7 @@ public class NativeImageBuildStep {
 
                 nativeImageArgs.add(nativeImageName);
 
-                //Make sure to have the -jar as last one, as it otherwise breaks "--exclude-config"
+                // Make sure to have the -jar as last one, as it otherwise breaks "--exclude-config"
                 nativeImageArgs.add("-jar");
                 nativeImageArgs.add(runnerJarName);
 
@@ -1082,11 +1034,11 @@ public class NativeImageBuildStep {
                         String trimmedBuildArg = buildArg.trim();
                         if (trimmedBuildArg.contains(TRUST_STORE_SYSTEM_PROPERTY_MARKER) && containerBuild) {
                             /*
-                             * When the native binary is being built with a docker container, because a volume is created,
-                             * we need to copy the trustStore file into the output directory (which is the root of volume)
-                             * and change the value of 'javax.net.ssl.trustStore' property to point to this value
-                             *
-                             * TODO: we might want to introduce a dedicated property in order to overcome this ugliness
+                             * When the native binary is being built with a docker container, because a volume is
+                             * created, we need to copy the trustStore file into the output directory (which is the root
+                             * of volume) and change the value of 'javax.net.ssl.trustStore' property to point to this
+                             * value TODO: we might want to introduce a dedicated property in order to overcome this
+                             * ugliness
                              */
                             int index = trimmedBuildArg.indexOf(TRUST_STORE_SYSTEM_PROPERTY_MARKER);
                             if (trimmedBuildArg.length() > index + 2) {
@@ -1098,8 +1050,10 @@ public class NativeImageBuildStep {
                                     command.add(trimmedBuildArg.substring(0, index) + TRUST_STORE_SYSTEM_PROPERTY_MARKER
                                             + CONTAINER_BUILD_VOLUME_PATH + "/" + MOVED_TRUST_STORE_NAME);
                                 } catch (IOException e) {
-                                    throw new UncheckedIOException("Unable to copy trustStore file '" + configuredTrustStorePath
-                                            + "' to volume root directory '" + outputDir.toAbsolutePath() + "'", e);
+                                    throw new UncheckedIOException(
+                                            "Unable to copy trustStore file '" + configuredTrustStorePath
+                                                    + "' to volume root directory '" + outputDir.toAbsolutePath() + "'",
+                                            e);
                                 }
                             }
                         } else {

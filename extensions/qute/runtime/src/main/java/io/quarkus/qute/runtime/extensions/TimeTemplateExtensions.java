@@ -38,7 +38,8 @@ public class TimeTemplateExtensions {
     }
 
     static String format(TemporalAccessor temporal, String pattern, Locale locale, ZoneId timeZone) {
-        return FORMATTER_CACHE.computeIfAbsent(new Key(pattern, locale, timeZone), TimeTemplateExtensions::formatterForKey)
+        return FORMATTER_CACHE
+                .computeIfAbsent(new Key(pattern, locale, timeZone), TimeTemplateExtensions::formatterForKey)
                 .format(temporal);
     }
 
@@ -57,20 +58,15 @@ public class TimeTemplateExtensions {
         return format(getFormattableObject(dateTimeObject, timeZone), pattern, locale, timeZone);
     }
 
-    private static TemporalAccessor getFormattableObject(Object value,
-            ZoneId timeZone) {
+    private static TemporalAccessor getFormattableObject(Object value, ZoneId timeZone) {
         if (value instanceof TemporalAccessor) {
             return (TemporalAccessor) value;
         } else if (value instanceof Date) {
-            return LocalDateTime.ofInstant(((Date) value).toInstant(),
-                    timeZone);
+            return LocalDateTime.ofInstant(((Date) value).toInstant(), timeZone);
         } else if (value instanceof Calendar) {
-            return LocalDateTime.ofInstant(((Calendar) value).toInstant(),
-                    timeZone);
+            return LocalDateTime.ofInstant(((Calendar) value).toInstant(), timeZone);
         } else if (value instanceof Number) {
-            return LocalDateTime.ofInstant(
-                    Instant.ofEpochMilli(((Number) value).longValue()),
-                    timeZone);
+            return LocalDateTime.ofInstant(Instant.ofEpochMilli(((Number) value).longValue()), timeZone);
         } else {
             throw new IllegalArgumentException("Not a formattable date/time object: " + value);
         }

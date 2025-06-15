@@ -19,18 +19,12 @@ public class RolesAllowedServletLoginTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            LoginLogoutServlet.class,
-                            RolesAllowedBeanServlet.class,
-                            TestIdentityProvider.class,
-                            TestIdentityController.class));
+            .withApplicationRoot((jar) -> jar.addClasses(LoginLogoutServlet.class, RolesAllowedBeanServlet.class,
+                    TestIdentityProvider.class, TestIdentityController.class));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -39,7 +33,8 @@ public class RolesAllowedServletLoginTestCase {
         RestAssured.given().queryParams(Map.of(USER, "admin", PASSWORD, "wrong")).get("/login").then().statusCode(401);
 
         {
-            final Response response = RestAssured.given().queryParams(Map.of(USER, "admin", PASSWORD, "admin")).get("/login");
+            final Response response = RestAssured.given().queryParams(Map.of(USER, "admin", PASSWORD, "admin"))
+                    .get("/login");
             response.then().statusCode(200);
             final String sessionId = response.sessionId();
 
@@ -49,7 +44,8 @@ public class RolesAllowedServletLoginTestCase {
         }
 
         {
-            final Response response = RestAssured.given().queryParams(Map.of(USER, "user", PASSWORD, "user")).get("/login");
+            final Response response = RestAssured.given().queryParams(Map.of(USER, "user", PASSWORD, "user"))
+                    .get("/login");
             response.then().statusCode(200);
             final String sessionId = response.sessionId();
 

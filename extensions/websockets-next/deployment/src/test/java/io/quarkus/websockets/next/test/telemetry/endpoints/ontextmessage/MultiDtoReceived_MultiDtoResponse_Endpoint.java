@@ -9,9 +9,7 @@ public class MultiDtoReceived_MultiDtoResponse_Endpoint {
 
     @OnTextMessage
     public Multi<Dto> onMessage(Multi<Dto> messages) {
-        return messages
-                .map(Dto::property)
-                .flatMap(msg -> Multi.createFrom().items("echo 0: " + msg, "echo 1: " + msg))
+        return messages.map(Dto::property).flatMap(msg -> Multi.createFrom().items("echo 0: " + msg, "echo 1: " + msg))
                 .map(Dto::new);
     }
 

@@ -5,8 +5,7 @@ import java.util.Optional;
 public interface ServiceConfig {
 
     /**
-     * The name of the service binding.
-     * If no value is specified the id of the service will be used instead.
+     * The name of the service binding. If no value is specified the id of the service will be used instead.
      */
     Optional<String> binding();
 
@@ -21,8 +20,7 @@ public interface ServiceConfig {
     Optional<String> apiVersion();
 
     /**
-     * The name of the service.
-     * When this is empty the key of the service is meant to be used as name.
+     * The name of the service. When this is empty the key of the service is meant to be used as name.
      */
     Optional<String> name();
 

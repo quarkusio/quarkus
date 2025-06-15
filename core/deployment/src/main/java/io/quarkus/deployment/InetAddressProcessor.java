@@ -9,7 +9,8 @@ public class InetAddressProcessor {
     @BuildStep
     void registerInetAddressServiceProvider(BuildProducer<ServiceProviderBuildItem> services) {
         // service provider loaded by java.net.InetAddress.loadResolver
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath("java.net.spi.InetAddressResolverProvider"));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("java.net.spi.InetAddressResolverProvider"));
     }
 
 }

@@ -33,9 +33,7 @@ public final class KeycloakDevServicesConfigBuildItem extends SimpleBuildItem {
     }
 
     public static String getKeycloakUrl(Optional<KeycloakDevServicesConfigBuildItem> configBuildItem) {
-        return configBuildItem
-                .map(KeycloakDevServicesConfigBuildItem::getConfig)
-                .map(config -> config.get(KEYCLOAK_URL_KEY))
-                .orElse(null);
+        return configBuildItem.map(KeycloakDevServicesConfigBuildItem::getConfig)
+                .map(config -> config.get(KEYCLOAK_URL_KEY)).orElse(null);
     }
 }

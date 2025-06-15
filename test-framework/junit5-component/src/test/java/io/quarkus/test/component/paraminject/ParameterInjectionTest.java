@@ -42,12 +42,12 @@ public class ParameterInjectionTest {
             @SkipInject MyComponent anotherComponent,
             // Inject unconfigured mock
             @InjectMock Charlie charlie,
-            // Note that @SkipInject is redundant in this case because the Supplier interface cannot be used as a class-based bean
+            // Note that @SkipInject is redundant in this case because the Supplier interface cannot be used as a
+            // class-based bean
             // And so no matching bean exists
             @SkipInject Supplier<Object> shouldBeTrue,
             // @All List<> needs special handling
-            @All List<MyComponent> allMyComponents,
-            Instance<MyComponent> instance) {
+            @All List<MyComponent> allMyComponents, Instance<MyComponent> instance) {
         Mockito.when(charlie.ping()).thenReturn("foo");
         assertNotNull(testInfo);
         assertEquals("foo and BAZ", myComponent.ping());

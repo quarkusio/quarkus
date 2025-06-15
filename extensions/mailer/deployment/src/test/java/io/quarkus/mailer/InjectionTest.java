@@ -27,21 +27,15 @@ public class InjectionTest {
 
     @SuppressWarnings("unused")
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingBareMailClient.class, BeanUsingBlockingMailer.class,
-                            BeanUsingReactiveMailer.class, MailTemplates.class, MailListener.class)
-                    .addAsResource("mock-config.properties", "application.properties")
-                    .addAsResource(new StringAsset(""
-                            + "<html>{name}</html>"), "templates/test1.html")
-                    .addAsResource(new StringAsset(""
-                            + "{name}"), "templates/test1.txt")
-                    .addAsResource(new StringAsset(""
-                            + "<html>{name}</html>"), "templates/MailTemplates/testNative.html")
-                    .addAsResource(new StringAsset(""
-                            + "{name}"), "templates/MailTemplates/testNative.txt")
-                    .addAsResource(new StringAsset(""
-                            + "<html>{name}</html>"), "templates/mails/test2.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(BeanUsingBareMailClient.class, BeanUsingBlockingMailer.class, BeanUsingReactiveMailer.class,
+                    MailTemplates.class, MailListener.class)
+            .addAsResource("mock-config.properties", "application.properties")
+            .addAsResource(new StringAsset("" + "<html>{name}</html>"), "templates/test1.html")
+            .addAsResource(new StringAsset("" + "{name}"), "templates/test1.txt")
+            .addAsResource(new StringAsset("" + "<html>{name}</html>"), "templates/MailTemplates/testNative.html")
+            .addAsResource(new StringAsset("" + "{name}"), "templates/MailTemplates/testNative.txt")
+            .addAsResource(new StringAsset("" + "<html>{name}</html>"), "templates/mails/test2.html"));
 
     @Inject
     BeanUsingBareMailClient beanUsingBare;

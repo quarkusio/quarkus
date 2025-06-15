@@ -20,9 +20,8 @@ import io.quarkus.test.common.QuarkusTestResource;
 @QuarkusTestResource(RedisTestResource.class)
 public class CacheTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClass(MyRedisCache.class).addClass(BusinessObject.class))
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClass(MyRedisCache.class).addClass(BusinessObject.class))
             .overrideConfigKey("quarkus.redis.hosts", "${quarkus.redis.tr}");
 
     @Inject

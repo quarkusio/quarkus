@@ -30,13 +30,13 @@ public abstract class TemporalParamConverter<T extends Temporal> implements Para
     }
 
     @Override
-    public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType,
-            Annotation[] annotations) {
+    public void init(ParamConverterProviders deployment, Class<?> rawType, Type genericType, Annotation[] annotations) {
         // no init required
     }
 
     @SuppressWarnings("unused")
-    public abstract static class TemporalSupplier<T extends TemporalParamConverter<?>> implements ParameterConverterSupplier {
+    public abstract static class TemporalSupplier<T extends TemporalParamConverter<?>>
+            implements ParameterConverterSupplier {
 
         // class is mutable in order to make bytecode recording work
         private String pattern;

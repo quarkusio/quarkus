@@ -13,7 +13,8 @@ public class BfReserveArgs implements RedisCommandExtraArguments {
 
     /**
      * Prevents the filter from creating additional sub-filters if initial capacity is reached. Non-scaling filters
-     * requires slightly less memory than their scaling counterparts. The filter returns an error when capacity is reached.
+     * requires slightly less memory than their scaling counterparts. The filter returns an error when capacity is
+     * reached.
      *
      * @return the current {@link BfReserveArgs}
      */
@@ -23,13 +24,15 @@ public class BfReserveArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Set the expansion factory.
-     * When capacity is reached, an additional sub-filter is created. The size of the new sub-filter is the size of
-     * the last sub-filter multiplied by expansion. If the number of elements to be stored in the filter is unknown,
-     * we recommend that you use an expansion of 2 or more to reduce the number of sub-filters. Otherwise, we recommend
-     * that you use an expansion of 1 to reduce memory consumption. The default expansion value is 2.
+     * Set the expansion factory. When capacity is reached, an additional sub-filter is created. The size of the new
+     * sub-filter is the size of the last sub-filter multiplied by expansion. If the number of elements to be stored in
+     * the filter is unknown, we recommend that you use an expansion of 2 or more to reduce the number of sub-filters.
+     * Otherwise, we recommend that you use an expansion of 1 to reduce memory consumption. The default expansion value
+     * is 2.
      *
-     * @param expansion the expansion factor, must be positive
+     * @param expansion
+     *        the expansion factor, must be positive
+     *
      * @return the current {@link BfReserveArgs}
      */
     public BfReserveArgs expansion(int expansion) {

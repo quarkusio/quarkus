@@ -24,10 +24,9 @@ import io.vertx.core.http.WebSocketClient;
 public class BroadcastOnMessageTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Up.class, UpBlocking.class, UpMultiBidi.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Up.class, UpBlocking.class, UpMultiBidi.class);
+    });
 
     @TestHTTPResource("up")
     URI upUri;
@@ -65,36 +64,32 @@ public class BroadcastOnMessageTest {
             AtomicReference<WebSocket> ws1 = new AtomicReference<>();
 
             List<String> messages = new CopyOnWriteArrayList<>();
-            client1
-                    .connect(testUri.getPort(), testUri.getHost(), testUri.getPath() + "/1")
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            WebSocket ws = r.result();
-                            ws.textMessageHandler(msg -> {
-                                messages.add(msg);
-                                messagesLatch.countDown();
-                            });
-                            // We will use this socket to write a message later on
-                            ws1.set(ws);
-                            connectedLatch.countDown();
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
+            client1.connect(testUri.getPort(), testUri.getHost(), testUri.getPath() + "/1").onComplete(r -> {
+                if (r.succeeded()) {
+                    WebSocket ws = r.result();
+                    ws.textMessageHandler(msg -> {
+                        messages.add(msg);
+                        messagesLatch.countDown();
                     });
-            client2
-                    .connect(testUri.getPort(), testUri.getHost(), testUri.getPath() + "/2")
-                    .onComplete(r -> {
-                        if (r.succeeded()) {
-                            WebSocket ws = r.result();
-                            ws.textMessageHandler(msg -> {
-                                messages.add(msg);
-                                messagesLatch.countDown();
-                            });
-                            connectedLatch.countDown();
-                        } else {
-                            throw new IllegalStateException(r.cause());
-                        }
+                    // We will use this socket to write a message later on
+                    ws1.set(ws);
+                    connectedLatch.countDown();
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
+            client2.connect(testUri.getPort(), testUri.getHost(), testUri.getPath() + "/2").onComplete(r -> {
+                if (r.succeeded()) {
+                    WebSocket ws = r.result();
+                    ws.textMessageHandler(msg -> {
+                        messages.add(msg);
+                        messagesLatch.countDown();
                     });
+                    connectedLatch.countDown();
+                } else {
+                    throw new IllegalStateException(r.cause());
+                }
+            });
             assertTrue(connectedLatch.await(5, TimeUnit.SECONDS));
             ws1.get().writeTextMessage("hello");
             assertTrue(messagesLatch.await(5, TimeUnit.SECONDS), "Messages: " + messages);

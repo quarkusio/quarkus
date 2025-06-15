@@ -16,8 +16,8 @@ import jakarta.inject.Qualifier;
 public @interface MeterRegistryCustomizerConstraint {
     Class<?> applyTo();
 
-    final class Literal extends AnnotationLiteral<MeterRegistryCustomizerConstraint> implements
-            MeterRegistryCustomizerConstraint {
+    final class Literal extends AnnotationLiteral<MeterRegistryCustomizerConstraint>
+            implements MeterRegistryCustomizerConstraint {
         private static final long serialVersionUID = 1L;
         private final Class<?> clazz;
 

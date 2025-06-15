@@ -16,8 +16,8 @@ public class OracleInitRecorder {
                 oracle.sql.CharacterSet.make(id);
             }
         } else {
-            //By default, support at least the following charsets;
-            //without these, we're unable to connect to an Oracle container image which is using default settings.
+            // By default, support at least the following charsets;
+            // without these, we're unable to connect to an Oracle container image which is using default settings.
             oracle.sql.CharacterSet.make(CharacterSet.AL32UTF8_CHARSET);
             oracle.sql.CharacterSet.make(CharacterSet.AL16UTF16_CHARSET);
         }
@@ -31,7 +31,7 @@ public class OracleInitRecorder {
                 try {
                     collectedIds.add(field.getShort(null));
                 } catch (IllegalAccessException e) {
-                    //ignore
+                    // ignore
                 }
             }
         }

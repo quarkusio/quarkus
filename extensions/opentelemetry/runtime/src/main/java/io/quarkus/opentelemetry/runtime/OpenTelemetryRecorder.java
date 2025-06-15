@@ -47,20 +47,15 @@ public class OpenTelemetryRecorder {
     }
 
     @StaticInit
-    public Supplier<DelayedAttributes> delayedAttributes(String quarkusVersion,
-            String serviceName,
+    public Supplier<DelayedAttributes> delayedAttributes(String quarkusVersion, String serviceName,
             String serviceVersion) {
         return new Supplier<>() {
             @Override
             public DelayedAttributes get() {
                 var result = new DelayedAttributes();
-                result.setAttributesDelegate(Resource.getDefault()
-                        .merge(Resource.create(
-                                Attributes.of(
-                                        SERVICE_NAME, serviceName,
-                                        SERVICE_VERSION, serviceVersion,
-                                        WEBENGINE_NAME, "Quarkus",
-                                        WEBENGINE_VERSION, quarkusVersion)))
+                result.setAttributesDelegate(Resource
+                        .getDefault().merge(Resource.create(Attributes.of(SERVICE_NAME, serviceName, SERVICE_VERSION,
+                                serviceVersion, WEBENGINE_NAME, "Quarkus", WEBENGINE_VERSION, quarkusVersion)))
                         .getAttributes());
                 return result;
             }
@@ -95,17 +90,11 @@ public class OpenTelemetryRecorder {
                 final Map<String, String> oTelConfigs = getOtelConfigs();
                 OtelConfigsSupplier propertiesSupplier = new OtelConfigsSupplier(oTelConfigs);
                 if (oTelRuntimeConfig.sdkDisabled()) {
-                    return AutoConfiguredOpenTelemetrySdk.builder()
-                            .setResultAsGlobal()
-                            .disableShutdownHook()
-                            .addPropertiesSupplier(propertiesSupplier)
-                            .build()
-                            .getOpenTelemetrySdk();
+                    return AutoConfiguredOpenTelemetrySdk.builder().setResultAsGlobal().disableShutdownHook()
+                            .addPropertiesSupplier(propertiesSupplier).build().getOpenTelemetrySdk();
                 }
 
-                var builder = AutoConfiguredOpenTelemetrySdk.builder()
-                        .setResultAsGlobal()
-                        .disableShutdownHook()
+                var builder = AutoConfiguredOpenTelemetrySdk.builder().setResultAsGlobal().disableShutdownHook()
                         .addPropertiesSupplier(propertiesSupplier)
                         .setServiceClassLoader(Thread.currentThread().getContextClassLoader());
                 for (var customizer : builderCustomizers) {
@@ -160,8 +149,7 @@ public class OpenTelemetryRecorder {
     }
 
     /**
-     * Transforms the value to what OTel expects
-     * TODO: this is super simplistic, and should be more modular if needed
+     * Transforms the value to what OTel expects TODO: this is super simplistic, and should be more modular if needed
      */
     private static class OTelDurationConverter implements Converter<String> {
         static OTelDurationConverter INSTANCE = new OTelDurationConverter();

@@ -11,8 +11,8 @@ public final class PathsUtil {
     }
 
     /**
-     * Return a Map.Entry (which is used as a Tuple) containing the main sources root as the key
-     * and the project root as the value
+     * Return a Map.Entry (which is used as a Tuple) containing the main sources root as the key and the project root as
+     * the value
      */
     public static AbstractMap.SimpleEntry<Path, Path> findMainSourcesRoot(Path outputDirectory) {
         Path currentPath = outputDirectory;

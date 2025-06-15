@@ -22,13 +22,8 @@ public class HelloService extends GreeterGrpc.GreeterImplBase {
         if (deadline == null) {
             throw new IllegalStateException("Null deadline");
         }
-        Uni.createFrom()
-                .item(HelloReply.newBuilder().setMessage("OK").build())
-                .onItem()
-                .delayIt()
-                .by(Duration.ofMillis(400)).invoke(observer::onNext)
-                .invoke(observer::onCompleted)
-                .await()
+        Uni.createFrom().item(HelloReply.newBuilder().setMessage("OK").build()).onItem().delayIt()
+                .by(Duration.ofMillis(400)).invoke(observer::onNext).invoke(observer::onCompleted).await()
                 .indefinitely();
     }
 

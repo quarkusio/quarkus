@@ -5,8 +5,8 @@ import org.jboss.jandex.MethodInfo;
 
 /**
  * This exception is thrown at build time during the validation phase if a private method is annotated with
- * {@link io.quarkus.cache.CacheInvalidate @CacheInvalidate}, {@link io.quarkus.cache.CacheInvalidateAll @CacheInvalidateAll} or
- * {@link io.quarkus.cache.CacheResult @CacheResult}.
+ * {@link io.quarkus.cache.CacheInvalidate @CacheInvalidate},
+ * {@link io.quarkus.cache.CacheInvalidateAll @CacheInvalidateAll} or {@link io.quarkus.cache.CacheResult @CacheResult}.
  */
 @SuppressWarnings("serial")
 public class PrivateMethodTargetException extends RuntimeException {

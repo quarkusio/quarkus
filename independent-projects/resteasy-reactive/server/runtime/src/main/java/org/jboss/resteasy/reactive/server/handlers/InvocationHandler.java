@@ -14,12 +14,12 @@ public class InvocationHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         if (requestContext.getResult() != null) {
-            //processing was aborted
-            //but we still follow through with the handler chain
+            // processing was aborted
+            // but we still follow through with the handler chain
             return;
         }
-        //suspend processing
-        //need to do it here to avoid a race
+        // suspend processing
+        // need to do it here to avoid a race
         boolean async = requestContext.getAsyncResponse() != null;
         if (async) {
             requestContext.suspend();
@@ -31,7 +31,8 @@ public class InvocationHandler implements ServerRestHandler {
                 requestContext.setResult(result);
             }
         } catch (Throwable t) {
-            // passing true since the target doesn't change and we want response filters to be able to know what the resource method was
+            // passing true since the target doesn't change and we want response filters to be able to know what the
+            // resource method was
             requestContext.handleException(t, true);
             if (async) {
                 requestContext.resume();

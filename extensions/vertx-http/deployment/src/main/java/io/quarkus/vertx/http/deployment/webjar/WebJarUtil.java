@@ -38,10 +38,7 @@ public class WebJarUtil {
     }
 
     static Path copyResourcesForDevOrTest(CurateOutcomeBuildItem curateOutcomeBuildItem, ApplicationConfig config,
-            WebJarBuildItem webJar,
-            ResolvedDependency resourcesArtifact,
-            Path deploymentBasePath)
-            throws IOException {
+            WebJarBuildItem webJar, ResolvedDependency resourcesArtifact, Path deploymentBasePath) throws IOException {
 
         Path deploymentPath = Files.createDirectories(deploymentBasePath);
 
@@ -52,8 +49,7 @@ public class WebJarUtil {
     }
 
     static Map<String, byte[]> copyResourcesForProduction(CurateOutcomeBuildItem curateOutcomeBuildItem,
-            ApplicationConfig config, WebJarBuildItem webJar,
-            ResolvedDependency resourcesArtifact) {
+            ApplicationConfig config, WebJarBuildItem webJar, ResolvedDependency resourcesArtifact) {
 
         InMemoryTargetVisitor visitor = new InMemoryTargetVisitor();
         copyResources(curateOutcomeBuildItem, config, webJar, resourcesArtifact, visitor);
@@ -62,8 +58,7 @@ public class WebJarUtil {
     }
 
     private static void copyResources(CurateOutcomeBuildItem curateOutcomeBuildItem, ApplicationConfig config,
-            WebJarBuildItem webJar,
-            ResolvedDependency resourcesArtifact, WebJarResourcesTargetVisitor visitor) {
+            WebJarBuildItem webJar, ResolvedDependency resourcesArtifact, WebJarResourcesTargetVisitor visitor) {
         final ResolvedDependency userApplication = curateOutcomeBuildItem.getApplicationModel().getAppArtifact();
 
         ClassLoader classLoader = WebJarUtil.class.getClassLoader();
@@ -83,8 +78,8 @@ public class WebJarUtil {
 
                 try {
                     Files.walkFileTree(pathVisit.getPath(),
-                            new ResourcesFileVisitor(visitor, pathVisit.getPath(), resourcesArtifact,
-                                    userApplication, new CombinedWebJarResourcesFilter(filters), classLoader, webJar));
+                            new ResourcesFileVisitor(visitor, pathVisit.getPath(), resourcesArtifact, userApplication,
+                                    new CombinedWebJarResourcesFilter(filters), classLoader, webJar));
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -98,8 +93,7 @@ public class WebJarUtil {
                 return dep;
             }
         }
-        throw new RuntimeException("Could not find artifact " + artifactKey
-                + " among the application dependencies");
+        throw new RuntimeException("Could not find artifact " + artifactKey + " among the application dependencies");
     }
 
     private static String getModuleOverrideName(ResolvedDependency artifact, String filename) {
@@ -108,8 +102,7 @@ public class WebJarUtil {
     }
 
     private static InputStream getOverride(ResolvedDependency userApplication, ClassLoader classLoader, String filename,
-            String moduleName,
-            boolean useDefaultQuarkusBranding) {
+            String moduleName, boolean useDefaultQuarkusBranding) {
 
         // First check if the developer supplied the files
         InputStream overrideStream = getCustomOverride(userApplication, filename, moduleName);
@@ -120,7 +113,8 @@ public class WebJarUtil {
         return overrideStream;
     }
 
-    private static InputStream getCustomOverride(ResolvedDependency userApplication, String filename, String moduleName) {
+    private static InputStream getCustomOverride(ResolvedDependency userApplication, String filename,
+            String moduleName) {
         // Check if the developer supplied the files
         byte[] content = readFromPathTree(userApplication.getContentTree(), CUSTOM_MEDIA_FOLDER + moduleName);
         if (content != null) {
@@ -182,23 +176,20 @@ public class WebJarUtil {
         }
 
         @Override
-        public FileVisitResult preVisitDirectory(final Path dir,
-                final BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs) throws IOException {
             visitor.visitDirectory(rootFolderToCopy.relativize(dir).toString());
             return FileVisitResult.CONTINUE;
         }
 
         @Override
-        public FileVisitResult visitFile(final Path file,
-                final BasicFileAttributes attrs) throws IOException {
+        public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
             String fileName = rootFolderToCopy.relativize(file).toString();
 
             String moduleName = getModuleOverrideName(resourcesArtifact, fileName);
             boolean overrideFileCreated = false;
             if (OVERRIDABLE_RESOURCES.contains(fileName)) {
-                try (WebJarResourcesFilter.FilterResult filterResult = filter.apply(fileName,
-                        getOverride(userApplication, classLoader,
-                                fileName, moduleName, webJar.getUseDefaultQuarkusBranding()))) {
+                try (WebJarResourcesFilter.FilterResult filterResult = filter.apply(fileName, getOverride(
+                        userApplication, classLoader, fileName, moduleName, webJar.getUseDefaultQuarkusBranding()))) {
                     if (filterResult.hasStream()) {
                         overrideFileCreated = true;
                         // Override (either developer supplied or Quarkus)
@@ -208,7 +199,8 @@ public class WebJarUtil {
             }
 
             if (!overrideFileCreated) {
-                try (WebJarResourcesFilter.FilterResult filterResult = filter.apply(fileName, Files.newInputStream(file))) {
+                try (WebJarResourcesFilter.FilterResult filterResult = filter.apply(fileName,
+                        Files.newInputStream(file))) {
                     if (!visitor.supportsOnlyCopyingNonArtifactFiles() || !webJar.getOnlyCopyNonArtifactFiles()
                             || filterResult.isChanged()) {
                         if (filterResult.hasStream()) {

@@ -109,7 +109,8 @@ public class ArcDevRecorder {
                     bean.put("types", types);
                     JsonArrayBuilder qualifiers = Json.array();
                     for (Annotation qualifier : injectableBean.getQualifiers()) {
-                        if (qualifier.annotationType().equals(Any.class) || qualifier.annotationType().equals(Default.class)) {
+                        if (qualifier.annotationType().equals(Any.class)
+                                || qualifier.annotationType().equals(Default.class)) {
                             qualifiers.add("@" + qualifier.annotationType().getSimpleName());
                         } else {
                             qualifiers.add(qualifier.toString());
@@ -206,7 +207,8 @@ public class ArcDevRecorder {
                     bean.put("types", types);
                     JsonArrayBuilder qualifiers = Json.array();
                     for (Annotation qualifier : removedBean.getQualifiers()) {
-                        if (qualifier.annotationType().equals(Any.class) || qualifier.annotationType().equals(Default.class)) {
+                        if (qualifier.annotationType().equals(Any.class)
+                                || qualifier.annotationType().equals(Default.class)) {
                             qualifiers.add("@" + qualifier.annotationType().getSimpleName());
                         } else {
                             qualifiers.add(qualifier.toString());

@@ -21,6 +21,7 @@ public class StringTemplateExtensions {
      * @param format
      * @param ignoredPropertyName
      * @param args
+     *
      * @return the formatted value
      */
     @TemplateExtension(matchNames = { "fmt", "format" }, priority = 2)
@@ -36,6 +37,7 @@ public class StringTemplateExtensions {
      * @param ignoredPropertyName
      * @param locale
      * @param args
+     *
      * @return the formatted value
      */
     @TemplateExtension(matchNames = { "fmt", "format" }, priority = 3)
@@ -44,11 +46,13 @@ public class StringTemplateExtensions {
     }
 
     /**
-     * E.g. {@cde str:fmt("Hello %s",name)}. The priority must be lower than {@link #fmt(String, Locale, String, Object...)}.
+     * E.g. {@cde str:fmt("Hello %s",name)}. The priority must be lower than
+     * {@link #fmt(String, Locale, String, Object...)}.
      *
      * @param ignoredPropertyName
      * @param format
      * @param args
+     *
      * @return the formatted value
      */
     @TemplateExtension(namespace = STR, matchNames = { "fmt", "format" }, priority = 2)
@@ -57,12 +61,14 @@ public class StringTemplateExtensions {
     }
 
     /**
-     * E.g. {@code str:fmt(locale,"Hello %s",name)}. The priority must be higher than {@link #fmt(String, String, Object...)}.
+     * E.g. {@code str:fmt(locale,"Hello %s",name)}. The priority must be higher than
+     * {@link #fmt(String, String, Object...)}.
      *
      * @param ignoredPropertyName
      * @param locale
      * @param format
      * @param args
+     *
      * @return the formatted value
      */
     @TemplateExtension(namespace = STR, matchNames = { "fmt", "format" }, priority = 3)

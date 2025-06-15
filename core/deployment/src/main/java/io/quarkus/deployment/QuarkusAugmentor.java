@@ -106,23 +106,17 @@ public class QuarkusAugmentor {
 
             ExtensionLoader.loadStepsFrom(deploymentClassLoader,
                     buildSystemProperties == null ? new Properties() : buildSystemProperties,
-                    runtimeProperties == null ? new Properties() : runtimeProperties,
-                    effectiveModel, launchMode, devModeType)
-                    .accept(chainBuilder);
+                    runtimeProperties == null ? new Properties() : runtimeProperties, effectiveModel, launchMode,
+                    devModeType).accept(chainBuilder);
 
             Thread.currentThread().setContextClassLoader(classLoader);
             chainBuilder.loadProviders(classLoader);
 
-            chainBuilder
-                    .addInitial(QuarkusBuildCloseablesBuildItem.class)
-                    .addInitial(ArchiveRootBuildItem.class)
-                    .addInitial(ShutdownContextBuildItem.class)
-                    .addInitial(RawCommandLineArgumentsBuildItem.class)
-                    .addInitial(LaunchModeBuildItem.class)
-                    .addInitial(LiveReloadBuildItem.class)
+            chainBuilder.addInitial(QuarkusBuildCloseablesBuildItem.class).addInitial(ArchiveRootBuildItem.class)
+                    .addInitial(ShutdownContextBuildItem.class).addInitial(RawCommandLineArgumentsBuildItem.class)
+                    .addInitial(LaunchModeBuildItem.class).addInitial(LiveReloadBuildItem.class)
                     .addInitial(AdditionalApplicationArchiveBuildItem.class)
-                    .addInitial(CuratedApplicationShutdownBuildItem.class)
-                    .addInitial(BuildSystemTargetBuildItem.class)
+                    .addInitial(CuratedApplicationShutdownBuildItem.class).addInitial(BuildSystemTargetBuildItem.class)
                     .addInitial(AppModelProviderBuildItem.class);
             for (Class<? extends BuildItem> i : finalResults) {
                 chainBuilder.addFinal(i);
@@ -141,13 +135,11 @@ public class QuarkusAugmentor {
             rootBuilder.setExcludedFromIndexing(excludedFromIndexing);
 
             BuildChain chain = chainBuilder.build();
-            BuildExecutionBuilder execBuilder = chain.createExecutionBuilder(baseName)
-                    .produce(buildCloseables)
-                    .produce(liveReloadBuildItem)
-                    .produce(rootBuilder.build(buildCloseables))
-                    .produce(new ShutdownContextBuildItem())
-                    .produce(new RawCommandLineArgumentsBuildItem())
-                    .produce(new CuratedApplicationShutdownBuildItem((QuarkusClassLoader) deploymentClassLoader.getParent(),
+            BuildExecutionBuilder execBuilder = chain.createExecutionBuilder(baseName).produce(buildCloseables)
+                    .produce(liveReloadBuildItem).produce(rootBuilder.build(buildCloseables))
+                    .produce(new ShutdownContextBuildItem()).produce(new RawCommandLineArgumentsBuildItem())
+                    .produce(new CuratedApplicationShutdownBuildItem(
+                            (QuarkusClassLoader) deploymentClassLoader.getParent(),
                             !liveReloadBuildItem.isLiveReload()))
                     .produce(new LaunchModeBuildItem(launchMode,
                             devModeType == null ? Optional.empty() : Optional.of(devModeType), auxiliaryApplication,
@@ -159,18 +151,19 @@ public class QuarkusAugmentor {
                 execBuilder.produce(new AdditionalApplicationArchiveBuildItem(i));
             }
             BuildResult buildResult = execBuilder.execute();
-            String message = "Quarkus augmentation completed in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start)
-                    + "ms";
+            String message = "Quarkus augmentation completed in "
+                    + TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start) + "ms";
             if (launchMode == LaunchMode.NORMAL) {
                 log.info(message);
                 if (Boolean.parseBoolean(System.getProperty("quarkus.debug.dump-build-metrics"))) {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
                 }
             } else {
-                //test and dev mode already report the total startup time, no need to add noise to the logs
+                // test and dev mode already report the total startup time, no need to add noise to the logs
                 log.debug(message);
 
-                // Dump the metrics in the dev mode but not remote-dev (as it could cause issues with container permissions)
+                // Dump the metrics in the dev mode but not remote-dev (as it could cause issues with container
+                // permissions)
                 if ((launchMode == LaunchMode.DEVELOPMENT) && !LaunchMode.isRemoteDev()) {
                     buildResult.getMetrics().dumpTo(targetDir.resolve("build-metrics.json"));
                 }

@@ -18,8 +18,7 @@ public class GetSchedulerJobsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(GetSchedulerJobsTest.Jobs.class));
+            .withApplicationRoot((jar) -> jar.addClasses(GetSchedulerJobsTest.Jobs.class));
 
     @Inject
     Scheduler scheduler;

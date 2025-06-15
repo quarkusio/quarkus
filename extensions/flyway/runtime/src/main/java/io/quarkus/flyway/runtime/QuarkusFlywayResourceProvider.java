@@ -10,8 +10,8 @@ import org.flywaydb.core.internal.util.StringUtils;
 import org.jboss.logging.Logger;
 
 /**
- * This class is very similar to {@link org.flywaydb.core.internal.scanner.Scanner}
- * TODO: refactor upstream to move common methods to utility class
+ * This class is very similar to {@link org.flywaydb.core.internal.scanner.Scanner} TODO: refactor upstream to move
+ * common methods to utility class
  */
 public class QuarkusFlywayResourceProvider implements ResourceProvider {
 
@@ -37,8 +37,11 @@ public class QuarkusFlywayResourceProvider implements ResourceProvider {
     /**
      * Returns all known resources starting with the specified prefix and ending with any of the specified suffixes.
      *
-     * @param prefix The prefix of the resource names to match.
-     * @param suffixes The suffixes of the resource names to match.
+     * @param prefix
+     *        The prefix of the resource names to match.
+     * @param suffixes
+     *        The suffixes of the resource names to match.
+     *
      * @return The resources that were found.
      */
     public Collection<LoadableResource> getResources(String prefix, String... suffixes) {

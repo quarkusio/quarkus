@@ -54,20 +54,16 @@ public class Http2RSTFloodProtectionConfigTest {
     URL url;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addAsResource(new StringAsset(configuration), "application.properties")
-                    .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBean.class).addAsResource(new StringAsset(configuration), "application.properties")
+            .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "server-keystore.jks"));
 
     @Test
     void testRstFloodProtectionWithTlsEnabled() throws Exception {
-        HttpClientOptions options = new HttpClientOptions()
-                .setUseAlpn(true)
-                .setProtocolVersion(HttpVersion.HTTP_2)
-                .setSsl(true)
-                .setTrustOptions(new JksOptions().setPath(new File("target/certs/ssl-test-truststore.jks").getAbsolutePath())
-                        .setPassword("secret"));
+        HttpClientOptions options = new HttpClientOptions().setUseAlpn(true).setProtocolVersion(HttpVersion.HTTP_2)
+                .setSsl(true).setTrustOptions(
+                        new JksOptions().setPath(new File("target/certs/ssl-test-truststore.jks").getAbsolutePath())
+                                .setPassword("secret"));
 
         var client = VertxCoreRecorder.getVertx().get().createHttpClient(options);
         int port = sslUrl.getPort();
@@ -76,8 +72,7 @@ public class Http2RSTFloodProtectionConfigTest {
 
     @Test
     public void testRstFloodProtection() throws InterruptedException {
-        HttpClientOptions options = new HttpClientOptions()
-                .setProtocolVersion(HttpVersion.HTTP_2)
+        HttpClientOptions options = new HttpClientOptions().setProtocolVersion(HttpVersion.HTTP_2)
                 .setHttp2ClearTextUpgrade(true);
         var client = VertxCoreRecorder.getVertx().get().createHttpClient(options);
         run(client, url.getPort(), true);
@@ -93,13 +88,11 @@ public class Http2RSTFloodProtectionConfigTest {
         if (plain) {
             // Emit a first request to establish a connection.
             // It's HTTP/1 so, does not count in the number of requests.
-            client.request(GET, port, "localhost", "/ping")
-                    .compose(HttpClientRequest::send);
+            client.request(GET, port, "localhost", "/ping").compose(HttpClientRequest::send);
         }
 
         for (int i = 0; i < 20; i++) {
-            client.request(GET, port, "localhost", "/ping")
-                    .onSuccess(req -> req.end().onComplete(v -> req.reset()));
+            client.request(GET, port, "localhost", "/ping").onSuccess(req -> req.end().onComplete(v -> req.reset()));
         }
 
         if (!latch.await(10, TimeUnit.SECONDS)) {

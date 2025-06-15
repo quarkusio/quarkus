@@ -117,13 +117,10 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
         }
         WebSocketClient client = vertx.createWebSocketClient();
         String connectionKey = UUID.randomUUID().toString();
-        Uni<WebSocket> uni = Uni.createFrom().completionStage(() -> client
-                .connect(new WebSocketConnectOptions()
-                        .setPort(httpConfig.port())
-                        .setHost(httpConfig.host())
-                        .setURI(path)
-                        .addHeader(DEVUI_SOCKET_KEY_HEADER, connectionKey))
-                .toCompletionStage());
+        Uni<WebSocket> uni = Uni.createFrom()
+                .completionStage(() -> client.connect(new WebSocketConnectOptions().setPort(httpConfig.port())
+                        .setHost(httpConfig.host()).setURI(path).addHeader(DEVUI_SOCKET_KEY_HEADER, connectionKey))
+                        .toCompletionStage());
         return uni.onItem().transform(s -> {
             LOG.debugf("Opened Dev UI connection with key %s to %s", connectionKey, path);
             List<TextMessage> messages = new ArrayList<>();
@@ -134,7 +131,8 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
                         messages.add(t);
                         connectionMessages.onNext(t.toJsonObject().put("key", connectionKey));
                     } else {
-                        LOG.debugf("Opened Dev UI connection [%s] received a message but the limit [%s] has been reached",
+                        LOG.debugf(
+                                "Opened Dev UI connection [%s] received a message but the limit [%s] has been reached",
                                 connectionKey, devModeConfig.connectionMessagesLimit());
                     }
                 }
@@ -207,7 +205,8 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
     public Uni<JsonObject> sendTextMessage(String connectionKey, String message) {
         DevWebSocket socket = sockets.get(connectionKey);
         if (socket != null) {
-            Uni<Void> uni = Uni.createFrom().completionStage(() -> socket.socket.writeTextMessage(message).toCompletionStage());
+            Uni<Void> uni = Uni.createFrom()
+                    .completionStage(() -> socket.socket.writeTextMessage(message).toCompletionStage());
             return uni.onItem().transform(v -> {
                 List<TextMessage> messages = socket.messages;
                 synchronized (messages) {
@@ -250,15 +249,15 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
 
     @Override
     public void connectionRemoved(String endpoint, String connectionId) {
-        connectionStatus.onNext(new JsonObject().put("id", connectionId).put("endpoint", endpoint).put("removed", true));
+        connectionStatus
+                .onNext(new JsonObject().put("id", connectionId).put("endpoint", endpoint).put("removed", true));
     }
 
     JsonObject toJsonObject(String endpoint, WebSocketConnection c) {
         JsonObject json = new JsonObject();
         json.put("id", c.id());
         json.put("endpoint", endpoint);
-        json.put("creationTime",
-                LocalDateTime.ofInstant(c.creationTime(), ZoneId.systemDefault()).format(FORMATTER));
+        json.put("creationTime", LocalDateTime.ofInstant(c.creationTime(), ZoneId.systemDefault()).format(FORMATTER));
         json.put("handshakePath", c.handshakeRequest().path());
         String key = c.handshakeRequest().header(DEVUI_SOCKET_KEY_HEADER);
         if (key != null) {
@@ -279,12 +278,8 @@ public class WebSocketNextJsonRPCService implements ConnectionListener {
     record TextMessage(boolean incoming, String text, LocalDateTime timestamp) {
 
         JsonObject toJsonObject() {
-            return new JsonObject()
-                    .put("text", text)
-                    .put("incoming", incoming)
-                    .put("time", timestamp.format(FORMATTER))
-                    .put("className", incoming ? "incoming" : "outgoing")
-                    .put("userAbbr", incoming ? "IN" : "OUT");
+            return new JsonObject().put("text", text).put("incoming", incoming).put("time", timestamp.format(FORMATTER))
+                    .put("className", incoming ? "incoming" : "outgoing").put("userAbbr", incoming ? "IN" : "OUT");
         }
 
     }

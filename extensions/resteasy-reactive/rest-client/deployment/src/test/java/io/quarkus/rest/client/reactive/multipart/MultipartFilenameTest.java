@@ -203,9 +203,9 @@ public class MultipartFilenameTest {
 
     @Test
     void shouldWorkWithListOfFiles() throws IOException {
-        Client client = RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                // we use this encoder mode on the client in order to make it possible for the server to read items with the same name
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
+                // we use this encoder mode on the client in order to make it possible for the server to read items with
+                // the same name
                 .property("io.quarkus.rest.client.multipart-post-encoder-mode",
                         PausableHttpPostRequestEncoder.EncoderMode.HTML5)
                 .build(Client.class);
@@ -308,8 +308,7 @@ public class MultipartFilenameTest {
         @Consumes(MediaType.MULTIPART_FORM_DATA)
         public String uploadWithFileContentAsInputStream(@MultipartForm FormDataWithInputStream form) {
             return new BufferedReader(new InputStreamReader(form.fileContentAsInputStream, StandardCharsets.UTF_8))
-                    .lines()
-                    .collect(Collectors.joining(System.lineSeparator()));
+                    .lines().collect(Collectors.joining(System.lineSeparator()));
         }
 
         @POST
@@ -320,11 +319,9 @@ public class MultipartFilenameTest {
             List<Item> items = new ArrayList<>();
             for (var entry : map.entrySet()) {
                 for (FormValue value : entry.getValue()) {
-                    items.add(new Item(
-                            entry.getKey(),
+                    items.add(new Item(entry.getKey(),
                             value.isFileItem() ? value.getFileItem().getFileSize() : value.getValue().length(),
-                            value.getCharset(),
-                            value.isFileItem()));
+                            value.getCharset(), value.isFileItem()));
                 }
 
             }

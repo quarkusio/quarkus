@@ -19,8 +19,7 @@ public class VertxIOHangTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InputStreamResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(InputStreamResource.class));
 
     @TestHTTPResource
     URI uri;
@@ -35,8 +34,8 @@ public class VertxIOHangTestCase {
     public void testDelayFilterConnectionKilled() throws Exception {
         // makes sure that everything works as normal
         try (Socket s = new Socket(uri.getHost(), uri.getPort())) {
-            s.getOutputStream().write(
-                    "POST /in HTTP/1.1\r\nHost:localhost\r\nContent-Length: 100\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+            s.getOutputStream().write("POST /in HTTP/1.1\r\nHost:localhost\r\nContent-Length: 100\r\n\r\n"
+                    .getBytes(StandardCharsets.UTF_8));
             s.getOutputStream().flush();
         }
         Throwable exception = InputStreamResource.THROWABLES.poll(3, TimeUnit.SECONDS);

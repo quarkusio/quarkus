@@ -25,8 +25,7 @@ public class KeycloakAdminClientInjectionDevServicesTest {
 
     @RegisterExtension
     final static QuarkusUnitTest app = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClasses(AdminResource.class)
+            .withApplicationRoot(jar -> jar.addClasses(AdminResource.class)
                     .addAsResource("app-dev-mode-config.properties", "application.properties"))
             // intention of this forced dependency is to test backwards compatibility
             // when users started Keycloak Dev Service by adding OIDC extension and configured 'server-url'

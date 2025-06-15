@@ -22,46 +22,25 @@ public class GraphQLMutationTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MutationApi.class, BusinessError.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MutationApi.class, BusinessError.class)
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testMutation() {
-        String request = getPayload("mutation hello{\n" +
-                "  hello\n" +
-                "}");
+        String request = getPayload("mutation hello{\n" + "  hello\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .body(CoreMatchers.containsString("Hello Phillip"));
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql")
+                .then().assertThat().statusCode(200).and().body(CoreMatchers.containsString("Hello Phillip"));
 
     }
 
     @Test
     public void testError() {
-        String request = getPayload("mutation error{\n" +
-                "  error\n" +
-                "}");
+        String request = getPayload("mutation error{\n" + "  error\n" + "}");
 
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .body(CoreMatchers.containsString("Some error"));
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request).post("/graphql")
+                .then().assertThat().statusCode(200).and().body(CoreMatchers.containsString("Some error"));
     }
 
     @GraphQLApi

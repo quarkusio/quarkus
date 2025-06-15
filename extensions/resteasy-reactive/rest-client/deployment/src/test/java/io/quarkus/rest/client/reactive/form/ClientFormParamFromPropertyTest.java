@@ -31,39 +31,32 @@ public class ClientFormParamFromPropertyTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class)
-                    .addAsResource(
-                            new StringAsset("my.property-value=" + FORM_VALUE),
-                            "application.properties"));
+                    .addAsResource(new StringAsset("my.property-value=" + FORM_VALUE), "application.properties"));
 
     @Test
     void shouldSetFromProperties() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.getWithParam()).isEqualTo(FORM_VALUE);
     }
 
     @Test
     void shouldFailOnMissingRequiredProperty() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
-        assertThatThrownBy(client::missingRequiredProperty)
-                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(client::missingRequiredProperty).isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void shouldSucceedOnMissingNonRequiredProperty() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.missingNonRequiredProperty()).isEqualTo(FORM_VALUE);
     }
 
     @Test
     void shouldSucceedOnMissingNonRequiredPropertyAndUseOverriddenValue() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.missingNonRequiredPropertyAndOverriddenValue()).isEqualTo("other");
     }

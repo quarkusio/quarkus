@@ -43,8 +43,7 @@ public class NarayanaJtaRecorder {
 
         try {
             String nodeName = transactions.nodeName();
-            if (nodeName.getBytes(StandardCharsets.UTF_8).length > 28
-                    && transactions.shortenNodeNameIfNecessary()) {
+            if (nodeName.getBytes(StandardCharsets.UTF_8).length > 28 && transactions.shortenNodeNameIfNecessary()) {
                 nodeName = shortenNodeName(transactions.nodeName());
             }
             arjPropertyManager.getCoreEnvironmentBean().setNodeIdentifier(nodeName);
@@ -62,10 +61,10 @@ public class NarayanaJtaRecorder {
         MessageDigest messageDigest224 = MessageDigest.getInstance(HASH_ALGORITHM_FOR_SHORTENING);
         byte[] hashedByteArray = messageDigest224.digest(nodeNameAsBytes);
 
-        //Encode the byte array in Base64
-        //encoding the array might result in a longer array
+        // Encode the byte array in Base64
+        // encoding the array might result in a longer array
         byte[] base64Result = Base64.getEncoder().encode(hashedByteArray);
-        //truncate the array
+        // truncate the array
         byte[] slice = Arrays.copyOfRange(base64Result, 0, 28);
 
         String shorterNodeName = new String(slice, StandardCharsets.UTF_8);
@@ -74,8 +73,8 @@ public class NarayanaJtaRecorder {
     }
 
     public void setDefaultProperties(Properties properties) {
-        //TODO: this is a huge hack to avoid loading XML parsers
-        //this needs a proper SPI
+        // TODO: this is a huge hack to avoid loading XML parsers
+        // this needs a proper SPI
         properties.putAll(System.getProperties());
 
         try {
@@ -101,8 +100,7 @@ public class NarayanaJtaRecorder {
     }
 
     public void disableTransactionStatusManager() {
-        arjPropertyManager.getCoordinatorEnvironmentBean()
-                .setTransactionStatusManagerEnable(false);
+        arjPropertyManager.getCoordinatorEnvironmentBean().setTransactionStatusManagerEnable(false);
     }
 
     public void setConfig(final TransactionManagerConfiguration transactions) {
@@ -126,7 +124,8 @@ public class NarayanaJtaRecorder {
     @Deprecated(forRemoval = true)
     public void allowUnsafeMultipleLastResources(boolean agroalPresent, boolean disableMultipleLastResourcesWarning) {
         arjPropertyManager.getCoreEnvironmentBean().setAllowMultipleLastResources(true);
-        arjPropertyManager.getCoreEnvironmentBean().setDisableMultipleLastResourcesWarning(disableMultipleLastResourcesWarning);
+        arjPropertyManager.getCoreEnvironmentBean()
+                .setDisableMultipleLastResourcesWarning(disableMultipleLastResourcesWarning);
         if (agroalPresent) {
             jtaPropertyManager.getJTAEnvironmentBean()
                     .setLastResourceOptimisationInterfaceClassName("io.agroal.narayana.LocalXAResource");
@@ -150,7 +149,8 @@ public class NarayanaJtaRecorder {
     }
 
     private void setJDBCObjectStore(String name, TransactionManagerConfiguration config) {
-        final ObjectStoreEnvironmentBean instance = BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class, name);
+        final ObjectStoreEnvironmentBean instance = BeanPopulator.getNamedInstance(ObjectStoreEnvironmentBean.class,
+                name);
         instance.setObjectStoreType(JDBCStore.class.getName());
         instance.setJdbcDataSource(new QuarkusDataSource(config.objectStore().datasource()));
         instance.setCreateTable(config.objectStore().createTable());
@@ -159,8 +159,7 @@ public class NarayanaJtaRecorder {
     }
 
     public void startRecoveryService(final TransactionManagerConfiguration transactions,
-            Map<String, String> configuredDataSourcesConfigKeys,
-            Set<String> dataSourcesWithTransactionIntegration) {
+            Map<String, String> configuredDataSourcesConfigKeys, Set<String> dataSourcesWithTransactionIntegration) {
 
         if (transactions.objectStore().type().equals(ObjectStoreType.JDBC)) {
             final String objectStoreDataSourceName;
@@ -180,14 +179,12 @@ public class NarayanaJtaRecorder {
                 objectStoreDataSourceName = transactions.objectStore().datasource().get();
 
                 if (!configuredDataSourcesConfigKeys.keySet().contains(objectStoreDataSourceName)) {
-                    throw new ConfigurationException(
-                            "The Narayana JTA extension is configured to use the datasource '"
-                                    + objectStoreDataSourceName
-                                    + "' but that datasource is not configured."
-                                    + " To solve this, either configure datasource " + objectStoreDataSourceName
-                                    + " referring to https://quarkus.io/guides/datasource for guidance,"
-                                    + " or configure another datasource to use in the Narayana JTA extension "
-                                    + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource.");
+                    throw new ConfigurationException("The Narayana JTA extension is configured to use the datasource '"
+                            + objectStoreDataSourceName + "' but that datasource is not configured."
+                            + " To solve this, either configure datasource " + objectStoreDataSourceName
+                            + " referring to https://quarkus.io/guides/datasource for guidance,"
+                            + " or configure another datasource to use in the Narayana JTA extension "
+                            + " by setting property 'quarkus.transaction-manager.object-store.datasource' to the name of a configured datasource.");
                 }
             }
             if (dataSourcesWithTransactionIntegration.contains(objectStoreDataSourceName)) {

@@ -43,9 +43,8 @@ import io.vertx.mutiny.core.http.HttpClient;
 import io.vertx.mutiny.core.http.HttpClientRequest;
 
 /**
- * Inspired by https://github.com/quarkusio/quarkus/issues/43217.
- * Tests that number of concurrent blocking requests processed
- * is not limited by a number of the IO threads.
+ * Inspired by https://github.com/quarkusio/quarkus/issues/43217. Tests that number of concurrent blocking requests
+ * processed is not limited by a number of the IO threads.
  */
 public class ConcurrentBlockingRequestTest {
 
@@ -82,33 +81,27 @@ public class ConcurrentBlockingRequestTest {
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("blocker", "blocker")
-                .add("test", "test");
+        TestIdentityController.resetRoles().add("blocker", "blocker").add("test", "test");
     }
 
     @Test
     public void testConcurrentBlockingExecutionAllowed() {
-        var httpClient = vertx.createHttpClient(new HttpClientOptions()
-                .setDefaultHost(blockerUri.getHost())
-                .setDefaultPort(blockerUri.getPort()));
+        var httpClient = vertx.createHttpClient(
+                new HttpClientOptions().setDefaultHost(blockerUri.getHost()).setDefaultPort(blockerUri.getPort()));
         try {
             // first perform blocking request
             AtomicBoolean blockerSucceeded = new AtomicBoolean(false);
             AtomicBoolean blockerFailed = new AtomicBoolean(false);
-            httpClient
-                    .request(HttpMethod.GET, blockerUri.getPath())
-                    .map(withBasic("blocker:blocker"))
-                    .flatMap(HttpClientRequest::send)
-                    .subscribe()
-                    .with(resp -> {
+            httpClient.request(HttpMethod.GET, blockerUri.getPath()).map(withBasic("blocker:blocker"))
+                    .flatMap(HttpClientRequest::send).subscribe().with(resp -> {
                         if (resp.statusCode() == 200) {
                             resp.body().map(Buffer::toString).subscribe().with(body -> {
                                 if (body.equals("blocker:/blocker")) {
                                     blockerSucceeded.set(true);
                                 } else {
-                                    Log.error(("Request to path '/blocker' failed, expected response body 'blocker:/blocker',"
-                                            + " got: %s").formatted(body));
+                                    Log.error(
+                                            ("Request to path '/blocker' failed, expected response body 'blocker:/blocker',"
+                                                    + " got: %s").formatted(body));
                                     blockerFailed.set(true);
                                 }
                             });
@@ -149,11 +142,8 @@ public class ConcurrentBlockingRequestTest {
     }
 
     private int requestToViewerPathAndGetStatusCode(HttpClient httpClient, String credentials) {
-        var response = httpClient
-                .request(HttpMethod.GET, viewerUri.getPath())
-                .map(withBasic(credentials))
-                .flatMap(HttpClientRequest::send)
-                .await().atMost(REQUEST_TIMEOUT);
+        var response = httpClient.request(HttpMethod.GET, viewerUri.getPath()).map(withBasic(credentials))
+                .flatMap(HttpClientRequest::send).await().atMost(REQUEST_TIMEOUT);
         return response.statusCode();
     }
 

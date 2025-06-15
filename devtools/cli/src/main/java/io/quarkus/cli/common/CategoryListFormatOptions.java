@@ -9,7 +9,8 @@ public class CategoryListFormatOptions {
     @CommandLine.Option(names = { "--concise" }, order = 2, description = "Display categoryId and name columns.")
     boolean concise = false;
 
-    @CommandLine.Option(names = { "--full" }, order = 3, description = "Display categoryId, name and description columns.")
+    @CommandLine.Option(names = {
+            "--full" }, order = 3, description = "Display categoryId, name and description columns.")
     boolean full = false;
 
     public String getFormatString() {

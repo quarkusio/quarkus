@@ -47,7 +47,8 @@ final class MongoCompressorSubstitution {
 final class ConnectionStringSubstitution {
 
     @Substitute
-    private List<MongoCompressor> buildCompressors(final String compressors, @Nullable final Integer zlibCompressionLevel) {
+    private List<MongoCompressor> buildCompressors(final String compressors,
+            @Nullable final Integer zlibCompressionLevel) {
         List<MongoCompressor> compressorsList = new ArrayList<>();
 
         for (String cur : compressors.split(",")) {
@@ -140,7 +141,7 @@ final class ServerAddressHelperSubstitution {
 
 }
 
-//TODO: move to a dedicated jna extension that will simply collect JNA substitutions
+// TODO: move to a dedicated jna extension that will simply collect JNA substitutions
 @TargetClass(com.sun.jna.Native.class)
 final class JnaNativeSubstitutions {
 

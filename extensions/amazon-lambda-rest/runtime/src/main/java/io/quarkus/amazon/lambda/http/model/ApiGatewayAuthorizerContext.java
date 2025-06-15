@@ -20,27 +20,24 @@ import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Context object used for custom authorizers and Cognito User Pool authorizers.
- *
- * Custom authorizers populate the <code>principalId</code> field. All other custom values
- * returned by the authorizer are accessible via the <code>getContextValue</code> method.
- *
- * Cognito User Pool authorizers populate the <code>claims</code> object.
+ * Context object used for custom authorizers and Cognito User Pool authorizers. Custom authorizers populate the
+ * <code>principalId</code> field. All other custom values returned by the authorizer are accessible via the
+ * <code>getContextValue</code> method. Cognito User Pool authorizers populate the <code>claims</code> object.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ApiGatewayAuthorizerContext {
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Variables - Private
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     private Map<String, String> contextProperties = new HashMap<>();
     private String principalId;
     private CognitoAuthorizerClaims claims;
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Methods - Public
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     @JsonAnyGetter
     public Map<String, String> getContextProperties() {
@@ -56,9 +53,9 @@ public class ApiGatewayAuthorizerContext {
         contextProperties.put(key, value);
     }
 
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
     // Methods - Getter/Setter
-    //-------------------------------------------------------------
+    // -------------------------------------------------------------
 
     public String getPrincipalId() {
         return principalId;

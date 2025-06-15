@@ -17,11 +17,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MicrometerDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.micrometer.enabled=false"), "application.properties"))
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .assertException(t -> {
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("quarkus.micrometer.enabled=false"), "application.properties"))
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").assertException(t -> {
                 Assertions.assertEquals(DeploymentException.class, t.getClass());
             });
 
@@ -30,7 +28,7 @@ public class MicrometerDisabledTest {
 
     @Test
     public void testNoMeterRegistry() {
-        //Should not be reached: dump what was injected if it somehow passed
+        // Should not be reached: dump what was injected if it somehow passed
         Assertions.assertNull(registry, "A MeterRegistry should not be found/injected when micrometer is disabled");
     }
 }

@@ -21,8 +21,8 @@ public interface GrpcBuildTimeConfig {
     interface GrpcDevModeConfig {
 
         /**
-         * Start gRPC server in dev mode even if no gRPC services are implemented.
-         * By default set to `true` to ease incremental development of new services using dev mode.
+         * Start gRPC server in dev mode even if no gRPC services are implemented. By default set to `true` to ease
+         * incremental development of new services using dev mode.
          */
         @WithDefault("true")
         boolean forceServerStart();

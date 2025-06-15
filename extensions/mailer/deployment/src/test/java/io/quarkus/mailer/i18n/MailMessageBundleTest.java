@@ -21,14 +21,11 @@ public class MailMessageBundleTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Templates.class, AppMessages.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Templates.class, AppMessages.class)
                     .addAsResource("mock-config.properties", "application.properties")
-                    .addAsResource(new StringAsset(
-                            "hello_name=Hallo {name}!"),
-                            "messages/msg_de.properties")
-                    .addAsResource(new StringAsset(""
-                            + "{msg:hello_name(name)}"), "templates/MailMessageBundleTest/hello.txt"));
+                    .addAsResource(new StringAsset("hello_name=Hallo {name}!"), "messages/msg_de.properties")
+                    .addAsResource(new StringAsset("" + "{msg:hello_name(name)}"),
+                            "templates/MailMessageBundleTest/hello.txt"));
 
     @Inject
     MockMailbox mailbox;
@@ -46,8 +43,8 @@ public class MailMessageBundleTest {
         assertEquals("Hello Lu!", english.getText());
 
         // Set the locale attribute
-        Templates.hello("Lu").to("quarkus@quarkus.io").subject("Test").setAttribute("locale", Locale.GERMAN).send().await()
-                .indefinitely();
+        Templates.hello("Lu").to("quarkus@quarkus.io").subject("Test").setAttribute("locale", Locale.GERMAN).send()
+                .await().indefinitely();
 
         assertEquals(2, sent.size());
         Mail german = sent.get(1);

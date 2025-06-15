@@ -10,7 +10,6 @@ import jakarta.ws.rs.sse.Sse;
 import jakarta.ws.rs.sse.SseBroadcaster;
 import jakarta.ws.rs.sse.SseEventSink;
 
-// Using `@RestStreamElementType` on purpose to ensure the backward compatibility.
 import org.jboss.resteasy.reactive.RestSseElementType;
 import org.jboss.resteasy.reactive.common.util.RestMediaType;
 
@@ -86,9 +85,10 @@ public class SseResource {
         // Same as sseJson but set mediaType in builder
         sseBroadcaster.register(sink);
         sseBroadcaster
-                .broadcast(sse.newEventBuilder().data(new Message("hello")).mediaType(MediaType.APPLICATION_JSON_TYPE).build())
-                .thenCompose(v -> sseBroadcaster.broadcast(
-                        sse.newEventBuilder().mediaType(MediaType.APPLICATION_JSON_TYPE).data(new Message("stef")).build()))
+                .broadcast(sse.newEventBuilder().data(new Message("hello")).mediaType(MediaType.APPLICATION_JSON_TYPE)
+                        .build())
+                .thenCompose(v -> sseBroadcaster.broadcast(sse.newEventBuilder()
+                        .mediaType(MediaType.APPLICATION_JSON_TYPE).data(new Message("stef")).build()))
                 .thenAccept(v -> sseBroadcaster.close());
     }
 

@@ -25,10 +25,8 @@ public class PathParamExtractor implements ParameterExtractor {
         if (single) {
             return encoded ? pathParam : Encode.decodePath(pathParam);
         } else {
-            return encoded
-                    ? List.of(pathParam.split("/"))
-                    : Arrays.stream(pathParam.split("/")).map(Encode::decodePath)
-                            .collect(Collectors.toList());
+            return encoded ? List.of(pathParam.split("/"))
+                    : Arrays.stream(pathParam.split("/")).map(Encode::decodePath).collect(Collectors.toList());
         }
     }
 }

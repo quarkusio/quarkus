@@ -73,8 +73,8 @@ public class DB2PoolRecorder {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
                 }
                 if (reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().url().isEmpty()) {
-                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
-                            "reactive.url"));
+                    return ActiveResult.inactive(
+                            DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName, "reactive.url"));
                 }
                 return ActiveResult.active();
             }
@@ -82,22 +82,16 @@ public class DB2PoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<DB2Pool>, DB2Pool> configureDB2Pool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            Supplier<Integer> eventLoopCount, String dataSourceName, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config,
-            ShutdownContext shutdown) {
+            DataSourcesReactiveDB2Config dataSourcesReactiveDB2Config, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public DB2Pool apply(SyntheticCreationalContext<DB2Pool> context) {
-                DB2Pool db2Pool = initialize((VertxInternal) vertx.getValue(),
-                        eventLoopCount.get(),
-                        dataSourceName,
+                DB2Pool db2Pool = initialize((VertxInternal) vertx.getValue(), eventLoopCount.get(), dataSourceName,
                         dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                         dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveDB2Config.dataSources().get(dataSourceName).reactive().db2(),
-                        context);
+                        dataSourcesReactiveDB2Config.dataSources().get(dataSourceName).reactive().db2(), context);
 
                 shutdown.addShutdownTask(db2Pool::close);
                 return db2Pool;
@@ -111,19 +105,16 @@ public class DB2PoolRecorder {
             @SuppressWarnings("unchecked")
             @Override
             public io.vertx.mutiny.db2client.DB2Pool apply(SyntheticCreationalContext context) {
-                return io.vertx.mutiny.db2client.DB2Pool.newInstance(
-                        (DB2Pool) context.getInjectedReference(DB2Pool.class, qualifier(dataSourceName)));
+                return io.vertx.mutiny.db2client.DB2Pool
+                        .newInstance((DB2Pool) context.getInjectedReference(DB2Pool.class, qualifier(dataSourceName)));
             }
         };
     }
 
-    private DB2Pool initialize(VertxInternal vertx,
-            Integer eventLoopCount,
-            String dataSourceName,
+    private DB2Pool initialize(VertxInternal vertx, Integer eventLoopCount, String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
-            DataSourceReactiveDB2Config dataSourceReactiveDB2Config,
-            SyntheticCreationalContext<DB2Pool> context) {
+            DataSourceReactiveDB2Config dataSourceReactiveDB2Config, SyntheticCreationalContext<DB2Pool> context) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         DB2ConnectOptions db2ConnectOptions = toConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveDB2Config);
@@ -132,8 +123,8 @@ public class DB2PoolRecorder {
         return createPool(vertx, poolOptions, db2ConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
-    private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(Vertx vertx, List<DB2ConnectOptions> db2ConnectOptionsList,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+    private Supplier<Future<DB2ConnectOptions>> toDatabasesSupplier(Vertx vertx,
+            List<DB2ConnectOptions> db2ConnectOptionsList, DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<DB2ConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
@@ -147,7 +138,8 @@ public class DB2PoolRecorder {
         return supplier;
     }
 
-    private PoolOptions toPoolOptions(Integer eventLoopCount, DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -187,8 +179,8 @@ public class DB2PoolRecorder {
         if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
             List<String> urls = dataSourceReactiveRuntimeConfig.url().get();
             if (urls.size() > 1) {
-                log.warn("The Reactive DB2 client does not support multiple URLs. The first one will be used, and " +
-                        "others will be ignored.");
+                log.warn("The Reactive DB2 client does not support multiple URLs. The first one will be used, and "
+                        + "others will be ignored.");
             }
             String url = urls.get(0);
             // clean up the URL to make migrations easier
@@ -263,7 +255,8 @@ public class DB2PoolRecorder {
     private DB2Pool createPool(Vertx vertx, PoolOptions poolOptions, DB2ConnectOptions dB2ConnectOptions,
             String dataSourceName, Supplier<Future<DB2ConnectOptions>> databases,
             SyntheticCreationalContext<DB2Pool> context) {
-        Instance<DB2PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL, qualifier(dataSourceName));
+        Instance<DB2PoolCreator> instance = context.getInjectedReference(POOL_CREATOR_TYPE_LITERAL,
+                qualifier(dataSourceName));
         if (instance.isResolvable()) {
             DB2PoolCreator.Input input = new DefaultInput(vertx, poolOptions, dB2ConnectOptions);
             return (DB2Pool) instance.get().create(input);

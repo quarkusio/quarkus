@@ -22,7 +22,6 @@ public class EnversModifiedColumnNamingStrategyTestCase {
 
     @Test
     public void testModifiedColumnNamingStrategy() {
-        RestAssured.when().get("/envers-modified-column-naming-strategy").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-modified-column-naming-strategy").then().body(is("OK"));
     }
 }

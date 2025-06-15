@@ -55,20 +55,17 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Boolean> zadd(K key, ZAddArgs args, double score, V value) {
-        return super._zadd(key, args, score, value)
-                .map(this::decodeIntAsBoolean);
+        return super._zadd(key, args, score, value).map(this::decodeIntAsBoolean);
     }
 
     @Override
     public Uni<Integer> zadd(K key, ZAddArgs args, Map<V, Double> items) {
-        return super._zadd(key, args, items)
-                .map(Response::toInteger);
+        return super._zadd(key, args, items).map(Response::toInteger);
     }
 
     @Override
     public Uni<Integer> zadd(K key, ZAddArgs args, ScoredValue<V>... items) {
-        return super._zadd(key, args, items)
-                .map(Response::toInteger);
+        return super._zadd(key, args, items).map(Response::toInteger);
     }
 
     @Override
@@ -78,51 +75,43 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Double> zaddincr(K key, ZAddArgs args, double score, V value) {
-        return super._zaddincr(key, args, score, value)
-                .map(this::decodeAsDouble);
+        return super._zaddincr(key, args, score, value).map(this::decodeAsDouble);
     }
 
     @Override
     public Uni<Long> zcard(K key) {
-        return super._zcard(key)
-                .map(this::decodeLongOrZero);
+        return super._zcard(key).map(this::decodeLongOrZero);
     }
 
     @Override
     public Uni<Long> zcount(K key, ScoreRange<Double> range) {
-        return super._zcount(key, range)
-                .map(Response::toLong);
+        return super._zcount(key, range).map(Response::toLong);
 
     }
 
     @Override
     public Uni<List<V>> zdiff(K... keys) {
-        return super._zdiff(keys)
-                .map(this::decodeAsListOfValues);
+        return super._zdiff(keys).map(this::decodeAsListOfValues);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zdiffWithScores(K... keys) {
-        return super._zdiffWithScores(keys)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zdiffWithScores(keys).map(this::decodeAsListOfScoredValues);
     }
 
     @Override
     public Uni<Long> zdiffstore(K destination, K... keys) {
-        return super._zdiffstore(destination, keys)
-                .map(Response::toLong);
+        return super._zdiffstore(destination, keys).map(Response::toLong);
     }
 
     @Override
     public Uni<Double> zincrby(K key, double increment, V value) {
-        return super._zincrby(key, increment, value)
-                .map(Response::toDouble);
+        return super._zincrby(key, increment, value).map(Response::toDouble);
     }
 
     @Override
     public Uni<List<V>> zinter(ZAggregateArgs args, K... keys) {
-        return super._zinter(args, keys)
-                .map(r -> marshaller.decodeAsList(r, typeOfValue));
+        return super._zinter(args, keys).map(r -> marshaller.decodeAsList(r, typeOfValue));
     }
 
     @Override
@@ -132,8 +121,7 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<List<ScoredValue<V>>> zinterWithScores(ZAggregateArgs arguments, K... keys) {
-        return super._zinterWithScores(arguments, keys)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zinterWithScores(arguments, keys).map(this::decodeAsListOfScoredValues);
     }
 
     @Override
@@ -143,20 +131,17 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Long> zintercard(K... keys) {
-        return super._zintercard(keys)
-                .map(Response::toLong);
+        return super._zintercard(keys).map(Response::toLong);
     }
 
     @Override
     public Uni<Long> zintercard(long limit, K... keys) {
-        return super._zintercard(limit, keys)
-                .map(Response::toLong);
+        return super._zintercard(limit, keys).map(Response::toLong);
     }
 
     @Override
     public Uni<Long> zinterstore(K destination, ZAggregateArgs arguments, K... keys) {
-        return super._zinterstore(destination, arguments, keys)
-                .map(Response::toLong);
+        return super._zinterstore(destination, arguments, keys).map(Response::toLong);
     }
 
     @SafeVarargs
@@ -167,136 +152,114 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Long> zlexcount(K key, Range<String> range) {
-        return super._zlexcount(key, range)
-                .map(Response::toLong);
+        return super._zlexcount(key, range).map(Response::toLong);
     }
 
     @Override
     public Uni<ScoredValue<V>> zmpopMin(K... keys) {
-        return super._zmpopMin(keys)
-                .map(this::decodePopResponse);
+        return super._zmpopMin(keys).map(this::decodePopResponse);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zmpopMin(int count, K... keys) {
-        return super._zmpopMin(count, keys)
-                .map(this::decodePopResponseWithCount);
+        return super._zmpopMin(count, keys).map(this::decodePopResponseWithCount);
     }
 
     @Override
     public Uni<ScoredValue<V>> zmpopMax(K... keys) {
-        return super._zmpopMax(keys)
-                .map(this::decodePopResponse);
+        return super._zmpopMax(keys).map(this::decodePopResponse);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zmpopMax(int count, K... keys) {
-        return super._zmpopMax(count, keys)
-                .map(this::decodePopResponseWithCount);
+        return super._zmpopMax(count, keys).map(this::decodePopResponseWithCount);
     }
 
     @Override
     public Uni<ScoredValue<V>> bzmpopMin(Duration timeout, K... keys) {
-        return super._bzmpopMin(timeout, keys)
-                .map(this::decodePopResponse);
+        return super._bzmpopMin(timeout, keys).map(this::decodePopResponse);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> bzmpopMin(Duration timeout, int count, K... keys) {
-        return super._bzmpopMin(timeout, count, keys)
-                .map(this::decodePopResponseWithCount);
+        return super._bzmpopMin(timeout, count, keys).map(this::decodePopResponseWithCount);
     }
 
     @Override
     public Uni<ScoredValue<V>> bzmpopMax(Duration timeout, K... keys) {
-        return super._bzmpopMax(timeout, keys)
-                .map(this::decodePopResponse);
+        return super._bzmpopMax(timeout, keys).map(this::decodePopResponse);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> bzmpopMax(Duration timeout, int count, K... keys) {
-        return super._bzmpopMax(timeout, count, keys)
-                .map(this::decodePopResponseWithCount);
+        return super._bzmpopMax(timeout, count, keys).map(this::decodePopResponseWithCount);
     }
 
     @Override
     public Uni<List<Double>> zmscore(K key, V... values) {
-        return super._zmscore(key, values)
-                .map(this::decodeAsListOfDouble);
+        return super._zmscore(key, values).map(this::decodeAsListOfDouble);
     }
 
     @Override
     public Uni<ScoredValue<V>> zpopmax(K key) {
-        return super._zpopmax(key)
-                .map(this::decodeAsScoredValue);
+        return super._zpopmax(key).map(this::decodeAsScoredValue);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zpopmax(K key, int count) {
-        return super._zpopmax(key, count)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zpopmax(key, count).map(this::decodeAsListOfScoredValues);
     }
 
     @Override
     public Uni<ScoredValue<V>> zpopmin(K key) {
-        return super._zpopmin(key)
-                .map(this::decodeAsScoredValue);
+        return super._zpopmin(key).map(this::decodeAsScoredValue);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zpopmin(K key, int count) {
-        return super._zpopmin(key, count)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zpopmin(key, count).map(this::decodeAsListOfScoredValues);
     }
 
     @Override
     public Uni<V> zrandmember(K key) {
-        return super._zrandmember(key)
-                .map(this::decodeV);
+        return super._zrandmember(key).map(this::decodeV);
     }
 
     @Override
     public Uni<List<V>> zrandmember(K key, int count) {
-        return super._zrandmember(key, count)
-                .map(this::decodeAsListOfValues);
+        return super._zrandmember(key, count).map(this::decodeAsListOfValues);
     }
 
     @Override
     public Uni<ScoredValue<V>> zrandmemberWithScores(K key) {
-        return super._zrandmemberWithScores(key)
-                .map(this::decodeAsScoredValueOrEmpty);
+        return super._zrandmemberWithScores(key).map(this::decodeAsScoredValueOrEmpty);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zrandmemberWithScores(K key, int count) {
-        return super._zrandmemberWithScores(key, count)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zrandmemberWithScores(key, count).map(this::decodeAsListOfScoredValues);
     }
 
     @SafeVarargs
     @Override
     public final Uni<KeyValue<K, ScoredValue<V>>> bzpopmin(Duration timeout, K... keys) {
-        return super._bzpopmin(timeout, keys)
-                .map(this::decodeAsKeyValue);
+        return super._bzpopmin(timeout, keys).map(this::decodeAsKeyValue);
     }
 
     @SafeVarargs
     @Override
     public final Uni<KeyValue<K, ScoredValue<V>>> bzpopmax(Duration timeout, K... keys) {
-        return super._bzpopmax(timeout, keys)
-                .map(this::decodeAsKeyValue);
+        return super._bzpopmax(timeout, keys).map(this::decodeAsKeyValue);
     }
 
     @Override
     public Uni<List<V>> zrange(K key, long start, long stop, ZRangeArgs args) {
-        return super._zrange(key, start, stop, args)
-                .map(this::decodeAsListOfValues);
+        return super._zrange(key, start, stop, args).map(this::decodeAsListOfValues);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zrangeWithScores(K key, long start, long stop, ZRangeArgs args) {
-        return super._zrangeWithScores(key, start, stop, args)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zrangeWithScores(key, start, stop, args).map(this::decodeAsListOfScoredValues);
     }
 
     @Override
@@ -311,8 +274,7 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<List<V>> zrangebylex(K key, Range<String> range, ZRangeArgs args) {
-        return super._zrangebylex(key, range, args)
-                .map(this::decodeAsListOfValues);
+        return super._zrangebylex(key, range, args).map(this::decodeAsListOfValues);
     }
 
     @Override
@@ -322,14 +284,12 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<List<V>> zrangebyscore(K key, ScoreRange<Double> range, ZRangeArgs args) {
-        return super._zrangebyscore(key, range, args)
-                .map(this::decodeAsListOfValues);
+        return super._zrangebyscore(key, range, args).map(this::decodeAsListOfValues);
     }
 
     @Override
     public Uni<List<ScoredValue<V>>> zrangebyscoreWithScores(K key, ScoreRange<Double> range, ZRangeArgs args) {
-        return super._zrangebyscoreWithScores(key, range, args)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zrangebyscoreWithScores(key, range, args).map(this::decodeAsListOfScoredValues);
     }
 
     @Override
@@ -344,8 +304,7 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Long> zrangestore(K dst, K src, long min, long max, ZRangeArgs args) {
-        return super._zrangestore(dst, src, min, max, args)
-                .map(Response::toLong);
+        return super._zrangestore(dst, src, min, max, args).map(Response::toLong);
     }
 
     @Override
@@ -355,8 +314,7 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Long> zrangestorebylex(K dst, K src, Range<String> range, ZRangeArgs args) {
-        return super._zrangestorebylex(dst, src, range, args)
-                .map(Response::toLong);
+        return super._zrangestorebylex(dst, src, range, args).map(Response::toLong);
     }
 
     @Override
@@ -366,8 +324,7 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Long> zrangestorebyscore(K dst, K src, ScoreRange<Double> range, ZRangeArgs args) {
-        return super._zrangestorebyscore(dst, src, range, args)
-                .map(Response::toLong);
+        return super._zrangestorebyscore(dst, src, range, args).map(Response::toLong);
     }
 
     @Override
@@ -377,38 +334,32 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Long> zrank(K key, V value) {
-        return super._zrank(key, value)
-                .map(this::decodeAsLong);
+        return super._zrank(key, value).map(this::decodeAsLong);
     }
 
     @Override
     public Uni<Integer> zrem(K key, V... values) {
-        return super._zrem(key, values)
-                .map(Response::toInteger);
+        return super._zrem(key, values).map(Response::toInteger);
     }
 
     @Override
     public Uni<Long> zremrangebylex(K key, Range<String> range) {
-        return super._zremrangebylex(key, range)
-                .map(Response::toLong);
+        return super._zremrangebylex(key, range).map(Response::toLong);
     }
 
     @Override
     public Uni<Long> zremrangebyrank(K key, long start, long stop) {
-        return super._zremrangebyrank(key, start, stop)
-                .map(Response::toLong);
+        return super._zremrangebyrank(key, start, stop).map(Response::toLong);
     }
 
     @Override
     public Uni<Long> zremrangebyscore(K key, ScoreRange<Double> range) {
-        return super._zremrangebyscore(key, range)
-                .map(Response::toLong);
+        return super._zremrangebyscore(key, range).map(Response::toLong);
     }
 
     @Override
     public Uni<Long> zrevrank(K key, V value) {
-        return super._zrevrank(key, value)
-                .map(this::decodeAsLong);
+        return super._zrevrank(key, value).map(this::decodeAsLong);
     }
 
     @Override
@@ -426,14 +377,12 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<Double> zscore(K key, V value) {
-        return super._zscore(key, value)
-                .map(this::decodeAsDouble);
+        return super._zscore(key, value).map(this::decodeAsDouble);
     }
 
     @Override
     public Uni<List<V>> zunion(ZAggregateArgs args, K... keys) {
-        return super._zunion(args, keys)
-                .map(this::decodeAsListOfValues);
+        return super._zunion(args, keys).map(this::decodeAsListOfValues);
     }
 
     @Override
@@ -448,14 +397,12 @@ public class ReactiveSortedSetCommandsImpl<K, V> extends AbstractSortedSetComman
 
     @Override
     public Uni<List<ScoredValue<V>>> zunionWithScores(ZAggregateArgs args, K... keys) {
-        return super._zunionWithScores(args, keys)
-                .map(this::decodeAsListOfScoredValues);
+        return super._zunionWithScores(args, keys).map(this::decodeAsListOfScoredValues);
     }
 
     @Override
     public Uni<Long> zunionstore(K destination, ZAggregateArgs args, K... keys) {
-        return super._zunionstore(destination, args, keys)
-                .map(Response::toLong);
+        return super._zunionstore(destination, args, keys).map(Response::toLong);
     }
 
     @Override

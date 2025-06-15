@@ -65,7 +65,9 @@ public final class TestUtil {
         return (TextMapPropagator[]) privatePropagatorsField.get(textMapPropagator);
     }
 
-    public static void assertStringAttribute(SpanData spanData, AttributeKey<String> attributeKey, String expectedValue) {
-        assertEquals(expectedValue, spanData.getAttributes().get(attributeKey), "Attribute Key Named:" + attributeKey.getKey());
+    public static void assertStringAttribute(SpanData spanData, AttributeKey<String> attributeKey,
+            String expectedValue) {
+        assertEquals(expectedValue, spanData.getAttributes().get(attributeKey),
+                "Attribute Key Named:" + attributeKey.getKey());
     }
 }

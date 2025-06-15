@@ -32,9 +32,12 @@ public class ProjectDescriptorBuilder {
 
     public static void initSourceDirs(Project project, WorkspaceModule.Mutable result) {
         final SourceSetContainer srcSets = project.getExtensions().getByType(SourceSetContainer.class);
-        // Here we are iterating through the JARs that will be produced, collecting directories that will be used as sources
-        // of their content. Then we are figuring out which source directories would be processed to produce the content of the JARs.
-        // It has to be configureEach instead of forEach, apparently to avoid concurrent collection modification in some cases.
+        // Here we are iterating through the JARs that will be produced, collecting directories that will be used as
+        // sources
+        // of their content. Then we are figuring out which source directories would be processed to produce the content
+        // of the JARs.
+        // It has to be configureEach instead of forEach, apparently to avoid concurrent collection modification in some
+        // cases.
         project.getTasks().withType(Jar.class).configureEach(jarTask -> {
             final String classifier = jarTask.getArchiveClassifier().get();
 
@@ -48,7 +51,9 @@ public class ProjectDescriptorBuilder {
                 for (var classesDir : srcSet.getOutput().getClassesDirs().getFiles()) {
                     if (classesDirs.contains(classesDir)) {
                         for (var srcDir : srcSet.getAllJava().getSrcDirs()) {
-                            sourceDirs.add(new LazySourceDir(srcDir.toPath(), classesDir.toPath())); // TODO findGeneratedSourceDir(destDir, sourceSet));
+                            sourceDirs.add(new LazySourceDir(srcDir.toPath(), classesDir.toPath())); // TODO
+                                                                                                     // findGeneratedSourceDir(destDir,
+                                                                                                     // sourceSet));
                         }
                     }
                 }
@@ -85,7 +90,9 @@ public class ProjectDescriptorBuilder {
                             if (testSourcesDirs.isEmpty()) {
                                 testSourcesDirs = new ArrayList<>(6);
                             }
-                            testSourcesDirs.add(new LazySourceDir(srcDir.toPath(), classesDir.toPath())); // TODO findGeneratedSourceDir(destDir, sourceSet));
+                            testSourcesDirs.add(new LazySourceDir(srcDir.toPath(), classesDir.toPath())); // TODO
+                                                                                                          // findGeneratedSourceDir(destDir,
+                                                                                                          // sourceSet));
                         }
                     }
                 }
@@ -99,7 +106,8 @@ public class ProjectDescriptorBuilder {
                             testResourcesDirs.add(new LazySourceDir(dir.toPath(), resourcesOutputDir));
                         }
                     }
-                    result.addArtifactSources(new DefaultArtifactSources(classifier, testSourcesDirs, testResourcesDirs));
+                    result.addArtifactSources(
+                            new DefaultArtifactSources(classifier, testSourcesDirs, testResourcesDirs));
                 }
             }
         });

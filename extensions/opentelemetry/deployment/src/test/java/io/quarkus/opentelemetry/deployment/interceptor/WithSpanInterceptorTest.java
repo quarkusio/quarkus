@@ -48,15 +48,13 @@ import io.vertx.ext.web.Router;
 
 public class WithSpanInterceptorTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClass(SpanBean.class)
-                            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
-                            .addAsManifestResource(
-                                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
-                                    "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClass(SpanBean.class)
+            .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsManifestResource(
+                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
+                    "services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource("resource-config/application-no-metrics.properties", "application.properties"));
 
     @Inject
     SpanBean spanBean;
@@ -180,8 +178,7 @@ public class WithSpanInterceptorTest {
         assertEquals(INTERNAL, span.getKind());
         assertEquals(ERROR, span.getStatus().getStatusCode());
         assertEquals(1, span.getEvents().size());
-        assertEquals("hello Uni",
-                ((ExceptionEventData) span.getEvents().get(0)).getException().getMessage());
+        assertEquals("hello Uni", ((ExceptionEventData) span.getEvents().get(0)).getException().getMessage());
         assertClassMethodNames(span, SpanBean.class, "spanUniWithException");
     }
 
@@ -301,9 +298,7 @@ public class WithSpanInterceptorTest {
         @WithSpan
         public void spanRestClient() {
             try (Client client = ClientBuilder.newClient()) {
-                WebTarget target = client.target(UriBuilder
-                        .fromUri(config.getRawValue("test.url"))
-                        .path("hello"));
+                WebTarget target = client.target(UriBuilder.fromUri(config.getRawValue("test.url")).path("hello"));
                 Response response = target.request().get();
                 assertEquals(HTTP_OK, response.getStatus());
             }

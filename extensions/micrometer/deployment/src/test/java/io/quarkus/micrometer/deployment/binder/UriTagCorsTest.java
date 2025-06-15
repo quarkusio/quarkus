@@ -18,18 +18,14 @@ import io.restassured.RestAssured;
 public class UriTagCorsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("quarkus.http.cors", "true")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .overrideConfigKey("quarkus.http.cors.origins", "*")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Util.class,
-                            VertxWebEndpoint.class,
-                            HelloResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, VertxWebEndpoint.class, HelloResource.class));
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
@@ -48,43 +44,24 @@ public class UriTagCorsTest {
         String origin = "http://custom.origin.quarkus";
         String methods = "GET,POST";
         String headers = "X-Custom";
-        RestAssured.given()
-                .header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
-                .when().options("/hello/world").then()
-                .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers)
-                .statusCode(200);
+        RestAssured.given().header("Origin", origin).header("Access-Control-Request-Method", methods)
+                .header("Access-Control-Request-Headers", headers).when().options("/hello/world").then()
+                .header("Access-Control-Allow-Origin", origin).header("Access-Control-Allow-Methods", methods)
+                .header("Access-Control-Allow-Headers", headers).statusCode(200);
 
-        RestAssured.given()
-                .header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
-                .when().options("/vertx/echo/anything").then()
-                .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers)
-                .statusCode(200);
+        RestAssured.given().header("Origin", origin).header("Access-Control-Request-Method", methods)
+                .header("Access-Control-Request-Headers", headers).when().options("/vertx/echo/anything").then()
+                .header("Access-Control-Allow-Origin", origin).header("Access-Control-Allow-Methods", methods)
+                .header("Access-Control-Allow-Headers", headers).statusCode(200);
 
-        RestAssured.given()
-                .header("Origin", origin)
-                .header("Access-Control-Request-Method", methods)
-                .header("Access-Control-Request-Headers", headers)
-                .when().options("/vertx/item/123").then()
-                .header("Access-Control-Allow-Origin", origin)
-                .header("Access-Control-Allow-Methods", methods)
-                .header("Access-Control-Allow-Headers", headers)
-                .statusCode(200);
+        RestAssured.given().header("Origin", origin).header("Access-Control-Request-Method", methods)
+                .header("Access-Control-Request-Headers", headers).when().options("/vertx/item/123").then()
+                .header("Access-Control-Allow-Origin", origin).header("Access-Control-Allow-Methods", methods)
+                .header("Access-Control-Allow-Headers", headers).statusCode(200);
 
-        RestAssured.given()
-                .when().options("/vertx/echo/anything").then()
-                .statusCode(200);
+        RestAssured.given().when().options("/vertx/echo/anything").then().statusCode(200);
 
-        RestAssured.given()
-                .when().options("/hello/world").then()
-                .statusCode(200);
+        RestAssured.given().when().options("/hello/world").then().statusCode(200);
 
         // Try to let metrics gathering finish.
         // Looking for 3 timers: uri=/cors-preflight, uri=/vertx/echo/{msg}, uri=/hello/{message}
@@ -98,7 +75,8 @@ public class UriTagCorsTest {
         Assertions.assertEquals(3, t.count(), "/cors-preflight should be checked 3 times");
 
         // Normal OPTIONS requests
-        Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/vertx/echo/{msg}").timers().size(),
+        Assertions.assertEquals(1,
+                registry.find("http.server.requests").tag("uri", "/vertx/echo/{msg}").timers().size(),
                 Util.foundServerRequests(registry, "/vertx/echo/{msg} for options request"));
         Assertions.assertEquals(1, registry.find("http.server.requests").tag("uri", "/hello/{message}").timers().size(),
                 Util.foundServerRequests(registry, "/hello/{message} for options request"));

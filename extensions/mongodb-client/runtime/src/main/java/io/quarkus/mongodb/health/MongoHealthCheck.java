@@ -55,8 +55,7 @@ public class MongoHealthCheck implements HealthCheck {
                 checks.add(new MongoClientCheck(CLIENT_DEFAULT, client, config.defaultMongoClientConfig()));
             }
             if (reactiveClient != null) {
-                checks.add(new ReactiveMongoClientCheck(CLIENT_DEFAULT_REACTIVE,
-                        reactiveClient,
+                checks.add(new ReactiveMongoClientCheck(CLIENT_DEFAULT_REACTIVE, reactiveClient,
                         config.defaultMongoClientConfig()));
             }
         }
@@ -67,12 +66,10 @@ public class MongoHealthCheck implements HealthCheck {
                 MongoClient client = getClient(handle, name);
                 ReactiveMongoClient reactiveClient = getReactiveClient(reactiveHandlers, name);
                 if (client != null) {
-                    checks.add(new MongoClientCheck(name, client,
-                            config.defaultMongoClientConfig()));
+                    checks.add(new MongoClientCheck(name, client, config.defaultMongoClientConfig()));
                 }
                 if (reactiveClient != null) {
-                    checks.add(new ReactiveMongoClientCheck(name, reactiveClient,
-                            config.defaultMongoClientConfig()));
+                    checks.add(new ReactiveMongoClientCheck(name, reactiveClient, config.defaultMongoClientConfig()));
                 }
             }
         });
@@ -116,8 +113,11 @@ public class MongoHealthCheck implements HealthCheck {
     /**
      * Get mongoClient name if defined.
      *
-     * @param bean the bean from which the name will be extracted.
+     * @param bean
+     *        the bean from which the name will be extracted.
+     *
      * @return mongoClient name or null if not defined
+     *
      * @see MongoClientName
      */
     private String getMongoClientName(Bean<?> bean) {
@@ -141,8 +141,7 @@ public class MongoHealthCheck implements HealthCheck {
             return builder.build();
         }
 
-        return Uni.combine().all().unis(unis)
-                .collectFailures() // We collect all failures to avoid partial responses.
+        return Uni.combine().all().unis(unis).collectFailures() // We collect all failures to avoid partial responses.
                 .with(new Function<List<?>, HealthCheckResponse>() {
                     @Override
                     public HealthCheckResponse apply(List<?> list) {
@@ -159,8 +158,7 @@ public class MongoHealthCheck implements HealthCheck {
             if ("OK".equalsIgnoreCase(tuple.getItem2())) {
                 builder.withData(tuple.getItem1(), "OK");
             } else {
-                builder.down()
-                        .withData(tuple.getItem1(), "KO, reason: " + tuple.getItem2());
+                builder.down().withData(tuple.getItem1(), "KO, reason: " + tuple.getItem2());
             }
         }
         return builder.build();
@@ -183,10 +181,9 @@ public class MongoHealthCheck implements HealthCheck {
                 public Document get() {
                     return client.getDatabase(config.healthDatabase()).runCommand(COMMAND);
                 }
-            })
-                    .runSubscriptionOn(Infrastructure.getDefaultExecutor())
-                    .ifNoItem().after(config.readTimeout().orElse(DEFAULT_TIMEOUT)).fail()
-                    .onItemOrFailure().transform(toResult(name));
+            }).runSubscriptionOn(Infrastructure.getDefaultExecutor()).ifNoItem()
+                    .after(config.readTimeout().orElse(DEFAULT_TIMEOUT)).fail().onItemOrFailure()
+                    .transform(toResult(name));
         }
     }
 
@@ -202,9 +199,9 @@ public class MongoHealthCheck implements HealthCheck {
         }
 
         public Uni<Tuple2<String, String>> get() {
-            return client.getDatabase(config.healthDatabase()).runCommand(COMMAND)
-                    .ifNoItem().after(config.readTimeout().orElse(DEFAULT_TIMEOUT)).fail()
-                    .onItemOrFailure().transform(toResult(name));
+            return client.getDatabase(config.healthDatabase()).runCommand(COMMAND).ifNoItem()
+                    .after(config.readTimeout().orElse(DEFAULT_TIMEOUT)).fail().onItemOrFailure()
+                    .transform(toResult(name));
         }
     }
 }

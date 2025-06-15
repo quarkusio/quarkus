@@ -88,8 +88,8 @@ public abstract class DatasourceServiceBindingConfigSourceFactory
             return true;
         }
 
-        log.warnf("The value '%s' from the property '%s' does not start with '%s'. It will be ignored.",
-                value, key, prefix);
+        log.warnf("The value '%s' from the property '%s' does not start with '%s'. It will be ignored.", value, key,
+                prefix);
         return false;
     }
 

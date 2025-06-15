@@ -42,8 +42,10 @@ public class TypeSignatureParserTest {
         assertType("Ljava/lang/Class;", Class.class);
         assertType("[Ljava/lang/Class;", Class[].class);
         assertType("[[Ljava/lang/Class;", Class[][].class);
-        assertType("Lio/quarkus/resteasy/reactive/runtime/mapping/TypeSignatureParserTest;", TypeSignatureParserTest.class);
-        assertType("Lio/quarkus/resteasy/reactive/runtime/mapping/TypeSignatureParserTest.StaticInner;", StaticInner.class);
+        assertType("Lio/quarkus/resteasy/reactive/runtime/mapping/TypeSignatureParserTest;",
+                TypeSignatureParserTest.class);
+        assertType("Lio/quarkus/resteasy/reactive/runtime/mapping/TypeSignatureParserTest.StaticInner;",
+                StaticInner.class);
         assertType("Lio/quarkus/resteasy/reactive/runtime/mapping/TypeSignatureParserTest.Inner;", Inner.class);
         assertType("Ljava/util/List<Ljava/lang/String;>;", new TypeLiteral<List<String>>() {
         });
@@ -53,7 +55,8 @@ public class TypeSignatureParserTest {
         });
         assertType("Ljava/util/Map<Ljava/lang/String;Ljava/lang/Integer;>;", new TypeLiteral<Map<String, Integer>>() {
         });
-        assertType("Lio/quarkus/resteasy/reactive/runtime/mapping/TypeSignatureParserTest.InnerGeneric<Ljava/lang/String;>;",
+        assertType(
+                "Lio/quarkus/resteasy/reactive/runtime/mapping/TypeSignatureParserTest.InnerGeneric<Ljava/lang/String;>;",
                 new TypeLiteral<InnerGeneric<String>>() {
                 });
         assertType(
@@ -68,7 +71,7 @@ public class TypeSignatureParserTest {
         assertType("Ljava/util/List<*>;", new TypeLiteral<List<?>>() {
         });
 
-        //        assertType("TT;", ((ParameterizedType)Foo.class.getGenericSuperclass()).getActualTypeArguments()[0]);
+        // assertType("TT;", ((ParameterizedType)Foo.class.getGenericSuperclass()).getActualTypeArguments()[0]);
     }
 
     private void assertType(String signature, TypeLiteral<?> actual) {
@@ -77,7 +80,8 @@ public class TypeSignatureParserTest {
 
     private void assertType(String signature, Type actual) {
         Type parsedType = new TypeSignatureParser(signature).parseType();
-        // the JDK impl has reasonable hashCode/equals for lots of stuff but not TypeVariable, so we do a switcheroo for those
+        // the JDK impl has reasonable hashCode/equals for lots of stuff but not TypeVariable, so we do a switcheroo for
+        // those
         if (actual instanceof TypeVariable) {
             Assertions.assertTrue(parsedType.equals(actual), () -> "expecting " + actual + " but got " + parsedType);
         } else {

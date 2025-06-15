@@ -23,7 +23,8 @@ public class BookStoreResource {
     @CacheResult(cacheName = "books")
     public Book book(@PathParam("id") String id) {
         return new Book("computed book", "desc", 2022,
-                Collections.singleton(new Author("Computed Name", "Computed Surname")), Type.FANTASY, new BigDecimal("100.99"));
+                Collections.singleton(new Author("Computed Name", "Computed Surname")), Type.FANTASY,
+                new BigDecimal("100.99"));
 
     }
 

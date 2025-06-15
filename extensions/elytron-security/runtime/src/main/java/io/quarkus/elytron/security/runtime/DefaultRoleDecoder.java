@@ -17,9 +17,8 @@ import org.wildfly.security.authz.Roles;
 
 /**
  * <p>
- * A default implementation of {@link RoleDecoder} that delegates decoding of roles for a given {@link AuthorizationIdentity} to
- * an application specific implementation of {@link RoleDecoder}, if provided.
- *
+ * A default implementation of {@link RoleDecoder} that delegates decoding of roles for a given
+ * {@link AuthorizationIdentity} to an application specific implementation of {@link RoleDecoder}, if provided.
  */
 @ApplicationScoped
 public class DefaultRoleDecoder {
@@ -35,7 +34,7 @@ public class DefaultRoleDecoder {
         if (userInstances.isUnsatisfied()) {
             return fromDefaultAttribute(authorizationIdentity);
         } else if (userInstances.isAmbiguous()) {
-            //if there are multiple decoders we return all the roles
+            // if there are multiple decoders we return all the roles
             List<Roles> allRoles = new ArrayList<>();
             for (RoleDecoder i : userInstances) {
                 allRoles.add(i.decodeRoles(authorizationIdentity));

@@ -156,8 +156,8 @@ public class CycloneDxSbomGenerator {
         }
         if (FORMAT_ALL.equalsIgnoreCase(format)) {
             if (outputFile != null) {
-                throw new IllegalArgumentException("Can't use output file " + outputFile + " with format '"
-                        + FORMAT_ALL + "', since it implies generating multiple files");
+                throw new IllegalArgumentException("Can't use output file " + outputFile + " with format '" + FORMAT_ALL
+                        + "', since it implies generating multiple files");
             }
             final List<SbomResult> result = new ArrayList<>(SUPPORTED_FORMATS.size());
             for (String format : SUPPORTED_FORMATS) {
@@ -281,7 +281,8 @@ public class CycloneDxSbomGenerator {
                 || component.getLicenseChoice().getLicenses().isEmpty()) {
             // If we don't already have license information, retrieve it.
             if (model.getLicenses() != null) {
-                component.setLicenseChoice(resolveMavenLicenses(model.getLicenses(), schemaVersion, includeLicenseText));
+                component
+                        .setLicenseChoice(resolveMavenLicenses(model.getLicenses(), schemaVersion, includeLicenseText));
             }
         }
         if (Version.VERSION_10 != schemaVersion) {
@@ -290,16 +291,18 @@ public class CycloneDxSbomGenerator {
                 addExternalReference(ExternalReference.Type.BUILD_SYSTEM, model.getCiManagement().getUrl(), component);
             }
             if (model.getDistributionManagement() != null) {
-                addExternalReference(ExternalReference.Type.DISTRIBUTION, model.getDistributionManagement().getDownloadUrl(),
-                        component);
+                addExternalReference(ExternalReference.Type.DISTRIBUTION,
+                        model.getDistributionManagement().getDownloadUrl(), component);
                 if (model.getDistributionManagement().getRepository() != null) {
-                    ExternalReference.Type type = (schemaVersion.getVersion() < 1.5) ? ExternalReference.Type.DISTRIBUTION
+                    ExternalReference.Type type = (schemaVersion.getVersion() < 1.5)
+                            ? ExternalReference.Type.DISTRIBUTION
                             : ExternalReference.Type.DISTRIBUTION_INTAKE;
                     addExternalReference(type, model.getDistributionManagement().getRepository().getUrl(), component);
                 }
             }
             if (model.getIssueManagement() != null) {
-                addExternalReference(ExternalReference.Type.ISSUE_TRACKER, model.getIssueManagement().getUrl(), component);
+                addExternalReference(ExternalReference.Type.ISSUE_TRACKER, model.getIssueManagement().getUrl(),
+                        component);
             }
             if (model.getMailingLists() != null && !model.getMailingLists().isEmpty()) {
                 for (MailingList list : model.getMailingLists()) {
@@ -322,11 +325,13 @@ public class CycloneDxSbomGenerator {
         for (org.apache.maven.model.License artifactLicense : projectLicenses) {
             boolean resolved = false;
             if (artifactLicense.getName() != null) {
-                final LicenseChoice resolvedByName = LicenseResolver.resolve(artifactLicense.getName(), includeLicenseText);
+                final LicenseChoice resolvedByName = LicenseResolver.resolve(artifactLicense.getName(),
+                        includeLicenseText);
                 resolved = resolveLicenseInfo(licenseChoice, resolvedByName, schemaVersion);
             }
             if (artifactLicense.getUrl() != null && !resolved) {
-                final LicenseChoice resolvedByUrl = LicenseResolver.resolve(artifactLicense.getUrl(), includeLicenseText);
+                final LicenseChoice resolvedByUrl = LicenseResolver.resolve(artifactLicense.getUrl(),
+                        includeLicenseText);
                 resolved = resolveLicenseInfo(licenseChoice, resolvedByUrl, schemaVersion);
             }
             if (artifactLicense.getName() != null && !resolved) {
@@ -396,11 +401,8 @@ public class CycloneDxSbomGenerator {
         }
         final PackageURL purl;
         try {
-            purl = new PackageURL(PackageURL.StandardTypes.MAVEN,
-                    dep.getGroupId(),
-                    dep.getArtifactId(),
-                    dep.getVersion(),
-                    qualifiers, null);
+            purl = new PackageURL(PackageURL.StandardTypes.MAVEN, dep.getGroupId(), dep.getArtifactId(),
+                    dep.getVersion(), qualifiers, null);
         } catch (MalformedPackageURLException e) {
             throw new RuntimeException("Failed to generate Purl for " + dep.toCompactCoords(), e);
         }
@@ -595,7 +597,8 @@ public class CycloneDxSbomGenerator {
     private static ArtifactCoords getMavenArtifact(Path toolLocation) {
         final List<ArtifactCoords> toolArtifact = new ArrayList<>(1);
         PathTree.ofDirectoryOrArchive(toolLocation).walkIfContains("META-INF/maven", visit -> {
-            if (!Files.isDirectory(visit.getPath()) && visit.getPath().getFileName().toString().equals("pom.properties")) {
+            if (!Files.isDirectory(visit.getPath())
+                    && visit.getPath().getFileName().toString().equals("pom.properties")) {
                 try (BufferedReader reader = Files.newBufferedReader(visit.getPath())) {
                     var props = new Properties();
                     props.load(reader);

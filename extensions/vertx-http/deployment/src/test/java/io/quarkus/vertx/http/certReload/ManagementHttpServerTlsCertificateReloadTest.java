@@ -44,10 +44,8 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.net.PemTrustOptions;
 import io.vertx.ext.web.RoutingContext;
 
-@Certificates(baseDir = "target/certificates", certificates = {
-        @Certificate(name = "reload-C", formats = Format.PEM),
-        @Certificate(name = "reload-D", formats = Format.PEM, duration = 365),
-})
+@Certificates(baseDir = "target/certificates", certificates = { @Certificate(name = "reload-C", formats = Format.PEM),
+        @Certificate(name = "reload-D", formats = Format.PEM, duration = 365), })
 @DisabledOnOs(OS.WINDOWS)
 public class ManagementHttpServerTlsCertificateReloadTest {
 
@@ -60,12 +58,12 @@ public class ManagementHttpServerTlsCertificateReloadTest {
             quarkus.management.ssl.certificate.key-files=%s
 
             loc=%s
-            """.formatted(temp.getAbsolutePath() + "/tls.crt", temp.getAbsolutePath() + "/tls.key", temp.getAbsolutePath());
+            """.formatted(temp.getAbsolutePath() + "/tls.crt", temp.getAbsolutePath() + "/tls.key",
+            temp.getAbsolutePath());
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties"))
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties"))
             .setBeforeAllCustomizer(() -> {
                 try {
                     // Prepare a random directory to store the certificates.
@@ -79,9 +77,7 @@ public class ManagementHttpServerTlsCertificateReloadTest {
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
-            })
-            .addBuildChainCustomizer(buildCustomizer())
-            .setAfterAllCustomizer(() -> {
+            }).addBuildChainCustomizer(buildCustomizer()).setAfterAllCustomizer(() -> {
                 try {
                     Files.deleteIfExists(new File(temp, "/tls.crt").toPath());
                     Files.deleteIfExists(new File(temp, "/tls.key").toPath());
@@ -99,16 +95,12 @@ public class ManagementHttpServerTlsCertificateReloadTest {
                 builder.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        NonApplicationRootPathBuildItem buildItem = context.consume(NonApplicationRootPathBuildItem.class);
-                        context.produce(buildItem.routeBuilder()
-                                .management()
-                                .route("/hello")
-                                .handler(new MyHandler())
-                                .build());
+                        NonApplicationRootPathBuildItem buildItem = context
+                                .consume(NonApplicationRootPathBuildItem.class);
+                        context.produce(
+                                buildItem.routeBuilder().management().route("/hello").handler(new MyHandler()).build());
                     }
-                }).produces(RouteBuildItem.class)
-                        .consumes(NonApplicationRootPathBuildItem.class)
-                        .build();
+                }).produces(RouteBuildItem.class).consumes(NonApplicationRootPathBuildItem.class).build();
             }
         };
     }
@@ -121,44 +113,33 @@ public class ManagementHttpServerTlsCertificateReloadTest {
 
     @Test
     void test() throws IOException, ExecutionException, InterruptedException, TimeoutException {
-        var options = new HttpClientOptions()
-                .setSsl(true)
-                .setDefaultPort(9001) // Management interface test port
+        var options = new HttpClientOptions().setSsl(true).setDefaultPort(9001) // Management interface test port
                 .setDefaultHost("localhost")
                 .setTrustOptions(new PemTrustOptions().addCertPath(new File(certs, "/ca.crt").getAbsolutePath()));
 
-        String response1 = vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/q/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        String response1 = vertx.createHttpClient(options).request(HttpMethod.GET, "/q/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         // Update certs
-        Files.copy(new File("target/certificates/reload-D.crt").toPath(),
-                new File(certs, "/tls.crt").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(new File("target/certificates/reload-D.key").toPath(),
-                new File(certs, "/tls.key").toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-D.crt").toPath(), new File(certs, "/tls.crt").toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(new File("target/certificates/reload-D.key").toPath(), new File(certs, "/tls.key").toPath(),
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 
         // Trigger the reload
         TlsCertificateReloader.reload().toCompletableFuture().get(10, TimeUnit.SECONDS);
 
         // The client truststore is not updated, thus it should fail.
-        assertThatThrownBy(() -> vertx.createHttpClient(options)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        assertThatThrownBy(() -> vertx.createHttpClient(options).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
 
         var options2 = new HttpClientOptions(options)
                 .setTrustOptions(new PemTrustOptions().addCertPath("target/certificates/reload-D-ca.crt"));
 
-        var response2 = vertx.createHttpClient(options2)
-                .request(HttpMethod.GET, "/hello")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
+        var response2 = vertx.createHttpClient(options2).request(HttpMethod.GET, "/hello")
+                .flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body).map(Buffer::toString)
                 .toCompletionStage().toCompletableFuture().join();
 
         assertThat(response1).isNotEqualTo(response2); // Because cert duration are different.

@@ -16,18 +16,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OidcClientRegistrationKeycloakDevServiceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(
-                            new StringAsset(
-                                    """
-                                            quarkus.oidc-client-registration.metadata.client-name=Default Test Client
-                                            quarkus.oidc-client-registration.metadata.redirect-uri=http://localhost:8081/default/redirect
-                                            quarkus.oidc-client-registration.named.metadata.client-name=Named Test Client
-                                            quarkus.oidc-client-registration.named.metadata.redirect-uri=http://localhost:8081/named/redirect
-                                            quarkus.oidc-client-registration.named.auth-server-url=${quarkus.oidc-client-registration.auth-server-url}
-                                            """),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addAsResource(
+            new StringAsset(
+                    """
+                            quarkus.oidc-client-registration.metadata.client-name=Default Test Client
+                            quarkus.oidc-client-registration.metadata.redirect-uri=http://localhost:8081/default/redirect
+                            quarkus.oidc-client-registration.named.metadata.client-name=Named Test Client
+                            quarkus.oidc-client-registration.named.metadata.redirect-uri=http://localhost:8081/named/redirect
+                            quarkus.oidc-client-registration.named.auth-server-url=${quarkus.oidc-client-registration.auth-server-url}
+                            """),
+            "application.properties"));
 
     @Inject
     TestClientRegistrations testClientRegistrations;

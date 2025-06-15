@@ -17,8 +17,7 @@ import jakarta.inject.Qualifier;
 import io.quarkus.hibernate.orm.PersistenceUnit;
 
 /**
- * CDI qualifier for beans representing an "extension" of Hibernate Search
- * in a given persistence unit of Hibernate ORM,
+ * CDI qualifier for beans representing an "extension" of Hibernate Search in a given persistence unit of Hibernate ORM,
  * i.e. beans injected into Hibernate Search as part of its configuration.
  * <p>
  * See the reference documentation for information about extensions that supports this annotation.
@@ -45,9 +44,7 @@ public @interface SearchExtension {
      */
     String index() default "";
 
-    class Literal
-            extends AnnotationLiteral<SearchExtension>
-            implements SearchExtension {
+    class Literal extends AnnotationLiteral<SearchExtension> implements SearchExtension {
 
         private final String persistenceUnit;
         private final String backend;

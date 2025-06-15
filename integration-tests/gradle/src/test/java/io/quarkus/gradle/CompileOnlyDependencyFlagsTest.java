@@ -29,18 +29,19 @@ public class CompileOnlyDependencyFlagsTest {
         final String componly = ArtifactCoords.jar("org.acme", "componly", "1.0.0-SNAPSHOT").toCompactCoords();
         final String common = ArtifactCoords.jar("org.acme", "common", "1.0.0-SNAPSHOT").toCompactCoords();
         final String bootstrapResolver = ArtifactCoords
-                .jar("io.quarkus", "quarkus-bootstrap-maven-resolver", System.getProperty("project.version")).toCompactCoords();
+                .jar("io.quarkus", "quarkus-bootstrap-maven-resolver", System.getProperty("project.version"))
+                .toCompactCoords();
         var expectedCompileOnly = Set.of(componly, common, bootstrapResolver);
 
         final Map<String, Map<String, Integer>> compileOnlyDeps;
         try (ProjectConnection connection = GradleConnector.newConnector()
                 .forProjectDirectory(new File(projectDir, "quarkus"))
-                .useGradleUserHomeDir(GradleUserHomeLookup.gradleUserHome())
-                .connect()) {
+                .useGradleUserHomeDir(GradleUserHomeLookup.gradleUserHome()).connect()) {
             final GradleActionOutcome<Map<String, Map<String, Integer>>> outcome = GradleActionOutcome.of();
             connection.action((BuildAction<Map<String, Map<String, Integer>>>) controller -> {
                 var result = new HashMap<String, Map<String, Integer>>();
-                result.put(LaunchMode.DEVELOPMENT.name(), readCompileOnlyDeps(controller, LaunchMode.DEVELOPMENT.name()));
+                result.put(LaunchMode.DEVELOPMENT.name(),
+                        readCompileOnlyDeps(controller, LaunchMode.DEVELOPMENT.name()));
                 result.put(LaunchMode.TEST.name(), readCompileOnlyDeps(controller, LaunchMode.TEST.name()));
                 result.put(LaunchMode.NORMAL.name(), readCompileOnlyDeps(controller, LaunchMode.NORMAL.name()));
                 return result;
@@ -53,55 +54,31 @@ public class CompileOnlyDependencyFlagsTest {
         // assertThat(compileOnly).containsOnlyKeys(expectedCompileOnly);
         // so I am not using the assertj api here
         assertEqual(compileOnly, expectedCompileOnly);
-        assertOnlyFlagsSet(common, compileOnly.get(common),
-                DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.RELOADABLE,
-                DependencyFlags.WORKSPACE_MODULE,
+        assertOnlyFlagsSet(common, compileOnly.get(common), DependencyFlags.COMPILE_ONLY, DependencyFlags.RUNTIME_CP,
+                DependencyFlags.DEPLOYMENT_CP, DependencyFlags.RELOADABLE, DependencyFlags.WORKSPACE_MODULE,
                 DependencyFlags.DIRECT);
-        assertOnlyFlagsSet(componly, compileOnly.get(componly),
-                DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.RELOADABLE,
-                DependencyFlags.WORKSPACE_MODULE,
-                DependencyFlags.DIRECT);
-        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
-                DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.CLASSLOADER_PARENT_FIRST);
+        assertOnlyFlagsSet(componly, compileOnly.get(componly), DependencyFlags.COMPILE_ONLY,
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP, DependencyFlags.RELOADABLE,
+                DependencyFlags.WORKSPACE_MODULE, DependencyFlags.DIRECT);
+        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver), DependencyFlags.COMPILE_ONLY,
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP, DependencyFlags.CLASSLOADER_PARENT_FIRST);
 
         compileOnly = compileOnlyDeps.get(LaunchMode.TEST.name());
         assertEqual(compileOnly, expectedCompileOnly);
-        assertOnlyFlagsSet(common, compileOnly.get(common),
-                DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.RELOADABLE,
-                DependencyFlags.WORKSPACE_MODULE,
+        assertOnlyFlagsSet(common, compileOnly.get(common), DependencyFlags.COMPILE_ONLY, DependencyFlags.RUNTIME_CP,
+                DependencyFlags.DEPLOYMENT_CP, DependencyFlags.RELOADABLE, DependencyFlags.WORKSPACE_MODULE,
                 DependencyFlags.DIRECT);
-        assertOnlyFlagsSet(componly, compileOnly.get(componly),
-                DependencyFlags.COMPILE_ONLY);
-        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
-                DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.CLASSLOADER_PARENT_FIRST,
-                DependencyFlags.DEPLOYMENT_CP);
+        assertOnlyFlagsSet(componly, compileOnly.get(componly), DependencyFlags.COMPILE_ONLY);
+        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver), DependencyFlags.COMPILE_ONLY,
+                DependencyFlags.CLASSLOADER_PARENT_FIRST, DependencyFlags.DEPLOYMENT_CP);
 
         compileOnly = compileOnlyDeps.get(LaunchMode.NORMAL.name());
         assertEqual(compileOnly, expectedCompileOnly);
-        assertOnlyFlagsSet(common, compileOnly.get(common),
-                DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.DIRECT);
-        assertOnlyFlagsSet(componly, compileOnly.get(componly),
-                DependencyFlags.COMPILE_ONLY);
-        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver),
-                DependencyFlags.COMPILE_ONLY,
-                DependencyFlags.CLASSLOADER_PARENT_FIRST,
-                DependencyFlags.DEPLOYMENT_CP);
+        assertOnlyFlagsSet(common, compileOnly.get(common), DependencyFlags.COMPILE_ONLY, DependencyFlags.RUNTIME_CP,
+                DependencyFlags.DEPLOYMENT_CP, DependencyFlags.DIRECT);
+        assertOnlyFlagsSet(componly, compileOnly.get(componly), DependencyFlags.COMPILE_ONLY);
+        assertOnlyFlagsSet(bootstrapResolver, compileOnly.get(bootstrapResolver), DependencyFlags.COMPILE_ONLY,
+                DependencyFlags.CLASSLOADER_PARENT_FIRST, DependencyFlags.DEPLOYMENT_CP);
     }
 
     private static void assertOnlyFlagsSet(String coords, int flags, int... expectedFlags) {
@@ -138,8 +115,9 @@ public class CompileOnlyDependencyFlagsTest {
         var model = controller.getModel(ApplicationModel.class, ModelParameter.class, mode -> mode.setMode(modeName));
         var result = new HashMap<String, Integer>();
         for (var d : model.getDependencies(DependencyFlags.COMPILE_ONLY)) {
-            result.put(ArtifactCoords.of(
-                    d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()).toCompactCoords(),
+            result.put(
+                    ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion())
+                            .toCompactCoords(),
                     d.getFlags());
         }
         return result;

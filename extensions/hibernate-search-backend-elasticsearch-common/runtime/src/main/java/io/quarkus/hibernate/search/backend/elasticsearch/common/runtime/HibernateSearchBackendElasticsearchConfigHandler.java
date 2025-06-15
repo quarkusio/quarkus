@@ -43,11 +43,9 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
     }
 
     private static void contributeBackendBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
-            MapperContext mapperContext,
-            String backendName, Set<String> indexNames,
+            MapperContext mapperContext, String backendName, Set<String> indexNames,
             HibernateSearchBackendElasticsearchBuildTimeConfig elasticsearchBackendConfig) {
-        addBackendConfig(propertyCollector, backendName, BackendSettings.TYPE,
-                ElasticsearchBackendSettings.TYPE_NAME);
+        addBackendConfig(propertyCollector, backendName, BackendSettings.TYPE, ElasticsearchBackendSettings.TYPE_NAME);
         if (elasticsearchBackendConfig != null) {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.VERSION,
                     elasticsearchBackendConfig.version());
@@ -64,13 +62,13 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
         for (String indexName : indexNames) {
             IndexConfig indexConfig = elasticsearchBackendConfig == null ? null
                     : elasticsearchBackendConfig.indexes().get(indexName);
-            contributeBackendIndexBuildTimeProperties(propertyCollector, mapperContext, backendName, indexName, indexConfig);
+            contributeBackendIndexBuildTimeProperties(propertyCollector, mapperContext, backendName, indexName,
+                    indexConfig);
         }
     }
 
     private static void contributeBackendIndexBuildTimeProperties(BiConsumer<String, Object> propertyCollector,
-            MapperContext mapperContext,
-            String backendName, String indexName, IndexConfig indexConfig) {
+            MapperContext mapperContext, String backendName, String indexName, IndexConfig indexConfig) {
         if (indexConfig != null) {
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_SETTINGS_FILE,
@@ -81,16 +79,14 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
         }
 
         // Settings that may default to a @SearchExtension-annotated-bean
-        addBackendIndexConfig(propertyCollector, backendName, indexName,
-                ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
+        addBackendIndexConfig(propertyCollector, backendName, indexName, ElasticsearchIndexSettings.ANALYSIS_CONFIGURER,
                 mapperContext.multiExtensionBeanReferencesFor(
                         indexConfig == null ? Optional.empty() : indexConfig.analysis().configurer(),
                         ElasticsearchAnalysisConfigurer.class, backendName, indexName));
     }
 
     public static void contributeBackendRuntimeProperties(BiConsumer<String, Object> propertyCollector,
-            MapperContext mapperContext,
-            Map<String, HibernateSearchBackendElasticsearchRuntimeConfig> backendConfigs) {
+            MapperContext mapperContext, Map<String, HibernateSearchBackendElasticsearchRuntimeConfig> backendConfigs) {
         // We need this weird collecting of names from both @SearchExtension and the configuration properties
         // because a backend/index could potentially be configured exclusively through configuration properties,
         // or exclusively through @SearchExtension.
@@ -110,8 +106,7 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
     }
 
     private static void contributeBackendRuntimeProperties(BiConsumer<String, Object> propertyCollector,
-            MapperContext mapperContext,
-            String backendName, Set<String> indexNames,
+            MapperContext mapperContext, String backendName, Set<String> indexNames,
             HibernateSearchBackendElasticsearchRuntimeConfig elasticsearchBackendConfig) {
         if (elasticsearchBackendConfig != null) {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.HOSTS,
@@ -142,14 +137,14 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
             addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_ENABLED,
                     elasticsearchBackendConfig.discovery().enabled());
             if (elasticsearchBackendConfig.discovery().enabled()) {
-                addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
+                addBackendConfig(propertyCollector, backendName,
+                        ElasticsearchBackendSettings.DISCOVERY_REFRESH_INTERVAL,
                         elasticsearchBackendConfig.discovery().refreshInterval().getSeconds());
             }
         }
 
         // Settings that may default to a @SearchExtension-annotated-bean
-        addBackendConfig(propertyCollector, backendName,
-                ElasticsearchBackendSettings.LAYOUT_STRATEGY,
+        addBackendConfig(propertyCollector, backendName, ElasticsearchBackendSettings.LAYOUT_STRATEGY,
                 mapperContext.singleExtensionBeanReferenceFor(
                         elasticsearchBackendConfig == null ? Optional.empty()
                                 : elasticsearchBackendConfig.layout().strategy(),
@@ -161,15 +156,17 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
 
         // Per-index properties
         for (String indexName : indexNames) {
-            HibernateSearchBackendElasticsearchRuntimeConfig.IndexConfig indexConfig = elasticsearchBackendConfig == null ? null
+            HibernateSearchBackendElasticsearchRuntimeConfig.IndexConfig indexConfig = elasticsearchBackendConfig == null
+                    ? null
                     : elasticsearchBackendConfig.indexes().get(indexName);
-            contributeBackendIndexRuntimeProperties(propertyCollector, mapperContext, backendName, indexName, indexConfig);
+            contributeBackendIndexRuntimeProperties(propertyCollector, mapperContext, backendName, indexName,
+                    indexConfig);
         }
     }
 
     private static void contributeBackendIndexRuntimeProperties(BiConsumer<String, Object> propertyCollector,
-            MapperContext mapperContext,
-            String backendName, String indexName, HibernateSearchBackendElasticsearchRuntimeConfig.IndexConfig indexConfig) {
+            MapperContext mapperContext, String backendName, String indexName,
+            HibernateSearchBackendElasticsearchRuntimeConfig.IndexConfig indexConfig) {
         if (indexConfig != null) {
             addBackendIndexConfig(propertyCollector, backendName, indexName,
                     ElasticsearchIndexSettings.SCHEMA_MANAGEMENT_MINIMAL_REQUIRED_STATUS,
@@ -179,14 +176,11 @@ public final class HibernateSearchBackendElasticsearchConfigHandler {
                     indexConfig.schemaManagement().requiredStatusWaitTimeout(), Optional::isPresent,
                     d -> d.get().toMillis());
             addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT,
-                    indexConfig.indexing().queueCount());
+                    ElasticsearchIndexSettings.INDEXING_QUEUE_COUNT, indexConfig.indexing().queueCount());
             addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE,
-                    indexConfig.indexing().queueSize());
+                    ElasticsearchIndexSettings.INDEXING_QUEUE_SIZE, indexConfig.indexing().queueSize());
             addBackendIndexConfig(propertyCollector, backendName, indexName,
-                    ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE,
-                    indexConfig.indexing().maxBulkSize());
+                    ElasticsearchIndexSettings.INDEXING_MAX_BULK_SIZE, indexConfig.indexing().maxBulkSize());
         }
 
         // Settings that may default to a @SearchExtension-annotated-bean

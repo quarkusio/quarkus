@@ -14,13 +14,11 @@ public class LRAOpenAPIExcludedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addAsResource(new StringAsset("quarkus.lra.openapi.included=false"),
-                    "application.properties"));
+            .addAsResource(new StringAsset("quarkus.lra.openapi.included=false"), "application.properties"));
 
     @Test
     public void testLRAExcluded() {
-        RestAssured.when().get("/q/openapi").then()
-                .body(not(containsString("lraproxy")), not(containsString("lra-participant-proxy")),
-                        not(containsString("LRAStatus")));
+        RestAssured.when().get("/q/openapi").then().body(not(containsString("lraproxy")),
+                not(containsString("lra-participant-proxy")), not(containsString("LRAStatus")));
     }
 }

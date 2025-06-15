@@ -23,11 +23,8 @@ public class MultiCompositeBuildExtensionsDevModeTest extends QuarkusDevGradleTe
 
     protected void testDevMode() throws Exception {
 
-        assertThat(getHttpResponse())
-                .contains("ready")
-                .contains("my-quarkus-project")
-                .contains("org.acme.quarkus.sample")
-                .contains("1.0-SNAPSHOT");
+        assertThat(getHttpResponse()).contains("ready").contains("my-quarkus-project")
+                .contains("org.acme.quarkus.sample").contains("1.0-SNAPSHOT");
 
         assertThat(getHttpResponse("/hello")).contains("hello from LibB and LibA extension enabled: false");
 
@@ -35,8 +32,7 @@ public class MultiCompositeBuildExtensionsDevModeTest extends QuarkusDevGradleTe
                 ImmutableMap.of("return \"LibA\";", "return \"modifiedA\";"));
         replace("libraries/libraryB/src/main/java/org/acme/libb/LibB.java",
                 ImmutableMap.of("return \"LibB\";", "return \"modifiedB\";"));
-        replace("application/src/main/resources/application.properties",
-                ImmutableMap.of("false", "true"));
+        replace("application/src/main/resources/application.properties", ImmutableMap.of("false", "true"));
 
         assertThat(getHttpResponse("/hello")).contains("hello from LibB and LibA extension enabled: true");
     }
@@ -47,7 +43,8 @@ public class MultiCompositeBuildExtensionsDevModeTest extends QuarkusDevGradleTe
         final File appProperties = new File(projectDir, "application/gradle.properties");
         final File libsProperties = new File(projectDir, "libraries/gradle.properties");
         final File extensionProperties = new File(projectDir, "extensions/example-extension/gradle.properties");
-        final File anotherExtensionProperties = new File(projectDir, "extensions/another-example-extension/gradle.properties");
+        final File anotherExtensionProperties = new File(projectDir,
+                "extensions/another-example-extension/gradle.properties");
         final Path projectProperties = projectDir.toPath().resolve("gradle.properties");
 
         try {

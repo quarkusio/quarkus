@@ -12,21 +12,16 @@ public class LargeResponseTest {
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(LargeResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(LargeResource.class));
 
     @Test
     public void testLargeResponseMultipleOfBuffer() {
-        RestAssured.get("/large/bufmult").then()
-                .statusCode(200)
-                .body("key500", equalTo("value500"));
+        RestAssured.get("/large/bufmult").then().statusCode(200).body("key500", equalTo("value500"));
     }
 
     @Test
     public void testLargeResponse() {
-        RestAssured.get("/large/huge").then()
-                .statusCode(200)
-                .body("key500", equalTo("value500"));
+        RestAssured.get("/large/huge").then().statusCode(200).body("key500", equalTo("value500"));
     }
 
 }

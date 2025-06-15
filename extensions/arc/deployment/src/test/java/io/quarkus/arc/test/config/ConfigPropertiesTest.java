@@ -20,23 +20,12 @@ import io.smallrye.config.WithDefault;
 
 public class ConfigPropertiesTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "smallrye.config.mapping.validate-unknown=false\n" +
-                                    "server.host=localhost\n" +
-                                    "server.port=8080\n" +
-                                    "server.reasons.200=OK Server\n" +
-                                    "server.reasons.201=Created Server\n" +
-                                    "cloud.host=cloud\n" +
-                                    "cloud.port=9090\n" +
-                                    "cloud.reasons.200=OK Cloud\n" +
-                                    "cloud.reasons.201=Created Cloud\n" +
-                                    "host=empty\n" +
-                                    "port=0\n" +
-                                    "reasons.200=OK\n" +
-                                    "reasons.201=Created\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("smallrye.config.mapping.validate-unknown=false\n"
+                    + "server.host=localhost\n" + "server.port=8080\n" + "server.reasons.200=OK Server\n"
+                    + "server.reasons.201=Created Server\n" + "cloud.host=cloud\n" + "cloud.port=9090\n"
+                    + "cloud.reasons.200=OK Cloud\n" + "cloud.reasons.201=Created Cloud\n" + "host=empty\n" + "port=0\n"
+                    + "reasons.200=OK\n" + "reasons.201=Created\n"), "application.properties"));
 
     @Inject
     Server server;

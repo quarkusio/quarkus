@@ -23,9 +23,8 @@ public @interface MethodProperties {
     boolean exposed() default true;
 
     /**
-     * URL path segment that should be used to access this operation.
-     * This path segment is appended to the segment specified with the {@link ResourceProperties} annotation used on this
-     * resource.
+     * URL path segment that should be used to access this operation. This path segment is appended to the segment
+     * specified with the {@link ResourceProperties} annotation used on this resource.
      * <p>
      * Default: ""
      */

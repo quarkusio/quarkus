@@ -79,9 +79,7 @@ public class SimpleQuarkusRestResource {
 
     @POST
     @Path("params/{p}")
-    public String params(@PathParam("p") String p,
-            @QueryParam("q") String q,
-            @HeaderParam("h") int h,
+    public String params(@PathParam("p") String p, @QueryParam("q") String q, @HeaderParam("h") int h,
             @FormParam("f") String f) {
         return "params: p: " + p + ", q: " + q + ", h: " + h + ", f: " + f;
     }
@@ -186,13 +184,15 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("feature-filters")
     public Response featureFilters(@Context HttpHeaders headers) {
-        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request")).build();
+        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request"))
+                .build();
     }
 
     @GET
     @Path("dynamic-feature-filters")
     public Response dynamicFeatureFilters(@Context HttpHeaders headers) {
-        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request")).build();
+        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request"))
+                .build();
     }
 
     @GET
@@ -362,10 +362,8 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("resource-info")
     public Response resourceInfo(@Context ResourceInfo resourceInfo, @Context HttpHeaders headers) {
-        return Response.ok()
-                .header("class-name", resourceInfo.getResourceClass().getSimpleName())
-                .header("method-name", headers.getHeaderString("method-name"))
-                .build();
+        return Response.ok().header("class-name", resourceInfo.getResourceClass().getSimpleName())
+                .header("method-name", headers.getHeaderString("method-name")).build();
     }
 
     @Path("form-map")

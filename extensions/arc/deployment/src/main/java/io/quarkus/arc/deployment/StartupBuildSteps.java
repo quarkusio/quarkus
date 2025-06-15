@@ -57,40 +57,36 @@ public class StartupBuildSteps {
             InjectableBean.class, String.class);
     static final MethodDescriptor ARC_CONTAINER_INSTANCE = MethodDescriptor.ofMethod(ArcContainer.class, "instance",
             InstanceHandle.class, InjectableBean.class);
-    static final MethodDescriptor INSTANCE_HANDLE_GET = MethodDescriptor.ofMethod(InstanceHandle.class, "get", Object.class);
+    static final MethodDescriptor INSTANCE_HANDLE_GET = MethodDescriptor.ofMethod(InstanceHandle.class, "get",
+            Object.class);
     static final MethodDescriptor CLIENT_PROXY_CONTEXTUAL_INSTANCE = MethodDescriptor.ofMethod(ClientProxy.class,
             "arc_contextualInstance", Object.class);
-    static final MethodDescriptor CONTEXTUAL_CREATE = MethodDescriptor.ofMethod(Contextual.class,
-            "create", Object.class, CreationalContext.class);
-    static final MethodDescriptor CONTEXTUAL_DESTROY = MethodDescriptor.ofMethod(Contextual.class,
-            "destroy", void.class, Object.class, CreationalContext.class);
+    static final MethodDescriptor CONTEXTUAL_CREATE = MethodDescriptor.ofMethod(Contextual.class, "create",
+            Object.class, CreationalContext.class);
+    static final MethodDescriptor CONTEXTUAL_DESTROY = MethodDescriptor.ofMethod(Contextual.class, "destroy",
+            void.class, Object.class, CreationalContext.class);
 
     private static final Logger LOG = Logger.getLogger(StartupBuildSteps.class);
 
     @BuildStep
     AutoAddScopeBuildItem addScope(CustomScopeAnnotationsBuildItem customScopes) {
         // Class with no built-in scope annotation but with @Startup annotation
-        return AutoAddScopeBuildItem.builder()
-                .defaultScope(BuiltinScope.APPLICATION)
-                .match(new MatchPredicate() {
-                    @Override
-                    public boolean test(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index) {
-                        if (Annotations.contains(annotations, STARTUP_NAME)) {
-                            // Class annotated with @Startup
-                            return true;
-                        }
-                        for (MethodInfo method : clazz.methods()) {
-                            if (method.hasAnnotation(STARTUP_NAME)
-                                    && !method.hasAnnotation(DotNames.PRODUCES)) {
-                                // @Startup methods but not producers
-                                return true;
-                            }
-                        }
-                        return false;
+        return AutoAddScopeBuildItem.builder().defaultScope(BuiltinScope.APPLICATION).match(new MatchPredicate() {
+            @Override
+            public boolean test(ClassInfo clazz, Collection<AnnotationInstance> annotations, IndexView index) {
+                if (Annotations.contains(annotations, STARTUP_NAME)) {
+                    // Class annotated with @Startup
+                    return true;
+                }
+                for (MethodInfo method : clazz.methods()) {
+                    if (method.hasAnnotation(STARTUP_NAME) && !method.hasAnnotation(DotNames.PRODUCES)) {
+                        // @Startup methods but not producers
+                        return true;
                     }
-                })
-                .reason("Found classes containing @Startup annotation.")
-                .build();
+                }
+                return false;
+            }
+        }).reason("Found classes containing @Startup annotation.").build();
     }
 
     @BuildStep
@@ -136,22 +132,20 @@ public class StartupBuildSteps {
                             priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, null);
                 }
                 if (target.kind() == Kind.CLASS) {
-                    // If the target is a class then collect all non-static non-producer no-args methods annotated with @Startup
+                    // If the target is a class then collect all non-static non-producer no-args methods annotated with
+                    // @Startup
                     List<MethodInfo> startupMethods = new ArrayList<>();
                     for (MethodInfo method : target.asClass().methods()) {
                         if (annotationStore.hasAnnotation(method, STARTUP_NAME)) {
-                            if (!method.isSynthetic()
-                                    && !Modifier.isPrivate(method.flags())
-                                    && !Modifier.isStatic(method.flags())
-                                    && method.parametersCount() == 0
+                            if (!method.isSynthetic() && !Modifier.isPrivate(method.flags())
+                                    && !Modifier.isStatic(method.flags()) && method.parametersCount() == 0
                                     && !annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
                                 startupMethods.add(method);
                             } else {
                                 if (!annotationStore.hasAnnotation(method, DotNames.PRODUCES)) {
                                     // Producer methods annotated with @Startup are valid and processed above
                                     LOG.warnf("Ignored an invalid @Startup method declared on %s: %s",
-                                            method.declaringClass().name(),
-                                            method);
+                                            method.declaringClass().name(), method);
                                 }
                             }
                         }
@@ -159,7 +153,8 @@ public class StartupBuildSteps {
                     if (!startupMethods.isEmpty()) {
                         for (MethodInfo method : startupMethods) {
                             AnnotationValue priority = annotationStore.getAnnotation(method, STARTUP_NAME).value();
-                            registerStartupObserver(observerRegistration, bean, bean.getIdentifier() + method.toString(),
+                            registerStartupObserver(observerRegistration, bean,
+                                    bean.getIdentifier() + method.toString(),
                                     priority != null ? priority.asInt() : ObserverMethod.DEFAULT_PRIORITY, method);
                         }
                     }
@@ -168,10 +163,9 @@ public class StartupBuildSteps {
         }
     }
 
-    private void registerStartupObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean, String id,
-            int priority, MethodInfo startupMethod) {
-        ObserverConfigurator configurator = observerRegistration.getContext().configure()
-                .beanClass(bean.getBeanClass())
+    private void registerStartupObserver(ObserverRegistrationPhaseBuildItem observerRegistration, BeanInfo bean,
+            String id, int priority, MethodInfo startupMethod) {
+        ObserverConfigurator configurator = observerRegistration.getContext().configure().beanClass(bean.getBeanClass())
                 .observedType(StartupEvent.class);
         configurator.id(id);
         configurator.priority(priority);
@@ -181,11 +175,13 @@ public class StartupBuildSteps {
             ResultHandle beanHandle = mc.invokeInterfaceMethod(ARC_CONTAINER_BEAN, containerHandle,
                     mc.load(bean.getIdentifier()));
 
-            // if the [synthetic] bean is not active and is not injected in an always-active bean, skip obtaining the instance
+            // if the [synthetic] bean is not active and is not injected in an always-active bean, skip obtaining the
+            // instance
             // this means that an inactive bean that is injected into an always-active bean will end up with an error
             if (bean.canBeInactive()) {
                 boolean isInjectedInAlwaysActiveBean = false;
-                for (InjectionPointInfo ip : observerRegistration.getBeanProcessor().getBeanDeployment().getInjectionPoints()) {
+                for (InjectionPointInfo ip : observerRegistration.getBeanProcessor().getBeanDeployment()
+                        .getInjectionPoints()) {
                     if (bean.equals(ip.getResolvedBean()) && ip.getTargetBean().isPresent()
                             && !ip.getTargetBean().get().canBeInactive()) {
                         isInjectedInAlwaysActiveBean = true;
@@ -195,8 +191,7 @@ public class StartupBuildSteps {
 
                 if (!isInjectedInAlwaysActiveBean) {
                     ResultHandle isActive = mc.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(InjectableBean.class, "isActive", boolean.class),
-                            beanHandle);
+                            MethodDescriptor.ofMethod(InjectableBean.class, "isActive", boolean.class), beanHandle);
                     mc.ifFalse(isActive).trueBranch().returnVoid();
                 }
             }
@@ -204,11 +199,9 @@ public class StartupBuildSteps {
             if (BuiltinScope.DEPENDENT.is(bean.getScope())) {
                 // It does not make a lot of sense to support @Startup dependent beans but it's still a valid use case
                 ResultHandle creationalContext = mc.newInstance(
-                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class),
-                        beanHandle);
+                        MethodDescriptor.ofConstructor(CreationalContextImpl.class, Contextual.class), beanHandle);
                 // Create a dependent instance
-                ResultHandle instance = mc.invokeInterfaceMethod(CONTEXTUAL_CREATE, beanHandle,
-                        creationalContext);
+                ResultHandle instance = mc.invokeInterfaceMethod(CONTEXTUAL_CREATE, beanHandle, creationalContext);
                 if (startupMethod != null) {
                     TryBlock tryBlock = mc.tryBlock();
                     tryBlock.invokeVirtualMethod(MethodDescriptor.of(startupMethod), instance);

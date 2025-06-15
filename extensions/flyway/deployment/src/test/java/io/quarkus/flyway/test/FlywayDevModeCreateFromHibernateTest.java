@@ -37,13 +37,11 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
             .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addClasses(FlywayDevModeCreateFromHibernateTest.class, Endpoint.class, Fruit.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.flyway.locations=db/create"), "application.properties"));
+                    .addAsResource(new StringAsset("quarkus.flyway.locations=db/create"), "application.properties"));
 
     @Test
     public void testGenerateMigrationFromHibernate() throws Exception {
-        RestAssured.get("fruit").then().statusCode(200)
-                .body("[0].name", CoreMatchers.is("Orange"));
+        RestAssured.get("fruit").then().statusCode(200).body("[0].name", CoreMatchers.is("Orange"));
 
         Map<String, Object> params = Map.of("ds", "<default>");
         JsonNode devuiresponse = super.executeJsonRPCMethod("create", params);
@@ -53,21 +51,13 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
         Assertions.assertNotNull(type);
         Assertions.assertEquals("success", type);
 
-        config.modifySourceFile(Fruit.class, s -> s.replace("Fruit {", "Fruit {\n" +
-                "    \n" +
-                "    private String color;\n" +
-                "\n" +
-                "    public String getColor() {\n" +
-                "        return color;\n" +
-                "    }\n" +
-                "\n" +
-                "    public Fruit setColor(String color) {\n" +
-                "        this.color = color;\n" +
-                "        return this;\n" +
-                "    }"));
-        //added a field, should now fail (if hibernate were still in charge this would work)
+        config.modifySourceFile(Fruit.class, s -> s.replace("Fruit {",
+                "Fruit {\n" + "    \n" + "    private String color;\n" + "\n" + "    public String getColor() {\n"
+                        + "        return color;\n" + "    }\n" + "\n" + "    public Fruit setColor(String color) {\n"
+                        + "        this.color = color;\n" + "        return this;\n" + "    }"));
+        // added a field, should now fail (if hibernate were still in charge this would work)
         RestAssured.get("fruit").then().statusCode(500);
-        //now update out sql
+        // now update out sql
         config.modifyResourceFile("db/create/V1.0.0__quarkus-flyway-deployment.sql", new Function<String, String>() {
             @Override
             public String apply(String s) {
@@ -75,8 +65,8 @@ public class FlywayDevModeCreateFromHibernateTest extends DevUIJsonRPCTest {
             }
         });
         // TODO: This still fails.
-        //        RestAssured.get("fruit").then().statusCode(200)
-        //                .body("[0].name", CoreMatchers.is("Orange"));
+        // RestAssured.get("fruit").then().statusCode(200)
+        // .body("[0].name", CoreMatchers.is("Orange"));
     }
 
     @Path("/fruit")

@@ -10,10 +10,8 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 
 public class AzureFunctionsHttpCodestartTest {
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("azure-functions-http")
-            .languages(JAVA)
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("azure-functions-http")
+            .languages(JAVA).build();
 
     @Test
     @EnabledIfSystemProperty(named = "build-projects", matches = "true")

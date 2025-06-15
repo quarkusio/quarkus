@@ -4,7 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-public interface DockerContainerArtifactLauncher extends ArtifactLauncher<DockerContainerArtifactLauncher.DockerInitContext> {
+public interface DockerContainerArtifactLauncher
+        extends ArtifactLauncher<DockerContainerArtifactLauncher.DockerInitContext> {
 
     interface DockerInitContext extends InitContext {
 

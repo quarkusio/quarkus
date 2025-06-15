@@ -19,16 +19,12 @@ public interface ConfigItemCollection {
 
     @JsonIgnore
     default List<AbstractConfigItem> getNonDeprecatedProperties() {
-        return getItems().stream()
-                .filter(i -> i instanceof ConfigProperty && !i.isDeprecated())
-                .toList();
+        return getItems().stream().filter(i -> i instanceof ConfigProperty && !i.isDeprecated()).toList();
     }
 
     @JsonIgnore
     default List<AbstractConfigItem> getNonDeprecatedSections() {
-        return getItems().stream()
-                .filter(i -> i instanceof ConfigSection && !i.isDeprecated())
-                .toList();
+        return getItems().stream().filter(i -> i instanceof ConfigSection && !i.isDeprecated()).toList();
     }
 
     void addItem(AbstractConfigItem item);

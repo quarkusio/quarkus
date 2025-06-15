@@ -61,7 +61,8 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
                                     return blockingExecutor.executeBlocking(new Supplier<PathConfig>() {
                                         @Override
                                         public PathConfig get() {
-                                            return policyEnforcer.getPathMatcher().matches(routingContext.normalizedPath());
+                                            return policyEnforcer.getPathMatcher()
+                                                    .matches(routingContext.normalizedPath());
                                         }
                                     }).flatMap(new Function<PathConfig, Uni<? extends CheckResult>>() {
                                         @Override
@@ -97,21 +98,21 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
         } else if (BlockingOperationControl.isBlockingAllowed()) {
             OidcTenantConfig tenantConfig = routingContext == null ? null
                     : routingContext.get(OidcTenantConfig.class.getName());
-            return resolver.resolvePolicyEnforcer(routingContext, tenantConfig)
-                    .await().indefinitely()
-                    .getAuthzClient();
+            return resolver.resolvePolicyEnforcer(routingContext, tenantConfig).await().indefinitely().getAuthzClient();
         } else {
             if (resolver instanceof DefaultPolicyEnforcerResolver defaultResolver
                     && !defaultResolver.hasDynamicPolicyEnforcers()) {
-                return defaultResolver.getStaticPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE)).getAuthzClient();
+                return defaultResolver.getStaticPolicyEnforcer(identity.getAttribute(TENANT_ID_ATTRIBUTE))
+                        .getAuthzClient();
             } else {
                 // this shouldn't happen inside HTTP request as policy enforcer is in most cases accessible from context
                 // and the Authz client itself is blocking so users can as well inject it when on the worker thread
-                throw new BlockingOperationNotAllowedException("""
-                        You have attempted to inject AuthzClient on a IO thread.
-                        This is not allowed when PolicyEnforcer is resolved dynamically as blocking operations are required.
-                        Make sure you are injecting AuthzClient from a worker thread.
-                        """);
+                throw new BlockingOperationNotAllowedException(
+                        """
+                                You have attempted to inject AuthzClient on a IO thread.
+                                This is not allowed when PolicyEnforcer is resolved dynamically as blocking operations are required.
+                                Make sure you are injecting AuthzClient from a worker thread.
+                                """);
             }
         }
     }
@@ -124,7 +125,8 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
             return CheckResult.permit();
         }
 
-        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, credential.getToken(), resolver.getReadTimeout());
+        VertxHttpFacade httpFacade = new VertxHttpFacade(routingContext, credential.getToken(),
+                resolver.getReadTimeout());
         return resolver.resolvePolicyEnforcer(routingContext, routingContext.get(OidcTenantConfig.class.getName()))
                 .flatMap(new Function<PolicyEnforcer, Uni<? extends AuthorizationContext>>() {
                     @Override
@@ -153,9 +155,7 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
     }
 
     private static SecurityIdentity enhanceSecurityIdentity(SecurityIdentity current, AuthorizationContext context) {
-        return QuarkusSecurityIdentity
-                .builder(current)
-                .addAttribute(PERMISSIONS_ATTRIBUTE, context.getPermissions())
+        return QuarkusSecurityIdentity.builder(current).addAttribute(PERMISSIONS_ATTRIBUTE, context.getPermissions())
                 .addPermissionChecker(new Function<Permission, Uni<Boolean>>() {
                     @Override
                     public Uni<Boolean> apply(Permission permission) {
@@ -173,7 +173,6 @@ public class KeycloakPolicyEnforcerAuthorizer implements HttpSecurityPolicy {
 
                         return Uni.createFrom().item(true);
                     }
-                })
-                .build();
+                }).build();
     }
 }

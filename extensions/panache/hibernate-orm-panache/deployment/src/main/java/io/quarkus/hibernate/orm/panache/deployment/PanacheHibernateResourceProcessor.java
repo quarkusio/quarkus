@@ -76,7 +76,8 @@ public final class PanacheHibernateResourceProcessor {
     @BuildStep
     void collectEntityClasses(CombinedIndexBuildItem index, BuildProducer<PanacheEntityClassBuildItem> entityClasses) {
         // NOTE: we don't skip abstract/generic entities because they still need accessors
-        for (ClassInfo panacheEntityBaseSubclass : index.getIndex().getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
+        for (ClassInfo panacheEntityBaseSubclass : index.getIndex()
+                .getAllKnownSubclasses(DOTNAME_PANACHE_ENTITY_BASE)) {
             // FIXME: should we really skip PanacheEntity or all MappedSuperClass?
             if (!panacheEntityBaseSubclass.name().equals(DOTNAME_PANACHE_ENTITY)) {
                 entityClasses.produce(new PanacheEntityClassBuildItem(panacheEntityBaseSubclass));
@@ -87,9 +88,7 @@ public final class PanacheHibernateResourceProcessor {
     @BuildStep
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
     @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
-    void build(
-            CombinedIndexBuildItem index,
-            BuildProducer<BytecodeTransformerBuildItem> transformers,
+    void build(CombinedIndexBuildItem index, BuildProducer<BytecodeTransformerBuildItem> transformers,
             List<PanacheEntityClassBuildItem> entityClasses,
             Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
             List<PanacheMethodCustomizerBuildItem> methodCustomizersBuildItems,
@@ -107,14 +106,14 @@ public final class PanacheHibernateResourceProcessor {
                 continue;
             if (daoEnhancer.skipRepository(classInfo))
                 continue;
-            List<org.jboss.jandex.Type> typeParameters = JandexUtil
-                    .resolveTypeParameters(classInfo.name(), DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex());
+            List<org.jboss.jandex.Type> typeParameters = JandexUtil.resolveTypeParameters(classInfo.name(),
+                    DOTNAME_PANACHE_REPOSITORY_BASE, index.getIndex());
             panacheEntities.add(typeParameters.get(0).name().toString());
             transformers.produce(new BytecodeTransformerBuildItem(classInfo.name().toString(), daoEnhancer));
         }
 
-        PanacheJpaEntityOperationsEnhancer entityOperationsEnhancer = new PanacheJpaEntityOperationsEnhancer(index.getIndex(),
-                methodCustomizers, JavaJpaTypeBundle.BUNDLE);
+        PanacheJpaEntityOperationsEnhancer entityOperationsEnhancer = new PanacheJpaEntityOperationsEnhancer(
+                index.getIndex(), methodCustomizers, JavaJpaTypeBundle.BUNDLE);
         Set<String> modelClasses = new HashSet<>();
         for (PanacheEntityClassBuildItem entityClass : entityClasses) {
             String entityClassName = entityClass.get().name().toString();
@@ -130,7 +129,8 @@ public final class PanacheHibernateResourceProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void recordEntityToPersistenceUnit(List<EntityToPersistenceUnitBuildItem> items, PanacheHibernateOrmRecorder recorder) {
+    void recordEntityToPersistenceUnit(List<EntityToPersistenceUnitBuildItem> items,
+            PanacheHibernateOrmRecorder recorder) {
         Map<String, String> map = new HashMap<>();
         for (EntityToPersistenceUnitBuildItem item : items) {
             map.put(item.getEntityClass(), item.getPersistenceUnitName());
@@ -145,9 +145,9 @@ public final class PanacheHibernateResourceProcessor {
         for (AnnotationInstance annotationInstance : index.getIndex().getAnnotations(DOTNAME_ID)) {
             ClassInfo info = JandexUtil.getEnclosingClass(annotationInstance);
             if (JandexUtil.isSubclassOf(index.getIndex(), info, DOTNAME_PANACHE_ENTITY)) {
-                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name() +
-                        "' but one is already provided by PanacheEntity, " +
-                        "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
+                BuildException be = new BuildException("You provide a JPA identifier via @Id inside '" + info.name()
+                        + "' but one is already provided by PanacheEntity, "
+                        + "your class should extend PanacheEntityBase instead, or use the id provided by PanacheEntity",
                         Collections.emptyList());
                 return new ValidationPhaseBuildItem.ValidationErrorBuildItem(be);
             }

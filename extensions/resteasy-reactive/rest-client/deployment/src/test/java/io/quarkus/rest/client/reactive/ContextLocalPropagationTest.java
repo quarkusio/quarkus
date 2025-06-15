@@ -28,16 +28,12 @@ public class ContextLocalPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Client.class))
-            .overrideRuntimeConfigKey("quarkus.rest-client.client.url",
-                    "http://localhost:${quarkus.http.test-port:8081}");
+            .withApplicationRoot((jar) -> jar.addClasses(Resource.class, Client.class)).overrideRuntimeConfigKey(
+                    "quarkus.rest-client.client.url", "http://localhost:${quarkus.http.test-port:8081}");
 
     @Test
     void testQueryParamsWithPrimitiveArrays() {
-        when().get("test/invokeClient")
-                .then()
-                .statusCode(200)
-                .body(is("test/foo/bar"));
+        when().get("test/invokeClient").then().statusCode(200).body(is("test/foo/bar"));
     }
 
     @Path("test")

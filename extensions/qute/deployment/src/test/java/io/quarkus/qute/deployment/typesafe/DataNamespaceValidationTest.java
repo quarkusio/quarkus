@@ -18,14 +18,10 @@ public class DataNamespaceValidationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Item.class, OtherItem.class, Globals.class)
-                    .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.Item item}\n" +
-                                    "{#for item in item.otherItems}\n" +
-                                    "  {data:item.name}\n" +
-                                    "{/for}\n"),
-                            "templates/item.html"));
+            .withApplicationRoot((jar) -> jar.addClasses(Item.class, OtherItem.class, Globals.class).addAsResource(
+                    new StringAsset("{@io.quarkus.qute.deployment.typesafe.Item item}\n"
+                            + "{#for item in item.otherItems}\n" + "  {data:item.name}\n" + "{/for}\n"),
+                    "templates/item.html"));
 
     @Inject
     Template item;
@@ -33,9 +29,7 @@ public class DataNamespaceValidationTest {
     @Test
     public void testCorrectParamDeclarationIsAssumed() {
         // succeed as global item declaration is overridden
-        assertEquals(
-                ITEM_NAME,
-                item.data("item", new Item(ITEM_NAME, new OtherItem())).render().trim());
+        assertEquals(ITEM_NAME, item.data("item", new Item(ITEM_NAME, new OtherItem())).render().trim());
     }
 
     public static class Globals {

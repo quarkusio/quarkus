@@ -22,8 +22,7 @@ public class MockServiceDiscoveryProvider implements ServiceDiscoveryProvider<Mo
 
     @Override
     public ServiceDiscovery createServiceDiscovery(MockServiceDiscoveryConfiguration config, String serviceName,
-            ServiceConfig serviceConfig,
-            StorkInfrastructure storkInfrastructure) {
+            ServiceConfig serviceConfig, StorkInfrastructure storkInfrastructure) {
         return serviceDiscovery;
     }
 

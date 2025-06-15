@@ -38,9 +38,6 @@ public class Place {
 
     @Override
     public String toString() {
-        return "Place{" +
-                "name='" + name + '\'' +
-                ", rating=" + rating +
-                '}';
+        return "Place{" + "name='" + name + '\'' + ", rating=" + rating + '}';
     }
 }

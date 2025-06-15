@@ -23,11 +23,8 @@ public class SecretVolumeConverter {
         if (c.items() != null && !c.items().isEmpty()) {
             List<Item> items = new ArrayList<>(c.items().size());
             for (Map.Entry<String, VolumeItemConfig> item : c.items().entrySet()) {
-                items.add(new ItemBuilder()
-                        .withKey(item.getKey())
-                        .withPath(item.getValue().path())
-                        .withMode(item.getValue().mode())
-                        .build());
+                items.add(new ItemBuilder().withKey(item.getKey()).withPath(item.getValue().path())
+                        .withMode(item.getValue().mode()).build());
             }
 
             b.withItems(items.toArray(new Item[items.size()]));

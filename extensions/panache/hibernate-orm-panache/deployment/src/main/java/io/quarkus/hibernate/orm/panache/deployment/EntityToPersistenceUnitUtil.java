@@ -15,12 +15,12 @@ public final class EntityToPersistenceUnitUtil {
     }
 
     /**
-     * Given the candidate entities, return a map with the persistence unit that single contains them
-     * or throw an exception if any of the candidates is part of more than one persistence unit
+     * Given the candidate entities, return a map with the persistence unit that single contains them or throw an
+     * exception if any of the candidates is part of more than one persistence unit
      */
     public static Map<String, String> determineEntityPersistenceUnits(
-            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping,
-            Set<String> candidates, String source) {
+            Optional<JpaModelPersistenceUnitMappingBuildItem> jpaModelPersistenceUnitMapping, Set<String> candidates,
+            String source) {
         if (jpaModelPersistenceUnitMapping.isEmpty()) {
             return Collections.emptyMap();
         }
@@ -49,8 +49,7 @@ public final class EntityToPersistenceUnitUtil {
         if (violatingEntities.size() > 0) {
             StringBuilder message = new StringBuilder(
                     String.format("%s entities do not support being attached to several persistence units:\n", source));
-            for (Map.Entry<String, Set<String>> violatingEntityEntry : violatingEntities
-                    .entrySet()) {
+            for (Map.Entry<String, Set<String>> violatingEntityEntry : violatingEntities.entrySet()) {
                 message.append("\t- ").append(violatingEntityEntry.getKey()).append(" is attached to: ")
                         .append(String.join(",", violatingEntityEntry.getValue()));
                 throw new IllegalStateException(message.toString());

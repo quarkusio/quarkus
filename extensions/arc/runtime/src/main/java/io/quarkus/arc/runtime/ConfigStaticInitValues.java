@@ -23,8 +23,8 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  * This is a store for all config values injected (directly or programmatically) during the static init phase.
  * <p>
- * The values are then compared with the current values during the runtime init, i.e. when the application starts. If a mismatch
- * is found the startup fails with an actionable error.
+ * The values are then compared with the current values during the runtime init, i.e. when the application starts. If a
+ * mismatch is found the startup fails with an actionable error.
  */
 @Singleton
 public class ConfigStaticInitValues {
@@ -44,14 +44,12 @@ public class ConfigStaticInitValues {
         List<String> mismatches = new ArrayList<>();
         for (InjectedValue injectedValue : injectedValues) {
             ConfigValue currentValue = config.getConfigValue(injectedValue.name);
-            if (currentValue.getValue() != null
-                    && !Objects.equals(currentValue.getValue(), injectedValue.value)) {
-                // Config property is set at runtime and the value differs from the value injected during STATIC_INIT bootstrap phase
-                mismatches.add(
-                        " - the runtime value of '" + injectedValue.name + "' is [" + currentValue.getValue()
-                                + "] but the value [" + injectedValue.value
-                                + "] was injected into "
-                                + injectedValue.injectionPointInfo);
+            if (currentValue.getValue() != null && !Objects.equals(currentValue.getValue(), injectedValue.value)) {
+                // Config property is set at runtime and the value differs from the value injected during STATIC_INIT
+                // bootstrap phase
+                mismatches.add(" - the runtime value of '" + injectedValue.name + "' is [" + currentValue.getValue()
+                        + "] but the value [" + injectedValue.value + "] was injected into "
+                        + injectedValue.injectionPointInfo);
             }
         }
         injectedValues.clear();

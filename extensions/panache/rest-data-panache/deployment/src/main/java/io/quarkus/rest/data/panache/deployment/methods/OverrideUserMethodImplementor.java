@@ -22,8 +22,8 @@ import io.quarkus.rest.data.panache.deployment.ResourceMetadata;
 import io.quarkus.rest.data.panache.deployment.properties.ResourceProperties;
 
 /**
- * Override the user method defined in the interface to propagate the annotations.
- * In case of the method is also a REST resource, it will be configured to support the rest-data features like hal.
+ * Override the user method defined in the interface to propagate the annotations. In case of the method is also a REST
+ * resource, it will be configured to support the rest-data features like hal.
  */
 public class OverrideUserMethodImplementor extends StandardMethodImplementor {
 
@@ -69,13 +69,14 @@ public class OverrideUserMethodImplementor extends StandardMethodImplementor {
 
         // Special handling for user-defined REST methods
         if (methodInfo.hasAnnotation(REST_PATH)) {
-            addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(), getResourceMethodName());
+            addLinksAnnotation(methodCreator, resourceProperties, resourceMetadata.getEntityType(),
+                    getResourceMethodName());
             addSecurityAnnotations(methodCreator, resourceProperties);
             addProducesAnnotation(produces, methodCreator, resourceProperties);
         }
 
-        methodCreator.returnValue(
-                methodCreator.invokeSpecialInterfaceMethod(methodInfo, methodCreator.getThis(), params));
+        methodCreator
+                .returnValue(methodCreator.invokeSpecialInterfaceMethod(methodInfo, methodCreator.getThis(), params));
         methodCreator.close();
     }
 
@@ -85,8 +86,8 @@ public class OverrideUserMethodImplementor extends StandardMethodImplementor {
     }
 
     @Override
-    protected void addLinksAnnotation(AnnotatedElement element, ResourceProperties resourceProperties, String entityClassName,
-            String rel) {
+    protected void addLinksAnnotation(AnnotatedElement element, ResourceProperties resourceProperties,
+            String entityClassName, String rel) {
         if (!resourceProperties.isHal()) {
             return;
         }

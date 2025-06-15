@@ -24,11 +24,11 @@ public final class AuthenticationConfigBuilder {
             Optional<String> sessionExpiredPath, boolean verifyAccessToken, Optional<Boolean> forceRedirectHttpsScheme,
             Optional<List<String>> scopes, Optional<String> scopeSeparator, boolean nonceRequired,
             Optional<Boolean> addOpenidScope, Map<String, String> extraParams, Optional<List<String>> forwardParams,
-            boolean cookieForceSecure, Optional<String> cookieSuffix, String cookiePath, Optional<String> cookiePathHeader,
-            Optional<String> cookieDomain, CookieSameSite cookieSameSite, boolean allowMultipleCodeFlows,
-            boolean failOnMissingStateParam, boolean failOnUnresolvedKid, Optional<Boolean> userInfoRequired,
-            Duration sessionAgeExtension,
-            Duration stateCookieAge, boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
+            boolean cookieForceSecure, Optional<String> cookieSuffix, String cookiePath,
+            Optional<String> cookiePathHeader, Optional<String> cookieDomain, CookieSameSite cookieSameSite,
+            boolean allowMultipleCodeFlows, boolean failOnMissingStateParam, boolean failOnUnresolvedKid,
+            Optional<Boolean> userInfoRequired, Duration sessionAgeExtension, Duration stateCookieAge,
+            boolean javaScriptAutoRedirect, Optional<Boolean> idTokenRequired,
             Optional<Duration> internalIdTokenLifespan, Optional<Boolean> pkceRequired, Optional<String> pkceSecret,
             Optional<String> stateSecret) implements Authentication {
     }
@@ -113,7 +113,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param responseMode {@link Authentication#responseMode()}
+     * @param responseMode
+     *        {@link Authentication#responseMode()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder responseMode(ResponseMode responseMode) {
@@ -122,7 +124,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param redirectPath {@link Authentication#redirectPath()}
+     * @param redirectPath
+     *        {@link Authentication#redirectPath()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder redirectPath(String redirectPath) {
@@ -140,7 +144,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param restorePathAfterRedirect {@link Authentication#restorePathAfterRedirect()}
+     * @param restorePathAfterRedirect
+     *        {@link Authentication#restorePathAfterRedirect()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder restorePathAfterRedirect(boolean restorePathAfterRedirect) {
@@ -158,7 +164,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param removeRedirectParameters {@link Authentication#removeRedirectParameters()}
+     * @param removeRedirectParameters
+     *        {@link Authentication#removeRedirectParameters()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder removeRedirectParameters(boolean removeRedirectParameters) {
@@ -167,7 +175,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param errorPath {@link Authentication#errorPath()}
+     * @param errorPath
+     *        {@link Authentication#errorPath()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder errorPath(String errorPath) {
@@ -176,7 +186,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param sessionExpiredPath {@link Authentication#sessionExpiredPath()}
+     * @param sessionExpiredPath
+     *        {@link Authentication#sessionExpiredPath()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder sessionExpiredPath(String sessionExpiredPath) {
@@ -194,7 +206,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param verifyAccessToken {@link Authentication#verifyAccessToken()}
+     * @param verifyAccessToken
+     *        {@link Authentication#verifyAccessToken()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder verifyAccessToken(boolean verifyAccessToken) {
@@ -212,7 +226,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param forceRedirectHttpsScheme {@link Authentication#forceRedirectHttpsScheme()}
+     * @param forceRedirectHttpsScheme
+     *        {@link Authentication#forceRedirectHttpsScheme()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder forceRedirectHttpsScheme(boolean forceRedirectHttpsScheme) {
@@ -221,7 +237,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param scopes {@link Authentication#scopes()}
+     * @param scopes
+     *        {@link Authentication#scopes()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder scopes(List<String> scopes) {
@@ -232,7 +250,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param scopes {@link Authentication#scopes()}
+     * @param scopes
+     *        {@link Authentication#scopes()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder scopes(String... scopes) {
@@ -243,7 +263,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param separator {@link Authentication#scopeSeparator()}
+     * @param separator
+     *        {@link Authentication#scopeSeparator()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder scopeSeparator(String separator) {
@@ -261,7 +283,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param nonceRequired {@link Authentication#nonceRequired()}
+     * @param nonceRequired
+     *        {@link Authentication#nonceRequired()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder nonceRequired(boolean nonceRequired) {
@@ -279,7 +303,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param addOpenidScope {@link Authentication#addOpenidScope()}
+     * @param addOpenidScope
+     *        {@link Authentication#addOpenidScope()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder addOpenidScope(boolean addOpenidScope) {
@@ -288,7 +314,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param forwardParams {@link Authentication#forwardParams()}
+     * @param forwardParams
+     *        {@link Authentication#forwardParams()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder forwardParams(List<String> forwardParams) {
@@ -299,7 +327,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param forwardParams {@link Authentication#forwardParams()}
+     * @param forwardParams
+     *        {@link Authentication#forwardParams()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder forwardParams(String... forwardParams) {
@@ -319,7 +349,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param cookieForceSecure {@link Authentication#cookieForceSecure()}
+     * @param cookieForceSecure
+     *        {@link Authentication#cookieForceSecure()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder cookieForceSecure(boolean cookieForceSecure) {
@@ -328,7 +360,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param cookieSuffix {@link Authentication#cookieSuffix()}
+     * @param cookieSuffix
+     *        {@link Authentication#cookieSuffix()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder cookieSuffix(String cookieSuffix) {
@@ -337,7 +371,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param cookiePath {@link Authentication#cookiePath()}
+     * @param cookiePath
+     *        {@link Authentication#cookiePath()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder cookiePath(String cookiePath) {
@@ -346,7 +382,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param cookiePathHeader {@link Authentication#cookiePathHeader()}
+     * @param cookiePathHeader
+     *        {@link Authentication#cookiePathHeader()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder cookiePathHeader(String cookiePathHeader) {
@@ -355,7 +393,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param cookieDomain {@link Authentication#cookieDomain()}
+     * @param cookieDomain
+     *        {@link Authentication#cookieDomain()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder cookieDomain(String cookieDomain) {
@@ -364,7 +404,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param cookieSameSite {@link Authentication#cookieSameSite()}
+     * @param cookieSameSite
+     *        {@link Authentication#cookieSameSite()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder cookieSameSite(CookieSameSite cookieSameSite) {
@@ -382,7 +424,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param allowMultipleCodeFlows {@link Authentication#allowMultipleCodeFlows()}
+     * @param allowMultipleCodeFlows
+     *        {@link Authentication#allowMultipleCodeFlows()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder allowMultipleCodeFlows(boolean allowMultipleCodeFlows) {
@@ -400,7 +444,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param failOnMissingStateParam {@link Authentication#failOnMissingStateParam()}
+     * @param failOnMissingStateParam
+     *        {@link Authentication#failOnMissingStateParam()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder failOnMissingStateParam(boolean failOnMissingStateParam) {
@@ -418,7 +464,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param failOnUnresolvedKid {@link Authentication#failOnUnreslvedKid()}
+     * @param failOnUnresolvedKid
+     *        {@link Authentication#failOnUnreslvedKid()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder failOnUnresolvedKid(boolean failOnUnresolvedKid) {
@@ -436,7 +484,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param userInfoRequired {@link Authentication#userInfoRequired()}
+     * @param userInfoRequired
+     *        {@link Authentication#userInfoRequired()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder userInfoRequired(boolean userInfoRequired) {
@@ -445,7 +495,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param sessionAgeExtension {@link Authentication#sessionAgeExtension()}
+     * @param sessionAgeExtension
+     *        {@link Authentication#sessionAgeExtension()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder sessionAgeExtension(Duration sessionAgeExtension) {
@@ -454,7 +506,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param stateCookieAge {@link Authentication#stateCookieAge()}
+     * @param stateCookieAge
+     *        {@link Authentication#stateCookieAge()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder stateCookieAge(Duration stateCookieAge) {
@@ -472,7 +526,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param javaScriptAutoRedirect {@link Authentication#javaScriptAutoRedirect()}
+     * @param javaScriptAutoRedirect
+     *        {@link Authentication#javaScriptAutoRedirect()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder javaScriptAutoRedirect(boolean javaScriptAutoRedirect) {
@@ -490,7 +546,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param idTokenRequired {@link Authentication#idTokenRequired()}
+     * @param idTokenRequired
+     *        {@link Authentication#idTokenRequired()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder idTokenRequired(boolean idTokenRequired) {
@@ -499,7 +557,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param internalIdTokenLifespan {@link Authentication#internalIdTokenLifespan()}
+     * @param internalIdTokenLifespan
+     *        {@link Authentication#internalIdTokenLifespan()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder internalIdTokenLifespan(Duration internalIdTokenLifespan) {
@@ -508,7 +568,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param extraParams {@link Authentication#extraParams()}
+     * @param extraParams
+     *        {@link Authentication#extraParams()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder extraParams(Map<String, String> extraParams) {
@@ -519,8 +581,11 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param key {@link Authentication#extraParams()} key
-     * @param value {@link Authentication#extraParams()} value
+     * @param key
+     *        {@link Authentication#extraParams()} key
+     * @param value
+     *        {@link Authentication#extraParams()} value
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder extraParam(String key, String value) {
@@ -540,7 +605,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param pkceRequired {@link Authentication#pkceRequired()}
+     * @param pkceRequired
+     *        {@link Authentication#pkceRequired()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder pkceRequired(boolean pkceRequired) {
@@ -549,7 +616,9 @@ public final class AuthenticationConfigBuilder {
     }
 
     /**
-     * @param stateSecret {@link Authentication#stateSecret()}
+     * @param stateSecret
+     *        {@link Authentication#stateSecret()}
+     *
      * @return this builder
      */
     public AuthenticationConfigBuilder stateSecret(String stateSecret) {
@@ -571,12 +640,12 @@ public final class AuthenticationConfigBuilder {
         Optional<List<String>> optionalScopes = scopes.isEmpty() ? Optional.empty() : Optional.of(List.copyOf(scopes));
         Optional<List<String>> optionalForwardParams = forwardParams.isEmpty() ? Optional.empty()
                 : Optional.of(List.copyOf(forwardParams));
-        return new AuthenticationImpl(responseMode, redirectPath, restorePathAfterRedirect, removeRedirectParameters, errorPath,
-                sessionExpiredPath, verifyAccessToken, forceRedirectHttpsScheme, optionalScopes, scopeSeparator, nonceRequired,
-                addOpenidScope, Map.copyOf(extraParams), optionalForwardParams, cookieForceSecure, cookieSuffix, cookiePath,
-                cookiePathHeader, cookieDomain, cookieSameSite, allowMultipleCodeFlows, failOnMissingStateParam,
-                failOnUnresolvedKid,
-                userInfoRequired, sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired,
-                internalIdTokenLifespan, pkceRequired, pkceSecret, stateSecret);
+        return new AuthenticationImpl(responseMode, redirectPath, restorePathAfterRedirect, removeRedirectParameters,
+                errorPath, sessionExpiredPath, verifyAccessToken, forceRedirectHttpsScheme, optionalScopes,
+                scopeSeparator, nonceRequired, addOpenidScope, Map.copyOf(extraParams), optionalForwardParams,
+                cookieForceSecure, cookieSuffix, cookiePath, cookiePathHeader, cookieDomain, cookieSameSite,
+                allowMultipleCodeFlows, failOnMissingStateParam, failOnUnresolvedKid, userInfoRequired,
+                sessionAgeExtension, stateCookieAge, javaScriptAutoRedirect, idTokenRequired, internalIdTokenLifespan,
+                pkceRequired, pkceSecret, stateSecret);
     }
 }

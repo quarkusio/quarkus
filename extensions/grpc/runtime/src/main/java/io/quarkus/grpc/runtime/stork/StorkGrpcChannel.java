@@ -71,8 +71,8 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
     }
 
     @Override
-    public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> newCall(MethodDescriptor<RequestT, ResponseT> methodDescriptor,
-            CallOptions callOptions) {
+    public <RequestT, ResponseT> ClientCall<RequestT, ResponseT> newCall(
+            MethodDescriptor<RequestT, ResponseT> methodDescriptor, CallOptions callOptions) {
         Service service = Stork.getInstance().getService(serviceName);
         if (service == null) {
             throw new IllegalStateException("No service definition for serviceName " + serviceName + " found.");
@@ -88,15 +88,8 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
         DelayedClientCall<RequestT, ResponseT> delayed = new StorkDelayedClientCall<>(executor, scheduler,
                 Deadline.after(stork.deadline(), TimeUnit.MILLISECONDS));
 
-        asyncCall(methodDescriptor, callOptions, context)
-                .onFailure()
-                .retry()
-                .atMost(stork.retries())
-                .subscribe()
-                .asCompletionStage()
-                .thenApply(delayed::setCall)
-                .thenAccept(Runnable::run)
-                .exceptionally(t -> {
+        asyncCall(methodDescriptor, callOptions, context).onFailure().retry().atMost(stork.retries()).subscribe()
+                .asCompletionStage().thenApply(delayed::setCall).thenAccept(Runnable::run).exceptionally(t -> {
                     delayed.cancel("Failed to create new Stork ClientCall", t);
                     return null;
                 });
@@ -147,42 +140,35 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
 
     private Uni<Context> pickServiceInstanceWithChannel(Context context) {
         Uni<ServiceInstance> uni = pickServerInstance(context.service, context.measureTime);
-        return uni
-                .map(si -> {
-                    context.instance = si;
-                    if (si.gatherStatistics() && context.ref != null) {
-                        context.ref.set(si);
-                    }
-                    return context;
-                })
-                .invoke(this::checkSocketAddress)
-                .invoke(c -> {
-                    ServiceInstance instance = context.instance;
-                    InetSocketAddress isa = context.address;
-                    context.channel = channels.computeIfAbsent(instance.getId(), id -> {
-                        SocketAddress address = SocketAddress.inetSocketAddress(isa.getPort(), isa.getHostName());
-                        return new GrpcClientChannel(client, address);
-                    });
-                });
+        return uni.map(si -> {
+            context.instance = si;
+            if (si.gatherStatistics() && context.ref != null) {
+                context.ref.set(si);
+            }
+            return context;
+        }).invoke(this::checkSocketAddress).invoke(c -> {
+            ServiceInstance instance = context.instance;
+            InetSocketAddress isa = context.address;
+            context.channel = channels.computeIfAbsent(instance.getId(), id -> {
+                SocketAddress address = SocketAddress.inetSocketAddress(isa.getPort(), isa.getHostName());
+                return new GrpcClientChannel(client, address);
+            });
+        });
     }
 
     private Uni<ServiceInstance> pickServerInstance(Service service, boolean measureTime) {
-        return Uni.createFrom()
-                .deferred(() -> {
-                    if (services.isEmpty()) {
-                        return service.getInstances()
-                                .invoke(l -> l.forEach(s -> services.put(s.getId(), s)));
-                    } else {
-                        List<ServiceInstance> list = new ArrayList<>(services.values());
-                        return Uni.createFrom().item(list);
-                    }
-                })
-                .map(ArrayList::new) // make it mutable
+        return Uni.createFrom().deferred(() -> {
+            if (services.isEmpty()) {
+                return service.getInstances().invoke(l -> l.forEach(s -> services.put(s.getId(), s)));
+            } else {
+                List<ServiceInstance> list = new ArrayList<>(services.values());
+                return Uni.createFrom().item(list);
+            }
+        }).map(ArrayList::new) // make it mutable
                 .invoke(list -> {
                     // list should not be empty + sort by id
                     list.sort(Comparator.comparing(ServiceInstance::getId));
-                })
-                .map(list -> service.selectInstanceAndRecordStart(list, measureTime));
+                }).map(list -> service.selectInstanceAndRecordStart(list, measureTime));
     }
 
     private void checkSocketAddress(Context context) {
@@ -202,12 +188,14 @@ public class StorkGrpcChannel extends Channel implements AutoCloseable {
             long serviceId = instance.getId();
             services.remove(serviceId);
             channels.remove(serviceId);
-            throw new IllegalStateException("Failed to determine working socket addresses for service-name: " + serviceName);
+            throw new IllegalStateException(
+                    "Failed to determine working socket addresses for service-name: " + serviceName);
         }
     }
 
     private static class StorkDelayedClientCall<RequestT, ResponseT> extends DelayedClientCall<RequestT, ResponseT> {
-        public StorkDelayedClientCall(Executor callExecutor, ScheduledExecutorService scheduler, @Nullable Deadline deadline) {
+        public StorkDelayedClientCall(Executor callExecutor, ScheduledExecutorService scheduler,
+                @Nullable Deadline deadline) {
             super(callExecutor, scheduler, deadline);
         }
     }

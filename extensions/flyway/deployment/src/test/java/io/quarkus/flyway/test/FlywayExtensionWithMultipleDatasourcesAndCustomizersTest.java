@@ -34,46 +34,36 @@ public class FlywayExtensionWithMultipleDatasourcesAndCustomizersTest {
     @Named("inventory")
     AgroalDataSource inventoryDataSource;
 
-    static final FlywayH2TestCustomizer h2ForDefault = FlywayH2TestCustomizer
-            .withDbName("quarkus-default-customizer")
-            .withPort(11303)
-            .withInitSqlFile("src/test/resources/callback-init-data.sql");
+    static final FlywayH2TestCustomizer h2ForDefault = FlywayH2TestCustomizer.withDbName("quarkus-default-customizer")
+            .withPort(11303).withInitSqlFile("src/test/resources/callback-init-data.sql");
 
-    static final FlywayH2TestCustomizer h2ForUsers = FlywayH2TestCustomizer
-            .withDbName("quarkus-users-customizer")
-            .withPort(11304)
-            .withInitSqlFile("src/test/resources/callback-init-data.sql");
+    static final FlywayH2TestCustomizer h2ForUsers = FlywayH2TestCustomizer.withDbName("quarkus-users-customizer")
+            .withPort(11304).withInitSqlFile("src/test/resources/callback-init-data.sql");
 
     static final FlywayH2TestCustomizer h2ForInventory = FlywayH2TestCustomizer
-            .withDbName("quarkus-inventory-customizer")
-            .withPort(11305)
+            .withDbName("quarkus-inventory-customizer").withPort(11305)
             .withInitSqlFile("src/test/resources/callback-init-data.sql");
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setBeforeAllCustomizer(new Runnable() {
-                @Override
-                public void run() {
-                    h2ForDefault.startH2();
-                    h2ForUsers.startH2();
-                    h2ForInventory.startH2();
-                }
-            })
-            .setAfterAllCustomizer(new Runnable() {
-                @Override
-                public void run() {
-                    h2ForDefault.stopH2();
-                    h2ForUsers.stopH2();
-                    h2ForInventory.stopH2();
-                }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FlywayH2TestCustomizer.class,
-                            AddCallbacksCustomizerForDefaultDS.class,
-                            FlywayExtensionCallback.class, FlywayExtensionCallback2.class, FlywayExtensionCDICallback.class)
-                    .addAsResource("db/migration/V1.0.3__Quarkus_Callback.sql")
-                    .addAsResource("config-for-multiple-datasource-with-customizers-config.properties",
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setBeforeAllCustomizer(new Runnable() {
+        @Override
+        public void run() {
+            h2ForDefault.startH2();
+            h2ForUsers.startH2();
+            h2ForInventory.startH2();
+        }
+    }).setAfterAllCustomizer(new Runnable() {
+        @Override
+        public void run() {
+            h2ForDefault.stopH2();
+            h2ForUsers.stopH2();
+            h2ForInventory.stopH2();
+        }
+    }).withApplicationRoot((jar) -> jar
+            .addClasses(FlywayH2TestCustomizer.class, AddCallbacksCustomizerForDefaultDS.class,
+                    FlywayExtensionCallback.class, FlywayExtensionCallback2.class, FlywayExtensionCDICallback.class)
+            .addAsResource("db/migration/V1.0.3__Quarkus_Callback.sql").addAsResource(
+                    "config-for-multiple-datasource-with-customizers-config.properties", "application.properties"));
 
     @Test
     public void testCustomizers() throws SQLException {
@@ -83,7 +73,8 @@ public class FlywayExtensionWithMultipleDatasourcesAndCustomizersTest {
     }
 
     private void assertEventCount(AgroalDataSource dataSource, int expectedEventCount) throws SQLException {
-        try (Connection connection = dataSource.getConnection(); Statement stat = connection.createStatement()) {
+        try (Connection connection = dataSource.getConnection();
+                Statement stat = connection.createStatement()) {
             try (ResultSet executeQuery = stat.executeQuery("select COUNT(name) from quarked_callback")) {
                 assertTrue(executeQuery.next(), "Table exists but it is empty");
                 int count = executeQuery.getInt(1);

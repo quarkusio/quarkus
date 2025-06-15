@@ -69,21 +69,10 @@ public class ComposeProject {
     private List<ComposeServiceWaitStrategyTarget> serviceInstances;
     private List<Network> networks;
 
-    public ComposeProject(DockerClient dockerClient,
-            ComposeFiles composeFiles,
-            String executable,
-            String project,
-            Duration startupTimeout,
-            Duration stopTimeout,
-            boolean stopContainers,
-            boolean ryukEnabled,
-            boolean followContainerLogs,
-            boolean removeVolumes,
-            String removeImages,
-            Boolean build,
-            List<String> options,
-            List<String> profiles,
-            Map<String, Integer> scalingPreferences,
+    public ComposeProject(DockerClient dockerClient, ComposeFiles composeFiles, String executable, String project,
+            Duration startupTimeout, Duration stopTimeout, boolean stopContainers, boolean ryukEnabled,
+            boolean followContainerLogs, boolean removeVolumes, String removeImages, Boolean build,
+            List<String> options, List<String> profiles, Map<String, Integer> scalingPreferences,
             Map<String, String> env) {
         this.dockerClient = dockerClient;
         this.composeFiles = composeFiles;
@@ -107,10 +96,9 @@ public class ComposeProject {
     }
 
     /**
-     * can have multiple wait strategies for a single container, e.g. if waiting on several ports
-     * if no wait strategy is defined, the WaitAllStrategy will return immediately.
-     * The WaitAllStrategy uses the startup timeout for everything as a global maximum, but we expect timeouts to be handled by
-     * the inner strategies.
+     * can have multiple wait strategies for a single container, e.g. if waiting on several ports if no wait strategy is
+     * defined, the WaitAllStrategy will return immediately. The WaitAllStrategy uses the startup timeout for everything
+     * as a global maximum, but we expect timeouts to be handled by the inner strategies.
      */
     public void addWaitStrategy(Map<String, WaitAllStrategy> strategies, String instanceName, WaitStrategy strategy) {
         strategies.computeIfAbsent(instanceName,
@@ -120,15 +108,14 @@ public class ComposeProject {
         LOG.debugv("Added wait strategy {0} for service {1}", strategy, instanceName);
     }
 
-    private void registerWaitStrategies(ComposeFiles composeFiles,
-            Map<String, WaitAllStrategy> waitStrategies) {
+    private void registerWaitStrategies(ComposeFiles composeFiles, Map<String, WaitAllStrategy> waitStrategies) {
         // Iterate over service definitions
         for (ComposeServiceDefinition definition : composeFiles.getServiceDefinitions().values()) {
             String serviceName = definition.getServiceName();
             Map<String, Object> labels = definition.getLabels();
             // Skip the service if profiles doesn't match
-            if (!definition.getProfiles().isEmpty() &&
-                    definition.getProfiles().stream().noneMatch(profiles::contains)) {
+            if (!definition.getProfiles().isEmpty()
+                    && definition.getProfiles().stream().noneMatch(profiles::contains)) {
                 continue;
             }
             // Add wait for health check
@@ -154,7 +141,8 @@ public class ComposeProject {
                     int[] ports = definition.getPorts().stream().mapToInt(ExposedPort::getPort).toArray();
                     String waitForTimeout = (String) labels.get(COMPOSE_WAIT_FOR_PORTS_TIMEOUT);
                     Duration timeout = waitForTimeout != null ? Duration.parse("PT" + waitForTimeout) : startupTimeout;
-                    addWaitStrategy(waitStrategies, serviceName, Wait.forListeningPorts(ports).withStartupTimeout(timeout));
+                    addWaitStrategy(waitStrategies, serviceName,
+                            Wait.forListeningPorts(ports).withStartupTimeout(timeout));
                 }
             }
         }
@@ -181,9 +169,8 @@ public class ComposeProject {
     public void waitUntilServicesReady(Executor waitOn) {
         checkServicesStarted();
         copyExposedPortsToContainers();
-        CompletableFuture.allOf(serviceInstances.stream()
-                .map(srv -> waitOnThread(srv, waitOn))
-                .toArray(CompletableFuture[]::new))
+        CompletableFuture.allOf(
+                serviceInstances.stream().map(srv -> waitOnThread(srv, waitOn)).toArray(CompletableFuture[]::new))
                 .join();
     }
 
@@ -244,19 +231,15 @@ public class ComposeProject {
 
     private void registerContainersForShutdown() {
         if (ryukEnabled) {
-            ResourceReaper
-                    .instance()
+            ResourceReaper.instance()
                     .registerLabelsFilterForCleanup(Collections.singletonMap(DOCKER_COMPOSE_PROJECT, project));
         }
     }
 
     private void startServices() {
         // scaling for the services
-        final String scalingOptions = scalingPreferences
-                .entrySet()
-                .stream()
-                .map(entry -> "--scale " + entry.getKey() + "=" + entry.getValue())
-                .distinct()
+        final String scalingOptions = scalingPreferences.entrySet().stream()
+                .map(entry -> "--scale " + entry.getKey() + "=" + entry.getValue()).distinct()
                 .collect(Collectors.joining(" "));
 
         String command = getUpCommand(getOptions());
@@ -290,8 +273,8 @@ public class ComposeProject {
         }
 
         if (checkForRequiredServices && !servicesToWaitFor.isEmpty()) {
-            throw new IllegalStateException("Services named " + servicesToWaitFor +
-                    " do not exist, but wait conditions have been defined for them.");
+            throw new IllegalStateException("Services named " + servicesToWaitFor
+                    + " do not exist, but wait conditions have been defined for them.");
         }
 
         this.networks = listChildNetworks();
@@ -299,17 +282,12 @@ public class ComposeProject {
     }
 
     private List<Container> listChildContainers() {
-        return dockerClient
-                .listContainersCmd()
-                .withLabelFilter(Map.of(DOCKER_COMPOSE_PROJECT, project))
-                .withShowAll(true)
-                .exec();
+        return dockerClient.listContainersCmd().withLabelFilter(Map.of(DOCKER_COMPOSE_PROJECT, project))
+                .withShowAll(true).exec();
     }
 
     private List<Network> listChildNetworks() {
-        return dockerClient
-                .listNetworksCmd()
-                .withFilter("label", List.of(DOCKER_COMPOSE_PROJECT + "=" + project))
+        return dockerClient.listNetworksCmd().withFilter("label", List.of(DOCKER_COMPOSE_PROJECT + "=" + project))
                 .exec();
     }
 
@@ -318,9 +296,7 @@ public class ComposeProject {
         if (tailChildContainers) {
             String containerId = containerInstance.getContainerId();
             String serviceName = containerInstance.getContainerName();
-            followLogs(containerId, new JBossLoggingConsumer(LOG)
-                    .withPrefix(serviceName)
-                    .withSeparateOutputStreams());
+            followLogs(containerId, new JBossLoggingConsumer(LOG).withPrefix(serviceName).withSeparateOutputStreams());
         }
         return containerInstance;
     }
@@ -329,11 +305,7 @@ public class ComposeProject {
         FrameConsumerResultCallback callback = new FrameConsumerResultCallback();
         callback.addConsumer(OutputFrame.OutputType.STDOUT, consumer);
         callback.addConsumer(OutputFrame.OutputType.STDERR, consumer);
-        dockerClient.logContainerCmd(containerId)
-                .withFollowStream(true)
-                .withStdErr(true)
-                .withStdOut(true)
-                .withSince(0)
+        dockerClient.logContainerCmd(containerId).withFollowStream(true).withStdErr(true).withStdOut(true).withSince(0)
                 .exec(callback);
     }
 
@@ -382,11 +354,8 @@ public class ComposeProject {
     }
 
     public void runWithCompose(String cmd, Map<String, String> env) {
-        new ComposeRunner(executable, composeFiles.getFiles(), project)
-                .withCommand(cmd)
-                .withEnv(env)
-                .withProfiles(profiles)
-                .run();
+        new ComposeRunner(executable, composeFiles.getFiles(), project).withCommand(cmd).withEnv(env)
+                .withProfiles(profiles).run();
     }
 
     public List<ComposeServiceWaitStrategyTarget> getServices() {
@@ -440,12 +409,9 @@ public class ComposeProject {
     }
 
     public String getDefaultNetworkId() {
-        return networks.stream()
-                .filter(n -> DEFAULT_NETWORK_NAME.equals(n.getLabels().get(DOCKER_COMPOSE_NETWORK)))
+        return networks.stream().filter(n -> DEFAULT_NETWORK_NAME.equals(n.getLabels().get(DOCKER_COMPOSE_NETWORK)))
                 // multiple networks can have the default label, but only one can have containers
-                .filter(n -> !n.getContainers().isEmpty())
-                .findFirst()
-                .map(Network::getId)
+                .filter(n -> !n.getContainers().isEmpty()).findFirst().map(Network::getId)
                 // this is not an id, but a useful fallback
                 .orElse(project + "_" + DEFAULT_NETWORK_NAME);
     }
@@ -478,7 +444,9 @@ public class ComposeProject {
         /**
          * Set the docker client to use for the compose project.
          *
-         * @param dockerClient the docker client to use
+         * @param dockerClient
+         *        the docker client to use
+         *
          * @return this
          */
         public Builder withDockerClient(DockerClient dockerClient) {
@@ -489,7 +457,9 @@ public class ComposeProject {
         /**
          * Set whether to stop containers when the project is stopped.
          *
-         * @param stopContainers whether to stop containers when the project is stopped
+         * @param stopContainers
+         *        whether to stop containers when the project is stopped
+         *
          * @return this
          */
         public Builder withStopContainers(boolean stopContainers) {
@@ -500,7 +470,9 @@ public class ComposeProject {
         /**
          * Set whether to stop containers when the project is stopped.
          *
-         * @param ryukEnabled whether to stop containers when the project is stopped
+         * @param ryukEnabled
+         *        whether to stop containers when the project is stopped
+         *
          * @return this
          */
         public Builder withRyukEnabled(boolean ryukEnabled) {
@@ -511,7 +483,9 @@ public class ComposeProject {
         /**
          * Set the startup timeout for the compose project.
          *
-         * @param duration the startup timeout
+         * @param duration
+         *        the startup timeout
+         *
          * @return this
          */
         public Builder withStartupTimeout(Duration duration) {
@@ -522,7 +496,9 @@ public class ComposeProject {
         /**
          * Set the stop timeout for the compose project.
          *
-         * @param duration the startup timeout
+         * @param duration
+         *        the startup timeout
+         *
          * @return this
          */
         public Builder withStopTimeout(Duration duration) {
@@ -533,7 +509,9 @@ public class ComposeProject {
         /**
          * Set whether to build the images before starting the compose project.
          *
-         * @param build whether to build the images before starting the compose project
+         * @param build
+         *        whether to build the images before starting the compose project
+         *
          * @return this
          */
         public Builder withBuild(Boolean build) {
@@ -544,7 +522,9 @@ public class ComposeProject {
         /**
          * Set environment variables to pass to the compose command.
          *
-         * @param envVariables the environment variables to pass to the compose command
+         * @param envVariables
+         *        the environment variables to pass to the compose command
+         *
          * @return this
          */
         public Builder withEnv(Map<String, String> envVariables) {
@@ -555,7 +535,9 @@ public class ComposeProject {
         /**
          * Set the options to pass to the compose command.
          *
-         * @param options the options to pass to the compose command
+         * @param options
+         *        the options to pass to the compose command
+         *
          * @return this
          */
         public Builder withOptions(List<String> options) {
@@ -566,7 +548,9 @@ public class ComposeProject {
         /**
          * Set the profiles for the compose project.
          *
-         * @param profiles the profiles for the compose project
+         * @param profiles
+         *        the profiles for the compose project
+         *
          * @return this
          */
         public Builder withProfiles(List<String> profiles) {
@@ -577,7 +561,9 @@ public class ComposeProject {
         /**
          * Set the scaling preferences for the compose project.
          *
-         * @param scalingPreferences the scaling preferences for the compose project
+         * @param scalingPreferences
+         *        the scaling preferences for the compose project
+         *
          * @return this
          */
         public Builder withScalingPreferences(Map<String, Integer> scalingPreferences) {
@@ -588,7 +574,9 @@ public class ComposeProject {
         /**
          * Set whether to follow the container logs.
          *
-         * @param followContainerLogs whether to follow the container logs
+         * @param followContainerLogs
+         *        whether to follow the container logs
+         *
          * @return this
          */
         public Builder withFollowContainerLogs(boolean followContainerLogs) {
@@ -609,7 +597,9 @@ public class ComposeProject {
         /**
          * Remove volumes after containers shut down.
          *
-         * @param removeVolumes whether volumes are to be removed.
+         * @param removeVolumes
+         *        whether volumes are to be removed.
+         *
          * @return this instance, for chaining.
          */
         public Builder withRemoveVolumes(boolean removeVolumes) {
@@ -620,7 +610,9 @@ public class ComposeProject {
         /**
          * Set the project name for the compose project.
          *
-         * @param project the project name for the compose project
+         * @param project
+         *        the project name for the compose project
+         *
          * @return this
          */
         public Builder withProject(String project) {
@@ -629,21 +621,9 @@ public class ComposeProject {
         }
 
         public ComposeProject build() {
-            return new ComposeProject(dockerClient, files,
-                    executable,
-                    project,
-                    startupTimeout,
-                    stopTimeout,
-                    stopContainers,
-                    ryukEnabled,
-                    followContainerLogs,
-                    removeVolumes,
-                    removeImages,
-                    build,
-                    options,
-                    profiles,
-                    scalingPreferences,
-                    env);
+            return new ComposeProject(dockerClient, files, executable, project, startupTimeout, stopTimeout,
+                    stopContainers, ryukEnabled, followContainerLogs, removeVolumes, removeImages, build, options,
+                    profiles, scalingPreferences, env);
         }
     }
 

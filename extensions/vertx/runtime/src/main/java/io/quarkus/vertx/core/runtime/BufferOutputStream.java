@@ -6,8 +6,7 @@ import java.io.OutputStream;
 import io.vertx.core.buffer.Buffer;
 
 /**
- * Simple {@link OutputStream} implementation that appends content
- * written in given {@link Buffer} instance.
+ * Simple {@link OutputStream} implementation that appends content written in given {@link Buffer} instance.
  */
 public class BufferOutputStream extends OutputStream {
 

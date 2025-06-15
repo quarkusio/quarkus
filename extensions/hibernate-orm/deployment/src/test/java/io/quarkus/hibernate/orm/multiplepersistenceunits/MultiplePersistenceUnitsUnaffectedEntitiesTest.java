@@ -26,23 +26,17 @@ public class MultiplePersistenceUnitsUnaffectedEntitiesTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addClass(User.class)
-                    .addClass(Plane.class)
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addClass(User.class).addClass(Plane.class)
                     .addAsResource("application-multiple-persistence-units-unaffected-entities.properties",
                             "application.properties"))
             // Expect a warning on startup
-            .setLogRecordPredicate(
-                    record -> record.getMessage().contains("Could not find a suitable persistence unit for model classes"))
-            .assertLogRecords(records -> assertThat(records)
-                    .hasSize(1)
-                    .element(0).satisfies(record -> {
-                        assertThat(record.getLevel()).isEqualTo(Level.WARNING);
-                        assertThat(LOG_FORMATTER.formatMessage(record))
-                                .contains(DefaultEntity.class.getName())
-                                .contains(User.class.getName());
-                    }));
+            .setLogRecordPredicate(record -> record.getMessage()
+                    .contains("Could not find a suitable persistence unit for model classes"))
+            .assertLogRecords(records -> assertThat(records).hasSize(1).element(0).satisfies(record -> {
+                assertThat(record.getLevel()).isEqualTo(Level.WARNING);
+                assertThat(LOG_FORMATTER.formatMessage(record)).contains(DefaultEntity.class.getName())
+                        .contains(User.class.getName());
+            }));
 
     @Inject
     @PersistenceUnit("inventory")

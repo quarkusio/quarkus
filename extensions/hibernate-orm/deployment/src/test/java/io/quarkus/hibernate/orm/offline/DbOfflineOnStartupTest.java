@@ -21,16 +21,12 @@ public class DbOfflineOnStartupTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(MyEntity.class))
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             // Disable schema management
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy",
-                    "none")
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "none")
             // Pick a DB URL that is offline
-            .overrideConfigKey("quarkus.datasource.jdbc.url",
-                    "jdbc:h2:tcp://localhost:9999/~/sample");
+            .overrideConfigKey("quarkus.datasource.jdbc.url", "jdbc:h2:tcp://localhost:9999/~/sample");
 
     @Inject
     Session session;
@@ -43,7 +39,6 @@ public class DbOfflineOnStartupTest {
         Assertions.assertThatThrownBy(() -> {
             session.persist(entity);
             session.flush();
-        })
-                .hasMessageContaining("Connection refused");
+        }).hasMessageContaining("Connection refused");
     }
 }

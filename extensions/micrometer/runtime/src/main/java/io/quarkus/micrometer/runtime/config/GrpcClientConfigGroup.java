@@ -12,9 +12,8 @@ public interface GrpcClientConfigGroup extends MicrometerConfig.CapabilityEnable
     /**
      * gRPC Client metrics support.
      * <p>
-     * Support for gRPC client metrics will be enabled if Micrometer support is enabled,
-     * the gRPC client interfaces are on the classpath
-     * and either this value is true, or this value is unset and
+     * Support for gRPC client metrics will be enabled if Micrometer support is enabled, the gRPC client interfaces are
+     * on the classpath and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.binder-enabled-default} is true.
      */
     @Override

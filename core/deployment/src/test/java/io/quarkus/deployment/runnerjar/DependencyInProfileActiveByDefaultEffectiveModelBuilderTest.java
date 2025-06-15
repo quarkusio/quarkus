@@ -51,11 +51,8 @@ public class DependencyInProfileActiveByDefaultEffectiveModelBuilderTest extends
         install(module2Jar);
         addWorkspaceModuleToProfile(module2Jar, "extra");
 
-        final TsArtifact appJar = TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA_100)
-                .addDependency(module1Jar);
+        final TsArtifact appJar = TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA_100).addDependency(module1Jar);
 
         final Profile profile = new Profile();
         profile.setId("extra");

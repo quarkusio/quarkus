@@ -37,12 +37,12 @@ public class WebDependencyLocatorDevModeApiProcessor {
     private static final Logger log = Logger.getLogger(WebDependencyLocatorDevModeApiProcessor.class.getName());
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public void findWebDependenciesAssets(
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+    public void findWebDependenciesAssets(VertxHttpBuildTimeConfig httpBuildTimeConfig,
             CurateOutcomeBuildItem curateOutcome,
             BuildProducer<WebDependencyLibrariesBuildItem> webDependencyLibrariesProducer) {
 
-        final List<WebDependencyLibrary> webJarLibraries = getLibraries(httpBuildTimeConfig, curateOutcome, WEBJARS_PATH);
+        final List<WebDependencyLibrary> webJarLibraries = getLibraries(httpBuildTimeConfig, curateOutcome,
+                WEBJARS_PATH);
         webDependencyLibrariesProducer.produce(new WebDependencyLibrariesBuildItem("webjars", webJarLibraries));
 
         final List<WebDependencyLibrary> mvnpmLibraries = getLibraries(httpBuildTimeConfig, curateOutcome, MVNPM_PATH);
@@ -50,8 +50,7 @@ public class WebDependencyLocatorDevModeApiProcessor {
 
     }
 
-    private List<WebDependencyLibrary> getLibraries(
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+    private List<WebDependencyLibrary> getLibraries(VertxHttpBuildTimeConfig httpBuildTimeConfig,
             CurateOutcomeBuildItem curateOutcome, String path) {
         final List<WebDependencyLibrary> webDependencyLibraries = new ArrayList<>();
         final List<ClassPathElement> providers = QuarkusClassLoader.getElements(PREFIX + path, false);
@@ -77,10 +76,8 @@ public class WebDependencyLocatorDevModeApiProcessor {
         return webDependencyLibraries;
     }
 
-    private WebDependencyLibrary createWebDependencyLibrary(ResolvedDependency dep,
-            String webDependencyRootPath,
-            Map<ArtifactKey, ClassPathElement> webDependencyKeys,
-            String path) {
+    private WebDependencyLibrary createWebDependencyLibrary(ResolvedDependency dep, String webDependencyRootPath,
+            Map<ArtifactKey, ClassPathElement> webDependencyKeys, String path) {
         // If the dependency is not a runtime class path dependency, return null
         if (!dep.isRuntimeCp()) {
             return null;
@@ -89,13 +86,15 @@ public class WebDependencyLocatorDevModeApiProcessor {
         if (provider == null) {
             return null;
         }
-        final WebDependencyLibrary webDependencyLibrary = new WebDependencyLibrary(provider.getDependencyKey().getArtifactId());
+        final WebDependencyLibrary webDependencyLibrary = new WebDependencyLibrary(
+                provider.getDependencyKey().getArtifactId());
         provider.apply(tree -> {
             final Path webDependenciesDir = tree.getPath(PREFIX + path);
             final Path nameDir;
             try (Stream<Path> webDependenciesDirPaths = Files.list(webDependenciesDir)) {
-                nameDir = webDependenciesDirPaths.filter(Files::isDirectory).findFirst().orElseThrow(() -> new IOException(
-                        "Could not find name directory for " + dep.getKey().getArtifactId() + " in " + webDependenciesDir));
+                nameDir = webDependenciesDirPaths.filter(Files::isDirectory).findFirst()
+                        .orElseThrow(() -> new IOException("Could not find name directory for "
+                                + dep.getKey().getArtifactId() + " in " + webDependenciesDir));
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -108,12 +107,11 @@ public class WebDependencyLocatorDevModeApiProcessor {
                 // If the version directory exists, use it as a root, otherwise use the name directory
                 versionDir = nameDir.resolve(dep.getVersion());
                 root = Files.isDirectory(versionDir) ? versionDir : nameDir;
-                urlBase.append(nameDir.getFileName().toString())
-                        .append("/");
+                urlBase.append(nameDir.getFileName().toString()).append("/");
                 appendRootPart = false;
             } catch (InvalidPathException e) {
-                log.warn("Could not find version directory for " + dep.getKey().getArtifactId() + " "
-                        + dep.getVersion() + " in " + nameDir + ", falling back to name directory");
+                log.warn("Could not find version directory for " + dep.getKey().getArtifactId() + " " + dep.getVersion()
+                        + " in " + nameDir + ", falling back to name directory");
             }
             webDependencyLibrary.setVersion(dep.getVersion());
             try {
@@ -132,7 +130,7 @@ public class WebDependencyLocatorDevModeApiProcessor {
 
     private WebDependencyAsset createAssetForLibrary(Path rootPath, String urlBase, boolean appendRootPart)
             throws IOException {
-        //If it is a directory, go deeper, otherwise add the file
+        // If it is a directory, go deeper, otherwise add the file
         var root = new WebDependencyAsset();
         root.setName(rootPath.getFileName().toString());
         root.setChildren(new LinkedList<>());

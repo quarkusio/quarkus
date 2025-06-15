@@ -42,7 +42,8 @@ public final class FilteredJaxbClassesToBeBoundBuildItem extends SimpleBuildItem
             for (String classNameExclude : classNameExcludes) {
                 if (classNameExclude.endsWith(packMatch)) {
                     // Package ends with ".*"
-                    final String packageName = classNameExclude.substring(0, classNameExclude.length() - packMatch.length());
+                    final String packageName = classNameExclude.substring(0,
+                            classNameExclude.length() - packMatch.length());
                     this.classNamePredicateExcludes.add((className) -> className.startsWith(packageName));
                 } else {
                     // Standard class name
@@ -62,8 +63,7 @@ public final class FilteredJaxbClassesToBeBoundBuildItem extends SimpleBuildItem
         public FilteredJaxbClassesToBeBoundBuildItem build() {
             final List<Class<?>> classes = classNames.stream()
                     .filter(className -> this.classNamePredicateExcludes.stream().noneMatch(p -> p.test(className)))
-                    .map(FilteredJaxbClassesToBeBoundBuildItem::getClassByName)
-                    .filter(JaxbType::isValidType)
+                    .map(FilteredJaxbClassesToBeBoundBuildItem::getClassByName).filter(JaxbType::isValidType)
                     .collect(Collectors.toList());
 
             return new FilteredJaxbClassesToBeBoundBuildItem(classes);

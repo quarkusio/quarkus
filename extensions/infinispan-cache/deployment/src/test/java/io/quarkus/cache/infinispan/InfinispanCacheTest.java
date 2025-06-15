@@ -38,18 +38,15 @@ import io.smallrye.mutiny.Uni;
 public class InfinispanCacheTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .withConfigurationResource("empty-application-infinispan-client.properties");
 
     private static final String CACHE_NAME = "cache";
 
     private static final ThreadFactory defaultThreadFactory = getTestThreadFactory("ForkThread");
     private static final ExecutorService testExecutor = ThreadCreator.createBlockingExecutorService()
-            .orElseGet(() -> new ThreadPoolExecutor(0, Integer.MAX_VALUE,
-                    60L, TimeUnit.SECONDS,
-                    new SynchronousQueue<>(),
-                    defaultThreadFactory));
+            .orElseGet(() -> new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit.SECONDS,
+                    new SynchronousQueue<>(), defaultThreadFactory));
     @Inject
     @Remote(CACHE_NAME)
     RemoteCache remoteCache;

@@ -23,11 +23,9 @@ public class DiscoveryConfigProperty {
     private final boolean sectionGenerated;
 
     public DiscoveryConfigProperty(String path, String sourceType, String sourceElementName,
-            SourceElementType sourceElementType,
-            String defaultValue,
-            String defaultValueForDoc, Deprecation deprecation, String mapKey, boolean unnamedMapKey,
-            ResolvedType type, boolean converted, boolean enforceHyphenateEnumValue,
-            boolean section, boolean sectionGenerated) {
+            SourceElementType sourceElementType, String defaultValue, String defaultValueForDoc,
+            Deprecation deprecation, String mapKey, boolean unnamedMapKey, ResolvedType type, boolean converted,
+            boolean enforceHyphenateEnumValue, boolean section, boolean sectionGenerated) {
         this.path = path;
         this.sourceType = sourceType;
         this.sourceElementName = sourceElementName;
@@ -158,7 +156,8 @@ public class DiscoveryConfigProperty {
         private boolean section = false;
         private boolean sectionGenerated = false;
 
-        public Builder(String sourceType, String sourceElementName, SourceElementType sourceElementType, ResolvedType type) {
+        public Builder(String sourceType, String sourceElementName, SourceElementType sourceElementType,
+                ResolvedType type) {
             this.sourceType = sourceType;
             this.sourceElementName = sourceElementName;
             this.sourceElementType = sourceElementType;
@@ -220,8 +219,8 @@ public class DiscoveryConfigProperty {
             }
 
             return new DiscoveryConfigProperty(name, sourceType, sourceElementName, sourceElementType, defaultValue,
-                    defaultValueForDoc,
-                    deprecation, mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue, section, sectionGenerated);
+                    defaultValueForDoc, deprecation, mapKey, unnamedMapKey, type, converted, enforceHyphenateEnumValue,
+                    section, sectionGenerated);
         }
     }
 }

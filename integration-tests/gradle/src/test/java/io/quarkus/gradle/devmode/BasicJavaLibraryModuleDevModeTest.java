@@ -20,10 +20,7 @@ public class BasicJavaLibraryModuleDevModeTest extends QuarkusDevGradleTestBase 
 
     protected void testDevMode() throws Exception {
 
-        assertThat(getHttpResponse())
-                .contains("ready")
-                .contains("application")
-                .contains("org.acme")
+        assertThat(getHttpResponse()).contains("ready").contains("application").contains("org.acme")
                 .contains("1.0.0-SNAPSHOT");
 
         assertThat(getHttpResponse("/hello")).contains("hello");

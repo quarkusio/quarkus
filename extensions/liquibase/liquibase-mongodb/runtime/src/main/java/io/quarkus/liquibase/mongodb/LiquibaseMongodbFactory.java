@@ -32,9 +32,9 @@ import liquibase.resource.ResourceAccessor;
 
 public class LiquibaseMongodbFactory {
 
-    //connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
-    private static final Pattern HAS_DB = Pattern
-            .compile("(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
+    // connection-string format, see https://docs.mongodb.com/manual/reference/connection-string/
+    private static final Pattern HAS_DB = Pattern.compile(
+            "(?<prefix>mongodb://|mongodb\\+srv://)(?<hosts>[^/]*)(?<slash>[/]?)(?<db>[^?]*)(?<options>\\??.*)");
     private final LiquibaseMongodbConfig liquibaseMongodbConfig;
     private final LiquibaseMongodbBuildTimeConfig liquibaseMongodbBuildTimeConfig;
     private final MongodbConfig mongodbConfig;
@@ -48,16 +48,15 @@ public class LiquibaseMongodbFactory {
 
     private ResourceAccessor resolveResourceAccessor() throws FileNotFoundException {
         var rootAccessor = new CompositeResourceAccessor();
-        return ImageMode.current().isNativeImage()
-                ? nativeImageResourceAccessor(rootAccessor)
+        return ImageMode.current().isNativeImage() ? nativeImageResourceAccessor(rootAccessor)
                 : defaultResourceAccessor(rootAccessor);
     }
 
     private ResourceAccessor defaultResourceAccessor(CompositeResourceAccessor rootAccessor)
             throws FileNotFoundException {
 
-        rootAccessor.addResourceAccessor(
-                new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
+        rootAccessor
+                .addResourceAccessor(new ClassLoaderResourceAccessor(Thread.currentThread().getContextClassLoader()));
 
         if (!liquibaseMongodbBuildTimeConfig.changeLog().startsWith("filesystem:")
                 && liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
@@ -65,11 +64,9 @@ public class LiquibaseMongodbFactory {
         }
 
         if (liquibaseMongodbBuildTimeConfig.searchPath().isEmpty()) {
-            return rootAccessor.addResourceAccessor(
-                    new DirectoryResourceAccessor(
-                            Paths.get(StringUtil
-                                    .changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:", ""))
-                                    .getParent()));
+            return rootAccessor.addResourceAccessor(new DirectoryResourceAccessor(
+                    Paths.get(StringUtil.changePrefix(liquibaseMongodbBuildTimeConfig.changeLog(), "filesystem:", ""))
+                            .getParent()));
         }
 
         for (String searchPath : liquibaseMongodbBuildTimeConfig.searchPath().get()) {
@@ -122,8 +119,8 @@ public class LiquibaseMongodbFactory {
                 if (matcher.matches() && !StringUtil.isNullOrEmpty(matcher.group("db"))) {
                     maybeDatabase = Optional.of(matcher.group("db"));
                 } else {
-                    throw new IllegalArgumentException("Config property 'quarkus.mongodb.database' must " +
-                            "be defined when no database exist in the connection string");
+                    throw new IllegalArgumentException("Config property 'quarkus.mongodb.database' must "
+                            + "be defined when no database exist in the connection string");
                 }
             }
             Database database = createDatabase(mongoClients, mongoClientName, maybeDatabase.get());

@@ -23,50 +23,29 @@ public class FileTestCase {
     private static final String FILE = "src/test/resources/lorem.txt";
 
     @RegisterExtension
-    static final ResteasyReactiveUnitTest config = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FileResource.class, WithWriterInterceptor.class, WriterInterceptor.class));
+    static final ResteasyReactiveUnitTest config = new ResteasyReactiveUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FileResource.class, WithWriterInterceptor.class, WriterInterceptor.class));
 
     @Test
     public void testFiles() throws Exception {
 
         String content = Files.readString(Path.of(FILE));
         String contentLength = String.valueOf(content.length());
-        RestAssured.get("/providers/file/file")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
+        RestAssured.get("/providers/file/file").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, contentLength)
                 .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/file-partial")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
+        RestAssured.get("/providers/file/file-partial").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, "10")
                 .body(Matchers.equalTo(content.substring(20, 30)));
-        RestAssured.get("/providers/file/path")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
+        RestAssured.get("/providers/file/path").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, contentLength)
                 .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/path-partial")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
+        RestAssured.get("/providers/file/path-partial").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, "10")
                 .body(Matchers.equalTo(content.substring(20, 30)));
-        RestAssured.get("/providers/file/async-file")
-                .then()
-                .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())
-                .statusCode(200)
+        RestAssured.get("/providers/file/async-file").then().header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())
+                .statusCode(200).body(Matchers.equalTo(content));
+        RestAssured.get("/providers/file/mutiny-async-file").then()
+                .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue()).statusCode(200)
                 .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/mutiny-async-file")
-                .then()
-                .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())
-                .statusCode(200)
-                .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/async-file-partial")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
-                .body(Matchers.equalTo(content.substring(20, 30)));
+        RestAssured.get("/providers/file/async-file-partial").then().statusCode(200)
+                .header(HttpHeaders.CONTENT_LENGTH, "10").body(Matchers.equalTo(content.substring(20, 30)));
     }
 
     @Test

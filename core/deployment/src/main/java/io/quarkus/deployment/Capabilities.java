@@ -38,7 +38,9 @@ public final class Capabilities extends SimpleBuildItem {
     /**
      * Checks whether a given capability is present during the build.
      *
-     * @param capability capability name
+     * @param capability
+     *        capability name
+     *
      * @return true, in case the capability is present, otherwise - false
      */
     public boolean isPresent(String capability) {
@@ -48,7 +50,9 @@ public final class Capabilities extends SimpleBuildItem {
     /**
      * Checks whether a given capability is missing during the build.
      *
-     * @param capability capability name
+     * @param capability
+     *        capability name
+     *
      * @return true, in case the capability is missing, otherwise - false
      */
     public boolean isMissing(String capability) {
@@ -58,24 +62,21 @@ public final class Capabilities extends SimpleBuildItem {
     /**
      * Checks whether a capability with a given prefix is present during the build.
      * <p>
-     * A capability name is a dot-separated string. A prefix is also a string that is
-     * composed of either the first capability name element or a dot separated sequence
-     * of the capability name elements starting from the first one.
+     * A capability name is a dot-separated string. A prefix is also a string that is composed of either the first
+     * capability name element or a dot separated sequence of the capability name elements starting from the first one.
      * <p>
-     * E.g. for capability {@code io.quarkus.resteasy.json.jackson} the following prefixes will
-     * be registered:
+     * E.g. for capability {@code io.quarkus.resteasy.json.jackson} the following prefixes will be registered:
      * <ul>
      * <li>{@code io}</li>
      * <li>{@code io.quarkus}</li>
      * <li>{@code io.quarkus.resteasy}</li>
      * <li>{@code io.quarkus.resteasy.json}</li>
      * </ul>
-     * And this method could be used to check whether a capability with prefix, e.g.,
-     * {@code io.quarkus.resteasy.json} is present during the build.
+     * And this method could be used to check whether a capability with prefix, e.g., {@code io.quarkus.resteasy.json}
+     * is present during the build.
      * <p>
-     * Given that only a single provider of a given capability is allowed in an application,
-     * capability prefixes allow expressing a certain common aspect among different but
-     * somewhat related capabilities.
+     * Given that only a single provider of a given capability is allowed in an application, capability prefixes allow
+     * expressing a certain common aspect among different but somewhat related capabilities.
      * <p>
      * E.g. there could be extensions providing the following capabilities:
      * <ul>
@@ -84,12 +85,14 @@ public final class Capabilities extends SimpleBuildItem {
      * <li>{@code io.quarkus.resteasy.json.jsonb}</li>
      * <li>{@code io.quarkus.resteasy.json.jsonb.client}</li>
      * </ul>
-     * Including any one of those extensions in an application will enable the RESTEasy JSON serializer.
-     * In case a build step needs to check whether the RESTEasy JSON serializer is already enabled in an
-     * application, instead of checking whether any of those capabilities is present, it could
-     * simply check whether an extension with prefix {@code io.quarkus.resteasy.json} is present.
+     * Including any one of those extensions in an application will enable the RESTEasy JSON serializer. In case a build
+     * step needs to check whether the RESTEasy JSON serializer is already enabled in an application, instead of
+     * checking whether any of those capabilities is present, it could simply check whether an extension with prefix
+     * {@code io.quarkus.resteasy.json} is present.
      *
-     * @param capabilityPrefix capability prefix
+     * @param capabilityPrefix
+     *        capability prefix
+     *
      * @return true, in case the capability with the given prefix is present, otherwise - false
      */
     public boolean isCapabilityWithPrefixPresent(String capabilityPrefix) {
@@ -97,11 +100,12 @@ public final class Capabilities extends SimpleBuildItem {
     }
 
     /**
-     * Checks whether a capability with a given prefix is missing during the build.
-     * This method simple calls {@link #isCapabilityWithPrefixPresent(String)} and returns
-     * its result inverted.
+     * Checks whether a capability with a given prefix is missing during the build. This method simple calls
+     * {@link #isCapabilityWithPrefixPresent(String)} and returns its result inverted.
      *
-     * @param capabilityPrefix capability prefix
+     * @param capabilityPrefix
+     *        capability prefix
+     *
      * @return true, in case the capability with the given prefix is missing, otherwise - false
      */
     public boolean isCapabilityWithPrefixMissing(String capabilityPrefix) {

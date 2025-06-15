@@ -14,9 +14,7 @@ public class ConfigPropertyGlobalVsClassTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(jar -> jar.addClasses(ConfigPropertyBean.class))
-            .overrideConfigKey("quarkus.fault-tolerance.global.retry.max-retries",
-                    "7")
-            .overrideConfigKey(
+            .overrideConfigKey("quarkus.fault-tolerance.global.retry.max-retries", "7").overrideConfigKey(
                     "quarkus.fault-tolerance.\"io.quarkus.smallrye.faulttolerance.test.config.ConfigPropertyBean\".retry.max-retries",
                     "5");
 

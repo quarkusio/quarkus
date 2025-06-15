@@ -22,30 +22,26 @@ import io.vertx.core.http.UpgradeRejectedException;
 
 /**
  * Due to the complexity of establishing a WebSocket, WebSocket/Subscription testing of the GraphQL server is done here,
- * as the client framework comes in very useful for establishing the connection to the server.
- * <br>
+ * as the client framework comes in very useful for establishing the connection to the server. <br>
  * This test establishes connections to the server, and ensures that the connected user has the necessary permissions to
  * execute the operation.
  */
 public class DynamicGraphQLClientWebSocketAuthenticationHttpPermissionsTest {
 
-    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
-            System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
+    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":"
+            + System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SecuredApi.class, Foo.class)
+            .withApplicationRoot((jar) -> jar.addClasses(SecuredApi.class, Foo.class)
                     .addAsResource("application-secured-http-permissions.properties", "application.properties")
-                    .addAsResource("users.properties")
-                    .addAsResource("roles.properties")
+                    .addAsResource("users.properties").addAsResource("roles.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Disabled("TODO: enable after upgrade to smallrye-graphql 1.6.1, with 1.6.0 a websocket upgrade failure causes a hang here")
     @Test
     public void testUnauthenticatedForQueryWebSocket() throws Exception {
-        DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()
-                .url(url)
+        DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder().url(url)
                 .executeSingleOperationsOverWebsocket(true);
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             try {
@@ -59,8 +55,7 @@ public class DynamicGraphQLClientWebSocketAuthenticationHttpPermissionsTest {
 
     @Test
     public void testUnauthenticatedForSubscriptionWebSocket() throws Exception {
-        DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder()
-                .url(url);
+        DynamicGraphQLClientBuilder clientBuilder = DynamicGraphQLClientBuilder.newBuilder().url(url);
         try (DynamicGraphQLClient client = clientBuilder.build()) {
             AssertSubscriber<Response> subscriber = new AssertSubscriber<>();
             client.subscription("{ bazSub { message} }").subscribe().withSubscriber(subscriber);

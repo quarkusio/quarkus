@@ -19,8 +19,8 @@ public class CompiledJavaVersionBuildStep {
     private static final Logger log = Logger.getLogger(CompiledJavaVersionBuildStep.class);
 
     /**
-     * Determines the Java version by looking up the major version of the first successfully parsed
-     * application .class file that is found
+     * Determines the Java version by looking up the major version of the first successfully parsed application .class
+     * file that is found
      */
     @BuildStep
     public CompiledJavaVersionBuildItem compiledJavaVersion(CurateOutcomeBuildItem curateOutcomeBuildItem) {

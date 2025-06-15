@@ -14,9 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConcurrentExecutionProceedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class));
 
     @Test
     public void testExecution() {

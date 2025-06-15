@@ -11,12 +11,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class InvalidMultilineSqlLoadScriptTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(PersistenceException.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(PersistenceException.class)
             .withApplicationRoot((jar) -> jar
                     .addAsResource("application-invalid-multiline-test.properties", "application.properties")
-                    .addAsResource("invalid-multiline.sql")
-                    .addClasses(MyEntity.class));
+                    .addAsResource("invalid-multiline.sql").addClasses(MyEntity.class));
 
     @Test
     public void testSqlLoadScriptFileAbsentTest() {

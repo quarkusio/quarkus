@@ -19,9 +19,7 @@ public class RestPathTestCase {
                 public void accept(ResteasyReactiveDeploymentManager.ScanStep scanStep) {
                     scanStep.setApplicationPath("/foo");
                 }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class));
+            }).withApplicationRoot((jar) -> jar.addClass(HelloResource.class));
 
     @Test
     public void testRestPath() {

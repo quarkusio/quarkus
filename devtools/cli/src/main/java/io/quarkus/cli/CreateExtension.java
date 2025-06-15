@@ -27,21 +27,15 @@ import picocli.CommandLine;
         + "by applying naming conventions to the specified EXTENSION-ID.", footer = { "%nDefault Naming conventions%n",
                 " GROUP-ID: io.quarkiverse.<EXTENSION-ID>",
                 " EXTENSION-NAME: EXTENSION-ID converted to Capitalized Words",
-                " NAMESPACE-NAME: NAMESPACE-ID converted to Capitalized Words",
-                "%nModule Naming Conventions%n",
-                " parent: ",
-                "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-parent",
-                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Parent",
-                " runtime:",
+                " NAMESPACE-NAME: NAMESPACE-ID converted to Capitalized Words", "%nModule Naming Conventions%n",
+                " parent: ", "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-parent",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Parent", " runtime:",
                 "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]",
-                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Runtime",
-                " deployment:",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Runtime", " deployment:",
                 "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-deployment",
-                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Deployment",
-                " integration-tests:",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Deployment", " integration-tests:",
                 "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-integration-tests",
-                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Integration Tests",
-                " docs:",
+                "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Integration Tests", " docs:",
                 "    artifactId:\t[NAMESPACE-ID][EXTENSION-ID]-docs",
                 "    name:\t[NAMESPACE-NAME][EXTENSION-NAME] - Documentation",
                 "%nPackage and Class Naming Conventions%n",
@@ -49,26 +43,18 @@ import picocli.CommandLine;
                 " Class name prefix: EXTENSION-ID converted to CamelCase",
                 "%nAs an example, specifying 'hello-world' as the EXTENSION-ID and "
                         + "'org.acme' as the GROUP-ID will generate a project containing the following modules:%n",
-                "  hello-world: ",
-                "    artifact:\torg.acme:hello-world-parent:1.0.0-SNAPSHOT",
-                "    name:\tHello World - Parent",
-                "  hello-world/runtime:",
-                "    artifact:\torg.acme:hello-world:1.0.0-SNAPSHOT",
-                "    name:\tHello World - Runtime",
-                "    package name: org.acme.hello.world.runtime",
-                "  hello-world/deployment:",
-                "    artifact:\torg.acme:hello-world-deployment:1.0.0-SNAPSHOT",
-                "    name:\tHello World - Deployment",
+                "  hello-world: ", "    artifact:\torg.acme:hello-world-parent:1.0.0-SNAPSHOT",
+                "    name:\tHello World - Parent", "  hello-world/runtime:",
+                "    artifact:\torg.acme:hello-world:1.0.0-SNAPSHOT", "    name:\tHello World - Runtime",
+                "    package name: org.acme.hello.world.runtime", "  hello-world/deployment:",
+                "    artifact:\torg.acme:hello-world-deployment:1.0.0-SNAPSHOT", "    name:\tHello World - Deployment",
                 "    package names: org.acme.hello.world.deployment, org.acme.hello.world.test",
                 "  hello-world/integration-test:",
                 "    artifact:\torg.acme:hello-world-integration-tests:1.0.0-SNAPSHOT",
-                "    name:\tHello World - Integration Tests",
-                "    package name: org.acme.hello.world.it",
-                "  hello-world/docs:",
-                "    artifact:\torg.acme:hello-world-docs:1.0.0-SNAPSHOT",
+                "    name:\tHello World - Integration Tests", "    package name: org.acme.hello.world.it",
+                "  hello-world/docs:", "    artifact:\torg.acme:hello-world-docs:1.0.0-SNAPSHOT",
                 "    name:\tHello World - Documentation",
-                "%nGenerated classes will use 'HelloWorld' as a class name prefix."
-        })
+                "%nGenerated classes will use 'HelloWorld' as a class name prefix." })
 public class CreateExtension extends BaseCreateCommand {
 
     static class VersionCandidates extends ArrayList<String> {
@@ -118,25 +104,18 @@ public class CreateExtension extends BaseCreateCommand {
             ArtifactCoords quarkusBom = catalog.getBom();
 
             final CreateExtensionCommandHandler createExtension = new io.quarkus.devtools.commands.CreateExtension(
-                    outputDirectory())
-                    .extensionId(gav.getExtensionId())
-                    .groupId(gav.getGroupId())
-                    .version(gav.getVersion())
-                    .extensionName(nameGeneration.getExtensionName())
+                    outputDirectory()).extensionId(gav.getExtensionId()).groupId(gav.getGroupId())
+                    .version(gav.getVersion()).extensionName(nameGeneration.getExtensionName())
                     .extensionDescription(nameGeneration.extensionDescription())
                     .namespaceId(nameGeneration.getNamespaceId())
                     .namespaceName(nameGeneration.getNamespaceName())
                     .packageName(nameGeneration.getPackageName())
-                    .quarkusVersion(catalog.getQuarkusCoreVersion())
-                    .quarkusBomGroupId(quarkusBom.getGroupId())
-                    .quarkusBomArtifactId(quarkusBom.getArtifactId())
-                    .quarkusBomVersion(quarkusBom.getVersion())
-                    .javaVersion(javaVersion)
-                    .withCodestart(codeGeneration.withCodestart())
+                    .quarkusVersion(catalog.getQuarkusCoreVersion()).quarkusBomGroupId(quarkusBom.getGroupId())
+                    .quarkusBomArtifactId(quarkusBom.getArtifactId()).quarkusBomVersion(quarkusBom.getVersion())
+                    .javaVersion(javaVersion).withCodestart(codeGeneration.withCodestart())
                     .withoutUnitTest(codeGeneration.skipUnitTest())
                     .withoutDevModeTest(codeGeneration.skipDevModeTest())
-                    .withoutIntegrationTests(codeGeneration.skipIntegrationTests())
-                    .prepare();
+                    .withoutIntegrationTests(codeGeneration.skipIntegrationTests()).prepare();
 
             QuarkusCommandOutcome outcome = QuarkusCommandOutcome.success();
 
@@ -156,18 +135,15 @@ public class CreateExtension extends BaseCreateCommand {
             return CommandLine.ExitCode.SOFTWARE;
         } catch (Exception e) {
             output.error("Extension creation failed, " + e.getMessage());
-            return output.handleCommandException(e,
-                    "Unable to create extension: " + e.getMessage());
+            return output.handleCommandException(e, "Unable to create extension: " + e.getMessage());
         }
     }
 
     public void dryRun(BuildTool buildTool, CreateExtensionCommandHandler invocation, OutputOptionMixin output) {
         CommandLine.Help help = spec.commandLine().getHelp();
-        output.printText(new String[] {
-                "\nA new extension would have been created in",
-                "\t" + outputDirectory().toString(),
-                "\nThe extension would have been created using the following settings:\n"
-        });
+        output.printText(
+                new String[] { "\nA new extension would have been created in", "\t" + outputDirectory().toString(),
+                        "\nThe extension would have been created using the following settings:\n" });
         Map<String, String> dryRunOutput = new TreeMap<>();
         for (Map.Entry<String, Object> entry : invocation.getData().entrySet()) {
             dryRunOutput.put(prettyName(entry.getKey()), entry.getValue().toString());
@@ -181,10 +157,7 @@ public class CreateExtension extends BaseCreateCommand {
 
     @Override
     public String toString() {
-        return "CreateExtension{" + "gav=" + gav
-                + ", quarkusVersion=" + targetQuarkusVersion
-                + ", nameGeneration=" + nameGeneration
-                + ", testGeneration=" + codeGeneration
-                + '}';
+        return "CreateExtension{" + "gav=" + gav + ", quarkusVersion=" + targetQuarkusVersion + ", nameGeneration="
+                + nameGeneration + ", testGeneration=" + codeGeneration + '}';
     }
 }

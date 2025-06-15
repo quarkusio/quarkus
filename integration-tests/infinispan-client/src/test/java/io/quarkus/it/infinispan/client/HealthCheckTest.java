@@ -15,14 +15,11 @@ import io.restassured.http.ContentType;
 public class HealthCheckTest {
     @Test
     public void testHealthCheck() {
-        RestAssured.when().get("/q/health").then()
-                .contentType(ContentType.JSON)
-                .header("Content-Type", containsString("charset=UTF-8"))
-                .body("status", is("UP"),
-                        "checks.status", containsInAnyOrder("UP"),
-                        "checks.data", containsInAnyOrder(hasKey("<default>.servers")),
-                        "checks.data", containsInAnyOrder(hasKey("<default>.caches-size")),
-                        "checks.data", containsInAnyOrder(hasKey("another.caches-size")),
-                        "checks.data", containsInAnyOrder(hasKey("another.caches-size")));
+        RestAssured.when().get("/q/health").then().contentType(ContentType.JSON)
+                .header("Content-Type", containsString("charset=UTF-8")).body("status", is("UP"), "checks.status",
+                        containsInAnyOrder("UP"), "checks.data", containsInAnyOrder(hasKey("<default>.servers")),
+                        "checks.data", containsInAnyOrder(hasKey("<default>.caches-size")), "checks.data",
+                        containsInAnyOrder(hasKey("another.caches-size")), "checks.data",
+                        containsInAnyOrder(hasKey("another.caches-size")));
     }
 }

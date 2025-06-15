@@ -27,17 +27,13 @@ import io.restassured.response.Response;
 
 class DefaultPagedResourceTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AbstractEntity.class, Record.class, DefaultRecordsRepository.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(AbstractEntity.class, Record.class, DefaultRecordsRepository.class)
+                    .addAsResource("application.properties").addAsResource("import.sql"));
 
     @Test
     void shouldList() {
-        Response response = given().accept("application/json")
-                .when().get("/default-records")
-                .thenReturn();
+        Response response = given().accept("application/json").when().get("/default-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).contains(1, 2);
@@ -51,12 +47,9 @@ class DefaultPagedResourceTest {
 
     @Test
     void shouldListHal() {
-        given().accept("application/hal+json")
-                .when().get("/default-records")
-                .then().statusCode(200)
-                .and().body("_embedded.default-records.id", hasItems(1, 2))
-                .and().body("_embedded.default-records.name", hasItems("first", "second"))
-                .and()
+        given().accept("application/hal+json").when().get("/default-records").then().statusCode(200).and()
+                .body("_embedded.default-records.id", hasItems(1, 2)).and()
+                .body("_embedded.default-records.name", hasItems("first", "second")).and()
                 .body("_embedded.default-records._links.add.href",
                         hasItems(endsWith("/default-records"), endsWith("/default-records")))
                 .and()
@@ -71,26 +64,21 @@ class DefaultPagedResourceTest {
                 .and()
                 .body("_embedded.default-records._links.remove.href",
                         hasItems(endsWith("/default-records/1"), endsWith("/default-records/2")))
-                .and().body("_links.add.href", endsWith("/default-records"))
-                .and().body("_links.list.href", endsWith("/default-records"))
-                .and().body("_links.first.href", endsWith("/default-records?page=0&size=20"))
-                .and().body("_links.last.href", endsWith("/default-records?page=0&size=20"));
+                .and().body("_links.add.href", endsWith("/default-records")).and()
+                .body("_links.list.href", endsWith("/default-records")).and()
+                .body("_links.first.href", endsWith("/default-records?page=0&size=20")).and()
+                .body("_links.last.href", endsWith("/default-records?page=0&size=20"));
     }
 
     @Test
     void shouldListFirstPage() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/default-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/default-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        Response response = given().accept("application/json")
-                .and().queryParam("page", 0)
-                .and().queryParam("size", 1)
-                .when().get("/default-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().queryParam("page", 0).and().queryParam("size", 1)
+                .when().get("/default-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).containsOnly(ids.get(0));
@@ -105,21 +93,15 @@ class DefaultPagedResourceTest {
 
     @Test
     void shouldListFirstPageHal() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/default-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/default-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        given().accept("application/hal+json")
-                .and().queryParam("page", 0)
-                .and().queryParam("size", 1)
-                .when().get("/default-records")
-                .then().statusCode(200)
-                .and().body("_embedded.default-records.id", contains(ids.get(0)))
-                .and().body("_embedded.default-records.name", contains(names.get(0)))
-                .and()
+        given().accept("application/hal+json").and().queryParam("page", 0).and().queryParam("size", 1).when()
+                .get("/default-records").then().statusCode(200).and()
+                .body("_embedded.default-records.id", contains(ids.get(0))).and()
+                .body("_embedded.default-records.name", contains(names.get(0))).and()
                 .body("_embedded.default-records._links.add.href",
                         hasItems(endsWith("/default-records"), endsWith("/default-records")))
                 .and()
@@ -134,27 +116,22 @@ class DefaultPagedResourceTest {
                 .and()
                 .body("_embedded.default-records._links.remove.href",
                         contains(endsWith("/default-records/" + ids.get(0))))
-                .and().body("_links.add.href", endsWith("/default-records"))
-                .and().body("_links.list.href", endsWith("/default-records"))
-                .and().body("_links.first.href", endsWith("/default-records?page=0&size=1"))
-                .and().body("_links.last.href", endsWith("/default-records?page=" + lastPage + "&size=1"))
-                .and().body("_links.next.href", endsWith("/default-records?page=1&size=1"));
+                .and().body("_links.add.href", endsWith("/default-records")).and()
+                .body("_links.list.href", endsWith("/default-records")).and()
+                .body("_links.first.href", endsWith("/default-records?page=0&size=1")).and()
+                .body("_links.last.href", endsWith("/default-records?page=" + lastPage + "&size=1")).and()
+                .body("_links.next.href", endsWith("/default-records?page=1&size=1"));
     }
 
     @Test
     void shouldListLastPage() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/default-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/default-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        Response response = given().accept("application/json")
-                .and().queryParam("page", lastPage)
-                .and().queryParam("size", 1)
-                .when().get("/default-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().queryParam("page", lastPage).and()
+                .queryParam("size", 1).when().get("/default-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).containsOnly(ids.get(lastPage));
@@ -169,21 +146,15 @@ class DefaultPagedResourceTest {
 
     @Test
     void shouldListLastPageHal() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/default-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/default-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        given().accept("application/hal+json")
-                .and().queryParam("page", lastPage)
-                .and().queryParam("size", 1)
-                .when().get("/default-records")
-                .then().statusCode(200)
-                .and().body("_embedded.default-records.id", contains(ids.get(lastPage)))
-                .and().body("_embedded.default-records.name", contains(names.get(lastPage)))
-                .and()
+        given().accept("application/hal+json").and().queryParam("page", lastPage).and().queryParam("size", 1).when()
+                .get("/default-records").then().statusCode(200).and()
+                .body("_embedded.default-records.id", contains(ids.get(lastPage))).and()
+                .body("_embedded.default-records.name", contains(names.get(lastPage))).and()
                 .body("_embedded.default-records._links.add.href",
                         hasItems(endsWith("/default-records"), endsWith("/default-records")))
                 .and()
@@ -198,38 +169,30 @@ class DefaultPagedResourceTest {
                 .and()
                 .body("_embedded.default-records._links.remove.href",
                         contains(endsWith("/default-records/" + ids.get(lastPage))))
-                .and().body("_links.add.href", endsWith("/default-records"))
-                .and().body("_links.list.href", endsWith("/default-records"))
-                .and().body("_links.first.href", endsWith("/default-records?page=0&size=1"))
-                .and().body("_links.last.href", endsWith("/default-records?page=" + lastPage + "&size=1"))
-                .and().body("_links.previous.href", endsWith("/default-records?page=" + (lastPage - 1) + "&size=1"));
+                .and().body("_links.add.href", endsWith("/default-records")).and()
+                .body("_links.list.href", endsWith("/default-records")).and()
+                .body("_links.first.href", endsWith("/default-records?page=0&size=1")).and()
+                .body("_links.last.href", endsWith("/default-records?page=" + lastPage + "&size=1")).and()
+                .body("_links.previous.href", endsWith("/default-records?page=" + (lastPage - 1) + "&size=1"));
     }
 
     @Test
     void shouldNotGetNonExistentPage() {
-        given().accept("application/json")
-                .and().queryParam("page", 100)
-                .when().get("/default-records")
-                .then().statusCode(200)
-                .and().body("id", is(empty()));
+        given().accept("application/json").and().queryParam("page", 100).when().get("/default-records").then()
+                .statusCode(200).and().body("id", is(empty()));
     }
 
     @Test
     void shouldNotGetNegativePageOrSize() {
-        given().accept("application/json")
-                .and().queryParam("page", -1)
-                .and().queryParam("size", -1)
-                .when().get("/default-records")
-                .then().statusCode(200)
+        given().accept("application/json").and().queryParam("page", -1).and().queryParam("size", -1).when()
+                .get("/default-records").then().statusCode(200)
                 // Invalid page and size parameters are replaced with defaults
                 .and().body("id", hasItems(1, 2));
     }
 
     @Test
     void shouldListAscending() {
-        Response response = given().accept("application/json")
-                .when().get("/default-records?sort=name,id")
-                .thenReturn();
+        Response response = given().accept("application/json").when().get("/default-records?sort=name,id").thenReturn();
 
         List<String> actualNames = response.body().jsonPath().getList("name");
         List<String> expectedNames = new LinkedList<>(actualNames);
@@ -239,8 +202,7 @@ class DefaultPagedResourceTest {
 
     @Test
     void shouldListDescending() {
-        Response response = given().accept("application/json")
-                .when().get("/default-records?sort=-name,id")
+        Response response = given().accept("application/json").when().get("/default-records?sort=-name,id")
                 .thenReturn();
 
         List<String> actualNames = response.body().jsonPath().getList("name");

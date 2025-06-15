@@ -23,14 +23,11 @@ import io.smallrye.config.WithUnnamedKey;
 public interface HibernateSearchStandaloneRuntimeConfig {
 
     /**
-     * Whether Hibernate Search Standalone should be active at runtime.
-     *
-     * If Hibernate Search Standalone is not active, it won't start with the application,
-     * and accessing the SearchMapping for search or other operations will not be possible.
-     *
-     * Note that if Hibernate Search Standalone is disabled
-     * (i.e. `quarkus.hibernate-search-standalone.enabled` is set to `false`),
-     * it won't be active, and setting this property to `true` will fail.
+     * Whether Hibernate Search Standalone should be active at runtime. If Hibernate Search Standalone is not active, it
+     * won't start with the application, and accessing the SearchMapping for search or other operations will not be
+     * possible. Note that if Hibernate Search Standalone is disabled (i.e.
+     * `quarkus.hibernate-search-standalone.enabled` is set to `false`), it won't be active, and setting this property
+     * to `true` will fail.
      *
      * @asciidoclet
      */
@@ -47,8 +44,8 @@ public interface HibernateSearchStandaloneRuntimeConfig {
     Map<String, HibernateSearchBackendElasticsearchRuntimeConfig> backends();
 
     /**
-     * Configuration for automatic creation and validation of the Elasticsearch schema:
-     * indexes, their mapping, their settings.
+     * Configuration for automatic creation and validation of the Elasticsearch schema: indexes, their mapping, their
+     * settings.
      */
     SchemaManagementConfig schemaManagement();
 

@@ -16,9 +16,7 @@ public class SinglePersistenceUnitCdiMutinySessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addAsResource("application.properties"));
 
     @Inject
     Mutiny.SessionFactory sessionFactory;
@@ -27,10 +25,10 @@ public class SinglePersistenceUnitCdiMutinySessionTest {
     @RunOnVertxContext
     public void test(UniAsserter asserter) {
         DefaultEntity entity = new DefaultEntity("default");
-        asserter.assertThat(() -> sessionFactory.withTransaction((session, tx) -> session.persist(entity))
-                .chain(() -> sessionFactory.withSession(session -> session.find(DefaultEntity.class, entity.getId()))),
-                retrievedEntity -> assertThat(retrievedEntity)
-                        .isNotSameAs(entity)
-                        .returns(entity.getName(), DefaultEntity::getName));
+        asserter.assertThat(
+                () -> sessionFactory.withTransaction((session, tx) -> session.persist(entity)).chain(
+                        () -> sessionFactory.withSession(session -> session.find(DefaultEntity.class, entity.getId()))),
+                retrievedEntity -> assertThat(retrievedEntity).isNotSameAs(entity).returns(entity.getName(),
+                        DefaultEntity::getName));
     }
 }

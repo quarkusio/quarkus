@@ -21,7 +21,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.RoutingContext;
 
-record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) implements Consumer<TokenVerificationResult> {
+record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge)
+        implements
+            Consumer<TokenVerificationResult> {
 
     private static volatile boolean enabled = false;
 
@@ -47,7 +49,8 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
         if (authTime == null) {
             authTime = json.getLong(Claims.iat.name());
             if (authTime != null) {
-                LOG.debugf("The '%s' claim value is not available, using the '%s' claim value '%s' to verify maximum token age",
+                LOG.debugf(
+                        "The '%s' claim value is not available, using the '%s' claim value '%s' to verify maximum token age",
                         Claims.auth_time.name(), Claims.iat.name(), authTime);
             }
         }
@@ -68,7 +71,8 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
             boolean acrFound = true;
             for (String expectedAcrValue : expectedAcrValues) {
                 if (!acr.contains(expectedAcrValue)) {
-                    LOG.debug("Acr value " + expectedAcrValue + " is required but not found in token 'acr' claim: " + acr);
+                    LOG.debug("Acr value " + expectedAcrValue + " is required but not found in token 'acr' claim: "
+                            + acr);
                     acrFound = false;
                     break;
                 }
@@ -87,7 +91,8 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
         throwAuthenticationFailedException(exceptionMessage, expectedAcrValues, maxAge);
     }
 
-    private static void throwAuthenticationFailedException(String exceptionMessage, String[] expectedAcrValues, Long maxAge) {
+    private static void throwAuthenticationFailedException(String exceptionMessage, String[] expectedAcrValues,
+            Long maxAge) {
         final Map<String, Object> failureContext;
         if (maxAge == null) {
             failureContext = Map.of(ACR_VALUES, String.join(",", expectedAcrValues));
@@ -118,17 +123,15 @@ record StepUpAuthenticationPolicy(String[] expectedAcrValues, Long maxAge) imple
     static String getAuthRequirementChallenge(RoutingContext context) {
         final AuthenticationFailedException authFailure = getAuthenticationFailureFromEvent(context);
         if (isInsufficientUserAuthException(authFailure)) {
-            StringBuilder challengeBuilder = new StringBuilder(" error=\"insufficient_user_authentication\"," +
-                    " error_description=\"A different authentication level is required\"");
+            StringBuilder challengeBuilder = new StringBuilder(" error=\"insufficient_user_authentication\","
+                    + " error_description=\"A different authentication level is required\"");
             if (authFailure.getAttribute(ACR_VALUES) != null) {
                 challengeBuilder.append(", ").append(ACR_VALUES).append("=\"")
-                        .append((String) authFailure.getAttribute(ACR_VALUES))
-                        .append("\"");
+                        .append((String) authFailure.getAttribute(ACR_VALUES)).append("\"");
             }
             if (authFailure.getAttribute(MAX_AGE) != null) {
                 challengeBuilder.append(", ").append(MAX_AGE).append("=\"")
-                        .append((String) authFailure.getAttribute(MAX_AGE))
-                        .append("\"");
+                        .append((String) authFailure.getAttribute(MAX_AGE)).append("\"");
             }
             return challengeBuilder.toString();
         }

@@ -16,22 +16,15 @@ public class MultipartResourceTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MultipartResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MultipartResource.class));
 
     @Test
     public void testHelloEndpoint() {
         Map<String, String> map = new HashMap<>();
         map.put("test", "value");
 
-        given()
-                .formParams(map)
-                .header("Expect", "100-continue")
-                .contentType(ContentType.URLENC)
-                .when().post("/multipart/")
-                .then()
-                .statusCode(200)
-                .body(is("[test:value]"));
+        given().formParams(map).header("Expect", "100-continue").contentType(ContentType.URLENC).when()
+                .post("/multipart/").then().statusCode(200).body(is("[test:value]"));
     }
 
 }

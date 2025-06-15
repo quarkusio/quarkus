@@ -31,11 +31,11 @@ import io.smallrye.config.SmallRyeConfig;
 /**
  * Utility class for manually instantiating a config object
  * <p>
- * This should only be used in specific circumstances, generally when normal start
- * has failed and we are attempting to do some form of recovery via hot deployment
+ * This should only be used in specific circumstances, generally when normal start has failed and we are attempting to
+ * do some form of recovery via hot deployment
  * <p>
- * TODO: fully implement this as required, at the moment this is mostly to read the HTTP config when startup fails
- * or for basic logging setup in non-Quarkus tests
+ * TODO: fully implement this as required, at the moment this is mostly to read the HTTP config when startup fails or
+ * for basic logging setup in non-Quarkus tests
  */
 public class ConfigInstantiator {
 
@@ -88,7 +88,8 @@ public class ConfigInstantiator {
         return names;
     }
 
-    private static void handleObject(String prefix, Object o, SmallRyeConfig config, List<String> quarkusPropertyNames) {
+    private static void handleObject(String prefix, Object o, SmallRyeConfig config,
+            List<String> quarkusPropertyNames) {
 
         try {
             final Class<?> cls = o.getClass();
@@ -127,8 +128,8 @@ public class ConfigInstantiator {
                         if (value.isPresent()) {
                             field.set(o, value.get());
                         } else if (!configItem.defaultValue().equals(ConfigItem.NO_DEFAULT)) {
-                            //the runtime config source handles default automatically
-                            //however this may not have actually been installed depending on where the failure occurred
+                            // the runtime config source handles default automatically
+                            // however this may not have actually been installed depending on where the failure occurred
                             field.set(o, conv.convert(configItem.defaultValue()));
                         }
                     } catch (NoSuchElementException ignored) {
@@ -225,12 +226,12 @@ public class ConfigInstantiator {
         }
     }
 
-    //    Configuration keys are normally derived from the field names that they are tied to.
-    //    This is done by de-camel-casing the name and then joining the segments with hyphens (-).
-    //    Some examples:
-    //    bindAddress becomes bind-address
-    //    keepAliveTime becomes keep-alive-time
-    //    requestDNSTimeout becomes request-dns-timeout
+    // Configuration keys are normally derived from the field names that they are tied to.
+    // This is done by de-camel-casing the name and then joining the segments with hyphens (-).
+    // Some examples:
+    // bindAddress becomes bind-address
+    // keepAliveTime becomes keep-alive-time
+    // requestDNSTimeout becomes request-dns-timeout
     private static String dashify(String substring) {
         final StringBuilder ret = new StringBuilder();
         final char[] chars = substring.toCharArray();

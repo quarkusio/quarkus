@@ -8,8 +8,8 @@ import java.lang.annotation.Target;
 import jakarta.ws.rs.core.Response;
 
 /**
- * When placed on a resource method, then RESTEasy Reactive will set the HTTP status to the specified value,
- * if the method completes without an exception and if it does not return {@link Response} or {@link RestResponse}
+ * When placed on a resource method, then RESTEasy Reactive will set the HTTP status to the specified value, if the
+ * method completes without an exception and if it does not return {@link Response} or {@link RestResponse}
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

@@ -24,11 +24,8 @@ public class BasicCompositeBuildProjectDevModeTest extends QuarkusDevGradleTestB
 
     protected void testDevMode() throws Exception {
 
-        assertThat(getHttpResponse())
-                .contains("ready")
-                .contains("my-quarkus-project")
-                .contains("org.acme.quarkus.sample")
-                .contains("1.0-SNAPSHOT");
+        assertThat(getHttpResponse()).contains("ready").contains("my-quarkus-project")
+                .contains("org.acme.quarkus.sample").contains("1.0-SNAPSHOT");
 
         assertThat(getHttpResponse("/hello")).contains("hello LibA");
 

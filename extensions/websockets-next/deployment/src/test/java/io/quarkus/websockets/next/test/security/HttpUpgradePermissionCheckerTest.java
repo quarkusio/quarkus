@@ -40,10 +40,9 @@ public class HttpUpgradePermissionCheckerTest extends SecurityTestBase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            AdminEndpoint.class, InclusiveEndpoint.class, MetaAnnotationEndpoint.class,
-                            StringEndpointReadPermissionMetaAnnotation.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class,
+                    TestIdentityController.class, AdminEndpoint.class, InclusiveEndpoint.class,
+                    MetaAnnotationEndpoint.class, StringEndpointReadPermissionMetaAnnotation.class));
 
     @TestHTTPResource("admin-end")
     URI adminEndpointUri;

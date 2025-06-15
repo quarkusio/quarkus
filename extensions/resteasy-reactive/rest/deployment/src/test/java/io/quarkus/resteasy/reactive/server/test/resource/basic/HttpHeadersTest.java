@@ -21,8 +21,11 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * @tpSubChapter Resources
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Spec requires that HEAD and OPTIONS are handled in a default manner
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Http Headers Test")
@@ -31,15 +34,14 @@ public class HttpHeadersTest {
     static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, HttpHeadersResource.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, HttpHeadersResource.class);
+            return war;
+        }
+    });
 
     @BeforeAll
     public static void init() {
@@ -56,9 +58,9 @@ public class HttpHeadersTest {
     }
 
     /**
-     * @tpTestDetails Client invokes GET request on a sub resource at /HeadersTest/sub2
-     *                with Accept MediaType and Content-Type Headers set;
-     *                Verify that HttpHeaders got the property set by the request
+     * @tpTestDetails Client invokes GET request on a sub resource at /HeadersTest/sub2 with Accept MediaType and
+     *                Content-Type Headers set; Verify that HttpHeaders got the property set by the request
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

@@ -29,10 +29,9 @@ import io.quarkus.websockets.next.test.utils.WSClient;
 public class ConnectionIdleTimeoutTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class, WSClient.class);
-            }).overrideConfigKey("quarkus.websockets-next.client.connection-idle-timeout", "500ms");;
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class, WSClient.class);
+    }).overrideConfigKey("quarkus.websockets-next.client.connection-idle-timeout", "500ms");;
 
     @TestHTTPResource("/")
     URI uri;

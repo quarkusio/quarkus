@@ -32,9 +32,11 @@ public class PropertyUtil {
         if (kubernetesValue == null) {
             // If no kubernetes property is provided, this will be used instead.
             String defaultOrProvided = extensionProperty.getValue().isPresent() ? "provided" : "default";
-            String stringValue = String.valueOf(extensionProperty.getValue().orElse(extensionProperty.getDefaultValue()));
-            LOG.infof("%s manifests are generated with '%s' having %s value '%s'. "
-                    + "The app and manifests will get out of sync if the property '%s' is changed at runtime.",
+            String stringValue = String
+                    .valueOf(extensionProperty.getValue().orElse(extensionProperty.getDefaultValue()));
+            LOG.infof(
+                    "%s manifests are generated with '%s' having %s value '%s'. "
+                            + "The app and manifests will get out of sync if the property '%s' is changed at runtime.",
                     platformCapitalized, usage, defaultOrProvided, stringValue, extensionProperty.getName());
 
         } else if (extensionProperty.getValue().filter(v -> !v.equals(kubernetesValue)).isPresent()) {
@@ -42,8 +44,8 @@ public class PropertyUtil {
             String runtimeOrBuildTime = extensionProperty.isRuntime() ? "runtime" : "buildtime";
             LOG.debugf(
                     "%s property '%s' has been set with value '%s' while %s property '%s' is set with '%s'. %s will be set using the former.",
-                    platformCapitalized, kubernetesProperty.getName(), kubernetesProperty.getValue().get(), runtimeOrBuildTime,
-                    extensionProperty.getName(), extensionProperty.getValue().get(), usage);
+                    platformCapitalized, kubernetesProperty.getName(), kubernetesProperty.getValue().get(),
+                    runtimeOrBuildTime, extensionProperty.getName(), extensionProperty.getValue().get(), usage);
         } else {
             // Both proeprties are present and aligned.
         }

@@ -13,15 +13,10 @@ public class DataNamespaceValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Item.class, OtherItem.class)
-                    .addAsResource(new StringAsset(
-                            "{@io.quarkus.qute.deployment.typesafe.Item item}\n" +
-                                    "{item.name}\n" +
-                                    "  {#for item in item.otherItems}\n" +
-                                    "    {data:item.unknownProperty}\n" +
-                                    "  {/for}\n"),
-                            "templates/item.html"))
+            .withApplicationRoot((jar) -> jar.addClasses(Item.class, OtherItem.class)
+                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Item item}\n"
+                            + "{item.name}\n" + "  {#for item in item.otherItems}\n"
+                            + "    {data:item.unknownProperty}\n" + "  {/for}\n"), "templates/item.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;

@@ -21,10 +21,8 @@ public class AmazonLambdaMapperRecorder {
     public static ObjectReader clientCtxReader;
 
     public void initObjectMapper() {
-        objectMapper = getObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true)
-                .registerModule(new JodaModule());
+        objectMapper = getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true).registerModule(new JodaModule());
     }
 
     public void initContextReaders() {

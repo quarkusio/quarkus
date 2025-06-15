@@ -20,10 +20,9 @@ import io.quarkus.websockets.next.WebSocketConnector;
 public class UnhandledMessageFailureDefaultStrategyTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientMessageErrorEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientMessageErrorEndpoint.class);
+    });
 
     @Inject
     WebSocketConnector<ClientMessageErrorEndpoint> connector;
@@ -33,9 +32,7 @@ public class UnhandledMessageFailureDefaultStrategyTest {
 
     @Test
     void testError() throws InterruptedException {
-        WebSocketClientConnection connection = connector
-                .baseUri(testUri)
-                .connectAndAwait();
+        WebSocketClientConnection connection = connector.baseUri(testUri).connectAndAwait();
         connection.sendTextAndAwait("foo");
         assertFalse(connection.isClosed());
         connection.sendTextAndAwait("bar");

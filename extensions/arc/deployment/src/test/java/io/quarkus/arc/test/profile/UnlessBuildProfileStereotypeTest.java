@@ -26,16 +26,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnlessBuildProfileStereotypeTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestNever.class, InheritableTestNever.class, TransitiveTestNever.class,
-                            InheritableTransitiveTestNever.class, MyService.class, TestNeverMyService.class,
-                            InheritableTestNeverMyService.class, TransitiveTestNeverMyService.class,
-                            InheritableTransitiveTestNeverMyService.class, MyServiceSimple.class,
-                            MyServiceTestNeverDirect.class, MyServiceTestNeverTransitive.class,
-                            MyServiceTestNeverOnSuperclassNotInheritable.class,
-                            MyServiceTestNeverOnSuperclassInheritable.class,
-                            MyServiceTestNeverTransitiveOnSuperclassNotInheritable.class,
-                            MyServiceTestNeverTransitiveOnSuperclassInheritable.class, Producers.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TestNever.class, InheritableTestNever.class,
+                    TransitiveTestNever.class, InheritableTransitiveTestNever.class, MyService.class,
+                    TestNeverMyService.class, InheritableTestNeverMyService.class, TransitiveTestNeverMyService.class,
+                    InheritableTransitiveTestNeverMyService.class, MyServiceSimple.class,
+                    MyServiceTestNeverDirect.class, MyServiceTestNeverTransitive.class,
+                    MyServiceTestNeverOnSuperclassNotInheritable.class, MyServiceTestNeverOnSuperclassInheritable.class,
+                    MyServiceTestNeverTransitiveOnSuperclassNotInheritable.class,
+                    MyServiceTestNeverTransitiveOnSuperclassInheritable.class, Producers.class));
 
     @Inject
     @Any
@@ -44,11 +42,9 @@ public class UnlessBuildProfileStereotypeTest {
     @Test
     public void test() {
         Set<String> hello = services.stream().map(MyService::hello).collect(Collectors.toSet());
-        Set<Object> expected = Set.of(
-                MyServiceSimple.class.getSimpleName(),
+        Set<Object> expected = Set.of(MyServiceSimple.class.getSimpleName(),
                 MyServiceTestNeverOnSuperclassNotInheritable.class.getSimpleName(),
-                MyServiceTestNeverTransitiveOnSuperclassNotInheritable.class.getSimpleName(),
-                Producers.SIMPLE);
+                MyServiceTestNeverTransitiveOnSuperclassNotInheritable.class.getSimpleName(), Producers.SIMPLE);
         assertEquals(expected, hello);
     }
 

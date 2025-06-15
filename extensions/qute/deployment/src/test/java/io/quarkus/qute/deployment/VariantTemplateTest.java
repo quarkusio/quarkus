@@ -18,10 +18,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class VariantTemplateTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class)
-                    .addAsResource(new StringAsset("{this}"), "templates/foo.txt")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SimpleBean.class).addAsResource(new StringAsset("{this}"), "templates/foo.txt")
                     .addAsResource(new StringAsset("<strong>{this}</strong>"), "templates/foo.html"));
 
     @Inject

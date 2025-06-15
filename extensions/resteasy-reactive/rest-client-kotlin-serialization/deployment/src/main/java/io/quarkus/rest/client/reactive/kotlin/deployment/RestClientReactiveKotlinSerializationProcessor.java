@@ -25,20 +25,18 @@ public class RestClientReactiveKotlinSerializationProcessor {
     }
 
     @BuildStep
-    void additionalProviders(
-            BuildProducer<AdditionalBeanBuildItem> additionalBean,
+    void additionalProviders(BuildProducer<AdditionalBeanBuildItem> additionalBean,
             BuildProducer<MessageBodyReaderBuildItem> additionalReaders,
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters) {
-        additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(ClientKotlinMessageBodyReader.class.getName())
-                .addBeanClass(ClientKotlinMessageBodyWriter.class.getName())
-                .setUnremovable().build());
+        additionalBean
+                .produce(AdditionalBeanBuildItem.builder().addBeanClass(ClientKotlinMessageBodyReader.class.getName())
+                        .addBeanClass(ClientKotlinMessageBodyWriter.class.getName()).setUnremovable().build());
 
-        additionalReaders
-                .produce(new MessageBodyReaderBuildItem(ClientKotlinMessageBodyReader.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON), RuntimeType.CLIENT, true, Priorities.USER));
-        additionalWriters
-                .produce(new MessageBodyWriterBuildItem(ClientKotlinMessageBodyWriter.class.getName(), Object.class.getName(),
-                        Collections.singletonList(MediaType.APPLICATION_JSON), RuntimeType.CLIENT, true, Priorities.USER));
+        additionalReaders.produce(new MessageBodyReaderBuildItem(ClientKotlinMessageBodyReader.class.getName(),
+                Object.class.getName(), Collections.singletonList(MediaType.APPLICATION_JSON), RuntimeType.CLIENT, true,
+                Priorities.USER));
+        additionalWriters.produce(new MessageBodyWriterBuildItem(ClientKotlinMessageBodyWriter.class.getName(),
+                Object.class.getName(), Collections.singletonList(MediaType.APPLICATION_JSON), RuntimeType.CLIENT, true,
+                Priorities.USER));
     }
 }

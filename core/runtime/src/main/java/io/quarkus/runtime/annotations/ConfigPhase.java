@@ -13,15 +13,15 @@ public enum ConfigPhase {
     /**
      * Values are read and available for usage at run time and are re-read on each program execution.
      */
-    RUN_TIME(false, true, true, "Run time"),
-    ;
+    RUN_TIME(false, true, true, "Run time"),;
 
     private final boolean availableAtBuild;
     private final boolean availableAtRun;
     private final boolean readAtMain;
     private final String name;
 
-    ConfigPhase(final boolean availableAtBuild, final boolean availableAtRun, final boolean readAtMain, final String name) {
+    ConfigPhase(final boolean availableAtBuild, final boolean availableAtRun, final boolean readAtMain,
+            final String name) {
         this.availableAtBuild = availableAtBuild;
         this.availableAtRun = availableAtRun;
         this.readAtMain = readAtMain;

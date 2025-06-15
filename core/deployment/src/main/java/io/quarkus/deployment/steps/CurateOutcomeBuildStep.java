@@ -23,7 +23,8 @@ public class CurateOutcomeBuildStep {
     @BuildStep
     void removeResources(CurateOutcomeBuildItem curateOutcome,
             BuildProducer<RemovedResourceBuildItem> removedResourceProducer) {
-        final Map<ArtifactKey, Set<String>> excludedResources = curateOutcome.getApplicationModel().getRemovedResources();
+        final Map<ArtifactKey, Set<String>> excludedResources = curateOutcome.getApplicationModel()
+                .getRemovedResources();
         if (!excludedResources.isEmpty()) {
             for (Map.Entry<ArtifactKey, Set<String>> removed : excludedResources.entrySet()) {
                 removedResourceProducer.produce(new RemovedResourceBuildItem(removed.getKey(), removed.getValue()));

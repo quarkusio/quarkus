@@ -24,9 +24,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RepeatingBindingStaticMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(InterceptMe.class, SimpleBean.class, InterceptMeAlpha.class, InterceptMeBravo.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(InterceptMe.class, SimpleBean.class, InterceptMeAlpha.class, InterceptMeBravo.class));
 
     @Test
     public void testInterceptor() {

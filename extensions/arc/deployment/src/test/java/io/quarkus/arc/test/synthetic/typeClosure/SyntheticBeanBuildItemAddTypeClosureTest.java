@@ -22,10 +22,9 @@ public class SyntheticBeanBuildItemAddTypeClosureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SyntheticBeanBuildItemAddTypeClosureTest.class, FooCreator.class, FooInterface.class, Foo.class,
-                            FooSubclass.class, Charlie.class, CharlieSubclass.class, CharlieInterface.class, BarInterface.class,
-                            BazInterface.class))
+            .withApplicationRoot((jar) -> jar.addClasses(SyntheticBeanBuildItemAddTypeClosureTest.class,
+                    FooCreator.class, FooInterface.class, Foo.class, FooSubclass.class, Charlie.class,
+                    CharlieSubclass.class, CharlieInterface.class, BarInterface.class, BazInterface.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -38,11 +37,8 @@ public class SyntheticBeanBuildItemAddTypeClosureTest {
                     @Override
                     public void execute(BuildContext context) {
                         context.produce(SyntheticBeanBuildItem.create(FooSubclass.class)
-                                .addTypeClosure(FooInterface.class)
-                                .addTypeClosure(DotName.createSimple(Foo.class))
-                                .scope(BuiltinScope.SINGLETON.getInfo())
-                                .unremovable()
-                                .creator(FooCreator.class)
+                                .addTypeClosure(FooInterface.class).addTypeClosure(DotName.createSimple(Foo.class))
+                                .scope(BuiltinScope.SINGLETON.getInfo()).unremovable().creator(FooCreator.class)
                                 .done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();

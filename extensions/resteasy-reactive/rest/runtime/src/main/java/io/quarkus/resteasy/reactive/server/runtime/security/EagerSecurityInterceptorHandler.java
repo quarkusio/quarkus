@@ -16,8 +16,8 @@ import io.quarkus.vertx.http.runtime.security.EagerSecurityInterceptorStorage;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Allows security customizations at the moment when request is matched with resource method, but
- * {@link SecurityCheck}s are yet to be run. This only makes sense when proactive auth is disabled.
+ * Allows security customizations at the moment when request is matched with resource method, but {@link SecurityCheck}s
+ * are yet to be run. This only makes sense when proactive auth is disabled.
  */
 public class EagerSecurityInterceptorHandler implements ServerRestHandler {
 

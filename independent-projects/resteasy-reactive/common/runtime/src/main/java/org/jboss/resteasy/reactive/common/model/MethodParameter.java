@@ -6,14 +6,13 @@ public class MethodParameter {
     public String name;
     public String type;
     /**
-     * Generally this will be the same as type, unless the parameter is a
-     * collection, in which case 'type' will be the element type and this
-     * will be the collection type
+     * Generally this will be the same as type, unless the parameter is a collection, in which case 'type' will be the
+     * element type and this will be the collection type
      */
     public String declaredType;
     /**
-     * This will only be different from the declaredType if a TypeVariable was used.
-     * It is needed for proper reflection method lookups
+     * This will only be different from the declaredType if a TypeVariable was used. It is needed for proper reflection
+     * method lookups
      */
     public String declaredUnresolvedType;
     public String signature;
@@ -30,11 +29,10 @@ public class MethodParameter {
     public MethodParameter() {
     }
 
-    public MethodParameter(String name, String type, String declaredType, String declaredUnresolvedType, String signature,
-            ParameterType parameterType,
-            boolean single,
-            String defaultValue, boolean isObtainedAsCollection, boolean optional, boolean encoded,
-            String mimeType, String partFileName, String separator) {
+    public MethodParameter(String name, String type, String declaredType, String declaredUnresolvedType,
+            String signature, ParameterType parameterType, boolean single, String defaultValue,
+            boolean isObtainedAsCollection, boolean optional, boolean encoded, String mimeType, String partFileName,
+            String separator) {
         this.name = name;
         this.type = type;
         this.declaredType = declaredType;
@@ -121,10 +119,7 @@ public class MethodParameter {
 
     @Override
     public String toString() {
-        return "MethodParameter{" +
-                "name='" + name + '\'' +
-                ", type='" + type + '\'' +
-                '}';
+        return "MethodParameter{" + "name='" + name + '\'' + ", type='" + type + '\'' + '}';
     }
 
     @Override
@@ -139,8 +134,7 @@ public class MethodParameter {
                 && Objects.equals(type, that.type) && Objects.equals(declaredType, that.declaredType)
                 && Objects.equals(declaredUnresolvedType, that.declaredUnresolvedType)
                 && Objects.equals(signature, that.signature) && parameterType == that.parameterType
-                && Objects.equals(defaultValue, that.defaultValue)
-                && Objects.equals(mimeType, that.mimeType)
+                && Objects.equals(defaultValue, that.defaultValue) && Objects.equals(mimeType, that.mimeType)
                 && Objects.equals(partFileName, that.partFileName);
     }
 

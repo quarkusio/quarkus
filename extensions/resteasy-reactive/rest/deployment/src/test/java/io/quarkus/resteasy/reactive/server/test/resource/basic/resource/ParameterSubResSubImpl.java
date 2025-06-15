@@ -2,7 +2,8 @@ package io.quarkus.resteasy.reactive.server.test.resource.basic.resource;
 
 import org.jboss.logging.Logger;
 
-public class ParameterSubResSubImpl<T extends Number> implements ParameterSubResSub, ParameterSubResInternalInterface<T> {
+public class ParameterSubResSubImpl<T extends Number>
+        implements ParameterSubResSub, ParameterSubResInternalInterface<T> {
     private static Logger LOG = Logger.getLogger(ParameterSubResSubImpl.class);
 
     private final String path;

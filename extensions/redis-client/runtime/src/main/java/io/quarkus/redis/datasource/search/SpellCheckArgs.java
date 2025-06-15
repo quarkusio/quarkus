@@ -20,7 +20,9 @@ public class SpellCheckArgs implements RedisCommandExtraArguments {
     /**
      * Sets the maximum Levenshtein distance for spelling suggestions (default: 1, max: 4).
      *
-     * @param distance the distance
+     * @param distance
+     *        the distance
+     *
      * @return the current {@code SpellCheckArgs}
      */
     public SpellCheckArgs distance(int distance) {
@@ -34,7 +36,9 @@ public class SpellCheckArgs implements RedisCommandExtraArguments {
     /**
      * Specifies an inclusion of a custom dictionary named {@code dict}
      *
-     * @param dict the dictionaries
+     * @param dict
+     *        the dictionaries
+     *
      * @return the current {@code SpellCheckArgs}
      */
     public SpellCheckArgs includes(String... dict) {
@@ -46,7 +50,9 @@ public class SpellCheckArgs implements RedisCommandExtraArguments {
     /**
      * Specifies an exclusion of a custom dictionary named {@code dict}
      *
-     * @param dict the dictionaries
+     * @param dict
+     *        the dictionaries
+     *
      * @return the current {@code SpellCheckArgs}
      */
     public SpellCheckArgs excludes(String... dict) {
@@ -59,7 +65,9 @@ public class SpellCheckArgs implements RedisCommandExtraArguments {
      * Selects the dialect version under which to execute the query. If not specified, the query will execute under the
      * default dialect version set during module initial loading.
      *
-     * @param dialect the dialect
+     * @param dialect
+     *        the dialect
+     *
      * @return the current {@code SpellCheckArgs}
      */
     public SpellCheckArgs dialect(int dialect) {

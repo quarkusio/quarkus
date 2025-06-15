@@ -21,11 +21,9 @@ public class InvalidInjectionTypeTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(GreeterGrpc.class, GreeterGrpc.GreeterStub.class,
-                            MutinyGreeterGrpc.MutinyGreeterStub.class, MutinyGreeterGrpc.class,
-                            HelloRequest.class, HelloReply.class,
-                            HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
+            .withApplicationRoot((jar) -> jar.addClasses(GreeterGrpc.class, GreeterGrpc.GreeterStub.class,
+                    MutinyGreeterGrpc.MutinyGreeterStub.class, MutinyGreeterGrpc.class, HelloRequest.class,
+                    HelloReply.class, HelloReplyOrBuilder.class, HelloRequestOrBuilder.class))
             .setExpectedException(DeploymentException.class);
 
     @Test

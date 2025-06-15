@@ -30,10 +30,9 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class OpenConnectionsTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -55,10 +54,10 @@ public class OpenConnectionsTest {
         }
 
         try (WSClient client1 = WSClient.create(vertx).connect(endUri);
-                WSClient client2 = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader(headerName, header2),
-                        endUri);
-                WSClient client3 = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader(headerName, header3),
-                        endUri)) {
+                WSClient client2 = WSClient.create(vertx)
+                        .connect(new WebSocketConnectOptions().addHeader(headerName, header2), endUri);
+                WSClient client3 = WSClient.create(vertx)
+                        .connect(new WebSocketConnectOptions().addHeader(headerName, header3), endUri)) {
 
             client1.waitForMessages(1);
             String client1Id = client1.getMessages().get(0).toString();
@@ -71,8 +70,7 @@ public class OpenConnectionsTest {
 
             assertNotNull(connections.findByConnectionId(client1Id).orElse(null));
             Collection<WebSocketConnection> found = connections.stream()
-                    .filter(c -> header3.equals(c.handshakeRequest().header(headerName)))
-                    .toList();
+                    .filter(c -> header3.equals(c.handshakeRequest().header(headerName))).toList();
             assertEquals(1, found.size());
             assertEquals(client3Id, found.iterator().next().id());
 

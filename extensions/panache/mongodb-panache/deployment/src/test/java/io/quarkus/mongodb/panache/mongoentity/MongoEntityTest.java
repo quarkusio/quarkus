@@ -11,12 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class MongoEntityTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            MongoEntityEntity.class,
-                            MongoEntityRepository.class)
-                    .addAsResource("application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MongoEntityEntity.class, MongoEntityRepository.class).addAsResource("application.properties"));
 
     @Inject
     MongoEntityRepository mongoEntityRepository;

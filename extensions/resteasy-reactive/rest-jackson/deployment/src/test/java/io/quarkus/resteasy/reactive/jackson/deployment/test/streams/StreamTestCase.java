@@ -45,9 +45,8 @@ public class StreamTestCase {
     URI uri;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(StreamResource.class, Message.class, Demands.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(StreamResource.class, Message.class, Demands.class));
 
     @Test
     public void testSseFromSse() throws Exception {
@@ -63,8 +62,8 @@ public class StreamTestCase {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
         // do not reconnect
-        try (SseEventSource eventSource = SseEventSource.target(target).reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS)
-                .build()) {
+        try (SseEventSource eventSource = SseEventSource.target(target)
+                .reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS).build()) {
             CompletableFuture<List<String>> res = new CompletableFuture<>();
             List<String> collect = Collections.synchronizedList(new ArrayList<>());
             eventSource.register(new Consumer<InboundSseEvent>() {
@@ -123,9 +122,8 @@ public class StreamTestCase {
 
     @Test
     public void testJsonMultiMultiDoc() {
-        when().get(uri.toString() + "streams/json/multi-docs")
-                .then().statusCode(HttpStatus.SC_OK)
-                // @formatter:off
+        when().get(uri.toString() + "streams/json/multi-docs").then().statusCode(HttpStatus.SC_OK)
+        // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
                             + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
@@ -134,9 +132,8 @@ public class StreamTestCase {
 
     @Test
     public void testJsonMultiMultiDocHigherDemand() {
-        when().get(uri.toString() + "streams/json/multi-docs-huge-demand")
-                .then().statusCode(HttpStatus.SC_OK)
-                // @formatter:off
+        when().get(uri.toString() + "streams/json/multi-docs-huge-demand").then().statusCode(HttpStatus.SC_OK)
+        // @formatter:off
                 .body(allOf(
                     containsString("{\"name\":\"hello\"}\n"),
                     containsString("{\"name\":\"stef\"}\n"),
@@ -153,9 +150,8 @@ public class StreamTestCase {
 
     @Test
     public void testNdJsonMultiFromMulti() {
-        when().get(uri.toString() + "streams/ndjson/multi")
-                .then().statusCode(HttpStatus.SC_OK)
-                // @formatter:off
+        when().get(uri.toString() + "streams/ndjson/multi").then().statusCode(HttpStatus.SC_OK)
+        // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
                             + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
@@ -164,9 +160,8 @@ public class StreamTestCase {
 
     @Test
     public void testNdJsonMultiFromMulti2() {
-        when().get(uri.toString() + "streams/ndjson/multi2")
-                .then().statusCode(222)
-                // @formatter:off
+        when().get(uri.toString() + "streams/ndjson/multi2").then().statusCode(222)
+        // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
                         + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
@@ -176,17 +171,14 @@ public class StreamTestCase {
 
     @Test
     public void testRestMultiEmptyJson() {
-        when().get(uri.toString() + "streams/restmulti/empty")
-                .then().statusCode(222)
-                .body(is("[]"))
-                .header("foo", "bar");
+        when().get(uri.toString() + "streams/restmulti/empty").then().statusCode(222).body(is("[]")).header("foo",
+                "bar");
     }
 
     @Test
     public void testStreamJsonMultiFromMulti() {
-        when().get(uri.toString() + "streams/stream-json/multi")
-                .then().statusCode(HttpStatus.SC_OK)
-                // @formatter:off
+        when().get(uri.toString() + "streams/stream-json/multi").then().statusCode(HttpStatus.SC_OK)
+        // @formatter:off
                 .body(is("{\"name\":\"hello\"}\n"
                         + "{\"name\":\"stef\"}\n"))
                 // @formatter:on
@@ -194,7 +186,8 @@ public class StreamTestCase {
     }
 
     private void testJsonMulti(String path) {
-        Client client = ClientBuilder.newBuilder().register(new JacksonBasicMessageBodyReader(new ObjectMapper())).build();
+        Client client = ClientBuilder.newBuilder().register(new JacksonBasicMessageBodyReader(new ObjectMapper()))
+                .build();
         WebTarget target = client.target(uri.toString() + path);
         Multi<Message> multi = target.request().rx(MultiInvoker.class).get(Message.class);
         List<Message> list = multi.collect().asList().await().atMost(Duration.ofSeconds(30));
@@ -206,13 +199,12 @@ public class StreamTestCase {
      */
     @Test
     public void testStreamJsonMultiFromMultiFast() {
-        String payload = when().get(uri.toString() + "streams/stream-json/multi/fast")
-                .then().statusCode(HttpStatus.SC_OK)
-                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_STREAM_JSON))
-                .extract().response().asString();
+        String payload = when().get(uri.toString() + "streams/stream-json/multi/fast").then()
+                .statusCode(HttpStatus.SC_OK)
+                .header(HttpHeaders.CONTENT_TYPE, containsString(RestMediaType.APPLICATION_STREAM_JSON)).extract()
+                .response().asString();
 
         // the payload include 5000 json objects
-        assertThat(payload.lines()).hasSize(5000)
-                .allSatisfy(s -> assertThat(s).matches("\\{\"name\":\".*\"}"));
+        assertThat(payload.lines()).hasSize(5000).allSatisfy(s -> assertThat(s).matches("\\{\"name\":\".*\"}"));
     }
 }

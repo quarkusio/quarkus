@@ -90,11 +90,8 @@ public class TestServlet {
             return "No one found for " + name;
         }
 
-        return list.stream()
-                .map(Book::authors)
-                .flatMap(Set::stream)
-                .map(author -> author.name() + " " + author.surname())
-                .sorted()
+        return list.stream().map(Book::authors).flatMap(Set::stream)
+                .map(author -> author.name() + " " + author.surname()).sorted()
                 .collect(Collectors.joining(",", "[", "]"));
     }
 
@@ -107,11 +104,8 @@ public class TestServlet {
         if (list.isEmpty()) {
             return "No one found for " + name;
         }
-        return list.stream()
-                .map(Book::authors)
-                .flatMap(Set::stream)
-                .map(author -> author.name() + " " + author.surname())
-                .sorted()
+        return list.stream().map(Book::authors).flatMap(Set::stream)
+                .map(author -> author.name() + " " + author.surname()).sorted()
                 .collect(Collectors.joining(",", "[", "]"));
     }
 
@@ -123,7 +117,8 @@ public class TestServlet {
             @QueryParam("storage") String storage) {
         CounterConfiguration configuration = counterManager.getConfiguration(id);
         if (configuration == null) {
-            configuration = CounterConfiguration.builder(CounterType.valueOf(type)).storage(Storage.valueOf(storage)).build();
+            configuration = CounterConfiguration.builder(CounterType.valueOf(type)).storage(Storage.valueOf(storage))
+                    .build();
             return counterManager.defineCounter(id, configuration);
         }
         return true;
@@ -153,9 +148,7 @@ public class TestServlet {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public String continuousQuery() {
-        return cacheSetup.getMatches().values().stream()
-                .mapToInt(Book::publicationYear)
-                .mapToObj(Integer::toString)
+        return cacheSetup.getMatches().values().stream().mapToInt(Book::publicationYear).mapToObj(Integer::toString)
                 .collect(Collectors.joining(","));
 
     }
@@ -169,8 +162,8 @@ public class TestServlet {
         long nearCacheHits = stats.getNearCacheHits();
         long nearCacheInvalidations = stats.getNearCacheInvalidations();
 
-        Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010,
-                Collections.emptySet(), Type.PROGRAMMING, new BigDecimal("12.99"));
+        Book nearCacheBook = new Book("Near Cache Book", "Just here to test", 2010, Collections.emptySet(),
+                Type.PROGRAMMING, new BigDecimal("12.99"));
 
         String id = "nearcache";
         cache.put(id, nearCacheBook);
@@ -204,8 +197,8 @@ public class TestServlet {
             return "second retrieved book doesn't match";
         }
 
-        nearCacheBook = new Book("Near Cache Book", "Just here to test",
-                2011, Collections.emptySet(), Type.PROGRAMMING, new BigDecimal("0.99"));
+        nearCacheBook = new Book("Near Cache Book", "Just here to test", 2011, Collections.emptySet(), Type.PROGRAMMING,
+                new BigDecimal("0.99"));
 
         cache.put(id, nearCacheBook);
 
@@ -219,8 +212,8 @@ public class TestServlet {
             }
             invalidations = stats.getNearCacheInvalidations();
             if (nearCacheInvalidations + 1 != invalidations) {
-                return "Near cache didn't invalidate for some reason. Expected: " + (nearCacheInvalidations + 1) + " but got: "
-                        + invalidations;
+                return "Near cache didn't invalidate for some reason. Expected: " + (nearCacheInvalidations + 1)
+                        + " but got: " + invalidations;
             }
         }
 
@@ -236,27 +229,23 @@ public class TestServlet {
         Book book = new Book(id, value, 2019, Collections.emptySet(), Type.PROGRAMMING, new BigDecimal("9.99"));
         Book previous = cache.putIfAbsent(id, book);
         if (previous == null) {
-            //status code 201
-            return Response.status(Response.Status.CREATED)
-                    .entity(id)
-                    .build();
+            // status code 201
+            return Response.status(Response.Status.CREATED).entity(id).build();
         } else {
-            return Response.noContent()
-                    .build();
+            return Response.noContent().build();
         }
     }
 
     @Path("magazinequery/{id}")
     @GET
     public String magazineQuery(@PathParam("id") String name) {
-        Query<Magazine> query = magazineCache.query(
-                "from magazine_sample.Magazine m where m.name like '%" + name + "%'");
+        Query<Magazine> query = magazineCache
+                .query("from magazine_sample.Magazine m where m.name like '%" + name + "%'");
         List<Magazine> list = query.execute().list();
         if (list.isEmpty()) {
             return "No one found for " + name;
         }
-        return list.stream()
-                .map(m -> m.getName() + ":" + m.getPublicationYearMonth())
+        return list.stream().map(m -> m.getName() + ":" + m.getPublicationYearMonth())
                 .collect(Collectors.joining(",", "[", "]"));
     }
 
@@ -264,8 +253,7 @@ public class TestServlet {
     @GET
     public String magazineQuery() {
         List<String> names1 = authorsCacheDefault.values().stream().map(a -> a.name()).collect(Collectors.toList());
-        List<String> names2 = authorsCacheAnother.values().stream().map(a -> a.name())
-                .collect(Collectors.toList());
+        List<String> names2 = authorsCacheAnother.values().stream().map(a -> a.name()).collect(Collectors.toList());
 
         names1.addAll(names2);
         return names1.stream().sorted().collect(Collectors.joining(",", "[", "]"));

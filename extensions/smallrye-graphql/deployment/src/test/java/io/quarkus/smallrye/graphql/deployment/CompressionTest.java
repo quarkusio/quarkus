@@ -20,8 +20,7 @@ public class CompressionTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
+            .withApplicationRoot((jar) -> jar.addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"))
             .overrideConfigKey("quarkus.http.enable-compression", "true");
 
     @Test
@@ -43,20 +42,11 @@ public class CompressionTest extends AbstractGraphQLTest {
     }
 
     private void assertCompressed(String body, String... expectedOutput) {
-        org.hamcrest.Matcher messageMatcher = Arrays.stream(expectedOutput)
-                .map(CoreMatchers::containsString)
+        org.hamcrest.Matcher messageMatcher = Arrays.stream(expectedOutput).map(CoreMatchers::containsString)
                 .reduce(Matchers.allOf(), (a, b) -> Matchers.allOf(a, b));
 
-        RestAssured.given()
-                .body(body)
-                .contentType(MEDIATYPE_JSON)
-                .post("/graphql")
-                .prettyPeek()
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .header("Content-Encoding", "gzip")
-                .body(messageMatcher);
+        RestAssured.given().body(body).contentType(MEDIATYPE_JSON).post("/graphql").prettyPeek().then().assertThat()
+                .statusCode(200).header("Content-Encoding", "gzip").body(messageMatcher);
     }
 
     @GraphQLApi

@@ -36,10 +36,9 @@ import io.vertx.core.Context;
 public class BasicConnectorTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class);
+    });
 
     @Inject
     BasicWebSocketConnector connector;
@@ -71,26 +70,18 @@ public class BasicConnectorTest {
         CountDownLatch messageLatch = new CountDownLatch(2);
         List<String> messages = new CopyOnWriteArrayList<>();
         CountDownLatch closedLatch = new CountDownLatch(1);
-        WebSocketClientConnection connection1 = connector
-                .baseUri(uri)
-                .path("/{name}")
-                .pathParam("name", "Lu")
-                .userData(TypedKey.forBoolean("boolean"), true)
-                .userData(TypedKey.forInt("int"), Integer.MAX_VALUE)
-                .userData(TypedKey.forLong("long"), Long.MAX_VALUE)
-                .userData(TypedKey.forString("string"), "Lu")
+        WebSocketClientConnection connection1 = connector.baseUri(uri).path("/{name}").pathParam("name", "Lu")
+                .userData(TypedKey.forBoolean("boolean"), true).userData(TypedKey.forInt("int"), Integer.MAX_VALUE)
+                .userData(TypedKey.forLong("long"), Long.MAX_VALUE).userData(TypedKey.forString("string"), "Lu")
                 .onOpen(c -> {
                     userData.set(c.userData());
                     openLatch.countDown();
-                })
-                .onTextMessage((c, m) -> {
+                }).onTextMessage((c, m) -> {
                     assertTrue(Context.isOnWorkerThread());
                     String name = c.pathParam("name");
                     messages.add(name + ":" + m);
                     messageLatch.countDown();
-                })
-                .onClose((c, s) -> closedLatch.countDown())
-                .connectAndAwait();
+                }).onClose((c, s) -> closedLatch.countDown()).connectAndAwait();
         assertEquals("Lu", connection1.pathParam("name"));
         assertTrue(connection1.userData().get(TypedKey.forBoolean("boolean")));
         assertEquals(Integer.MAX_VALUE, connection1.userData().get(TypedKey.forInt("int")));
@@ -115,21 +106,15 @@ public class BasicConnectorTest {
         assertTrue(ServerEndpoint.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
 
         CountDownLatch conn2Latch = new CountDownLatch(1);
-        WebSocketClientConnection connection2 = BasicWebSocketConnector
-                .create()
-                .baseUri(uri)
-                .path("/Cool")
-                .executionModel(ExecutionModel.NON_BLOCKING)
-                .addHeader("X-Test", "foo")
-                .onTextMessage((c, m) -> {
+        WebSocketClientConnection connection2 = BasicWebSocketConnector.create().baseUri(uri).path("/Cool")
+                .executionModel(ExecutionModel.NON_BLOCKING).addHeader("X-Test", "foo").onTextMessage((c, m) -> {
                     assertTrue(Context.isOnEventLoopThread());
                     // Path params not set
                     assertNull(c.pathParam("name"));
                     assertTrue(c.handshakeRequest().path().endsWith("Cool"));
                     assertEquals("foo", c.handshakeRequest().header("X-Test"));
                     conn2Latch.countDown();
-                })
-                .connectAndAwait();
+                }).connectAndAwait();
         assertNotNull(connection2);
         assertTrue(conn2Latch.await(5, TimeUnit.SECONDS));
     }

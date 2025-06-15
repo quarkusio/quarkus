@@ -9,9 +9,9 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation that can be used to list Authentication Context Class Reference (ACR) values to enforce a required
- * authentication level for the endpoint classes and methods.
- * <a href="https://datatracker.ietf.org/doc/rfc9470/">OAuth 2.0 Step Up Authentication Challenge Protocol</a>
- * is initiated when the access token does not have sufficient authentication strength.
+ * authentication level for the endpoint classes and methods. <a href="https://datatracker.ietf.org/doc/rfc9470/">OAuth
+ * 2.0 Step Up Authentication Challenge Protocol</a> is initiated when the access token does not have sufficient
+ * authentication strength.
  */
 @Target({ TYPE, METHOD })
 @Retention(RetentionPolicy.RUNTIME)

@@ -21,25 +21,23 @@ import io.quarkus.deployment.pkg.steps.NativeBuild;
 import io.quarkus.runtime.LocalesBuildTimeConfig;
 
 /**
- * In order for a Native image built app to be able to use localized names of e.g. countries,
- * these language bundles have to be loaded. JDK uses ServiceLoader approach for that.
- * For instance, Locale.FRANCE.getDisplayCountry(Locale.GERMAN) must print "Frankreich".
+ * In order for a Native image built app to be able to use localized names of e.g. countries, these language bundles
+ * have to be loaded. JDK uses ServiceLoader approach for that. For instance,
+ * Locale.FRANCE.getDisplayCountry(Locale.GERMAN) must print "Frankreich".
  */
 public class LocaleProcessor {
 
     private static final Logger log = Logger.getLogger(LocaleProcessor.class);
     public static final String DEPRECATED_USER_LANGUAGE_WARNING = "Your application is setting the deprecated 'quarkus.native.user-language' configuration property. "
-            +
-            "Please, consider using only 'quarkus.default-locale' configuration property instead.";
+            + "Please, consider using only 'quarkus.default-locale' configuration property instead.";
     public static final String DEPRECATED_USER_COUNTRY_WARNING = "Your application is setting the deprecated 'quarkus.native.user-country' configuration property. "
-            +
-            "Please, consider using only 'quarkus.default-locale' configuration property instead.";
+            + "Please, consider using only 'quarkus.default-locale' configuration property instead.";
 
     @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
     void nativeResources(BuildProducer<NativeImageResourceBundleBuildItem> resources) {
         resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.LocaleNames", "java.base"));
         resources.produce(new NativeImageResourceBundleBuildItem("sun.util.resources.CurrencyNames", "java.base"));
-        //Adding sun.util.resources.TimeZoneNames is not necessary.
+        // Adding sun.util.resources.TimeZoneNames is not necessary.
     }
 
     @BuildStep(onlyIf = { NativeBuild.class, NonDefaultLocale.class })
@@ -61,8 +59,8 @@ public class LocaleProcessor {
     }
 
     /**
-     * These exports are only required for GraalVM for JDK < 24, but don't cause any issues for newer versions.
-     * To be removed once we drop support for GraalVM for JDK < 24.
+     * These exports are only required for GraalVM for JDK < 24, but don't cause any issues for newer versions. To be
+     * removed once we drop support for GraalVM for JDK < 24.
      */
     @BuildStep(onlyIf = NativeBuild.class)
     void setDefaults(BuildProducer<NativeImageSystemPropertyBuildItem> buildtimeSystemProperties,
@@ -78,8 +76,8 @@ public class LocaleProcessor {
     }
 
     /**
-     * We activate additional resources in native-image executable only if user opts
-     * for anything else than what is already the system default.
+     * We activate additional resources in native-image executable only if user opts for anything else than what is
+     * already the system default.
      */
     static final class NonDefaultLocale implements BooleanSupplier {
         private final NativeConfig nativeConfig;
@@ -94,14 +92,11 @@ public class LocaleProcessor {
         public boolean getAsBoolean() {
             return (nativeConfig.userLanguage().isPresent()
                     && !Locale.getDefault().getLanguage().equals(nativeConfig.userLanguage().get()))
-                    ||
-                    (nativeConfig.userCountry().isPresent()
+                    || (nativeConfig.userCountry().isPresent()
                             && !Locale.getDefault().getCountry().equals(nativeConfig.userCountry().get()))
-                    ||
-                    (localesBuildTimeConfig.defaultLocale().isPresent() &&
-                            !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale().get()))
-                    ||
-                    localesBuildTimeConfig.locales().stream().anyMatch(l -> !Locale.getDefault().equals(l));
+                    || (localesBuildTimeConfig.defaultLocale().isPresent()
+                            && !Locale.getDefault().equals(localesBuildTimeConfig.defaultLocale().get()))
+                    || localesBuildTimeConfig.locales().stream().anyMatch(l -> !Locale.getDefault().equals(l));
         }
     }
 
@@ -110,12 +105,15 @@ public class LocaleProcessor {
      *
      * @param nativeConfig
      * @param localesBuildTimeConfig
+     *
      * @return User language set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-language' or
      *         effectively LocalesBuildTimeConfig.DEFAULT_LANGUAGE if none of the aforementioned is set.
+     *
      * @Deprecated
      */
     @Deprecated
-    public static String nativeImageUserLanguage(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+    public static String nativeImageUserLanguage(NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig) {
         String language = System.getProperty("user.language", "en");
         if (localesBuildTimeConfig.defaultLocale().isPresent()) {
             language = localesBuildTimeConfig.defaultLocale().get().getLanguage();
@@ -133,13 +131,16 @@ public class LocaleProcessor {
      *
      * @param nativeConfig
      * @param localesBuildTimeConfig
+     *
      * @return User country set by 'quarkus.default-locale' or by deprecated 'quarkus.native.user-country' or
-     *         effectively LocalesBuildTimeConfig.DEFAULT_COUNTRY (could be an empty string) if none of the aforementioned is
-     *         set.
+     *         effectively LocalesBuildTimeConfig.DEFAULT_COUNTRY (could be an empty string) if none of the
+     *         aforementioned is set.
+     *
      * @Deprecated
      */
     @Deprecated
-    public static String nativeImageUserCountry(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+    public static String nativeImageUserCountry(NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig) {
         String country = System.getProperty("user.country", "");
         if (localesBuildTimeConfig.defaultLocale().isPresent()) {
             country = localesBuildTimeConfig.defaultLocale().get().getCountry();
@@ -157,10 +158,12 @@ public class LocaleProcessor {
      *
      * @param nativeConfig
      * @param localesBuildTimeConfig
-     * @return A comma separated list of IETF BCP 47 language tags, optionally with ISO 3166-1 alpha-2 country codes.
-     *         As a special case a string "all" making the native-image to include all available locales.
+     *
+     * @return A comma separated list of IETF BCP 47 language tags, optionally with ISO 3166-1 alpha-2 country codes. As
+     *         a special case a string "all" making the native-image to include all available locales.
      */
-    public static String nativeImageIncludeLocales(NativeConfig nativeConfig, LocalesBuildTimeConfig localesBuildTimeConfig) {
+    public static String nativeImageIncludeLocales(NativeConfig nativeConfig,
+            LocalesBuildTimeConfig localesBuildTimeConfig) {
         // We start with what user sets as needed locales
         final Set<Locale> additionalLocales = new HashSet<>(localesBuildTimeConfig.locales());
 

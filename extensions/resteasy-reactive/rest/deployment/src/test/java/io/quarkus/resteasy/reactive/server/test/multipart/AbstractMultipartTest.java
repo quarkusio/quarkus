@@ -33,14 +33,12 @@ abstract class AbstractMultipartTest {
     }
 
     protected void awaitUploadDirectoryToEmpty(Path uploadDir) {
-        await().atMost(10, TimeUnit.SECONDS)
-                .pollInterval(Duration.ofSeconds(1))
-                .until(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() {
-                        return isDirectoryEmpty(uploadDir);
-                    }
-                });
+        await().atMost(10, TimeUnit.SECONDS).pollInterval(Duration.ofSeconds(1)).until(new Callable<Boolean>() {
+            @Override
+            public Boolean call() {
+                return isDirectoryEmpty(uploadDir);
+            }
+        });
     }
 
     protected String fileSizeAsStr(File file) throws IOException {

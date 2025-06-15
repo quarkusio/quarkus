@@ -16,12 +16,9 @@ import io.smallrye.mutiny.Uni;
 public class MailTemplateLocationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MailTemplates.class)
-                    .addAsResource("mock-config.properties", "application.properties")
-                    .addAsResource(new StringAsset(""
-                            + "<html>{name}</html>"), "templates/confirmation.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MailTemplates.class).addAsResource("mock-config.properties", "application.properties")
+            .addAsResource(new StringAsset("" + "<html>{name}</html>"), "templates/confirmation.html"));
 
     @Inject
     MailTemplates mailTemplates;

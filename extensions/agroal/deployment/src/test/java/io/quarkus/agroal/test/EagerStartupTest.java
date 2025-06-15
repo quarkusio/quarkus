@@ -22,8 +22,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class EagerStartupTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("base.properties");
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("base.properties");
 
     @Test
     public void shouldStartEagerly() {
@@ -31,10 +30,10 @@ public class EagerStartupTest {
         var instanceHandle = container.instance(AgroalDataSource.class,
                 AgroalDataSourceUtil.qualifier(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
         // Check that the datasource has already been eagerly created.
-        assertThat(container.getActiveContext(ApplicationScoped.class).getState()
-                .getContextualInstances().get(instanceHandle.getBean()))
-                .as("Eagerly instantiated DataSource bean")
-                .isNotInstanceOf(ClientProxy.class) // Just to be sure I didn't misuse CDI: this should be the actual underlying instance.
+        assertThat(container.getActiveContext(ApplicationScoped.class).getState().getContextualInstances()
+                .get(instanceHandle.getBean())).as("Eagerly instantiated DataSource bean")
+                .isNotInstanceOf(ClientProxy.class) // Just to be sure I didn't misuse CDI: this should be the
+                // actual underlying instance.
                 .isNotNull();
     }
 

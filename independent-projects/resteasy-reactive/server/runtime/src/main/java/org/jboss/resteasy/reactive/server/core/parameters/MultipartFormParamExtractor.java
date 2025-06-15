@@ -61,12 +61,11 @@ public class MultipartFormParamExtractor implements ParameterExtractor {
                 }
             case PartType:
                 if (single) {
-                    return MultipartSupport.getConvertedFormAttribute(name, typeClass, genericType, MediaType.valueOf(mimeType),
-                            context);
+                    return MultipartSupport.getConvertedFormAttribute(name, typeClass, genericType,
+                            MediaType.valueOf(mimeType), context);
                 } else {
                     return MultipartSupport.getConvertedFormAttributes(name, typeClass, genericType,
-                            MediaType.valueOf(mimeType),
-                            context);
+                            MediaType.valueOf(mimeType), context);
                 }
             case FileUpload:
                 // special case

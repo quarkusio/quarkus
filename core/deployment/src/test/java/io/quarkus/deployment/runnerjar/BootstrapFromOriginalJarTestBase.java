@@ -68,10 +68,8 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
         IoUtils.mkdirs(ws);
 
         Path applicationRoot = resolver.resolve(appJar.toArtifact()).getResolvedPaths().getSinglePath();
-        final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
-                .setApplicationRoot(applicationRoot)
-                .setProjectRoot(applicationRoot)
-                .setAppModelResolver(resolver);
+        final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder().setApplicationRoot(applicationRoot)
+                .setProjectRoot(applicationRoot).setAppModelResolver(resolver);
 
         switch (getBootstrapMode()) {
             case PROD:
@@ -91,14 +89,11 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
             List<Dependency> depModules = List.of();
             if (createWorkspace()) {
                 bomModules = (appPom.getDependencyManagement() == null ? List.<Dependency> of()
-                        : appPom.getDependencyManagement().getDependencies()).stream()
-                        .filter(d -> "import".equals(d.getScope())
-                                && d.getGroupId().equals(appPom.getGroupId()))
+                        : appPom.getDependencyManagement().getDependencies()).stream().filter(
+                                d -> "import".equals(d.getScope()) && d.getGroupId().equals(appPom.getGroupId()))
                         .toList();
-                depModules = appPom.getDependencies().stream()
-                        .filter(d -> d.getGroupId().equals(appPom.getGroupId()) &&
-                                (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType())))
-                        .toList();
+                depModules = appPom.getDependencies().stream().filter(d -> d.getGroupId().equals(appPom.getGroupId())
+                        && (d.getType().isEmpty() || ArtifactCoords.TYPE_JAR.equals(d.getType()))).toList();
             }
 
             final Path appModule;
@@ -124,8 +119,8 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                 for (Dependency bomModule : bomModules) {
                     parentPom.getModules().add(bomModule.getArtifactId());
                     final String moduleVersion = bomModule.getVersion();
-                    Model modulePom = ModelUtils.readModel(resolver
-                            .resolve(ArtifactCoords.pom(bomModule.getGroupId(), bomModule.getArtifactId(), moduleVersion))
+                    Model modulePom = ModelUtils.readModel(resolver.resolve(
+                            ArtifactCoords.pom(bomModule.getGroupId(), bomModule.getArtifactId(), moduleVersion))
                             .getResolvedPaths().getSinglePath());
                     modulePom.setParent(parent);
                     final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
@@ -150,8 +145,8 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                                 ? managedVersions.get(ArtifactKey.of(moduleDep.getGroupId(), moduleDep.getArtifactId(),
                                         moduleDep.getClassifier(), moduleDep.getType()))
                                 : moduleDep.getVersion();
-                        Model modulePom = ModelUtils.readModel(resolver
-                                .resolve(ArtifactCoords.pom(moduleDep.getGroupId(), moduleDep.getArtifactId(), moduleVersion))
+                        Model modulePom = ModelUtils.readModel(resolver.resolve(
+                                ArtifactCoords.pom(moduleDep.getGroupId(), moduleDep.getArtifactId(), moduleVersion))
                                 .getResolvedPaths().getSinglePath());
                         modulePom.setParent(parent);
                         final Path moduleDir = IoUtils.mkdirs(ws.resolve(modulePom.getArtifactId()));
@@ -159,12 +154,11 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                         final Path resolvedJar = resolver
                                 .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
                                         moduleDep.getClassifier(), moduleDep.getType(), modulePom.getVersion()))
-                                .getResolvedPaths()
-                                .getSinglePath();
+                                .getResolvedPaths().getSinglePath();
                         final Path moduleTargetDir = moduleDir.resolve("target");
                         ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
-                        IoUtils.copy(resolvedJar,
-                                moduleTargetDir.resolve(modulePom.getArtifactId() + "-" + modulePom.getVersion() + ".jar"));
+                        IoUtils.copy(resolvedJar, moduleTargetDir
+                                .resolve(modulePom.getArtifactId() + "-" + modulePom.getVersion() + ".jar"));
                     }
                 }
                 for (TsArtifact module : wsModules) {
@@ -176,8 +170,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                     final Path resolvedJar = resolver
                             .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
                                     module.getClassifier(), module.getType(), modulePom.getVersion()))
-                            .getResolvedPaths()
-                            .getSinglePath();
+                            .getResolvedPaths().getSinglePath();
                     final Path moduleTargetDir = moduleDir.resolve("target");
                     ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
                     IoUtils.copy(resolvedJar,
@@ -219,12 +212,11 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
                         final Path resolvedJar = resolver
                                 .resolve(ArtifactCoords.of(modulePom.getGroupId(), modulePom.getArtifactId(),
                                         a.getClassifier(), a.getType(), modulePom.getVersion()))
-                                .getResolvedPaths()
-                                .getSinglePath();
+                                .getResolvedPaths().getSinglePath();
                         final Path moduleTargetDir = moduleDir.resolve("target");
                         ZipUtils.unzip(resolvedJar, moduleTargetDir.resolve("classes"));
-                        IoUtils.copy(resolvedJar,
-                                moduleTargetDir.resolve(modulePom.getArtifactId() + "-" + modulePom.getVersion() + ".jar"));
+                        IoUtils.copy(resolvedJar, moduleTargetDir
+                                .resolve(modulePom.getArtifactId() + "-" + modulePom.getVersion() + ".jar"));
                     }
                 }
 
@@ -236,16 +228,11 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
             ZipUtils.unzip(applicationRoot, appClassesDir);
 
             final LocalProject appProject = new BootstrapMavenContext(BootstrapMavenContext.config()
-                    .setWorkspaceDiscovery(true)
-                    .setWorkspaceModuleParentHierarchy(workspaceModuleParentHierarchy())
-                    .setRootProjectDir(ws)
-                    .setUserSettings(getSettingsXml() == null ? null : getSettingsXml().toFile())
-                    .setCurrentProject(appPomXml.toString()))
-                    .getCurrentProject();
+                    .setWorkspaceDiscovery(true).setWorkspaceModuleParentHierarchy(workspaceModuleParentHierarchy())
+                    .setRootProjectDir(ws).setUserSettings(getSettingsXml() == null ? null : getSettingsXml().toFile())
+                    .setCurrentProject(appPomXml.toString())).getCurrentProject();
 
-            bootstrap.setProjectRoot(appModule)
-                    .setTargetDirectory(appOutputDir)
-                    .setLocalProjectDiscovery(true)
+            bootstrap.setProjectRoot(appModule).setTargetDirectory(appOutputDir).setLocalProjectDiscovery(true)
                     .setAppModelResolver(newAppModelResolver(appProject));
         } else {
             bootstrap.setTargetDirectory(IoUtils.mkdirs(ws.resolve("target")));
@@ -262,8 +249,8 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
             managedVersions.put(ArtifactKey.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType()),
                     d.getVersion());
             if (d.getType().equals(ArtifactCoords.TYPE_POM) && d.getScope().equals("import")) {
-                collectManagedDeps(ModelUtils
-                        .readModel(resolver.resolve(ArtifactCoords.pom(d.getGroupId(), d.getArtifactId(), d.getVersion()))
+                collectManagedDeps(ModelUtils.readModel(
+                        resolver.resolve(ArtifactCoords.pom(d.getGroupId(), d.getArtifactId(), d.getVersion()))
                                 .getResolvedPaths().getSinglePath()),
                         managedVersions);
             }

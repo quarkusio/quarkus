@@ -23,21 +23,20 @@ public class CertificateUpdateEventListener {
         List<HttpClient> httpClients = RestClientRecorder.clientsUsingTlsConfig(updatedTlsConfigurationName);
         if (!httpClients.isEmpty()) {
             for (HttpClient httpClient : httpClients) {
-                httpClient.updateSSLOptions(updatedTlsConfiguration.getSSLOptions(),
-                        new Handler<>() {
-                            @Override
-                            public void handle(AsyncResult<Boolean> event) {
-                                if (event.succeeded()) {
-                                    LOG.infof(
-                                            "Certificate reloaded for the REST client(s) using the TLS configuration (bucket) name '%s'",
-                                            updatedTlsConfigurationName);
-                                } else {
-                                    LOG.errorf(event.cause(),
-                                            "Certificate reload failed  using the TLS configuration (bucket) name '%s'",
-                                            event.cause(), updatedTlsConfigurationName);
-                                }
-                            }
-                        });
+                httpClient.updateSSLOptions(updatedTlsConfiguration.getSSLOptions(), new Handler<>() {
+                    @Override
+                    public void handle(AsyncResult<Boolean> event) {
+                        if (event.succeeded()) {
+                            LOG.infof(
+                                    "Certificate reloaded for the REST client(s) using the TLS configuration (bucket) name '%s'",
+                                    updatedTlsConfigurationName);
+                        } else {
+                            LOG.errorf(event.cause(),
+                                    "Certificate reload failed  using the TLS configuration (bucket) name '%s'",
+                                    event.cause(), updatedTlsConfigurationName);
+                        }
+                    }
+                });
             }
 
         }

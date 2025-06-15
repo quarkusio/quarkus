@@ -17,12 +17,10 @@ public class NonVoidMessageConsumerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(MessageConsumers.class))
-            .assertException(t -> {
+            .withApplicationRoot(root -> root.addClasses(MessageConsumers.class)).assertException(t -> {
                 Throwable root = ExceptionUtil.getRootCause(t);
-                assertTrue(
-                        root.getMessage().contains(
-                                "An event consumer business method that accepts io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message must return void"),
+                assertTrue(root.getMessage().contains(
+                        "An event consumer business method that accepts io.vertx.core.eventbus.Message or io.vertx.mutiny.core.eventbus.Message must return void"),
                         t.toString());
             });
 

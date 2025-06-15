@@ -26,9 +26,8 @@ public final class CheckedTemplateBuildItem extends MultiBuildItem {
     // record class
     public final ClassInfo recordClass;
 
-    public CheckedTemplateBuildItem(String templateId, String fragmentId, Map<String, String> bindings, MethodInfo method,
-            ClassInfo recordClass,
-            boolean requireTypeSafeExpressions) {
+    public CheckedTemplateBuildItem(String templateId, String fragmentId, Map<String, String> bindings,
+            MethodInfo method, ClassInfo recordClass, boolean requireTypeSafeExpressions) {
         this.templateId = templateId;
         this.fragmentId = fragmentId;
         this.bindings = bindings;
@@ -46,9 +45,7 @@ public final class CheckedTemplateBuildItem extends MultiBuildItem {
     }
 
     public String getDescription() {
-        return isRecord() ? recordClass.toString()
-                : method.declaringClass().name() + "."
-                        + method.name() + "()";
+        return isRecord() ? recordClass.toString() : method.declaringClass().name() + "." + method.name() + "()";
     }
 
 }

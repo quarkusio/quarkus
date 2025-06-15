@@ -26,10 +26,10 @@ public interface DataSourceReactivePostgreSQLConfig {
     Optional<SslMode> sslMode();
 
     /**
-     * Level 7 proxies can load balance queries on several connections to the actual database.
-     * When it happens, the client can be confused by the lack of session affinity and unwanted errors can happen like
-     * ERROR: unnamed prepared statement does not exist (26000).
-     * See <a href="https://vertx.io/docs/vertx-pg-client/java/#_using_a_level_7_proxy">Using a level 7 proxy</a>
+     * Level 7 proxies can load balance queries on several connections to the actual database. When it happens, the
+     * client can be confused by the lack of session affinity and unwanted errors can happen like ERROR: unnamed
+     * prepared statement does not exist (26000). See
+     * <a href="https://vertx.io/docs/vertx-pg-client/java/#_using_a_level_7_proxy">Using a level 7 proxy</a>
      */
     @WithDefault("false")
     boolean useLayer7Proxy();

@@ -68,7 +68,6 @@ public final class JarBuildItem extends SimpleBuildItem {
     }
 
     public JarResult toJarResult(Collection<SbomResult> sboms) {
-        return new JarResult(path, originalArtifact, libraryDir, type == MUTABLE_JAR,
-                classifier, sboms);
+        return new JarResult(path, originalArtifact, libraryDir, type == MUTABLE_JAR, classifier, sboms);
     }
 }

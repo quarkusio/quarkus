@@ -19,12 +19,9 @@ import io.quarkus.micrometer.runtime.config.runtime.VertxConfig;
 import io.quarkus.runtime.LaunchMode;
 
 /**
- * Digest configuration options for http metrics once, so they can
- * be used by different binders emitting http metrics (depending on
- * other extension configuration).
- *
- * This is a synthetic bean created at runtime init (see MicrometerRecorder),
- * it cannot be referenced during build or static initialization.
+ * Digest configuration options for http metrics once, so they can be used by different binders emitting http metrics
+ * (depending on other extension configuration). This is a synthetic bean created at runtime init (see
+ * MicrometerRecorder), it cannot be referenced during build or static initialization.
  */
 public class HttpBinderConfiguration {
     private static final Logger log = Logger.getLogger(HttpBinderConfiguration.class);
@@ -45,8 +42,8 @@ public class HttpBinderConfiguration {
     }
 
     @SuppressWarnings("deprecation")
-    public HttpBinderConfiguration(boolean httpServerMetrics, boolean httpClientMetrics,
-            HttpServerConfig serverConfig, HttpClientConfig clientConfig, VertxConfig vertxConfig) {
+    public HttpBinderConfiguration(boolean httpServerMetrics, boolean httpClientMetrics, HttpServerConfig serverConfig,
+            HttpClientConfig clientConfig, VertxConfig vertxConfig) {
 
         serverEnabled = httpServerMetrics;
         clientEnabled = httpClientMetrics;
@@ -72,10 +69,12 @@ public class HttpBinderConfiguration {
 
             // Handle deprecated/previous vertx properties as well
             serverIgnorePatterns = getIgnorePatterns(
-                    serverConfig.ignorePatterns().isPresent() ? serverConfig.ignorePatterns() : vertxConfig.ignorePatterns(),
+                    serverConfig.ignorePatterns().isPresent() ? serverConfig.ignorePatterns()
+                            : vertxConfig.ignorePatterns(),
                     defaultIgnore);
             serverMatchPatterns = getMatchPatterns(
-                    serverConfig.matchPatterns().isPresent() ? serverConfig.matchPatterns() : vertxConfig.matchPatterns(),
+                    serverConfig.matchPatterns().isPresent() ? serverConfig.matchPatterns()
+                            : vertxConfig.matchPatterns(),
                     defaultMatch);
         }
 

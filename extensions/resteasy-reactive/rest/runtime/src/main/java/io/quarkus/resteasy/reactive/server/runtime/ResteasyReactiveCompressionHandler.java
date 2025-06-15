@@ -74,8 +74,8 @@ public class ResteasyReactiveCompressionHandler implements ServerRestHandler {
                     }
                     if (responseContentType != null) {
                         MediaType contentType = responseContentType.getMediaType();
-                        if (contentType != null
-                                && compressMediaTypes.contains(contentType.getType() + '/' + contentType.getSubtype())) {
+                        if (contentType != null && compressMediaTypes
+                                .contains(contentType.getType() + '/' + contentType.getSubtype())) {
                             response.removeResponseHeader(HttpHeaders.CONTENT_ENCODING);
                         }
                     }

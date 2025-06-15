@@ -42,8 +42,8 @@ public class QuarkusJsonbSerializer extends JsonBindingProvider {
      * RESTEasy can already handle these
      */
     private static final Set<Class<?>> BUILTIN_DEFAULTS = new HashSet<>(
-            Arrays.asList(String.class, InputStream.class, FileRange.class, AsyncStreamingOutput.class, DataSource.class,
-                    Reader.class, StreamingOutput.class, byte[].class, File.class));
+            Arrays.asList(String.class, InputStream.class, FileRange.class, AsyncStreamingOutput.class,
+                    DataSource.class, Reader.class, StreamingOutput.class, byte[].class, File.class));
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -64,7 +64,8 @@ public class QuarkusJsonbSerializer extends JsonBindingProvider {
 
     @Override
     public void writeTo(Object t, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         httpHeaders.putSingle(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
         super.writeTo(t, type, genericType, annotations, mediaType, httpHeaders, entityStream);
     }

@@ -14,8 +14,8 @@ public class FromBeanRoleSupplier implements Supplier<String[]> {
     public FromBeanRoleSupplier(Class<?> beanClass, String fieldName) {
         this.beanClass = beanClass;
         try {
-            //note that this is initialized at static init time
-            //so no reflection registration required
+            // note that this is initialized at static init time
+            // so no reflection registration required
             this.field = beanClass.getField(fieldName);
             if (field.getType() != String.class) {
                 throw new RuntimeException("Field was not of type String");

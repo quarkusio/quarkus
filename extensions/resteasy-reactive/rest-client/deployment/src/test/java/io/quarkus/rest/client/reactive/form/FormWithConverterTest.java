@@ -25,17 +25,16 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class FormWithConverterTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ResourceClient.class, Resource.class, Input.class, InputParamConverterProvider.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(ResourceClient.class, Resource.class, Input.class, InputParamConverterProvider.class));
 
     @TestHTTPResource
     URI baseUri;
 
     @Test
     void test() {
-        ResourceClient client = RestClientBuilder.newBuilder().baseUri(baseUri).register(InputParamConverterProvider.class)
-                .build(ResourceClient.class);
+        ResourceClient client = RestClientBuilder.newBuilder().baseUri(baseUri)
+                .register(InputParamConverterProvider.class).build(ResourceClient.class);
         String result = client.hello(new Input("hey"));
         assertThat(result).isEqualTo("hey!");
     }

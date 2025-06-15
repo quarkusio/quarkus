@@ -158,7 +158,9 @@ public abstract class PageBuilder<T> {
 
         // Guess the component name from the componentlink or title
         if (this.componentName == null) {
-            this.componentName = this.componentLink.substring(0, this.componentLink.lastIndexOf(DOT)); // Remove the file extension (.js)
+            this.componentName = this.componentLink.substring(0, this.componentLink.lastIndexOf(DOT)); // Remove the
+                                                                                                       // file extension
+                                                                                                       // (.js)
         }
 
         // Guess the title
@@ -169,21 +171,8 @@ public abstract class PageBuilder<T> {
             this.title = n.substring(0, 1).toUpperCase() + n.substring(1); // Capitalize first letter
         }
 
-        Page page = new Page(icon,
-                color,
-                tooltip,
-                title,
-                staticLabel,
-                dynamicLabel,
-                streamingLabel,
-                componentName,
-                componentLink,
-                metadata,
-                embed,
-                includeInMenu,
-                internalComponent,
-                namespace,
-                namespaceLabel,
+        Page page = new Page(icon, color, tooltip, title, staticLabel, dynamicLabel, streamingLabel, componentName,
+                componentLink, metadata, embed, includeInMenu, internalComponent, namespace, namespaceLabel,
                 extensionId);
 
         return page;

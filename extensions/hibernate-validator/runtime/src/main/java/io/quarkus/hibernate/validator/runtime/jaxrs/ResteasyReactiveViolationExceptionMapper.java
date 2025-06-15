@@ -75,9 +75,8 @@ public class ResteasyReactiveViolationExceptionMapper implements ExceptionMapper
 
         var rrContext = CurrentRequestManager.get();
         // Check standard media types.
-        MediaType mediaType = ValidatorMediaTypeUtil.getAcceptMediaType(
-                rrContext.getHttpHeaders().getAcceptableMediaTypes(),
-                serverMediaTypes(rrContext));
+        MediaType mediaType = ValidatorMediaTypeUtil
+                .getAcceptMediaType(rrContext.getHttpHeaders().getAcceptableMediaTypes(), serverMediaTypes(rrContext));
         if (mediaType == null) {
             mediaType = MediaType.APPLICATION_JSON_TYPE;
         }

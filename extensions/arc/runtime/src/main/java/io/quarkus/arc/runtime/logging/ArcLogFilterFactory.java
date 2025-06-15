@@ -7,17 +7,18 @@ import io.quarkus.arc.InstanceHandle;
 import io.quarkus.runtime.logging.LogFilterFactory;
 
 /**
- * Creates the implementation of the class by getting a bean from Arc.
- * This class is loaded automatically by the {@link java.util.ServiceLoader}.
+ * Creates the implementation of the class by getting a bean from Arc. This class is loaded automatically by the
+ * {@link java.util.ServiceLoader}.
  */
 public class ArcLogFilterFactory implements LogFilterFactory {
 
     @Override
     public Filter create(String className) throws Exception {
-        InstanceHandle<?> instance = Arc.container().instance(Class.forName(className, true, Thread.currentThread()
-                .getContextClassLoader()));
+        InstanceHandle<?> instance = Arc.container()
+                .instance(Class.forName(className, true, Thread.currentThread().getContextClassLoader()));
         if (!instance.isAvailable()) {
-            throw new IllegalStateException("Improper integration of '" + LogFilterFactory.class.getName() + "' detected");
+            throw new IllegalStateException(
+                    "Improper integration of '" + LogFilterFactory.class.getName() + "' detected");
         }
         return (Filter) instance.get();
     }

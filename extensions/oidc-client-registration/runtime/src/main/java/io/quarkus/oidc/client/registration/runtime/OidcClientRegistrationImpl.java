@@ -52,8 +52,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     private final RegisteredClient registeredClient;
     private volatile boolean closed;
 
-    public OidcClientRegistrationImpl(WebClient client, long connectionDelayInMillisecs,
-            String registrationUri,
+    public OidcClientRegistrationImpl(WebClient client, long connectionDelayInMillisecs, String registrationUri,
             OidcClientRegistrationConfig oidcConfig, RegisteredClient registeredClient,
             Map<Type, List<OidcRequestFilter>> oidcRequestFilters,
             Map<Type, List<OidcResponseFilter>> oidcResponseFilters) {
@@ -79,10 +78,9 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
                         oidcConfig.id().orElse(DEFAULT_ID));
                 return Uni.createFrom().nullItem();
             } else {
-                return registerClient(client, registrationUri,
-                        oidcConfig, requestFilters, responseFilters, metadata.getMetadataString())
-                        .onFailure(OidcCommonUtils.oidcEndpointNotAvailable())
-                        .retry()
+                return registerClient(client, registrationUri, oidcConfig, requestFilters, responseFilters,
+                        metadata.getMetadataString())
+                        .onFailure(OidcCommonUtils.oidcEndpointNotAvailable()).retry()
                         .withBackOff(OidcCommonUtils.CONNECTION_BACKOFF_DURATION,
                                 OidcCommonUtils.CONNECTION_BACKOFF_DURATION)
                         .expireIn(connectionDelayInMillisecs);
@@ -95,9 +93,10 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         LOG.debugf("Register client metadata: %s", metadata.getMetadataString());
         checkClosed();
         OidcRequestContextProperties requestProps = getRequestProps();
-        return postRequest(requestProps, client, registrationUri, oidcConfig, requestFilters, metadata.getMetadataString())
-                .transform(resp -> newRegisteredClient(resp, client, registrationUri, oidcConfig, requestFilters,
-                        responseFilters, requestProps));
+        return postRequest(requestProps, client, registrationUri, oidcConfig, requestFilters,
+                metadata.getMetadataString())
+                .transform(resp -> newRegisteredClient(resp, client, registrationUri, oidcConfig,
+                        requestFilters, responseFilters, requestProps));
     }
 
     @Override
@@ -113,9 +112,8 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
                     for (ClientMetadata metadata : metadataList) {
                         postRequest(requestProps, client, registrationUri, oidcConfig, requestFilters,
                                 metadata.getMetadataString())
-                                .transform(
-                                        resp -> newRegisteredClient(resp, client, registrationUri, oidcConfig, requestFilters,
-                                                responseFilters, requestProps))
+                                .transform(resp -> newRegisteredClient(resp, client, registrationUri,
+                                        oidcConfig, requestFilters, responseFilters, requestProps))
                                 .subscribe().with(new Consumer<RegisteredClient>() {
                                     @Override
                                     public void accept(RegisteredClient client) {
@@ -137,12 +135,9 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         return requestFilters.isEmpty() && responseFilters.isEmpty() ? null : new OidcRequestContextProperties();
     }
 
-    static Uni<RegisteredClient> registerClient(WebClient client,
-            String registrationUri,
-            OidcClientRegistrationConfig oidcConfig,
-            Map<Type, List<OidcRequestFilter>> requestFilters,
-            Map<Type, List<OidcResponseFilter>> responseFilters,
-            String clientRegJson) {
+    static Uni<RegisteredClient> registerClient(WebClient client, String registrationUri,
+            OidcClientRegistrationConfig oidcConfig, Map<Type, List<OidcRequestFilter>> requestFilters,
+            Map<Type, List<OidcResponseFilter>> responseFilters, String clientRegJson) {
         OidcRequestContextProperties requestProps = requestFilters == null && responseFilters.isEmpty() ? null
                 : new OidcRequestContextProperties();
         return postRequest(requestProps, client, registrationUri, oidcConfig, requestFilters, clientRegJson)
@@ -150,22 +145,20 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
                         responseFilters, requestProps));
     }
 
-    static UniOnItem<HttpResponse<Buffer>> postRequest(OidcRequestContextProperties requestProps,
-            WebClient client, String registrationUri,
-            OidcClientRegistrationConfig oidcConfig,
-            Map<Type, List<OidcRequestFilter>> filters, String clientRegJson) {
+    static UniOnItem<HttpResponse<Buffer>> postRequest(OidcRequestContextProperties requestProps, WebClient client,
+            String registrationUri, OidcClientRegistrationConfig oidcConfig, Map<Type, List<OidcRequestFilter>> filters,
+            String clientRegJson) {
         HttpRequest<Buffer> request = client.postAbs(registrationUri);
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(), APPLICATION_JSON);
         request.putHeader(HttpHeaders.ACCEPT.toString(), APPLICATION_JSON);
         if (oidcConfig.initialToken().orElse(null) != null) {
-            request.putHeader(AUTHORIZATION_HEADER, OidcConstants.BEARER_SCHEME + " " + oidcConfig.initialToken().get());
+            request.putHeader(AUTHORIZATION_HEADER,
+                    OidcConstants.BEARER_SCHEME + " " + oidcConfig.initialToken().get());
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = Buffer.buffer(clientRegJson);
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, filters, buffer).sendBuffer(buffer)
-                .onFailure(SocketException.class)
-                .retry()
-                .atMost(oidcConfig.connectionRetryCount())
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, request, filters, buffer)
+                .sendBuffer(buffer).onFailure(SocketException.class).retry().atMost(oidcConfig.connectionRetryCount())
                 .onFailure().transform(t -> {
                     LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
                     // don't wrap it to avoid information leak
@@ -175,9 +168,7 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     }
 
     static private HttpRequest<Buffer> filterHttpRequest(OidcRequestContextProperties requestProps,
-            HttpRequest<Buffer> request,
-            Map<Type, List<OidcRequestFilter>> filters,
-            Buffer body) {
+            HttpRequest<Buffer> request, Map<Type, List<OidcRequestFilter>> filters, Buffer body) {
         if (!filters.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
             for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(filters,
@@ -188,13 +179,13 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
         return request;
     }
 
-    static private RegisteredClient newRegisteredClient(HttpResponse<Buffer> resp,
-            WebClient client, String registrationUri, OidcClientRegistrationConfig oidcConfig,
-            Map<Type, List<OidcRequestFilter>> requestFilters,
-            Map<Type, List<OidcResponseFilter>> responseFilters,
+    static private RegisteredClient newRegisteredClient(HttpResponse<Buffer> resp, WebClient client,
+            String registrationUri, OidcClientRegistrationConfig oidcConfig,
+            Map<Type, List<OidcRequestFilter>> requestFilters, Map<Type, List<OidcResponseFilter>> responseFilters,
             OidcRequestContextProperties requestProps) {
         Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.CLIENT_REGISTRATION);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters,
+                OidcEndpoint.Type.CLIENT_REGISTRATION);
         if (resp.statusCode() == 200 || resp.statusCode() == 201) {
             JsonObject json = buffer.toJsonObject();
             LOG.debugf("Client has been succesfully registered: %s", json.toString());
@@ -217,8 +208,8 @@ public class OidcClientRegistrationImpl implements OidcClientRegistration {
     @Override
     public Uni<RegisteredClient> readClient(String registrationUri, String registrationToken) {
         @SuppressWarnings("resource")
-        RegisteredClient newClient = new RegisteredClientImpl(client, oidcConfig,
-                requestFilters, responseFilters, createMetadata(oidcConfig.metadata()), registrationUri, registrationToken);
+        RegisteredClient newClient = new RegisteredClientImpl(client, oidcConfig, requestFilters, responseFilters,
+                createMetadata(oidcConfig.metadata()), registrationUri, registrationToken);
         return newClient.read();
     }
 

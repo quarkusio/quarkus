@@ -34,8 +34,7 @@ public final class PatternMapBuilder {
         return patternMap;
     }
 
-    private static void addGroup(ConfigPatternMap<Container> patternMap, ClassDefinition current,
-            Container parent) {
+    private static void addGroup(ConfigPatternMap<Container> patternMap, ClassDefinition current, Container parent) {
         for (ClassDefinition.ClassMember member : current.getMembers()) {
             final String propertyName = member.getPropertyName();
             ConfigPatternMap<Container> addTo = patternMap;
@@ -63,10 +62,10 @@ public final class PatternMapBuilder {
         if (member instanceof ClassDefinition.ItemMember) {
             Container matched = patternMap.getMatched();
             if (matched != null) {
-                throw new IllegalArgumentException(
-                        "Multiple matching properties for name \"" + matched.getPropertyName()
-                                + "\" property was matched by both " + container.findField() + " and " + matched.findField()
-                                + ". This is likely because you have an incompatible combination of extensions that both define the same properties (e.g. including both reactive and blocking database extensions)");
+                throw new IllegalArgumentException("Multiple matching properties for name \""
+                        + matched.getPropertyName() + "\" property was matched by both " + container.findField()
+                        + " and " + matched.findField()
+                        + ". This is likely because you have an incompatible combination of extensions that both define the same properties (e.g. including both reactive and blocking database extensions)");
             }
             patternMap.setMatched(container);
         } else if (member instanceof ClassDefinition.MapMember) {

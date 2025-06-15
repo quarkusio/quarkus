@@ -18,7 +18,7 @@ public class VirtualThreadNonBlockingHandler implements ServerRestHandler {
     @Override
     public void handle(ResteasyReactiveRequestContext requestContext) throws Exception {
         if (BlockingOperationSupport.isBlockingAllowed()) {
-            return; //already dispatched
+            return; // already dispatched
         }
 
         if (!eventLoops.containsKey(Thread.currentThread().toString())) {
@@ -26,8 +26,7 @@ public class VirtualThreadNonBlockingHandler implements ServerRestHandler {
             Constructor constructor = vtf.getDeclaredConstructors()[0];
             constructor.setAccessible(true);
             ThreadFactory tf = (ThreadFactory) constructor.newInstance(
-                    new Object[] { requestContext.getContextExecutor(), "quarkus-virtual-factory", 0, 0,
-                            null });
+                    new Object[] { requestContext.getContextExecutor(), "quarkus-virtual-factory", 0, 0, null });
             var exec = (Executor) Executors.class.getMethod("newThreadPerTaskExecutor", ThreadFactory.class)
                     .invoke(this, tf);
             eventLoops.put(Thread.currentThread().toString(), exec);

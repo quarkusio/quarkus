@@ -4,7 +4,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request scheme
- *
  */
 public class RequestSchemeAttribute implements ExchangeAttribute {
 

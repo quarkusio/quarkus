@@ -19,9 +19,8 @@ import io.quarkus.test.QuarkusUnitTest;
 /**
  * Tests that DB version checks can be disabled explicitly.
  * <p>
- * This was originally introduced to work around problems with version checks,
- * such as https://github.com/quarkusio/quarkus/issues/43703 /
- * https://github.com/quarkusio/quarkus/issues/42255
+ * This was originally introduced to work around problems with version checks, such as
+ * https://github.com/quarkusio/quarkus/issues/43703 / https://github.com/quarkusio/quarkus/issues/42255
  */
 public class DbVersionCheckDisabledExplicitlyTest {
 
@@ -36,9 +35,7 @@ public class DbVersionCheckDisabledExplicitlyTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(MyEntity.class))
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.datasource.db-version", "999.999")
             // We disable the version check explicitly, so Quarkus should boot just fine
@@ -52,16 +49,15 @@ public class DbVersionCheckDisabledExplicitlyTest {
 
     @Test
     public void dialectVersion() {
-        var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect().getVersion();
+        var dialectVersion = sessionFactory.unwrap(SessionFactoryImplementor.class).getJdbcServices().getDialect()
+                .getVersion();
         assertThat(DialectVersions.toString(dialectVersion)).isEqualTo(CONFIGURED_DB_VERSION);
     }
 
     @Test
     @Transactional
     public void smokeTest() {
-        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(session,
-                MyEntity.class, MyEntity::new,
-                MyEntity::getId,
+        SmokeTestUtils.testSimplePersistRetrieveUpdateDelete(session, MyEntity.class, MyEntity::new, MyEntity::getId,
                 MyEntity::setName, MyEntity::getName);
     }
 }

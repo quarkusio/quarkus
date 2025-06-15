@@ -75,16 +75,15 @@ public class ResourceNotFoundData {
     public String getHTMLContent() {
 
         List<RouteDescription> combinedRoutes = getCombinedRoutes();
-        TemplateHtmlBuilder builder = new TemplateHtmlBuilder(this.baseUrl,
-                HEADING, "", "Resources overview", List.of());
+        TemplateHtmlBuilder builder = new TemplateHtmlBuilder(this.baseUrl, HEADING, "", "Resources overview",
+                List.of());
 
         builder.resourcesStart(RESOURCE_ENDPOINTS);
 
         for (RouteDescription resource : combinedRoutes) {
             builder.resourcePath(adjustRoot(this.httpRoot, resource.getBasePath()));
             for (RouteMethodDescription method : resource.getCalls()) {
-                builder.method(method.getHttpMethod(),
-                        adjustRoot(this.httpRoot, method.getFullPath()));
+                builder.method(method.getHttpMethod(), adjustRoot(this.httpRoot, method.getFullPath()));
                 if (method.getJavaMethod() != null) {
                     builder.listItem(method.getJavaMethod());
                 }
@@ -157,8 +156,8 @@ public class ResourceNotFoundData {
                     if (method.getJavaMethod() != null) {
                         description = description + " (java:" + method.getJavaMethod() + ")";
                     }
-                    r.add(JsonObject.of(URI, adjustRoot(this.httpRoot, method.getFullPath()),
-                            DESCRIPTION, description));
+                    r.add(JsonObject.of(URI, adjustRoot(this.httpRoot, method.getFullPath()), DESCRIPTION,
+                            description));
                 }
             }
             infoMap.put(RESOURCE_ENDPOINTS, r);
@@ -168,8 +167,7 @@ public class ResourceNotFoundData {
         if (!servletMappings.isEmpty()) {
             JsonArray sm = new JsonArray();
             for (String servletMapping : servletMappings) {
-                sm.add(JsonObject.of(URI, adjustRoot(this.httpRoot, servletMapping), DESCRIPTION,
-                        EMPTY));
+                sm.add(JsonObject.of(URI, adjustRoot(this.httpRoot, servletMapping), DESCRIPTION, EMPTY));
             }
             infoMap.put(SERVLET_MAPPINGS, sm);
         }
@@ -180,8 +178,7 @@ public class ResourceNotFoundData {
             if (!resources.isEmpty()) {
                 JsonArray sr = new JsonArray();
                 for (String staticResource : resources) {
-                    sr.add(JsonObject.of(URI, adjustRoot(this.httpRoot, staticResource), DESCRIPTION,
-                            EMPTY));
+                    sr.add(JsonObject.of(URI, adjustRoot(this.httpRoot, staticResource), DESCRIPTION, EMPTY));
                 }
                 infoMap.put(STATIC_RESOURCES, sr);
             }
@@ -191,7 +188,8 @@ public class ResourceNotFoundData {
         if (!this.additionalEndpoints.isEmpty()) {
             JsonArray ae = new JsonArray();
             for (AdditionalRouteDescription additionalEndpoint : this.additionalEndpoints) {
-                ae.add(JsonObject.of(URI, additionalEndpoint.getUri(), DESCRIPTION, additionalEndpoint.getDescription()));
+                ae.add(JsonObject.of(URI, additionalEndpoint.getUri(), DESCRIPTION,
+                        additionalEndpoint.getDescription()));
             }
             infoMap.put(ADDITIONAL_ENDPOINTS, ae);
         }
@@ -278,8 +276,8 @@ public class ResourceNotFoundData {
 
     private List<String> findRealResources() {
 
-        //we need to check for web resources in order to get welcome files to work
-        //this kinda sucks
+        // we need to check for web resources in order to get welcome files to work
+        // this kinda sucks
         Set<String> knownFiles = new HashSet<>();
         for (String staticResourceRoot : this.staticRoots) {
             if (staticResourceRoot != null) {
@@ -313,7 +311,7 @@ public class ResourceNotFoundData {
             LOG.error("Failed to read static resources", e);
         }
 
-        //limit to 1000 to not have to many files to display
+        // limit to 1000 to not have to many files to display
         return knownFiles.stream().filter(this::isHtmlFileName).limit(1000).distinct().sorted(Comparator.naturalOrder())
                 .collect(Collectors.toList());
     }
@@ -322,8 +320,7 @@ public class ResourceNotFoundData {
         try {
             Files.walkFileTree(resource, new SimpleFileVisitor<java.nio.file.Path>() {
                 @Override
-                public FileVisitResult visitFile(java.nio.file.Path p, BasicFileAttributes attrs)
-                        throws IOException {
+                public FileVisitResult visitFile(java.nio.file.Path p, BasicFileAttributes attrs) throws IOException {
                     String file = resource.relativize(p).toString();
                     // Windows has a backslash
                     file = file.replace('\\', '/');

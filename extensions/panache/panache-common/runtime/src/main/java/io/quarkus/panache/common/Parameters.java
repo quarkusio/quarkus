@@ -8,11 +8,9 @@ import java.util.Map;
  * <p>
  * Utility class to build populated `Map` instances. Page instances are mutable (builder-like).
  * </p>
- *
  * <p>
  * Usage:
  * </p>
- *
  * <code><pre>
  * Map&lt;String, Object&gt; params = Parameters.with("foo", foo)
  *     .and("bar", bar)
@@ -28,9 +26,13 @@ public class Parameters {
     /**
      * Add a parameter to this {@link Parameters}.
      *
-     * @param name name of the parameter to add
-     * @param value value of the parameter to add
+     * @param name
+     *        name of the parameter to add
+     * @param value
+     *        value of the parameter to add
+     *
      * @return this instance, modified.
+     *
      * @see {@link Parameters#map()}
      */
     public Parameters and(String name, Object value) {
@@ -50,9 +52,13 @@ public class Parameters {
     /**
      * Build a {@link Parameters} with a single parameter.
      *
-     * @param name name of the first parameter
-     * @param value value of the first parameter
+     * @param name
+     *        name of the first parameter
+     * @param value
+     *        value of the first parameter
+     *
      * @return a {@link Parameters} with a single parameter.
+     *
      * @see {@link Parameters#and(String, Object)}
      * @see {@link Parameters#map()}
      */

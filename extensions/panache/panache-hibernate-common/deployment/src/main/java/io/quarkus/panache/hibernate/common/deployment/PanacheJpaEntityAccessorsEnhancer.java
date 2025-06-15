@@ -11,8 +11,7 @@ import io.quarkus.panache.common.deployment.EntityModel;
 import io.quarkus.panache.common.deployment.MetamodelInfo;
 import io.quarkus.panache.common.deployment.visitors.PanacheEntityClassAccessorGenerationVisitor;
 
-public class PanacheJpaEntityAccessorsEnhancer
-        implements BiFunction<String, ClassVisitor, ClassVisitor> {
+public class PanacheJpaEntityAccessorsEnhancer implements BiFunction<String, ClassVisitor, ClassVisitor> {
 
     private final IndexView indexView;
     private final MetamodelInfo modelInfo;

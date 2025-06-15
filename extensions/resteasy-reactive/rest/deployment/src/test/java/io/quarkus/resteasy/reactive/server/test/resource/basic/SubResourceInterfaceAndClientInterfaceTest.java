@@ -32,67 +32,61 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SubResourceInterfaceAndClientInterfaceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class);
+            war.addClasses(StoreResource.class);
+            war.addClasses(OrderResource.class);
+            war.addClasses(PositionResource.class);
+            war.addClasses(PositionResourceImpl.class);
+            war.addClasses(UndangerousGoodsResource.class);
+            war.addClasses(DangerousGoodsResource.class);
+            war.addClasses(VeryDangerousGoodsResource.class);
+            war.addClasses(SubResourceRestClientInterface.class);
+            war.addClasses(ContactResource.class);
+            war.addClasses(ContactResourceImpl.class);
+            return war;
+        }
+    }).addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
                 @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
-                    war.addClasses(StoreResource.class);
-                    war.addClasses(OrderResource.class);
-                    war.addClasses(PositionResource.class);
-                    war.addClasses(PositionResourceImpl.class);
-                    war.addClasses(UndangerousGoodsResource.class);
-                    war.addClasses(DangerousGoodsResource.class);
-                    war.addClasses(VeryDangerousGoodsResource.class);
-                    war.addClasses(SubResourceRestClientInterface.class);
-                    war.addClasses(ContactResource.class);
-                    war.addClasses(ContactResourceImpl.class);
-                    return war;
-                }
-            })
-            .addBuildChainCustomizer(new Consumer<BuildChainBuilder>() {
-                @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
-                        @Override
-                        public void execute(BuildContext context) {
-                            SetupEndpointsResultBuildItem consumed = context.consume(SetupEndpointsResultBuildItem.class);
-                            context.produce(new FeatureBuildItem("just-here-to-invoke-buildstep"));
+                public void execute(BuildContext context) {
+                    SetupEndpointsResultBuildItem consumed = context.consume(SetupEndpointsResultBuildItem.class);
+                    context.produce(new FeatureBuildItem("just-here-to-invoke-buildstep"));
 
-                            for (ResourceClass subResourceClass : consumed.getSubResourceClasses()) {
-                                if (subResourceClass.getClassName().contains("SubResourceRestClientInterface")) {
-                                    throw new IllegalStateException(
-                                            "Client Interface SubResourceRestClientInterface got endpoint indexed.");
-                                }
-                            }
+                    for (ResourceClass subResourceClass : consumed.getSubResourceClasses()) {
+                        if (subResourceClass.getClassName().contains("SubResourceRestClientInterface")) {
+                            throw new IllegalStateException(
+                                    "Client Interface SubResourceRestClientInterface got endpoint indexed.");
                         }
-                    }).consumes(SetupEndpointsResultBuildItem.class).produces(FeatureBuildItem.class).build();
+                    }
                 }
-            });
+            }).consumes(SetupEndpointsResultBuildItem.class).produces(FeatureBuildItem.class).build();
+        }
+    });
 
     @Test
     public void basicTest() {
         {
             Client client = ClientBuilder.newClient();
-            Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/positions/positionId/dangerousgoods/dangerousgoodId/some-field",
-                            SubResourceInterfaceAndClientInterfaceTest.class.getSimpleName()))
-                    .request().get();
+            Response response = client.target(PortProviderUtil.generateURL(
+                    "/store/orders/orderId/positions/positionId/dangerousgoods/dangerousgoodId/some-field",
+                    SubResourceInterfaceAndClientInterfaceTest.class.getSimpleName())).request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-            Assertions.assertEquals("someFielddangerousgoodId", response.readEntity(String.class), "Wrong content of response");
+            Assertions.assertEquals("someFielddangerousgoodId", response.readEntity(String.class),
+                    "Wrong content of response");
             response.close();
             client.close();
         }
 
         {
             Client client = ClientBuilder.newClient();
-            Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/contacts",
-                            SubResourceInterfaceAndClientInterfaceTest.class.getSimpleName()))
-                    .request().get();
+            Response response = client.target(PortProviderUtil.generateURL("/store/orders/orderId/contacts",
+                    SubResourceInterfaceAndClientInterfaceTest.class.getSimpleName())).request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("[name1, name2]", response.readEntity(String.class), "Wrong content of response");
             response.close();
@@ -171,8 +165,8 @@ public class SubResourceInterfaceAndClientInterfaceTest {
                 }
             };
             Class[] intfs = { VeryDangerousGoodsResource.class };
-            return (VeryDangerousGoodsResource) Proxy.newProxyInstance(PositionResourceImpl.class.getClassLoader(), intfs,
-                    handler);
+            return (VeryDangerousGoodsResource) Proxy.newProxyInstance(PositionResourceImpl.class.getClassLoader(),
+                    intfs, handler);
         }
     }
 

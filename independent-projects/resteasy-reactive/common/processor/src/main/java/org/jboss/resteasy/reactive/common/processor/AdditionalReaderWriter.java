@@ -30,8 +30,7 @@ public interface AdditionalReaderWriter {
             this(handlerClass, mediaType, entityClass, null);
         }
 
-        public Entry(String handlerClass, String mediaType, String entityClass,
-                RuntimeType constraint) {
+        public Entry(String handlerClass, String mediaType, String entityClass, RuntimeType constraint) {
             this.handlerClass = Objects.requireNonNull(handlerClass);
             this.mediaType = Objects.requireNonNull(mediaType);
             this.entityClass = Objects.requireNonNull(entityClass);
@@ -66,10 +65,8 @@ public interface AdditionalReaderWriter {
             if (o == null || getClass() != o.getClass())
                 return false;
             Entry entry = (Entry) o;
-            return handlerClass.equals(entry.handlerClass) &&
-                    mediaType.equals(entry.mediaType) &&
-                    entityClass.equals(entry.entityClass) &&
-                    constraint == entry.constraint;
+            return handlerClass.equals(entry.handlerClass) && mediaType.equals(entry.mediaType)
+                    && entityClass.equals(entry.entityClass) && constraint == entry.constraint;
         }
 
         @Override

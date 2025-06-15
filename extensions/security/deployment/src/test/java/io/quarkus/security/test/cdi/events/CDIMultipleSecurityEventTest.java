@@ -46,11 +46,10 @@ public class CDIMultipleSecurityEventTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithNoSecurityAnnotations.class, BeanWithSecurityAnnotations.class,
-                            SecurityTestUtils.class, IdentityMock.class, AuthZFailureEventObserver.class,
-                            SecurityEventObserver.class, CustomSecurityEvent.class, CustomEventService.class,
-                            CustomEventObserver.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithNoSecurityAnnotations.class,
+                    BeanWithSecurityAnnotations.class, SecurityTestUtils.class, IdentityMock.class,
+                    AuthZFailureEventObserver.class, SecurityEventObserver.class, CustomSecurityEvent.class,
+                    CustomEventService.class, CustomEventObserver.class));
 
     @BeforeEach
     public void beforeEach() {

@@ -22,15 +22,13 @@ import io.restassured.RestAssured;
 @Tag(TestTags.DEVMODE)
 public class MultiplePersistenceUnitsImportSqlHotReloadScriptTest {
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(Plane.class.getPackage().getName())
-                    .addPackage(SharedEntity.class.getPackage().getName())
-                    .addPackage(User.class.getPackage().getName())
-                    .addPackage(OtherUserInSubPackage.class.getPackage().getName())
-                    .addClass(MultiplePersistenceUnitsSqlLoadScriptTestResource.class)
-                    .addAsResource("application-multiple-persistence-units-annotations.properties", "application.properties")
-                    .addAsResource("import-sharedentity.sql", "import.sql"));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addPackage(Plane.class.getPackage().getName()).addPackage(SharedEntity.class.getPackage().getName())
+            .addPackage(User.class.getPackage().getName())
+            .addPackage(OtherUserInSubPackage.class.getPackage().getName())
+            .addClass(MultiplePersistenceUnitsSqlLoadScriptTestResource.class)
+            .addAsResource("application-multiple-persistence-units-annotations.properties", "application.properties")
+            .addAsResource("import-sharedentity.sql", "import.sql"));
 
     @Test
     public void testImportSqlScriptHotReload() {

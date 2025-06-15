@@ -23,8 +23,7 @@ import io.quarkus.vertx.http.runtime.security.QuarkusHttpUser;
 import io.restassured.RestAssured;
 
 /**
- * Tests that basic authentication is enabled for the management interface when no other
- * mechanism is available.
+ * Tests that basic authentication is enabled for the management interface when no other mechanism is available.
  */
 public class ManagementInterfaceBasicAuthTest {
 
@@ -32,9 +31,8 @@ public class ManagementInterfaceBasicAuthTest {
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
-            return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,
-                            ManagementPathHandler.class)
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestIdentityProvider.class,
+                    TestTrustedIdentityProvider.class, TestIdentityController.class, ManagementPathHandler.class)
                     .addAsResource(new StringAsset("""
                             quarkus.management.enabled=true
                             quarkus.management.auth.enabled=true
@@ -50,35 +48,20 @@ public class ManagementInterfaceBasicAuthTest {
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin");
     }
 
     @Test
     public void testBasicAuthSuccess() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "admin")
-                .redirects().follow(false)
-                .when()
-                .get(metrics)
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(equalTo("admin:" + metrics.getPath()));
+        RestAssured.given().auth().preemptive().basic("admin", "admin").redirects().follow(false).when().get(metrics)
+                .then().assertThat().statusCode(200).body(equalTo("admin:" + metrics.getPath()));
 
     }
 
     @Test
     public void testBasicAuthFailure() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("admin", "wrongpassword")
-                .redirects().follow(false)
-                .get(metrics)
-                .then()
-                .assertThat()
-                .statusCode(401);
+        RestAssured.given().auth().preemptive().basic("admin", "wrongpassword").redirects().follow(false).get(metrics)
+                .then().assertThat().statusCode(401);
 
     }
 

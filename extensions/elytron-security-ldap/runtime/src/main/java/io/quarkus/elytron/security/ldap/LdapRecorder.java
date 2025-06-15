@@ -32,13 +32,14 @@ public class LdapRecorder {
     /**
      * Create a runtime value for a {@linkplain LdapSecurityRealm}
      *
-     * @param runtimeConfig the realm config
+     * @param runtimeConfig
+     *        the realm config
+     *
      * @return runtime value wrapper for the SecurityRealm
      */
     public RuntimeValue<SecurityRealm> createRealm(LdapSecurityRealmRuntimeConfig runtimeConfig) {
         LdapSecurityRealmBuilder.IdentityMappingBuilder identityMappingBuilder = LdapSecurityRealmBuilder.builder()
-                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext()))
-                .identityMapping();
+                .setDirContextSupplier(createDirContextSupplier(runtimeConfig.dirContext())).identityMapping();
 
         if (runtimeConfig.identityMapping().searchRecursive()) {
             identityMappingBuilder.searchRecursive();
@@ -47,8 +48,7 @@ public class LdapRecorder {
         LdapSecurityRealmBuilder ldapSecurityRealmBuilder = identityMappingBuilder
                 .map(createAttributeMappings(runtimeConfig.identityMapping()))
                 .setRdnIdentifier(runtimeConfig.identityMapping().rdnIdentifier())
-                .setSearchDn(runtimeConfig.identityMapping().searchBaseDn())
-                .build();
+                .setSearchDn(runtimeConfig.identityMapping().searchBaseDn()).build();
 
         if (runtimeConfig.directVerification()) {
             ldapSecurityRealmBuilder.addDirectEvidenceVerification(false);
@@ -58,8 +58,8 @@ public class LdapRecorder {
 
         if (runtimeConfig.cache().enabled()) {
             if (ldapRealm instanceof CacheableSecurityRealm) {
-                ldapRealm = new CachingSecurityRealm(ldapRealm,
-                        new LRURealmIdentityCache(runtimeConfig.cache().size(), runtimeConfig.cache().maxAge().toMillis()));
+                ldapRealm = new CachingSecurityRealm(ldapRealm, new LRURealmIdentityCache(runtimeConfig.cache().size(),
+                        runtimeConfig.cache().maxAge().toMillis()));
             } else {
                 log.warn(
                         "Created LDAP realm is not cacheable. Caching of the 'SecurityRealm' won't be available. Please, report this issue.");
@@ -69,12 +69,10 @@ public class LdapRecorder {
         return new RuntimeValue<>(ldapRealm);
     }
 
-    private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(DirContextConfig dirContext) {
-        DirContextFactory dirContextFactory = new QuarkusDirContextFactory(
-                dirContext.url(),
-                dirContext.principal().orElse(null),
-                dirContext.password().orElse(null),
-                dirContext.connectTimeout(),
+    private static ExceptionSupplier<DirContext, NamingException> createDirContextSupplier(
+            DirContextConfig dirContext) {
+        DirContextFactory dirContextFactory = new QuarkusDirContextFactory(dirContext.url(),
+                dirContext.principal().orElse(null), dirContext.password().orElse(null), dirContext.connectTimeout(),
                 dirContext.readTimeout());
         return () -> dirContextFactory.obtainDirContext(dirContext.referralMode());
     }
@@ -83,11 +81,9 @@ public class LdapRecorder {
         List<AttributeMapping> attributeMappings = new ArrayList<>();
 
         for (AttributeMappingConfig attributeMappingConfig : identityMappingConfig.attributeMappings().values()) {
-            attributeMappings.add(AttributeMapping.fromFilter(attributeMappingConfig.filter())
-                    .from(attributeMappingConfig.from())
-                    .to(attributeMappingConfig.to())
-                    .searchDn(attributeMappingConfig.filterBaseDn())
-                    .build());
+            attributeMappings.add(
+                    AttributeMapping.fromFilter(attributeMappingConfig.filter()).from(attributeMappingConfig.from())
+                            .to(attributeMappingConfig.to()).searchDn(attributeMappingConfig.filterBaseDn()).build());
         }
 
         AttributeMapping[] attributeMappingsArray = new AttributeMapping[attributeMappings.size()];

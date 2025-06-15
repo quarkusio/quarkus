@@ -79,18 +79,16 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
     }
 
     private void checkUnzipped(Path projectPath, Path unzipProject) throws IOException {
-        assertTrue(contentEquals(unzipProject.resolve(".gitignore").toFile(), projectPath.resolve(".gitignore").toFile()));
+        assertTrue(
+                contentEquals(unzipProject.resolve(".gitignore").toFile(), projectPath.resolve(".gitignore").toFile()));
         assertTrue(contentEquals(unzipProject.resolve("pom.xml").toFile(), projectPath.resolve("pom.xml").toFile()));
     }
 
     private Path createProject(Path testDir) throws QuarkusCommandException, IOException {
         final Path projectPath = testDir.resolve("project");
         final QuarkusProject project = QuarkusProjectHelper.getProject(projectPath, BuildTool.MAVEN);
-        final QuarkusCommandOutcome result = new CreateProject(project)
-                .groupId("org.acme")
-                .artifactId("basic-rest")
-                .version("1.0.0-SNAPSHOT")
-                .execute();
+        final QuarkusCommandOutcome result = new CreateProject(project).groupId("org.acme").artifactId("basic-rest")
+                .version("1.0.0-SNAPSHOT").execute();
         // Create a fake wrapper
         Files.write(projectPath.resolve("mvnw"), "testmvnw".getBytes());
         projectPath.resolve("mvnw").toFile().setExecutable(true);
@@ -102,7 +100,8 @@ class QuarkusProjectCompressTest extends PlatformAwareTestBase {
     }
 
     private static void unzip(final Path zipPath, final Path outputDir) throws IOException {
-        try (FileInputStream fis = new FileInputStream(zipPath.toFile()); ZipInputStream zis = new ZipInputStream(fis)) {
+        try (FileInputStream fis = new FileInputStream(zipPath.toFile());
+                ZipInputStream zis = new ZipInputStream(fis)) {
             ZipEntry zipEntry = zis.getNextEntry();
             byte[] buffer = new byte[1024];
             while (zipEntry != null) {

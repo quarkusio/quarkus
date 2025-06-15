@@ -14,10 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidCronExpressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(InvalidBean.class));
 
     @Test
     public void test() throws InterruptedException {

@@ -21,10 +21,9 @@ import io.vertx.core.Vertx;
 public class RequestContextActivatedByInstanceTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Endpoint.class, WSClient.class, RequestScopedBean.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Endpoint.class, WSClient.class, RequestScopedBean.class);
+    });
 
     @Inject
     Vertx vertx;

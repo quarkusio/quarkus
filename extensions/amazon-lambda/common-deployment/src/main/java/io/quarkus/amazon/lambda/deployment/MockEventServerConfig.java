@@ -3,8 +3,7 @@ package io.quarkus.amazon.lambda.deployment;
 import io.smallrye.config.WithDefault;
 
 /**
- * Configuration for the mock event server that is run
- * in dev mode and test mode
+ * Configuration for the mock event server that is run in dev mode and test mode
  */
 public interface MockEventServerConfig {
     /**

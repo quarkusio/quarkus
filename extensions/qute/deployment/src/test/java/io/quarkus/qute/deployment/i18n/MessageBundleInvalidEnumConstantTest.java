@@ -15,8 +15,7 @@ public class MessageBundleInvalidEnumConstantTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Messages.class, UnderscoredEnum.class)
+            .withApplicationRoot(root -> root.addClasses(Messages.class, UnderscoredEnum.class)
                     .addAsResource("messages/enu_invalid.properties"))
             .setExpectedException(MessageBundleException.class, true);
 

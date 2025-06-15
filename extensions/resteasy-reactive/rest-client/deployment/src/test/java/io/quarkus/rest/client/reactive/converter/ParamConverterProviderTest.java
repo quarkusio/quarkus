@@ -39,8 +39,7 @@ public class ParamConverterProviderTest {
 
     @Test
     void shouldConvertPathParam() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.get(Param.FIRST)).isEqualTo("1");
         assertThat(client.sub().get(Param.SECOND)).isEqualTo("2");
 
@@ -51,8 +50,7 @@ public class ParamConverterProviderTest {
 
     @Test
     void shouldConvertQueryParams() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.getWithQuery(Param.FIRST)).isEqualTo("1");
         assertThat(client.sub().getWithQuery(Param.SECOND)).isEqualTo("2");
 
@@ -64,8 +62,7 @@ public class ParamConverterProviderTest {
 
     @Test
     void shouldConvertHeaderParams() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.getWithHeader(Param.FIRST)).isEqualTo("1");
         assertThat(client.sub().getWithHeader(Param.SECOND)).isEqualTo("2");
 
@@ -78,8 +75,7 @@ public class ParamConverterProviderTest {
 
     @Test
     void shouldConvertCookieParams() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.getWithCookie(Param.FIRST)).isEqualTo("1");
         assertThat(client.sub().getWithCookie(Param.SECOND)).isEqualTo("2");
 

@@ -27,7 +27,8 @@ public class SecuredAmqpBroker {
                 }
 
                 @Override
-                public boolean validateUserAndRole(String username, String password, Set<Role> set, CheckType checkType) {
+                public boolean validateUserAndRole(String username, String password, Set<Role> set,
+                        CheckType checkType) {
                     return username.equalsIgnoreCase("artemis") && password.equalsIgnoreCase("artemis");
                 }
             });

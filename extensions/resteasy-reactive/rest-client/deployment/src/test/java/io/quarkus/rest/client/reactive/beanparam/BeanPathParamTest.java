@@ -38,8 +38,8 @@ public class BeanPathParamTest {
     @Test
     void shouldResolvePathParamsWhenBeanParamClassExtendsAnother() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
-        assertThat(client.getWithBeanParamInheritance(new MyChildBeanParam("child", "123"))).isEqualTo(
-                "it works with inheritance too!");
+        assertThat(client.getWithBeanParamInheritance(new MyChildBeanParam("child", "123")))
+                .isEqualTo("it works with inheritance too!");
     }
 
     @Path("/my/{id}/resource")

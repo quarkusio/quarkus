@@ -33,8 +33,7 @@ public class ClientRequestFilterAbortWithTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class));
 
     @TestHTTPResource
     URL url;
@@ -93,8 +92,8 @@ public class ClientRequestFilterAbortWithTestCase {
 
         @Override
         public void filter(ClientRequestContext requestContext) {
-            requestContext
-                    .abortWith(Response.status(ABORT_WITH_STATUS, ABORT_WITH_REASON_PHRASE).entity(ABORT_WITH_ENTITY).build());
+            requestContext.abortWith(
+                    Response.status(ABORT_WITH_STATUS, ABORT_WITH_REASON_PHRASE).entity(ABORT_WITH_ENTITY).build());
         }
     }
 }

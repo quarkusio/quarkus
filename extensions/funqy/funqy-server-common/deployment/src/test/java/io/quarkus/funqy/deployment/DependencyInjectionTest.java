@@ -15,9 +15,8 @@ public class DependencyInjectionTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    (jar) -> jar.addClasses(GreetingFunction.class, GreetingService.class, FarewellFunction.class,
-                            HiFunction.class, ByeFunction.class));
+            .withApplicationRoot((jar) -> jar.addClasses(GreetingFunction.class, GreetingService.class,
+                    FarewellFunction.class, HiFunction.class, ByeFunction.class));
 
     @Inject
     GreetingFunction greetingFunction;

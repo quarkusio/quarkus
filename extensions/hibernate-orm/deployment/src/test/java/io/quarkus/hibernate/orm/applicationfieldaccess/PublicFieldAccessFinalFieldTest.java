@@ -24,8 +24,8 @@ import io.quarkus.hibernate.orm.TransactionTestUtils;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Checks that access to public, final fields by the application is correctly replaced with getter calls for reads,
- * but not replaced at all for writes (since writes to final fields can only occur from constructors).
+ * Checks that access to public, final fields by the application is correctly replaced with getter calls for reads, but
+ * not replaced at all for writes (since writes to final fields can only occur from constructors).
  * <p>
  * See https://github.com/quarkusio/quarkus/issues/20186
  */
@@ -33,13 +33,10 @@ public class PublicFieldAccessFinalFieldTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
-                    .addClasses(
-                            EntityWithFinalField.class,
-                            EntityWithEmbeddedIdWithFinalField.class, EntityWithEmbeddedIdWithFinalField.EmbeddableId.class,
-                            EntityWithEmbeddedNonIdWithFinalField.class,
-                            EntityWithEmbeddedNonIdWithFinalField.EmbeddableNonId.class))
+            .withApplicationRoot((jar) -> jar.addClass(TransactionTestUtils.class).addClasses(
+                    EntityWithFinalField.class, EntityWithEmbeddedIdWithFinalField.class,
+                    EntityWithEmbeddedIdWithFinalField.EmbeddableId.class, EntityWithEmbeddedNonIdWithFinalField.class,
+                    EntityWithEmbeddedNonIdWithFinalField.EmbeddableNonId.class))
             .withConfigurationResource("application.properties");
 
     @Inject
@@ -65,8 +62,7 @@ public class PublicFieldAccessFinalFieldTest {
 
         inTransaction(() -> {
             EntityWithFinalField entity = em.find(EntityWithFinalField.class, persistedEntity.id);
-            assertThat(entity).extracting(e -> e.immutableProperty)
-                    .isEqualTo(persistedEntity.immutableProperty);
+            assertThat(entity).extracting(e -> e.immutableProperty).isEqualTo(persistedEntity.immutableProperty);
         });
     }
 
@@ -83,30 +79,27 @@ public class PublicFieldAccessFinalFieldTest {
         inTransaction(() -> {
             EntityWithEmbeddedIdWithFinalField entity = em.find(EntityWithEmbeddedIdWithFinalField.class,
                     persistedEntity.id);
-            assertThat(entity).extracting(e -> e.id).extracting(i -> i.id)
-                    .isEqualTo(persistedEntity.id.id);
+            assertThat(entity).extracting(e -> e.id).extracting(i -> i.id).isEqualTo(persistedEntity.id.id);
         });
 
         // Read with a new ID instance
         inTransaction(() -> {
             EntityWithEmbeddedIdWithFinalField entity = em.find(EntityWithEmbeddedIdWithFinalField.class,
                     EntityWithEmbeddedIdWithFinalField.EmbeddableId.of(persistedEntity.id.id));
-            assertThat(entity).extracting(e -> e.id).extracting(i -> i.id)
-                    .isEqualTo(persistedEntity.id.id);
+            assertThat(entity).extracting(e -> e.id).extracting(i -> i.id).isEqualTo(persistedEntity.id.id);
         });
 
         // Read with a query
         // This is special because in this particular test,
         // we know Hibernate ORM *has to* instantiate the EmbeddableIdType itself:
         // it cannot reuse the ID we passed.
-        // And since the EmbeddableIdType has a final field, instantiation will not be able to use a no-arg constructor...
+        // And since the EmbeddableIdType has a final field, instantiation will not be able to use a no-arg
+        // constructor...
         inTransaction(() -> {
             EntityWithEmbeddedIdWithFinalField entity = em
                     .createQuery("from embidwithfinal e where e.name = :name", EntityWithEmbeddedIdWithFinalField.class)
-                    .setParameter("name", persistedEntity.name)
-                    .getSingleResult();
-            assertThat(entity).extracting(e -> e.id).extracting(i -> i.id)
-                    .isEqualTo(persistedEntity.id.id);
+                    .setParameter("name", persistedEntity.name).getSingleResult();
+            assertThat(entity).extracting(e -> e.id).extracting(i -> i.id).isEqualTo(persistedEntity.id.id);
         });
     }
 
@@ -130,8 +123,7 @@ public class PublicFieldAccessFinalFieldTest {
         inTransaction(() -> {
             EntityWithEmbeddedNonIdWithFinalField entity = em.find(EntityWithEmbeddedNonIdWithFinalField.class,
                     persistedEntity.id);
-            assertThat(entity).extracting(e -> e.embedded)
-                    .extracting(emb -> emb.immutableProperty)
+            assertThat(entity).extracting(e -> e.embedded).extracting(emb -> emb.immutableProperty)
                     .isEqualTo(persistedEntity.embedded.immutableProperty);
         });
     }

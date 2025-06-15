@@ -22,12 +22,10 @@ public class MultiplePersistenceUnitsPackageAnnotationsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(Plane.class.getPackage().getName())
-                    .addPackage(SharedEntity.class.getPackage().getName())
-                    .addPackage(User.class.getPackage().getName())
-                    .addPackage(OtherUserInSubPackage.class.getPackage().getName())
-                    .addAsResource("application-multiple-persistence-units-annotations.properties", "application.properties"));
+            .withApplicationRoot((jar) -> jar.addPackage(Plane.class.getPackage().getName())
+                    .addPackage(SharedEntity.class.getPackage().getName()).addPackage(User.class.getPackage().getName())
+                    .addPackage(OtherUserInSubPackage.class.getPackage().getName()).addAsResource(
+                            "application-multiple-persistence-units-annotations.properties", "application.properties"));
 
     @Inject
     EntityManager defaultEntityManager;

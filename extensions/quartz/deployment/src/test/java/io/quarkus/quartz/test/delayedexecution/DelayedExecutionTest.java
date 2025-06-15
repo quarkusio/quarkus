@@ -18,8 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DelayedExecutionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Jobs.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class));
 
     @Test
     public void testSimpleScheduledJobs() throws InterruptedException {

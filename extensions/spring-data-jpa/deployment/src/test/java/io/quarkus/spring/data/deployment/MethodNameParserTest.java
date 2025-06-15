@@ -34,8 +34,8 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(1);
-        assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.zipCode = ?1");
+        assertThat(result.getQuery()).isEqualTo(
+                "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.zipCode = ?1");
     }
 
     @Test
@@ -45,8 +45,7 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(2);
-        assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND order = ?2");
+        assertThat(result.getQuery()).isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 AND order = ?2");
     }
 
     @Test
@@ -56,8 +55,7 @@ public class MethodNameParserTest {
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
         assertThat(result.getParamCount()).isEqualTo(2);
-        assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR order = ?2");
+        assertThat(result.getQuery()).isEqualTo("SELECT person FROM Person AS person WHERE name = ?1 OR order = ?2");
     }
 
     @Test
@@ -109,8 +107,8 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery())
-                .isEqualTo("SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country = ?1");
+        assertThat(result.getQuery()).isEqualTo(
+                "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -127,9 +125,8 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery())
-                .isEqualTo(
-                        "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
+        assertThat(result.getQuery()).isEqualTo(
+                "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -139,9 +136,8 @@ public class MethodNameParserTest {
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), entityClass);
-        assertThat(result.getQuery())
-                .isEqualTo(
-                        "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
+        assertThat(result.getQuery()).isEqualTo(
+                "SELECT person FROM Person AS person LEFT JOIN person.address address WHERE address.country.isoCode = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -165,13 +161,11 @@ public class MethodNameParserTest {
         Class[] additionalClasses = new Class[] { ChildBase.class };
 
         MethodNameParser.Result result = parseMethod(ParentBaseRepository.class, "countParentsByChildren_Nombre",
-                ParentBase.class,
-                additionalClasses);
+                ParentBase.class, additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), ParentBase.class);
-        assertThat(result.getQuery())
-                .isEqualTo(
-                        "FROM ParentBase AS parentbase LEFT JOIN parentbase.children children WHERE children.nombre = ?1");
+        assertThat(result.getQuery()).isEqualTo(
+                "FROM ParentBase AS parentbase LEFT JOIN parentbase.children children WHERE children.nombre = ?1");
         assertThat(result.getParamCount()).isEqualTo(1);
     }
 
@@ -179,8 +173,7 @@ public class MethodNameParserTest {
     public void shouldParseRepositoryMethodOverEntityContainingACollection() throws Exception {
         Class[] additionalClasses = new Class[] { LoginEvent.class };
 
-        MethodNameParser.Result result = parseMethod(UserRepository.class, "countUsersByLoginEvents_Id",
-                User.class,
+        MethodNameParser.Result result = parseMethod(UserRepository.class, "countUsersByLoginEvents_Id", User.class,
                 additionalClasses);
         assertThat(result).isNotNull();
         assertSameClass(result.getEntityClass(), User.class);
@@ -193,8 +186,8 @@ public class MethodNameParserTest {
         return assertThat(classInfo.name().toString()).isEqualTo(aClass.getName());
     }
 
-    private MethodNameParser.Result parseMethod(Class<?> repositoryClass, String methodToParse,
-            Class<?> entityClass, Class<?>... additionalClasses) throws IOException {
+    private MethodNameParser.Result parseMethod(Class<?> repositoryClass, String methodToParse, Class<?> entityClass,
+            Class<?>... additionalClasses) throws IOException {
         IndexView indexView = index(ArrayUtils.addAll(additionalClasses, repositoryClass, entityClass));
         DotName repository = DotName.createSimple(repositoryClass.getName());
         DotName entity = DotName.createSimple(entityClass.getName());

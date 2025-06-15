@@ -28,9 +28,12 @@ public class PathPart {
     /**
      * Create a new partial {@link Path} object.
      *
-     * @param file The file to send
-     * @param offset The starting byte of the file (must be >= 0)
-     * @param count The number of bytes to send (must be >= 0 and offset+count <= file size)
+     * @param file
+     *        The file to send
+     * @param offset
+     *        The starting byte of the file (must be >= 0)
+     * @param count
+     *        The number of bytes to send (must be >= 0 and offset+count <= file size)
      */
     public PathPart(Path file, long offset, long count) {
         if (!Files.exists(file))
@@ -47,8 +50,8 @@ public class PathPart {
         try {
             fileLength = Files.size(file);
             if ((offset + count) > fileLength)
-                throw new IllegalArgumentException(
-                        "Offset + count (" + (offset + count) + ") larger than file size (" + fileLength + "): " + file);
+                throw new IllegalArgumentException("Offset + count (" + (offset + count) + ") larger than file size ("
+                        + fileLength + "): " + file);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

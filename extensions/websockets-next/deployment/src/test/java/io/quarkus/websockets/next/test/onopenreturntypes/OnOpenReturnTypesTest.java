@@ -22,10 +22,9 @@ import io.vertx.core.buffer.Buffer;
 public class OnOpenReturnTypesTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(EndpointText.class, EndpointBinary.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(EndpointText.class, EndpointBinary.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

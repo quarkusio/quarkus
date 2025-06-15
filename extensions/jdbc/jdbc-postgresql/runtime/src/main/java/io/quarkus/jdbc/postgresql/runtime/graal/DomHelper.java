@@ -67,8 +67,8 @@ final class DomHelper {
             transformer.transform(domSource, streamResult);
             return stringWriter.toString();
         } catch (TransformerException te) {
-            throw new PSQLException(GT.tr("Unable to convert DOMResult SQLXML data to a string."),
-                    PSQLState.DATA_ERROR, te);
+            throw new PSQLException(GT.tr("Unable to convert DOMResult SQLXML data to a string."), PSQLState.DATA_ERROR,
+                    te);
         }
     }
 

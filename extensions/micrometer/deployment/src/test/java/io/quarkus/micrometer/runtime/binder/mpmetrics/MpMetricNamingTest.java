@@ -13,14 +13,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MpMetricNamingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MpColorResource.class));
+            .withApplicationRoot((jar) -> jar.addClass(MpColorResource.class));
 
     @Inject
     MeterRegistry registry;
@@ -35,13 +33,9 @@ public class MpMetricNamingTest {
         colors.green();
         colors.yellow();
 
-        Assertions.assertNotNull(
-                registry.find("io.quarkus.micrometer.test.MpColorResource.red").counter());
-        Assertions.assertNotNull(
-                registry.find("io.quarkus.micrometer.test.MpColorResource.blueCount").counter());
-        Assertions.assertNotNull(
-                registry.find("greenCount").counter());
-        Assertions.assertNotNull(
-                registry.find("yellow").gauge());
+        Assertions.assertNotNull(registry.find("io.quarkus.micrometer.test.MpColorResource.red").counter());
+        Assertions.assertNotNull(registry.find("io.quarkus.micrometer.test.MpColorResource.blueCount").counter());
+        Assertions.assertNotNull(registry.find("greenCount").counter());
+        Assertions.assertNotNull(registry.find("yellow").gauge());
     }
 }

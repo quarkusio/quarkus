@@ -34,8 +34,7 @@ public class BeforeTestAction implements Action<Task> {
 
     public BeforeTestAction(File projectDir, FileCollection combinedOutputSourceDirs,
             Provider<RegularFile> applicationModelPath, Provider<File> nativeRunnerPath,
-            FileCollection mainSourceSetClassesDir,
-            QuarkusPluginExtensionView extensionView) {
+            FileCollection mainSourceSetClassesDir, QuarkusPluginExtensionView extensionView) {
         this.projectDir = projectDir;
         this.combinedOutputSourceDirs = combinedOutputSourceDirs;
         this.applicationModelPath = applicationModelPath;
@@ -54,7 +53,8 @@ public class BeforeTestAction implements Action<Task> {
             ApplicationModel applicationModel = ToolingUtils
                     .deserializeAppModel(applicationModelPath.get().getAsFile().toPath());
 
-            SmallRyeConfig config = extensionView.buildEffectiveConfiguration(applicationModel, new HashMap<>()).getConfig();
+            SmallRyeConfig config = extensionView.buildEffectiveConfiguration(applicationModel, new HashMap<>())
+                    .getConfig();
             config.getOptionalValue(TEST.getProfileKey(), String.class)
                     .ifPresent(value -> props.put(TEST.getProfileKey(), value));
 
@@ -72,11 +72,8 @@ public class BeforeTestAction implements Action<Task> {
             Path projectDirPath = projectDir.toPath();
 
             // Identify the folder containing the sources associated with this test task
-            String fileList = task.getTestClassesDirs().getFiles().stream()
-                    .filter(File::exists)
-                    .distinct()
-                    .map(testSrcDir -> String.format("%s:%s",
-                            projectDirPath.relativize(testSrcDir.toPath()),
+            String fileList = task.getTestClassesDirs().getFiles().stream().filter(File::exists).distinct()
+                    .map(testSrcDir -> String.format("%s:%s", projectDirPath.relativize(testSrcDir.toPath()),
                             projectDirPath.relativize(outputDirectoryAsFile.toPath())))
                     .collect(Collectors.joining(","));
             task.environment(BootstrapConstants.TEST_TO_MAIN_MAPPINGS, fileList);

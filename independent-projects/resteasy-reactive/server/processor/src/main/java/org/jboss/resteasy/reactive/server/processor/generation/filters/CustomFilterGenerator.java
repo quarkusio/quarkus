@@ -91,7 +91,8 @@ final class CustomFilterGenerator {
     String generateContainerRequestFilter(MethodInfo targetMethod, ClassOutput classOutput) {
         checkModifiers(targetMethod, ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
         if (KotlinUtils.isSuspendMethod(targetMethod)) {
-            return generateRequestFilterForSuspendedMethod(targetMethod, classOutput, isOptionalFilter.test(targetMethod));
+            return generateRequestFilterForSuspendedMethod(targetMethod, classOutput,
+                    isOptionalFilter.test(targetMethod));
         }
         return generateStandardRequestFilter(targetMethod, classOutput, isOptionalFilter.test(targetMethod));
     }
@@ -112,19 +113,19 @@ final class CustomFilterGenerator {
                     + "' cannot be used as a request filter as it does not declare 'void', 'Response', 'RestResponse' as its return type.");
         }
 
-        String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
+        String generatedClassName = getGeneratedClassName(targetMethod,
+                ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
         ClassInfo declaringClass = targetMethod.declaringClass();
         DotName declaringClassName = declaringClass.name();
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(generatedClassName)
-                .superClass(ABSTRACT_SUSPENDED_REQ_FILTER)
-                .build()) {
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .superClass(ABSTRACT_SUSPENDED_REQ_FILTER).build()) {
             FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClass,
                     ABSTRACT_SUSPENDED_REQ_FILTER, additionalBeanAnnotations, checkForOptionalBean);
 
             // generate the implementation of the 'doFilter' method
             MethodCreator doFilterMethod = cc.getMethodCreator("doFilter", Object.class.getName(),
-                    ResteasyReactiveContainerRequestContext.class.getName(), ResteasyReactiveDotNames.CONTINUATION.toString());
+                    ResteasyReactiveContainerRequestContext.class.getName(),
+                    ResteasyReactiveDotNames.CONTINUATION.toString());
             ResultHandle delegate = doFilterMethod.readInstanceField(delegateField, doFilterMethod.getThis());
 
             if (checkForOptionalBean) {
@@ -133,8 +134,7 @@ final class CustomFilterGenerator {
             }
 
             // call the target method
-            ResultHandle resultHandle = doFilterMethod.invokeVirtualMethod(targetMethod,
-                    delegate,
+            ResultHandle resultHandle = doFilterMethod.invokeVirtualMethod(targetMethod, delegate,
                     getRequestFilterResultHandles(targetMethod, declaringClassName, doFilterMethod, 2,
                             getRRReqCtxHandle(doFilterMethod, getRRContainerReqCtxHandle(doFilterMethod, 0))));
             doFilterMethod.returnValue(resultHandle);
@@ -158,13 +158,10 @@ final class CustomFilterGenerator {
                     throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported, in method "
                             + targetMethod.declaringClass() + "." + targetMethod.name());
             }
-            handleResultMethod
-                    .invokeStaticMethod(
-                            MethodDescriptor.ofMethod(FilterUtil.class,
-                                    methodName,
-                                    void.class,
-                                    Uni.class, ResteasyReactiveContainerRequestContext.class),
-                            handleResultMethod.getMethodParam(1), getRRContainerReqCtxHandle(handleResultMethod, 0));
+            handleResultMethod.invokeStaticMethod(
+                    MethodDescriptor.ofMethod(FilterUtil.class, methodName, void.class, Uni.class,
+                            ResteasyReactiveContainerRequestContext.class),
+                    handleResultMethod.getMethodParam(1), getRRContainerReqCtxHandle(handleResultMethod, 0));
 
             handleResultMethod.returnNull();
         }
@@ -173,8 +170,8 @@ final class CustomFilterGenerator {
     }
 
     /**
-     * Generates an implementation of {@link jakarta.ws.rs.container.ContainerRequestFilter} that delegates to the method
-     * annotated with {@code @ServerRequestFilter}.
+     * Generates an implementation of {@link jakarta.ws.rs.container.ContainerRequestFilter} that delegates to the
+     * method annotated with {@code @ServerRequestFilter}.
      * <p>
      * An example of the generated code is:
      *
@@ -182,11 +179,13 @@ final class CustomFilterGenerator {
      *
      * &#64;Singleton
      * &#64;Unremovable
-     * public class CustomContainerRequestFilter$GeneratedContainerRequestFilter$someMethod implements ServerRequestFilter {
+     * public class CustomContainerRequestFilter$GeneratedContainerRequestFilter$someMethod
+     *         implements ServerRequestFilter {
      *     private final CustomContainerRequestFilter delegate;
      *
      *     &#64;Inject
-     *     public CustomContainerRequestFilter$GeneratedContainerRequestFilter$someMethod(CustomContainerRequestFilter var1) {
+     *     public CustomContainerRequestFilter$GeneratedContainerRequestFilter$someMethod(
+     *             CustomContainerRequestFilter var1) {
      *         this.delegate = var1;
      *     }
      *
@@ -204,20 +203,17 @@ final class CustomFilterGenerator {
     private String generateStandardRequestFilter(MethodInfo targetMethod, ClassOutput classOutput,
             boolean checkForOptionalBean) {
         ReturnType returnType = determineRequestFilterReturnType(targetMethod);
-        String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
+        String generatedClassName = getGeneratedClassName(targetMethod,
+                ResteasyReactiveServerDotNames.SERVER_REQUEST_FILTER);
         ClassInfo declaringClass = targetMethod.declaringClass();
         DotName declaringClassName = declaringClass.name();
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(generatedClassName)
-                .interfaces(determineRequestInterfaceType(returnType))
-                .build()) {
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .interfaces(determineRequestInterfaceType(returnType)).build()) {
             FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClass,
                     Object.class.getName(), additionalBeanAnnotations, checkForOptionalBean);
 
-            if (returnType == ReturnType.VOID
-                    || returnType == ReturnType.OPTIONAL_RESPONSE
-                    || returnType == ReturnType.OPTIONAL_REST_RESPONSE
-                    || returnType == ReturnType.RESPONSE
+            if (returnType == ReturnType.VOID || returnType == ReturnType.OPTIONAL_RESPONSE
+                    || returnType == ReturnType.OPTIONAL_REST_RESPONSE || returnType == ReturnType.RESPONSE
                     || returnType == ReturnType.REST_RESPONSE) {
                 // generate the implementation of the filter method
                 MethodCreator filterMethod = cc.getMethodCreator("filter", void.class, ContainerRequestContext.class);
@@ -236,36 +232,34 @@ final class CustomFilterGenerator {
                 ResultHandle rrContainerReqCtxHandle = getRRContainerReqCtxHandle(filterMethod, 0);
                 // call the target method
 
-                ResultHandle resultHandle = filterMethod.invokeVirtualMethod(targetMethod,
-                        delegate,
+                ResultHandle resultHandle = filterMethod.invokeVirtualMethod(targetMethod, delegate,
                         getRequestFilterResultHandles(targetMethod, declaringClassName, filterMethod, 1,
                                 getRRReqCtxHandle(filterMethod, rrContainerReqCtxHandle)));
                 if (returnType == ReturnType.OPTIONAL_RESPONSE) {
                     // invoke utility class that deals with Optional
-                    filterMethod.invokeStaticMethod(MethodDescriptor.ofMethod(FilterUtil.class, "handleOptional", void.class,
-                            Optional.class, ResteasyReactiveContainerRequestContext.class), resultHandle,
-                            rrContainerReqCtxHandle);
+                    filterMethod.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(FilterUtil.class, "handleOptional", void.class, Optional.class,
+                                    ResteasyReactiveContainerRequestContext.class),
+                            resultHandle, rrContainerReqCtxHandle);
                 } else if (returnType == ReturnType.OPTIONAL_REST_RESPONSE) {
                     // invoke utility class that deals with Optional
                     filterMethod.invokeStaticMethod(
                             MethodDescriptor.ofMethod(FilterUtil.class, "handleOptionalRestResponse", void.class,
                                     Optional.class, ResteasyReactiveContainerRequestContext.class),
-                            resultHandle,
-                            rrContainerReqCtxHandle);
+                            resultHandle, rrContainerReqCtxHandle);
                 } else if (returnType == ReturnType.RESPONSE) {
-                    filterMethod.invokeStaticMethod(MethodDescriptor.ofMethod(FilterUtil.class, "handleResponse", void.class,
-                            Response.class, ResteasyReactiveContainerRequestContext.class), resultHandle,
-                            rrContainerReqCtxHandle);
+                    filterMethod.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(FilterUtil.class, "handleResponse", void.class, Response.class,
+                                    ResteasyReactiveContainerRequestContext.class),
+                            resultHandle, rrContainerReqCtxHandle);
                 } else if (returnType == ReturnType.REST_RESPONSE) {
                     filterMethod.invokeStaticMethod(
                             MethodDescriptor.ofMethod(FilterUtil.class, "handleRestResponse", void.class,
                                     RestResponse.class, ResteasyReactiveContainerRequestContext.class),
-                            resultHandle,
-                            rrContainerReqCtxHandle);
+                            resultHandle, rrContainerReqCtxHandle);
                 }
                 filterMethod.returnValue(null);
-            } else if (returnType == ReturnType.UNI_VOID
-                    || returnType == ReturnType.UNI_RESPONSE
+            } else if (returnType == ReturnType.UNI_VOID || returnType == ReturnType.UNI_RESPONSE
                     || returnType == ReturnType.UNI_REST_RESPONSE) {
                 // generate the implementation of the filter method
                 MethodCreator filterMethod = cc.getMethodCreator("filter", void.class,
@@ -273,8 +267,8 @@ final class CustomFilterGenerator {
 
                 if (checkForOptionalBean) {
                     // if the delegate is null (because there was no bean of the target type, just return),
-                    filterMethod.ifNull(filterMethod.readInstanceField(delegateField, filterMethod.getThis())).trueBranch()
-                            .returnNull();
+                    filterMethod.ifNull(filterMethod.readInstanceField(delegateField, filterMethod.getThis()))
+                            .trueBranch().returnNull();
                 }
 
                 // call the target method
@@ -299,13 +293,8 @@ final class CustomFilterGenerator {
                                 + targetMethod.declaringClass() + "." + targetMethod.name());
                 }
                 // invoke utility class that deals with suspend / resume
-                filterMethod
-                        .invokeStaticMethod(
-                                MethodDescriptor.ofMethod(FilterUtil.class,
-                                        methodName,
-                                        void.class,
-                                        Uni.class, ResteasyReactiveContainerRequestContext.class),
-                                uniHandle, rrContainerReqCtxHandle);
+                filterMethod.invokeStaticMethod(MethodDescriptor.ofMethod(FilterUtil.class, methodName, void.class,
+                        Uni.class, ResteasyReactiveContainerRequestContext.class), uniHandle, rrContainerReqCtxHandle);
                 filterMethod.returnNull();
             } else {
                 throw new IllegalStateException("ReturnType: '" + returnType + "' is not supported, in method "
@@ -317,7 +306,8 @@ final class CustomFilterGenerator {
 
     private ResultHandle[] getRequestFilterResultHandles(MethodInfo targetMethod, DotName declaringClassName,
             MethodCreator filterMethod, int filterMethodParamCount, ResultHandle rrReqCtxHandle) {
-        // for each of the parameters of the user method, generate bytecode that pulls the argument outs of QuarkusRestRequestContext
+        // for each of the parameters of the user method, generate bytecode that pulls the argument outs of
+        // QuarkusRestRequestContext
         ResultHandle[] targetMethodParamHandles = new ResultHandle[targetMethod.parametersCount()];
         for (int i = 0; i < targetMethod.parametersCount(); i++) {
             Type param = targetMethod.parameterType(i);
@@ -335,19 +325,13 @@ final class CustomFilterGenerator {
                 targetMethodParamHandles[i] = rrReqCtxHandle;
             } else if (URI_INFO.equals(paramDotName)) {
                 GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
-                        i,
-                        "getUriInfo",
-                        URI_INFO);
+                        i, "getUriInfo", URI_INFO);
             } else if (HTTP_HEADERS.equals(paramDotName)) {
                 GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
-                        i,
-                        "getHttpHeaders",
-                        HttpHeadersImpl.class);
+                        i, "getHttpHeaders", HttpHeadersImpl.class);
             } else if (REQUEST.equals(paramDotName)) {
                 GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
-                        i,
-                        "getRequest",
-                        REQUEST);
+                        i, "getRequest", REQUEST);
             } else if (RESOURCE_INFO.equals(paramDotName)) {
                 targetMethodParamHandles[i] = getResourceInfoHandle(filterMethod, rrReqCtxHandle);
             } else if (ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
@@ -360,8 +344,7 @@ final class CustomFilterGenerator {
             } else {
                 String parameterName = targetMethod.parameterName(i);
                 throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
-                        + " of class '" + declaringClassName
-                        + "' is not allowed");
+                        + " of class '" + declaringClassName + "' is not allowed");
             }
         }
         return targetMethodParamHandles;
@@ -370,7 +353,8 @@ final class CustomFilterGenerator {
     String generateContainerResponseFilter(MethodInfo targetMethod, ClassOutput classOutput) {
         checkModifiers(targetMethod, ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
         if (KotlinUtils.isSuspendMethod(targetMethod)) {
-            return generateResponseFilterForSuspendedMethod(targetMethod, classOutput, isOptionalFilter.test(targetMethod));
+            return generateResponseFilterForSuspendedMethod(targetMethod, classOutput,
+                    isOptionalFilter.test(targetMethod));
         }
         return generateStandardContainerResponseFilter(targetMethod, classOutput, isOptionalFilter.test(targetMethod));
     }
@@ -379,17 +363,16 @@ final class CustomFilterGenerator {
             boolean checkForOptionalBean) {
         DotName returnDotName = determineReturnDotNameOfSuspendMethod(targetMethod);
         if (!returnDotName.equals(VOID)) {
-            throw new RuntimeException("Suspend method '" + targetMethod.name() + " of class '"
-                    + targetMethod.declaringClass().name()
-                    + "' cannot be used as a request filter as it does not declare 'void' as its return type.");
+            throw new RuntimeException(
+                    "Suspend method '" + targetMethod.name() + " of class '" + targetMethod.declaringClass().name()
+                            + "' cannot be used as a request filter as it does not declare 'void' as its return type.");
         }
-        String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
+        String generatedClassName = getGeneratedClassName(targetMethod,
+                ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
         ClassInfo declaringClass = targetMethod.declaringClass();
         DotName declaringClassName = declaringClass.name();
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(generatedClassName)
-                .superClass(ABSTRACT_SUSPENDED_RES_FILTER)
-                .build()) {
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .superClass(ABSTRACT_SUSPENDED_RES_FILTER).build()) {
             FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClass,
                     ABSTRACT_SUSPENDED_RES_FILTER, additionalBeanAnnotations, checkForOptionalBean);
 
@@ -404,16 +387,16 @@ final class CustomFilterGenerator {
             // call the target method
             ResultHandle resultHandle = doFilterMethod.invokeVirtualMethod(targetMethod,
                     doFilterMethod.readInstanceField(delegateField, doFilterMethod.getThis()),
-                    getResponseFilterResultHandles(targetMethod, declaringClassName,
-                            doFilterMethod, 3, rrReqCtxHandle));
+                    getResponseFilterResultHandles(targetMethod, declaringClassName, doFilterMethod, 3,
+                            rrReqCtxHandle));
             doFilterMethod.returnValue(resultHandle);
         }
         return generatedClassName;
     }
 
     /**
-     * Generates an implementation of {@link jakarta.ws.rs.container.ContainerResponseFilter} that delegates to the method
-     * annotated with {@code @ServerResponseFilter}.
+     * Generates an implementation of {@link jakarta.ws.rs.container.ContainerResponseFilter} that delegates to the
+     * method annotated with {@code @ServerResponseFilter}.
      * <p>
      * An example of the generated code is:
      *
@@ -426,7 +409,8 @@ final class CustomFilterGenerator {
      *     private final CustomContainerRequestFilter delegate;
      *
      *     &#64;Inject
-     *     public CustomContainerResponseFilter$GeneratedContainerResponseFilter$someMethod(CustomContainerRequestFilter var1) {
+     *     public CustomContainerResponseFilter$GeneratedContainerResponseFilter$someMethod(
+     *             CustomContainerRequestFilter var1) {
      *         this.delegate = var1;
      *     }
      *
@@ -443,13 +427,12 @@ final class CustomFilterGenerator {
     private String generateStandardContainerResponseFilter(MethodInfo targetMethod, ClassOutput classOutput,
             boolean checkForOptionalBean) {
         ReturnType returnType = determineResponseFilterReturnType(targetMethod);
-        String generatedClassName = getGeneratedClassName(targetMethod, ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
+        String generatedClassName = getGeneratedClassName(targetMethod,
+                ResteasyReactiveServerDotNames.SERVER_RESPONSE_FILTER);
         ClassInfo declaringClassInfo = targetMethod.declaringClass();
         DotName declaringClassName = declaringClassInfo.name();
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(generatedClassName)
-                .interfaces(determineResponseInterfaceType(returnType))
-                .build()) {
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .interfaces(determineResponseInterfaceType(returnType)).build()) {
             FieldDescriptor delegateField = generateConstructorAndDelegateField(cc, declaringClassInfo,
                     Object.class.getName(), additionalBeanAnnotations, checkForOptionalBean);
 
@@ -459,8 +442,8 @@ final class CustomFilterGenerator {
                         ContainerResponseContext.class);
 
                 if (checkForOptionalBean) {
-                    filterMethod.ifNull(filterMethod.readInstanceField(delegateField, filterMethod.getThis())).trueBranch()
-                            .returnVoid();
+                    filterMethod.ifNull(filterMethod.readInstanceField(delegateField, filterMethod.getThis()))
+                            .trueBranch().returnVoid();
                 }
 
                 ResultHandle rrContainerReqCtxHandle = getRRContainerReqCtxHandle(filterMethod, 0);
@@ -469,18 +452,17 @@ final class CustomFilterGenerator {
                 // call the target method
                 filterMethod.invokeVirtualMethod(targetMethod,
                         filterMethod.readInstanceField(delegateField, filterMethod.getThis()),
-                        getResponseFilterResultHandles(targetMethod, declaringClassName,
-                                filterMethod, 2, rrReqCtxHandle));
+                        getResponseFilterResultHandles(targetMethod, declaringClassName, filterMethod, 2,
+                                rrReqCtxHandle));
                 filterMethod.returnValue(null);
             } else if (returnType == ReturnType.UNI_VOID) {
                 // generate the implementation of the filter method
                 MethodCreator filterMethod = cc.getMethodCreator("filter", void.class,
-                        ResteasyReactiveContainerRequestContext.class,
-                        ContainerResponseContext.class);
+                        ResteasyReactiveContainerRequestContext.class, ContainerResponseContext.class);
 
                 if (checkForOptionalBean) {
-                    filterMethod.ifNull(filterMethod.readInstanceField(delegateField, filterMethod.getThis())).trueBranch()
-                            .returnNull();
+                    filterMethod.ifNull(filterMethod.readInstanceField(delegateField, filterMethod.getThis()))
+                            .trueBranch().returnNull();
                 }
 
                 ResultHandle rrContainerReqCtxHandle = getRRContainerReqCtxHandle(filterMethod, 0);
@@ -489,14 +471,12 @@ final class CustomFilterGenerator {
                 // call the target method
                 ResultHandle uniHandle = filterMethod.invokeVirtualMethod(targetMethod,
                         filterMethod.readInstanceField(delegateField, filterMethod.getThis()),
-                        getResponseFilterResultHandles(targetMethod, declaringClassName,
-                                filterMethod, 2, rrReqCtxHandle));
+                        getResponseFilterResultHandles(targetMethod, declaringClassName, filterMethod, 2,
+                                rrReqCtxHandle));
 
                 // invoke utility class that deals with Optional
-                filterMethod.invokeStaticMethod(
-                        MethodDescriptor.ofMethod(FilterUtil.class, "handleUniVoid", void.class,
-                                Uni.class, ResteasyReactiveContainerRequestContext.class),
-                        uniHandle, rrContainerReqCtxHandle);
+                filterMethod.invokeStaticMethod(MethodDescriptor.ofMethod(FilterUtil.class, "handleUniVoid", void.class,
+                        Uni.class, ResteasyReactiveContainerRequestContext.class), uniHandle, rrContainerReqCtxHandle);
                 filterMethod.returnValue(null);
             }
         }
@@ -504,8 +484,7 @@ final class CustomFilterGenerator {
     }
 
     private FieldDescriptor generateConstructorAndDelegateField(ClassCreator cc, ClassInfo declaringClass,
-            String superClassName, Set<String> additionalBeanAnnotations,
-            boolean checkForOptionalBean) {
+            String superClassName, Set<String> additionalBeanAnnotations, boolean checkForOptionalBean) {
 
         String declaringClassName = declaringClass.toString();
         ScopeInspectionResult scopeInspectionResult = inspectScope(declaringClass);
@@ -518,18 +497,16 @@ final class CustomFilterGenerator {
         }
 
         FieldDescriptor delegateField = cc.getFieldCreator("delegate", declaringClassName)
-                .setModifiers(Modifier.PRIVATE | Modifier.FINAL)
-                .getFieldDescriptor();
+                .setModifiers(Modifier.PRIVATE | Modifier.FINAL).getFieldDescriptor();
 
         MethodCreator ctor;
         if (checkForOptionalBean) {
             // generate a constructor that takes the Instance<TargetClass> as an argument
-            ctor = cc.getMethodCreator("<init>", void.class, Instance.class).setSignature(
-                    String.format("(L%s<L%s;>;)V",
-                            Instance.class.getName().replace('.', '/'),
-                            declaringClassName.replace('.', '/')));
+            ctor = cc.getMethodCreator("<init>", void.class, Instance.class).setSignature(String.format("(L%s<L%s;>;)V",
+                    Instance.class.getName().replace('.', '/'), declaringClassName.replace('.', '/')));
         } else {
-            // generate a constructor that takes the target class as an argument - this class is a CDI bean so Arc will be able to inject into the generated class
+            // generate a constructor that takes the target class as an argument - this class is a CDI bean so Arc will
+            // be able to inject into the generated class
             ctor = cc.getMethodCreator("<init>", void.class, declaringClassName);
         }
         ctor.setModifiers(Modifier.PUBLIC);
@@ -538,8 +515,8 @@ final class CustomFilterGenerator {
         ResultHandle self = ctor.getThis();
         if (checkForOptionalBean) {
             ResultHandle instance = ctor.getMethodParam(0);
-            ResultHandle isResolvable = ctor
-                    .invokeInterfaceMethod(MethodDescriptor.ofMethod(Instance.class, "isResolvable", boolean.class), instance);
+            ResultHandle isResolvable = ctor.invokeInterfaceMethod(
+                    MethodDescriptor.ofMethod(Instance.class, "isResolvable", boolean.class), instance);
             BranchResult isResolvableBranch = ctor.ifTrue(isResolvable);
 
             BytecodeCreator isResolvableTrue = isResolvableBranch.trueBranch();
@@ -568,21 +545,18 @@ final class CustomFilterGenerator {
 
     /**
      * The generated class needs to be proxyable:
-     *
      * <ul>
      * <li>The class declaring the filter annotation is itself annotated with {@code @ApplicationScoped}</li>
-     * <li>The class contains instance fields that are not annotated with {@code Inject}. The reason for this rule
-     * is to ensure that fields will not be instantiated at static-init time, which can cause problems during
-     * native image build, see <a href="https://github.com/quarkusio/quarkus/issues/27752">this</a>
-     * for more details</li>
+     * <li>The class contains instance fields that are not annotated with {@code Inject}. The reason for this rule is to
+     * ensure that fields will not be instantiated at static-init time, which can cause problems during native image
+     * build, see <a href="https://github.com/quarkusio/quarkus/issues/27752">this</a> for more details</li>
      * </ul>
-     *
      * If the class already has a scope declared, we use it. Otherwise, if it needs a proxy we make it
-     * {@code @ApplicationScoped},
-     * or {@code @Singleton} if no proxy is needed.
+     * {@code @ApplicationScoped}, or {@code @Singleton} if no proxy is needed.
      */
     private ScopeInspectionResult inspectScope(ClassInfo classInfo) {
-        if (classInfo.hasDeclaredAnnotation(ApplicationScoped.class) || classInfo.hasDeclaredAnnotation(RequestScoped.class)) {
+        if (classInfo.hasDeclaredAnnotation(ApplicationScoped.class)
+                || classInfo.hasDeclaredAnnotation(RequestScoped.class)) {
             return new ScopeInspectionResult(ApplicationScoped.class, true);
         }
         if (classInfo.hasDeclaredAnnotation(Singleton.class)) {
@@ -634,25 +608,21 @@ final class CustomFilterGenerator {
                 targetMethodParamHandles[i] = GeneratorUtils.unwrapObject(filterMethod, rrReqCtxHandle, paramDotName);
             } else if (URI_INFO.equals(paramDotName)) {
                 GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
-                        i,
-                        "getUriInfo",
-                        URI_INFO);
+                        i, "getUriInfo", URI_INFO);
             } else if (RESOURCE_INFO.equals(paramDotName)) {
                 targetMethodParamHandles[i] = getResourceInfoHandle(filterMethod, rrReqCtxHandle);
             } else if (ResteasyReactiveServerDotNames.SIMPLIFIED_RESOURCE_INFO.equals(paramDotName)) {
                 targetMethodParamHandles[i] = getSimpleResourceInfoHandle(filterMethod, rrReqCtxHandle);
             } else if (THROWABLE.equals(paramDotName)) {
-                GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles, i,
-                        "getThrowable",
-                        THROWABLE);
+                GeneratorUtils.paramHandleFromReqContextMethod(filterMethod, rrReqCtxHandle, targetMethodParamHandles,
+                        i, "getThrowable", THROWABLE);
             } else if (ResteasyReactiveDotNames.CONTINUATION.equals(paramDotName)) {
                 // the continuation to pass on to the target is retrieved from the last parameter of the filter method
                 targetMethodParamHandles[i] = filterMethod.getMethodParam(filterMethodParamCount - 1);
             } else {
                 String parameterName = targetMethod.parameterName(i);
                 throw new RuntimeException("Parameter '" + parameterName + "' of method '" + targetMethod.name()
-                        + " of class '" + declaringClassName
-                        + "' is not allowed");
+                        + " of class '" + declaringClassName + "' is not allowed");
             }
         }
         return targetMethodParamHandles;
@@ -660,15 +630,13 @@ final class CustomFilterGenerator {
 
     private ResultHandle getRRContainerReqCtxHandle(MethodCreator filter, int containerReqCtxParamIndex) {
         ResultHandle containerReqCtxHandle = filter.getMethodParam(containerReqCtxParamIndex);
-        return filter.checkCast(containerReqCtxHandle,
-                ResteasyReactiveContainerRequestContext.class);
+        return filter.checkCast(containerReqCtxHandle, ResteasyReactiveContainerRequestContext.class);
     }
 
     private ResultHandle getRRReqCtxHandle(MethodCreator filter, ResultHandle rrContainerReqCtxHandle) {
-        ResultHandle rrCtxHandle = filter.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(ResteasyReactiveContainerRequestContext.class, "getServerRequestContext",
-                        ServerRequestContext.class),
-                rrContainerReqCtxHandle);
+        ResultHandle rrCtxHandle = filter
+                .invokeInterfaceMethod(MethodDescriptor.ofMethod(ResteasyReactiveContainerRequestContext.class,
+                        "getServerRequestContext", ServerRequestContext.class), rrContainerReqCtxHandle);
         return filter.checkCast(rrCtxHandle, ResteasyReactiveRequestContext.class);
     }
 
@@ -676,20 +644,21 @@ final class CustomFilterGenerator {
         ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, rrReqCtxHandle);
         AssignableResultHandle resourceInfo = filterMethod.createVariable(ResourceInfo.class);
         BranchResult ifNullBranch = filterMethod.ifNull(runtimeResourceHandle);
-        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(
-                FieldDescriptor.of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));
+        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(FieldDescriptor
+                .of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));
         ifNullBranch.falseBranch().assign(resourceInfo, ifNullBranch.falseBranch().invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RuntimeResource.class, "getLazyMethod", ResteasyReactiveResourceInfo.class),
                 runtimeResourceHandle));
         return resourceInfo;
     }
 
-    private AssignableResultHandle getSimpleResourceInfoHandle(MethodCreator filterMethod, ResultHandle rrReqCtxHandle) {
+    private AssignableResultHandle getSimpleResourceInfoHandle(MethodCreator filterMethod,
+            ResultHandle rrReqCtxHandle) {
         ResultHandle runtimeResourceHandle = GeneratorUtils.runtimeResourceHandle(filterMethod, rrReqCtxHandle);
         AssignableResultHandle resourceInfo = filterMethod.createVariable(SimpleResourceInfo.class);
         BranchResult ifNullBranch = filterMethod.ifNull(runtimeResourceHandle);
-        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(
-                FieldDescriptor.of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));
+        ifNullBranch.trueBranch().assign(resourceInfo, ifNullBranch.trueBranch().readStaticField(FieldDescriptor
+                .of(SimpleResourceInfo.NullValues.class, "INSTANCE", SimpleResourceInfo.NullValues.class)));
         ifNullBranch.falseBranch().assign(resourceInfo, ifNullBranch.falseBranch().invokeVirtualMethod(
                 MethodDescriptor.ofMethod(RuntimeResource.class, "getSimplifiedResourceInfo", SimpleResourceInfo.class),
                 runtimeResourceHandle));
@@ -738,7 +707,8 @@ final class CustomFilterGenerator {
         } else if (targetMethod.returnType().name().equals(RESPONSE)) {
             return ReturnType.RESPONSE;
         }
-        throw new RuntimeException("Method '" + targetMethod.name() + " of class '" + targetMethod.declaringClass().name()
+        throw new RuntimeException("Method '" + targetMethod.name() + " of class '"
+                + targetMethod.declaringClass().name()
                 + "' cannot be used as a request filter as it does not declare 'void', Response, RestResponse, Optional<Response>, Optional<RestResponse>, 'Uni<Void>', 'Uni<RestResponse>' or 'Uni<Response>' as its return type");
     }
 
@@ -753,7 +723,8 @@ final class CustomFilterGenerator {
                 }
             }
         }
-        throw new RuntimeException("Method '" + targetMethod.name() + " of class '" + targetMethod.declaringClass().name()
+        throw new RuntimeException("Method '" + targetMethod.name() + " of class '"
+                + targetMethod.declaringClass().name()
                 + "' cannot be used as a response filter as it does not declare 'void' or 'Uni<Void>' as its return type");
     }
 

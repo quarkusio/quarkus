@@ -41,7 +41,8 @@ public abstract class NoAnnotationParentResourceWithPath implements NoAnnotation
 
     @POST
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + METHOD_ROLES_ALLOWED_PATH)
-    public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_MethodRolesAllowed(JsonObject array);
+    public abstract String classPathOnParentResource_ImplOnBase_ParentMethodWithPath_MethodRolesAllowed(
+            JsonObject array);
 
     @POST
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_BASE + PARENT_METHOD_WITH_PATH + METHOD_DENY_ALL_PATH)
@@ -118,8 +119,10 @@ public abstract class NoAnnotationParentResourceWithPath implements NoAnnotation
     }
 
     @Override
-    public String classPathOnParentResource_ImplOnParent_InterfaceMethodWithPath_NoSecurityAnnotation(JsonObject array) {
-        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH + NO_SECURITY_ANNOTATION_PATH;
+    public String classPathOnParentResource_ImplOnParent_InterfaceMethodWithPath_NoSecurityAnnotation(
+            JsonObject array) {
+        return CLASS_PATH_ON_PARENT_RESOURCE + IMPL_ON_PARENT + INTERFACE_METHOD_WITH_PATH
+                + NO_SECURITY_ANNOTATION_PATH;
     }
 
     @RolesAllowed("admin")

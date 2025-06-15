@@ -17,7 +17,8 @@ public interface RestClientClosingTask {
     record Context(Class<?> restApiClass, WebTargetImpl baseTarget) {
     }
 
-    @SuppressWarnings("unused") // this is called by the implementation class of the REST Client when the {@code close} method is called
+    @SuppressWarnings("unused") // this is called by the implementation class of the REST Client when the {@code close}
+                                // method is called
     static void invokeAll(Context context) {
         for (RestClientClosingTask restClientClosingTask : ServiceLoader.load(RestClientClosingTask.class)) {
             try {

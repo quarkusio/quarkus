@@ -28,8 +28,7 @@ public interface RestClientBuilderFactory {
         for (RestClientBuilderFactory spi : sl) {
             if (instance != null) {
                 throw new IllegalStateException("Multiple RestClientBuilderFactory implementations found: "
-                        + spi.getClass().getName() + " and "
-                        + instance.getClass().getName());
+                        + spi.getClass().getName() + " and " + instance.getClass().getName());
             }
             instance = spi;
         }

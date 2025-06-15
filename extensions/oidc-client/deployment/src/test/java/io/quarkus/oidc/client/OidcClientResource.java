@@ -53,11 +53,13 @@ public class OidcClientResource {
     }
 
     private Uni<String> createTokensString(Tokens tokens) {
-        return tokensAreInitialized(tokens) ? Uni.createFrom().item(tokens.getAccessToken() + " " + tokens.getRefreshToken())
+        return tokensAreInitialized(tokens)
+                ? Uni.createFrom().item(tokens.getAccessToken() + " " + tokens.getRefreshToken())
                 : Uni.createFrom().failure(new InternalServerErrorException());
     }
 
     private boolean tokensAreInitialized(Tokens tokens) {
-        return tokens.getAccessToken() != null && tokens.getAccessTokenExpiresAt() != null && tokens.getRefreshToken() != null;
+        return tokens.getAccessToken() != null && tokens.getAccessTokenExpiresAt() != null
+                && tokens.getRefreshToken() != null;
     }
 }

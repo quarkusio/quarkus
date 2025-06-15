@@ -17,7 +17,8 @@ public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements 
     private long cursor;
     private final List<String> extra = new ArrayList<>();
 
-    public ScanReactiveCursorImpl(RedisCommandExecutor redis, Marshaller marshaller, Type typeOfKey, List<String> extra) {
+    public ScanReactiveCursorImpl(RedisCommandExecutor redis, Marshaller marshaller, Type typeOfKey,
+            List<String> extra) {
         super(redis, marshaller);
         this.cursor = ReactiveCursor.INITIAL_CURSOR_ID;
         this.typeOfKey = typeOfKey;
@@ -44,9 +45,7 @@ public class ScanReactiveCursorImpl<K> extends AbstractRedisCommands implements 
 
     @Override
     public Multi<K> toMulti() {
-        return Multi.createBy().repeating()
-                .uni(this::next)
-                .whilst(m -> hasNext())
-                .onItem().transformToMultiAndConcatenate(set -> Multi.createFrom().items(set.stream()));
+        return Multi.createBy().repeating().uni(this::next).whilst(m -> hasNext()).onItem()
+                .transformToMultiAndConcatenate(set -> Multi.createFrom().items(set.stream()));
     }
 }

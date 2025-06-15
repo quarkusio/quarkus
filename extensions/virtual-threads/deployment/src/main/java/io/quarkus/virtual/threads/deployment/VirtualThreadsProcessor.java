@@ -23,20 +23,14 @@ public class VirtualThreadsProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void setup(VirtualThreadsConfig config, VirtualThreadsRecorder recorder,
-            ShutdownContextBuildItem shutdownContextBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
-            BuildProducer<AdditionalBeanBuildItem> beans,
-            BuildProducer<SyntheticBeanBuildItem> producer) {
+            ShutdownContextBuildItem shutdownContextBuildItem, LaunchModeBuildItem launchModeBuildItem,
+            BuildProducer<AdditionalBeanBuildItem> beans, BuildProducer<SyntheticBeanBuildItem> producer) {
         beans.produce(new AdditionalBeanBuildItem(VirtualThreads.class));
         recorder.setupVirtualThreads(config, shutdownContextBuildItem, launchModeBuildItem.getLaunchMode());
-        producer.produce(
-                SyntheticBeanBuildItem.configure(ExecutorService.class)
-                        .addType(Executor.class)
-                        .addQualifier(AnnotationInstance.builder(VirtualThreads.class).build())
-                        .scope(BuiltinScope.APPLICATION.getInfo())
-                        .setRuntimeInit()
-                        .supplier(recorder.getCurrentSupplier())
-                        .done());
+        producer.produce(SyntheticBeanBuildItem.configure(ExecutorService.class).addType(Executor.class)
+                .addQualifier(AnnotationInstance.builder(VirtualThreads.class).build())
+                .scope(BuiltinScope.APPLICATION.getInfo()).setRuntimeInit().supplier(recorder.getCurrentSupplier())
+                .done());
     }
 
 }

@@ -5,12 +5,11 @@ import org.hibernate.dialect.DatabaseVersion;
 /**
  * Constants exposing the default versions of various DBs in Quarkus.
  * <p>
- * If, one day, Hibernate ORM's defaults catch up with all our default versions,
- * we could consider relying on ORM's defaults going forward.
+ * If, one day, Hibernate ORM's defaults catch up with all our default versions, we could consider relying on ORM's
+ * defaults going forward.
  * <p>
- * For H2, we will probably have to keep a constant here forever,
- * as H2 is embedded and thus Quarkus determines its default version through the BOM.
- * See https://github.com/quarkusio/quarkus/issues/1886
+ * For H2, we will probably have to keep a constant here forever, as H2 is embedded and thus Quarkus determines its
+ * default version through the BOM. See https://github.com/quarkusio/quarkus/issues/1886
  */
 public final class DialectVersions {
     public static final class Defaults {

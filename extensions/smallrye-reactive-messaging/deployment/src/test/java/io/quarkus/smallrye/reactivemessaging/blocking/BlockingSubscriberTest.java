@@ -23,12 +23,9 @@ import io.smallrye.reactive.messaging.annotations.Broadcast;
 
 public class BlockingSubscriberTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ProduceIn.class, IncomingCustomUnorderedBlockingBean.class, IncomingCustomTwoBlockingBean.class)
-                    .addAsResource(
-                            new File("src/test/resources/config/worker-config.properties"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(ProduceIn.class, IncomingCustomUnorderedBlockingBean.class, IncomingCustomTwoBlockingBean.class)
+            .addAsResource(new File("src/test/resources/config/worker-config.properties"), "application.properties"));
 
     @Inject
     IncomingCustomUnorderedBlockingBean incomingCustomUnorderedBlockingBean;
@@ -57,7 +54,8 @@ public class BlockingSubscriberTest {
         await().until(() -> incomingCustomTwoBlockingBean.list().size() == 6);
         assertThat(incomingCustomTwoBlockingBean.list()).contains("a", "b", "c", "d", "e", "f");
 
-        List<String> threadNames = incomingCustomTwoBlockingBean.threads().stream().distinct().collect(Collectors.toList());
+        List<String> threadNames = incomingCustomTwoBlockingBean.threads().stream().distinct()
+                .collect(Collectors.toList());
         assertThat(threadNames.size()).isLessThanOrEqualTo(5);
         assertThat(threadNames.contains(Thread.currentThread().getName())).isFalse();
         for (String name : threadNames) {

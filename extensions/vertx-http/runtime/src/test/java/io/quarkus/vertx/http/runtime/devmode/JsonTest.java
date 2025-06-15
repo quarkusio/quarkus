@@ -12,7 +12,8 @@ public class JsonTest {
 
     @Test
     public void testJsonArray() {
-        assertEquals("[\"foo\",\"bar\",[\"baz\"]]", Json.array().add("foo").add("bar").add(Json.array().add("baz")).build());
+        assertEquals("[\"foo\",\"bar\",[\"baz\"]]",
+                Json.array().add("foo").add("bar").add(Json.array().add("baz")).build());
     }
 
     @Test
@@ -32,9 +33,9 @@ public class JsonTest {
 
     @Test
     public void testABitMoreComplexStructure() {
-        JsonObjectBuilder builder = Json.object().put("items", Json.array().add(1).add(2)).put("name", "Foo").put("parent",
-                Json.object(true).put("name", "Martin").put("age", 100).put("active", true).put("children",
-                        Json.array(true).add(Json.object())));
+        JsonObjectBuilder builder = Json.object().put("items", Json.array().add(1).add(2)).put("name", "Foo")
+                .put("parent", Json.object(true).put("name", "Martin").put("age", 100).put("active", true)
+                        .put("children", Json.array(true).add(Json.object())));
         assertFalse(builder.isEmpty());
         assertEquals("{\"items\":[1,2],\"name\":\"Foo\",\"parent\":{\"name\":\"Martin\",\"age\":100,\"active\":true}}",
                 builder.build());

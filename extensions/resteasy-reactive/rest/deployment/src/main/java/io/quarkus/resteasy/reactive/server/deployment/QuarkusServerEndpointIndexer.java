@@ -39,8 +39,7 @@ import io.quarkus.deployment.util.JandexUtil;
 import io.quarkus.resteasy.reactive.common.deployment.JsonDefaultProducersHandler;
 import io.quarkus.resteasy.reactive.server.runtime.ResteasyReactiveRecorder;
 
-public class QuarkusServerEndpointIndexer
-        extends ServerEndpointIndexer {
+public class QuarkusServerEndpointIndexer extends ServerEndpointIndexer {
 
     private static final org.jboss.logging.Logger LOGGER = Logger.getLogger(QuarkusServerEndpointIndexer.class);
     private static final String REST_CLIENT_NOT_BODY_ANNOTATION = "io.quarkus.rest.client.reactive.NotBody";
@@ -167,9 +166,9 @@ public class QuarkusServerEndpointIndexer
 
     /**
      * Check whether the Resource Method has a body parameter for which there exists a matching
-     * {@link jakarta.ws.rs.ext.MessageBodyReader}
-     * that is not a {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader}.
-     * In this case the Resource Class needs to be registered for reflection because the
+     * {@link jakarta.ws.rs.ext.MessageBodyReader} that is not a
+     * {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyReader}. In this case the Resource Class needs to
+     * be registered for reflection because the
      * {@link jakarta.ws.rs.ext.MessageBodyReader#isReadable(Class, java.lang.reflect.Type, Annotation[], MediaType)}
      * method expects to be passed the method annotations.
      */
@@ -192,8 +191,8 @@ public class QuarkusServerEndpointIndexer
         List<ScannedSerializer> readers = getSerializerScanningResult().getReaders();
 
         for (ScannedSerializer reader : readers) {
-            if (isSubclassOf(parameterClassName, reader.getHandledClassName()) && !isServerMessageBodyReader(
-                    reader.getClassInfo())) {
+            if (isSubclassOf(parameterClassName, reader.getHandledClassName())
+                    && !isServerMessageBodyReader(reader.getClassInfo())) {
                 return true;
             }
         }
@@ -202,9 +201,9 @@ public class QuarkusServerEndpointIndexer
 
     /**
      * Check whether the Resource Method has a return type for which there exists a matching
-     * {@link jakarta.ws.rs.ext.MessageBodyWriter}
-     * that is not a {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter}.
-     * In this case the Resource Class needs to be registered for reflection because the
+     * {@link jakarta.ws.rs.ext.MessageBodyWriter} that is not a
+     * {@link org.jboss.resteasy.reactive.server.spi.ServerMessageBodyWriter}. In this case the Resource Class needs to
+     * be registered for reflection because the
      * {@link jakarta.ws.rs.ext.MessageBodyWriter#isWriteable(Class, java.lang.reflect.Type, Annotation[], MediaType)}
      * method expects to be passed the method annotations.
      */
@@ -245,8 +244,7 @@ public class QuarkusServerEndpointIndexer
             return false;
         }
         try {
-            return JandexUtil.isSubclassOf(index, classByName,
-                    DotName.createSimple(parentName));
+            return JandexUtil.isSubclassOf(index, classByName, DotName.createSimple(parentName));
         } catch (BuildException e) {
             return false;
         }
@@ -269,7 +267,8 @@ public class QuarkusServerEndpointIndexer
 
     @Override
     protected void warnAboutMissUsedBodyParameter(DotName httpMethod, MethodInfo methodInfo) {
-        // This indexer also picks up REST client methods as well as there is no bulletproof way of distinguishing the two.
+        // This indexer also picks up REST client methods as well as there is no bulletproof way of distinguishing the
+        // two.
         // That is why we check for client specific annotations here
         if (methodInfo.hasAnnotation(REST_CLIENT_NOT_BODY_ANNOTATION)) {
             return;
@@ -279,11 +278,9 @@ public class QuarkusServerEndpointIndexer
 
     /**
      * At this point we know exactly which resources will require field injection and therefore are required to be
-     * {@link RequestScoped}.
-     * We can't change anything CDI related at this point (because it would create build cycles), so all we can do
-     * is fail the build if the resource has not already been handled automatically (by the best effort approach performed
-     * elsewhere)
-     * or it's not manually set to be {@link RequestScoped}.
+     * {@link RequestScoped}. We can't change anything CDI related at this point (because it would create build cycles),
+     * so all we can do is fail the build if the resource has not already been handled automatically (by the best effort
+     * approach performed elsewhere) or it's not manually set to be {@link RequestScoped}.
      */
     @Override
     protected void verifyClassThatRequiresFieldInjection(ClassInfo classInfo) {

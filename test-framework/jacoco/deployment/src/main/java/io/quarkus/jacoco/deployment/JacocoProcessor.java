@@ -46,14 +46,11 @@ public class JacocoProcessor {
 
     @BuildStep(onlyIf = IsTest.class)
     void transformerBuildItem(BuildProducer<BytecodeTransformerBuildItem> transformers,
-            OutputTargetBuildItem outputTargetBuildItem,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
-            BuildSystemTargetBuildItem buildSystemTargetBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
-            JacocoConfig config) throws Exception {
+            OutputTargetBuildItem outputTargetBuildItem, ApplicationArchivesBuildItem applicationArchivesBuildItem,
+            BuildSystemTargetBuildItem buildSystemTargetBuildItem, CurateOutcomeBuildItem curateOutcomeBuildItem,
+            LaunchModeBuildItem launchModeBuildItem, JacocoConfig config) throws Exception {
         if (launchModeBuildItem.isAuxiliaryApplication()) {
-            //no code coverage for continuous testing, it does not really make sense
+            // no code coverage for continuous testing, it does not really make sense
             return;
         }
         if (!config.enabled()) {
@@ -77,32 +74,29 @@ public class JacocoProcessor {
                     continue;
                 }
                 seen.add(className);
-                transformers.produce(
-                        new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
-                                .setCacheable(true)
-                                .setInputTransformer(new BiFunction<String, byte[], byte[]>() {
-                                    @Override
-                                    public byte[] apply(String className, byte[] bytes) {
-                                        try {
-                                            byte[] enhanced = instrumenter.instrument(bytes, className);
-                                            if (enhanced == null) {
-                                                return bytes;
-                                            }
-                                            return enhanced;
-                                        } catch (IOException e) {
-                                            throw new RuntimeException(e);
-                                        }
+                transformers.produce(new BytecodeTransformerBuildItem.Builder().setClassToTransform(className)
+                        .setCacheable(true).setInputTransformer(new BiFunction<String, byte[], byte[]>() {
+                            @Override
+                            public byte[] apply(String className, byte[] bytes) {
+                                try {
+                                    byte[] enhanced = instrumenter.instrument(bytes, className);
+                                    if (enhanced == null) {
+                                        return bytes;
                                     }
-                                }).build());
+                                    return enhanced;
+                                } catch (IOException e) {
+                                    throw new RuntimeException(e);
+                                }
+                            }
+                        }).build());
             }
         }
         if (config.report()) {
             ReportInfo info = new ReportInfo();
             info.dataFile = dataFile;
 
-            File targetdir = new File(
-                    getFilePath(config.reportLocation(), outputTargetBuildItem.getOutputDirectory(),
-                            JacocoConfig.JACOCO_REPORT));
+            File targetdir = new File(getFilePath(config.reportLocation(), outputTargetBuildItem.getOutputDirectory(),
+                    JacocoConfig.JACOCO_REPORT));
             info.reportDir = targetdir.getAbsolutePath();
             String includes = String.join(",", config.includes());
             String excludes = String.join(",", config.excludes().orElse(Collections.emptyList()));
@@ -139,8 +133,7 @@ public class JacocoProcessor {
                 sources.add(p.toAbsolutePath().toString());
             }
             if (Files.isDirectory(src.getOutputDir())) {
-                for (final File file : FileUtils.getFiles(src.getOutputDir().toFile(), includes, excludes,
-                        true)) {
+                for (final File file : FileUtils.getFiles(src.getOutputDir().toFile(), includes, excludes, true)) {
                     if (file.getName().endsWith(".class")) {
                         classes.add(file.getAbsolutePath());
                     }

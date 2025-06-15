@@ -33,10 +33,8 @@ public class CustomTemplateLocatorTest {
     private static final String CHECKED_TEMPLATE_LOCATION = "my_checked_template_base/myCheckedTemplate";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(CustomLocator1.class, CustomLocator2.class, CustomLocator3.class,
-                            TemplateValueProvider.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(CustomLocator1.class, CustomLocator2.class, CustomLocator3.class, TemplateValueProvider.class));
 
     @Location(TEMPLATE_LOCATION_1)
     Template template1;

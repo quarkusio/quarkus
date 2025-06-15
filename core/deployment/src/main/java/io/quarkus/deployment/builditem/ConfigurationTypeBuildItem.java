@@ -4,8 +4,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.smallrye.common.constraint.Assert;
 
 /**
- * The configuration type build item. Every configuration type should be registered using this build item
- * to ensure that the converter is properly loaded in the native image case.
+ * The configuration type build item. Every configuration type should be registered using this build item to ensure that
+ * the converter is properly loaded in the native image case.
  */
 public final class ConfigurationTypeBuildItem extends MultiBuildItem {
     private final Class<?> valueType;
@@ -13,7 +13,8 @@ public final class ConfigurationTypeBuildItem extends MultiBuildItem {
     /**
      * Construct a new instance.
      *
-     * @param valueType the value type (must not be {@code null})
+     * @param valueType
+     *        the value type (must not be {@code null})
      */
     public ConfigurationTypeBuildItem(final Class<?> valueType) {
         Assert.checkNotNullParam("valueType", valueType);

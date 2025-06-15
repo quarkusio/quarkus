@@ -24,27 +24,19 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultipartBinaryWithoutFilenameTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(MultipartDataInputTest.Resource.class, MultipartDataInputTest.Item.class,
-                                    MultipartDataInputTest.Result.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(MultipartDataInputTest.Resource.class,
+                    MultipartDataInputTest.Item.class, MultipartDataInputTest.Result.class);
+        }
+    });
     private final File IMAGE_FILE = new File("./src/test/resources/image.png");
 
     @Test
     public void test() throws IOException {
-        byte[] bytes = given()
-                .contentType("multipart/form-data")
-                .multiPart("bytes", IMAGE_FILE, "application/png")
-                .when()
-                .post("/test")
-                .then()
-                .statusCode(200)
-                .extract().body().asByteArray();
+        byte[] bytes = given().contentType("multipart/form-data").multiPart("bytes", IMAGE_FILE, "application/png")
+                .when().post("/test").then().statusCode(200).extract().body().asByteArray();
 
         assertThat(bytes).isEqualTo(Files.readAllBytes(IMAGE_FILE.toPath()));
     }

@@ -14,9 +14,8 @@ import io.smallrye.config.WithDefault;
 public interface ShutdownBuildTimeConfig {
 
     /**
-     * Whether Quarkus should wait between shutdown being requested and actually initiated.
-     * This delay gives the infrastructure time to detect that the application instance is shutting down and
-     * stop routing traffic to it.
+     * Whether Quarkus should wait between shutdown being requested and actually initiated. This delay gives the
+     * infrastructure time to detect that the application instance is shutting down and stop routing traffic to it.
      */
     @WithDefault("false")
     boolean delayEnabled();

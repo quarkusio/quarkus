@@ -17,12 +17,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AdditionalTemplatePathExcludeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    // excluded
-                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/foo.txt")
-                    // not excluded
-                    .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/_foo.txt"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            // excluded
+            .addAsResource(new StringAsset("{@java.util.List myList}{myList.bar}"), "templates/foo.txt")
+            // not excluded
+            .addAsResource(new StringAsset("{@java.util.List myList}{myList.size}"), "templates/_foo.txt"))
             .overrideConfigKey("quarkus.qute.template-path-exclude", "^\\..*|.*\\/\\..*$|foo.txt");
 
     @Inject

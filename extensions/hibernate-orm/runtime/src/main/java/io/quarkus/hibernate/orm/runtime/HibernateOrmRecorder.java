@@ -51,13 +51,15 @@ public class HibernateOrmRecorder {
 
     public void enlistPersistenceUnit(Set<String> entityClassNames) {
         entities.addAll(entityClassNames);
-        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s", entities);
+        Logger.getLogger("io.quarkus.hibernate.orm").debugf("List of entities found by Quarkus deployment:%n%s",
+                entities);
     }
 
     /**
      * The feature needs to be initialized, even if it's not enabled.
      *
-     * @param enabled Set to false if it's not being enabled, to log appropriately.
+     * @param enabled
+     *        Set to false if it's not being enabled, to log appropriately.
      */
     public void callHibernateFeatureInit(boolean enabled) {
         Hibernate.featureInit(enabled);
@@ -65,7 +67,8 @@ public class HibernateOrmRecorder {
 
     public void setupPersistenceProvider(HibernateOrmRuntimeConfig hibernateOrmRuntimeConfig,
             Map<String, List<HibernateOrmIntegrationRuntimeDescriptor>> integrationRuntimeDescriptors) {
-        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig, integrationRuntimeDescriptors);
+        PersistenceProviderSetup.registerRuntimePersistenceProvider(hibernateOrmRuntimeConfig,
+                integrationRuntimeDescriptors);
     }
 
     public BeanContainerListener initMetadata(List<QuarkusPersistenceUnitDefinition> parsedPersistenceXmlDescriptors,
@@ -86,12 +89,12 @@ public class HibernateOrmRecorder {
     }
 
     public Supplier<DataSourceTenantConnectionResolver> dataSourceTenantConnectionResolver(String persistenceUnitName,
-            Optional<String> dataSourceName,
-            MultiTenancyStrategy multiTenancyStrategy) {
+            Optional<String> dataSourceName, MultiTenancyStrategy multiTenancyStrategy) {
         return new Supplier<DataSourceTenantConnectionResolver>() {
             @Override
             public DataSourceTenantConnectionResolver get() {
-                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName, multiTenancyStrategy);
+                return new DataSourceTenantConnectionResolver(persistenceUnitName, dataSourceName,
+                        multiTenancyStrategy);
             }
         };
     }
@@ -110,8 +113,7 @@ public class HibernateOrmRecorder {
             @Override
             public SessionFactory apply(SyntheticCreationalContext<SessionFactory> context) {
                 SessionFactory sessionFactory = context.getInjectedReference(JPAConfig.class)
-                        .getEntityManagerFactory(persistenceUnitName)
-                        .unwrap(SessionFactory.class);
+                        .getEntityManagerFactory(persistenceUnitName).unwrap(SessionFactory.class);
 
                 return sessionFactory;
             }
@@ -154,37 +156,32 @@ public class HibernateOrmRecorder {
     public Function<SyntheticCreationalContext<CriteriaBuilder>, CriteriaBuilder> criteriaBuilderSupplier(
             String persistenceUnitName) {
 
-        return sessionFactoryFunctionSupplier(persistenceUnitName,
-                new Function<SessionFactory, CriteriaBuilder>() {
-                    @Override
-                    public CriteriaBuilder apply(SessionFactory sessionFactory) {
-                        return sessionFactory.getCriteriaBuilder();
-                    }
-                });
+        return sessionFactoryFunctionSupplier(persistenceUnitName, new Function<SessionFactory, CriteriaBuilder>() {
+            @Override
+            public CriteriaBuilder apply(SessionFactory sessionFactory) {
+                return sessionFactory.getCriteriaBuilder();
+            }
+        });
     }
 
-    public Function<SyntheticCreationalContext<Metamodel>, Metamodel> metamodelSupplier(
-            String persistenceUnitName) {
+    public Function<SyntheticCreationalContext<Metamodel>, Metamodel> metamodelSupplier(String persistenceUnitName) {
 
-        return sessionFactoryFunctionSupplier(persistenceUnitName,
-                new Function<SessionFactory, Metamodel>() {
-                    @Override
-                    public Metamodel apply(SessionFactory sessionFactory) {
-                        return sessionFactory.getMetamodel();
-                    }
-                });
+        return sessionFactoryFunctionSupplier(persistenceUnitName, new Function<SessionFactory, Metamodel>() {
+            @Override
+            public Metamodel apply(SessionFactory sessionFactory) {
+                return sessionFactory.getMetamodel();
+            }
+        });
     }
 
-    public Function<SyntheticCreationalContext<Cache>, Cache> cacheSupplier(
-            String persistenceUnitName) {
+    public Function<SyntheticCreationalContext<Cache>, Cache> cacheSupplier(String persistenceUnitName) {
 
-        return sessionFactoryFunctionSupplier(persistenceUnitName,
-                new Function<SessionFactory, Cache>() {
-                    @Override
-                    public Cache apply(SessionFactory sessionFactory) {
-                        return sessionFactory.getCache();
-                    }
-                });
+        return sessionFactoryFunctionSupplier(persistenceUnitName, new Function<SessionFactory, Cache>() {
+            @Override
+            public Cache apply(SessionFactory sessionFactory) {
+                return sessionFactory.getCache();
+            }
+        });
     }
 
     public Function<SyntheticCreationalContext<jakarta.persistence.PersistenceUnitUtil>, jakarta.persistence.PersistenceUnitUtil> persistenceUnitUtilSupplier(
@@ -202,18 +199,16 @@ public class HibernateOrmRecorder {
     public Function<SyntheticCreationalContext<SchemaManager>, SchemaManager> schemaManagerSupplier(
             String persistenceUnitName) {
 
-        return sessionFactoryFunctionSupplier(persistenceUnitName,
-                new Function<SessionFactory, SchemaManager>() {
-                    @Override
-                    public SchemaManager apply(SessionFactory sessionFactory) {
-                        return sessionFactory.getSchemaManager();
-                    }
-                });
+        return sessionFactoryFunctionSupplier(persistenceUnitName, new Function<SessionFactory, SchemaManager>() {
+            @Override
+            public SchemaManager apply(SessionFactory sessionFactory) {
+                return sessionFactory.getSchemaManager();
+            }
+        });
     }
 
     private <T> Function<SyntheticCreationalContext<T>, T> sessionFactoryFunctionSupplier(
-            final String persistenceUnitName,
-            final Function<SessionFactory, T> sessionFactoryMapper) {
+            final String persistenceUnitName, final Function<SessionFactory, T> sessionFactoryMapper) {
         return new Function<SyntheticCreationalContext<T>, T>() {
             @Override
             public T apply(SyntheticCreationalContext<T> context) {
@@ -223,12 +218,14 @@ public class HibernateOrmRecorder {
         };
     }
 
-    private SessionFactory getSessionFactoryFromContext(SyntheticCreationalContext<?> context, String persistenceUnitName) {
+    private SessionFactory getSessionFactoryFromContext(SyntheticCreationalContext<?> context,
+            String persistenceUnitName) {
         Class<SessionFactory> sfBeanType = SessionFactory.class;
         if (PersistenceUnitUtil.isDefaultPersistenceUnit(persistenceUnitName)) {
             return context.getInjectedReference(sfBeanType);
         } else {
-            PersistenceUnit.PersistenceUnitLiteral qualifier = new PersistenceUnit.PersistenceUnitLiteral(persistenceUnitName);
+            PersistenceUnit.PersistenceUnitLiteral qualifier = new PersistenceUnit.PersistenceUnitLiteral(
+                    persistenceUnitName);
             return context.getInjectedReference(sfBeanType, qualifier);
         }
     }
@@ -239,7 +236,7 @@ public class HibernateOrmRecorder {
         String schemaManagementStrategy = hibernateOrmRuntimeConfigPersistenceUnit.database().generation().generation()
                 .orElse(hibernateOrmRuntimeConfigPersistenceUnit.schemaManagement().strategy());
 
-        //if hibernate is already managing the schema we don't do this
+        // if hibernate is already managing the schema we don't do this
         if (!"none".equals(schemaManagementStrategy)) {
             return;
         }

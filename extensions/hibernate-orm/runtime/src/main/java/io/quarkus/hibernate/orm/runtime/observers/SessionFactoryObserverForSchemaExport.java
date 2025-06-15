@@ -18,10 +18,7 @@ public final class SessionFactoryObserverForSchemaExport implements SessionFacto
 
     @Override
     public void sessionFactoryCreated(SessionFactory factory) {
-        SchemaManagementToolCoordinator.process(
-                metadata,
-                getRegistry(factory),
-                factory.getProperties(),
+        SchemaManagementToolCoordinator.process(metadata, getRegistry(factory), factory.getProperties(),
                 action -> delayedDropAction = action);
     }
 

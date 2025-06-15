@@ -20,16 +20,12 @@ public class VertxUdpMetrics implements DatagramSocketMetrics {
     public VertxUdpMetrics(MeterRegistry registry, String prefix, Tags tags) {
         this.tags = tags;
 
-        read = DistributionSummary.builder(prefix + ".bytes.read")
-                .description("Number of bytes read")
+        read = DistributionSummary.builder(prefix + ".bytes.read").description("Number of bytes read")
                 .withRegistry(registry);
-        sent = DistributionSummary.builder(prefix + ".bytes.written")
-                .description("Number of bytes written")
+        sent = DistributionSummary.builder(prefix + ".bytes.written").description("Number of bytes written")
                 .withRegistry(registry);
 
-        exceptions = Counter.builder(prefix + ".errors")
-                .description("Number of exceptions")
-                .withRegistry(registry);
+        exceptions = Counter.builder(prefix + ".errors").description("Number of exceptions").withRegistry(registry);
     }
 
     @Override
@@ -39,14 +35,12 @@ public class VertxUdpMetrics implements DatagramSocketMetrics {
 
     @Override
     public void bytesRead(Void socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
-        read.withTags(tags.and("remote-address", NetworkMetrics.toString(remoteAddress)))
-                .record(numberOfBytes);
+        read.withTags(tags.and("remote-address", NetworkMetrics.toString(remoteAddress))).record(numberOfBytes);
     }
 
     @Override
     public void bytesWritten(Void socketMetric, SocketAddress remoteAddress, long numberOfBytes) {
-        sent.withTags(tags.and("remote-address", NetworkMetrics.toString(remoteAddress)))
-                .record(numberOfBytes);
+        sent.withTags(tags.and("remote-address", NetworkMetrics.toString(remoteAddress))).record(numberOfBytes);
     }
 
     @Override

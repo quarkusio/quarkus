@@ -17,8 +17,8 @@ import jakarta.inject.Qualifier;
 /**
  * Qualifier used to specify which datasource will be used and therefore which Liquibase instance will be injected.
  * <p>
- * Liquibase instances can also be qualified by name using @{@link Named}.
- * The name is the datasource name prefixed by "liquibase_".
+ * Liquibase instances can also be qualified by name using @{@link Named}. The name is the datasource name prefixed by
+ * "liquibase_".
  */
 @Target({ METHOD, FIELD, PARAMETER, TYPE })
 @Retention(RUNTIME)

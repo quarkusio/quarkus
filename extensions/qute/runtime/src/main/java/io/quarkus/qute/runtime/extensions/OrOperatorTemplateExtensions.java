@@ -12,7 +12,8 @@ import io.quarkus.qute.TemplateExtension;
 public class OrOperatorTemplateExtensions {
 
     static <T> T or(T value, T other) {
-        if (value == null || Results.isNotFound(value) || (value instanceof Optional && ((Optional<?>) value).isEmpty())) {
+        if (value == null || Results.isNotFound(value)
+                || (value instanceof Optional && ((Optional<?>) value).isEmpty())) {
             return other;
         }
         return value;

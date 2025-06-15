@@ -24,10 +24,10 @@ public class AgroalOrderedLastSynchronizationList implements Synchronization {
     private volatile Throwable deferredThrowable; // remember the first beforeCompletion exception
 
     /*
-     * Keep track of whether a synchronization group has been processed.
-     * If a group of synchs has already been processed then do not allow further synchs to be registered in that group.
-     * If a group of synchs is currently being processed then allow it to be registered.
-     * But note that no synchronizations can be registered after the transaction has finished preparing.
+     * Keep track of whether a synchronization group has been processed. If a group of synchs has already been processed
+     * then do not allow further synchs to be registered in that group. If a group of synchs is currently being
+     * processed then allow it to be registered. But note that no synchronizations can be registered after the
+     * transaction has finished preparing.
      */
     private enum ExecutionStatus {
         PENDING, // the synchronization has not started executing
@@ -36,12 +36,10 @@ public class AgroalOrderedLastSynchronizationList implements Synchronization {
     }
 
     /*
-     * Synchronizations are grouped by package prefix and these groups are ordered such that the
-     * synchronizations in the first group execute first, then the second group is processed, etc.
-     * In particular, the Agroal synchronization group runs last.
-     *
-     * The beforeCompletion methods within a group are called in the order they were added,
-     * and the afterCompletion methods are ran in the reverse order
+     * Synchronizations are grouped by package prefix and these groups are ordered such that the synchronizations in the
+     * first group execute first, then the second group is processed, etc. In particular, the Agroal synchronization
+     * group runs last. The beforeCompletion methods within a group are called in the order they were added, and the
+     * afterCompletion methods are ran in the reverse order
      */
     private class SynchronizationGroup implements Synchronization {
         String packagePrefix; // Synchronizations with this package prefix belong to this group
@@ -124,8 +122,11 @@ public class AgroalOrderedLastSynchronizationList implements Synchronization {
      * Register an interposed synchronization. Note that synchronizations are not allowed if:
      * <p>
      *
-     * @param synchronization The synchronization to register
-     * @throws IllegalStateException if the transaction is in the wrong state:
+     * @param synchronization
+     *        The synchronization to register
+     *
+     * @throws IllegalStateException
+     *         if the transaction is in the wrong state:
      *         <ol>
      *         <li>the transaction has already prepared;
      *         <li>the transaction is marked rollback only
@@ -159,8 +160,8 @@ public class AgroalOrderedLastSynchronizationList implements Synchronization {
     }
 
     /**
-     * Exceptions from beforeCompletion Synchronizations are not caught because such errors should cause the
-     * transaction to roll back.
+     * Exceptions from beforeCompletion Synchronizations are not caught because such errors should cause the transaction
+     * to roll back.
      */
     @Override
     public void beforeCompletion() {
@@ -171,10 +172,9 @@ public class AgroalOrderedLastSynchronizationList implements Synchronization {
 
         if (deferredThrowable != null) {
             /*
-             * If any Synchronization threw an exception then only report the first one.
-             *
-             * Cause the transaction to rollback. The underlying transaction manager will catch the runtime
-             * exception and re-throw it when it does the rollback
+             * If any Synchronization threw an exception then only report the first one. Cause the transaction to
+             * rollback. The underlying transaction manager will catch the runtime exception and re-throw it when it
+             * does the rollback
              */
             throw new RuntimeException(deferredThrowable);
         }

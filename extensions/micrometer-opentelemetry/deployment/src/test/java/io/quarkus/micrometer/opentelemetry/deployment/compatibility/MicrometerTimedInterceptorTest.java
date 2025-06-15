@@ -31,18 +31,16 @@ import io.smallrye.mutiny.Uni;
  */
 public class MicrometerTimedInterceptorTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.otel.metrics.exporter", "in-memory")
             .overrideConfigKey("quarkus.otel.metric.export.interval", "100ms")
             .overrideConfigKey("quarkus.micrometer.binder.mp-metrics.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClass(CountedResource.class)
-                    .addClass(TimedResource.class)
+            .withApplicationRoot((jar) -> jar.addClass(CountedResource.class).addClass(TimedResource.class)
                     .addClass(GuardedResult.class)
-                    .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class, MetricDataFilter.class)
+                    .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class,
+                            MetricDataFilter.class)
                     .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"));
 
@@ -62,19 +60,15 @@ public class MicrometerTimedInterceptorTest {
         timed.call(false);
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("call", null, 1);
-        assertEquals(1, metricExporter.get("call")
-                .tag("method", "call")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(HistogramPointData.class).getCount());
+        assertEquals(1,
+                metricExporter.get("call").tag("method", "call")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("exception", "none").tag("extra", "tag").lastReadingDataPoint(HistogramPointData.class)
+                        .getCount());
 
-        assertThat(metricExporter.get("call.max")
-                .tag("method", "call")
+        assertThat(metricExporter.get("call.max").tag("method", "call")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(DoublePointData.class).getValue())
+                .tag("exception", "none").tag("extra", "tag").lastReadingDataPoint(DoublePointData.class).getValue())
                 .isGreaterThan(0);
     }
 
@@ -82,23 +76,17 @@ public class MicrometerTimedInterceptorTest {
     void testTimeMethod_Failed() {
         assertThrows(NullPointerException.class, () -> timed.call(true));
 
-        Supplier<MetricDataFilter> metricFilterSupplier = () -> metricExporter.get("call")
-                .tag("method", "call")
+        Supplier<MetricDataFilter> metricFilterSupplier = () -> metricExporter.get("call").tag("method", "call")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "NullPointerException")
-                .tag("extra", "tag");
+                .tag("exception", "NullPointerException").tag("extra", "tag");
 
         metricExporter.assertCountDataPointsAtLeastOrEqual(metricFilterSupplier, 1);
-        assertEquals(1, metricFilterSupplier.get()
-                .lastReadingDataPoint(HistogramPointData.class).getCount());
+        assertEquals(1, metricFilterSupplier.get().lastReadingDataPoint(HistogramPointData.class).getCount());
 
-        assertThat(metricExporter.get("call.max")
-                .tag("method", "call")
+        assertThat(metricExporter.get("call.max").tag("method", "call")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "NullPointerException")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(DoublePointData.class).getValue())
-                .isGreaterThan(0);
+                .tag("exception", "NullPointerException").tag("extra", "tag")
+                .lastReadingDataPoint(DoublePointData.class).getValue()).isGreaterThan(0);
     }
 
     @Test
@@ -111,19 +99,14 @@ public class MicrometerTimedInterceptorTest {
         Supplier<MetricDataFilter> metricFilterSupplier = () -> metricExporter.get("async.call")
                 .tag("method", "asyncCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag");
+                .tag("exception", "none").tag("extra", "tag");
 
         metricExporter.assertCountDataPointsAtLeastOrEqual(metricFilterSupplier, 1);
-        assertEquals(1, metricFilterSupplier.get()
-                .lastReadingDataPoint(HistogramPointData.class).getCount());
+        assertEquals(1, metricFilterSupplier.get().lastReadingDataPoint(HistogramPointData.class).getCount());
 
-        assertThat(metricExporter.get("async.call.max")
-                .tag("method", "asyncCall")
+        assertThat(metricExporter.get("async.call.max").tag("method", "asyncCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(DoublePointData.class).getValue())
+                .tag("exception", "none").tag("extra", "tag").lastReadingDataPoint(DoublePointData.class).getValue())
                 .isGreaterThan(0);
     }
 
@@ -135,20 +118,16 @@ public class MicrometerTimedInterceptorTest {
         assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("async.call", null, 1);
-        assertEquals(1, metricExporter.get("async.call")
-                .tag("method", "asyncCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "NullPointerException")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(HistogramPointData.class).getCount());
+        assertEquals(1,
+                metricExporter.get("async.call").tag("method", "asyncCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("exception", "NullPointerException").tag("extra", "tag")
+                        .lastReadingDataPoint(HistogramPointData.class).getCount());
 
-        assertThat(metricExporter.get("async.call.max")
-                .tag("method", "asyncCall")
+        assertThat(metricExporter.get("async.call.max").tag("method", "asyncCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "NullPointerException")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(DoublePointData.class).getValue())
-                .isGreaterThan(0);
+                .tag("exception", "NullPointerException").tag("extra", "tag")
+                .lastReadingDataPoint(DoublePointData.class).getValue()).isGreaterThan(0);
     }
 
     @Test
@@ -159,19 +138,15 @@ public class MicrometerTimedInterceptorTest {
         uni.subscribe().asCompletionStage().join();
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("uni.call", null, 1);
-        assertEquals(1, metricExporter.get("uni.call")
-                .tag("method", "uniCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(HistogramPointData.class).getCount());
+        assertEquals(1,
+                metricExporter.get("uni.call").tag("method", "uniCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("exception", "none").tag("extra", "tag").lastReadingDataPoint(HistogramPointData.class)
+                        .getCount());
 
-        assertThat(metricExporter.get("uni.call.max")
-                .tag("method", "uniCall")
+        assertThat(metricExporter.get("uni.call.max").tag("method", "uniCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(DoublePointData.class).getValue())
+                .tag("exception", "none").tag("extra", "tag").lastReadingDataPoint(DoublePointData.class).getValue())
                 .isGreaterThan(0);
     }
 
@@ -180,38 +155,30 @@ public class MicrometerTimedInterceptorTest {
         GuardedResult guardedResult = new GuardedResult();
         Uni<?> uni = timed.uniCall(guardedResult);
         guardedResult.complete(new NullPointerException());
-        assertThrows(java.util.concurrent.CompletionException.class,
-                () -> uni.subscribe().asCompletionStage().join());
+        assertThrows(java.util.concurrent.CompletionException.class, () -> uni.subscribe().asCompletionStage().join());
 
         // this needs to be executed inline, otherwise the results will be old.
-        Supplier<MetricDataFilter> metricFilterSupplier = () -> metricExporter.get("uni.call")
-                .tag("method", "uniCall")
+        Supplier<MetricDataFilter> metricFilterSupplier = () -> metricExporter.get("uni.call").tag("method", "uniCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "NullPointerException")
-                .tag("extra", "tag");
+                .tag("exception", "NullPointerException").tag("extra", "tag");
 
         metricExporter.assertCountDataPointsAtLeastOrEqual(metricFilterSupplier, 1);
-        assertEquals(1, metricFilterSupplier.get()
-                .lastReadingDataPoint(HistogramPointData.class).getCount());
+        assertEquals(1, metricFilterSupplier.get().lastReadingDataPoint(HistogramPointData.class).getCount());
 
-        assertThat(metricExporter.get("uni.call.max")
-                .tag("method", "uniCall")
+        assertThat(metricExporter.get("uni.call.max").tag("method", "uniCall")
                 .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "NullPointerException")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(DoublePointData.class).getValue())
-                .isGreaterThan(0);
+                .tag("exception", "NullPointerException").tag("extra", "tag")
+                .lastReadingDataPoint(DoublePointData.class).getValue()).isGreaterThan(0);
     }
 
     @Test
     void testTimeMethod_LongTaskTimer() {
         timed.longCall(false);
         metricExporter.assertCountDataPointsAtLeastOrEqual("longCall.active", null, 1);
-        assertEquals(0, metricExporter.get("longCall.active")
-                .tag("method", "longCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(LongPointData.class).getValue());
+        assertEquals(0,
+                metricExporter.get("longCall.active").tag("method", "longCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("extra", "tag").lastReadingDataPoint(LongPointData.class).getValue());
     }
 
     @Test
@@ -219,11 +186,10 @@ public class MicrometerTimedInterceptorTest {
         assertThrows(NullPointerException.class, () -> timed.longCall(true));
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("longCall.active", null, 1);
-        assertEquals(0, metricExporter.get("longCall.active")
-                .tag("method", "longCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(LongPointData.class).getValue());
+        assertEquals(0,
+                metricExporter.get("longCall.active").tag("method", "longCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("extra", "tag").lastReadingDataPoint(LongPointData.class).getValue());
     }
 
     @Test
@@ -234,11 +200,10 @@ public class MicrometerTimedInterceptorTest {
         completableFuture.join();
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("async.longCall.active", null, 1);
-        assertEquals(0, metricExporter.get("async.longCall.active")
-                .tag("method", "longAsyncCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(LongPointData.class).getValue());
+        assertEquals(0,
+                metricExporter.get("async.longCall.active").tag("method", "longAsyncCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("extra", "tag").lastReadingDataPoint(LongPointData.class).getValue());
     }
 
     @Test
@@ -249,11 +214,10 @@ public class MicrometerTimedInterceptorTest {
         assertThrows(java.util.concurrent.CompletionException.class, () -> completableFuture.join());
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("async.longCall.active", null, 1);
-        assertEquals(0, metricExporter.get("async.longCall.active")
-                .tag("method", "longAsyncCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(LongPointData.class).getValue());
+        assertEquals(0,
+                metricExporter.get("async.longCall.active").tag("method", "longAsyncCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("extra", "tag").lastReadingDataPoint(LongPointData.class).getValue());
     }
 
     @Test
@@ -264,11 +228,10 @@ public class MicrometerTimedInterceptorTest {
         uni.subscribe().asCompletionStage().join();
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("uni.longCall.active", null, 1);
-        assertEquals(0, metricExporter.get("uni.longCall.active")
-                .tag("method", "longUniCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(LongPointData.class).getValue());
+        assertEquals(0,
+                metricExporter.get("uni.longCall.active").tag("method", "longUniCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("extra", "tag").lastReadingDataPoint(LongPointData.class).getValue());
     }
 
     @Test
@@ -276,24 +239,21 @@ public class MicrometerTimedInterceptorTest {
         GuardedResult guardedResult = new GuardedResult();
         Uni<?> uni = timed.longUniCall(guardedResult);
         guardedResult.complete(new NullPointerException());
-        assertThrows(java.util.concurrent.CompletionException.class,
-                () -> uni.subscribe().asCompletionStage().join());
+        assertThrows(java.util.concurrent.CompletionException.class, () -> uni.subscribe().asCompletionStage().join());
 
         // Was "uni.longCall" Now is "uni.longCall.active" and "uni.longCall.duration"
         // Metric was executed but now there are no active tasks
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("uni.longCall.active", null, 1);
-        assertEquals(0, metricExporter.get("uni.longCall.active")
-                .tag("method", "longUniCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(LongPointData.class).getValue());
+        assertEquals(0,
+                metricExporter.get("uni.longCall.active").tag("method", "longUniCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("extra", "tag").lastReadingDataPoint(LongPointData.class).getValue());
 
-        assertEquals(0, metricExporter.get("uni.longCall.duration")
-                .tag("method", "longUniCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("extra", "tag")
-                .lastReadingDataPoint(DoublePointData.class).getValue());
+        assertEquals(0,
+                metricExporter.get("uni.longCall.duration").tag("method", "longUniCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("extra", "tag").lastReadingDataPoint(DoublePointData.class).getValue());
 
     }
 
@@ -303,19 +263,15 @@ public class MicrometerTimedInterceptorTest {
 
         metricExporter.assertCountDataPointsAtLeastOrEqual("alpha", null, 1);
 
-        assertEquals(1, metricExporter.get("alpha")
-                .tag("method", "repeatableCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag")
-                .lastReadingPointsSize());
+        assertEquals(1,
+                metricExporter.get("alpha").tag("method", "repeatableCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("exception", "none").tag("extra", "tag").lastReadingPointsSize());
 
-        assertEquals(1, metricExporter.get("bravo")
-                .tag("method", "repeatableCall")
-                .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
-                .tag("exception", "none")
-                .tag("extra", "tag")
-                .lastReadingPointsSize());
+        assertEquals(1,
+                metricExporter.get("bravo").tag("method", "repeatableCall")
+                        .tag("class", "io.quarkus.micrometer.opentelemetry.deployment.common.TimedResource")
+                        .tag("exception", "none").tag("extra", "tag").lastReadingPointsSize());
     }
 
 }

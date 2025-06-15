@@ -51,9 +51,8 @@ import io.smallrye.mutiny.Multi;
 public class SseResourceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SseResource.class, Message.class, ClientJaxbMessageBodyReader.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SseResource.class, Message.class, ClientJaxbMessageBodyReader.class));
 
     @TestHTTPResource
     URI uri;
@@ -72,8 +71,8 @@ public class SseResourceTest {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget target = client.target(uri.toString() + path);
         // do not reconnect
-        try (SseEventSource eventSource = SseEventSource.target(target).reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS)
-                .build()) {
+        try (SseEventSource eventSource = SseEventSource.target(target)
+                .reconnectingEvery(Integer.MAX_VALUE, TimeUnit.SECONDS).build()) {
             CompletableFuture<List<String>> res = new CompletableFuture<>();
             List<String> collect = Collections.synchronizedList(new ArrayList<>());
             eventSource.register(new Consumer<InboundSseEvent>() {
@@ -153,7 +152,8 @@ public class SseResourceTest {
             SseBroadcaster sseBroadcaster = sse.newBroadcaster();
 
             sseBroadcaster.register(sink);
-            sseBroadcaster.broadcast(sse.newEventBuilder().data("hello").build()).thenAccept(v -> sseBroadcaster.close());
+            sseBroadcaster.broadcast(sse.newEventBuilder().data("hello").build())
+                    .thenAccept(v -> sseBroadcaster.close());
         }
 
         @Path("multi")
@@ -205,9 +205,8 @@ public class SseResourceTest {
 
             // Same as sseXml but set mediaType in builder
             sseBroadcaster.register(sink);
-            sseBroadcaster
-                    .broadcast(
-                            sse.newEventBuilder().data(new Message("hello")).mediaType(MediaType.APPLICATION_XML_TYPE).build())
+            sseBroadcaster.broadcast(
+                    sse.newEventBuilder().data(new Message("hello")).mediaType(MediaType.APPLICATION_XML_TYPE).build())
                     .thenAccept(v -> sseBroadcaster.close());
         }
 
@@ -237,7 +236,8 @@ public class SseResourceTest {
                 return false;
             }
             String subtype = mediaType.getSubtype();
-            boolean isCorrectMediaType = "application".equals(mediaType.getType()) || "text".equals(mediaType.getType());
+            boolean isCorrectMediaType = "application".equals(mediaType.getType())
+                    || "text".equals(mediaType.getType());
             return (isCorrectMediaType && "xml".equalsIgnoreCase(subtype) || subtype.endsWith("+xml"))
                     || (mediaType.isWildcardSubtype() && (mediaType.isWildcardType() || isCorrectMediaType));
         }

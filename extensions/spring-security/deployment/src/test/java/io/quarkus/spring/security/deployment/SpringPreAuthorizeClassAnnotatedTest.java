@@ -26,14 +26,8 @@ public class SpringPreAuthorizeClassAnnotatedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Roles.class,
-                            Person.class,
-                            ComponentWithClassAnnotation.class,
-                            DenyAllOnClass.class,
-                            IdentityMock.class,
-                            AuthData.class,
-                            SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Roles.class, Person.class, ComponentWithClassAnnotation.class,
+                    DenyAllOnClass.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     private ComponentWithClassAnnotation springComponent;

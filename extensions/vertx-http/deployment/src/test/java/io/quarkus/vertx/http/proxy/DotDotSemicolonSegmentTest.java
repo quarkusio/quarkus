@@ -9,10 +9,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Make sure that `/..;/` appended to a path is not resolved to `/`, as this
- * would allow to escape the allowed context when passing through proxies
- * (httpd does not recognize it as a double-dot segment and lets the request
- * through without sanitizing the path).
+ * Make sure that `/..;/` appended to a path is not resolved to `/`, as this would allow to escape the allowed context
+ * when passing through proxies (httpd does not recognize it as a double-dot segment and lets the request through
+ * without sanitizing the path).
  */
 public class DotDotSemicolonSegmentTest {
 
@@ -23,18 +22,9 @@ public class DotDotSemicolonSegmentTest {
 
     @Test
     public void testPathIsNotResolved() {
-        given()
-                .get("/index.html")
-                .then()
-                .statusCode(200);
-        given()
-                .get("/something/../index.html")
-                .then()
-                .statusCode(200);
-        given()
-                .get("/something/..;/index.html")
-                .then()
-                .statusCode(404);
+        given().get("/index.html").then().statusCode(200);
+        given().get("/something/../index.html").then().statusCode(200);
+        given().get("/something/..;/index.html").then().statusCode(404);
     }
 
 }

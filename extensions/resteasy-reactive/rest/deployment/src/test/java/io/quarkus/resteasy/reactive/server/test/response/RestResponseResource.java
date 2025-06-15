@@ -35,22 +35,13 @@ public class RestResponseResource {
         CacheControl cc = new CacheControl();
         cc.setMaxAge(42);
         cc.setPrivate(true);
-        return RestResponse.ResponseBuilder.ok("Hello")
-                .allow("FOO", "BAR")
-                .cacheControl(cc)
-                .contentLocation(new URI("http://example.com/content"))
-                .cookie(new NewCookie("Flavour", "Praliné"))
-                .encoding("Stef-Encoding")
-                .expires(Date.from(Instant.parse("2021-01-01T00:00:00Z")))
-                .header("X-Stef", "FroMage")
-                .language(Locale.FRENCH)
-                .lastModified(Date.from(Instant.parse("2021-01-02T00:00:00Z")))
-                .link("http://example.com/link", "stef")
-                .location(new URI("http://example.com/location"))
-                .tag("yourit")
-                .type("text/stef")
-                .variants(Variant.languages(Locale.ENGLISH, Locale.GERMAN).build())
-                .build();
+        return RestResponse.ResponseBuilder.ok("Hello").allow("FOO", "BAR").cacheControl(cc)
+                .contentLocation(new URI("http://example.com/content")).cookie(new NewCookie("Flavour", "Praliné"))
+                .encoding("Stef-Encoding").expires(Date.from(Instant.parse("2021-01-01T00:00:00Z")))
+                .header("X-Stef", "FroMage").language(Locale.FRENCH)
+                .lastModified(Date.from(Instant.parse("2021-01-02T00:00:00Z"))).link("http://example.com/link", "stef")
+                .location(new URI("http://example.com/location")).tag("yourit").type("text/stef")
+                .variants(Variant.languages(Locale.ENGLISH, Locale.GERMAN).build()).build();
     }
 
     @GET

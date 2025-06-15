@@ -23,15 +23,13 @@ final class OidcDevSessionCookieReaderHandler implements Handler<RoutingContext>
         if (cookie != null) {
             DefaultTokenStateManager tokenStateManager = Arc.container().instance(DefaultTokenStateManager.class).get();
             OidcTenantConfig defaultTenantConfig = getDefaultTenantConfig();
-            Uni<AuthorizationCodeTokens> tokensUni = tokenStateManager.getTokens(rc, defaultTenantConfig, cookie.getValue(),
-                    null);
+            Uni<AuthorizationCodeTokens> tokensUni = tokenStateManager.getTokens(rc, defaultTenantConfig,
+                    cookie.getValue(), null);
             tokensUni.subscribe().with(tokens -> {
                 rc.response().setStatusCode(200);
                 rc.response().putHeader("Content-Type", "application/json");
                 rc.end("{\"id_token\": \"" + tokens.getIdToken() + "\", \"access_token\": \"" + tokens.getAccessToken()
-                        + "\", \"refresh_token\": \""
-                        + tokens.getRefreshToken()
-                        + "\"}");
+                        + "\", \"refresh_token\": \"" + tokens.getRefreshToken() + "\"}");
             }, rc::fail);
         } else {
             rc.response().setStatusCode(200);

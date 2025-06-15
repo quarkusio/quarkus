@@ -13,9 +13,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.shareddata.Shareable;
 
 /**
- * Implementation utilities (details) affecting the way JSON objects are wrapped.
- *
- * This class is copied from {@code io.vertx.core.json.impl.JsonUtil} as it is internal to Vert.x
+ * Implementation utilities (details) affecting the way JSON objects are wrapped. This class is copied from
+ * {@code io.vertx.core.json.impl.JsonUtil} as it is internal to Vert.x
  */
 public final class JsonUtil {
 
@@ -24,11 +23,11 @@ public final class JsonUtil {
 
     static {
         /*
-         * Vert.x 3.x Json supports RFC-7493, however the JSON encoder/decoder format was incorrect.
-         * Users who might need to interop with Vert.x 3.x applications should set the system property
-         * {@code vertx.json.base64} to {@code legacy}.
+         * Vert.x 3.x Json supports RFC-7493, however the JSON encoder/decoder format was incorrect. Users who might
+         * need to interop with Vert.x 3.x applications should set the system property {@code vertx.json.base64} to
+         * {@code legacy}.
          */
-        if ("legacy".equalsIgnoreCase(System.getProperty("vertx.json.base64"))) { //TODO: do we need this for Quarkus?
+        if ("legacy".equalsIgnoreCase(System.getProperty("vertx.json.base64"))) { // TODO: do we need this for Quarkus?
             BASE64_ENCODER = Base64.getEncoder();
             BASE64_DECODER = Base64.getDecoder();
         } else {
@@ -47,7 +46,9 @@ public final class JsonUtil {
      * <li>{@code Enum} will be converted to enum name {@code String}</li>
      * </ul>
      *
-     * @param val java type
+     * @param val
+     *        java type
+     *
      * @return wrapped type or {@code val} if not applicable.
      */
     public static Object wrapJsonValue(Object val) {

@@ -38,23 +38,24 @@ public class CompressionScanner implements MethodScanner {
             return Collections.emptyList();
         }
 
-        AnnotationStore annotationStore = (AnnotationStore) methodContext.get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
+        AnnotationStore annotationStore = (AnnotationStore) methodContext
+                .get(EndpointIndexer.METHOD_CONTEXT_ANNOTATION_STORE);
         HttpCompression compression = HttpCompression.UNDEFINED;
         if (annotationStore.hasAnnotation(method, COMPRESSED)) {
             compression = HttpCompression.ON;
         }
         if (annotationStore.hasAnnotation(method, UNCOMPRESSED)) {
             if (compression == HttpCompression.ON) {
-                throw new IllegalStateException(
-                        String.format(
-                                "@Compressed and @Uncompressed cannot be both declared on resource method %s declared on %s",
-                                method, actualEndpointClass));
+                throw new IllegalStateException(String.format(
+                        "@Compressed and @Uncompressed cannot be both declared on resource method %s declared on %s",
+                        method, actualEndpointClass));
             } else {
                 compression = HttpCompression.OFF;
             }
         }
         if (compression == HttpCompression.OFF) {
-            // No action is needed because the "Content-Encoding: identity" header is set for every request if compression is enabled
+            // No action is needed because the "Content-Encoding: identity" header is set for every request if
+            // compression is enabled
             return Collections.emptyList();
         }
         ResteasyReactiveCompressionHandler handler = new ResteasyReactiveCompressionHandler(

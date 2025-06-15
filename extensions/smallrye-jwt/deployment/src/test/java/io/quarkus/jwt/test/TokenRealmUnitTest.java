@@ -33,14 +33,12 @@ public class TokenRealmUnitTest {
         JWTAuthContextInfo contextInfo = new JWTAuthContextInfo((RSAPublicKey) pk1, "https://server.example.com");
         MpJwtValidator jwtValidator = new MpJwtValidator(new DefaultJWTParser(contextInfo), null);
         QuarkusIdentityProviderManagerImpl authenticator = QuarkusIdentityProviderManagerImpl.builder()
-                .addProvider(new AnonymousIdentityProvider())
-                .setBlockingExecutor(new Executor() {
+                .addProvider(new AnonymousIdentityProvider()).setBlockingExecutor(new Executor() {
                     @Override
                     public void execute(Runnable command) {
                         command.run();
                     }
-                })
-                .addProvider(jwtValidator).build();
+                }).addProvider(jwtValidator).build();
 
         String jwt = TokenUtils.generateTokenString("/Token1.json", pk1Priv, "testTokenRealm");
         TokenAuthenticationRequest tokenEvidence = new TokenAuthenticationRequest(new JsonWebTokenCredential(jwt));

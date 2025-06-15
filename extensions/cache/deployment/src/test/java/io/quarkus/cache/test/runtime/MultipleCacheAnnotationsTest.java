@@ -22,7 +22,8 @@ public class MultipleCacheAnnotationsTest {
     private static final Object KEY = new Object();
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -48,7 +49,8 @@ public class MultipleCacheAnnotationsTest {
 
         // STEP 4
         // Action: [@CacheResult(cache1) and @CacheInvalidateAll(cache2)]-annotated method call.
-        // Expected effect: all entries invalidated in `cache2`, then method not invoked and result coming from `cache1`.
+        // Expected effect: all entries invalidated in `cache2`, then method not invoked and result coming from
+        // `cache1`.
         // Verified by: STEP 5 and same object reference between STEPS 2 and 4 results.
         String value4 = cachedService.cachedMethodWithInvalidateAll(KEY);
         assertTrue(value2 == value4);

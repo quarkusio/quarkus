@@ -70,23 +70,20 @@ public class ParameterHandler implements ServerRestHandler {
 
     private void handleResult(Object result, ResteasyReactiveRequestContext requestContext, boolean needsResume) {
         // empty collections should still get their default value
-        if (defaultValue != null
-                && (result == null || (isCollection && ((Collection) result).isEmpty()))) {
+        if (defaultValue != null && (result == null || (isCollection && ((Collection) result).isEmpty()))) {
             result = defaultValue;
         }
         Throwable toThrow = null;
         if (converter != null && ((result != null) || isOptional)) {
             // spec says:
             /*
-             * 3.2 Fields and Bean Properties
-             * if the field or property is annotated with @MatrixParam, @QueryParam or @PathParam then an implementation
-             * MUST generate an instance of NotFoundException (404 status) that wraps the thrown exception and no
-             * entity; if the field or property is annotated with @HeaderParam or @CookieParam then an implementation
-             * MUST generate an instance of BadRequestException (400 status) that wraps the thrown exception and
-             * no entity.
-             * 3.3.2 Parameters
-             * Exceptions thrown during construction of @FormParam annotated parameter values are treated the same as if
-             * the parameter were annotated with @HeaderParam.
+             * 3.2 Fields and Bean Properties if the field or property is annotated with @MatrixParam, @QueryParam
+             * or @PathParam then an implementation MUST generate an instance of NotFoundException (404 status) that
+             * wraps the thrown exception and no entity; if the field or property is annotated with @HeaderParam
+             * or @CookieParam then an implementation MUST generate an instance of BadRequestException (400 status) that
+             * wraps the thrown exception and no entity. 3.3.2 Parameters Exceptions thrown during construction
+             * of @FormParam annotated parameter values are treated the same as if the parameter were annotated
+             * with @HeaderParam.
              */
             switch (parameterType) {
                 case COOKIE:

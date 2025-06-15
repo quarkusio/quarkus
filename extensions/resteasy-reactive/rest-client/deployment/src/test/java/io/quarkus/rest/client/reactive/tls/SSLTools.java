@@ -25,7 +25,8 @@ public class SSLTools {
                 try (InputStream input = locateStream(path)) {
                     keyStore.load(input, password.toCharArray());
                 } catch (CertificateException | NoSuchAlgorithmException | IOException e) {
-                    throw new IllegalArgumentException("Failed to initialize key store from classpath resource " + path, e);
+                    throw new IllegalArgumentException("Failed to initialize key store from classpath resource " + path,
+                            e);
                 }
 
                 return keyStore;

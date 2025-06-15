@@ -16,20 +16,17 @@ import io.vertx.ext.mail.MailMessage;
 public class MailTemplateRecordTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(confirmation.class)
-                    .addAsResource("mock-config.properties", "application.properties")
-                    .addAsResource(new StringAsset(""
-                            + "<html>{name}</html>"), "templates/confirmation.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(confirmation.class).addAsResource("mock-config.properties", "application.properties")
+            .addAsResource(new StringAsset("" + "<html>{name}</html>"), "templates/confirmation.html"));
 
     @Inject
     MockMailbox mockMailbox;
 
     @Test
     public void testMailTemplateRecord() {
-        new confirmation("Ondrej").to("quarkus-reactive@quarkus.io").from("from-record@quarkus.io").subject("test mailer")
-                .send().await().indefinitely();
+        new confirmation("Ondrej").to("quarkus-reactive@quarkus.io").from("from-record@quarkus.io")
+                .subject("test mailer").send().await().indefinitely();
         assertEquals(1, mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").size());
         MailMessage message = mockMailbox.getMailMessagesSentTo("quarkus-reactive@quarkus.io").get(0);
         assertEquals("from-record@quarkus.io", message.getFrom());

@@ -29,19 +29,16 @@ public class DelegateNotASubclassTest {
                     buildChainBuilder.addBuildStep(new BuildStep() {
                         @Override
                         public void execute(BuildContext context) {
-                            context.produce(
-                                    new CapabilityBuildItem(Capability.AGROAL, "fakeProvider"));
+                            context.produce(new CapabilityBuildItem(Capability.AGROAL, "fakeProvider"));
                         }
                     }).produces(CapabilityBuildItem.class).build();
                 }
-            })
-            .assertException(t -> {
+            }).assertException(t -> {
                 assertEquals(ConfigurationException.class, t.getClass());
                 Assertions.assertTrue(t.getMessage().contains(
                         "Custom JDBC delegate implementation with name 'io.quarkus.quartz.test.customDelegate.InvalidDelegate' needs to be a subclass"));
             })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleJobs.class, InvalidDelegate.class)
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleJobs.class, InvalidDelegate.class)
                     .addAsResource(new StringAsset(
                             "quarkus.quartz.driver-delegate=io.quarkus.quartz.test.customDelegate.InvalidDelegate\nquarkus.quartz.store-type=jdbc-cmt"),
                             "application.properties"));

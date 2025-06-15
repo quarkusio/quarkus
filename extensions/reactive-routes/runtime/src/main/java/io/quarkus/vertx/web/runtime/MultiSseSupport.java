@@ -99,8 +99,7 @@ public class MultiSseSupport {
             public void onNext(Buffer item) {
                 initialize(response);
                 Buffer buffer = Buffer.buffer("data: ").appendBuffer(item).appendString("\n")
-                        .appendString("id: " + count.getAndIncrement())
-                        .appendString("\n\n");
+                        .appendString("id: " + count.getAndIncrement()).appendString("\n\n");
                 response.write(buffer, new Handler<AsyncResult<Void>>() {
                     @Override
                     public void handle(AsyncResult<Void> ar) {
@@ -141,7 +140,8 @@ public class MultiSseSupport {
                     String e = ev.event() == null ? "" : "event: " + ev.event() + "\n";
                     return Buffer.buffer(e + "data: " + Json.encodeToBuffer(ev.data()) + "\nid: " + id + "\n\n");
                 } else {
-                    return Buffer.buffer("data: " + Json.encodeToBuffer(o) + "\nid: " + count.getAndIncrement() + "\n\n");
+                    return Buffer
+                            .buffer("data: " + Json.encodeToBuffer(o) + "\nid: " + count.getAndIncrement() + "\n\n");
                 }
             }
         }), rc);

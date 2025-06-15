@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class JfrConfigurationTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.jfr.enabled", "false")
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().overrideConfigKey("quarkus.jfr.enabled", "false")
             .overrideConfigKey("quarkus.jfr.rest.enabled", "false");
 
     @Inject

@@ -19,8 +19,6 @@ public class RegistryConfigResource {
     public Response getDefaultRegistryConfig() throws IOException {
         StringWriter sw = new StringWriter();
         RegistriesConfigMapperHelper.toJson(RegistryConfig.defaultConfig(), sw);
-        return Response.ok(sw.toString())
-                .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-                .build();
+        return Response.ok(sw.toString()).header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON).build();
     }
 }

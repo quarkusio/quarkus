@@ -78,7 +78,7 @@ public abstract class LetsEncryptFlowTestBase {
             reloadEndpoint = reloadEndpoint + "?key=" + tlsConfigurationName;
         }
 
-        //  Verify the application is serving the application
+        // Verify the application is serving the application
         HttpResponse<Buffer> response = await(client.getAbs(getApplicationEndpoint()).send());
         Assertions.assertThat(response.statusCode()).isEqualTo(200);
         String body = response.bodyAsString(); // We will need it later.
@@ -88,40 +88,34 @@ public abstract class LetsEncryptFlowTestBase {
         Assertions.assertThat(response.statusCode()).isEqualTo(204);
 
         // Make sure invalid tokens are rejected
-        response = await(client.postAbs(getLetsEncryptManagementEndpoint()).sendJsonObject(
-                new JsonObject()));
+        response = await(client.postAbs(getLetsEncryptManagementEndpoint()).sendJsonObject(new JsonObject()));
         Assertions.assertThat(response.statusCode()).isEqualTo(400);
 
-        response = await(client.postAbs(getLetsEncryptManagementEndpoint()).sendJsonObject(
-                new JsonObject()
-                        .put("challenge-content", "aaa")));
+        response = await(client.postAbs(getLetsEncryptManagementEndpoint())
+                .sendJsonObject(new JsonObject().put("challenge-content", "aaa")));
         Assertions.assertThat(response.statusCode()).isEqualTo(400);
 
-        response = await(client.postAbs(getLetsEncryptManagementEndpoint()).sendJsonObject(
-                new JsonObject()
-                        .put("challenge-resource", "aaa")));
+        response = await(client.postAbs(getLetsEncryptManagementEndpoint())
+                .sendJsonObject(new JsonObject().put("challenge-resource", "aaa")));
         Assertions.assertThat(response.statusCode()).isEqualTo(400);
 
         // Set the challenge
         String challengeContent = UUID.randomUUID().toString();
         String challengeToken = UUID.randomUUID().toString();
         response = await(client.postAbs(getLetsEncryptManagementEndpoint()).sendJsonObject(
-                new JsonObject()
-                        .put("challenge-content", challengeContent)
-                        .put("challenge-resource", challengeToken)));
+                new JsonObject().put("challenge-content", challengeContent).put("challenge-resource", challengeToken)));
 
         Assertions.assertThat(response.statusCode()).isEqualTo(204);
 
         // Verify that the challenge is set
         response = await(client.getAbs(readyEndpoint).send());
         Assertions.assertThat(response.statusCode()).isEqualTo(200);
-        Assertions.assertThat(response.bodyAsJsonObject()).isEqualTo(new JsonObject()
-                .put("challenge-content", challengeContent)
-                .put("challenge-resource", challengeToken));
+        Assertions.assertThat(response.bodyAsJsonObject()).isEqualTo(
+                new JsonObject().put("challenge-content", challengeContent).put("challenge-resource", challengeToken));
 
         // Make sure the challenge cannot be set again
-        response = await(client.postAbs(getLetsEncryptManagementEndpoint()).sendJsonObject(
-                new JsonObject().put("challenge-resource", "again").put("challenge-content", "again")));
+        response = await(client.postAbs(getLetsEncryptManagementEndpoint())
+                .sendJsonObject(new JsonObject().put("challenge-resource", "again").put("challenge-content", "again")));
         Assertions.assertThat(response.statusCode()).isEqualTo(400);
 
         // Verify that the let's encrypt management endpoint only support GET, POST and DELETE
@@ -181,14 +175,12 @@ public abstract class LetsEncryptFlowTestBase {
         // Verify the application is serving the new certificate
         // We should not use the WebClient as the connection are still established with the old certificate.
         URL url = new URL(getApplicationEndpoint());
-        assertThatThrownBy(() -> vertx.createHttpClient(
-                new HttpClientOptions().setSsl(true).setDefaultPort(url.getPort())
+        assertThatThrownBy(() -> vertx
+                .createHttpClient(new HttpClientOptions().setSsl(true).setDefaultPort(url.getPort())
                         .setTrustOptions(new PemTrustOptions().addCertPath(SELF_SIGNED_CA.getAbsolutePath())))
-                .request(HttpMethod.GET, "/tls")
-                .flatMap(HttpClientRequest::send)
-                .flatMap(HttpClientResponse::body)
-                .map(Buffer::toString)
-                .toCompletionStage().toCompletableFuture().join()).hasCauseInstanceOf(SSLHandshakeException.class);
+                .request(HttpMethod.GET, "/tls").flatMap(HttpClientRequest::send).flatMap(HttpClientResponse::body)
+                .map(Buffer::toString).toCompletionStage().toCompletableFuture().join())
+                .hasCauseInstanceOf(SSLHandshakeException.class);
 
         WebClient newWebClient = WebClient.create(vertx,
                 options.setTrustOptions(new PemTrustOptions().addCertPath(ACME_CA.getAbsolutePath())));
@@ -201,15 +193,14 @@ public abstract class LetsEncryptFlowTestBase {
 
         public void register(@Observes Router router) {
             router.route().order(ROUTE_ORDER_BODY_HANDLER).handler(BodyHandler.create());
-            router
-                    .get("/tls").handler(rc -> {
-                        Assertions.assertThat(rc.request().connection().isSsl()).isTrue();
-                        Assertions.assertThat(rc.request().isSSL()).isTrue();
-                        Assertions.assertThat(rc.request().connection().sslSession()).isNotNull();
-                        var exp = ((X509Certificate) rc.request().connection().sslSession().getLocalCertificates()[0])
-                                .getNotAfter().toInstant().toEpochMilli();
-                        rc.response().end("expiration: " + exp);
-                    });
+            router.get("/tls").handler(rc -> {
+                Assertions.assertThat(rc.request().connection().isSsl()).isTrue();
+                Assertions.assertThat(rc.request().isSSL()).isTrue();
+                Assertions.assertThat(rc.request().connection().sslSession()).isNotNull();
+                var exp = ((X509Certificate) rc.request().connection().sslSession().getLocalCertificates()[0])
+                        .getNotAfter().toInstant().toEpochMilli();
+                rc.response().end("expiration: " + exp);
+            });
         }
     }
 

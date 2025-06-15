@@ -66,8 +66,8 @@ public class JDBCDB2Processor {
     @BuildStep
     void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
             SslNativeConfigBuildItem sslNativeConfigBuildItem) {
-        jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.DB2, DB2_DRIVER_CLASS,
-                "com.ibm.db2.jcc.DB2XADataSource"));
+        jdbcDriver.produce(
+                new JdbcDriverBuildItem(DatabaseKind.DB2, DB2_DRIVER_CLASS, "com.ibm.db2.jcc.DB2XADataSource"));
     }
 
     @BuildStep
@@ -76,52 +76,42 @@ public class JDBCDB2Processor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
             additionalBeans
                     .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(DB2AgroalConnectionConfigurer.class)
-                            .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                            .setUnremovable()
-                            .build());
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
     @BuildStep
     void registerForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        //Not strictly necessary when using Agroal, as it also registers
-        //any JDBC driver being configured explicitly through its configuration.
-        //We register it for the sake of people not using Agroal,
-        //for example when the driver is used with OpenTelemetry JDBC instrumentation.
+        // Not strictly necessary when using Agroal, as it also registers
+        // any JDBC driver being configured explicitly through its configuration.
+        // We register it for the sake of people not using Agroal,
+        // for example when the driver is used with OpenTelemetry JDBC instrumentation.
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(DB2_DRIVER_CLASS)
-                .reason(getClass().getName() + " DB2 JDBC driver classes")
-                .build());
+                .reason(getClass().getName() + " DB2 JDBC driver classes").build());
 
         // register resource bundles for reflection (they are apparently classes...)
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                Resources.class,
-                ResourceKeys.class,
-                SqljResources.class,
-                T2uResourceKeys.class,
-                T2uResources.class,
-                T2zResourceKeys.class,
-                T2zResources.class,
-                T4ResourceKeys.class,
-                T4Resources.class)
-                .reason(getClass().getName() + " DB2 JDBC driver classes")
-                .build());
+        reflectiveClass
+                .produce(
+                        ReflectiveClassBuildItem
+                                .builder(Resources.class, ResourceKeys.class, SqljResources.class,
+                                        T2uResourceKeys.class, T2uResources.class, T2zResourceKeys.class,
+                                        T2zResources.class, T4ResourceKeys.class, T4Resources.class)
+                                .reason(getClass().getName() + " DB2 JDBC driver classes").build());
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("com.ibm.pdq.cmx.client.DataSourceFactory")
-                .reason(getClass().getName() + " accessed reflectively by Db2 JDBC driver")
-                .build());
+                .reason(getClass().getName() + " accessed reflectively by Db2 JDBC driver").build());
     }
 
     @BuildStep
-    void registerResources(CombinedIndexBuildItem index,
-            BuildProducer<NativeImageResourceBuildItem> resource,
+    void registerResources(CombinedIndexBuildItem index, BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<NativeImageResourceBundleBuildItem> resourceBundle) {
         resource.produce(new NativeImageResourceBuildItem("pdq.properties"));
-        resource.produce(new NativeImageResourceBuildItem("com/ibm/db2/cmx/runtime/internal/resources/messages.properties"));
+        resource.produce(
+                new NativeImageResourceBuildItem("com/ibm/db2/cmx/runtime/internal/resources/messages.properties"));
 
         // we need to register for reflection all the classes of the driver that are ResourceBundles
         for (ClassInfo bundle : index.getIndex().getAllKnownSubclasses(RESOURCE_BUNDLE_DOT_NAME)) {
@@ -138,9 +128,7 @@ public class JDBCDB2Processor {
         // The DB2 JDBC driver has been updated with conditional checks for the
         // "QuarkusWithJcc" system property which will no-op some code paths that
         // are not needed for T4 JDBC usage and are incompatible with native mode
-        return NativeImageConfigBuildItem.builder()
-                .addNativeImageSystemProperty("QuarkusWithJcc", "true")
-                .build();
+        return NativeImageConfigBuildItem.builder().addNativeImageSystemProperty("QuarkusWithJcc", "true").build();
     }
 
     @BuildStep
@@ -150,13 +138,12 @@ public class JDBCDB2Processor {
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider,
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider,
             BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            DB2ServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    DB2ServiceBindingConverter.class.getName()));
         }
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.DB2));
     }
@@ -165,7 +152,9 @@ public class JDBCDB2Processor {
     NativeImageAllowIncompleteClasspathBuildItem allowIncompleteClasspath() {
         // The DB2 JDBC driver uses reflection to load classes that are not present in the classpath
         // Without it, the following error is thrown:
-        // Discovered unresolved type during parsing: com.ibm.db2.jcc.licenses.ConParam. This error is reported at image build time because class com.ibm.db2.jcc.am.Connection is registered for linking at image build time by command line and command line.
+        // Discovered unresolved type during parsing: com.ibm.db2.jcc.licenses.ConParam. This error is reported at image
+        // build time because class com.ibm.db2.jcc.am.Connection is registered for linking at image build time by
+        // command line and command line.
         return new NativeImageAllowIncompleteClasspathBuildItem(Feature.JDBC_DB2.getName());
     }
 

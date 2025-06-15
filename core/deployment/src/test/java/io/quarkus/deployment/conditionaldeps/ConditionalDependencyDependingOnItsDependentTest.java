@@ -26,19 +26,12 @@ public class ConditionalDependencyDependingOnItsDependentTest extends BootstrapF
         install(extB);
         install(extGConditional);
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA)
-                .addDependency(extB);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA).addDependency(extB);
     }
 
     @Override
     protected String[] expectedExtensionDependencies() {
-        return new String[] {
-                "ext-a",
-                "ext-b",
-                "ext-g-conditional"
-        };
+        return new String[] { "ext-a", "ext-b", "ext-g-conditional" };
     }
 }

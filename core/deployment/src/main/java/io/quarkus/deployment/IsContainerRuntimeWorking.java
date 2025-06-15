@@ -61,8 +61,8 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
         public Result get() {
             // Testcontainers uses the Unreliables library to test if docker is started
             // this runs in threads that start with 'ducttape'
-            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(), null,
-                    (s) -> s.getName().startsWith("ducttape"));
+            StartupLogCompressor compressor = new StartupLogCompressor("Checking Docker Environment", Optional.empty(),
+                    null, (s) -> s.getName().startsWith("ducttape"));
             try {
                 Class<?> dockerClientFactoryClass = Thread.currentThread().getContextClassLoader()
                         .loadClass("org.testcontainers.DockerClientFactory");
@@ -73,9 +73,13 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                 Object configurationInstance = configurationClass.getMethod("getInstance").invoke(null);
                 String oldReusePropertyValue = (String) configurationClass
                         .getMethod("getEnvVarOrUserProperty", String.class, String.class)
-                        .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default provided in TestcontainersConfiguration#environmentSupportsReuse
-                Method updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class, String.class);
-                // this will ensure that testcontainers does not start ryuk - see https://github.com/quarkusio/quarkus/issues/25852 for why this is important
+                        .invoke(configurationInstance, "testcontainers.reuse.enable", "false"); // use the default
+                                                                                                                                                                                                                           // provided in
+                                                                                                                                                                                                                           // TestcontainersConfiguration#environmentSupportsReuse
+                Method updateUserConfigMethod = configurationClass.getMethod("updateUserConfig", String.class,
+                        String.class);
+                // this will ensure that testcontainers does not start ryuk - see
+                // https://github.com/quarkusio/quarkus/issues/25852 for why this is important
                 updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", "true");
 
                 // ensure that Testcontainers doesn't take previous failures into account
@@ -93,7 +97,8 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
                 }
 
                 // restore the previous value
-                updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable", oldReusePropertyValue);
+                updateUserConfigMethod.invoke(configurationInstance, "testcontainers.reuse.enable",
+                        oldReusePropertyValue);
                 return isAvailable ? Result.AVAILABLE : Result.UNAVAILABLE;
             } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | IllegalAccessException
                     | NoSuchFieldException e) {
@@ -109,10 +114,8 @@ public abstract class IsContainerRuntimeWorking implements BooleanSupplier {
     }
 
     /**
-     * Detection using a remote host socket
-     * We don't want to pull in the docker API here, so we just see if the DOCKER_HOST is set
-     * and if we can connect to it.
-     * We can't actually verify it is docker listening on the other end.
+     * Detection using a remote host socket We don't want to pull in the docker API here, so we just see if the
+     * DOCKER_HOST is set and if we can connect to it. We can't actually verify it is docker listening on the other end.
      * Furthermore, this does not support Unix Sockets
      */
     protected static class DockerHostStrategy implements Strategy {

@@ -12,8 +12,8 @@ import java.util.function.BooleanSupplier;
  * This annotation is applied at the class level, and will result in conditions ({@link #onlyIf()}/{@link #onlyIfNot()})
  * being prepended to all build steps defined in that class.
  * <p>
- * This is mainly useful for "enabled"-type conditions, where all steps in a class should be enabled/disabled
- * based on a single condition, for example based on configuration properties.
+ * This is mainly useful for "enabled"-type conditions, where all steps in a class should be enabled/disabled based on a
+ * single condition, for example based on configuration properties.
  *
  * @see BuildStep
  */

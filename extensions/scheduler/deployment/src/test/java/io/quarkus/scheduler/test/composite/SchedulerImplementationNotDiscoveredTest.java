@@ -12,13 +12,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SchedulerImplementationNotDiscoveredTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Jobs.class))
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root.addClasses(Jobs.class))
             .assertException(t -> {
-                assertThat(t).cause().isInstanceOf(IllegalStateException.class)
-                        .hasMessageContaining(
-                                "The required scheduler implementation was not discovered in application: QUARTZ");
+                assertThat(t).cause().isInstanceOf(IllegalStateException.class).hasMessageContaining(
+                        "The required scheduler implementation was not discovered in application: QUARTZ");
             });
 
     @Test

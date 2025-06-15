@@ -26,11 +26,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class FailFastTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(A.class, B.class)
-            .add(new StringAsset("quarkus.hibernate-validator.fail-fast=true"),
-                    "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(A.class, B.class)
+                    .add(new StringAsset("quarkus.hibernate-validator.fail-fast=true"), "application.properties"));
 
     @Inject
     Validator validator;

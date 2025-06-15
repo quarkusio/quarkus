@@ -14,8 +14,7 @@ public interface JKSKeyStoreConfig {
     Path path();
 
     /**
-     * Password of the key store.
-     * When not set, the password must be retrieved from the credential provider.
+     * Password of the key store. When not set, the password must be retrieved from the credential provider.
      */
     Optional<String> password();
 
@@ -25,8 +24,7 @@ public interface JKSKeyStoreConfig {
     Optional<String> alias();
 
     /**
-     * Password of the alias in the key store.
-     * When not set, the password may be retrieved from the credential provider.
+     * Password of the alias in the key store. When not set, the password may be retrieved from the credential provider.
      */
     Optional<String> aliasPassword();
 

@@ -30,19 +30,19 @@ public interface SchedulerConfig {
     boolean metricsEnabled();
 
     /**
-     * Controls whether tracing is enabled. If set to true and the OpenTelemetry extension is present,
-     * tracing will be enabled, creating automatic Spans for each scheduled task.
+     * Controls whether tracing is enabled. If set to true and the OpenTelemetry extension is present, tracing will be
+     * enabled, creating automatic Spans for each scheduled task.
      */
     @WithName("tracing.enabled")
     @WithDefault("false")
     boolean tracingEnabled();
 
     /**
-     * By default, only one {@link Scheduler} implementation is used. If set to {@code true} then a composite {@link Scheduler}
-     * that delegates to all running implementations is used.
+     * By default, only one {@link Scheduler} implementation is used. If set to {@code true} then a composite
+     * {@link Scheduler} that delegates to all running implementations is used.
      * <p>
-     * Scheduler implementations will be started depending on the value of {@code quarkus.scheduler.start-mode}, i.e. the
-     * scheduler is not started unless a relevant {@link io.quarkus.scheduler.Scheduled} business method is found.
+     * Scheduler implementations will be started depending on the value of {@code quarkus.scheduler.start-mode}, i.e.
+     * the scheduler is not started unless a relevant {@link io.quarkus.scheduler.Scheduled} business method is found.
      */
     @WithDefault("false")
     boolean useCompositeScheduler();

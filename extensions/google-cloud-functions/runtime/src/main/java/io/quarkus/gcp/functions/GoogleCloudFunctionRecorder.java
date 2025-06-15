@@ -22,8 +22,8 @@ public class GoogleCloudFunctionRecorder {
                 }
             }
             if (!found) {
-                throw new RuntimeException(
-                        "No function named " + functionName + ", did you forget to annotate your function with @Named ?");
+                throw new RuntimeException("No function named " + functionName
+                        + ", did you forget to annotate your function with @Named ?");
             }
         } else {
             for (GoogleCloudFunctionInfo info : cloudFunctions) {

@@ -15,25 +15,19 @@ public class RBACUtil {
         if (rule == null) {
             return null;
         }
-        return new PolicyRuleBuilder()
-                .withApiGroups(rule.getApiGroups())
-                .withNonResourceURLs(rule.getNonResourceURLs())
-                .withResourceNames(rule.getResourceNames())
-                .withResources(rule.getResources())
-                .withVerbs(rule.getVerbs())
-                .build();
+        return new PolicyRuleBuilder().withApiGroups(rule.getApiGroups()).withNonResourceURLs(rule.getNonResourceURLs())
+                .withResourceNames(rule.getResourceNames()).withResources(rule.getResources())
+                .withVerbs(rule.getVerbs()).build();
     }
 
     public static io.fabric8.kubernetes.api.model.rbac.PolicyRule from(RbacConfig.PolicyRuleConfig policyRuleConfig) {
         if (policyRuleConfig == null) {
             return null;
         }
-        return new PolicyRuleBuilder()
-                .withApiGroups(policyRuleConfig.apiGroups().orElse(LIST_WITH_EMPTY))
+        return new PolicyRuleBuilder().withApiGroups(policyRuleConfig.apiGroups().orElse(LIST_WITH_EMPTY))
                 .withNonResourceURLs(policyRuleConfig.nonResourceUrls().orElse(null))
                 .withResourceNames(policyRuleConfig.resourceNames().orElse(null))
                 .withResources(policyRuleConfig.resources().orElse(null))
-                .withVerbs(policyRuleConfig.verbs().orElse(null))
-                .build();
+                .withVerbs(policyRuleConfig.verbs().orElse(null)).build();
     }
 }

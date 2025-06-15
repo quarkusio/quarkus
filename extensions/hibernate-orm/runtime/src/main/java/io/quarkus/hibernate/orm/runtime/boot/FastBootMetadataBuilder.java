@@ -81,8 +81,8 @@ import io.quarkus.hibernate.orm.runtime.service.QuarkusStaticInitDialectFactory;
 import io.quarkus.hibernate.orm.runtime.tenant.HibernateMultiTenantConnectionProvider;
 
 /**
- * Alternative to EntityManagerFactoryBuilderImpl so to have full control of how MetadataBuilderImplementor
- * is created, which configuration properties are supportable, custom overrides, etc...
+ * Alternative to EntityManagerFactoryBuilderImpl so to have full control of how MetadataBuilderImplementor is created,
+ * which configuration properties are supportable, custom overrides, etc...
  */
 public class FastBootMetadataBuilder {
 
@@ -131,7 +131,8 @@ public class FastBootMetadataBuilder {
 
         LogHelper.logPersistenceUnitInformation(persistenceUnit);
 
-        final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory.createRecordableBootstrapBuilder(puDefinition);
+        final RecordableBootstrap ssrBuilder = RecordableBootstrapFactory
+                .createRecordableBootstrapBuilder(puDefinition);
 
         // Should be set before calling mergeSettings()
         this.multiTenancyStrategy = puDefinition.getConfig().getMultiTenancyStrategy();
@@ -146,21 +147,16 @@ public class FastBootMetadataBuilder {
         this.providedServices = ssrBuilder.getProvidedServices();
 
         /**
-         * This is required to properly integrate Hibernate Envers.
-         *
-         * The EnversService requires multiple steps to be properly built, the most important ones are:
-         *
-         * 1. The EnversServiceContributor contributes the EnversServiceInitiator to the RecordableBootstrap.
-         * 2. After RecordableBootstrap builds a StandardServiceRegistry, the first time the EnversService is
-         * requested, it is created by the initiator and configured by the registry.
-         * 3. The MetadataBuildingProcess completes by calling the AdditionalJaxbMappingProducer which
-         * initializes the EnversService and produces some additional mapping documents.
-         * 4. After that point the EnversService appears to be fully functional.
-         *
-         * The following trick uses the aforementioned steps to set up the EnversService and then turns it into
-         * a ProvidedService so that it is not necessary to repeat all these complex steps during the reactivation
-         * of the destroyed service registry in PreconfiguredServiceRegistryBuilder.
-         *
+         * This is required to properly integrate Hibernate Envers. The EnversService requires multiple steps to be
+         * properly built, the most important ones are: 1. The EnversServiceContributor contributes the
+         * EnversServiceInitiator to the RecordableBootstrap. 2. After RecordableBootstrap builds a
+         * StandardServiceRegistry, the first time the EnversService is requested, it is created by the initiator and
+         * configured by the registry. 3. The MetadataBuildingProcess completes by calling the
+         * AdditionalJaxbMappingProducer which initializes the EnversService and produces some additional mapping
+         * documents. 4. After that point the EnversService appears to be fully functional. The following trick uses the
+         * aforementioned steps to set up the EnversService and then turns it into a ProvidedService so that it is not
+         * necessary to repeat all these complex steps during the reactivation of the destroyed service registry in
+         * PreconfiguredServiceRegistryBuilder.
          */
         for (Class<? extends Service> postBuildProvidedService : ssrBuilder.getPostBuildProvidedServices()) {
             providedServices.add(new ProvidedService(postBuildProvidedService,
@@ -211,8 +207,8 @@ public class FastBootMetadataBuilder {
 
         var databaseOrmCompatibilityVersion = puDefinition.getConfig().getDatabaseOrmCompatibilityVersion();
         Map<String, String> appliedDatabaseOrmCompatibilitySettings = new HashMap<>();
-        for (Map.Entry<String, String> entry : databaseOrmCompatibilityVersion.settings(puDefinition.getConfig().getDbKind())
-                .entrySet()) {
+        for (Map.Entry<String, String> entry : databaseOrmCompatibilityVersion
+                .settings(puDefinition.getConfig().getDbKind()).entrySet()) {
             // Not using putIfAbsent() because that would be ambiguous in case of null values
             if (!allSettings.containsKey(entry.getKey())) {
                 appliedDatabaseOrmCompatibilitySettings.put(entry.getKey(), entry.getValue());
@@ -275,11 +271,11 @@ public class FastBootMetadataBuilder {
         // Disallow CDI during metadata building in anticipation for https://github.com/quarkusio/quarkus/issues/40897
         cfg.put(AvailableSettings.ALLOW_EXTENSIONS_IN_CDI, "false");
 
-        //This shouldn't be encouraged, but sometimes it's really useful - and it used to be the default
-        //in Hibernate ORM before the JPA spec would require to change this.
-        //At this time of transitioning we'll only expose it as a global system property, so to allow usage
-        //for special circumstances and yet not encourage this.
-        //Also, definitely don't override anything which was explicitly set in the configuration.
+        // This shouldn't be encouraged, but sometimes it's really useful - and it used to be the default
+        // in Hibernate ORM before the JPA spec would require to change this.
+        // At this time of transitioning we'll only expose it as a global system property, so to allow usage
+        // for special circumstances and yet not encourage this.
+        // Also, definitely don't override anything which was explicitly set in the configuration.
         if (!cfg.containsKey(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION)) {
             cfg.put(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION,
                     Boolean.getBoolean(AvailableSettings.ALLOW_UPDATE_OUTSIDE_TRANSACTION));
@@ -290,21 +286,19 @@ public class FastBootMetadataBuilder {
                     + "' is being ignored: this property is no longer meaningful since Hibernate ORM 6");
             cfg.remove(ALLOW_ENHANCEMENT_AS_PROXY);
         }
-        //Always Order batch updates as it prevents contention on the data (unless it was disabled)
+        // Always Order batch updates as it prevents contention on the data (unless it was disabled)
         if (!cfg.containsKey(AvailableSettings.ORDER_UPDATES)) {
             cfg.put(AvailableSettings.ORDER_UPDATES, Boolean.TRUE.toString());
         }
-        //Agroal already does disable auto-commit, so Hibernate ORM should trust that:
+        // Agroal already does disable auto-commit, so Hibernate ORM should trust that:
         cfg.put(AvailableSettings.CONNECTION_PROVIDER_DISABLES_AUTOCOMMIT, Boolean.TRUE.toString());
 
         /*
-         * Set CONNECTION_HANDLING to DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION
-         * as it generally performs better, at no known drawbacks.
-         * This is a new mode in Hibernate ORM, it might become the default in the future.
-         *
-         * Note: other connection handling modes lead to leaked resources, statements in particular.
-         * See https://github.com/quarkusio/quarkus/issues/7242, https://github.com/quarkusio/quarkus/issues/13273
-         *
+         * Set CONNECTION_HANDLING to DELAYED_ACQUISITION_AND_RELEASE_BEFORE_TRANSACTION_COMPLETION as it generally
+         * performs better, at no known drawbacks. This is a new mode in Hibernate ORM, it might become the default in
+         * the future. Note: other connection handling modes lead to leaked resources, statements in particular. See
+         * https://github.com/quarkusio/quarkus/issues/7242, https://github.com/quarkusio/quarkus/issues/13273
+         * 
          * @see org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode
          */
         cfg.putIfAbsent(AvailableSettings.CONNECTION_HANDLING,
@@ -325,19 +319,18 @@ public class FastBootMetadataBuilder {
         if (!puDefinition.getXmlMappings().isEmpty() || !integrationsRequiringXmlMapping.isEmpty()) {
             if (xmlMappingEnabledOptional.isPresent() && !xmlMappingEnabledOptional.get()) {
                 // Explicitly disabled even though we need it...
-                LOG.warnf("XML mapping is necessary in persistence unit '%s':"
-                        + " %d XML mapping files are used, and %d extensions require XML mapping (%s)."
-                        + " Setting '%s' to false.",
-                        persistenceUnit.getName(), XML_MAPPING_ENABLED,
-                        puDefinition.getXmlMappings().size(), integrationsRequiringXmlMapping.size(),
-                        integrationsRequiringXmlMapping);
+                LOG.warnf(
+                        "XML mapping is necessary in persistence unit '%s':"
+                                + " %d XML mapping files are used, and %d extensions require XML mapping (%s)."
+                                + " Setting '%s' to false.",
+                        persistenceUnit.getName(), XML_MAPPING_ENABLED, puDefinition.getXmlMappings().size(),
+                        integrationsRequiringXmlMapping.size(), integrationsRequiringXmlMapping);
             }
             cfg.put(XML_MAPPING_ENABLED, "true");
         } else {
             if (xmlMappingEnabledOptional.isPresent() && xmlMappingEnabledOptional.get()) {
                 // Explicitly enabled even though we do not need it...
-                LOG.warnf("XML mapping is not necessary in persistence unit '%s'."
-                        + " Setting '%s' to false.",
+                LOG.warnf("XML mapping is not necessary in persistence unit '%s'." + " Setting '%s' to false.",
                         persistenceUnit.getName(), XML_MAPPING_ENABLED);
             }
             cfg.put(XML_MAPPING_ENABLED, "false");
@@ -411,10 +404,9 @@ public class FastBootMetadataBuilder {
     }
 
     public RecordedState build() {
-        MetadataImpl fullMeta = (MetadataImpl) MetadataBuildingProcess.complete(
-                managedResources,
-                metamodelBuilder.getBootstrapContext(),
-                metamodelBuilder.getMetadataBuildingOptions() //INTERCEPT & DESTROY :)
+        MetadataImpl fullMeta = (MetadataImpl) MetadataBuildingProcess.complete(managedResources,
+                metamodelBuilder.getBootstrapContext(), metamodelBuilder.getMetadataBuildingOptions() // INTERCEPT &
+                                                                                                                                                                                                // DESTROY :)
         );
 
         IntegrationSettings.Builder integrationSettingsBuilder = new IntegrationSettings.Builder();
@@ -429,44 +421,46 @@ public class FastBootMetadataBuilder {
 
         Dialect dialect = extractDialect();
         PrevalidatedQuarkusMetadata storeableMetadata = trimBootstrapMetadata(fullMeta);
-        //Make sure that the service is destroyed after the metadata has been validated and trimmed, as validation needs to use it.
+        // Make sure that the service is destroyed after the metadata has been validated and trimmed, as validation
+        // needs to use it.
         destroyServiceRegistry();
-        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata, preGeneratedProxies);
-        return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(),
-                providedServices, integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy,
-                isReactive, fromPersistenceXml);
+        ProxyDefinitions proxyClassDefinitions = ProxyDefinitions.createFromMetadata(storeableMetadata,
+                preGeneratedProxies);
+        return new RecordedState(dialect, storeableMetadata, buildTimeSettings, getIntegrators(), providedServices,
+                integrationSettingsBuilder.build(), proxyClassDefinitions, multiTenancyStrategy, isReactive,
+                fromPersistenceXml);
     }
 
     private void destroyServiceRegistry() {
-        final AbstractServiceRegistryImpl serviceRegistry = (AbstractServiceRegistryImpl) metamodelBuilder.getBootstrapContext()
-                .getServiceRegistry();
+        final AbstractServiceRegistryImpl serviceRegistry = (AbstractServiceRegistryImpl) metamodelBuilder
+                .getBootstrapContext().getServiceRegistry();
         serviceRegistry.close();
         serviceRegistry.resetParent(null);
     }
 
     private PrevalidatedQuarkusMetadata trimBootstrapMetadata(MetadataImpl fullMeta) {
-        MetadataImpl replacement = new MetadataImpl(
-                fullMeta.getUUID(),
-                fullMeta.getMetadataBuildingOptions(), //TODO Replace this
-                fullMeta.getEntityBindingMap(),
-                fullMeta.getComposites(),
-                fullMeta.getGenericComponentsMap(),
-                fullMeta.getEmbeddableDiscriminatorTypesMap(),
-                fullMeta.getMappedSuperclassMap(),
-                fullMeta.getCollectionBindingMap(),
-                fullMeta.getTypeDefinitionMap(),
-                fullMeta.getFilterDefinitions(),
-                fullMeta.getFetchProfileMap(),
-                fullMeta.getImports(), // ok
-                fullMeta.getIdGeneratorDefinitionMap(),
-                fullMeta.getNamedQueryMap(),
-                fullMeta.getNamedNativeQueryMap(), // TODO // might contain references to org.hibernate.loader.custom.ConstructorResultColumnProcessor, org.hibernate.type.TypeStandardSQLFunction
-                fullMeta.getNamedProcedureCallMap(),
-                fullMeta.getSqlResultSetMappingMap(), //TODO might contain NativeSQLQueryReturn (as namedNativeQueryMap above)
-                fullMeta.getNamedEntityGraphs(), //TODO //reference to *annotation* instance ! FIXME or ignore feature?
-                fullMeta.getSqlFunctionMap(), //ok
-                fullMeta.getDatabase(), //Cleaned up: used to include references to MetadataBuildingOptions, etc..
-                fullMeta.getBootstrapContext() //FIXME WHOA!
+        MetadataImpl replacement = new MetadataImpl(fullMeta.getUUID(), fullMeta.getMetadataBuildingOptions(), // TODO
+                // Replace
+                // this
+                fullMeta.getEntityBindingMap(), fullMeta.getComposites(), fullMeta.getGenericComponentsMap(),
+                fullMeta.getEmbeddableDiscriminatorTypesMap(), fullMeta.getMappedSuperclassMap(),
+                fullMeta.getCollectionBindingMap(), fullMeta.getTypeDefinitionMap(), fullMeta.getFilterDefinitions(),
+                fullMeta.getFetchProfileMap(), fullMeta.getImports(), // ok
+                fullMeta.getIdGeneratorDefinitionMap(), fullMeta.getNamedQueryMap(), fullMeta.getNamedNativeQueryMap(), // TODO
+                // //
+                // might
+                // contain
+                // references
+                // to
+                // org.hibernate.loader.custom.ConstructorResultColumnProcessor,
+                // org.hibernate.type.TypeStandardSQLFunction
+                fullMeta.getNamedProcedureCallMap(), fullMeta.getSqlResultSetMappingMap(), // TODO might contain
+                // NativeSQLQueryReturn (as
+                // namedNativeQueryMap above)
+                fullMeta.getNamedEntityGraphs(), // TODO //reference to *annotation* instance ! FIXME or ignore feature?
+                fullMeta.getSqlFunctionMap(), // ok
+                fullMeta.getDatabase(), // Cleaned up: used to include references to MetadataBuildingOptions, etc..
+                fullMeta.getBootstrapContext() // FIXME WHOA!
         );
 
         return PrevalidatedQuarkusMetadata.validateAndWrap(replacement);
@@ -607,8 +601,7 @@ public class FastBootMetadataBuilder {
             LOG.overridingTransactionStrategyDangerous(TRANSACTION_COORDINATOR_STRATEGY);
         } else {
             if (transactionType == PersistenceUnitTransactionType.JTA) {
-                configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY,
-                        JtaTransactionCoordinatorBuilderImpl.class);
+                configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY, JtaTransactionCoordinatorBuilderImpl.class);
             } else if (transactionType == PersistenceUnitTransactionType.RESOURCE_LOCAL) {
                 configurationValues.put(TRANSACTION_COORDINATOR_STRATEGY,
                         JdbcResourceLocalTransactionCoordinatorBuilderImpl.class);
@@ -643,16 +636,14 @@ public class FastBootMetadataBuilder {
     }
 
     private void applyMetadataBuilderContributor() {
-        Object metadataBuilderContributorSetting = buildTimeSettings
-                .get(JpaSettings.METADATA_BUILDER_CONTRIBUTOR);
+        Object metadataBuilderContributorSetting = buildTimeSettings.get(JpaSettings.METADATA_BUILDER_CONTRIBUTOR);
 
         if (metadataBuilderContributorSetting == null) {
             return;
         }
 
         MetadataBuilderContributor metadataBuilderContributor = loadSettingInstance(
-                JpaSettings.METADATA_BUILDER_CONTRIBUTOR,
-                metadataBuilderContributorSetting,
+                JpaSettings.METADATA_BUILDER_CONTRIBUTOR, metadataBuilderContributorSetting,
                 MetadataBuilderContributor.class);
 
         if (metadataBuilderContributor != null) {
@@ -672,7 +663,8 @@ public class FastBootMetadataBuilder {
         } else if (settingValue instanceof String) {
             String settingStringValue = (String) settingValue;
             if (standardServiceRegistry != null) {
-                final ClassLoaderService classLoaderService = standardServiceRegistry.getService(ClassLoaderService.class);
+                final ClassLoaderService classLoaderService = standardServiceRegistry
+                        .getService(ClassLoaderService.class);
 
                 instanceClass = classLoaderService.classForName(settingStringValue);
             } else {
@@ -690,7 +682,8 @@ public class FastBootMetadataBuilder {
         if (instanceClass != null) {
             try {
                 instance = instanceClass.getConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+            } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                    | InvocationTargetException e) {
                 throw new IllegalArgumentException(
                         "The " + clazz.getSimpleName() + " class [" + instanceClass + "] could not be instantiated!",
                         e);

@@ -34,9 +34,7 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
     }
 
     /**
-     * Generate JAX-RS GET method.
-     *
-     * The RESTEasy Classic version exposes {@link RestDataResource#count()}.
+     * Generate JAX-RS GET method. The RESTEasy Classic version exposes {@link RestDataResource#count()}.
      *
      * <pre>
      * {@code
@@ -52,8 +50,8 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
      * }
      * </pre>
      *
-     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#count()}
-     * and the generated code looks more or less like this:
+     * The RESTEasy Reactive version exposes {@link io.quarkus.rest.data.panache.ReactiveRestDataResource#count()} and
+     * the generated code looks more or less like this:
      *
      * <pre>
      * {@code
@@ -80,7 +78,8 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
         // Add method annotations
         addGetAnnotation(methodCreator);
         addProducesAnnotation(methodCreator, APPLICATION_JSON);
-        addPathAnnotation(methodCreator, appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), RESOURCE_METHOD_NAME));
+        addPathAnnotation(methodCreator,
+                appendToPath(resourceProperties.getPath(RESOURCE_METHOD_NAME), RESOURCE_METHOD_NAME));
         addMethodAnnotations(methodCreator, resourceProperties.getMethodAnnotations(RESOURCE_METHOD_NAME));
         addOpenApiResponseAnnotation(methodCreator, RestResponse.Status.OK, Long.class, false);
         addSecurityAnnotations(methodCreator, resourceProperties);
@@ -91,16 +90,14 @@ public final class CountMethodImplementor extends StandardMethodImplementor {
         if (isNotReactivePanache()) {
             TryBlock tryBlock = implementTryBlock(methodCreator, EXCEPTION_MESSAGE);
             ResultHandle count = tryBlock.invokeVirtualMethod(
-                    ofMethod(resourceMetadata.getResourceClass(), METHOD_NAME, long.class),
-                    resource);
+                    ofMethod(resourceMetadata.getResourceClass(), METHOD_NAME, long.class), resource);
 
             // Return response
             tryBlock.returnValue(responseImplementor.ok(tryBlock, count));
             tryBlock.close();
         } else {
             ResultHandle uniCount = methodCreator.invokeVirtualMethod(
-                    ofMethod(resourceMetadata.getResourceClass(), METHOD_NAME, Uni.class),
-                    resource);
+                    ofMethod(resourceMetadata.getResourceClass(), METHOD_NAME, Uni.class), resource);
             methodCreator.returnValue(UniImplementor.map(methodCreator, uniCount, EXCEPTION_MESSAGE,
                     (countBody, count) -> countBody.returnValue(responseImplementor.ok(countBody, count))));
         }

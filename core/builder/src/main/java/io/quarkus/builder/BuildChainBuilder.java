@@ -49,19 +49,21 @@ public final class BuildChainBuilder {
      * <p>
      * A given build step is included in the chain when one or more of the following criteria are met:
      * <ul>
-     * <li>It includes a pre-produce step for a item which is produced by one or more build steps that is included in the
-     * chain</li>
-     * <li>It includes a produce step for a item which is consumed by a build step that is included in the chain or is a final
-     * item</li>
-     * <li>It includes a consume step for a item which is produced by a build step that is included in the chain or is an
-     * initial item</li>
-     * <li>It includes a destroy step for a item which is produced by a build step that is included in the chain or is an
-     * initial item</li>
+     * <li>It includes a pre-produce step for a item which is produced by one or more build steps that is included in
+     * the chain</li>
+     * <li>It includes a produce step for a item which is consumed by a build step that is included in the chain or is a
+     * final item</li>
+     * <li>It includes a consume step for a item which is produced by a build step that is included in the chain or is
+     * an initial item</li>
+     * <li>It includes a destroy step for a item which is produced by a build step that is included in the chain or is
+     * an initial item</li>
      * </ul>
      * In addition, the declaration of producers and consumers can cause corresponding consumers and producers to be
      * included if they exist.
      *
-     * @param buildStep the build step instance
+     * @param buildStep
+     *        the build step instance
+     *
      * @return the builder for the build step
      */
     public BuildStepBuilder addBuildStep(BuildStep buildStep) {
@@ -76,14 +78,14 @@ public final class BuildChainBuilder {
      * <p>
      * A given build step is included in the chain when one or more of the following criteria are met:
      * <ul>
-     * <li>It includes a pre-produce step for a item which is produced by one or more build steps that is included in the
-     * chain</li>
-     * <li>It includes a produce step for a item which is consumed by a build step that is included in the chain or is a final
-     * item</li>
-     * <li>It includes a consume step for a item which is produced by a build step that is included in the chain or is an
-     * initial item</li>
-     * <li>It includes a destroy step for a item which is produced by a build step that is included in the chain or is an
-     * initial item</li>
+     * <li>It includes a pre-produce step for a item which is produced by one or more build steps that is included in
+     * the chain</li>
+     * <li>It includes a produce step for a item which is consumed by a build step that is included in the chain or is a
+     * final item</li>
+     * <li>It includes a consume step for a item which is produced by a build step that is included in the chain or is
+     * an initial item</li>
+     * <li>It includes a destroy step for a item which is produced by a build step that is included in the chain or is
+     * an initial item</li>
      * </ul>
      * In addition, the declaration of producers and consumers can cause corresponding consumers and producers to be
      * included if they exist.
@@ -95,12 +97,16 @@ public final class BuildChainBuilder {
     }
 
     /**
-     * Declare an initial item that will be provided to build steps in the chain. Note that if this method is called
-     * for a simple item, no build steps will be allowed to produce that item.
+     * Declare an initial item that will be provided to build steps in the chain. Note that if this method is called for
+     * a simple item, no build steps will be allowed to produce that item.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return this builder
-     * @throws IllegalArgumentException if the item type is {@code null}
+     *
+     * @throws IllegalArgumentException
+     *         if the item type is {@code null}
      */
     public BuildChainBuilder addInitial(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
@@ -117,12 +123,16 @@ public final class BuildChainBuilder {
     }
 
     /**
-     * Declare a final item that will be consumable after the build step chain completes. This may be any item
-     * that is produced in the chain.
+     * Declare a final item that will be consumable after the build step chain completes. This may be any item that is
+     * produced in the chain.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return this builder
-     * @throws IllegalArgumentException if the item type is {@code null}
+     *
+     * @throws IllegalArgumentException
+     *         if the item type is {@code null}
      */
     public BuildChainBuilder addFinal(Class<? extends BuildItem> type) {
         Assert.checkNotNullParam("type", type);
@@ -137,7 +147,8 @@ public final class BuildChainBuilder {
     /**
      * Sets the ClassLoader for the build. Every build step will be run with this as the TCCL.
      *
-     * @param classLoader The ClassLoader
+     * @param classLoader
+     *        The ClassLoader
      */
     public void setClassLoader(ClassLoader classLoader) {
         this.classLoader = classLoader;
@@ -147,7 +158,9 @@ public final class BuildChainBuilder {
      * Build the build step chain from the current builder configuration.
      *
      * @return the constructed build chain
-     * @throws ChainBuildException if the chain could not be built
+     *
+     * @throws ChainBuildException
+     *         if the chain could not be built
      */
     public BuildChain build() throws ChainBuildException {
         final Set<BuildStepBuilder> included = new HashSet<>(); // the set of steps already included to avoid duplicates
@@ -185,7 +198,8 @@ public final class BuildChainBuilder {
                     }
                 }
                 // add every producer
-                addItem(allProduces, included, toAdd, id, dependencies.computeIfAbsent(stepBuilder, x -> new HashSet<>()));
+                addItem(allProduces, included, toAdd, id,
+                        dependencies.computeIfAbsent(stepBuilder, x -> new HashSet<>()));
             }
         }
         return dependencies;
@@ -204,8 +218,7 @@ public final class BuildChainBuilder {
                     // ensure only one producer
                     if (initialIds.contains(id)) {
                         String message = "Item " + id + " cannot be produced here (it is an initial resource) ("
-                                + toBeAdded.getStepBuilder().getBuildStep()
-                                + ").";
+                                + toBeAdded.getStepBuilder().getBuildStep() + ").";
                         if (!LOG_CONFLICT_CAUSING) {
                             message += " Use -Dquarkus.builder.log-conflict-cause=true to see the full stacktrace.";
                         }
@@ -216,22 +229,18 @@ public final class BuildChainBuilder {
                     }
                     final boolean overridable = toBeAdded.isOverridable();
                     for (Produce produce : list) {
-                        if (produce.getConstraint() == Constraint.REAL
-                                && produce.isOverridable() == overridable) {
+                        if (produce.getConstraint() == Constraint.REAL && produce.isOverridable() == overridable) {
                             String message = "This is the location of the conflicting producer ("
-                                    + toBeAdded.getStepBuilder().getBuildStep()
-                                    + ").";
+                                    + toBeAdded.getStepBuilder().getBuildStep() + ").";
                             if (!LOG_CONFLICT_CAUSING) {
                                 message += " Use -Dquarkus.builder.log-conflict-cause=true to see the full stacktrace.";
                             }
 
                             final Throwable cause = new Throwable(message);
                             cause.setStackTrace(steps.get(toBeAdded.getStepBuilder()));
-                            final ChainBuildException cbe = new ChainBuildException(
-                                    String.format("Multiple %s"
-                                            + "producers of item %s (%s)",
-                                            overridable ? "overridable " : "", id, produce.getStepBuilder().getBuildStep()),
-                                    cause);
+                            final ChainBuildException cbe = new ChainBuildException(String.format(
+                                    "Multiple %s" + "producers of item %s (%s)", overridable ? "overridable " : "", id,
+                                    produce.getStepBuilder().getBuildStep()), cause);
                             cbe.setStackTrace(steps.get(produce.getStepBuilder()));
                             throw cbe;
                         }
@@ -284,17 +293,17 @@ public final class BuildChainBuilder {
         detectCycles(builders, new HashSet<>(), new HashSet<>(), dependencies, new ArrayDeque<>());
     }
 
-    private void detectCycles(Set<BuildStepBuilder> builders, Set<BuildStepBuilder> visited, Set<BuildStepBuilder> checked,
-            final Map<BuildStepBuilder, Set<Produce>> dependencies, final Deque<Produce> producedPath)
-            throws ChainBuildException {
+    private void detectCycles(Set<BuildStepBuilder> builders, Set<BuildStepBuilder> visited,
+            Set<BuildStepBuilder> checked, final Map<BuildStepBuilder, Set<Produce>> dependencies,
+            final Deque<Produce> producedPath) throws ChainBuildException {
         for (BuildStepBuilder builder : builders) {
             detectCycles(builder, visited, checked, dependencies, producedPath);
         }
     }
 
-    private void cycleCheckProduce(Set<Produce> produceSet, Set<BuildStepBuilder> visited, Set<BuildStepBuilder> checked,
-            final Map<BuildStepBuilder, Set<Produce>> dependencies, final Deque<Produce> producedPath)
-            throws ChainBuildException {
+    private void cycleCheckProduce(Set<Produce> produceSet, Set<BuildStepBuilder> visited,
+            Set<BuildStepBuilder> checked, final Map<BuildStepBuilder, Set<Produce>> dependencies,
+            final Deque<Produce> producedPath) throws ChainBuildException {
         for (Produce produce : produceSet) {
             producedPath.add(produce);
             detectCycles(produce.getStepBuilder(), visited, checked, dependencies, producedPath);
@@ -351,8 +360,7 @@ public final class BuildChainBuilder {
     }
 
     private static boolean produceItem(Map<ItemId, List<Produce>> allProduces, Set<BuildStepBuilder> included,
-            ArrayDeque<BuildStepBuilder> toAdd, ItemId idToAdd,
-            Set<Produce> dependencies, boolean overrideable) {
+            ArrayDeque<BuildStepBuilder> toAdd, ItemId idToAdd, Set<Produce> dependencies, boolean overrideable) {
         boolean modified = false;
         for (Produce produce : allProduces.getOrDefault(idToAdd, Collections.emptyList())) {
             final BuildStepBuilder stepBuilder = produce.getStepBuilder();
@@ -373,8 +381,8 @@ public final class BuildChainBuilder {
         return modified;
     }
 
-    private Set<StepInfo> buildAllSteps(Set<BuildStepBuilder> included, Map<BuildStepBuilder, Set<Produce>> dependencies,
-            Set<StepInfo> startSteps) {
+    private Set<StepInfo> buildAllSteps(Set<BuildStepBuilder> included,
+            Map<BuildStepBuilder, Set<Produce>> dependencies, Set<StepInfo> startSteps) {
         Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents = calculateDependents(dependencies);
         final Set<StepInfo> endSteps = new HashSet<>();
         final Map<BuildStepBuilder, StepInfo> mappedSteps = new HashMap<>();
@@ -396,9 +404,10 @@ public final class BuildChainBuilder {
         return dependents;
     }
 
-    private StepInfo buildOne(BuildStepBuilder toBuild, Set<BuildStepBuilder> included, Map<BuildStepBuilder, StepInfo> mapped,
-            Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents, Map<BuildStepBuilder, Set<Produce>> dependencies,
-            final Set<StepInfo> startSteps, final Set<StepInfo> endSteps) {
+    private StepInfo buildOne(BuildStepBuilder toBuild, Set<BuildStepBuilder> included,
+            Map<BuildStepBuilder, StepInfo> mapped, Map<BuildStepBuilder, Set<BuildStepBuilder>> dependents,
+            Map<BuildStepBuilder, Set<Produce>> dependencies, final Set<StepInfo> startSteps,
+            final Set<StepInfo> endSteps) {
         if (mapped.containsKey(toBuild)) {
             return mapped.get(toBuild);
         }
@@ -406,8 +415,8 @@ public final class BuildChainBuilder {
         final Set<BuildStepBuilder> dependentsOfThis = dependents.getOrDefault(toBuild, Collections.emptySet());
         for (BuildStepBuilder dependentBuilder : dependentsOfThis) {
             if (included.contains(dependentBuilder)) {
-                dependentStepInfos
-                        .add(buildOne(dependentBuilder, included, mapped, dependents, dependencies, startSteps, endSteps));
+                dependentStepInfos.add(
+                        buildOne(dependentBuilder, included, mapped, dependents, dependencies, startSteps, endSteps));
             }
         }
         final Set<Produce> dependenciesOfThis = dependencies.getOrDefault(toBuild, Collections.emptySet());

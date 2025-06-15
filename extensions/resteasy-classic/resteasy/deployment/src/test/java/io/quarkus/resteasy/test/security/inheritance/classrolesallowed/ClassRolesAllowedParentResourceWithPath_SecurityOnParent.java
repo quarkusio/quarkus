@@ -28,8 +28,8 @@ public abstract class ClassRolesAllowedParentResourceWithPath_SecurityOnParent
 
     @Path(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_PARENT + CLASS_ROLES_ALLOWED_PATH)
     public ClassRolesAllowedSubResourceWithoutPath classPathOnParentResource_SubDeclaredOnParent_SubImplOnParentResource_ClassRolesAllowed() {
-        return new ClassRolesAllowedSubResourceWithoutPath(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT
-                + SUB_IMPL_ON_PARENT + CLASS_ROLES_ALLOWED_PATH);
+        return new ClassRolesAllowedSubResourceWithoutPath(
+                CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_PARENT + CLASS_ROLES_ALLOWED_PATH);
     }
 
     @POST

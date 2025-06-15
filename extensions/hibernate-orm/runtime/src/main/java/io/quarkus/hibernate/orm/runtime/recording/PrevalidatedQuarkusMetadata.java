@@ -38,16 +38,12 @@ import org.hibernate.type.Type;
 import org.hibernate.type.spi.TypeConfiguration;
 
 /**
- * This is a Quarkus custom implementation of Metadata wrapping the original
- * implementation from Hibernate ORM.
- * The goal is to run the {@link MetadataImpl#validate()} method
- * earlier than when it is normally performed, for two main reasons: further reduce
- * the work that is still necessary when performing a runtime boot, and to be
- * able to still use reflection as it's necessary e.g. to validate enum fields.
- *
- * We also make sure that methods {@link #getSessionFactoryBuilder()} and {@link #buildSessionFactory()}
- * are unavailable, as these would normally trigger an additional validation phase:
- * we can actually boot Quarkus in a simpler way.
+ * This is a Quarkus custom implementation of Metadata wrapping the original implementation from Hibernate ORM. The goal
+ * is to run the {@link MetadataImpl#validate()} method earlier than when it is normally performed, for two main
+ * reasons: further reduce the work that is still necessary when performing a runtime boot, and to be able to still use
+ * reflection as it's necessary e.g. to validate enum fields. We also make sure that methods
+ * {@link #getSessionFactoryBuilder()} and {@link #buildSessionFactory()} are unavailable, as these would normally
+ * trigger an additional validation phase: we can actually boot Quarkus in a simpler way.
  */
 public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
 
@@ -66,8 +62,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
 
     public SessionFactoryOptionsBuilder buildSessionFactoryOptionsBuilder() {
         SessionFactoryOptionsBuilder builder = new SessionFactoryOptionsBuilder(
-                metadata.getMetadataBuildingOptions().getServiceRegistry(),
-                metadata.getBootstrapContext());
+                metadata.getMetadataBuildingOptions().getServiceRegistry(), metadata.getBootstrapContext());
         // This would normally be done by the constructor of SessionFactoryBuilderImpl,
         // but we don't use a builder to create the session factory, for some reason.
 
@@ -80,26 +75,26 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
         return builder;
     }
 
-    //Relevant overrides:
+    // Relevant overrides:
 
     @Override
     public SessionFactoryBuilder getSessionFactoryBuilder() {
-        //Ensure we don't boot Hibernate using this, but rather use the #buildSessionFactoryOptionsBuilder above.
+        // Ensure we don't boot Hibernate using this, but rather use the #buildSessionFactoryOptionsBuilder above.
         throw new IllegalStateException("This method is not supposed to be used in Quarkus");
     }
 
     @Override
     public SessionFactoryImplementor buildSessionFactory() {
-        //Ensure we don't boot Hibernate using this, but rather use the #buildSessionFactoryOptionsBuilder above.
+        // Ensure we don't boot Hibernate using this, but rather use the #buildSessionFactoryOptionsBuilder above.
         throw new IllegalStateException("This method is not supposed to be used in Quarkus");
     }
 
     @Override
     public void validate() throws MappingException {
-        //Intentional no-op
+        // Intentional no-op
     }
 
-    //All other contracts from Metadata delegating:
+    // All other contracts from Metadata delegating:
 
     @Override
     public UUID getUUID() {
@@ -231,7 +226,7 @@ public final class PrevalidatedQuarkusMetadata implements MetadataImplementor {
         return metadata.getContributors();
     }
 
-    //All methods from org.hibernate.engine.spi.Mapping, the parent of Metadata:
+    // All methods from org.hibernate.engine.spi.Mapping, the parent of Metadata:
 
     @Override
     public Type getIdentifierType(final String className) throws MappingException {

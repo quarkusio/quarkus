@@ -75,11 +75,8 @@ public class JpaSecurityDefinition {
     public final FieldOrMethod roles;
     public final ClassInfo annotatedClass;
 
-    public JpaSecurityDefinition(Index index,
-            ClassInfo annotatedClass,
-            boolean isPanache,
-            AnnotationTarget usernameFieldOrMethod,
-            AnnotationTarget passwordFieldOrMethod,
+    public JpaSecurityDefinition(Index index, ClassInfo annotatedClass, boolean isPanache,
+            AnnotationTarget usernameFieldOrMethod, AnnotationTarget passwordFieldOrMethod,
             AnnotationTarget rolesFieldOrMethod) {
         this.annotatedClass = annotatedClass;
         this.username = getFieldOrMethod(index, annotatedClass, usernameFieldOrMethod, isPanache);
@@ -117,12 +114,14 @@ public class JpaSecurityDefinition {
         return password.annotation(QuarkusSecurityJpaCommonProcessor.DOTNAME_PASSWORD).value("provider");
     }
 
-    // FIXME: in order to check for the getter type we need to apply type parameters, that's too complex so assume it matches
+    // FIXME: in order to check for the getter type we need to apply type parameters, that's too complex so assume it
+    // matches
     private static MethodInfo findGetter(Index index, ClassInfo annotatedClass, FieldInfo field, boolean isPanache) {
         // if it's a panache field, we won't see the getter but it will be there
         String methodName = "get" + JavaBeanUtil.capitalize(field.name());
         if (isPanache) {
-            return MethodInfo.create(field.declaringClass(), methodName, new Type[0], field.type(), (short) Modifier.PUBLIC);
+            return MethodInfo.create(field.declaringClass(), methodName, new Type[0], field.type(),
+                    (short) Modifier.PUBLIC);
         }
         return findGetter(index, annotatedClass, methodName);
     }

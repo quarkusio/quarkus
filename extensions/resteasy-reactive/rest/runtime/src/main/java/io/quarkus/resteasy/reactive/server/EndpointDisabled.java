@@ -7,7 +7,6 @@ import java.lang.annotation.Target;
 
 /**
  * Provides the ability to conditionally enable a JAX-RS Resource class at runtime based on the value of a property.
- *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.TYPE })

@@ -12,7 +12,8 @@ import io.quarkus.opentelemetry.runtime.QuarkusContextStorage;
 public class OpenTelemetryExemplarContextUnwrapper implements OpenTelemetryContextUnwrapper {
 
     @Override
-    public <P, R> R executeInContext(Function<P, R> methodReference, P parameter, io.vertx.core.Context requestContext) {
+    public <P, R> R executeInContext(Function<P, R> methodReference, P parameter,
+            io.vertx.core.Context requestContext) {
         if (requestContext == null) {
             return methodReference.apply(parameter);
         }

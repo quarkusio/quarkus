@@ -15,51 +15,33 @@ public class RestEasyDevModeTestCase {
 
     @RegisterExtension
     public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(PostResource.class)
-                    .addClass(GreetingResource.class)
-                    .addClass(InterfaceResource.class)
-                    .addClass(InterfaceResourceImpl.class)
-                    .addClass(Service.class)
+            .withApplicationRoot((jar) -> jar.addClass(PostResource.class).addClass(GreetingResource.class)
+                    .addClass(InterfaceResource.class).addClass(InterfaceResourceImpl.class).addClass(Service.class)
                     .addAsResource("config-test.properties", "application.properties"));
 
     @Test
     public void testRESTEasyHotReplacement() {
-        RestAssured.given().body("Stuart")
-                .when()
-                .post("/post")
-                .then()
-                .body(Matchers.equalTo("Hello: Stuart"));
+        RestAssured.given().body("Stuart").when().post("/post").then().body(Matchers.equalTo("Hello: Stuart"));
         test.modifySourceFile(PostResource.class, new Function<String, String>() {
             @Override
             public String apply(String s) {
                 return s.replace("Hello:", "Hi:");
             }
         });
-        RestAssured.given().body("Stuart")
-                .when()
-                .post("/post")
-                .then()
-                .body(Matchers.equalTo("Hi: Stuart"));
+        RestAssured.given().body("Stuart").when().post("/post").then().body(Matchers.equalTo("Hi: Stuart"));
     }
 
     @Test
     public void testConfigHotReplacement() {
-        RestAssured.when().get("/greeting").then()
-                .statusCode(200)
-                .body(is("hello from dev mode"));
+        RestAssured.when().get("/greeting").then().statusCode(200).body(is("hello from dev mode"));
 
         test.modifyResourceFile("application.properties", s -> s.replace("hello", "hi"));
 
-        RestAssured.when().get("/greeting").then()
-                .statusCode(200)
-                .body(is("hi from dev mode"));
+        RestAssured.when().get("/greeting").then().statusCode(200).body(is("hi from dev mode"));
     }
 
     @Test
     public void testInterfaceImplementation() {
-        RestAssured.when().get("/inter/hello").then()
-                .statusCode(200)
-                .body(is("hello from impl"));
+        RestAssured.when().get("/inter/hello").then().statusCode(200).body(is("hello from impl"));
     }
 }

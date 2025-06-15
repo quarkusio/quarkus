@@ -10,17 +10,15 @@ import io.quarkus.builder.item.MultiBuildItem;
  * reloadable module} that, if modified, may result in a hot redeployment when in the dev mode.
  * <p>
  * A file may be identified with an location or a matching predicate. See {@link Builder#setLocation(String)} and
- * {@link Builder#setLocationPredicate(Predicate)}.
- *
- * The location may be:
+ * {@link Builder#setLocationPredicate(Predicate)}. The location may be:
  * <ul>
  * <li>a relative OS-agnostic file path where {@code /} is used as a separator; e.g. {@code foo/bar.txt}</li>
  * <li>an absolute OS-specific file path; e.g. {@code /home/foo/bar.txt}</li>
  * <li>a glob pattern as defined in {@link java.nio.file.FileSystem#getPathMatcher(String)}; e.g. {@code *.sample}</li>
  * </ul>
  * <p>
- * If multiple build items match the same file then the final value of {@code restartNeeded} is computed as a logical OR of all
- * the {@link #isRestartNeeded()} values.
+ * If multiple build items match the same file then the final value of {@code restartNeeded} is computed as a logical OR
+ * of all the {@link #isRestartNeeded()} values.
  */
 public final class HotDeploymentWatchedFileBuildItem extends MultiBuildItem {
 
@@ -34,8 +32,8 @@ public final class HotDeploymentWatchedFileBuildItem extends MultiBuildItem {
     private final boolean restartNeeded;
 
     /**
-     *
      * @param location
+     *
      * @see #builder()
      */
     public HotDeploymentWatchedFileBuildItem(String location) {
@@ -43,16 +41,17 @@ public final class HotDeploymentWatchedFileBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @param location
      * @param restartNeeded
+     *
      * @see #builder()
      */
     public HotDeploymentWatchedFileBuildItem(String location, boolean restartNeeded) {
         this(location, null, restartNeeded);
     }
 
-    private HotDeploymentWatchedFileBuildItem(String location, Predicate<String> locationPredicate, boolean restartNeeded) {
+    private HotDeploymentWatchedFileBuildItem(String location, Predicate<String> locationPredicate,
+            boolean restartNeeded) {
         if (location == null && locationPredicate == null) {
             throw new IllegalArgumentException("Either location or predicate must be set");
         }
@@ -62,7 +61,6 @@ public final class HotDeploymentWatchedFileBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return a location a file from a reloadable module
      */
     public String getLocation() {
@@ -74,7 +72,6 @@ public final class HotDeploymentWatchedFileBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return a predicate used to match a file from a reloadable module
      */
     public Predicate<String> getLocationPredicate() {
@@ -86,7 +83,6 @@ public final class HotDeploymentWatchedFileBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return {@code true} if a file change should result in an application restart, {@code false} otherwise
      */
     public boolean isRestartNeeded() {

@@ -12,10 +12,9 @@ import io.quarkus.builder.item.SimpleBuildItem;
 public final class AuthorizationPolicyInstancesBuildItem extends SimpleBuildItem {
 
     /**
-     * Contains:
-     * - Methods annotated with {@link io.quarkus.vertx.http.security.AuthorizationPolicy}
-     * - Methods of classes annotated with {@link io.quarkus.vertx.http.security.AuthorizationPolicy} that
-     * doesn't have another standard security annotation.
+     * Contains: - Methods annotated with {@link io.quarkus.vertx.http.security.AuthorizationPolicy} - Methods of
+     * classes annotated with {@link io.quarkus.vertx.http.security.AuthorizationPolicy} that doesn't have another
+     * standard security annotation.
      */
     final Map<MethodInfo, String> methodToPolicyName;
 

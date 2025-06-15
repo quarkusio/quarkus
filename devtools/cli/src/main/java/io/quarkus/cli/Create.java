@@ -9,10 +9,8 @@ import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
-@CommandLine.Command(name = "create", header = "Create a new project.", subcommands = {
-        CreateApp.class,
-        CreateCli.class,
-        CreateExtension.class })
+@CommandLine.Command(name = "create", header = "Create a new project.", subcommands = { CreateApp.class,
+        CreateCli.class, CreateExtension.class })
 public class Create implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")
@@ -32,6 +30,7 @@ public class Create implements Callable<Integer> {
 
         ParseResult result = spec.commandLine().getParseResult();
         CommandLine appCommand = spec.subcommands().get("app");
-        return appCommand.execute(result.originalArgs().stream().filter(x -> !"create".equals(x)).toArray(String[]::new));
+        return appCommand
+                .execute(result.originalArgs().stream().filter(x -> !"create".equals(x)).toArray(String[]::new));
     }
 }

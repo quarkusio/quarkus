@@ -4,9 +4,8 @@ package io.quarkus.kubernetes.spi;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A build item that extension can use to mark a specific resource definition as optional.
- * An optional resource, when fails to get deployed, will not cause the entire deployment process to fail,
- * but will log a warning instead.
+ * A build item that extension can use to mark a specific resource definition as optional. An optional resource, when
+ * fails to get deployed, will not cause the entire deployment process to fail, but will log a warning instead.
  */
 public final class KubernetesOptionalResourceDefinitionBuildItem extends MultiBuildItem {
 

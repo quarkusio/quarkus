@@ -20,7 +20,9 @@ public class XReadGroupArgs implements RedisCommandExtraArguments {
     /**
      * Sets the max number of entries per stream to return
      *
-     * @param count the count, must be positive
+     * @param count
+     *        the count, must be positive
+     *
      * @return the current {@code XReadGroupArgs}
      */
     public XReadGroupArgs count(int count) {
@@ -31,7 +33,9 @@ public class XReadGroupArgs implements RedisCommandExtraArguments {
     /**
      * Sets the max duration to wait for messages
      *
-     * @param block the duration, must not {@code null}
+     * @param block
+     *        the duration, must not {@code null}
+     *
      * @return the current {@code XReadGroupArgs}
      */
     public XReadGroupArgs block(Duration block) {

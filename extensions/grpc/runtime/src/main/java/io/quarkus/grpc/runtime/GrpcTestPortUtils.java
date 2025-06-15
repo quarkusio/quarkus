@@ -31,8 +31,8 @@ public final class GrpcTestPortUtils {
     private static boolean isHttpsConfigured(GrpcServerConfiguration.SslServerConfig ssl) {
         return ssl.certificate().isPresent() || ssl.key().isPresent() || ssl.keyStore().isPresent()
                 || ssl.keyStoreType().isPresent() || ssl.keyStorePassword().isPresent() || ssl.trustStore().isPresent()
-                || ssl.trustStoreType().isPresent() || ssl.cipherSuites().isPresent() || ssl.clientAuth() != ClientAuth.NONE
-                || !isDefaultProtocols(ssl.protocols());
+                || ssl.trustStoreType().isPresent() || ssl.cipherSuites().isPresent()
+                || ssl.clientAuth() != ClientAuth.NONE || !isDefaultProtocols(ssl.protocols());
     }
 
     private static boolean isDefaultProtocols(Set<String> protocols) {

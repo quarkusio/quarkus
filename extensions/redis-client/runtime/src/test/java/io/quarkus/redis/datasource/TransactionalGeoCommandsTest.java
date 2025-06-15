@@ -47,7 +47,12 @@ public class TransactionalGeoCommandsTest extends DatasourceTestBase {
             geo.geoadd(key, GeoItem.of("3", -20, -20)); // 2 - true
             geo.geodist(key, "1", "3", GeoUnit.KM); // 3 - some number
             geo.geopos(key, "2", "3", "4"); // 4 - list of position
-            geo.geosearch(key, new GeoSearchArgs<String>().withDistance().ascending().byRadius(10000, GeoUnit.KM)); // 5 - list of geo value
+            geo.geosearch(key, new GeoSearchArgs<String>().withDistance().ascending().byRadius(10000, GeoUnit.KM)); // 5
+                                                                                                                    // -
+                                                                                                                    // list
+                                                                                                                    // of
+                                                                                                                    // geo
+                                                                                                                    // value
         });
         assertThat(result.size()).isEqualTo(6);
         assertThat(result.discarded()).isFalse();
@@ -71,7 +76,11 @@ public class TransactionalGeoCommandsTest extends DatasourceTestBase {
                     .chain(() -> geo.geodist(key, "1", "3", GeoUnit.KM)) // 3 - some number
                     .chain(() -> geo.geopos(key, "2", "3", "4")) // 4 - list of position
                     .chain(() -> geo.geosearch(key,
-                            new GeoSearchArgs<String>().withDistance().ascending().byRadius(10000, GeoUnit.KM))); // 5 - list of geo value
+                            new GeoSearchArgs<String>().withDistance().ascending().byRadius(10000, GeoUnit.KM))); // 5 -
+                                                                                                                                                  // list
+                                                                                                                                                  // of
+                                                                                                                                                  // geo
+                                                                                                                                                  // value
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(6);
         assertThat(result.discarded()).isFalse();

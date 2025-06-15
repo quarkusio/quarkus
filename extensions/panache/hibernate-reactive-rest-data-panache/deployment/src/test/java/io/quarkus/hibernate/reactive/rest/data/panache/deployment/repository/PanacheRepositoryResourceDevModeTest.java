@@ -12,7 +12,6 @@ public class PanacheRepositoryResourceDevModeTest extends AbstractDevModeTest {
             .withApplicationRoot((jar) -> jar
                     .addClasses(Collection.class, AbstractEntity.class, AbstractItem.class, Item.class,
                             ItemsResource.class, ItemsRepository.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+                    .addAsResource("application.properties").addAsResource("import.sql"));
 
 }

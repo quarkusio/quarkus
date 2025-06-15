@@ -22,20 +22,16 @@ import io.restassured.RestAssured;
 public class ContainerRequestContextTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class);
+        }
+    });
 
     @Test
     public void helloWorldTest() {
-        RestAssured.get("/hello")
-                .then()
-                .body(equalTo("hello foo"));
+        RestAssured.get("/hello").then().body(equalTo("hello foo"));
     }
 
     @Path("/hello")

@@ -29,8 +29,7 @@ import io.vertx.ext.web.client.WebClient;
 public class CancelableUniTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(Resource.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClasses(Resource.class));
 
     @BeforeEach
     void setUp() {
@@ -64,10 +63,7 @@ public class CancelableUniTest {
     }
 
     private void doTestNormal(String path) {
-        when().get("test/" + path)
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello, world"));
+        when().get("test/" + path).then().statusCode(200).body(equalTo("Hello, world"));
     }
 
     private void doTestCancel(String path, AtomicInteger count, int expected) {
@@ -108,8 +104,8 @@ public class CancelableUniTest {
         @Path("1")
         public Uni<String> defaultCancelableHello() {
             COUNT.incrementAndGet();
-            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
-                    COUNT::incrementAndGet);
+            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem()
+                    .invoke(COUNT::incrementAndGet);
         }
 
         @GET
@@ -118,8 +114,8 @@ public class CancelableUniTest {
         @Path("2")
         public Uni<String> uncancellableHello() {
             COUNT.incrementAndGet();
-            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
-                    COUNT::incrementAndGet);
+            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem()
+                    .invoke(COUNT::incrementAndGet);
         }
 
         @GET
@@ -128,8 +124,8 @@ public class CancelableUniTest {
         @Path("3")
         public Uni<String> cancellableHello() {
             COUNT.incrementAndGet();
-            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem().invoke(
-                    COUNT::incrementAndGet);
+            return Uni.createFrom().item("Hello, world").onItem().delayIt().by(Duration.ofSeconds(5)).onItem()
+                    .invoke(COUNT::incrementAndGet);
         }
     }
 }

@@ -29,18 +29,16 @@ public class ServerCalls {
         try {
             Uni<O> uni = implementation.apply(request);
             if (uni == null) {
-                log.error("gRPC service method returned null instead of Uni. " +
-                        "Please change the implementation to return a Uni object, either carrying a value or a failure," +
-                        " or throw StatusRuntimeException");
+                log.error("gRPC service method returned null instead of Uni. "
+                        + "Please change the implementation to return a Uni object, either carrying a value or a failure,"
+                        + " or throw StatusRuntimeException");
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
-            uni.subscribe().with(
-                    item -> {
-                        response.onNext(item);
-                        onCompleted(response);
-                    },
-                    failure -> onError(response, failure));
+            uni.subscribe().with(item -> {
+                response.onNext(item);
+                onCompleted(response);
+            }, failure -> onError(response, failure));
         } catch (Throwable t) {
             onError(response, t);
         }
@@ -53,14 +51,12 @@ public class ServerCalls {
             streamCollector.add(response);
             Multi<O> returnValue = implementation.apply(request);
             if (returnValue == null) {
-                log.error("gRPC service method returned null instead of Multi. " +
-                        "Please change the implementation to return a Multi object or throw StatusRuntimeException");
+                log.error("gRPC service method returned null instead of Multi. "
+                        + "Please change the implementation to return a Multi object or throw StatusRuntimeException");
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return;
             }
-            handleSubscription(returnValue.subscribe().with(
-                    response::onNext,
-                    throwable -> onError(response, throwable),
+            handleSubscription(returnValue.subscribe().with(response::onNext, throwable -> onError(response, throwable),
                     () -> onCompleted(response)), response);
         } catch (Throwable throwable) {
             onError(response, throwable);
@@ -76,18 +72,16 @@ public class ServerCalls {
 
             Uni<O> uni = implementation.apply(input);
             if (uni == null) {
-                log.error("gRPC service method returned null instead of Uni. " +
-                        "Please change the implementation to return a Uni object, either carrying a value or a failure," +
-                        " or throw StatusRuntimeException");
+                log.error("gRPC service method returned null instead of Uni. "
+                        + "Please change the implementation to return a Uni object, either carrying a value or a failure,"
+                        + " or throw StatusRuntimeException");
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
-            uni.subscribe().with(
-                    item -> {
-                        response.onNext(item);
-                        onCompleted(response);
-                    },
-                    failure -> onError(response, failure));
+            uni.subscribe().with(item -> {
+                response.onNext(item);
+                onCompleted(response);
+            }, failure -> onError(response, failure));
             return pump;
         } catch (Throwable throwable) {
             onError(response, throwable);
@@ -114,14 +108,12 @@ public class ServerCalls {
             StreamObserver<I> pump = getStreamObserverFeedingProcessor(input);
             Multi<O> multi = implementation.apply(input);
             if (multi == null) {
-                log.error("gRPC service method returned null instead of Multi. " +
-                        "Please change the implementation to return a Multi object or throw StatusRuntimeException");
+                log.error("gRPC service method returned null instead of Multi. "
+                        + "Please change the implementation to return a Multi object or throw StatusRuntimeException");
                 onError(response, Status.fromCode(Status.Code.INTERNAL).asException());
                 return null;
             }
-            handleSubscription(multi.subscribe().with(
-                    response::onNext,
-                    failure -> onError(response, failure),
+            handleSubscription(multi.subscribe().with(response::onNext, failure -> onError(response, failure),
                     () -> onCompleted(response)), response);
 
             return pump;

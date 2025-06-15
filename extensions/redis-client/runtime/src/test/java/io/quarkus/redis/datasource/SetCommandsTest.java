@@ -319,8 +319,8 @@ public class SetCommandsTest extends DatasourceTestBase {
 
         assertThat(commands.sort(key)).containsExactly("1", "2", "3", "4", "5", "6", "7", "8", "9");
 
-        assertThat(commands.sort(key, new SortArgs().descending())).containsExactly("9", "8", "7", "6", "5", "4", "3", "2",
-                "1");
+        assertThat(commands.sort(key, new SortArgs().descending())).containsExactly("9", "8", "7", "6", "5", "4", "3",
+                "2", "1");
 
         String k = key + "-alpha";
         commands.sadd(k, "a", "e", "f", "b");

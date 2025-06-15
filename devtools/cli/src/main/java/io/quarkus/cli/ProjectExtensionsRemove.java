@@ -34,16 +34,13 @@ public class ProjectExtensionsRemove extends BaseBuildCommand implements Callabl
 
             return runner.removeExtension(runMode, extensions);
         } catch (Exception e) {
-            return output.handleCommandException(e,
-                    "Unable to remove extension(s): " + e.getMessage());
+            return output.handleCommandException(e, "Unable to remove extension(s): " + e.getMessage());
         }
     }
 
     void dryRunRemove(CommandLine.Help help, BuildTool buildTool) {
-        output.printText(new String[] {
-                "\nRemove extensions to the current project in \n",
-                "\t" + projectRoot().toString()
-        });
+        output.printText(
+                new String[] { "\nRemove extensions to the current project in \n", "\t" + projectRoot().toString() });
         Map<String, String> dryRunOutput = new TreeMap<>();
 
         dryRunOutput.put("Build tool", buildTool.name());

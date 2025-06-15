@@ -22,9 +22,8 @@ public class SecurityAnnotationOnObservedMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(StartupMethodBean.class, IdentityMock.class, PermitAllEagerAppBean.class,
-                            AuthData.class, SecurityTestUtils.class, EagerAppBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(StartupMethodBean.class, IdentityMock.class,
+                    PermitAllEagerAppBean.class, AuthData.class, SecurityTestUtils.class, EagerAppBean.class))
             .assertException(throwable -> {
                 String errorMsg = throwable.getMessage();
                 Assertions.assertTrue(errorMsg.contains("StartupMethodBean#packagePrivateClassAnnotatedMethod"));

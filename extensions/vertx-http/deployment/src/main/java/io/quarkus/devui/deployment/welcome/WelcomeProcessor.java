@@ -30,14 +30,11 @@ public class WelcomeProcessor {
 
         InternalPageBuildItem welcomePageBuildItem = new InternalPageBuildItem("Welcome", 99999);
 
-        welcomePageBuildItem.addBuildTimeData("welcomeData", createWelcomeData(curateOutcomeBuildItem, extensionsBuildItem));
+        welcomePageBuildItem.addBuildTimeData("welcomeData",
+                createWelcomeData(curateOutcomeBuildItem, extensionsBuildItem));
 
-        welcomePageBuildItem.addPage(Page.webComponentPageBuilder()
-                .namespace("devui-welcome")
-                .title("Welcome")
-                .icon("font-awesome-brands:redhat")
-                .componentLink("qwc-welcome.js")
-                .excludeFromMenu());
+        welcomePageBuildItem.addPage(Page.webComponentPageBuilder().namespace("devui-welcome").title("Welcome")
+                .icon("font-awesome-brands:redhat").componentLink("qwc-welcome.js").excludeFromMenu());
 
         return welcomePageBuildItem;
     }
@@ -120,8 +117,7 @@ public class WelcomeProcessor {
         Map<String, Extension> extensionMap = getExtensionMap(extensionsBuildItem);
 
         if (workspaceModule != null) {
-            List<Extension> selectedDependency = workspaceModule.getDirectDependencies()
-                    .stream()
+            List<Extension> selectedDependency = workspaceModule.getDirectDependencies().stream()
                     .filter((dependency) -> {
                         return dependency.isJar()
                                 && (dependency.getScope() == null || !dependency.getScope().equals("test"))

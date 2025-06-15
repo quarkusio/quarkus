@@ -32,7 +32,8 @@ class HibernateSearchStandaloneDevInfo {
         IndexedEntity(SearchIndexedEntity<?> searchIndexedEntity) {
             this.name = searchIndexedEntity.name();
             this.javaClass = searchIndexedEntity.javaClass().getName();
-            ElasticsearchIndexManager indexManager = searchIndexedEntity.indexManager().unwrap(ElasticsearchIndexManager.class);
+            ElasticsearchIndexManager indexManager = searchIndexedEntity.indexManager()
+                    .unwrap(ElasticsearchIndexManager.class);
             indexNames.add(indexManager.descriptor().readName());
             indexNames.add(indexManager.descriptor().writeName());
         }

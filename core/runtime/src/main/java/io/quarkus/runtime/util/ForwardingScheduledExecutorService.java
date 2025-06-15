@@ -6,11 +6,11 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Forwards all method calls to the scheduled executor service returned from the {@link #delegate()} method. Only non-default
- * methods
- * declared on the {@link ScheduledExecutorService} interface are forwarded.
+ * Forwards all method calls to the scheduled executor service returned from the {@link #delegate()} method. Only
+ * non-default methods declared on the {@link ScheduledExecutorService} interface are forwarded.
  */
-public abstract class ForwardingScheduledExecutorService extends ForwardingExecutorService implements ScheduledExecutorService {
+public abstract class ForwardingScheduledExecutorService extends ForwardingExecutorService
+        implements ScheduledExecutorService {
 
     protected abstract ScheduledExecutorService delegate();
 

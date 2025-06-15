@@ -43,12 +43,10 @@ public class CacheHotReloadTest {
     }
 
     private void checkInvocations(String expectedBody) {
-        RestAssured.when().get("/cache-hot-reload-test/invocations").then().statusCode(200)
-                .body(is(expectedBody));
+        RestAssured.when().get("/cache-hot-reload-test/invocations").then().statusCode(200).body(is(expectedBody));
     }
 
     private void checkBody(String expectedBody) {
-        RestAssured.when().get("/cache-hot-reload-test/greet?key=foo").then().statusCode(200)
-                .body(is(expectedBody));
+        RestAssured.when().get("/cache-hot-reload-test/greet?key=foo").then().statusCode(200).body(is(expectedBody));
     }
 }

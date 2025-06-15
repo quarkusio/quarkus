@@ -17,12 +17,10 @@ import io.restassured.RestAssured;
 
 public class NonAppEndpointsDisabledTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TracerRouter.class)
-                    .addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClass(TracerRouter.class).addClasses(TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider"))
             .withConfigurationResource("resource-config/application-no-metrics.properties");
 
     @Inject
@@ -30,21 +28,13 @@ public class NonAppEndpointsDisabledTest {
 
     @Test
     void testHealthEndpointNotTraced() throws InterruptedException {
-        RestAssured.when().get("/q/health").then()
-                .statusCode(200)
-                .body(containsString("\"status\": \"UP\""));
+        RestAssured.when().get("/q/health").then().statusCode(200).body(containsString("\"status\": \"UP\""));
 
-        RestAssured.when().get("/q/health/live").then()
-                .statusCode(200)
-                .body(containsString("\"status\": \"UP\""));
+        RestAssured.when().get("/q/health/live").then().statusCode(200).body(containsString("\"status\": \"UP\""));
 
-        RestAssured.when().get("/q/health/ready").then()
-                .statusCode(200)
-                .body(containsString("\"status\": \"UP\""));
+        RestAssured.when().get("/q/health/ready").then().statusCode(200).body(containsString("\"status\": \"UP\""));
 
-        RestAssured.when().get("/tracer").then()
-                .statusCode(200)
-                .body(is("Hello Tracer!"));
+        RestAssured.when().get("/tracer").then().statusCode(200).body(is("Hello Tracer!"));
 
         testSpanExporter.assertSpanCount(2);
     }

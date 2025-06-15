@@ -67,23 +67,22 @@ public class KafkaTopicClient {
     }
 
     /**
-     * Reads the messages from particular topic. Offset for next page is returned within response.
-     * The first/last page offset could be retrieved with
-     * {@link KafkaTopicClient#getPagePartitionOffset(String, Collection, Order)}
-     * method.
+     * Reads the messages from particular topic. Offset for next page is returned within response. The first/last page
+     * offset could be retrieved with {@link KafkaTopicClient#getPagePartitionOffset(String, Collection, Order)} method.
      *
-     * @param topicName topic to read messages from
-     * @param order ascending or descending. Defaults to descending (newest first)
-     * @param partitionOffsets the offset for page to be read
-     * @param pageSize size of read page
+     * @param topicName
+     *        topic to read messages from
+     * @param order
+     *        ascending or descending. Defaults to descending (newest first)
+     * @param partitionOffsets
+     *        the offset for page to be read
+     * @param pageSize
+     *        size of read page
+     *
      * @return page of messages, matching requested filters
      */
-    public KafkaMessagePage getTopicMessages(
-            String topicName,
-            Order order,
-            Map<Integer, Long> partitionOffsets,
-            int pageSize)
-            throws ExecutionException, InterruptedException {
+    public KafkaMessagePage getTopicMessages(String topicName, Order order, Map<Integer, Long> partitionOffsets,
+            int pageSize) throws ExecutionException, InterruptedException {
         assertParamsValid(pageSize, partitionOffsets);
 
         var requestedPartitions = partitionOffsets.keySet();
@@ -105,9 +104,7 @@ public class KafkaTopicClient {
         }
 
         var newOffsets = calculateNewPartitionOffset(partitionOffsets, allPartitionsResult, order, topicName);
-        var convertedResult = allPartitionsResult.stream()
-                .map(modelConverter::convert)
-                .collect(Collectors.toList());
+        var convertedResult = allPartitionsResult.stream().map(modelConverter::convert).collect(Collectors.toList());
         return new KafkaMessagePage(newOffsets, convertedResult);
     }
 
@@ -121,8 +118,7 @@ public class KafkaTopicClient {
 
         for (var partitionOffset : partitionOffsets.entrySet()) {
             if (partitionOffset.getValue() < 0)
-                throw new IllegalArgumentException(
-                        "Partition offset must be > 0.");
+                throw new IllegalArgumentException("Partition offset must be > 0.");
         }
     }
 
@@ -139,16 +135,12 @@ public class KafkaTopicClient {
     }
 
     /*
-     * FIXME: should consider compaction strategy, when our new offset not necessary = old + total records read, but some
-     * records might be deleted, so we'll end up seeing duplicates on some pages.
-     * Imagine this case:
-     * - page size = 10
-     * - 30 messages pushed, value is incremental 1 ... 30.
-     * - message 10 gets removed, as message 15 has same key because of compaction
-     * - we request page 1. it had offset 0. we return values [1, 2, 3, ..., 9, 11], total of 10. We get new offset for page 2 =
-     * 0 + totalRecords = 10.
-     * - we request page 2. we read starting from offset = 10. There is no message with that offset, but we see message 11 again
-     * instead.
+     * FIXME: should consider compaction strategy, when our new offset not necessary = old + total records read, but
+     * some records might be deleted, so we'll end up seeing duplicates on some pages. Imagine this case: - page size =
+     * 10 - 30 messages pushed, value is incremental 1 ... 30. - message 10 gets removed, as message 15 has same key
+     * because of compaction - we request page 1. it had offset 0. we return values [1, 2, 3, ..., 9, 11], total of 10.
+     * We get new offset for page 2 = 0 + totalRecords = 10. - we request page 2. we read starting from offset = 10.
+     * There is no message with that offset, but we see message 11 again instead.
      */
     private Map<Integer, Long> calculateNewPartitionOffset(Map<Integer, Long> oldPartitionOffset,
             Collection<ConsumerRecord<Bytes, Bytes>> records, Order order, String topicName) {
@@ -160,7 +152,8 @@ public class KafkaTopicClient {
             // We should add in case we seek for oldest and reduce for newest.
             var multiplier = Order.OLD_FIRST == order ? 1 : -1;
 
-            // If new offset for partition is not there in the map - we didn't have records for that partition. So, just take the old offset.
+            // If new offset for partition is not there in the map - we didn't have records for that partition. So, just
+            // take the old offset.
             var newOffset = oldPartitionOffset.get(partition) + multiplier * newOffsets.getOrDefault(partition, 0L);
             newPartitionOffset.put(partition, newOffset);
         }
@@ -179,8 +172,8 @@ public class KafkaTopicClient {
         }
     }
 
-    public Map<Integer, Long> getPagePartitionOffset(String topicName, Collection<Integer> requestedPartitions, Order order)
-            throws ExecutionException, InterruptedException {
+    public Map<Integer, Long> getPagePartitionOffset(String topicName, Collection<Integer> requestedPartitions,
+            Order order) throws ExecutionException, InterruptedException {
         assertRequestedPartitionsExist(topicName, requestedPartitions);
 
         var result = new HashMap<Integer, Long>();
@@ -196,12 +189,14 @@ public class KafkaTopicClient {
             Collection<Integer> requestedPartitions, Map<Integer, Long> start, int totalMessages) {
         List<ConsumerRecord<Bytes, Bytes>> allPartitionsResult = new ArrayList<>();
 
-        // Requesting a full page from each partition and then filtering out redundant data. Thus, we'll ensure, we read data in historical order.
+        // Requesting a full page from each partition and then filtering out redundant data. Thus, we'll ensure, we read
+        // data in historical order.
         for (var requestedPartition : requestedPartitions) {
             List<ConsumerRecord<Bytes, Bytes>> partitionResult = new ArrayList<>();
             var offset = start.get(requestedPartition);
             try (var consumer = createConsumer(topicName, requestedPartition, this.config)) {
-                // Move pointer to currently read position. It might be different per partition, so requesting with offset per partition.
+                // Move pointer to currently read position. It might be different per partition, so requesting with
+                // offset per partition.
                 var partition = new TopicPartition(topicName, requestedPartition);
 
                 var seekedOffset = Order.OLD_FIRST == order ? offset : Long.max(offset - pageSize, 0);
@@ -253,13 +248,9 @@ public class KafkaTopicClient {
                 Bytes.wrap(request.getKey().getBytes(StandardCharsets.UTF_8)),
                 Bytes.wrap(request.getValue().getBytes(StandardCharsets.UTF_8)));
 
-        Optional.ofNullable(request.getHeaders())
-                .orElseGet(Collections::emptyMap)
-                .forEach((key, value) -> record.headers().add(
-                        key,
-                        Optional.ofNullable(value)
-                                .map(v -> v.getBytes(StandardCharsets.UTF_8))
-                                .orElse(null)));
+        Optional.ofNullable(request.getHeaders()).orElseGet(Collections::emptyMap)
+                .forEach((key, value) -> record.headers().add(key,
+                        Optional.ofNullable(value).map(v -> v.getBytes(StandardCharsets.UTF_8)).orElse(null)));
 
         try (var producer = createProducer()) {
             producer.send(record);
@@ -267,16 +258,11 @@ public class KafkaTopicClient {
     }
 
     public List<Integer> partitions(String topicName) throws ExecutionException, InterruptedException {
-        return adminClient.describeTopics(List.of(topicName))
-                .values().stream()
-                .reduce((a, b) -> {
-                    throw new IllegalStateException(
-                            "Requested info about single topic, but got result of multiple: " + a + ", " + b);
-                })
-                .orElseThrow(() -> new IllegalStateException(
-                        "Requested info about a topic, but nothing found. Topic name: " + topicName))
-                .partitions().stream()
-                .map(TopicPartitionInfo::partition)
-                .collect(Collectors.toList());
+        return adminClient.describeTopics(List.of(topicName)).values().stream().reduce((a, b) -> {
+            throw new IllegalStateException(
+                    "Requested info about single topic, but got result of multiple: " + a + ", " + b);
+        }).orElseThrow(() -> new IllegalStateException(
+                "Requested info about a topic, but nothing found. Topic name: " + topicName)).partitions().stream()
+                .map(TopicPartitionInfo::partition).collect(Collectors.toList());
     }
 }

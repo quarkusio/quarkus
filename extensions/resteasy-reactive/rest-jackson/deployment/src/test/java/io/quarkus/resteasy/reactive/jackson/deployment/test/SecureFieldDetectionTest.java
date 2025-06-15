@@ -51,13 +51,13 @@ public class SecureFieldDetectionTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MultiResource.class, UniResource.class, ObjectResource.class, ResponseResource.class,
-                            PlainResource.class, TestIdentityProvider.class, TestIdentityController.class,
-                            CollectionResource.class, NoSecureField.class, WithSecureField.class, WithNestedSecureField.class,
-                            ResponseType.class, DetectSecuritySerializationHandler.class, JsonIgnoreDto.class))
-            .addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder.addBuildStep(context -> context.produce(
-                    new MethodScannerBuildItem(new MethodScanner() {
+            .withApplicationRoot((jar) -> jar.addClasses(MultiResource.class, UniResource.class, ObjectResource.class,
+                    ResponseResource.class, PlainResource.class, TestIdentityProvider.class,
+                    TestIdentityController.class, CollectionResource.class, NoSecureField.class, WithSecureField.class,
+                    WithNestedSecureField.class, ResponseType.class, DetectSecuritySerializationHandler.class,
+                    JsonIgnoreDto.class))
+            .addBuildChainCustomizer(buildChainBuilder -> buildChainBuilder
+                    .addBuildStep(context -> context.produce(new MethodScannerBuildItem(new MethodScanner() {
                         @Override
                         public List<HandlerChainCustomizer> scan(MethodInfo method, ClassInfo actualEndpointClass,
                                 Map<String, Object> methodContext) {
@@ -80,54 +80,31 @@ public class SecureFieldDetectionTest {
         var responseType = ResponseType.valueOf(responseTypeStr);
 
         // with auth
-        RestAssured
-                .given()
-                .auth().preemptive().basic("Georgios", "Andrianakis")
-                .pathParam("sub-path", responseType.getResourceSubPath())
-                .get("/{sub-path}/secure-field")
-                .then()
-                .statusCode(200)
-                .body(containsString("hush hush"));
-        RestAssured
-                .given()
-                .auth().preemptive().basic("Georgios", "Andrianakis")
-                .pathParam("sub-path", responseType.getResourceSubPath())
-                .get("/{sub-path}/no-secure-field")
-                .then()
-                .statusCode(200)
-                .body(containsString("public"));
+        RestAssured.given().auth().preemptive().basic("Georgios", "Andrianakis")
+                .pathParam("sub-path", responseType.getResourceSubPath()).get("/{sub-path}/secure-field").then()
+                .statusCode(200).body(containsString("hush hush"));
+        RestAssured.given().auth().preemptive().basic("Georgios", "Andrianakis")
+                .pathParam("sub-path", responseType.getResourceSubPath()).get("/{sub-path}/no-secure-field").then()
+                .statusCode(200).body(containsString("public"));
 
         // no auth
-        RestAssured
-                .given()
-                .pathParam("sub-path", responseType.getResourceSubPath())
-                .get("/{sub-path}/secure-field")
-                .then()
-                .statusCode(200)
-                .header(SECURITY_SERIALIZATION, is("true"))
+        RestAssured.given().pathParam("sub-path", responseType.getResourceSubPath()).get("/{sub-path}/secure-field")
+                .then().statusCode(200).header(SECURITY_SERIALIZATION, is("true"))
                 .body(not(containsString("hush hush")));
 
         // if endpoint returns for example Object or Response we can't really tell during the build time
-        // therefore we add custom security serialization and let decision be made dynamically based on present annotation
+        // therefore we add custom security serialization and let decision be made dynamically based on present
+        // annotation
         boolean isSecureSerializationApplied = !responseType.isSecureFieldDetectable();
-        RestAssured
-                .given()
-                .pathParam("sub-path", responseType.getResourceSubPath())
-                .get("/{sub-path}/no-secure-field")
-                .then()
-                .statusCode(200)
+        RestAssured.given().pathParam("sub-path", responseType.getResourceSubPath()).get("/{sub-path}/no-secure-field")
+                .then().statusCode(200)
                 .header(SECURITY_SERIALIZATION, is(Boolean.toString(isSecureSerializationApplied)))
                 .body(containsString("public"));
 
-        RestAssured
-                .given()
-                .pathParam("sub-path", responseType.getResourceSubPath())
-                .get("/{sub-path}/json-ignore")
-                .then()
-                .statusCode(200)
+        RestAssured.given().pathParam("sub-path", responseType.getResourceSubPath()).get("/{sub-path}/json-ignore")
+                .then().statusCode(200)
                 .header(SECURITY_SERIALIZATION, is(Boolean.toString(isSecureSerializationApplied)))
-                .body(containsString("other"))
-                .body(not(containsString("ignored")));
+                .body(containsString("other")).body(not(containsString("ignored")));
     }
 
     @Path("plain")
@@ -392,7 +369,8 @@ public class SecureFieldDetectionTest {
         }
 
         @Override
-        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass, ServerResourceMethod resourceMethod) {
+        public List<ServerRestHandler> handlers(Phase phase, ResourceClass resourceClass,
+                ServerResourceMethod resourceMethod) {
             return List.of(new DetectSecuritySerializationHandler());
         }
     }

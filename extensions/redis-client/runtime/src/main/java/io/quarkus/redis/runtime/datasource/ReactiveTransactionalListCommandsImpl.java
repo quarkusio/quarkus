@@ -21,7 +21,8 @@ public class ReactiveTransactionalListCommandsImpl<K, V> extends AbstractTransac
     }
 
     @Override
-    public Uni<Void> blmove(K source, K destination, Position positionInSource, Position positionInDest, Duration timeout) {
+    public Uni<Void> blmove(K source, K destination, Position positionInSource, Position positionInDest,
+            Duration timeout) {
         this.tx.enqueue(this.reactive::decodeV);
         return this.reactive._blmove(source, destination, positionInSource, positionInDest, timeout)
                 .invoke(this::queuedOrDiscard).replaceWithVoid();
@@ -85,8 +86,8 @@ public class ReactiveTransactionalListCommandsImpl<K, V> extends AbstractTransac
     @Override
     public Uni<Void> lmove(K source, K destination, Position positionInSource, Position positionInDestination) {
         this.tx.enqueue(this.reactive::decodeV);
-        return this.reactive._lmove(source, destination, positionInSource, positionInDestination).invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._lmove(source, destination, positionInSource, positionInDestination)
+                .invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override

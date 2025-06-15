@@ -22,10 +22,9 @@ import io.vertx.core.Vertx;
 public class ConcurrentInboundProcessingTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Sim.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Sim.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

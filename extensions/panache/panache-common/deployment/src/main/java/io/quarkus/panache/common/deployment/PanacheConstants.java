@@ -19,8 +19,10 @@ public final class PanacheConstants {
     public static final String JSON_PROPERTY_SIGNATURE = "L" + JSON_PROPERTY_BINARY_NAME + ";";
     public static final String JSON_PROPERTY_ACCESS_SIGNATURE = "L" + JSON_PROPERTY_BINARY_NAME + "$Access;";
 
-    public static final DotName JSON_IGNORE_DOT_NAME = DotName.createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
-    public static final DotName JSON_PROPERTY_DOT_NAME = DotName.createSimple("com.fasterxml.jackson.annotation.JsonProperty");
+    public static final DotName JSON_IGNORE_DOT_NAME = DotName
+            .createSimple("com.fasterxml.jackson.annotation.JsonIgnore");
+    public static final DotName JSON_PROPERTY_DOT_NAME = DotName
+            .createSimple("com.fasterxml.jackson.annotation.JsonProperty");
 
     public static final String JSON_PROPERTY_VALUE = "value";
     public static final String JSON_PROPERTY_NAMESPACE = "namespace";

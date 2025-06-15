@@ -47,7 +47,8 @@ import io.vertx.ext.web.RoutingContext;
 public class SwaggerUiProcessor {
     private static final Logger LOG = Logger.getLogger(SwaggerUiProcessor.class);
 
-    private static final GACT SWAGGER_UI_WEBJAR_ARTIFACT_KEY = new GACT("io.smallrye", "smallrye-open-api-ui", null, "jar");
+    private static final GACT SWAGGER_UI_WEBJAR_ARTIFACT_KEY = new GACT("io.smallrye", "smallrye-open-api-ui", null,
+            "jar");
     private static final String SWAGGER_UI_WEBJAR_STATIC_RESOURCES_PATH = "META-INF/resources/openapi-ui/";
 
     // Branding files to monitor for changes
@@ -65,8 +66,7 @@ public class SwaggerUiProcessor {
     private static final String OIDC_NONCE_KEY = "nonce";
 
     @BuildStep
-    void feature(BuildProducer<FeatureBuildItem> feature,
-            LaunchModeBuildItem launchMode,
+    void feature(BuildProducer<FeatureBuildItem> feature, LaunchModeBuildItem launchMode,
             SwaggerUiConfig swaggerUiConfig) {
         if (shouldInclude(launchMode, swaggerUiConfig)) {
             feature.produce(new FeatureBuildItem(Feature.SWAGGER_UI));
@@ -75,21 +75,15 @@ public class SwaggerUiProcessor {
 
     @BuildStep
     List<HotDeploymentWatchedFileBuildItem> brandingFiles() {
-        return Stream.of(BRANDING_LOGO_GENERAL,
-                BRANDING_STYLE_GENERAL,
-                BRANDING_FAVICON_GENERAL,
-                BRANDING_LOGO_MODULE,
-                BRANDING_STYLE_MODULE,
-                BRANDING_FAVICON_MODULE).map(HotDeploymentWatchedFileBuildItem::new)
-                .collect(Collectors.toList());
+        return Stream
+                .of(BRANDING_LOGO_GENERAL, BRANDING_STYLE_GENERAL, BRANDING_FAVICON_GENERAL, BRANDING_LOGO_MODULE,
+                        BRANDING_STYLE_MODULE, BRANDING_FAVICON_MODULE)
+                .map(HotDeploymentWatchedFileBuildItem::new).collect(Collectors.toList());
     }
 
     @BuildStep
-    public void getSwaggerUiFinalDestination(
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            LaunchModeBuildItem launchMode,
-            SwaggerUiConfig swaggerUiConfig,
-            SmallRyeOpenApiConfig openapi,
+    public void getSwaggerUiFinalDestination(NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig, SmallRyeOpenApiConfig openapi,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
             BuildProducer<WebJarBuildItem> webJarBuildProducer) throws Exception {
 
@@ -116,41 +110,34 @@ public class SwaggerUiProcessor {
             NonApplicationRootPathBuildItem indexRootPathBuildItem = null;
 
             byte[] indexHtmlContent = generateIndexHtml(openApiPath, swaggerUiPath, swaggerUiConfig,
-                    indexRootPathBuildItem,
-                    launchMode,
-                    devServicesLauncherConfig.orElse(null));
-            webJarBuildProducer.produce(
-                    WebJarBuildItem.builder().artifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY) //
-                            .root(SWAGGER_UI_WEBJAR_STATIC_RESOURCES_PATH) //
-                            .filter(new WebJarResourcesFilter() {
-                                @Override
-                                public FilterResult apply(String fileName, InputStream file) throws IOException {
-                                    if (!fileName.equals(theme.toString()) && fileName.startsWith("theme-")) {
-                                        return new FilterResult(null, true);
-                                    }
-                                    if (fileName.endsWith("index.html")) {
-                                        return new FilterResult(new ByteArrayInputStream(indexHtmlContent), true);
-                                    }
-                                    return new FilterResult(file, false);
-                                }
-                            })
-                            .build());
+                    indexRootPathBuildItem, launchMode, devServicesLauncherConfig.orElse(null));
+            webJarBuildProducer.produce(WebJarBuildItem.builder().artifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY) //
+                    .root(SWAGGER_UI_WEBJAR_STATIC_RESOURCES_PATH) //
+                    .filter(new WebJarResourcesFilter() {
+                        @Override
+                        public FilterResult apply(String fileName, InputStream file) throws IOException {
+                            if (!fileName.equals(theme.toString()) && fileName.startsWith("theme-")) {
+                                return new FilterResult(null, true);
+                            }
+                            if (fileName.endsWith("index.html")) {
+                                return new FilterResult(new ByteArrayInputStream(indexHtmlContent), true);
+                            }
+                            return new FilterResult(file, false);
+                        }
+                    }).build());
         }
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    public void registerSwaggerUiHandler(SwaggerUiRecorder recorder,
-            BuildProducer<RouteBuildItem> routes,
+    public void registerSwaggerUiHandler(SwaggerUiRecorder recorder, BuildProducer<RouteBuildItem> routes,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            WebJarResultsBuildItem webJarResultsBuildItem,
-            SwaggerUiRuntimeConfig runtimeConfig,
-            LaunchModeBuildItem launchMode,
-            SwaggerUiConfig swaggerUiConfig,
-            BuildProducer<SwaggerUiBuildItem> swaggerUiBuildProducer,
-            ShutdownContextBuildItem shutdownContext) {
+            WebJarResultsBuildItem webJarResultsBuildItem, SwaggerUiRuntimeConfig runtimeConfig,
+            LaunchModeBuildItem launchMode, SwaggerUiConfig swaggerUiConfig,
+            BuildProducer<SwaggerUiBuildItem> swaggerUiBuildProducer, ShutdownContextBuildItem shutdownContext) {
 
-        WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem.byArtifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY);
+        WebJarResultsBuildItem.WebJarResult result = webJarResultsBuildItem
+                .byArtifactKey(SWAGGER_UI_WEBJAR_ARTIFACT_KEY);
         if (result == null) {
             return;
         }
@@ -159,30 +146,23 @@ public class SwaggerUiProcessor {
             String swaggerUiPath = nonApplicationRootPathBuildItem.resolvePath(swaggerUiConfig.path());
             swaggerUiBuildProducer.produce(new SwaggerUiBuildItem(result.getFinalDestination(), swaggerUiPath));
 
-            Handler<RoutingContext> handler = recorder.handler(result.getFinalDestination(),
-                    swaggerUiPath, result.getWebRootConfigurations(),
-                    runtimeConfig, shutdownContext);
+            Handler<RoutingContext> handler = recorder.handler(result.getFinalDestination(), swaggerUiPath,
+                    result.getWebRootConfigurations(), runtimeConfig, shutdownContext);
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .management("quarkus.smallrye-openapi.management.enabled")
-                    .route(swaggerUiConfig.path())
-                    .displayOnNotFoundPage("Open API UI")
-                    .routeConfigKey("quarkus.swagger-ui.path")
-                    .handler(handler)
+                    .management("quarkus.smallrye-openapi.management.enabled").route(swaggerUiConfig.path())
+                    .displayOnNotFoundPage("Open API UI").routeConfigKey("quarkus.swagger-ui.path").handler(handler)
                     .build());
 
             routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .management("quarkus.smallrye-openapi.management.enabled")
-                    .route(swaggerUiConfig.path() + "*")
-                    .handler(handler)
-                    .build());
+                    .management("quarkus.smallrye-openapi.management.enabled").route(swaggerUiConfig.path() + "*")
+                    .handler(handler).build());
         }
     }
 
     private byte[] generateIndexHtml(String openApiPath, String swaggerUiPath, SwaggerUiConfig swaggerUiConfig,
             NonApplicationRootPathBuildItem nonApplicationRootPath, LaunchModeBuildItem launchMode,
-            DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem)
-            throws IOException {
+            DevServicesLauncherConfigResultBuildItem devServicesLauncherConfigResultBuildItem) throws IOException {
         Map<Option, String> options = new HashMap<>();
         Map<String, String> urlsMap = null;
 
@@ -223,11 +203,13 @@ public class SwaggerUiProcessor {
         }
 
         if (swaggerUiConfig.defaultModelsExpandDepth().isPresent()) {
-            options.put(Option.defaultModelsExpandDepth, String.valueOf(swaggerUiConfig.defaultModelsExpandDepth().getAsInt()));
+            options.put(Option.defaultModelsExpandDepth,
+                    String.valueOf(swaggerUiConfig.defaultModelsExpandDepth().getAsInt()));
         }
 
         if (swaggerUiConfig.defaultModelExpandDepth().isPresent()) {
-            options.put(Option.defaultModelExpandDepth, String.valueOf(swaggerUiConfig.defaultModelExpandDepth().getAsInt()));
+            options.put(Option.defaultModelExpandDepth,
+                    String.valueOf(swaggerUiConfig.defaultModelExpandDepth().getAsInt()));
         }
 
         if (swaggerUiConfig.defaultModelRendering().isPresent()) {
@@ -394,7 +376,8 @@ public class SwaggerUiProcessor {
             }
         }
 
-        // If not provided, add generated nonce id. Swagger UI should actually do this. They do not support nonce at the moment. Once they do we can remove this.
+        // If not provided, add generated nonce id. Swagger UI should actually do this. They do not support nonce at the
+        // moment. Once they do we can remove this.
         if (!oauthAdditionalQueryStringParamMap.containsKey(OIDC_NONCE_KEY)) {
             oauthAdditionalQueryStringParamMap.put(OIDC_NONCE_KEY, UUID.randomUUID().toString());
         }
@@ -403,13 +386,13 @@ public class SwaggerUiProcessor {
 
         if (swaggerUiConfig.oauthUseBasicAuthenticationWithAccessCodeGrant().isPresent()) {
             String oauthUseBasicAuthenticationWithAccessCodeGrant = swaggerUiConfig
-                    .oauthUseBasicAuthenticationWithAccessCodeGrant()
-                    .get().toString();
-            options.put(Option.oauthUseBasicAuthenticationWithAccessCodeGrant, oauthUseBasicAuthenticationWithAccessCodeGrant);
+                    .oauthUseBasicAuthenticationWithAccessCodeGrant().get().toString();
+            options.put(Option.oauthUseBasicAuthenticationWithAccessCodeGrant,
+                    oauthUseBasicAuthenticationWithAccessCodeGrant);
         }
         if (swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant().isPresent()) {
-            String oauthUsePkceWithAuthorizationCodeGrant = swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant().get()
-                    .toString();
+            String oauthUsePkceWithAuthorizationCodeGrant = swaggerUiConfig.oauthUsePkceWithAuthorizationCodeGrant()
+                    .get().toString();
             options.put(Option.oauthUsePkceWithAuthorizationCodeGrant, oauthUsePkceWithAuthorizationCodeGrant);
         }
         if (swaggerUiConfig.preauthorizeBasicAuthDefinitionKey().isPresent()) {

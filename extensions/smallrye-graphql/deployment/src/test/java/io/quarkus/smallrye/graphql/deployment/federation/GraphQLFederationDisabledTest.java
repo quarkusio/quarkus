@@ -13,23 +13,18 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.restassured.RestAssured;
 
 /**
- * Make sure that if no Federation related annotations are in the application, then Federation is
- * disabled (unless explicitly enabled in the config).
+ * Make sure that if no Federation related annotations are in the application, then Federation is disabled (unless
+ * explicitly enabled in the config).
  */
 public class GraphQLFederationDisabledTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FooApi.class, Foo.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FooApi.class, Foo.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void checkSchemaDoesNotIncludeServiceDeclaration() {
-        RestAssured.given()
-                .get("/graphql/schema.graphql")
-                .then()
-                .body(not(containsString("type _Service {")));
+        RestAssured.given().get("/graphql/schema.graphql").then().body(not(containsString("type _Service {")));
     }
 
     @GraphQLApi

@@ -12,25 +12,18 @@ public class OpenApiDefaultPathTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiRoute.class));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiRoute.class));
 
     @Test
     public void testOpenApiPathAccessResource() {
-        RestAssured.given().header("Accept", "application/yaml")
-                .when().get(OPEN_API_PATH)
-                .then().header("Content-Type", "application/yaml;charset=UTF-8");
-        RestAssured.given().queryParam("format", "YAML")
-                .when().get(OPEN_API_PATH)
-                .then().header("Content-Type", "application/yaml;charset=UTF-8");
-        RestAssured.given().header("Accept", "application/json")
-                .when().get(OPEN_API_PATH)
-                .then().header("Content-Type", "application/json;charset=UTF-8");
-        RestAssured.given().queryParam("format", "JSON")
-                .when().get(OPEN_API_PATH)
-                .then()
-                .header("Content-Type", "application/json;charset=UTF-8")
-                .body("openapi", Matchers.startsWith("3.1"))
+        RestAssured.given().header("Accept", "application/yaml").when().get(OPEN_API_PATH).then().header("Content-Type",
+                "application/yaml;charset=UTF-8");
+        RestAssured.given().queryParam("format", "YAML").when().get(OPEN_API_PATH).then().header("Content-Type",
+                "application/yaml;charset=UTF-8");
+        RestAssured.given().header("Accept", "application/json").when().get(OPEN_API_PATH).then().header("Content-Type",
+                "application/json;charset=UTF-8");
+        RestAssured.given().queryParam("format", "JSON").when().get(OPEN_API_PATH).then()
+                .header("Content-Type", "application/json;charset=UTF-8").body("openapi", Matchers.startsWith("3.1"))
                 .body("info.title", Matchers.equalTo("quarkus-smallrye-openapi-deployment API"))
                 .body("paths", Matchers.hasKey("/resource"));
     }

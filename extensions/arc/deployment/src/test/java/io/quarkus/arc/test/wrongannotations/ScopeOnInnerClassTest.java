@@ -15,9 +15,7 @@ public class ScopeOnInnerClassTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IgnoredClass.class))
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(IgnoredClass.class)).assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertTrue(
                         rootCause.getMessage().contains(

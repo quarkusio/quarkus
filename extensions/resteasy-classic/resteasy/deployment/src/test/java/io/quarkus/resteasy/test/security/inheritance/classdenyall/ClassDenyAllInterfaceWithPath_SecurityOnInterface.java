@@ -30,12 +30,13 @@ public interface ClassDenyAllInterfaceWithPath_SecurityOnInterface {
 
     @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_DENY_ALL_PATH)
     default ClassDenyAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnInterface_ClassDenyAll() {
-        return new ClassDenyAllSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_INTERFACE + CLASS_DENY_ALL_PATH);
+        return new ClassDenyAllSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_DENY_ALL_PATH);
     }
 
     @PermitAll
-    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
+    @Path(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_INTERFACE
+            + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
     default ClassDenyAllSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnInterface_ClassDenyAllMethodPermitAll() {
         return new ClassDenyAllSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
                 + SUB_IMPL_ON_INTERFACE + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH);
@@ -58,15 +59,20 @@ public interface ClassDenyAllInterfaceWithPath_SecurityOnInterface {
     @PermitAll
     @POST
     @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH)
-    default String classPathOnInterface_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
+    default String classPathOnInterface_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
     @RolesAllowed("admin")
     @POST
-    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
-    default String classPathOnInterface_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodRolesAllowed(JsonObject array) {
-        return CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
+    @Path(CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH
+            + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH)
+    default String classPathOnInterface_ImplOnInterface_ImplMethodWithPath_ClassDenyAllMethodRolesAllowed(
+            JsonObject array) {
+        return CLASS_PATH_ON_INTERFACE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH
+                + CLASS_DENY_ALL_METHOD_ROLES_ALLOWED_PATH;
     }
 
 }

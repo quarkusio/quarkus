@@ -19,10 +19,8 @@ public class UnbuildableSpringRestControllerInterfaceTest {
 
     @RegisterExtension
     static final QuarkusProdModeTest config = new QuarkusProdModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnbuildableControllerInterface.class))
-            .setApplicationName("unbuildable-rest-controller-interface")
-            .setApplicationVersion("0.1-SNAPSHOT")
+            .withApplicationRoot((jar) -> jar.addClasses(UnbuildableControllerInterface.class))
+            .setApplicationName("unbuildable-rest-controller-interface").setApplicationVersion("0.1-SNAPSHOT")
             .assertBuildException(throwable -> {
                 assertThat(throwable).isInstanceOf(RuntimeException.class);
                 assertThat(throwable).hasMessageContaining(

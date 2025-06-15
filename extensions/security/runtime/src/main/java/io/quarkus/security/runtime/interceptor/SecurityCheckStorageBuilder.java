@@ -11,9 +11,7 @@ public class SecurityCheckStorageBuilder {
     private final Map<MethodDescription, SecurityCheck> securityChecks = new HashMap<>();
     private SecurityCheck defaultSecurityCheck;
 
-    public void registerCheck(String className,
-            String methodName,
-            String[] parameterTypes,
+    public void registerCheck(String className, String methodName, String[] parameterTypes,
             SecurityCheck securityCheck) {
         securityChecks.put(new MethodDescription(className, methodName, parameterTypes), securityCheck);
     }

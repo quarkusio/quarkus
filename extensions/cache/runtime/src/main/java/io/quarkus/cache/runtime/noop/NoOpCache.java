@@ -8,8 +8,8 @@ import io.quarkus.cache.runtime.AbstractCache;
 import io.smallrye.mutiny.Uni;
 
 /**
- * This class is an internal Quarkus cache implementation. Do not use it explicitly from your Quarkus application. The public
- * methods signatures may change without prior notice.
+ * This class is an internal Quarkus cache implementation. Do not use it explicitly from your Quarkus application. The
+ * public methods signatures may change without prior notice.
  */
 public class NoOpCache extends AbstractCache {
 

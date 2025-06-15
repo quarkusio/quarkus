@@ -90,7 +90,8 @@ public class SimpleBeanParam {
         Assertions.assertNull(missing);
         Assertions.assertEquals("there", missingWithDefaultValue);
         Assertions.assertNull(missingParameterWithFromString);
-        Assertions.assertEquals("ParameterWithFromString[val=there]", missingParameterWithFromStringAndDefaultValue.toString());
+        Assertions.assertEquals("ParameterWithFromString[val=there]",
+                missingParameterWithFromStringAndDefaultValue.toString());
         Assertions.assertEquals(666, primitiveParam);
         Assertions.assertEquals(0, missingPrimitiveParam);
         Assertions.assertEquals(42, missingPrimitiveParamWithDefaultValue);
@@ -98,6 +99,7 @@ public class SimpleBeanParam {
         Assertions.assertEquals("one-queryone-query", myParameterList.get(0).toString());
         Assertions.assertTrue(missingOptionalString.isEmpty());
         Assertions.assertEquals("one-query", optionalQuery.get());
-        Assertions.assertEquals("ParameterWithFromString[val=one-query]", optionalParameterWithFromString.get().toString());
+        Assertions.assertEquals("ParameterWithFromString[val=one-query]",
+                optionalParameterWithFromString.get().toString());
     }
 }

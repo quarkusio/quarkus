@@ -35,7 +35,9 @@ public class IncrementArgs implements RedisCommandExtraArguments {
      * <p>
      * When not specified, the timestamp is set according to the server clock.
      *
-     * @param value the value
+     * @param value
+     *        the value
+     *
      * @return the current {@code IncrementArgs}
      */
     public IncrementArgs setTimestamp(long value) {
@@ -46,10 +48,12 @@ public class IncrementArgs implements RedisCommandExtraArguments {
     /**
      * Set the maximum retention period, compared to the maximum existing timestamp, in milliseconds.
      * <p>
-     * Use it only if you are creating a new time series.
-     * It is ignored if you are adding samples to an existing time series.
+     * Use it only if you are creating a new time series. It is ignored if you are adding samples to an existing time
+     * series.
      *
-     * @param retention the retention, must not be {@code null}
+     * @param retention
+     *        the retention, must not be {@code null}
+     *
      * @return the current {@code IncrementArgs}
      */
     public IncrementArgs setRetention(Duration retention) {
@@ -60,8 +64,8 @@ public class IncrementArgs implements RedisCommandExtraArguments {
     /**
      * Changes data storage from compressed (default) to uncompressed.
      * <p>
-     * Use it only if you are creating a new time series.
-     * It is ignored if you are adding samples to an existing time series
+     * Use it only if you are creating a new time series. It is ignored if you are adding samples to an existing time
+     * series
      *
      * @return the current {@code IncrementArgs}
      */
@@ -71,10 +75,12 @@ public class IncrementArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Sets memory size, in bytes, allocated for each data chunk. Use it only if you are creating a new time series.
-     * It is ignored if you are adding samples to an existing time series.
+     * Sets memory size, in bytes, allocated for each data chunk. Use it only if you are creating a new time series. It
+     * is ignored if you are adding samples to an existing time series.
      *
-     * @param size the chunk size, between 48 and 1048576
+     * @param size
+     *        the chunk size, between 48 and 1048576
+     *
      * @return the current {@code IncrementArgs}
      */
     public IncrementArgs chunkSize(int size) {
@@ -85,8 +91,11 @@ public class IncrementArgs implements RedisCommandExtraArguments {
     /**
      * Set a label-value pairs that represent metadata labels of the time series.
      *
-     * @param label the label, must not be {@code null}
-     * @param value the value, must not be {@code  null}
+     * @param label
+     *        the label, must not be {@code null}
+     * @param value
+     *        the value, must not be {@code  null}
+     *
      * @return the current {@code IncrementArgs}
      */
     public IncrementArgs label(String label, Object value) {

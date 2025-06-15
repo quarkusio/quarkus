@@ -14,16 +14,12 @@ import io.smallrye.config.WithParentName;
 @ConfigGroup
 public interface HibernateSearchBackendElasticsearchBuildTimeConfig {
     /**
-     * The version of Elasticsearch used in the cluster.
-     *
-     * As the schema is generated without a connection to the server, this item is mandatory.
-     *
-     * It doesn't have to be the exact version (it can be `7` or `7.1` for instance) but it has to be sufficiently precise
-     * to choose a model dialect (the one used to generate the schema) compatible with the protocol dialect (the one used
-     * to communicate with Elasticsearch).
-     *
-     * There's no rule of thumb here as it depends on the schema incompatibilities introduced by Elasticsearch versions. In
-     * any case, if there is a problem, you will have an error when Hibernate Search tries to connect to the cluster.
+     * The version of Elasticsearch used in the cluster. As the schema is generated without a connection to the server,
+     * this item is mandatory. It doesn't have to be the exact version (it can be `7` or `7.1` for instance) but it has
+     * to be sufficiently precise to choose a model dialect (the one used to generate the schema) compatible with the
+     * protocol dialect (the one used to communicate with Elasticsearch). There's no rule of thumb here as it depends on
+     * the schema incompatibilities introduced by Elasticsearch versions. In any case, if there is a problem, you will
+     * have an error when Hibernate Search tries to connect to the cluster.
      *
      * @asciidoclet
      */
@@ -45,8 +41,8 @@ public interface HibernateSearchBackendElasticsearchBuildTimeConfig {
     @ConfigGroup
     interface IndexConfig {
         /**
-         * Configuration for automatic creation and validation of the Elasticsearch schema:
-         * indexes, their mapping, their settings.
+         * Configuration for automatic creation and validation of the Elasticsearch schema: indexes, their mapping,
+         * their settings.
          */
         SchemaManagementConfig schemaManagement();
 
@@ -97,24 +93,14 @@ public interface HibernateSearchBackendElasticsearchBuildTimeConfig {
     @ConfigGroup
     interface AnalysisConfig {
         /**
-         * One or more xref:#bean-reference-note-anchor[bean references]
-         * to the component(s) used to configure full text analysis (e.g. analyzers, normalizers).
-         *
-         * The referenced beans must implement `ElasticsearchAnalysisConfigurer`.
-         *
-         * See xref:#analysis-configurer[Setting up the analyzers] for more
-         * information.
-         *
-         * [NOTE]
-         * ====
-         * Instead of setting this configuration property,
-         * you can simply annotate your custom `ElasticsearchAnalysisConfigurer` implementations with `@SearchExtension`
-         * and leave the configuration property unset: Hibernate Search will use the annotated implementation automatically.
-         * See xref:#plugging-in-custom-components[this section]
-         * for more information.
-         *
-         * If this configuration property is set, it takes precedence over any `@SearchExtension` annotation.
-         * ====
+         * One or more xref:#bean-reference-note-anchor[bean references] to the component(s) used to configure full text
+         * analysis (e.g. analyzers, normalizers). The referenced beans must implement
+         * `ElasticsearchAnalysisConfigurer`. See xref:#analysis-configurer[Setting up the analyzers] for more
+         * information. [NOTE] ==== Instead of setting this configuration property, you can simply annotate your custom
+         * `ElasticsearchAnalysisConfigurer` implementations with `@SearchExtension` and leave the configuration
+         * property unset: Hibernate Search will use the annotated implementation automatically. See
+         * xref:#plugging-in-custom-components[this section] for more information. If this configuration property is
+         * set, it takes precedence over any `@SearchExtension` annotation. ====
          *
          * @asciidoclet
          */

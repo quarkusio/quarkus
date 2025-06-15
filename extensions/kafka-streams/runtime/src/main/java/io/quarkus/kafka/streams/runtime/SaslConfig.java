@@ -59,8 +59,8 @@ public interface SaslConfig {
     Optional<Long> kerberosMinTimeBeforeRelogin();
 
     /**
-     * Login refresh thread will sleep until the specified window factor relative to the
-     * credential's lifetime has been reached-
+     * Login refresh thread will sleep until the specified window factor relative to the credential's lifetime has been
+     * reached-
      */
     Optional<Double> loginRefreshWindowFactor();
 

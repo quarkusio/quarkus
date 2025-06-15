@@ -25,8 +25,9 @@ class HibernateSearchElasticsearchDisabledProcessor {
             BuildProducer<HibernateOrmIntegrationStaticConfiguredBuildItem> staticIntegrations) {
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             String puName = puDescriptor.getPersistenceUnitName();
-            staticIntegrations.produce(new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    puName).setInitListener(recorder.createStaticInitInactiveListener()));
+            staticIntegrations.produce(
+                    new HibernateOrmIntegrationStaticConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
+                            .setInitListener(recorder.createStaticInitInactiveListener()));
         }
     }
 
@@ -39,8 +40,9 @@ class HibernateSearchElasticsearchDisabledProcessor {
         recorder.checkNoExplicitActiveTrue(runtimeConfig);
         for (PersistenceUnitDescriptorBuildItem puDescriptor : persistenceUnitDescriptorBuildItems) {
             String puName = puDescriptor.getPersistenceUnitName();
-            runtimeIntegrations.produce(new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH,
-                    puName).setInitListener(recorder.createRuntimeInitInactiveListener()));
+            runtimeIntegrations.produce(
+                    new HibernateOrmIntegrationRuntimeConfiguredBuildItem(HIBERNATE_SEARCH_ELASTICSEARCH, puName)
+                            .setInitListener(recorder.createRuntimeInitInactiveListener()));
         }
     }
 

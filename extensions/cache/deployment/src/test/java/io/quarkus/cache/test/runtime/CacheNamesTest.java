@@ -44,9 +44,9 @@ public class CacheNamesTest {
     @Test
     public void testCacheNamesCollection() {
         /*
-         * The main goal of this test is to check that a cache with an empty name is not instantiated at build time because of
-         * the bindings with an empty `cacheName` parameter from the cache interceptors or because of the @CacheName annotation
-         * in CacheProducer.
+         * The main goal of this test is to check that a cache with an empty name is not instantiated at build time
+         * because of the bindings with an empty `cacheName` parameter from the cache interceptors or because of
+         * the @CacheName annotation in CacheProducer.
          */
         List<String> cacheNames = new ArrayList<>(cacheManager.getCacheNames());
         assertEquals(4, cacheNames.size());

@@ -68,13 +68,13 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
     /**
      * <p>
-     * Looking for the {@link Transactional} annotation first on the method,
-     * second on the class.
+     * Looking for the {@link Transactional} annotation first on the method, second on the class.
      * <p>
-     * Method handles CDI types to cover cases where extensions are used. In
-     * case of EE container uses reflection.
+     * Method handles CDI types to cover cases where extensions are used. In case of EE container uses reflection.
      *
-     * @param ic invocation context of the interceptor
+     * @param ic
+     *        invocation context of the interceptor
+     *
      * @return instance of {@link Transactional} annotation or null
      */
     private Transactional getTransactional(InvocationContext ic) {
@@ -108,8 +108,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         });
     }
 
-    protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm, RunnableWithException afterEndTransaction)
-            throws Exception {
+    protected Object invokeInOurTx(InvocationContext ic, TransactionManager tm,
+            RunnableWithException afterEndTransaction) throws Exception {
 
         int timeoutConfiguredForMethod = getTransactionTimeoutFromAnnotation(ic);
 
@@ -183,8 +183,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     private boolean isSomePublisher(InvocationContext ic, Object ret) {
-        return isLegacyPublisher(ret) || (ic.getMethod().getReturnType() == Publisher.class)
-                || isFlowPublisher(ret) || (ic.getMethod().getReturnType() == Flow.Publisher.class);
+        return isLegacyPublisher(ret) || (ic.getMethod().getReturnType() == Publisher.class) || isFlowPublisher(ret)
+                || (ic.getMethod().getReturnType() == Flow.Publisher.class);
     }
 
     private static boolean isFlowPublisher(Object ret) {
@@ -204,7 +204,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
 
         int transactionTimeout = -1;
 
-        if (!configAnnotation.timeoutFromConfigProperty().equals(TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY)) {
+        if (!configAnnotation.timeoutFromConfigProperty()
+                .equals(TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY)) {
             Integer timeoutForMethod = methodTransactionTimeoutDefinedByPropertyCache.get(ic.getMethod());
             if (timeoutForMethod != null) {
                 transactionTimeout = timeoutForMethod;
@@ -213,7 +214,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                         new Function<Method, Integer>() {
                             @Override
                             public Integer apply(Method m) {
-                                return TransactionalInterceptorBase.this.getTransactionTimeoutPropertyValue(configAnnotation);
+                                return TransactionalInterceptorBase.this
+                                        .getTransactionTimeoutPropertyValue(configAnnotation);
                             }
                         });
             }
@@ -231,7 +233,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
                 .getOptionalValue(configAnnotation.timeoutFromConfigProperty(), Integer.class);
         if (configTimeout.isEmpty()) {
             if (log.isDebugEnabled()) {
-                log.debugf("Configuration property '%s' was not provided, so it will not affect the transaction's timeout.",
+                log.debugf(
+                        "Configuration property '%s' was not provided, so it will not affect the transaction's timeout.",
                         configAnnotation.timeoutFromConfigProperty());
             }
             return -1;
@@ -279,32 +282,31 @@ public abstract class TransactionalInterceptorBase implements Serializable {
             } else {
                 pub = (Flow.Publisher<?>) ret;
             }
-            ret = Multi.createFrom().publisher(pub)
-                    .onFailure().invoke(t -> {
-                        try {
-                            doInTransaction(tm, tx, () -> handleExceptionNoThrow(ic, t, tx));
-                        } catch (RuntimeException e) {
-                            e.addSuppressed(t);
-                            throw e;
-                        } catch (Exception e) {
-                            RuntimeException x = new RuntimeException(e);
-                            x.addSuppressed(t);
-                            throw x;
-                        }
-                        // pass-through the previous result
-                        if (t instanceof RuntimeException)
-                            throw (RuntimeException) t;
-                        throw new RuntimeException(t);
-                    }).onTermination().invoke(() -> {
-                        try {
-                            doInTransaction(tm, tx, () -> endTransaction(tm, tx, () -> {
-                            }));
-                        } catch (RuntimeException e) {
-                            throw e;
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    });
+            ret = Multi.createFrom().publisher(pub).onFailure().invoke(t -> {
+                try {
+                    doInTransaction(tm, tx, () -> handleExceptionNoThrow(ic, t, tx));
+                } catch (RuntimeException e) {
+                    e.addSuppressed(t);
+                    throw e;
+                } catch (Exception e) {
+                    RuntimeException x = new RuntimeException(e);
+                    x.addSuppressed(t);
+                    throw x;
+                }
+                // pass-through the previous result
+                if (t instanceof RuntimeException)
+                    throw (RuntimeException) t;
+                throw new RuntimeException(t);
+            }).onTermination().invoke(() -> {
+                try {
+                    doInTransaction(tm, tx, () -> endTransaction(tm, tx, () -> {
+                    }));
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
             if (isLegacyRS) {
                 ret = AdaptersToReactiveStreams.publisher((Multi<?>) ret);
             }
@@ -349,8 +351,8 @@ public abstract class TransactionalInterceptorBase implements Serializable {
         if (configAnnotation != null && ((configAnnotation.timeout() != TransactionConfiguration.UNSET_TIMEOUT)
                 || !TransactionConfiguration.UNSET_TIMEOUT_CONFIG_PROPERTY
                         .equals(configAnnotation.timeoutFromConfigProperty()))) {
-            throw new RuntimeException("Changing timeout via @TransactionConfiguration can only be done " +
-                    "at the entry level of a transaction");
+            throw new RuntimeException("Changing timeout via @TransactionConfiguration can only be done "
+                    + "at the entry level of a transaction");
         }
     }
 
@@ -423,9 +425,9 @@ public abstract class TransactionalInterceptorBase implements Serializable {
     }
 
     /**
-     * A utility method to throw any exception as a {@link RuntimeException}.
-     * We may throw a checked exception (subtype of {@code Throwable} or {@code Exception}) as un-checked exception.
-     * This considers the Java 8 inference rule that states that a {@code throws E} is inferred as {@code RuntimeException}.
+     * A utility method to throw any exception as a {@link RuntimeException}. We may throw a checked exception (subtype
+     * of {@code Throwable} or {@code Exception}) as un-checked exception. This considers the Java 8 inference rule that
+     * states that a {@code throws E} is inferred as {@code RuntimeException}.
      * <p>
      * This method can be used in {@code throw} statement such as: {@code throw sneakyThrow(exception);}.
      */

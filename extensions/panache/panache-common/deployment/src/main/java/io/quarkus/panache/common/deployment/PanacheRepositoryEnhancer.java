@@ -21,7 +21,6 @@ public abstract class PanacheRepositoryEnhancer implements BiFunction<String, Cl
     public boolean skipRepository(ClassInfo classInfo) {
         // we don't want to add methods to abstract/generic entities/repositories: they get added to bottom types
         // which can't be either
-        return Modifier.isAbstract(classInfo.flags())
-                || !classInfo.typeParameters().isEmpty();
+        return Modifier.isAbstract(classInfo.flags()) || !classInfo.typeParameters().isEmpty();
     }
 }

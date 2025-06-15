@@ -26,7 +26,9 @@ public class AggregateOptions {
     /**
      * Enables writing to temporary files. A null value indicates that it's unspecified.
      *
-     * @param allowDiskUse true if writing to temporary files is enabled
+     * @param allowDiskUse
+     *        true if writing to temporary files is enabled
+     *
      * @return this
      */
     public AggregateOptions allowDiskUse(boolean allowDiskUse) {
@@ -37,8 +39,11 @@ public class AggregateOptions {
     /**
      * Sets the maximum execution time on the server for this operation.
      *
-     * @param maxTime the max time
-     * @param timeUnit the time unit, which may not be null
+     * @param maxTime
+     *        the max time
+     * @param timeUnit
+     *        the time unit, which may not be null
+     *
      * @return this
      */
     public AggregateOptions maxTime(long maxTime, TimeUnit timeUnit) {
@@ -48,12 +53,16 @@ public class AggregateOptions {
     }
 
     /**
-     * The maximum amount of time for the server to wait on new documents to satisfy a {@code $changeStream} aggregation.
+     * The maximum amount of time for the server to wait on new documents to satisfy a {@code $changeStream}
+     * aggregation.
      * <p>
      * A zero value will be ignored.
      *
-     * @param maxAwaitTime the max await time
-     * @param timeUnit the time unit to return the result in
+     * @param maxAwaitTime
+     *        the max await time
+     * @param timeUnit
+     *        the time unit to return the result in
+     *
      * @return the maximum await execution time in the given time unit
      */
     public AggregateOptions maxAwaitTime(long maxAwaitTime, TimeUnit timeUnit) {
@@ -64,13 +73,14 @@ public class AggregateOptions {
 
     /**
      * Sets the bypass document level validation flag.
-     *
      * <p>
      * Note: This only applies when an $out stage is specified
      * </p>
      * .
      *
-     * @param bypassDocumentValidation If true, allows the write to opt-out of document level validation.
+     * @param bypassDocumentValidation
+     *        If true, allows the write to opt-out of document level validation.
+     *
      * @return this
      */
     public AggregateOptions bypassDocumentValidation(boolean bypassDocumentValidation) {
@@ -80,12 +90,13 @@ public class AggregateOptions {
 
     /**
      * Sets the collation options
-     *
      * <p>
      * A null value represents the server default.
      * </p>
      *
-     * @param collation the collation options to use
+     * @param collation
+     *        the collation options to use
+     *
      * @return this
      */
     public AggregateOptions collation(Collation collation) {
@@ -96,7 +107,9 @@ public class AggregateOptions {
     /**
      * Sets the comment to the aggregation. A null value means no comment is set.
      *
-     * @param comment the comment
+     * @param comment
+     *        the comment
+     *
      * @return this
      */
     public AggregateOptions comment(String comment) {
@@ -107,7 +120,9 @@ public class AggregateOptions {
     /**
      * Sets the hint for which index to use. A null value means no hint is set.
      *
-     * @param hint the hint
+     * @param hint
+     *        the hint
+     *
      * @return this
      */
     public AggregateOptions hint(Bson hint) {
@@ -117,14 +132,14 @@ public class AggregateOptions {
 
     /**
      * Sets the number of documents to return per batch.
-     *
      * <p>
-     * Overrides the {@link org.reactivestreams.Subscription#request(long)} value for setting the batch size, allowing for fine
-     * grained
-     * control over the underlying cursor.
+     * Overrides the {@link org.reactivestreams.Subscription#request(long)} value for setting the batch size, allowing
+     * for fine grained control over the underlying cursor.
      * </p>
      *
-     * @param size the batch size
+     * @param size
+     *        the batch size
+     *
      * @return this
      */
     public AggregateOptions batchSize(int size) {

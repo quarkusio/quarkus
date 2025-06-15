@@ -8,9 +8,9 @@ import java.util.stream.Stream;
 
 /**
  * This class is used to copy classes and resources from the dependencies of the launcher to the classes directory
- * hiding it under the META-INF from the default classloader.
- * Besides that it collects {@code META-INFO/sisu/javax.inject.Named} resources from the dependencies and merges
- * them into a single file so that the Maven resolver can properly be initialized from the launcher.
+ * hiding it under the META-INF from the default classloader. Besides that it collects
+ * {@code META-INFO/sisu/javax.inject.Named} resources from the dependencies and merges them into a single file so that
+ * the Maven resolver can properly be initialized from the launcher.
  */
 public class LauncherShader {
 

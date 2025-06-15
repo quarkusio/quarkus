@@ -12,10 +12,8 @@ import io.micrometer.core.instrument.binder.kafka.KafkaStreamsMetrics;
 import io.quarkus.runtime.ShutdownEvent;
 
 /**
- * Observer to create and register KafkaStreamsMetrics.
- *
- * Must be separated from KafkaEventObserver, because they use different dependencies and if only "kafka-client" is used, the
- * classes from "kafka-streams" aren't loaded.
+ * Observer to create and register KafkaStreamsMetrics. Must be separated from KafkaEventObserver, because they use
+ * different dependencies and if only "kafka-client" is used, the classes from "kafka-streams" aren't loaded.
  */
 @ApplicationScoped
 public class KafkaStreamsEventObserver {
@@ -25,12 +23,12 @@ public class KafkaStreamsEventObserver {
     KafkaStreamsMetrics kafkaStreamsMetrics;
 
     /**
-     * Manage bind/close of KafkaStreamsMetrics for the specified KafkaStreams client.
-     * If the kafkaStreams has not been seen before, it will be bound to the
-     * Micrometer registry and instrumented using a Kafka MeterBinder.
-     * If the kafkaStreams has been seen before, the MeterBinder will be closed.
+     * Manage bind/close of KafkaStreamsMetrics for the specified KafkaStreams client. If the kafkaStreams has not been
+     * seen before, it will be bound to the Micrometer registry and instrumented using a Kafka MeterBinder. If the
+     * kafkaStreams has been seen before, the MeterBinder will be closed.
      *
-     * @param kafkaStreams Observed KafkaStreams instance
+     * @param kafkaStreams
+     *        Observed KafkaStreams instance
      */
     public synchronized void kafkaStreamsCreated(@Observes KafkaStreams kafkaStreams) {
         if (kafkaStreamsMetrics == null) {

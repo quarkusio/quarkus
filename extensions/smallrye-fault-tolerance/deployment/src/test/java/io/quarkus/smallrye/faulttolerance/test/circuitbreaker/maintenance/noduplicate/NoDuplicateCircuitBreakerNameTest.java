@@ -15,8 +15,7 @@ import io.smallrye.faulttolerance.api.CircuitBreakerState;
 public class NoDuplicateCircuitBreakerNameTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(CircuitBreakerService1.class, CircuitBreakerService2.class));
+            .withApplicationRoot((jar) -> jar.addClasses(CircuitBreakerService1.class, CircuitBreakerService2.class));
 
     @Inject
     CircuitBreakerMaintenance cb;

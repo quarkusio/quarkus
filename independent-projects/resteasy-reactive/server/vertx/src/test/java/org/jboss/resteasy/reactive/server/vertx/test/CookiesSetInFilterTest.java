@@ -22,26 +22,17 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class CookiesSetInFilterTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestResource.class, Filters.class));
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(TestResource.class, Filters.class));
 
     @Test
     void requestDoesNotContainCookie() {
-        when().get("/test")
-                .then()
-                .statusCode(200)
-                .body(is("foo"));
+        when().get("/test").then().statusCode(200).body(is("foo"));
     }
 
     @Test
     void requestContainsCookie() {
-        given()
-                .cookie("dummy", "bar")
-                .when().get("/test")
-                .then()
-                .statusCode(200)
-                .body(is("bar"));
+        given().cookie("dummy", "bar").when().get("/test").then().statusCode(200).body(is("bar"));
     }
 
     @Path("test")

@@ -17,12 +17,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OtelLogsDisabledTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=false\n" +
-                                            "quarkus.otel.traces.enabled=false\n"),
-                                    "application.properties"));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).add(
+                    new StringAsset("quarkus.otel.logs.enabled=false\n" + "quarkus.otel.traces.enabled=false\n"),
+                    "application.properties"));
 
     @Inject
     Instance<LogRecordExporter> logRecordExporter;

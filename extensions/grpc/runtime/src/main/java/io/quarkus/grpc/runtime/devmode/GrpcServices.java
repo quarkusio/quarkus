@@ -91,9 +91,8 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
             Map<String, String> prototypes = DevConsoleManager.getGlobal("io.quarkus.grpc.messagePrototypes");
             List<MethodAndPrototype> methods = new ArrayList<>();
             for (ServerMethodDefinition<?, ?> method : getMethods()) {
-                methods.add(
-                        new MethodAndPrototype(method,
-                                prototypes.get(method.getMethodDescriptor().getFullMethodName() + "_REQUEST")));
+                methods.add(new MethodAndPrototype(method,
+                        prototypes.get(method.getMethodDescriptor().getFullMethodName() + "_REQUEST")));
             }
             return methods;
         }
@@ -114,7 +113,8 @@ public class GrpcServices extends AbstractMap<String, ServiceDefinitionAndStatus
         }
 
         public boolean hasTestableMethod() {
-            if (configuration.server().ssl().certificate().isPresent() || configuration.server().ssl().keyStore().isPresent()) {
+            if (configuration.server().ssl().certificate().isPresent()
+                    || configuration.server().ssl().keyStore().isPresent()) {
                 return false;
             }
             Map<String, String> prototypes = DevConsoleManager.getGlobal("io.quarkus.grpc.messagePrototypes");

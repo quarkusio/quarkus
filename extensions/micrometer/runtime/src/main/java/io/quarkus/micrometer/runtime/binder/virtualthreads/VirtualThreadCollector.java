@@ -21,8 +21,8 @@ import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.util.JavaVersionUtil;
 
 /**
- * A component collecting metrics about virtual threads.
- * It will be only available when the virtual threads are enabled (Java 21+).
+ * A component collecting metrics about virtual threads. It will be only available when the virtual threads are enabled
+ * (Java 21+).
  * <p>
  * Note that metrics are collected using JFR events.
  */
@@ -64,7 +64,9 @@ public class VirtualThreadCollector {
     /**
      * Use reflection to avoid calling a class touching Java 21+ APIs.
      *
-     * @param tags the tags.
+     * @param tags
+     *        the tags.
+     *
      * @return the binder, {@code null} if the instantiation failed.
      */
     public MeterBinder instantiate(List<Tag> tags) {

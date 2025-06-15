@@ -9,7 +9,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import io.quarkus.amazon.lambda.deployment.testing.model.InputPerson;
 import io.quarkus.amazon.lambda.deployment.testing.model.OutputPerson;
 
-public abstract class AbstractInputCollectionOutputCollection implements RequestHandler<List<InputPerson>, List<OutputPerson>> {
+public abstract class AbstractInputCollectionOutputCollection
+        implements RequestHandler<List<InputPerson>, List<OutputPerson>> {
 
     @Override
     public List<OutputPerson> handleRequest(List<InputPerson> inputPeronList, Context context) {

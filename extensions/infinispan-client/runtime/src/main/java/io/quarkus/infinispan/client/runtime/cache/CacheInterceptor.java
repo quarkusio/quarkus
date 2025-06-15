@@ -29,17 +29,19 @@ public abstract class CacheInterceptor {
 
     // These annotations work with the default cache manager only, named connections are not supported.
     // The configuration of the named connection will be supported in the infinispan-cache extension
-    RemoteCacheManager remoteCacheManager = Arc.container().instance(RemoteCacheManager.class, Default.Literal.INSTANCE).get();
+    RemoteCacheManager remoteCacheManager = Arc.container().instance(RemoteCacheManager.class, Default.Literal.INSTANCE)
+            .get();
 
     /*
-     * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve the
-     * interceptor bindings stored by Arc in the invocation context data (very good performance-wise). But sometimes the
-     * interception is managed by another CDI interceptors implementation. It can happen for example while using caching
-     * annotations on a MicroProfile REST Client method. In that case, we have no other choice but to rely on reflection (with
-     * underlying synchronized blocks which are bad for performances) to retrieve the interceptor bindings.
+     * The interception is almost always managed by Arc in a Quarkus application. In such a case, we want to retrieve
+     * the interceptor bindings stored by Arc in the invocation context data (very good performance-wise). But sometimes
+     * the interception is managed by another CDI interceptors implementation. It can happen for example while using
+     * caching annotations on a MicroProfile REST Client method. In that case, we have no other choice but to rely on
+     * reflection (with underlying synchronized blocks which are bad for performances) to retrieve the interceptor
+     * bindings.
      */
-    protected <T extends Annotation> CacheInterceptionContext<T> getInterceptionContext(InvocationContext invocationContext,
-            Class<T> interceptorBindingClass) {
+    protected <T extends Annotation> CacheInterceptionContext<T> getInterceptionContext(
+            InvocationContext invocationContext, Class<T> interceptorBindingClass) {
         return getArcCacheInterceptionContext(invocationContext, interceptorBindingClass)
                 .orElseGet(new Supplier<CacheInterceptionContext<T>>() {
                     @Override
@@ -91,7 +93,8 @@ public abstract class CacheInterceptor {
             return methodParameterValues[0];
         } else {
             // Protobuf type must be used
-            return new RuntimeException("A single parameter is needed. Create a Protobuf schema to create a Composite Key.");
+            return new RuntimeException(
+                    "A single parameter is needed. Create a Protobuf schema to create a Composite Key.");
         }
     }
 

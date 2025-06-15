@@ -58,15 +58,13 @@ public class ImageResource {
     Application application;
 
     /**
-     * DECODERS
+     * DECODERS Converts any JDK supported image types to PNG, reading metadata along the way. The point is to exercise
+     * code that needs reflection and JNI access in packages such as javax.imageio.plugins.
      *
-     * Converts any JDK supported image types to PNG,
-     * reading metadata along the way. The point is to
-     * exercise code that needs reflection and JNI access
-     * in packages such as javax.imageio.plugins.
-     *
-     * @param data images in JDK supported formats
-     * @param filename name of the file, used to get the extension and mark log
+     * @param data
+     *        images in JDK supported formats
+     * @param filename
+     *        name of the file, used to get the extension and mark log
      */
     @POST
     @Consumes(MediaType.MULTIPART_FORM_DATA)
@@ -85,56 +83,47 @@ public class ImageResource {
                 ImageIO.write(image, "PNG", bos);
             } else {
                 final ImageReader imageReader = ImageIO.getImageReadersByFormatName(extension).next();
-                imageReader.setInput(
-                        ImageIO.createImageInputStream(bin),
-                        true);
+                imageReader.setInput(ImageIO.createImageInputStream(bin), true);
                 // Reads both image data and metadata. It exposes code paths in e.g. TIFF plugin.
                 final IIOImage iioimg = imageReader.readAll(0, imageReader.getDefaultReadParam());
                 colorSpaceName = iioimg.getRenderedImage().getColorModel().getColorSpace().toString();
                 final IIOMetadataNode root = (IIOMetadataNode) iioimg.getMetadata()
                         .getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
                 // To read some attributes:
-                final IIOMetadataNode compressionNode = (IIOMetadataNode) root.getElementsByTagName("CompressionTypeName")
-                        .item(0);
+                final IIOMetadataNode compressionNode = (IIOMetadataNode) root
+                        .getElementsByTagName("CompressionTypeName").item(0);
                 if (compressionNode != null) {
                     compressionName = compressionNode.getAttribute("value");
                 }
                 ImageIO.write(iioimg.getRenderedImage(), "PNG", bos);
             }
 
-            return Response
-                    .accepted()
-                    .type(MediaType.APPLICATION_OCTET_STREAM_TYPE)
-                    .entity(bos.toByteArray())
-                    .header("color-space", colorSpaceName)
-                    .header("compression", compressionName)
-                    .build();
+            return Response.accepted().type(MediaType.APPLICATION_OCTET_STREAM_TYPE).entity(bos.toByteArray())
+                    .header("color-space", colorSpaceName).header("compression", compressionName).build();
         }
     }
 
     /**
-     * ENCODERS
+     * ENCODERS Endpoint creates a simple image of a square within a square and encodes this image with various
+     * encoders, compressors and colour models according to the request. The aim is to exhaust common code paths in
+     * native-image initialization.
      *
-     * Endpoint creates a simple image of a square within a square
-     * and encodes this image with various encoders, compressors and
-     * colour models according to the request.
+     * @param type
+     *        image type, e.g. TYPE_INT_ARGB_PRE
+     * @param format
+     *        e.g. GIF
+     * @param cs
+     *        e.g. CS_sRGB
+     * @param compress
+     *        e.g. LZW
      *
-     * The aim is to exhaust common code paths in native-image initialization.
-     *
-     * @param type image type, e.g. TYPE_INT_ARGB_PRE
-     * @param format e.g. GIF
-     * @param cs e.g. CS_sRGB
-     * @param compress e.g. LZW
      * @return encoded image
      */
     @GET
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     @Path("/generate/{type}/{format}/{cs}/{compress}")
-    public Response image(
-            @PathParam("type") ImageType type,
-            @PathParam("format") String format,
-            @PathParam("cs") ColorSpaceEnum cs,
-            @PathParam("compress") String compress) throws IOException {
+    public Response image(@PathParam("type") ImageType type, @PathParam("format") String format,
+            @PathParam("cs") ColorSpaceEnum cs, @PathParam("compress") String compress) throws IOException {
 
         final BufferedImage img = simpleRectangular(type);
         // Used only in TIFF, but we calculate the ColorModel for others too to touch the code path.
@@ -172,19 +161,16 @@ public class ImageResource {
             } else if ("GIF".equalsIgnoreCase(format)) {
                 writeGIF(writer, iioMetadata, params, desc, img);
             } else {
-                //BMP and WBMP metadata are immutable, and we don't replace them with anything, so use the default:
+                // BMP and WBMP metadata are immutable, and we don't replace them with anything, so use the default:
                 writer.write(null, new IIOImage(img, null, iioMetadata), params);
             }
 
             output.flush();
             writer.dispose();
 
-            return Response
-                    .accepted()
-                    .type(MediaType.APPLICATION_OCTET_STREAM_TYPE)
+            return Response.accepted().type(MediaType.APPLICATION_OCTET_STREAM_TYPE)
                     .header("Content-Disposition", "attachment; filename=\"picture." + format.toLowerCase() + "\"")
-                    .entity(bos.toByteArray())
-                    .build();
+                    .entity(bos.toByteArray()).build();
         }
     }
 
@@ -210,7 +196,8 @@ public class ImageResource {
                     break;
                 case "WBMP":
                     // Handles neither transparency nor colours, it's monochrome.
-                    final BufferedImage imgBINARY = new BufferedImage(img.getWidth(), img.getHeight(), TYPE_BYTE_BINARY);
+                    final BufferedImage imgBINARY = new BufferedImage(img.getWidth(), img.getHeight(),
+                            TYPE_BYTE_BINARY);
                     imgBINARY.getGraphics().drawImage(img, 0, 0, null);
                     ImageIO.write(imgBINARY, format, bos);
                     break;
@@ -218,12 +205,9 @@ public class ImageResource {
                     throw new IllegalArgumentException("Unknown image format " + format);
             }
 
-            return Response
-                    .accepted()
-                    .type(MediaType.APPLICATION_OCTET_STREAM_TYPE)
+            return Response.accepted().type(MediaType.APPLICATION_OCTET_STREAM_TYPE)
                     .header("Content-Disposition", "attachment; filename=\"picture." + format.toLowerCase() + "\"")
-                    .entity(bos.toByteArray())
-                    .build();
+                    .entity(bos.toByteArray()).build();
         }
     }
 
@@ -231,28 +215,36 @@ public class ImageResource {
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/fonts")
     public Response fonts() {
-        return Response.ok().entity(Arrays.toString(
-                GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())).build();
+        return Response.ok()
+                .entity(Arrays
+                        .toString(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames()))
+                .build();
     }
 
     /**
      * Prepares a TIFF with two images and image description metadata.
      *
-     * @param writer Image writer
-     * @param iioMetadata metadata to be manipulated
-     * @param params settings for the image encoding, e.g. compression, tiling etc.
-     * @param desc some text we bake in the metadata
-     * @param img image one
-     * @param result image two
+     * @param writer
+     *        Image writer
+     * @param iioMetadata
+     *        metadata to be manipulated
+     * @param params
+     *        settings for the image encoding, e.g. compression, tiling etc.
+     * @param desc
+     *        some text we bake in the metadata
+     * @param img
+     *        image one
+     * @param result
+     *        image two
      */
     public static void writeTIFF(ImageWriter writer, IIOMetadata iioMetadata, ImageWriteParam params, String[] desc,
             BufferedImage img, BufferedImage result) throws IOException {
         // https://docs.oracle.com/javase/10/docs/api/javax/imageio/metadata/doc-files/tiff_metadata.html
         params.setTilingMode(MODE_DEFAULT);
         final TIFFDirectory descDir = TIFFDirectory.createFromMetadata(iioMetadata);
-        descDir.addTIFFField(new TIFFField(new TIFFTag("ImageDescription",
-                BaselineTIFFTagSet.TAG_IMAGE_DESCRIPTION, 1 << TIFFTag.TIFF_ASCII), TIFFTag.TIFF_ASCII, desc.length,
-                desc));
+        descDir.addTIFFField(new TIFFField(
+                new TIFFTag("ImageDescription", BaselineTIFFTagSet.TAG_IMAGE_DESCRIPTION, 1 << TIFFTag.TIFF_ASCII),
+                TIFFTag.TIFF_ASCII, desc.length, desc));
         // Write the data part
         // 2 images in the TIFF container:
         writer.prepareWriteSequence(null);
@@ -264,11 +256,16 @@ public class ImageResource {
     /**
      * Prepares a PNG with description metadata.
      *
-     * @param writer Image writer
-     * @param iioMetadata metadata to be manipulated
-     * @param params settings for the image encoding, e.g. compression
-     * @param desc some text we bake in the metadata
-     * @param img image
+     * @param writer
+     *        Image writer
+     * @param iioMetadata
+     *        metadata to be manipulated
+     * @param params
+     *        settings for the image encoding, e.g. compression
+     * @param desc
+     *        some text we bake in the metadata
+     * @param img
+     *        image
      */
     public static void writePNG(ImageWriter writer, IIOMetadata iioMetadata, ImageWriteParam params, String[] desc,
             BufferedImage img) throws IOException {
@@ -288,11 +285,16 @@ public class ImageResource {
     /**
      * Prepares a JPEG with description metadata.
      *
-     * @param writer Image writer
-     * @param iioMetadata metadata to be manipulated
-     * @param params settings for the image encoding, e.g. compression
-     * @param desc some text we bake in the metadata
-     * @param img image
+     * @param writer
+     *        Image writer
+     * @param iioMetadata
+     *        metadata to be manipulated
+     * @param params
+     *        settings for the image encoding, e.g. compression
+     * @param desc
+     *        some text we bake in the metadata
+     * @param img
+     *        image
      */
     public static void writeJPEG(ImageWriter writer, IIOMetadata iioMetadata, ImageWriteParam params, String[] desc,
             BufferedImage img) throws IOException {
@@ -311,11 +313,16 @@ public class ImageResource {
     /**
      * Prepares a GIF with description metadata.
      *
-     * @param writer Image writer
-     * @param iioMetadata metadata to be manipulated
-     * @param params settings for the image encoding, e.g. compression
-     * @param desc some text we bake in the metadata
-     * @param img image
+     * @param writer
+     *        Image writer
+     * @param iioMetadata
+     *        metadata to be manipulated
+     * @param params
+     *        settings for the image encoding, e.g. compression
+     * @param desc
+     *        some text we bake in the metadata
+     * @param img
+     *        image
      */
     public static void writeGIF(ImageWriter writer, IIOMetadata iioMetadata, ImageWriteParam params, String[] desc,
             BufferedImage img) throws IOException {
@@ -329,14 +336,12 @@ public class ImageResource {
     }
 
     /**
-     * Small, simple, rectangular image.
+     * Small, simple, rectangular image. **DO NOT** edit what this method does without altering encoders_test_config.txt
+     * too. There are recorded pixel values at positions x:25 y:25 and x:2 y:2 respectively to sanity check the output.
      *
-     * **DO NOT** edit what this method does without altering
-     * encoders_test_config.txt too. There are recorded pixel values
-     * at positions x:25 y:25 and x:2 y:2 respectively to sanity check
-     * the output.
+     * @param type
+     *        type sets the main layout, e.g. RGBA or grayscale.
      *
-     * @param type type sets the main layout, e.g. RGBA or grayscale.
      * @return image
      */
     public static BufferedImage simpleRectangular(ImageType type) {
@@ -351,25 +356,27 @@ public class ImageResource {
     }
 
     /**
-     * There is not much sense in this conversion except
-     * for touching relevant code paths to make sure native-image
-     * is not missing any initialization.
+     * There is not much sense in this conversion except for touching relevant code paths to make sure native-image is
+     * not missing any initialization.
      *
-     * @param cs Color space
-     * @param img input image
-     * @param format image file format
+     * @param cs
+     *        Color space
+     * @param img
+     *        input image
+     * @param format
+     *        image file format
+     *
      * @return image with a converted color model, if possible
      */
     public static BufferedImage imgDifferentColorModel(ColorSpaceEnum cs, BufferedImage img, String format) {
         final ColorModel colorModel = ((Supplier<ColorModel>) (() -> {
             if (cs != CS_DEFAULT) {
-                if ("JPEG".equalsIgnoreCase(format) || "BMP".equalsIgnoreCase(format) || "WBMP".equalsIgnoreCase(format)) {
-                    return new ComponentColorModel(
-                            ColorSpace.getInstance(cs.code), false, false, Transparency.BITMASK,
+                if ("JPEG".equalsIgnoreCase(format) || "BMP".equalsIgnoreCase(format)
+                        || "WBMP".equalsIgnoreCase(format)) {
+                    return new ComponentColorModel(ColorSpace.getInstance(cs.code), false, false, Transparency.BITMASK,
                             img.getRaster().getDataBuffer().getDataType());
                 } else {
-                    return new ComponentColorModel(
-                            ColorSpace.getInstance(cs.code), true, true, Transparency.OPAQUE,
+                    return new ComponentColorModel(ColorSpace.getInstance(cs.code), true, true, Transparency.OPAQUE,
                             img.getRaster().getDataBuffer().getDataType());
                 }
             }

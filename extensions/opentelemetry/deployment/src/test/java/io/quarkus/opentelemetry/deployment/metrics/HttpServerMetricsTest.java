@@ -33,19 +33,13 @@ import io.restassured.RestAssured;
 public class HttpServerMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                            .add(new StringAsset(
-                                    "quarkus.otel.metrics.enabled=true\n" +
-                                            "quarkus.otel.traces.exporter=none\n" +
-                                            "quarkus.otel.logs.exporter=none\n" +
-                                            "quarkus.otel.metrics.exporter=in-memory\n" +
-                                            "quarkus.otel.metric.export.interval=300ms\n"),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .add(new StringAsset("quarkus.otel.metrics.enabled=true\n" + "quarkus.otel.traces.exporter=none\n"
+                    + "quarkus.otel.logs.exporter=none\n" + "quarkus.otel.metrics.exporter=in-memory\n"
+                    + "quarkus.otel.metric.export.interval=300ms\n"), "application.properties"));
 
     @Inject
     protected InMemoryMetricExporter metricExporter;
@@ -60,39 +54,24 @@ public class HttpServerMetricsTest {
 
     @Test
     void collectsHttpRouteFromEndAttributes() {
-        RestAssured.when()
-                .get("/span").then()
-                .statusCode(200)
-                .body(is("hello"));
+        RestAssured.when().get("/span").then().statusCode(200).body(is("hello"));
 
-        RestAssured.when()
-                .get("/fail").then()
-                .statusCode(INTERNAL_SERVER_ERROR.getStatusCode());
+        RestAssured.when().get("/fail").then().statusCode(INTERNAL_SERVER_ERROR.getStatusCode());
 
         metricExporter.assertCountPointsAtLeast("http.server.request.duration", null, 2);
-        MetricData metric = metricExporter
-                .getFinishedMetricItems("http.server.request.duration", null).stream()
+        MetricData metric = metricExporter.getFinishedMetricItems("http.server.request.duration", null).stream()
                 .reduce((first, second) -> second) // get the last received
                 .orElse(null);
 
-        assertThat(metric)
-                .hasName("http.server.request.duration")
-                .hasDescription("Duration of HTTP server requests.")
+        assertThat(metric).hasName("http.server.request.duration").hasDescription("Duration of HTTP server requests.")
                 .hasUnit("s")
-                .hasHistogramSatisfying(histogram -> histogram.isCumulative()
-                        .hasPointsSatisfying(
-                                point -> point.hasCount(1)
-                                        .hasAttributesSatisfying(
-                                                equalTo(HTTP_REQUEST_METHOD, "GET"),
-                                                equalTo(URL_SCHEME, "http"),
-                                                equalTo(HTTP_RESPONSE_STATUS_CODE, 200),
-                                                equalTo(HTTP_ROUTE, url.getPath() + "span")),
-                                point -> point.hasCount(1)
-                                        .hasAttributesSatisfying(
-                                                equalTo(HTTP_REQUEST_METHOD, "GET"),
-                                                equalTo(URL_SCHEME, "http"),
-                                                equalTo(HTTP_RESPONSE_STATUS_CODE, 500),
-                                                equalTo(HTTP_ROUTE, url.getPath() + "fail"))));
+                .hasHistogramSatisfying(histogram -> histogram.isCumulative().hasPointsSatisfying(
+                        point -> point.hasCount(1).hasAttributesSatisfying(equalTo(HTTP_REQUEST_METHOD, "GET"),
+                                equalTo(URL_SCHEME, "http"), equalTo(HTTP_RESPONSE_STATUS_CODE, 200),
+                                equalTo(HTTP_ROUTE, url.getPath() + "span")),
+                        point -> point.hasCount(1).hasAttributesSatisfying(equalTo(HTTP_REQUEST_METHOD, "GET"),
+                                equalTo(URL_SCHEME, "http"), equalTo(HTTP_RESPONSE_STATUS_CODE, 500),
+                                equalTo(HTTP_ROUTE, url.getPath() + "fail"))));
     }
 
     @Path("/")

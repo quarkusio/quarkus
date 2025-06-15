@@ -17,8 +17,7 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
         new QuarkusConfigBuilderCustomizer().configBuilder(builder);
         builder.withSources(new UuidConfigSource());
 
-        builder.forClassLoader(Thread.currentThread().getContextClassLoader())
-                .addDefaultInterceptors()
+        builder.forClassLoader(Thread.currentThread().getContextClassLoader()).addDefaultInterceptors()
                 .addDefaultSources();
     }
 
@@ -33,7 +32,8 @@ public class RuntimeConfigBuilder implements SmallRyeConfigBuilderCustomizer {
 
         @Override
         public Set<String> getPropertyNames() {
-            // Not listed to avoid being reported as unknown. It can't be mapped either, because config will eagerly access it.
+            // Not listed to avoid being reported as unknown. It can't be mapped either, because config will eagerly
+            // access it.
             return Set.of();
         }
 

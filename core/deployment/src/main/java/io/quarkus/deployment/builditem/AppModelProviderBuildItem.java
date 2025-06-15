@@ -34,22 +34,27 @@ public final class AppModelProviderBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Validates the platform imports in the application model against the provided bootstrap configuration.
-     * The behavior in case of misalignment depends on the provided {@link BootstrapConfig#misalignedPlatformImports()}:
+     * Validates the platform imports in the application model against the provided bootstrap configuration. The
+     * behavior in case of misalignment depends on the provided {@link BootstrapConfig#misalignedPlatformImports()}:
      * <ul>
      * <li><b>ERROR</b>: Throws a {@link RuntimeException}.</li>
      * <li><b>WARN</b>: Logs a warning.</li>
      * <li><b>IGNORE</b>: Skips validation entirely.</li>
      * </ul>
      *
-     * @param config the bootstrap configuration
+     * @param config
+     *        the bootstrap configuration
+     *
      * @return the validated application model
-     * @throws RuntimeException if platform imports are misaligned and the configuration is set to {@code ERROR}
-     *         or if the configuration is unrecognized.
+     *
+     * @throws RuntimeException
+     *         if platform imports are misaligned and the configuration is set to {@code ERROR} or if the
+     *         configuration is unrecognized.
      */
     public ApplicationModel validateAndGet(BootstrapConfig config) {
         final PlatformImports platforms = appModel.getPlatforms();
-        if (platforms != null && !BootstrapConfig.MisalignedPlatformImports.IGNORE.equals(config.misalignedPlatformImports())
+        if (platforms != null
+                && !BootstrapConfig.MisalignedPlatformImports.IGNORE.equals(config.misalignedPlatformImports())
                 && !platforms.isAligned()) {
             switch (config.misalignedPlatformImports()) {
                 case ERROR:

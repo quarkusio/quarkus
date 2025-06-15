@@ -17,8 +17,8 @@ public interface PlatformConfiguration extends EnvVarHolder {
     Optional<String> partOf();
 
     /**
-     * The name of the application. This value will be used for naming Kubernetes resources like: - Deployment -
-     * Service and so on ...
+     * The name of the application. This value will be used for naming Kubernetes resources like: - Deployment - Service
+     * and so on ...
      */
     Optional<String> name();
 
@@ -30,8 +30,7 @@ public interface PlatformConfiguration extends EnvVarHolder {
     /**
      * The namespace the generated resources should belong to. If not value is set, then the 'namespace' field will not
      * be added to the 'metadata' section of the generated manifests. This in turn means that when the manifests are
-     * applied to a cluster, the namespace will be resolved from the current Kubernetes context (see
-     * <a href=
+     * applied to a cluster, the namespace will be resolved from the current Kubernetes context (see <a href=
      * "https://kubernetes.io/docs/concepts/configuration/organize-cluster-access-kubeconfig/#context">organize-cluster-access-kubeconfig</a>
      * for more details).
      */

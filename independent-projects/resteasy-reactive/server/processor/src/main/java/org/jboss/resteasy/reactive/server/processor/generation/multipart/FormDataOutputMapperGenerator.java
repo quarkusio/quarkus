@@ -43,8 +43,8 @@ public final class FormDataOutputMapperGenerator {
     }
 
     /**
-     * Returns true whether the returning type uses either {@link org.jboss.resteasy.reactive.RestForm}
-     * or {@link org.jboss.resteasy.reactive.server.core.multipart.FormData} annotations.
+     * Returns true whether the returning type uses either {@link org.jboss.resteasy.reactive.RestForm} or
+     * {@link org.jboss.resteasy.reactive.server.core.multipart.FormData} annotations.
      */
     public static boolean isReturnTypeCompatible(ClassInfo returnTypeClassInfo, IndexView index) {
         // go up the class hierarchy until we reach Object
@@ -81,7 +81,6 @@ public final class FormDataOutputMapperGenerator {
 
     /**
      * Generates a class that map a Pojo into {@link PartItem} that is then used by {@link MultipartMessageBodyWriter}.
-     *
      * <p>
      * For example for a pojo like:
      *
@@ -113,9 +112,7 @@ public final class FormDataOutputMapperGenerator {
      *     }
      * }
      * </pre>
-     *
      * <p>
-     *
      * The generated mapper would look like:
      *
      * <pre>
@@ -143,8 +140,8 @@ public final class FormDataOutputMapperGenerator {
                     Object.class);
             populate.setModifiers(Modifier.PUBLIC);
 
-            ResultHandle formDataInstanceHandle = populate.newInstance(MethodDescriptor
-                    .ofConstructor(MultipartFormDataOutput.class));
+            ResultHandle formDataInstanceHandle = populate
+                    .newInstance(MethodDescriptor.ofConstructor(MultipartFormDataOutput.class));
             ResultHandle inputInstanceHandle = populate.checkCast(populate.getMethodParam(0), returnClassName);
 
             // go up the class hierarchy until we reach Object
@@ -160,7 +157,8 @@ public final class FormDataOutputMapperGenerator {
                     if (formParamInstance == null) {
                         formParamInstance = field.annotation(FORM_PARAM);
                     }
-                    if (formParamInstance == null) { // fields not annotated with @RestForm or @FormParam are completely ignored
+                    if (formParamInstance == null) { // fields not annotated with @RestForm or @FormParam are completely
+                                                     // ignored
                         continue;
                     }
 
@@ -184,7 +182,8 @@ public final class FormDataOutputMapperGenerator {
                         formAttrName = formParamValue.asString();
                     }
 
-                    // TODO: not sure this is correct, but it seems to be what RESTEasy does and it also makes most sense in the context of a POJO
+                    // TODO: not sure this is correct, but it seems to be what RESTEasy does and it also makes most
+                    // sense in the context of a POJO
                     String partType = MediaType.TEXT_PLAIN;
                     AnnotationInstance partTypeInstance = field.annotation(ResteasyReactiveDotNames.PART_TYPE_NAME);
                     if (partTypeInstance != null) {
@@ -196,25 +195,22 @@ public final class FormDataOutputMapperGenerator {
 
                     // Cast part type to MediaType.
                     AssignableResultHandle partTypeHandle = populate.createVariable(MediaType.class);
-                    populate.assign(partTypeHandle,
-                            populate.invokeStaticMethod(
-                                    MethodDescriptor.ofMethod(MediaType.class, "valueOf", MediaType.class, String.class),
-                                    populate.load(partType)));
+                    populate.assign(partTypeHandle, populate.invokeStaticMethod(
+                            MethodDescriptor.ofMethod(MediaType.class, "valueOf", MediaType.class, String.class),
+                            populate.load(partType)));
 
                     // Continue with the value
                     AssignableResultHandle resultHandle = populate.createVariable(Object.class);
 
                     if (useFieldAccess) {
                         populate.assign(resultHandle,
-                                populate.readInstanceField(
-                                        FieldDescriptor.of(currentClassInHierarchy.name().toString(), field.name(),
-                                                fieldDotName.toString()),
-                                        inputInstanceHandle));
+                                populate.readInstanceField(FieldDescriptor.of(currentClassInHierarchy.name().toString(),
+                                        field.name(), fieldDotName.toString()), inputInstanceHandle));
                     } else {
                         populate.assign(resultHandle,
                                 populate.invokeVirtualMethod(
-                                        MethodDescriptor.ofMethod(currentClassInHierarchy.name().toString(),
-                                                getterName, fieldDotName.toString()),
+                                        MethodDescriptor.ofMethod(currentClassInHierarchy.name().toString(), getterName,
+                                                fieldDotName.toString()),
                                         inputInstanceHandle));
                     }
 
@@ -229,10 +225,10 @@ public final class FormDataOutputMapperGenerator {
 
                     // Add it to the form data object
                     populate.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(MultipartFormDataOutput.class, ADD_FORM_DATA_METHOD_NAME, PartItem.class,
-                                    String.class, Object.class, String.class, MediaType.class),
-                            formDataInstanceHandle,
-                            populate.load(formAttrName), resultHandle, populate.load(genericType), partTypeHandle);
+                            MethodDescriptor.ofMethod(MultipartFormDataOutput.class, ADD_FORM_DATA_METHOD_NAME,
+                                    PartItem.class, String.class, Object.class, String.class, MediaType.class),
+                            formDataInstanceHandle, populate.load(formAttrName), resultHandle,
+                            populate.load(genericType), partTypeHandle);
                 }
 
                 DotName superClassDotName = currentClassInHierarchy.superName();
@@ -252,7 +248,8 @@ public final class FormDataOutputMapperGenerator {
         return generateClassName;
     }
 
-    private static void printWarningMessageForMissingJandexIndex(ClassInfo currentClassInHierarchy, DotName superClassDotName) {
+    private static void printWarningMessageForMissingJandexIndex(ClassInfo currentClassInHierarchy,
+            DotName superClassDotName) {
         if (!superClassDotName.toString().startsWith("java.")) {
             LOGGER.warn("Class '" + superClassDotName + "' which is a parent class of '"
                     + currentClassInHierarchy.name()

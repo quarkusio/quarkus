@@ -14,7 +14,7 @@ public final class DisableSourceCompiler {
 
     private static final String ERR = "It's not possible to compile H2 triggers when embedding the engine in GraalVM native images";
 
-    //Delete it all
+    // Delete it all
 
     @Substitute
     public static boolean isJavaxScriptSource(String source) {
@@ -27,19 +27,18 @@ public final class DisableSourceCompiler {
     }
 
     @Substitute
-    public Class<?> getClass(String packageAndClassName)
-            throws ClassNotFoundException {
+    public Class<?> getClass(String packageAndClassName) throws ClassNotFoundException {
         throw new UnsupportedOperationException(ERR);
     }
 
     @Substitute
     public void setSource(String className, String source) {
-        //no-op
+        // no-op
     }
 
     @Substitute
     public void setJavaSystemCompiler(boolean enabled) {
-        //no-op
+        // no-op
     }
 
     @Substitute

@@ -34,8 +34,7 @@ public final class SkipPredicateInvoker extends DelegateInvoker {
     public CompletionStage<Void> invoke(ScheduledExecution execution) throws Exception {
         if (predicate.test(execution)) {
             LOG.debugf("Skipped scheduled invoker execution: %s", delegate.getClass().getName());
-            SkippedExecution payload = new SkippedExecution(execution,
-                    predicate.getClass().getName());
+            SkippedExecution payload = new SkippedExecution(execution, predicate.getClass().getName());
             try {
                 event.fire(payload);
                 event.fireAsync(payload);

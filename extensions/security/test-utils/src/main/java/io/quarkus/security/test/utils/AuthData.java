@@ -31,7 +31,8 @@ public class AuthData {
         this.applyAugmentors = false;
     }
 
-    public AuthData(Set<String> roles, boolean anonymous, String name, Set<Permission> permissions, boolean applyAugmentors) {
+    public AuthData(Set<String> roles, boolean anonymous, String name, Set<Permission> permissions,
+            boolean applyAugmentors) {
         this.roles = roles;
         this.anonymous = anonymous;
         this.name = name;
@@ -44,6 +45,7 @@ public class AuthData {
     }
 
     public AuthData(AuthData authData, boolean applyAugmentors, Permission... permissions) {
-        this(authData.roles, authData.anonymous, authData.name, new HashSet<>(Arrays.asList(permissions)), applyAugmentors);
+        this(authData.roles, authData.anonymous, authData.name, new HashSet<>(Arrays.asList(permissions)),
+                applyAugmentors);
     }
 }

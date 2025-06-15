@@ -25,17 +25,15 @@ public class OidcDevUiRpcSvcPropertiesBean {
     private final String graphqlUiPath;
     private final boolean alwaysLogoutUserInDevUiOnReload;
     /**
-     * Properties state id helps UI to determine that properties may have changed
-     * and web component needs to be updated.
+     * Properties state id helps UI to determine that properties may have changed and web component needs to be updated.
      */
     private final String propertiesStateId;
 
-    OidcDevUiRpcSvcPropertiesBean(String authorizationUrl, String tokenUrl, String logoutUrl,
-            Duration webClientTimeout, Map<String, Map<String, String>> grantOptions,
-            Map<String, String> oidcUsers, String oidcProviderName, String oidcApplicationType,
-            String oidcGrantType, boolean introspectionIsAvailable, String keycloakAdminUrl,
-            List<String> keycloakRealms, boolean swaggerIsAvailable, boolean graphqlIsAvailable,
-            String swaggerUiPath, String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload) {
+    OidcDevUiRpcSvcPropertiesBean(String authorizationUrl, String tokenUrl, String logoutUrl, Duration webClientTimeout,
+            Map<String, Map<String, String>> grantOptions, Map<String, String> oidcUsers, String oidcProviderName,
+            String oidcApplicationType, String oidcGrantType, boolean introspectionIsAvailable, String keycloakAdminUrl,
+            List<String> keycloakRealms, boolean swaggerIsAvailable, boolean graphqlIsAvailable, String swaggerUiPath,
+            String graphqlUiPath, boolean alwaysLogoutUserInDevUiOnReload) {
         this.authorizationUrl = authorizationUrl;
         this.tokenUrl = tokenUrl;
         this.logoutUrl = logoutUrl;

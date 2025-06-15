@@ -28,8 +28,7 @@ public class FailureTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class));
 
     @TestHTTPResource
     URL url;
@@ -69,7 +68,7 @@ public class FailureTestCase {
 
         @Override
         public void filter(ResteasyReactiveClientRequestContext requestContext, ClientResponseContext responseContext) {
-            //make sure the response builder works with no server components installed
+            // make sure the response builder works with no server components installed
             throw new WebApplicationException(Response.status(500).build());
         }
     }

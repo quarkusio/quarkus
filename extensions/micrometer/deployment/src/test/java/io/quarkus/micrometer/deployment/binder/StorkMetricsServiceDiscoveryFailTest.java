@@ -37,18 +37,16 @@ import io.smallrye.stork.api.observability.StorkObservation;
 public class StorkMetricsServiceDiscoveryFailTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "mock")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("greeting/mp-rest/url", "stork://greeting-service/greeting")
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.type", "mock")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class,
-                            MockServiceDiscoveryProvider.class, MockServiceDiscoveryConfiguration.class,
-                            MockServiceDiscoveryProviderLoader.class, GreetingResource.class,
-                            GreetingResource.GreetingRestClient.class, Util.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PingPongResource.class,
+                    PingPongResource.PingPongRestClient.class, MockServiceDiscoveryProvider.class,
+                    MockServiceDiscoveryConfiguration.class, MockServiceDiscoveryProviderLoader.class,
+                    GreetingResource.class, GreetingResource.GreetingRestClient.class, Util.class));
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
@@ -73,7 +71,7 @@ public class StorkMetricsServiceDiscoveryFailTest {
         RestAssured.when().get("/ping/one").then().statusCode(500);
         when().get("/greeting/hola").then().statusCode(500);
 
-        //Stork metrics
+        // Stork metrics
         assertStorkMetrics("pingpong-service");
         assertStorkMetrics("greeting-service");
 
@@ -84,16 +82,16 @@ public class StorkMetricsServiceDiscoveryFailTest {
     }
 
     private void assertStorkMetricsInMicrometerRegistry(String serviceName) {
-        Counter instanceCounter = registry.find("stork.service-discovery.instances.count").tags("service-name", serviceName)
-                .counter();
-        Timer serviceDiscoveryDuration = registry.find("stork.service-discovery.duration").tags("service-name", serviceName)
-                .timer();
-        Timer serviceSelectionDuration = registry.find("stork.service-selection.duration").tags("service-name", serviceName)
-                .timer();
-        Counter serviceDiscoveryFailures = registry.find("stork.service-discovery.failures").tags("service-name", serviceName)
-                .counter();
-        Counter loadBalancerFailures = registry.find("stork.service-selection.failures").tags("service-name", serviceName)
-                .counter();
+        Counter instanceCounter = registry.find("stork.service-discovery.instances.count")
+                .tags("service-name", serviceName).counter();
+        Timer serviceDiscoveryDuration = registry.find("stork.service-discovery.duration")
+                .tags("service-name", serviceName).timer();
+        Timer serviceSelectionDuration = registry.find("stork.service-selection.duration")
+                .tags("service-name", serviceName).timer();
+        Counter serviceDiscoveryFailures = registry.find("stork.service-discovery.failures")
+                .tags("service-name", serviceName).counter();
+        Counter loadBalancerFailures = registry.find("stork.service-selection.failures")
+                .tags("service-name", serviceName).counter();
 
         Util.assertTags(Tag.of("service-name", serviceName), instanceCounter, serviceDiscoveryDuration,
                 serviceSelectionDuration);
@@ -117,8 +115,7 @@ public class StorkMetricsServiceDiscoveryFailTest {
         Assertions.assertThat(metrics.getServiceName()).isEqualTo(serviceName);
         Assertions.assertThat(metrics.isDone()).isTrue();
         Assertions.assertThat(metrics.isServiceDiscoverySuccessful()).isFalse();
-        Assertions.assertThat(metrics.failure().getMessage())
-                .isEqualTo("Service Discovery induced failure");
+        Assertions.assertThat(metrics.failure().getMessage()).isEqualTo("Service Discovery induced failure");
         Assertions.assertThat(metrics.getOverallDuration()).isNotNull();
         Assertions.assertThat(metrics.getServiceDiscoveryType()).isEqualTo("mock");
         Assertions.assertThat(metrics.getServiceSelectionType()).isEqualTo("round-robin");

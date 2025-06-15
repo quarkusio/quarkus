@@ -11,10 +11,8 @@ import io.quarkus.gradle.QuarkusGradleWrapperTestBase;
 
 public class QuarkusNativeGradleITBase extends QuarkusGradleWrapperTestBase {
 
-    private final static String[] NATIVE_ARGS = new String[] {
-            "quarkus.native.container-build",
-            "quarkus.native.builder-image"
-    };
+    private final static String[] NATIVE_ARGS = new String[] { "quarkus.native.container-build",
+            "quarkus.native.builder-image" };
 
     @Override
     public BuildResult runGradleWrapper(File projectDir, String... args) throws IOException, InterruptedException {

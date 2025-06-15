@@ -194,7 +194,8 @@ public class ListCommandTest extends DatasourceTestBase {
         Assertions.assertThat(lists.lpush(key, Person.person1)).isEqualTo(2);
         assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person1, Person.person2));
         assertThat(lists.lpush(key, Person.person3, Person.person4)).isEqualTo(4);
-        assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person4, Person.person3, Person.person1, Person.person2));
+        assertThat(lists.lrange(key, 0, -1))
+                .isEqualTo(List.of(Person.person4, Person.person3, Person.person1, Person.person2));
     }
 
     @Test
@@ -230,11 +231,13 @@ public class ListCommandTest extends DatasourceTestBase {
 
         lists.rpush(key, Person.person1, Person.person2, Person.person1, Person.person2, Person.person1);
         assertThat(lists.lrem(key, 1, Person.person1)).isEqualTo(1);
-        assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person2, Person.person1, Person.person2, Person.person1));
+        assertThat(lists.lrange(key, 0, -1))
+                .isEqualTo(List.of(Person.person2, Person.person1, Person.person2, Person.person1));
 
         lists.lpush(key, Person.person1);
         assertThat(lists.lrem(key, -1, Person.person1)).isEqualTo(1);
-        assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person1, Person.person2, Person.person1, Person.person2));
+        assertThat(lists.lrange(key, 0, -1))
+                .isEqualTo(List.of(Person.person1, Person.person2, Person.person1, Person.person2));
 
         lists.lpush(key, Person.person1);
         assertThat(lists.lrem(key, 0, Person.person1)).isEqualTo(3);
@@ -250,9 +253,11 @@ public class ListCommandTest extends DatasourceTestBase {
 
     @Test
     void ltrim() {
-        lists.rpush(key, Person.person1, Person.person2, Person.person3, Person.person4, Person.person5, Person.person6);
+        lists.rpush(key, Person.person1, Person.person2, Person.person3, Person.person4, Person.person5,
+                Person.person6);
         lists.ltrim(key, 0, 3);
-        assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person1, Person.person2, Person.person3, Person.person4));
+        assertThat(lists.lrange(key, 0, -1))
+                .isEqualTo(List.of(Person.person1, Person.person2, Person.person3, Person.person4));
         lists.ltrim(key, -2, -1);
         assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person3, Person.person4));
     }
@@ -289,7 +294,8 @@ public class ListCommandTest extends DatasourceTestBase {
         Assertions.assertThat(lists.rpush(key, Person.person2)).isEqualTo(2);
         assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person1, Person.person2));
         assertThat(lists.rpush(key, Person.person3, Person.person4)).isEqualTo(4);
-        assertThat(lists.lrange(key, 0, -1)).isEqualTo(List.of(Person.person1, Person.person2, Person.person3, Person.person4));
+        assertThat(lists.lrange(key, 0, -1))
+                .isEqualTo(List.of(Person.person1, Person.person2, Person.person3, Person.person4));
     }
 
     @Test
@@ -342,8 +348,8 @@ public class ListCommandTest extends DatasourceTestBase {
 
         assertThat(commands.sort(key)).containsExactly("1", "2", "3", "4", "5", "5", "6", "7", "8", "9");
 
-        assertThat(commands.sort(key, new SortArgs().descending())).containsExactly("9", "8", "7", "6", "5", "5", "4", "3", "2",
-                "1");
+        assertThat(commands.sort(key, new SortArgs().descending())).containsExactly("9", "8", "7", "6", "5", "5", "4",
+                "3", "2", "1");
 
         String k = key + "-alpha";
         commands.rpush(k, "a", "e", "f", "b");
@@ -387,25 +393,21 @@ public class ListCommandTest extends DatasourceTestBase {
         var shouldBeACat = cmd.rpop(key);
         var shouldBeARabbit = cmd.rpop(key);
 
-        assertThat(shouldBeACat).isInstanceOf(Cat.class)
-                .satisfies(animal -> {
-                    assertThat(animal.getName()).isEqualTo("the cat");
-                    assertThat(((Cat) animal).getId()).isEqualTo("1234");
-                });
+        assertThat(shouldBeACat).isInstanceOf(Cat.class).satisfies(animal -> {
+            assertThat(animal.getName()).isEqualTo("the cat");
+            assertThat(((Cat) animal).getId()).isEqualTo("1234");
+        });
 
-        assertThat(shouldBeARabbit).isInstanceOf(Rabbit.class)
-                .satisfies(animal -> {
-                    assertThat(animal.getName()).isEqualTo("roxanne");
-                    assertThat(((Rabbit) animal).getColor()).isEqualTo("grey");
-                });
+        assertThat(shouldBeARabbit).isInstanceOf(Rabbit.class).satisfies(animal -> {
+            assertThat(animal.getName()).isEqualTo("roxanne");
+            assertThat(((Rabbit) animal).getColor()).isEqualTo("grey");
+        });
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS)
-    @JsonSubTypes({
-            @JsonSubTypes.Type(value = Cat.class, name = "Cat"),
-            @JsonSubTypes.Type(value = Rabbit.class, name = "Rabbit")
-    })
+    @JsonSubTypes({ @JsonSubTypes.Type(value = Cat.class, name = "Cat"),
+            @JsonSubTypes.Type(value = Rabbit.class, name = "Rabbit") })
     public static class Animal {
 
         private String name;

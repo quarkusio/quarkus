@@ -34,7 +34,9 @@ public class RequestScopedEndpoint {
     /**
      * Validate that the passed in username parameter matches the injected preferred_username claim
      *
-     * @param username - expected username
+     * @param username
+     *        - expected username
+     *
      * @return test result response
      */
     @GET
@@ -50,14 +52,12 @@ public class RequestScopedEndpoint {
             msg = "\nInjected Principal#getName matches, PASS";
             pass = true;
         } else {
-            msg = String.format("Injected preferred_username %s != %s, FAIL", currentUsername.get().getString(), username);
+            msg = String.format("Injected preferred_username %s != %s, FAIL", currentUsername.get().getString(),
+                    username);
         }
 
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .add("authScheme", context.getAuthenticationScheme())
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg)
+                .add("authScheme", context.getAuthenticationScheme()).build();
         return result;
     }
 }

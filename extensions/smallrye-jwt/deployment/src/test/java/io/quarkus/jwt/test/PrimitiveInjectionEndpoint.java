@@ -70,10 +70,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.iss.name(), issValue, iss);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -93,10 +90,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.raw_token.name(), rawTokenValue, rt);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -116,10 +110,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.jti.name(), jtiValue, jwtID);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -139,10 +130,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.upn.name(), upnValue, upn);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -162,10 +150,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.sub.name(), subValue, sub);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -185,10 +170,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.aud.name(), audValue, audience);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -208,10 +190,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.groups.name(), groupsValue, groups);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -231,10 +210,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.iat.name(), iatValue, iat);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -254,10 +230,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.exp.name(), expValue, exp);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -277,10 +250,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("customString: %s != %s", customValue, value);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -298,10 +268,7 @@ public class PrimitiveInjectionEndpoint {
         } else {
             msg = String.format("customDouble: %.6f != %.6f", customDouble, value);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 }

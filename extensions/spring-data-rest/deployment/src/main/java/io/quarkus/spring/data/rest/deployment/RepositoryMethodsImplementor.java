@@ -35,21 +35,23 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
 
     private static final Logger LOGGER = Logger.getLogger(RepositoryMethodsImplementor.class);
 
-    //CrudRepository
+    // CrudRepository
     public static final MethodDescriptor GET = ofMethod(CrudRepository.class, "findById", Optional.class, Object.class);
     public static final MethodDescriptor ADD = ofMethod(CrudRepository.class, "save", Object.class, Object.class);
     public static final MethodDescriptor UPDATE = ofMethod(CrudRepository.class, "save", Object.class, Object.class);
 
-    public static final MethodDescriptor DELETE = ofMethod(CrudRepository.class, "deleteById", void.class, Object.class);
+    public static final MethodDescriptor DELETE = ofMethod(CrudRepository.class, "deleteById", void.class,
+            Object.class);
     public static final MethodDescriptor LIST_ITERABLE = ofMethod(CrudRepository.class, "findAll", Iterable.class);
 
-    //ListCrudRepository
+    // ListCrudRepository
     public static final MethodDescriptor LIST = ofMethod(ListCrudRepository.class, "findAll", List.class);
     public static final MethodDescriptor LIST_BY_ID = ofMethod(ListCrudRepository.class, "findAllById", List.class,
             Iterable.class);
-    public static final MethodDescriptor SAVE_LIST = ofMethod(ListCrudRepository.class, "saveAll", List.class, Iterable.class);
+    public static final MethodDescriptor SAVE_LIST = ofMethod(ListCrudRepository.class, "saveAll", List.class,
+            Iterable.class);
 
-    //PagingAndSortingRepository
+    // PagingAndSortingRepository
     public static final MethodDescriptor LIST_PAGED = ofMethod(PagingAndSortingRepository.class, "findAll",
             org.springframework.data.domain.Page.class, Pageable.class);
 
@@ -62,7 +64,8 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
     private static final Class<?> PANACHE_DIRECTION = io.quarkus.panache.common.Sort.Direction.class;
 
     public static final DotName CRUD_REPOSITORY_INTERFACE = DotName.createSimple(CrudRepository.class.getName());
-    public static final DotName LIST_CRUD_REPOSITORY_INTERFACE = DotName.createSimple(ListCrudRepository.class.getName());
+    public static final DotName LIST_CRUD_REPOSITORY_INTERFACE = DotName
+            .createSimple(ListCrudRepository.class.getName());
 
     public static final DotName PAGING_AND_SORTING_REPOSITORY_INTERFACE = DotName
             .createSimple(PagingAndSortingRepository.class.getName());
@@ -78,7 +81,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         this.entityClassHelper = entityClassHelper;
     }
 
-    //    CrudRepository Iterable<T> findAll();
+    // CrudRepository Iterable<T> findAll();
     public void implementIterable(ClassCreator classCreator, String repositoryInterfaceName) {
         if (entityClassHelper.isCrudRepository(repositoryInterfaceName)
                 && !entityClassHelper.isPagingAndSortingRepository(repositoryInterfaceName)) {
@@ -92,7 +95,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         }
     }
 
-    //ListCrudRepository List<T> findAll();
+    // ListCrudRepository List<T> findAll();
     public void implementList(ClassCreator classCreator, String repositoryInterfaceName) {
         if (entityClassHelper.isListCrudRepository(repositoryInterfaceName)
                 && !entityClassHelper.isListPagingAndSortingRepository(repositoryInterfaceName)) {
@@ -128,7 +131,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         }
     }
 
-    //PagingAndSortingRepository Page<T> findAll(Pageable pageable);
+    // PagingAndSortingRepository Page<T> findAll(Pageable pageable);
     public void implementListPageCount(ClassCreator classCreator, String repositoryInterfaceName) {
         MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list",
                 int.class, Page.class, String.class, Map.class);
@@ -147,7 +150,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         methodCreator.close();
     }
 
-    //ListCrudRepository List<T> findAllById(Iterable<ID> ids);
+    // ListCrudRepository List<T> findAllById(Iterable<ID> ids);
     public void implementListById(ClassCreator classCreator, String repositoryInterfaceName) {
         if (entityClassHelper.isListCrudRepository(repositoryInterfaceName)) {
             MethodCreator methodCreator = classCreator.getMethodCreator("list", List.class, Iterable.class);
@@ -192,7 +195,7 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         methodCreator.close();
     }
 
-    //ListCrudRepository  List<S> saveAll(Iterable<S> entities);
+    // ListCrudRepository List<S> saveAll(Iterable<S> entities);
     public void implementAddList(ClassCreator classCreator, String repositoryInterfaceName) {
         MethodCreator methodCreator = classCreator.getMethodCreator("addAll", List.class, Iterable.class);
         if (entityClassHelper.isListCrudRepository(repositoryInterfaceName)) {
@@ -212,7 +215,8 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         if (entityClassHelper.isCrudRepository(repositoryInterfaceName)) {
             ResultHandle id = methodCreator.getMethodParam(0);
             ResultHandle entity = methodCreator.getMethodParam(1);
-            // Set entity ID before executing an update to make sure that a requested object ID matches a given entity ID.
+            // Set entity ID before executing an update to make sure that a requested object ID matches a given entity
+            // ID.
             setId(methodCreator, entityType, entity, id);
             ResultHandle repository = getRepositoryInstance(methodCreator, repositoryInterfaceName);
             ResultHandle result = methodCreator.invokeInterfaceMethod(UPDATE, repository, entity);
@@ -247,8 +251,8 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
 
     private ResultHandle findById(BytecodeCreator creator, ResultHandle id, ResultHandle repository) {
         ResultHandle optional = creator.invokeInterfaceMethod(GET, repository, id);
-        return creator.invokeVirtualMethod(ofMethod(Optional.class, "orElse", Object.class, Object.class),
-                optional, creator.loadNull());
+        return creator.invokeVirtualMethod(ofMethod(Optional.class, "orElse", Object.class, Object.class), optional,
+                creator.loadNull());
     }
 
     private void setId(BytecodeCreator creator, String entityType, ResultHandle entity, ResultHandle id) {
@@ -267,8 +271,8 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
     private ResultHandle toPageable(MethodCreator creator, ResultHandle panachePage) {
         ResultHandle index = creator.readInstanceField(of(PANACHE_PAGE, "index", int.class), panachePage);
         ResultHandle size = creator.readInstanceField(of(PANACHE_PAGE, "size", int.class), panachePage);
-        return creator.invokeStaticMethod(
-                ofMethod(PageRequest.class, "of", PageRequest.class, int.class, int.class), index, size);
+        return creator.invokeStaticMethod(ofMethod(PageRequest.class, "of", PageRequest.class, int.class, int.class),
+                index, size);
     }
 
     /**
@@ -283,10 +287,8 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
         ResultHandle index = creator.readInstanceField(of(PANACHE_PAGE, "index", int.class), panachePage);
         ResultHandle size = creator.readInstanceField(of(PANACHE_PAGE, "size", int.class), panachePage);
         ResultHandle springSort = toSpringSort(creator, panacheSort);
-        return creator.invokeStaticMethod(
-                ofMethod(PageRequest.class, "of", PageRequest.class, int.class, int.class,
-                        org.springframework.data.domain.Sort.class),
-                index, size, springSort);
+        return creator.invokeStaticMethod(ofMethod(PageRequest.class, "of", PageRequest.class, int.class, int.class,
+                org.springframework.data.domain.Sort.class), index, size, springSort);
     }
 
     /**
@@ -317,56 +319,54 @@ public class RepositoryMethodsImplementor implements ResourceMethodsImplementor 
      */
     private ResultHandle toSpringSort(MethodCreator creator, ResultHandle panacheSort) {
         AssignableResultHandle springSort = creator.createVariable(org.springframework.data.domain.Sort.class);
-        creator.assign(springSort, creator.invokeStaticMethod(
-                ofMethod(org.springframework.data.domain.Sort.class, "unsorted", org.springframework.data.domain.Sort.class)));
+        creator.assign(springSort, creator.invokeStaticMethod(ofMethod(org.springframework.data.domain.Sort.class,
+                "unsorted", org.springframework.data.domain.Sort.class)));
 
         // Loop through the columns
-        ResultHandle columns = creator.invokeVirtualMethod(
-                ofMethod(PANACHE_SORT, "getColumns", List.class), panacheSort);
-        ResultHandle columnsIterator = creator.invokeInterfaceMethod(
-                ofMethod(List.class, "iterator", Iterator.class), columns);
+        ResultHandle columns = creator.invokeVirtualMethod(ofMethod(PANACHE_SORT, "getColumns", List.class),
+                panacheSort);
+        ResultHandle columnsIterator = creator.invokeInterfaceMethod(ofMethod(List.class, "iterator", Iterator.class),
+                columns);
         BytecodeCreator loopCreator = creator.whileLoop(c -> iteratorHasNext(c, columnsIterator)).block();
-        ResultHandle column = loopCreator.invokeInterfaceMethod(
-                ofMethod(Iterator.class, "next", Object.class), columnsIterator);
+        ResultHandle column = loopCreator.invokeInterfaceMethod(ofMethod(Iterator.class, "next", Object.class),
+                columnsIterator);
         addColumn(loopCreator, springSort, column);
 
         return springSort;
     }
 
     private BranchResult iteratorHasNext(BytecodeCreator creator, ResultHandle iterator) {
-        return creator.ifTrue(
-                creator.invokeInterfaceMethod(ofMethod(Iterator.class, "hasNext", boolean.class), iterator));
+        return creator
+                .ifTrue(creator.invokeInterfaceMethod(ofMethod(Iterator.class, "hasNext", boolean.class), iterator));
     }
 
     private void addColumn(BytecodeCreator creator, AssignableResultHandle springSort, ResultHandle column) {
         ResultHandle orderArray = creator.newArray(org.springframework.data.domain.Sort.Order.class, 1);
         setOrder(creator, orderArray, column);
-        ResultHandle subSort = creator.invokeStaticMethod(
-                ofMethod(org.springframework.data.domain.Sort.class, "by", org.springframework.data.domain.Sort.class,
-                        org.springframework.data.domain.Sort.Order[].class),
+        ResultHandle subSort = creator.invokeStaticMethod(ofMethod(org.springframework.data.domain.Sort.class, "by",
+                org.springframework.data.domain.Sort.class, org.springframework.data.domain.Sort.Order[].class),
                 orderArray);
-        creator.assign(springSort, creator.invokeVirtualMethod(
-                ofMethod(org.springframework.data.domain.Sort.class, "and", org.springframework.data.domain.Sort.class,
-                        org.springframework.data.domain.Sort.class),
-                springSort, subSort));
+        creator.assign(springSort,
+                creator.invokeVirtualMethod(
+                        ofMethod(org.springframework.data.domain.Sort.class, "and",
+                                org.springframework.data.domain.Sort.class, org.springframework.data.domain.Sort.class),
+                        springSort, subSort));
     }
 
     private void setOrder(BytecodeCreator creator, ResultHandle orderArray, ResultHandle column) {
-        ResultHandle columnName = creator.invokeVirtualMethod(
-                ofMethod(PANACHE_COLUMN, "getName", String.class), column);
-        ResultHandle direction = creator.invokeVirtualMethod(
-                ofMethod(PANACHE_COLUMN, "getDirection", PANACHE_DIRECTION), column);
+        ResultHandle columnName = creator.invokeVirtualMethod(ofMethod(PANACHE_COLUMN, "getName", String.class),
+                column);
+        ResultHandle direction = creator
+                .invokeVirtualMethod(ofMethod(PANACHE_COLUMN, "getDirection", PANACHE_DIRECTION), column);
         BranchResult isAscendingBranch = isAscending(creator, direction);
-        isAscendingBranch.trueBranch()
-                .writeArrayValue(orderArray, 0, isAscendingBranch.trueBranch().invokeStaticMethod(
-                        ofMethod(org.springframework.data.domain.Sort.Order.class, "asc",
-                                org.springframework.data.domain.Sort.Order.class, String.class),
-                        columnName));
-        isAscendingBranch.falseBranch()
-                .writeArrayValue(orderArray, 0, isAscendingBranch.falseBranch().invokeStaticMethod(
-                        ofMethod(org.springframework.data.domain.Sort.Order.class, "desc",
-                                org.springframework.data.domain.Sort.Order.class, String.class),
-                        columnName));
+        isAscendingBranch.trueBranch().writeArrayValue(orderArray, 0,
+                isAscendingBranch.trueBranch()
+                        .invokeStaticMethod(ofMethod(org.springframework.data.domain.Sort.Order.class, "asc",
+                                org.springframework.data.domain.Sort.Order.class, String.class), columnName));
+        isAscendingBranch.falseBranch().writeArrayValue(orderArray, 0,
+                isAscendingBranch.falseBranch()
+                        .invokeStaticMethod(ofMethod(org.springframework.data.domain.Sort.Order.class, "desc",
+                                org.springframework.data.domain.Sort.Order.class, String.class), columnName));
     }
 
     private BranchResult isAscending(BytecodeCreator creator, ResultHandle panacheDirection) {

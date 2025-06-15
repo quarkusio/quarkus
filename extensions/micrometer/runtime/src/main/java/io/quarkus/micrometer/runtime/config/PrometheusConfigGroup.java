@@ -11,25 +11,21 @@ public interface PrometheusConfigGroup extends MicrometerConfig.CapabilityEnable
     /**
      * Support for export to Prometheus.
      * <p>
-     * Support for Prometheus will be enabled if Micrometer
-     * support is enabled, the PrometheusMeterRegistry is on the classpath
-     * and either this value is true, or this value is unset and
+     * Support for Prometheus will be enabled if Micrometer support is enabled, the PrometheusMeterRegistry is on the
+     * classpath and either this value is true, or this value is unset and
      * {@code quarkus.micrometer.registry-enabled-default} is true.
      */
     @Override
     Optional<Boolean> enabled();
 
     /**
-     * The path for the prometheus metrics endpoint (produces text/plain). The default value is
-     * `metrics` and is resolved relative to the non-application endpoint (`q`), e.g.
-     * `${quarkus.http.root-path}/${quarkus.http.non-application-root-path}/metrics`.
-     * If an absolute path is specified (`/metrics`), the prometheus endpoint will be served
-     * from the configured path.
-     *
-     * If the management interface is enabled, the value will be resolved as a path relative to
-     * `${quarkus.management.root-path}` (`q` by default), e.g.
-     * `http://${quarkus.management.host}:${quarkus.management.port}/${quarkus.management.root-path}/metrics`.
-     * If an absolute path is specified (`/metrics`), the prometheus endpoint will be served from the configured path, e.g.
+     * The path for the prometheus metrics endpoint (produces text/plain). The default value is `metrics` and is
+     * resolved relative to the non-application endpoint (`q`), e.g.
+     * `${quarkus.http.root-path}/${quarkus.http.non-application-root-path}/metrics`. If an absolute path is specified
+     * (`/metrics`), the prometheus endpoint will be served from the configured path. If the management interface is
+     * enabled, the value will be resolved as a path relative to `${quarkus.management.root-path}` (`q` by default),
+     * e.g. `http://${quarkus.management.host}:${quarkus.management.port}/${quarkus.management.root-path}/metrics`. If
+     * an absolute path is specified (`/metrics`), the prometheus endpoint will be served from the configured path, e.g.
      * `http://${quarkus.management.host}:${quarkus.management.port}/metrics`.
      *
      * @asciidoclet

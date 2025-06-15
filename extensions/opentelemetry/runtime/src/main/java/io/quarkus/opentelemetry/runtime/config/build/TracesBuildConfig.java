@@ -20,9 +20,9 @@ public interface TracesBuildConfig {
      * <p>
      * This property is not available in the Open Telemetry SDK. It's Quarkus specific.
      * <p>
-     * Support for OpenTelemetry Tracing will be enabled if this value is true.
-     * The OpenTelemetry SDK ( {@link io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig#enabled()} )
-     * is enabled by default and if disabled, OpenTelemetry Tracing will also be disabled.
+     * Support for OpenTelemetry Tracing will be enabled if this value is true. The OpenTelemetry SDK (
+     * {@link io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig#enabled()} ) is enabled by default and if
+     * disabled, OpenTelemetry Tracing will also be disabled.
      */
     @Deprecated
     @WithDefault("true")
@@ -31,9 +31,9 @@ public interface TracesBuildConfig {
     /**
      * List of exporters supported by Quarkus.
      * <p>
-     * List of exporters to be used for tracing, separated by commas.
-     * Has one of the values on {@link ExporterType} `otlp`, `cdi`, `none` or the full qualified name of a class
-     * implementing {@link io.opentelemetry.sdk.trace.export.SpanExporter}
+     * List of exporters to be used for tracing, separated by commas. Has one of the values on {@link ExporterType}
+     * `otlp`, `cdi`, `none` or the full qualified name of a class implementing
+     * {@link io.opentelemetry.sdk.trace.export.SpanExporter}
      * <p>
      * Default on Quarkus is {@value ExporterType.Constants#CDI_VALUE}.
      */
@@ -48,8 +48,8 @@ public interface TracesBuildConfig {
      * for the {@link io.opentelemetry.sdk.trace.samplers.Sampler} implementation set in the provider:
      * {@link io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSamplerProvider}.
      * <p>
-     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.sampler.sampler.name</code> or
-     * defaults to {@value SamplerType.Constants#PARENT_BASED_ALWAYS_ON}.
+     * Fallbacks to the legacy property <code>quarkus.opentelemetry.tracer.sampler.sampler.name</code> or defaults to
+     * {@value SamplerType.Constants#PARENT_BASED_ALWAYS_ON}.
      */
     @WithDefault(SamplerType.Constants.PARENT_BASED_ALWAYS_ON)
     String sampler();

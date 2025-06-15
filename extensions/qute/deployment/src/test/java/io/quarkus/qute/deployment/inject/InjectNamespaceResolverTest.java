@@ -27,23 +27,19 @@ public class InjectNamespaceResolverTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleBean.class, Hello.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "{inject:hello.ping} != {inject:simple.ping} and {cdi:hello.ping} != {cdi:simple.ping}"),
+            .withApplicationRoot(root -> root.addClasses(SimpleBean.class, Hello.class)
+                    .addAsResource(new StringAsset(
+                            "{inject:hello.ping} != {inject:simple.ping} and {cdi:hello.ping} != {cdi:simple.ping}"),
                             "templates/foo.html"))
             .addBuildChainCustomizer(bcb -> {
                 bcb.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(SyntheticBeanBuildItem.configure(String.class)
-                                .addQualifier().annotation(Identifier.class).addValue("value", "synthetic").done()
-                                .name("synthetic")
+                        context.produce(SyntheticBeanBuildItem.configure(String.class).addQualifier()
+                                .annotation(Identifier.class).addValue("value", "synthetic").done().name("synthetic")
                                 .creator(mc -> {
                                     mc.returnValue(mc.load("Yes!"));
-                                })
-                                .done());
+                                }).done());
                     }
                 }).produces(SyntheticBeanBuildItem.class).build();
             });

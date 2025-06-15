@@ -24,8 +24,7 @@ public class QuarkusResteasyReactiveDotNames {
     public static final IgnoreMethodForReflectionPredicate IGNORE_METHOD_FOR_REFLECTION_PREDICATE = new IgnoreMethodForReflectionPredicate();
     private static final String[] PACKAGES_IGNORED_FOR_REFLECTION = {
             // JSON-P
-            "jakarta.json.",
-            "jakarta.json.",
+            "jakarta.json.", "jakarta.json.",
             // Jackson
             "com.fasterxml.jackson.databind.",
             // JAX-RS
@@ -35,8 +34,7 @@ public class QuarkusResteasyReactiveDotNames {
             // Vert.x JSON layer
             "io.vertx.core.json.",
             // Mutiny
-            "io.smallrye.mutiny."
-    };
+            "io.smallrye.mutiny." };
 
     private static class IgnoreTypeForReflectionPredicate implements Predicate<DotName> {
 
@@ -59,8 +57,7 @@ public class QuarkusResteasyReactiveDotNames {
 
         @Override
         public boolean test(FieldInfo fieldInfo) {
-            return fieldInfo.hasAnnotation(JSON_IGNORE)
-                    || fieldInfo.hasAnnotation(JSONB_TRANSIENT);
+            return fieldInfo.hasAnnotation(JSON_IGNORE) || fieldInfo.hasAnnotation(JSONB_TRANSIENT);
         }
     }
 
@@ -68,8 +65,7 @@ public class QuarkusResteasyReactiveDotNames {
 
         @Override
         public boolean test(MethodInfo methodInfo) {
-            return methodInfo.hasAnnotation(JSON_IGNORE)
-                    || methodInfo.hasAnnotation(JSONB_TRANSIENT);
+            return methodInfo.hasAnnotation(JSON_IGNORE) || methodInfo.hasAnnotation(JSONB_TRANSIENT);
         }
     }
 }

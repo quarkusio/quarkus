@@ -32,16 +32,14 @@ public class GenericsConverterTest {
 
     @Test
     void testSingle() {
-        TestClient client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(TestClient.class);
+        TestClient client = RestClientBuilder.newBuilder().baseUri(baseUri).build(TestClient.class);
         var result = client.wrapper(new WrapperClass<>(StatusEnum.ACTIVE));
         assertEquals("ACTIVE", result);
     }
 
     @Test
     void testList() {
-        TestClient client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(TestClient.class);
+        TestClient client = RestClientBuilder.newBuilder().baseUri(baseUri).build(TestClient.class);
         var result = client
                 .wrapperList(List.of(new WrapperClass<>(StatusEnum.ACTIVE), new WrapperClass<>(StatusEnum.INACTIVE)));
         assertEquals("ACTIVE,INACTIVE", result);

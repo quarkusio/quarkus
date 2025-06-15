@@ -68,8 +68,8 @@ public class OraclePoolRecorder {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
                 }
                 if (reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().url().isEmpty()) {
-                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
-                            "reactive.url"));
+                    return ActiveResult.inactive(
+                            DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName, "reactive.url"));
                 }
                 return ActiveResult.active();
             }
@@ -77,22 +77,16 @@ public class OraclePoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<OraclePool>, OraclePool> configureOraclePool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            Supplier<Integer> eventLoopCount, String dataSourceName, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig,
-            ShutdownContext shutdown) {
+            DataSourcesReactiveOracleConfig dataSourcesReactiveOracleConfig, ShutdownContext shutdown) {
         return new Function<>() {
             @Override
             public OraclePool apply(SyntheticCreationalContext<OraclePool> context) {
-                OraclePool pool = initialize((VertxInternal) vertx.getValue(),
-                        eventLoopCount.get(),
-                        dataSourceName,
+                OraclePool pool = initialize((VertxInternal) vertx.getValue(), eventLoopCount.get(), dataSourceName,
                         dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                         dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveOracleConfig.dataSources().get(dataSourceName).reactive().oracle(),
-                        context);
+                        dataSourcesReactiveOracleConfig.dataSources().get(dataSourceName).reactive().oracle(), context);
 
                 shutdown.addShutdownTask(pool::close);
                 return pool;
@@ -112,9 +106,7 @@ public class OraclePoolRecorder {
         };
     }
 
-    private OraclePool initialize(VertxInternal vertx,
-            Integer eventLoopCount,
-            String dataSourceName,
+    private OraclePool initialize(VertxInternal vertx, Integer eventLoopCount, String dataSourceName,
             DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig,
@@ -122,14 +114,13 @@ public class OraclePoolRecorder {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         OracleConnectOptions oracleConnectOptions = toOracleConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveOracleConfig);
-        Supplier<Future<OracleConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(oracleConnectOptions),
-                dataSourceRuntimeConfig);
+        Supplier<Future<OracleConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx,
+                List.of(oracleConnectOptions), dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, oracleConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
     private Supplier<Future<OracleConnectOptions>> toDatabasesSupplier(Vertx vertx,
-            List<OracleConnectOptions> oracleConnectOptions,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+            List<OracleConnectOptions> oracleConnectOptions, DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<OracleConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
@@ -143,7 +134,8 @@ public class OraclePoolRecorder {
         return supplier;
     }
 
-    private PoolOptions toPoolOptions(Integer eventLoopCount, DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -175,15 +167,16 @@ public class OraclePoolRecorder {
         return poolOptions;
     }
 
-    private OracleConnectOptions toOracleConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private OracleConnectOptions toOracleConnectOptions(String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveOracleConfig dataSourceReactiveOracleConfig) {
         OracleConnectOptions oracleConnectOptions;
         if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
             List<String> urls = dataSourceReactiveRuntimeConfig.url().get();
             if (urls.size() > 1) {
-                log.warn("The Reactive Oracle client does not support multiple URLs. The first one will be used, and " +
-                        "others will be ignored.");
+                log.warn("The Reactive Oracle client does not support multiple URLs. The first one will be used, and "
+                        + "others will be ignored.");
             }
             String url = urls.get(0);
             // clean up the URL to make migrations easier

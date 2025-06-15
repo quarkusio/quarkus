@@ -10,8 +10,8 @@ import io.smallrye.config.WithDefault;
 public interface RestQuteConfig {
 
     /**
-     * If set to {@code true} then the {@link io.quarkus.qute.TemplateInstance} is registered as a non-blocking return type for
-     * JAX-RS resource methods.
+     * If set to {@code true} then the {@link io.quarkus.qute.TemplateInstance} is registered as a non-blocking return
+     * type for JAX-RS resource methods.
      *
      * @deprecated This config item will be removed at some time after Quarkus 3.16
      */

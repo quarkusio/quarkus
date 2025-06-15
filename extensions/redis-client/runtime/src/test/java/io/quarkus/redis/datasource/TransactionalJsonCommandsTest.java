@@ -106,8 +106,7 @@ public class TransactionalJsonCommandsTest extends DatasourceTestBase {
                     .chain(() -> json.jsonStrLen(key, "$.sister.lastname")) // 8 -> 10
                     .chain(() -> json.jsonGet(key)) // 9 {...}
                     .chain(() -> json.jsonSet("sister", "$", new JsonObject(Json.encode(person2))))
-                    .chain(() -> json.jsonGet("sister", Person.class))
-                    .chain(() -> json.jsonSet("someone", person3))
+                    .chain(() -> json.jsonGet("sister", Person.class)).chain(() -> json.jsonSet("someone", person3))
                     .chain(() -> json.jsonGetObject("someone"));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(14);

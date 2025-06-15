@@ -41,9 +41,7 @@ class OpenTelemetryConfigTest {
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .withCustomizers(builder -> new OtlpExporterConfigBuilder().configBuilder(builder))
-                .withMapping(OtlpExporterRuntimeConfig.class)
-                .withDefaultValues(baseExporterConfig)
-                .build();
+                .withMapping(OtlpExporterRuntimeConfig.class).withDefaultValues(baseExporterConfig).build();
 
         OtlpExporterRuntimeConfig mapping = config.getConfigMapping(OtlpExporterRuntimeConfig.class);
         assertTrue(mapping.endpoint().isPresent());
@@ -162,10 +160,8 @@ class OpenTelemetryConfigTest {
 
         SmallRyeConfig config = new SmallRyeConfigBuilder()
                 .withCustomizers(builder -> new OtlpExporterConfigBuilder().configBuilder(builder))
-                .withMapping(OtlpExporterRuntimeConfig.class)
-                .withDefaultValues(baseExporterConfig)
-                .withDefaultValues(tracesExporterConfig)
-                .build();
+                .withMapping(OtlpExporterRuntimeConfig.class).withDefaultValues(baseExporterConfig)
+                .withDefaultValues(tracesExporterConfig).build();
 
         OtlpExporterRuntimeConfig mapping = config.getConfigMapping(OtlpExporterRuntimeConfig.class);
 

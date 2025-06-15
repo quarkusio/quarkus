@@ -4,9 +4,8 @@ import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public record Extension(String groupId, String artifactId, String name,
-        NameSource nameSource, boolean commonOrInternal, String guideUrl,
-        boolean splitOnConfigRootDescription, boolean detected) implements Comparable<Extension> {
+public record Extension(String groupId, String artifactId, String name, NameSource nameSource, boolean commonOrInternal,
+        String guideUrl, boolean splitOnConfigRootDescription, boolean detected) implements Comparable<Extension> {
 
     private static final String ARTIFACT_COMMON_SUFFIX = "-common";
     private static final String ARTIFACT_INTERNAL_SUFFIX = "-internal";
@@ -14,20 +13,22 @@ public record Extension(String groupId, String artifactId, String name,
     private static final String NAME_INTERNAL_SUFFIX = "Internal";
     private static final String NAME_SEPARATOR = " - ";
 
-    public static Extension of(String groupId, String artifactId, String name,
-            NameSource nameSource, String guideUrl, boolean splitOnConfigRootDescription) {
-        boolean commonOrInternal = artifactId.endsWith(ARTIFACT_COMMON_SUFFIX) || artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX);
+    public static Extension of(String groupId, String artifactId, String name, NameSource nameSource, String guideUrl,
+            boolean splitOnConfigRootDescription) {
+        boolean commonOrInternal = artifactId.endsWith(ARTIFACT_COMMON_SUFFIX)
+                || artifactId.endsWith(ARTIFACT_INTERNAL_SUFFIX);
         if (commonOrInternal) {
             nameSource = nameSource == NameSource.EXTENSION_METADATA ? NameSource.EXTENSION_METADATA_COMMON_INTERNAL
                     : (nameSource == NameSource.POM_XML ? NameSource.POM_XML_COMMON_INTERNAL : nameSource);
         }
 
-        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl, splitOnConfigRootDescription,
-                true);
+        return new Extension(groupId, artifactId, name, nameSource, commonOrInternal, guideUrl,
+                splitOnConfigRootDescription, true);
     }
 
     public static Extension createNotDetected() {
-        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false, null, false, false);
+        return new Extension("not.detected", "not.detected", "Not detected", NameSource.NONE, false, null, false,
+                false);
     }
 
     @Override
@@ -59,7 +60,8 @@ public record Extension(String groupId, String artifactId, String name,
     @Deprecated(forRemoval = true)
     @JsonIgnore
     public boolean isMixedModule() {
-        return "io.quarkus".equals(groupId) && ("quarkus-core".equals(artifactId) || "quarkus-vertx-http".equals(artifactId));
+        return "io.quarkus".equals(groupId)
+                && ("quarkus-core".equals(artifactId) || "quarkus-vertx-http".equals(artifactId));
     }
 
     @JsonIgnore

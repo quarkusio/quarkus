@@ -24,8 +24,9 @@ public class ResteasyQuteProcessor {
 
     @BuildStep
     ReflectiveHierarchyIgnoreWarningBuildItem ignoreReflectiveWarning() {
-        return new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
-                DotName.createSimple(TemplateInstance.class.getName())));
+        return new ReflectiveHierarchyIgnoreWarningBuildItem(
+                new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+                        DotName.createSimple(TemplateInstance.class.getName())));
     }
 
 }

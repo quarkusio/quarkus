@@ -184,9 +184,8 @@ public class Callback {
         ResultHandle[] resultHandles = new ResultHandle[arguments.size()];
         int idx = 0;
         for (CallbackArgument argument : arguments) {
-            resultHandles[idx] = argument.get(
-                    invocationBytecodeContext(annotation, method.parameters().get(idx), transformedAnnotations, index,
-                            endpointThis, bytecode));
+            resultHandles[idx] = argument.get(invocationBytecodeContext(annotation, method.parameters().get(idx),
+                    transformedAnnotations, index, endpointThis, bytecode));
             idx++;
         }
         return resultHandles;
@@ -204,17 +203,16 @@ public class Callback {
             List<CallbackArgument> found = callbackArguments
                     .findMatching(parameterContext(annotation, parameter, transformedAnnotations, index));
             if (found.isEmpty()) {
-                String msg = String.format("Unable to inject @%s callback parameter '%s' declared on %s: no injector found",
+                String msg = String.format(
+                        "Unable to inject @%s callback parameter '%s' declared on %s: no injector found",
                         DotNames.simpleName(annotation.name()),
-                        parameter.name() != null ? parameter.name() : "#" + parameter.position(),
-                        asString());
+                        parameter.name() != null ? parameter.name() : "#" + parameter.position(), asString());
                 throw new WebSocketException(msg);
             } else if (found.size() > 1 && (found.get(0).priotity() == found.get(1).priotity())) {
                 String msg = String.format(
                         "Unable to inject @%s callback parameter '%s' declared on %s: ambiguous injectors found: %s",
                         DotNames.simpleName(annotation.name()),
-                        parameter.name() != null ? parameter.name() : "#" + parameter.position(),
-                        asString(),
+                        parameter.name() != null ? parameter.name() : "#" + parameter.position(), asString(),
                         found.stream().map(p -> p.getClass().getSimpleName() + ":" + p.priotity()));
                 throw new WebSocketException(msg);
             }
@@ -248,8 +246,8 @@ public class Callback {
 
             @Override
             public Set<AnnotationInstance> parameterAnnotations() {
-                return Annotations.getParameterAnnotations(
-                        transformedAnnotations::getAnnotations, parameter.method(), parameter.position());
+                return Annotations.getParameterAnnotations(transformedAnnotations::getAnnotations, parameter.method(),
+                        parameter.position());
             }
 
             @Override
@@ -292,8 +290,8 @@ public class Callback {
 
             @Override
             public Set<AnnotationInstance> parameterAnnotations() {
-                return Annotations.getParameterAnnotations(
-                        transformedAnnotations::getAnnotations, parameter.method(), parameter.position());
+                return Annotations.getParameterAnnotations(transformedAnnotations::getAnnotations, parameter.method(),
+                        parameter.position());
             }
 
             @Override
@@ -322,8 +320,7 @@ public class Callback {
             public ResultHandle getDecodedMessage(Type parameterType) {
                 return acceptsMessage()
                         ? WebSocketProcessor.decodeMessage(endpointThis, bytecode, acceptsBinaryMessage(),
-                                parameterType,
-                                getPayload(), Callback.this)
+                                parameterType, getPayload(), Callback.this)
                         : null;
             }
 

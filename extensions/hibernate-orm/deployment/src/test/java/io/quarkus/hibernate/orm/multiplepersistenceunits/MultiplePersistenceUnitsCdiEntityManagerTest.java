@@ -26,10 +26,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(DefaultEntity.class)
-                    .addClass(User.class)
-                    .addClass(Plane.class)
+            .withApplicationRoot((jar) -> jar.addClass(DefaultEntity.class).addClass(User.class).addClass(Plane.class)
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Inject
@@ -74,8 +71,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
         // Writes are not
         DefaultEntity defaultEntity = new DefaultEntity("default");
         assertThatThrownBy(() -> defaultEntityManager.persist(defaultEntity))
-                .isInstanceOf(TransactionRequiredException.class)
-                .hasMessageContaining(
+                .isInstanceOf(TransactionRequiredException.class).hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
     }
 
@@ -83,8 +79,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     public void defaultEntityManagerNoRequestNoTransaction() {
         DefaultEntity defaultEntity = new DefaultEntity("default");
         assertThatThrownBy(() -> defaultEntityManager.persist(defaultEntity))
-                .isInstanceOf(ContextNotActiveException.class)
-                .hasMessageContainingAll(
+                .isInstanceOf(ContextNotActiveException.class).hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
                         "Consider adding @Transactional to your method to automatically activate a transaction",
                         "@ActivateRequestContext if you have valid reasons not to use transactions");
@@ -104,12 +99,10 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @ActivateRequestContext
     public void usersEntityManagerInRequestNoTransaction() {
         // Reads are allowed
-        assertThatCode(() -> usersEntityManager.createQuery("select count(*) from User"))
-                .doesNotThrowAnyException();
+        assertThatCode(() -> usersEntityManager.createQuery("select count(*) from User")).doesNotThrowAnyException();
         // Writes are not
         User user = new User("gsmet");
-        assertThatThrownBy(() -> usersEntityManager.persist(user))
-                .isInstanceOf(TransactionRequiredException.class)
+        assertThatThrownBy(() -> usersEntityManager.persist(user)).isInstanceOf(TransactionRequiredException.class)
                 .hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
     }
@@ -117,8 +110,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Test
     public void usersEntityManagerNoRequestNoTransaction() {
         User user = new User("gsmet");
-        assertThatThrownBy(() -> usersEntityManager.persist(user))
-                .isInstanceOf(ContextNotActiveException.class)
+        assertThatThrownBy(() -> usersEntityManager.persist(user)).isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
                         "Consider adding @Transactional to your method to automatically activate a transaction",
@@ -143,8 +135,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
                 .doesNotThrowAnyException();
         // Writes are not
         Plane plane = new Plane("Airbus A380");
-        assertThatThrownBy(() -> inventoryEntityManager.persist(plane))
-                .isInstanceOf(TransactionRequiredException.class)
+        assertThatThrownBy(() -> inventoryEntityManager.persist(plane)).isInstanceOf(TransactionRequiredException.class)
                 .hasMessageContaining(
                         "Transaction is not active, consider adding @Transactional to your method to automatically activate one");
     }
@@ -152,8 +143,7 @@ public class MultiplePersistenceUnitsCdiEntityManagerTest {
     @Test
     public void inventoryEntityManagerNoRequestNoTransaction() {
         Plane plane = new Plane("Airbus A380");
-        assertThatThrownBy(() -> inventoryEntityManager.persist(plane))
-                .isInstanceOf(ContextNotActiveException.class)
+        assertThatThrownBy(() -> inventoryEntityManager.persist(plane)).isInstanceOf(ContextNotActiveException.class)
                 .hasMessageContainingAll(
                         "Cannot use the EntityManager/Session because neither a transaction nor a CDI request context is active",
                         "Consider adding @Transactional to your method to automatically activate a transaction",

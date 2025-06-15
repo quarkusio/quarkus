@@ -23,16 +23,13 @@ import io.vertx.core.http.impl.HttpServerRequestInternal;
 
 class UriTagWithInterfaceResourceTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Util.class,
-                            InterfaceResourceReturningUrlTemplate.class,
-                            InterfaceResourceReturningUrlTemplateImpl.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, InterfaceResourceReturningUrlTemplate.class,
+                    InterfaceResourceReturningUrlTemplateImpl.class));
 
     @Inject
     MeterRegistry registry;
@@ -41,8 +38,7 @@ class UriTagWithInterfaceResourceTest {
     void testRequestUris() throws Exception {
         RestAssured.basePath = "/";
 
-        when().get("/class/path/method/path/test").then()
-                .statusCode(200)
+        when().get("/class/path/method/path/test").then().statusCode(200)
                 .body(Matchers.is("/class/path/method/path/{param}"));
 
         Util.waitForMeters(registry.find("http.server.requests").timers(), 1);

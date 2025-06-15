@@ -29,8 +29,7 @@ public class DefaultClientLogger implements ClientLogger {
         response.bodyHandler(new Handler<>() {
             @Override
             public void handle(Buffer body) {
-                log.debugf("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s",
-                        redirect ? "Redirect" : "Response",
+                log.debugf("%s: %s %s, Status[%d %s], Headers[%s], Body:\n%s", redirect ? "Redirect" : "Response",
                         response.request().getMethod(), response.request().absoluteURI(), response.statusCode(),
                         response.statusMessage(), asString(response.headers()), bodyToString(body));
             }
@@ -43,14 +42,14 @@ public class DefaultClientLogger implements ClientLogger {
             return;
         }
         if (omitBody) {
-            log.debugf("Request: %s %s Headers[%s], Body omitted",
-                    request.getMethod(), request.absoluteURI(), asString(request.headers()));
+            log.debugf("Request: %s %s Headers[%s], Body omitted", request.getMethod(), request.absoluteURI(),
+                    asString(request.headers()));
         } else if (body == null || body.length() == 0) {
-            log.debugf("Request: %s %s Headers[%s], Empty body",
-                    request.getMethod(), request.absoluteURI(), asString(request.headers()));
+            log.debugf("Request: %s %s Headers[%s], Empty body", request.getMethod(), request.absoluteURI(),
+                    asString(request.headers()));
         } else {
-            log.debugf("Request: %s %s Headers[%s], Body:\n%s",
-                    request.getMethod(), request.absoluteURI(), asString(request.headers()), bodyToString(body));
+            log.debugf("Request: %s %s Headers[%s], Body:\n%s", request.getMethod(), request.absoluteURI(),
+                    asString(request.headers()), bodyToString(body));
         }
     }
 
@@ -69,7 +68,11 @@ public class DefaultClientLogger implements ClientLogger {
         if (headers.isEmpty()) {
             return "";
         }
-        StringBuilder sb = new StringBuilder((headers.size() * (6 + 1 + 6)) + (headers.size() - 1)); // this is a very rough estimate of a result like 'key1=value1 key2=value2'
+        StringBuilder sb = new StringBuilder((headers.size() * (6 + 1 + 6)) + (headers.size() - 1)); // this is a very
+                                                                                                     // rough estimate
+                                                                                                     // of a result like
+                                                                                                     // 'key1=value1
+                                                                                                     // key2=value2'
         boolean isFirst = true;
         for (Map.Entry<String, String> entry : headers) {
             if (isFirst) {

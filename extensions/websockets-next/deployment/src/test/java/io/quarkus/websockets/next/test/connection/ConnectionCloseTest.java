@@ -25,10 +25,9 @@ import io.vertx.core.Vertx;
 public class ConnectionCloseTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Closing.class, ClosingBlocking.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Closing.class, ClosingBlocking.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

@@ -30,24 +30,12 @@ public class SendRequestScopedInputStreamTest {
 
     @Test
     public void test() {
-        when()
-                .get("test/in")
-                .then()
-                .statusCode(200)
-                .body(equalTo("" + CustomInputStream.MAX_ITERATIONS));
+        when().get("test/in").then().statusCode(200).body(equalTo("" + CustomInputStream.MAX_ITERATIONS));
 
         // make sure the request scope of the stream is coming into play
-        when()
-                .get("test/in")
-                .then()
-                .statusCode(200)
-                .body(equalTo("" + CustomInputStream.MAX_ITERATIONS));
+        when().get("test/in").then().statusCode(200).body(equalTo("" + CustomInputStream.MAX_ITERATIONS));
 
-        when()
-                .get("test/uniIn")
-                .then()
-                .statusCode(200)
-                .body(equalTo("" + CustomInputStream.MAX_ITERATIONS));
+        when().get("test/uniIn").then().statusCode(200).body(equalTo("" + CustomInputStream.MAX_ITERATIONS));
     }
 
     @RegisterRestClient(configKey = "test")
@@ -102,7 +90,8 @@ public class SendRequestScopedInputStreamTest {
         @Override
         public int read() throws IOException {
             if (!BlockingOperationControl.isBlockingAllowed()) {
-                throw new BlockingOperationNotAllowedException("The read method of the stream was called an event loop thread");
+                throw new BlockingOperationNotAllowedException(
+                        "The read method of the stream was called an event loop thread");
             }
             if (count.incrementAndGet() <= MAX_ITERATIONS) {
                 try {

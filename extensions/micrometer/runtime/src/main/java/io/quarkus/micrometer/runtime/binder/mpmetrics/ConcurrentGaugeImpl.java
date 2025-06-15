@@ -15,11 +15,8 @@ class ConcurrentGaugeImpl implements ConcurrentGauge, MeterHolder {
 
     ConcurrentGaugeImpl register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
         gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), longAdder, LongAdder::doubleValue)
-                .description(metadata.getDescription())
-                .baseUnit(metadata.getUnit())
-                .tags(metricInfo.tags())
-                .strongReference(true)
-                .register(registry);
+                .description(metadata.getDescription()).baseUnit(metadata.getUnit()).tags(metricInfo.tags())
+                .strongReference(true).register(registry);
         return this;
     }
 
@@ -29,8 +26,8 @@ class ConcurrentGaugeImpl implements ConcurrentGauge, MeterHolder {
     }
 
     /**
-     * Not supported for micrometer. Min/max values per dropwizard
-     * would be provided by dropwizard capabilities if enabled.
+     * Not supported for micrometer. Min/max values per dropwizard would be provided by dropwizard capabilities if
+     * enabled.
      */
     @Override
     public long getMax() {
@@ -38,8 +35,8 @@ class ConcurrentGaugeImpl implements ConcurrentGauge, MeterHolder {
     }
 
     /**
-     * Not supported for micrometer. Min/max values per dropwizard
-     * would be provided by dropwizard capabilities if enabled.
+     * Not supported for micrometer. Min/max values per dropwizard would be provided by dropwizard capabilities if
+     * enabled.
      */
     @Override
     public long getMin() {

@@ -64,19 +64,13 @@ public class BouncyCastleFipsJsseTestCase {
                 .setDefaultPort(url.getPort()).setSsl(true).setVerifyHost(false);
 
         byte[] keyStoreData = getFileContent(Paths.get("client-keystore.jks"));
-        KeyStoreOptions keyStoreOptions = new KeyStoreOptions()
-                .setPassword("password")
-                .setValue(Buffer.buffer(keyStoreData))
-                .setType("BCFKS")
-                .setProvider("BCFIPS");
+        KeyStoreOptions keyStoreOptions = new KeyStoreOptions().setPassword("password")
+                .setValue(Buffer.buffer(keyStoreData)).setType("BCFKS").setProvider("BCFIPS");
         webClientOptions.setKeyCertOptions(keyStoreOptions);
 
         byte[] trustStoreData = getFileContent(Paths.get("client-truststore.jks"));
-        KeyStoreOptions trustStoreOptions = new KeyStoreOptions()
-                .setPassword("password")
-                .setValue(Buffer.buffer(trustStoreData))
-                .setType("BCFKS")
-                .setProvider("BCFIPS");
+        KeyStoreOptions trustStoreOptions = new KeyStoreOptions().setPassword("password")
+                .setValue(Buffer.buffer(trustStoreData)).setType("BCFKS").setProvider("BCFIPS");
         webClientOptions.setTrustOptions(trustStoreOptions);
 
         return webClientOptions;
@@ -84,8 +78,7 @@ public class BouncyCastleFipsJsseTestCase {
 
     protected void checkLog(boolean serverOnly) {
         final Path logDirectory = Paths.get(".", "target");
-        given().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+        given().pollInterval(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

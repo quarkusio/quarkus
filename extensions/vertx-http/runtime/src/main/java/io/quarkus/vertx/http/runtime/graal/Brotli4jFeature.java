@@ -51,7 +51,8 @@ public class Brotli4jFeature implements Feature {
         }
     }
 
-    // Verbatim copy from https://github.com/hyperxpro/Brotli4j/blob/32e3d3827fa3124ca945b75ae2138492c9c775b3/brotli4j/src/main/java/com/aayushatharva/brotli4j/Brotli4jLoader.java#L118C1-L150C6
+    // Verbatim copy from
+    // https://github.com/hyperxpro/Brotli4j/blob/32e3d3827fa3124ca945b75ae2138492c9c775b3/brotli4j/src/main/java/com/aayushatharva/brotli4j/Brotli4jLoader.java#L118C1-L150C6
     private static String getPlatform() {
         String osName = System.getProperty("os.name");
         String archName = System.getProperty("os.arch");

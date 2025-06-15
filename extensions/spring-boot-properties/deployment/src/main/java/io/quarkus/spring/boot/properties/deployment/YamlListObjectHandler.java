@@ -28,12 +28,10 @@ import io.quarkus.gizmo.ResultHandle;
 import io.smallrye.config.SmallRyeConfig;
 
 /**
- * Class used to handle all the plumbing needed to support fields with types like {@code List<SomeClass>}
- * values for which can only be provided in YAML.
- *
- * The basic idea for handling these fields is to convert the string value of the field (which is SR Config
- * populates with the "serialized" value of the field) using SnakeYAML.
- * To achieve that various intermediate classes and Yaml configuration need to be generated.
+ * Class used to handle all the plumbing needed to support fields with types like {@code List<SomeClass>} values for
+ * which can only be provided in YAML. The basic idea for handling these fields is to convert the string value of the
+ * field (which is SR Config populates with the "serialized" value of the field) using SnakeYAML. To achieve that
+ * various intermediate classes and Yaml configuration need to be generated.
  */
 class YamlListObjectHandler {
 
@@ -63,13 +61,12 @@ class YamlListObjectHandler {
         // generate a class that has a List field and getters and setter which have the proper generic type
         // this way SnakeYaml can properly populate the field
         MethodDescriptor getterDesc;
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(wrapperClassName)
-                .build()) {
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(wrapperClassName).build()) {
             FieldDescriptor fieldDesc = cc.getFieldCreator(configName, List.class).setModifiers(Modifier.PRIVATE)
                     .getFieldDescriptor();
 
-            MethodCreator getter = cc.getMethodCreator(JavaBeanUtil.getGetterName(configName, classInfo.name()), List.class);
+            MethodCreator getter = cc.getMethodCreator(JavaBeanUtil.getGetterName(configName, classInfo.name()),
+                    List.class);
             getter.setSignature(String.format("()Ljava/util/List<L%s;>;", forSignature(classInfo)));
             getterDesc = getter.getMethodDescriptor();
             getter.returnValue(getter.readInstanceField(fieldDesc, getter.getThis()));
@@ -83,27 +80,25 @@ class YamlListObjectHandler {
         reflectiveClasses.produce(ReflectiveClassBuildItem.builder(wrapperClassName).methods().build());
 
         // generate an MP-Config converter which looks something like this
-        // public class GeneratedInputsConverter extends io.quarkus.config.yaml.runtime.AbstractYamlObjectConverter<SomeClass_GeneratedListWrapper_fieldName> {
+        // public class GeneratedInputsConverter extends
+        // io.quarkus.config.yaml.runtime.AbstractYamlObjectConverter<SomeClass_GeneratedListWrapper_fieldName> {
         //
-        //     @Override
-        //     Map<String, String> getFieldNameMap() {
-        //         Map<String, String> result = new HashMap<>();
-        //         result.put("some_field", "someField");
-        //         return result;
-        //     }
+        // @Override
+        // Map<String, String> getFieldNameMap() {
+        // Map<String, String> result = new HashMap<>();
+        // result.put("some_field", "someField");
+        // return result;
+        // }
         //
-        //     @Override
-        //     Class<SomeClass_GeneratedListWrapper_fieldName> getClazz() {
-        //         return SomeClass_GeneratedListWrapper_fieldName.class;
-        //     }
+        // @Override
+        // Class<SomeClass_GeneratedListWrapper_fieldName> getClazz() {
+        // return SomeClass_GeneratedListWrapper_fieldName.class;
+        // }
         // }
         String wrapperConverterClassName = wrapperClassName + "_Converter";
-        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput)
-                .className(wrapperConverterClassName)
-                .superClass(ABSTRACT_YAML_CONVERTER_CNAME)
-                .signature(
-                        String.format("L%s<L%s;>;", ABSTRACT_YAML_CONVERTER_CNAME.replace('.', '/'),
-                                wrapperClassName.replace('.', '/')))
+        try (ClassCreator cc = ClassCreator.builder().classOutput(classOutput).className(wrapperConverterClassName)
+                .superClass(ABSTRACT_YAML_CONVERTER_CNAME).signature(String.format("L%s<L%s;>;",
+                        ABSTRACT_YAML_CONVERTER_CNAME.replace('.', '/'), wrapperClassName.replace('.', '/')))
                 .build()) {
             MethodCreator getClazz = cc.getMethodCreator("getClazz", Class.class).setModifiers(Modifier.PROTECTED);
             getClazz.returnValue(getClazz.loadClassFromTCCL(wrapperClassName));
@@ -141,12 +136,12 @@ class YamlListObjectHandler {
         // use the generated converter to convert the string value into the wrapper
         ResultHandle smallryeConfig = configPopulator.checkCast(configObject, SmallRyeConfig.class);
         ResultHandle getValueHandle = configPopulator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValue", Object.class, String.class, Converter.class),
-                smallryeConfig,
-                configPopulator.load(fullConfigName),
+                MethodDescriptor.ofMethod(SmallRyeConfig.class, "getValue", Object.class, String.class,
+                        Converter.class),
+                smallryeConfig, configPopulator.load(fullConfigName),
                 configPopulator.newInstance(MethodDescriptor.ofConstructor(wrapperConverterClassName)));
         ResultHandle wrapperHandle = configPopulator.checkCast(getValueHandle, wrapperClassName);
-        //pull the actual value out of the wrapper
+        // pull the actual value out of the wrapper
         return configPopulator.invokeVirtualMethod(getterDesc, wrapperHandle);
     }
 
@@ -158,8 +153,8 @@ class YamlListObjectHandler {
         }
         if (!classInfo.hasNoArgsConstructor()) {
             throw new IllegalArgumentException(
-                    String.format("Class '%s' which is used as %s in class '%s' must have a no-args constructor", classInfo,
-                            member.phraseUsage(), member.declaringClass().name().toString()));
+                    String.format("Class '%s' which is used as %s in class '%s' must have a no-args constructor",
+                            classInfo, member.phraseUsage(), member.declaringClass().name().toString()));
         }
         if (!Modifier.isPublic(classInfo.flags())) {
             throw new IllegalArgumentException(
@@ -191,7 +186,8 @@ class YamlListObjectHandler {
     }
 
     /**
-     * An abstraction over Field and Method which we will use in order to keep the same code for Class and Interface cases
+     * An abstraction over Field and Method which we will use in order to keep the same code for Class and Interface
+     * cases
      */
     static abstract class Member {
         private final ClassInfo declaringClass;

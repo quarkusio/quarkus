@@ -13,8 +13,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BeforeRetryMethodTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeforeRetryMethodService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(BeforeRetryMethodService.class));
 
     @Inject
     BeforeRetryMethodService service;
@@ -22,8 +21,6 @@ public class BeforeRetryMethodTest {
     @Test
     public void test() {
         assertThrows(IllegalArgumentException.class, service::hello);
-        assertThat(BeforeRetryMethodService.ids)
-                .hasSize(3)
-                .containsExactly(1, 2, 3);
+        assertThat(BeforeRetryMethodService.ids).hasSize(3).containsExactly(1, 2, 3);
     }
 }

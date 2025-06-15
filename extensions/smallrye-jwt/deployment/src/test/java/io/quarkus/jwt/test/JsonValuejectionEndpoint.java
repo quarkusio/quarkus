@@ -84,10 +84,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.iss.name(), issValue, iss);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -108,10 +105,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.raw_token.name(), rawTokenValue, rt);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -132,10 +126,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.jti.name(), jtiValue, jwtID);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -156,10 +147,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.aud.name(), audValue, audience);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -180,10 +168,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.iat.name(), iatValue, iat);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -204,10 +189,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("%s: %s != %s", Claims.auth_time.name(), authTimeValue, authTime);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -228,10 +210,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("customString: %s != %s", customValue, value);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -250,10 +229,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("customInteger: %d != %d", customValue, value);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -272,10 +248,7 @@ public class JsonValuejectionEndpoint {
         } else {
             msg = String.format("customDouble: %s != %.8f", customValue, value);
         }
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg)
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg).build();
         return result;
     }
 
@@ -294,8 +267,8 @@ public class JsonValuejectionEndpoint {
         if (customStringArray == null || customStringArray.size() == 0) {
             msg.append("customStringArray value is null or empty, FAIL");
         } else if (customStringArray.size() != array.size()) {
-            msg.append(
-                    String.format("customStringArray.size(%d) != expected.size(%d)", customStringArray.size(), array.size()));
+            msg.append(String.format("customStringArray.size(%d) != expected.size(%d)", customStringArray.size(),
+                    array.size()));
         } else {
             for (int n = 0; n < customStringArray.size(); n++) {
                 JsonString js = customStringArray.getJsonString(n);
@@ -306,10 +279,7 @@ public class JsonValuejectionEndpoint {
             pass = expected.size() == 0;
         }
 
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg.toString())
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg.toString()).build();
         return result;
     }
 
@@ -328,8 +298,8 @@ public class JsonValuejectionEndpoint {
         if (customIntegerArray == null || customIntegerArray.size() == 0) {
             msg.append("customStringArray value is null or empty, FAIL");
         } else if (customIntegerArray.size() != array.size()) {
-            msg.append(
-                    String.format("customStringArray.size(%d) != expected.size(%d)", customIntegerArray.size(), array.size()));
+            msg.append(String.format("customStringArray.size(%d) != expected.size(%d)", customIntegerArray.size(),
+                    array.size()));
         } else {
             for (int n = 0; n < customIntegerArray.size(); n++) {
                 Long value = customIntegerArray.getJsonNumber(n).longValue();
@@ -340,10 +310,7 @@ public class JsonValuejectionEndpoint {
             pass = expected.size() == 0;
         }
 
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg.toString())
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg.toString()).build();
         return result;
     }
 
@@ -362,8 +329,8 @@ public class JsonValuejectionEndpoint {
         if (customDoubleArray == null || customDoubleArray.size() == 0) {
             msg.append("customStringArray value is null or empty, FAIL");
         } else if (customDoubleArray.size() != array.size()) {
-            msg.append(
-                    String.format("customStringArray.size(%d) != expected.size(%d)", customDoubleArray.size(), array.size()));
+            msg.append(String.format("customStringArray.size(%d) != expected.size(%d)", customDoubleArray.size(),
+                    array.size()));
         } else {
             for (int n = 0; n < customDoubleArray.size(); n++) {
                 BigDecimal value = customDoubleArray.getJsonNumber(n).bigDecimalValue();
@@ -374,10 +341,7 @@ public class JsonValuejectionEndpoint {
             pass = expected.size() == 0;
         }
 
-        JsonObject result = Json.createObjectBuilder()
-                .add("pass", pass)
-                .add("msg", msg.toString())
-                .build();
+        JsonObject result = Json.createObjectBuilder().add("pass", pass).add("msg", msg.toString()).build();
         return result;
     }
 }

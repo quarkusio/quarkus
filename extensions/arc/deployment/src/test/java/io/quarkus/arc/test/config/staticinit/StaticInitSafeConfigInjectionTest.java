@@ -14,9 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class StaticInitSafeConfigInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(StaticInitSafeBean.class, StaticInitLazyBean.class, UnsafeConfigSource.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClasses(StaticInitSafeBean.class, StaticInitLazyBean.class, UnsafeConfigSource.class)
                     .addAsServiceProvider(ConfigSource.class, UnsafeConfigSource.class)
                     // the value from application.properties should be injected during STATIC_INIT
                     .addAsResource(new StringAsset("apfelstrudel=jandex"), "application.properties"));

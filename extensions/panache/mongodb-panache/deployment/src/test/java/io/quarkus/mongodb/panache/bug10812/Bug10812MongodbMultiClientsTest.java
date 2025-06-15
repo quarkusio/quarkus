@@ -9,18 +9,12 @@ import io.quarkus.test.QuarkusUnitTest;
 
 class Bug10812MongodbMultiClientsTest {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            Bug10812BookNotAnnotatedEntity.class,
-                            Bug10812BookDefaultClientNameEntity.class,
-                            Bug10812BookClient1Entity.class,
-                            Bug10812BookClient2Entity.class,
-                            Bug10812BookNotAnnotatedReactiveEntity.class,
-                            Bug10812BookDefaultClientNameReactiveEntity.class,
-                            Bug10812BookClient1ReactiveEntity.class,
-                            Bug10812BookClient2ReactiveEntity.class)
-                    .addAsResource("application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Bug10812BookNotAnnotatedEntity.class, Bug10812BookDefaultClientNameEntity.class,
+                    Bug10812BookClient1Entity.class, Bug10812BookClient2Entity.class,
+                    Bug10812BookNotAnnotatedReactiveEntity.class, Bug10812BookDefaultClientNameReactiveEntity.class,
+                    Bug10812BookClient1ReactiveEntity.class, Bug10812BookClient2ReactiveEntity.class)
+            .addAsResource("application.properties"));
 
     @Test
     public void testMongoDatabaseNameConfigurationWhenEntityIsNotAnnotated() {

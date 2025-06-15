@@ -21,21 +21,17 @@ import io.restassured.http.ContentType;
 public class InvalidAcceptTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid", ContentType.TEXT))).body("dummy")
-                .accept("invalid").get("/hello")
-                .then()
-                .statusCode(406);
+        given().config(config().encoderConfig(encoderConfig().encodeContentTypeAs("invalid", ContentType.TEXT)))
+                .body("dummy").accept("invalid").get("/hello").then().statusCode(406);
     }
 
     @Path("hello")

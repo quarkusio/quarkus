@@ -38,10 +38,8 @@ public class TypesafeGraphQLClientClientAuthenticationCorrectKeystoreTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyApi.class, SSLTestingTools.class)
-                    .addAsResource(new StringAsset(CONFIGURATION),
-                            "application.properties")
+            .withApplicationRoot((jar) -> jar.addClasses(MyApi.class, SSLTestingTools.class)
+                    .addAsResource(new StringAsset(CONFIGURATION), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @GraphQLClientApi(configKey = "my-client")
@@ -55,8 +53,8 @@ public class TypesafeGraphQLClientClientAuthenticationCorrectKeystoreTest {
 
     @BeforeAll
     static void setupServer() throws Exception {
-        server = TOOLS.runServer("target/certs/graphql-keystore.p12",
-                "password", "target/certs/graphql-server-truststore.p12", "password");
+        server = TOOLS.runServer("target/certs/graphql-keystore.p12", "password",
+                "target/certs/graphql-server-truststore.p12", "password");
     }
 
     @Test

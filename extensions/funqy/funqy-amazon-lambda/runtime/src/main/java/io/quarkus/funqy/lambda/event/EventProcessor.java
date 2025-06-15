@@ -42,8 +42,8 @@ public class EventProcessor {
     private final FunqyAmazonConfig config;
     private final Map<Class<?>, EventHandler<?, ?, ?>> eventHandlers;
 
-    public EventProcessor(final ObjectReader objectReader,
-            final FunqyAmazonBuildTimeConfig buildTimeConfig, final FunqyAmazonConfig config) {
+    public EventProcessor(final ObjectReader objectReader, final FunqyAmazonBuildTimeConfig buildTimeConfig,
+            final FunqyAmazonConfig config) {
         this.objectReader = objectReader;
         this.config = config;
 
@@ -60,8 +60,8 @@ public class EventProcessor {
         }
     }
 
-    public FunqyServerResponse handle(Object event,
-            Function<Object, FunqyServerResponse> dispatcher, Context context) throws IOException {
+    public FunqyServerResponse handle(Object event, Function<Object, FunqyServerResponse> dispatcher, Context context)
+            throws IOException {
 
         EventHandler<?, ?, ?> handler = getHandler(event);
 
@@ -100,23 +100,21 @@ public class EventProcessor {
 
         log.debugv("Received {0} messages in a batch.", unis.size());
 
-        return Uni.combine().all().unis(unis)
-                .collectFailures().discardItems()
-                .onFailure().invoke(err -> log.errorv(err, "An exception occurred during message handling."))
-                .onFailure().recoverWithNull()
-                .replaceWith(() -> {
+        return Uni.combine().all().unis(unis).collectFailures().discardItems().onFailure()
+                .invoke(err -> log.errorv(err, "An exception occurred during message handling.")).onFailure()
+                .recoverWithNull().replaceWith(() -> {
                     log.debugv("Detected {0} errors during message handling.", unis.size());
                     return handler.createResponse(eventErrorHandler.getFailures(), config);
                 });
     }
 
-    private <E, M, R> Uni<?> handleMessage(final EventHandler<E, M, R> handler, final EventErrorHandler eventErrorHandler,
-            final Function<Object, FunqyServerResponse> dispatcher, final M msg) {
+    private <E, M, R> Uni<?> handleMessage(final EventHandler<E, M, R> handler,
+            final EventErrorHandler eventErrorHandler, final Function<Object, FunqyServerResponse> dispatcher,
+            final M msg) {
         try {
             // We check if the funqy method already uses the event model
             final boolean isUsingEventModel = Optional.ofNullable(objectReader).map(ObjectReader::getValueType)
-                    .map(type -> type.hasRawClass(handler.getMessageClass()))
-                    .orElse(false);
+                    .map(type -> type.hasRawClass(handler.getMessageClass())).orElse(false);
 
             Object input;
             if (isUsingEventModel) {
@@ -139,8 +137,7 @@ public class EventProcessor {
                     1. Message body could not be deserialized
                     2. Using a not supported AWS event
                     """);
-            return eventErrorHandler.collectFailures(Uni.createFrom().failure(e),
-                    handler.getIdentifier(msg, config));
+            return eventErrorHandler.collectFailures(Uni.createFrom().failure(e), handler.getIdentifier(msg, config));
         }
     }
 

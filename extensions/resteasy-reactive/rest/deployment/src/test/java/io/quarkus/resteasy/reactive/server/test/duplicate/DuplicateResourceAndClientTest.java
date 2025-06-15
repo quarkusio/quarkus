@@ -19,15 +19,11 @@ public class DuplicateResourceAndClientTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Client.class, Resource.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Client.class, Resource.class));
 
     @Test
     public void dummy() {
-        when()
-                .get("/hello")
-                .then()
-                .statusCode(200);
+        when().get("/hello").then().statusCode(200);
     }
 
     @Path("/hello")

@@ -17,7 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class MultipleNamedInfinispanClientsTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @InfinispanClientName("site-lon")
     @Inject
     RemoteCacheManager siteLonCm;
@@ -25,7 +25,7 @@ public class MultipleNamedInfinispanClientsTest {
     @InfinispanClientName("site-nyc")
     @Inject
     RemoteCacheManager siteNycCm;
-    //end::injection[]
+    // end::injection[]
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()

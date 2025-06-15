@@ -26,44 +26,13 @@ import io.fabric8.kubernetes.api.model.KubernetesListBuilder;
 
 public class QuarkusFileWriter extends SimpleFileWriter {
 
-    private static final List<String> RESOURCE_KIND_ORDER = List.of("Namespace",
-            "NetworkPolicy",
-            "ResourceQuota",
-            "LimitRange",
-            "PodSecurityPolicy",
-            "PodDisruptionBudget",
-            SERVICE_ACCOUNT,
-            "Secret",
-            "SecretList",
-            "ConfigMap",
-            "StorageClass",
-            "PersistentVolume",
-            "PersistentVolumeClaim",
-            "CustomResourceDefinition",
-            CLUSTER_ROLE,
-            "ClusterRoleList",
-            CLUSTER_ROLE_BINDING,
-            "ClusterRoleBindingList",
-            ROLE,
-            "RoleList",
-            ROLE_BINDING,
-            "RoleBindingList",
-            "Service",
-            "ImageStream",
-            "BuildConfig",
-            "DaemonSet",
-            "Pod",
-            "ReplicationController",
-            "ReplicaSet",
-            DEPLOYMENT,
-            "HorizontalPodAutoscaler",
-            STATEFULSET,
-            DEPLOYMENT_CONFIG,
-            JOB,
-            CRONJOB,
-            INGRESS,
-            ROUTE,
-            "APIService");
+    private static final List<String> RESOURCE_KIND_ORDER = List.of("Namespace", "NetworkPolicy", "ResourceQuota",
+            "LimitRange", "PodSecurityPolicy", "PodDisruptionBudget", SERVICE_ACCOUNT, "Secret", "SecretList",
+            "ConfigMap", "StorageClass", "PersistentVolume", "PersistentVolumeClaim", "CustomResourceDefinition",
+            CLUSTER_ROLE, "ClusterRoleList", CLUSTER_ROLE_BINDING, "ClusterRoleBindingList", ROLE, "RoleList",
+            ROLE_BINDING, "RoleBindingList", "Service", "ImageStream", "BuildConfig", "DaemonSet", "Pod",
+            "ReplicationController", "ReplicaSet", DEPLOYMENT, "HorizontalPodAutoscaler", STATEFULSET,
+            DEPLOYMENT_CONFIG, JOB, CRONJOB, INGRESS, ROUTE, "APIService");
 
     public QuarkusFileWriter(Project project) {
         super(project, false);
@@ -83,8 +52,7 @@ public class QuarkusFileWriter extends SimpleFileWriter {
         for (HasMetadata item : items) {
             String kind = item.getKind();
             if (RESOURCE_KIND_ORDER.contains(kind)) {
-                groups.computeIfAbsent(kind, k -> new LinkedList<>())
-                        .add(item);
+                groups.computeIfAbsent(kind, k -> new LinkedList<>()).add(item);
             } else {
                 rest.add(item);
             }

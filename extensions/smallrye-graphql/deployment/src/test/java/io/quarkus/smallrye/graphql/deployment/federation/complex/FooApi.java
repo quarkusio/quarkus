@@ -21,9 +21,8 @@ public class FooApi {
 
     @Query
     public Uni<List<Bar>> bars(List<Integer> id, List<String> otherId) {
-        return Uni.join().all(
-                IntStream.range(0, id.size()).boxed().map(i -> bar(id.get(i), otherId.get(i))).collect(Collectors.toList()))
-                .andFailFast();
+        return Uni.join().all(IntStream.range(0, id.size()).boxed().map(i -> bar(id.get(i), otherId.get(i)))
+                .collect(Collectors.toList())).andFailFast();
     }
 
     private Uni<Bar> bar(int id, String otherId) {

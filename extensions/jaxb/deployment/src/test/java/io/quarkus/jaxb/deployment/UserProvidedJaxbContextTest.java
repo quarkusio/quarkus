@@ -28,11 +28,8 @@ public class UserProvidedJaxbContextTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            io.quarkus.jaxb.deployment.one.Model.class,
-                            io.quarkus.jaxb.deployment.two.Model.class,
-                            UserProvidedJaxbContextTest.JaxbContextProducer.class));
+            .withApplicationRoot((jar) -> jar.addClasses(io.quarkus.jaxb.deployment.one.Model.class,
+                    io.quarkus.jaxb.deployment.two.Model.class, UserProvidedJaxbContextTest.JaxbContextProducer.class));
 
     @Inject
     JAXBContext jaxbContext;
@@ -70,8 +67,8 @@ public class UserProvidedJaxbContextTest {
         io.quarkus.jaxb.deployment.two.Model model = new io.quarkus.jaxb.deployment.two.Model();
         model.setName2("name2");
         Assertions.assertThatExceptionOfType(JAXBException.class)
-                .isThrownBy(() -> marshaller.marshal(model, new StringWriter()))
-                .withMessage("class io.quarkus.jaxb.deployment.two.Model nor any of its super class is known to this context.");
+                .isThrownBy(() -> marshaller.marshal(model, new StringWriter())).withMessage(
+                        "class io.quarkus.jaxb.deployment.two.Model nor any of its super class is known to this context.");
     }
 
     public static class JaxbContextProducer {

@@ -22,14 +22,12 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UserTagArgumentsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(
-                            "{_args.size}::{_args.empty}::{_args.get('name')}::{_args.asHtmlAttributes}::{_args.skip('foo','baz').size}::{#each _args.filter('name')}{it.value}{/each}"),
-                            "templates/tags/hello.txt")
-                    .addAsResource(new StringAsset("{#hello name=val /}"), "templates/foo.txt")
-                    .addAsResource(new StringAsset("{_args.startsWith('hx-','x-')}"),
-                            "templates/tags/startsWith.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset(
+                    "{_args.size}::{_args.empty}::{_args.get('name')}::{_args.asHtmlAttributes}::{_args.skip('foo','baz').size}::{#each _args.filter('name')}{it.value}{/each}"),
+                    "templates/tags/hello.txt")
+            .addAsResource(new StringAsset("{#hello name=val /}"), "templates/foo.txt")
+            .addAsResource(new StringAsset("{_args.startsWith('hx-','x-')}"), "templates/tags/startsWith.txt"));
 
     @Inject
     Template foo;

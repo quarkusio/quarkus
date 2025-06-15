@@ -63,7 +63,8 @@ public class ProjectionForEnhancer implements BiFunction<String, ClassVisitor, C
         }
 
         @Override
-        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String descriptor, String signature,
+                String[] exceptions) {
             MethodVisitor superVisitor = super.visitMethod(access, name, descriptor, signature, exceptions);
             if (this.propertyMapping.containsKey(name)) {
                 return new MethodVisitor(Gizmo.ASM_API_VERSION, superVisitor) {

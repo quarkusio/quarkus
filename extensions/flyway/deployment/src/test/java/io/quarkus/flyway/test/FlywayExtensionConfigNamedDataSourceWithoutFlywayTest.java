@@ -13,8 +13,8 @@ import io.quarkus.flyway.FlywayDataSource;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Assures, that flyway can also be used without any configuration,
- * provided, that at least a named datasource is configured.
+ * Assures, that flyway can also be used without any configuration, provided, that at least a named datasource is
+ * configured.
  */
 public class FlywayExtensionConfigNamedDataSourceWithoutFlywayTest {
 
@@ -27,8 +27,7 @@ public class FlywayExtensionConfigNamedDataSourceWithoutFlywayTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(FlywayExtensionConfigFixture.class)
+            .withApplicationRoot((jar) -> jar.addClass(FlywayExtensionConfigFixture.class)
                     .addAsResource("config-for-named-datasource-without-flyway.properties", "application.properties"));
 
     @Test

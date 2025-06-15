@@ -25,15 +25,14 @@ final class Util {
         if (!engine.useAsyncTimeout()) {
             // Make sure the timeout is always used
             long timeout = instance.getTimeout();
-            uni = uni.ifNoItem().after(Duration.ofMillis(timeout))
-                    .failWith(() -> new TemplateException(instance + " rendering timeout [" + timeout + "ms] occurred"));
+            uni = uni.ifNoItem().after(Duration.ofMillis(timeout)).failWith(
+                    () -> new TemplateException(instance + " rendering timeout [" + timeout + "ms] occurred"));
         }
         return uni;
     }
 
     @SuppressWarnings("unchecked")
-    static MediaType setSelectedVariant(TemplateInstance result,
-            Request request, List<Locale> acceptableLanguages) {
+    static MediaType setSelectedVariant(TemplateInstance result, Request request, List<Locale> acceptableLanguages) {
         List<Variant> quteVariants = List.of();
         Object variantsAttr = result.getAttribute(TemplateInstance.VARIANTS);
         if (variantsAttr != null) {
@@ -48,11 +47,10 @@ final class Util {
         if (!quteVariants.isEmpty()) {
             List<jakarta.ws.rs.core.Variant> jaxRsVariants = new ArrayList<>(quteVariants.size());
             for (Variant variant : quteVariants) {
-                jaxRsVariants.add(new jakarta.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()), variant.getLocale(),
-                        variant.getEncoding()));
+                jaxRsVariants.add(new jakarta.ws.rs.core.Variant(MediaType.valueOf(variant.getMediaType()),
+                        variant.getLocale(), variant.getEncoding()));
             }
-            jakarta.ws.rs.core.Variant selected = request
-                    .selectVariant(jaxRsVariants);
+            jakarta.ws.rs.core.Variant selected = request.selectVariant(jaxRsVariants);
 
             if (selected != null) {
                 Locale selectedLocale = selected.getLanguage();
@@ -62,8 +60,7 @@ final class Util {
                     }
                 }
                 result.setAttribute(TemplateInstance.SELECTED_VARIANT,
-                        new Variant(selectedLocale, selected.getMediaType().toString(),
-                                selected.getEncoding()));
+                        new Variant(selectedLocale, selected.getMediaType().toString(), selected.getEncoding()));
                 return selected.getMediaType();
             }
         }

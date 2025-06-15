@@ -71,8 +71,7 @@ public class VertxCoreRecorder {
     static volatile int blockingThreadPoolSize;
 
     /**
-     * This is a bit of a hack. In dev mode we undeploy all the verticles on restart, except
-     * for this one
+     * This is a bit of a hack. In dev mode we undeploy all the verticles on restart, except for this one
      */
     private static volatile String webDeploymentId;
 
@@ -84,15 +83,15 @@ public class VertxCoreRecorder {
     private static final Set<Thread> devModeThreads = new HashSet<>();
     /**
      * The class loader to use for new threads in dev mode. On dev mode restart this must be updated under the
-     * {@link #devModeThreads} lock, to
-     * avoid race conditions.
+     * {@link #devModeThreads} lock, to avoid race conditions.
      */
     private static volatile ClassLoader currentDevModeNewThreadCreationClassLoader;
 
     public Supplier<Vertx> configureVertx(VertxConfiguration config, ThreadPoolConfig threadPoolConfig,
             LaunchMode launchMode, ShutdownContext shutdown, List<Consumer<VertxOptions>> customizers,
             ExecutorService executorProxy) {
-        // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to the io.quarkus.runtime.ExecutorRecorder
+        // The wrapper previously here to prevent the executor to be shutdown prematurely is moved to higher level to
+        // the io.quarkus.runtime.ExecutorRecorder
         QuarkusExecutorFactory.sharedExecutor = executorProxy;
         if (launchMode != LaunchMode.DEVELOPMENT) {
             vertx = new VertxSupplier(launchMode, config, customizers, threadPoolConfig, shutdown);
@@ -198,8 +197,7 @@ public class VertxCoreRecorder {
     }
 
     public static Vertx initialize(VertxConfiguration conf, VertxOptionsCustomizer customizer,
-            ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown,
-            LaunchMode launchMode) {
+            ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown, LaunchMode launchMode) {
 
         VertxOptions options = new VertxOptions();
 
@@ -219,15 +217,15 @@ public class VertxCoreRecorder {
             @Override
             public VertxThread newVertxThread(Runnable target, String name, boolean worker, long maxExecTime,
                     TimeUnit maxExecTimeUnit) {
-                return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode, nonDevModeTccl);
+                return createVertxThread(target, name, worker, maxExecTime, maxExecTimeUnit, launchMode,
+                        nonDevModeTccl);
             }
         };
         if (conf != null && conf.cluster() != null && conf.cluster().clustered()) {
             CompletableFuture<Vertx> latch = new CompletableFuture<>();
-            new VertxBuilder(options)
-                    .threadFactory(vertxThreadFactory)
-                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
-                    .init().clusteredVertx(new Handler<AsyncResult<Vertx>>() {
+            new VertxBuilder(options).threadFactory(vertxThreadFactory)
+                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode)).init()
+                    .clusteredVertx(new Handler<AsyncResult<Vertx>>() {
                         @Override
                         public void handle(AsyncResult<Vertx> ar) {
                             if (ar.failed()) {
@@ -239,10 +237,8 @@ public class VertxCoreRecorder {
                     });
             vertx = latch.join();
         } else {
-            vertx = new VertxBuilder(options)
-                    .threadFactory(vertxThreadFactory)
-                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode))
-                    .init().vertx();
+            vertx = new VertxBuilder(options).threadFactory(vertxThreadFactory)
+                    .executorServiceFactory(new QuarkusExecutorFactory(conf, launchMode)).init().vertx();
         }
 
         vertx.exceptionHandler(new Handler<Throwable>() {
@@ -258,19 +254,20 @@ public class VertxCoreRecorder {
     }
 
     /**
-     * Depending on the launch mode we may need to handle the TCCL differently.
+     * Depending on the launch mode we may need to handle the TCCL differently. For dev mode it can change, so we don't
+     * want to capture the original TCCL (as this would be a leak). For other modes we just want a fixed TCCL, and leaks
+     * are not an issue.
      *
-     * For dev mode it can change, so we don't want to capture the original TCCL (as this would be a leak). For other modes we
-     * just want a fixed TCCL, and leaks are not an issue.
+     * @param launchMode
+     *        The launch mode
      *
-     * @param launchMode The launch mode
      * @return The ClassLoader if we are not running in dev mode
      */
     private static Optional<ClassLoader> setupThreadFactoryTccl(LaunchMode launchMode) {
         Optional<ClassLoader> nonDevModeTccl;
         if (launchMode == LaunchMode.DEVELOPMENT) {
             currentDevModeNewThreadCreationClassLoader = Thread.currentThread().getContextClassLoader();
-            nonDevModeTccl = Optional.empty(); //in dev mode we don't want to capture the original TCCL to stop a leak
+            nonDevModeTccl = Optional.empty(); // in dev mode we don't want to capture the original TCCL to stop a leak
         } else {
             nonDevModeTccl = Optional.of(Thread.currentThread().getContextClassLoader());
         }
@@ -297,8 +294,7 @@ public class VertxCoreRecorder {
     }
 
     private static VertxOptions convertToVertxOptions(VertxConfiguration conf, VertxOptions options,
-            ThreadPoolConfig threadPoolConfig, boolean allowClustering,
-            ShutdownContext shutdown) {
+            ThreadPoolConfig threadPoolConfig, boolean allowClustering, ShutdownContext shutdown) {
 
         if (!conf.useAsyncDNS()) {
             System.setProperty(ResolverProvider.DISABLE_DNS_RESOLVER_PROP_NAME, "true");
@@ -312,8 +308,7 @@ public class VertxCoreRecorder {
             initializeClusterOptions(conf, options);
         }
 
-        FileSystemOptions fileSystemOptions = new FileSystemOptions()
-                .setFileCachingEnabled(conf.caching())
+        FileSystemOptions fileSystemOptions = new FileSystemOptions().setFileCachingEnabled(conf.caching())
                 .setClassPathResolvingEnabled(conf.classpathResolving());
 
         String fileCacheDir = System.getProperty(CACHE_DIR_BASE_PROP_NAME);
@@ -349,7 +344,8 @@ public class VertxCoreRecorder {
                         public void run() {
                             // Recursively delete the created directory and all the files
                             deleteDirectory(cache);
-                            // We do not delete the vertx-cache directory on purpose, as it could be used concurrently by
+                            // We do not delete the vertx-cache directory on purpose, as it could be used concurrently
+                            // by
                             // another application. In the worse case, it's just an empty directory.
                         }
                     });
@@ -394,13 +390,13 @@ public class VertxCoreRecorder {
     }
 
     private static int calculateDefaultIOThreads() {
-        //we only allow one event loop per 10mb of ram at the most
-        //it's hard to say what this number should be, but it is also obvious
-        //that for constrained environments we don't want a lot of event loops
-        //lets start with 10mb and adjust as needed
-        //We used to recommend a default of twice the number of cores,
-        //but more recent developments seem to suggest matching the number of cores 1:1
-        //being a more reasonable default. It also saves memory.
+        // we only allow one event loop per 10mb of ram at the most
+        // it's hard to say what this number should be, but it is also obvious
+        // that for constrained environments we don't want a lot of event loops
+        // lets start with 10mb and adjust as needed
+        // We used to recommend a default of twice the number of cores,
+        // but more recent developments seem to suggest matching the number of cores 1:1
+        // being a more reasonable default. It also saves memory.
         int recommended = ProcessorInfo.availableProcessors();
         long mem = Runtime.getRuntime().maxMemory();
         long memInMb = mem / (1024 * 1024);
@@ -411,7 +407,8 @@ public class VertxCoreRecorder {
 
     void destroy() {
         if (vertx != null && vertx.v != null) {
-            // Netty attaches a ThreadLocal to the main thread that can leak the QuarkusClassLoader which can be problematic in dev or test mode
+            // Netty attaches a ThreadLocal to the main thread that can leak the QuarkusClassLoader which can be
+            // problematic in dev or test mode
             FastThreadLocal.destroy();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> problem = new AtomicReference<>();
@@ -463,10 +460,9 @@ public class VertxCoreRecorder {
         opts.setAcceptBacklog(eb.acceptBacklog().orElse(-1));
         opts.setClientAuth(ClientAuth.valueOf(eb.clientAuth().toUpperCase()));
         opts.setConnectTimeout((int) (Math.min(Integer.MAX_VALUE, eb.connectTimeout().toMillis())));
-        opts.setIdleTimeout(
-                eb.idleTimeout().isPresent()
-                        ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout().get().getSeconds()))
-                        : 0);
+        opts.setIdleTimeout(eb.idleTimeout().isPresent()
+                ? (int) Math.max(1, Math.min(Integer.MAX_VALUE, eb.idleTimeout().get().getSeconds()))
+                : 0);
         opts.setSendBufferSize(eb.sendBufferSize().orElse(-1));
         opts.setSoLinger(eb.soLinger().orElse(-1));
         opts.setSsl(eb.ssl());
@@ -565,8 +561,8 @@ public class VertxCoreRecorder {
         return new ThreadFactory() {
             @Override
             public Thread newThread(Runnable runnable) {
-                VertxThread thread = createVertxThread(runnable,
-                        "executor-thread-" + threadCount.getAndIncrement(), true, 0, null, launchMode, nonDevModeTccl);
+                VertxThread thread = createVertxThread(runnable, "executor-thread-" + threadCount.getAndIncrement(),
+                        true, 0, null, launchMode, nonDevModeTccl);
                 thread.setDaemon(true);
                 return thread;
             }
@@ -585,8 +581,8 @@ public class VertxCoreRecorder {
     private static void setNewThreadTccl(VertxThread thread) {
         ClassLoader cl = VertxCoreRecorder.currentDevModeNewThreadCreationClassLoader;
         if (cl == null) {
-            //can happen if a thread is created after shutdown is initiated
-            //should be super rare, but might as well handle it properly
+            // can happen if a thread is created after shutdown is initiated
+            // should be super rare, but might as well handle it properly
             cl = VertxCoreRecorder.class.getClassLoader();
         }
         thread.setContextClassLoader(cl);
@@ -663,7 +659,8 @@ public class VertxCoreRecorder {
     }
 
     public static Supplier<Vertx> recoverFailedStart(VertxConfiguration config, ThreadPoolConfig threadPoolConfig) {
-        return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), threadPoolConfig, null);
+        return vertx = new VertxSupplier(LaunchMode.DEVELOPMENT, config, Collections.emptyList(), threadPoolConfig,
+                null);
 
     }
 
@@ -683,8 +680,7 @@ public class VertxCoreRecorder {
         Vertx v;
 
         VertxSupplier(LaunchMode launchMode, VertxConfiguration config, List<Consumer<VertxOptions>> customizers,
-                ThreadPoolConfig threadPoolConfig,
-                ShutdownContext shutdown) {
+                ThreadPoolConfig threadPoolConfig, ShutdownContext shutdown) {
             this.launchMode = launchMode;
             this.config = config;
             this.customizer = new VertxOptionsCustomizer(customizers);

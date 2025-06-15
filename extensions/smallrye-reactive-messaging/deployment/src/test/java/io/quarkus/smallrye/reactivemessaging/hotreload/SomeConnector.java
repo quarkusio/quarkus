@@ -24,15 +24,12 @@ public class SomeConnector implements OutgoingConnectorFactory, IncomingConnecto
     public PublisherBuilder<? extends Message<?>> getPublisherBuilder(Config config) {
         Integer increment = config.getOptionalValue("increment", Integer.class).orElse(1);
 
-        return ReactiveStreams.of(1, 2, 3, 4, 5, 6, 7, 8, 9)
-                .map(i -> i + increment)
-                .map(Message::of);
+        return ReactiveStreams.of(1, 2, 3, 4, 5, 6, 7, 8, 9).map(i -> i + increment).map(Message::of);
     }
 
     @Override
     public SubscriberBuilder<? extends Message<?>, Void> getSubscriberBuilder(Config config) {
-        return ReactiveStreams.<Message<String>> builder()
-                .forEach(s -> items.add(s.getPayload()));
+        return ReactiveStreams.<Message<String>> builder().forEach(s -> items.add(s.getPayload()));
     }
 
     private JsonArray items = new JsonArray();

@@ -6,10 +6,8 @@ import io.quarkus.devui.spi.AbstractDevUIBuildItem;
 import io.quarkus.devui.spi.DevUIContent;
 
 /**
- * Static Content generated at build time
- *
- * This is used to generate components that will be available in Dev UI, but generated during build.
- * This contains the final content (no more generation) and will be served as is
+ * Static Content generated at build time This is used to generate components that will be available in Dev UI, but
+ * generated during build. This contains the final content (no more generation) and will be served as is
  */
 public final class StaticContentBuildItem extends AbstractDevUIBuildItem {
 

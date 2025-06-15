@@ -26,31 +26,25 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Tests that shutdown will wait for current requests to finish, up to the timeout specified.
- *
- * This test records the current time, then sends a request to an endpoint that will take 50s to finish.
- *
- * After undeploy we verify that less than 50s has elapsed, as the shutdown should have proceeded anyway once
- * the timeout of 100ms was reached.
+ * Tests that shutdown will wait for current requests to finish, up to the timeout specified. This test records the
+ * current time, then sends a request to an endpoint that will take 50s to finish. After undeploy we verify that less
+ * than 50s has elapsed, as the shutdown should have proceeded anyway once the timeout of 100ms was reached.
  */
 public class ShutdownTimeoutDefaultExecutorTest {
 
     protected static final int HANDLER_WAIT_TIME = 50000;
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setAllowTestClassOutsideDeployment(true)
+    static QuarkusUnitTest test = new QuarkusUnitTest().setAllowTestClassOutsideDeployment(true)
             .setArchiveProducer(new Supplier<>() {
                 @Override
                 public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(ShutdownTimeoutDefaultExecutorTest.class)
+                    return ShrinkWrap.create(JavaArchive.class).addClasses(ShutdownTimeoutDefaultExecutorTest.class)
                             .addAsResource(new StringAsset(
                                     "quarkus.shutdown.timeout=PT0.1S\nquarkus.thread-pool.shutdown-check-interval=PT0.2S"),
                                     "application.properties");
                 }
-            })
-            .setAfterUndeployListener(new Runnable() {
+            }).setAfterUndeployListener(new Runnable() {
                 @Override
                 public void run() {
                     try {
@@ -58,7 +52,8 @@ public class ShutdownTimeoutDefaultExecutorTest {
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    Assertions.assertTrue(System.currentTimeMillis() - ShutdownTimer.requestStarted < HANDLER_WAIT_TIME);
+                    Assertions
+                            .assertTrue(System.currentTimeMillis() - ShutdownTimer.requestStarted < HANDLER_WAIT_TIME);
                 }
             });
 

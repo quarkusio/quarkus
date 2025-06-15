@@ -34,44 +34,29 @@ class ApplicationTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(
-                            ResourceTest1.class, ResourceTest2.class, ResponseFilter1.class, ResponseFilter2.class,
-                            ResponseFilter3.class, ResponseFilter4.class, ResponseFilter5.class, ResponseFilter6.class,
-                            Feature1.class, Feature2.class, DynamicFeature1.class, DynamicFeature2.class,
-                            ExceptionMapper1.class, ExceptionMapper2.class, AppTest.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ResourceTest1.class, ResourceTest2.class,
+                    ResponseFilter1.class, ResponseFilter2.class, ResponseFilter3.class, ResponseFilter4.class,
+                    ResponseFilter5.class, ResponseFilter6.class, Feature1.class, Feature2.class, DynamicFeature1.class,
+                    DynamicFeature2.class, ExceptionMapper1.class, ExceptionMapper2.class, AppTest.class));
 
     @DisplayName("Should access to ok of resource 1 and provide a response with the expected headers")
     @Test
     void should_call_ok_of_resource_1() {
-        when()
-                .get("/rt-1/ok")
-                .then()
-                .header("X-RF-1", notNullValue())
-                .header("X-RF-2", nullValue())
-                .header("X-RF-3", notNullValue())
-                .header("X-RF-4", nullValue())
-                .header("X-RF-5", notNullValue())
-                .header("X-RF-6", nullValue())
-                .body(Matchers.is("ok1"));
+        when().get("/rt-1/ok").then().header("X-RF-1", notNullValue()).header("X-RF-2", nullValue())
+                .header("X-RF-3", notNullValue()).header("X-RF-4", nullValue()).header("X-RF-5", notNullValue())
+                .header("X-RF-6", nullValue()).body(Matchers.is("ok1"));
     }
 
     @DisplayName("Should access to ko of resource 1 and call the expected exception mapper")
     @Test
     void should_call_ko_of_resource_1() {
-        when()
-                .get("/rt-1/ko")
-                .then()
-                .statusCode(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+        when().get("/rt-1/ko").then().statusCode(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
     }
 
     @DisplayName("Should access to ok of resource 1 and provide a response with the expected headers")
     @Test
     void should_not_call_ok_of_resource_2() {
-        when()
-                .get("/rt-2/ok")
-                .then()
-                .statusCode(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
+        when().get("/rt-2/ok").then().statusCode(Response.Status.SERVICE_UNAVAILABLE.getStatusCode());
     }
 
     @Path("rt-1")
@@ -220,16 +205,12 @@ class ApplicationTest {
 
         @Override
         public Set<Class<?>> getClasses() {
-            return new HashSet<>(
-                    Arrays.asList(
-                            ResourceTest1.class, Feature1.class, ExceptionMapper1.class));
+            return new HashSet<>(Arrays.asList(ResourceTest1.class, Feature1.class, ExceptionMapper1.class));
         }
 
         @Override
         public Set<Object> getSingletons() {
-            return new HashSet<>(
-                    Arrays.asList(
-                            new ResponseFilter1(), new DynamicFeature1()));
+            return new HashSet<>(Arrays.asList(new ResponseFilter1(), new DynamicFeature1()));
         }
     }
 }

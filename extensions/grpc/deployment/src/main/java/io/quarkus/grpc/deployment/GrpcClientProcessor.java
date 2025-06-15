@@ -109,8 +109,7 @@ public class GrpcClientProcessor {
 
     @BuildStep
     void discoverInjectedClients(BeanDiscoveryFinishedBuildItem beanDiscovery,
-            BuildProducer<GrpcClientBuildItem> clients,
-            BuildProducer<FeatureBuildItem> features,
+            BuildProducer<GrpcClientBuildItem> clients, BuildProducer<FeatureBuildItem> features,
             CombinedIndexBuildItem index) {
 
         Map<String, GrpcClientBuildItem> items = new HashMap<>();
@@ -150,15 +149,16 @@ public class GrpcClientProcessor {
                     MethodParameterInfo param = clientAnnotation.target().asMethodParameter();
                     clientName = param.method().parameterName(param.position());
                     if (clientName == null) {
-                        throw new DeploymentException("Unable to determine the client name from the parameter at position "
-                                + param.position()
-                                + " in method "
-                                + param.method().declaringClass().name() + "#" + param.method().name()
-                                + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or use GrpcClient#value() to specify the service name");
+                        throw new DeploymentException(
+                                "Unable to determine the client name from the parameter at position " + param.position()
+                                        + " in method " + param.method().declaringClass().name() + "#"
+                                        + param.method().name()
+                                        + "() - compile the class with debug info enabled (-g) or parameter names recorded (-parameters), or use GrpcClient#value() to specify the service name");
                     }
                 } else {
                     // This should never happen because @GrpcClient has @Target({ FIELD, PARAMETER })
-                    throw new IllegalStateException(clientAnnotation + " may not be declared at " + clientAnnotation.target());
+                    throw new IllegalStateException(
+                            clientAnnotation + " may not be declared at " + clientAnnotation.target());
                 }
             } else {
                 clientName = clientNameValue.asString();
@@ -185,21 +185,24 @@ public class GrpcClientProcessor {
 
             // Clients supported: blocking stubs, Mutiny stubs, Mutiny client implementing the service interface
             // The required type must have AbstractBlockingStub, MutinyStub or MutinyService in the hierarchy
-            // Note that we must use the computing index because the generated stubs don't need to be part of the app index
+            // Note that we must use the computing index because the generated stubs don't need to be part of the app
+            // index
             Set<DotName> rawTypes = getRawTypeClosure(index.getComputingIndex().getClassByName(injectionType.name()),
                     index.getComputingIndex());
 
             if (rawTypes.contains(GrpcDotNames.ABSTRACT_BLOCKING_STUB)) {
-                item.addClient(new ClientInfo(injectionType.name(), ClientType.BLOCKING_STUB, registeredInterceptors), true);
+                item.addClient(new ClientInfo(injectionType.name(), ClientType.BLOCKING_STUB, registeredInterceptors),
+                        true);
             } else if (rawTypes.contains(GrpcDotNames.MUTINY_STUB)) {
-                item.addClient(new ClientInfo(injectionType.name(), ClientType.MUTINY_STUB, registeredInterceptors), true);
+                item.addClient(new ClientInfo(injectionType.name(), ClientType.MUTINY_STUB, registeredInterceptors),
+                        true);
             } else if (rawTypes.contains(GrpcDotNames.MUTINY_SERVICE)) {
                 DotName generatedClient = generatedClients.get(injectionType.name());
                 if (generatedClient == null) {
                     throw invalidInjectionPoint(injectionPoint);
                 }
-                item.addClient(new ClientInfo(injectionType.name(), ClientType.MUTINY_CLIENT,
-                        generatedClient, registeredInterceptors), true);
+                item.addClient(new ClientInfo(injectionType.name(), ClientType.MUTINY_CLIENT, generatedClient,
+                        registeredInterceptors), true);
             } else {
                 throw invalidInjectionPoint(injectionPoint);
             }
@@ -232,28 +235,25 @@ public class GrpcClientProcessor {
                 if (clientInfo.type == ClientType.CHANNEL) {
                     // channel
 
-                    // IMPORTANT: the channel producer relies on the io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider
+                    // IMPORTANT: the channel producer relies on the
+                    // io.quarkus.grpc.runtime.supports.GrpcClientConfigProvider
                     // bean that provides the GrpcClientConfiguration for the specific service.
 
                     ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(GrpcDotNames.CHANNEL)
-                            .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", clientName)
-                            .done()
-                            .scope(Singleton.class)
-                            .unremovable()
-                            .forceApplicationClass()
-                            .creator(new Consumer<>() {
+                            .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", clientName).done()
+                            .scope(Singleton.class).unremovable().forceApplicationClass().creator(new Consumer<>() {
                                 @Override
                                 public void accept(MethodCreator mc) {
                                     GrpcClientProcessor.this.generateChannelProducer(mc, clientName, clientInfo);
                                 }
-                            })
-                            .destroyer(Channels.ChannelDestroyer.class);
+                            }).destroyer(Channels.ChannelDestroyer.class);
                     if (!clientInfo.interceptors.isEmpty()) {
                         for (String interceptorClass : clientInfo.interceptors) {
-                            configurator.addQualifier(AnnotationInstance.create(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR, null,
-                                    new AnnotationValue[] { AnnotationValue.createClassValue("value",
-                                            Type.create(DotName.createSimple(interceptorClass),
-                                                    org.jboss.jandex.Type.Kind.CLASS)) }));
+                            configurator.addQualifier(
+                                    AnnotationInstance.create(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR, null,
+                                            new AnnotationValue[] { AnnotationValue.createClassValue("value",
+                                                    Type.create(DotName.createSimple(interceptorClass),
+                                                            org.jboss.jandex.Type.Kind.CLASS)) }));
                         }
                     }
                     syntheticBeans.produce(configurator.done());
@@ -261,12 +261,12 @@ public class GrpcClientProcessor {
                     // blocking stub, mutiny stub, mutiny client
                     ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(clientInfo.className)
                             .addQualifier().annotation(GrpcDotNames.GRPC_CLIENT).addValue("value", clientName).done()
-                            // Only the mutiny client can use the Application scope, the others are "final" and so need Singleton.
+                            // Only the mutiny client can use the Application scope, the others are "final" and so need
+                            // Singleton.
                             // Using @ApplicationScoped allows the usage of @InjectMock
-                            .scope(clientInfo.type == ClientType.MUTINY_CLIENT ? ApplicationScoped.class : Singleton.class)
-                            .unremovable()
-                            .forceApplicationClass()
-                            .addType(MutinyClient.class)
+                            .scope(clientInfo.type == ClientType.MUTINY_CLIENT ? ApplicationScoped.class
+                                    : Singleton.class)
+                            .unremovable().forceApplicationClass().addType(MutinyClient.class)
                             .creator(new Consumer<>() {
                                 @Override
                                 public void accept(MethodCreator mc) {
@@ -275,10 +275,11 @@ public class GrpcClientProcessor {
                             });
                     if (!clientInfo.interceptors.isEmpty()) {
                         for (String interceptorClass : clientInfo.interceptors) {
-                            configurator.addQualifier(AnnotationInstance.create(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR, null,
-                                    new AnnotationValue[] { AnnotationValue.createClassValue("value",
-                                            Type.create(DotName.createSimple(interceptorClass),
-                                                    org.jboss.jandex.Type.Kind.CLASS)) }));
+                            configurator.addQualifier(
+                                    AnnotationInstance.create(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR, null,
+                                            new AnnotationValue[] { AnnotationValue.createClassValue("value",
+                                                    Type.create(DotName.createSimple(interceptorClass),
+                                                            org.jboss.jandex.Type.Kind.CLASS)) }));
                         }
                     }
                     syntheticBeans.produce(configurator.done());
@@ -290,7 +291,8 @@ public class GrpcClientProcessor {
     @BuildStep
     void registerSslResources(BuildProducer<NativeImageResourceBuildItem> resourceBuildItem) {
         Config config = ConfigProvider.getConfig();
-        registerResourcesForProperties(config, resourceBuildItem, TRUST_STORE_PATTERN, CERTIFICATE_PATTERN, KEY_PATTERN);
+        registerResourcesForProperties(config, resourceBuildItem, TRUST_STORE_PATTERN, CERTIFICATE_PATTERN,
+                KEY_PATTERN);
     }
 
     @BuildStep
@@ -304,7 +306,8 @@ public class GrpcClientProcessor {
             // Dummy producer - this build step needs to be executed before the CDI container is initialized
             BuildProducer<UnremovableBeanBuildItem> dummy) {
         // Attempt to detect wrong service interface injection points
-        // Note that we cannot use injection points metadata because the build can fail with unsatisfied dependency before
+        // Note that we cannot use injection points metadata because the build can fail with unsatisfied dependency
+        // before
         Set<DotName> serviceInterfaces = new HashSet<>();
         for (ClassInfo serviceInterface : index.getIndex().getKnownDirectImplementors(GrpcDotNames.MUTINY_SERVICE)) {
             serviceInterfaces.add(serviceInterface.name());
@@ -334,8 +337,9 @@ public class GrpcClientProcessor {
                             }
                         }
                         if (annotations.size() > 1) {
-                            throw new IllegalStateException("A gRPC service injection is missing the @GrpcClient qualifier: "
-                                    + method.declaringClass().name() + "#" + method.name() + "()");
+                            throw new IllegalStateException(
+                                    "A gRPC service injection is missing the @GrpcClient qualifier: "
+                                            + method.declaringClass().name() + "#" + method.name() + "()");
                         }
                     }
                 }
@@ -350,7 +354,8 @@ public class GrpcClientProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 // If annotated with @GrpcClient and no explicit value is used, i.e. @GrpcClient(),
-                // then we need to determine the service name from the annotated element and transform the injection point
+                // then we need to determine the service name from the annotated element and transform the injection
+                // point
                 AnnotationInstance clientAnnotation = Annotations.find(ctx.getQualifiers(), GrpcDotNames.GRPC_CLIENT);
                 if (clientAnnotation != null && clientAnnotation.value() == null) {
                     String clientName = null;
@@ -385,10 +390,10 @@ public class GrpcClientProcessor {
             BeanArchiveIndexBuildItem beanArchiveIndex) {
 
         IndexView index = beanArchiveIndex.getIndex();
-        GrpcInterceptors interceptors = GrpcInterceptors.gatherInterceptors(index,
-                GrpcDotNames.CLIENT_INTERCEPTOR);
+        GrpcInterceptors interceptors = GrpcInterceptors.gatherInterceptors(index, GrpcDotNames.CLIENT_INTERCEPTOR);
 
-        // Let's gather all the non-abstract, non-global interceptors, from these we'll filter out ones used per-service ones
+        // Let's gather all the non-abstract, non-global interceptors, from these we'll filter out ones used per-service
+        // ones
         // The rest, if anything stays, should be logged as problematic
         Set<String> superfluousInterceptors = new HashSet<>(interceptors.nonGlobalInterceptors);
 
@@ -397,7 +402,8 @@ public class GrpcClientProcessor {
             superfluousInterceptors.remove(MICROMETER_INTERCEPTOR);
         }
 
-        List<AnnotationInstance> found = new ArrayList<>(index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR));
+        List<AnnotationInstance> found = new ArrayList<>(
+                index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR));
         for (AnnotationInstance annotation : index.getAnnotations(GrpcDotNames.REGISTER_CLIENT_INTERCEPTOR_LIST)) {
             for (AnnotationInstance nested : annotation.value().asNestedArray()) {
                 found.add(AnnotationInstance.create(nested.name(), annotation.target(), nested.values()));
@@ -421,15 +427,15 @@ public class GrpcClientProcessor {
         superfluousInterceptors.remove(StorkMeasuringGrpcInterceptor.class.getName());
         superfluousInterceptors.remove(VertxStorkMeasuringGrpcInterceptor.class.getName());
         if (!superfluousInterceptors.isEmpty()) {
-            LOGGER.warnf("At least one unused gRPC client interceptor found: %s. If there are meant to be used globally, " +
-                    "annotate them with @GlobalInterceptor.", String.join(", ", superfluousInterceptors));
+            LOGGER.warnf(
+                    "At least one unused gRPC client interceptor found: %s. If there are meant to be used globally, "
+                            + "annotate them with @GlobalInterceptor.",
+                    String.join(", ", superfluousInterceptors));
         }
 
-        return SyntheticBeanBuildItem.configure(ClientInterceptorStorage.class)
-                .unremovable()
+        return SyntheticBeanBuildItem.configure(ClientInterceptorStorage.class).unremovable()
                 .runtimeValue(recorder.initClientInterceptorStorage(perClientInterceptors, globalInterceptors))
-                .setRuntimeInit()
-                .done();
+                .setRuntimeInit().done();
     }
 
     @BuildStep
@@ -462,9 +468,9 @@ public class GrpcClientProcessor {
     }
 
     private DeploymentException invalidInjectionPoint(InjectionPointInfo injectionPoint) {
-        return new DeploymentException(
-                injectionPoint.getRequiredType() + " cannot be injected into " + injectionPoint.getTargetInfo()
-                        + " - only Mutiny service interfaces, blocking stubs, reactive stubs based on Mutiny and io.grpc.Channel can be injected via @GrpcClient");
+        return new DeploymentException(injectionPoint.getRequiredType() + " cannot be injected into "
+                + injectionPoint.getTargetInfo()
+                + " - only Mutiny service interfaces, blocking stubs, reactive stubs based on Mutiny and io.grpc.Channel can be injected via @GrpcClient");
     }
 
     private void generateChannelProducer(MethodCreator mc, String clientName, ClientInfo client) {
@@ -523,18 +529,16 @@ public class GrpcClientProcessor {
         ResultHandle client;
 
         if (clientInfo.type == ClientType.MUTINY_CLIENT) {
-            // Instantiate the client, e.g. new HealthClient(serviceName,channel,GrpcClientConfigProvider.getStubConfigurator())
+            // Instantiate the client, e.g. new
+            // HealthClient(serviceName,channel,GrpcClientConfigProvider.getStubConfigurator())
             ResultHandle stubConfigurator = mc.invokeStaticMethod(GrpcDotNames.GET_STUB_CONFIGURATOR);
-            client = mc.newInstance(
-                    MethodDescriptor.ofConstructor(clientInfo.implName.toString(), String.class.getName(),
-                            Channel.class.getName(), BiFunction.class),
-                    name, channel, stubConfigurator);
+            client = mc.newInstance(MethodDescriptor.ofConstructor(clientInfo.implName.toString(),
+                    String.class.getName(), Channel.class.getName(), BiFunction.class), name, channel,
+                    stubConfigurator);
         } else {
             // Create the stub, e.g. newBlockingStub(channel)
-            MethodDescriptor factoryMethod = MethodDescriptor
-                    .ofMethod(convertToServiceName(clientInfo.className), clientInfo.type.getFactoryMethodName(),
-                            clientInfo.className.toString(),
-                            Channel.class.getName());
+            MethodDescriptor factoryMethod = MethodDescriptor.ofMethod(convertToServiceName(clientInfo.className),
+                    clientInfo.type.getFactoryMethodName(), clientInfo.className.toString(), Channel.class.getName());
             client = mc.invokeStaticMethod(factoryMethod, channel);
 
             // If needed, modify the call options, e.g. stub = stub.withCompression("gzip")

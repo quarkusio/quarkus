@@ -45,11 +45,9 @@ public class PrometheusRecorder {
         return new Handler<RoutingContext>() {
             @Override
             public void handle(RoutingContext routingContext) {
-                routingContext.response()
-                        .setStatusCode(406)
-                        .setStatusMessage(
-                                "Micrometer prometheus endpoint does not support "
-                                        + routingContext.request().getHeader(HttpHeaders.ACCEPT))
+                routingContext.response().setStatusCode(406)
+                        .setStatusMessage("Micrometer prometheus endpoint does not support "
+                                + routingContext.request().getHeader(HttpHeaders.ACCEPT))
                         .end();
             }
         };

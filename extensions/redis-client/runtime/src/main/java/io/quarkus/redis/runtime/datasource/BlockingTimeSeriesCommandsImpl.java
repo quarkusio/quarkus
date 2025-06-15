@@ -25,7 +25,8 @@ public class BlockingTimeSeriesCommandsImpl<K> extends AbstractRedisCommandGroup
 
     private final ReactiveTimeSeriesCommands<K> reactive;
 
-    public BlockingTimeSeriesCommandsImpl(RedisDataSource ds, ReactiveTimeSeriesCommands<K> reactive, Duration timeout) {
+    public BlockingTimeSeriesCommandsImpl(RedisDataSource ds, ReactiveTimeSeriesCommands<K> reactive,
+            Duration timeout) {
         super(ds, timeout);
         this.reactive = reactive;
     }

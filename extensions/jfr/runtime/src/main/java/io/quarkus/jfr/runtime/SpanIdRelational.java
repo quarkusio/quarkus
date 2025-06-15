@@ -12,8 +12,8 @@ import jdk.jfr.Name;
 import jdk.jfr.Relational;
 
 /**
- * This is an annotation that associates multiple events in JFR by SpanId.
- * Fields that can be annotated with this annotation must be in the String class.
+ * This is an annotation that associates multiple events in JFR by SpanId. Fields that can be annotated with this
+ * annotation must be in the String class.
  */
 @Relational
 @MetadataDefinition

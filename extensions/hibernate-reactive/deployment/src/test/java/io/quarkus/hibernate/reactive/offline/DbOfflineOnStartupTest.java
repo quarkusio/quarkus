@@ -23,13 +23,10 @@ public class DbOfflineOnStartupTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SmokeTestUtils.class)
-                    .addClass(MyEntity.class))
+            .withApplicationRoot((jar) -> jar.addClass(SmokeTestUtils.class).addClass(MyEntity.class))
             .withConfigurationResource("application.properties")
             // Disable schema management
-            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy",
-                    "none")
+            .overrideConfigKey("quarkus.hibernate-orm.schema-management.strategy", "none")
             // Pick a DB URL that is offline
             .overrideConfigKey("quarkus.datasource.reactive.url",
                     "vertx-reactive:postgresql://localhost:9999/hibernate_orm_test");

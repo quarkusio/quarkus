@@ -30,11 +30,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MicrometerTimedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("quarkus.scheduler.metrics.enabled=true"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("quarkus.scheduler.metrics.enabled=true"), "application.properties"));
 
     @Inject
     MeterRegistry registry;
@@ -53,35 +50,29 @@ public class MicrometerTimedTest {
         waitForMeters(registry.find("foo").timers(), 1);
 
         try {
-            Timer timer1 = registry.get("scheduled.methods")
-                    .tag("method", "everySecond")
-                    .tag("class", "io.quarkus.scheduler.test.metrics.MicrometerTimedTest$Jobs")
-                    .tag("exception", "none")
+            Timer timer1 = registry.get("scheduled.methods").tag("method", "everySecond")
+                    .tag("class", "io.quarkus.scheduler.test.metrics.MicrometerTimedTest$Jobs").tag("exception", "none")
                     .timer();
             assertNotNull(timer1);
-            //the count is updated after the method is called,
-            //so we need to use Awaitility as the metric may not be up-to-date immediately
-            Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS)
-                    .atMost(2, TimeUnit.SECONDS)
+            // the count is updated after the method is called,
+            // so we need to use Awaitility as the metric may not be up-to-date immediately
+            Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(2, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertTrue(timer1.count() > 0, "Count=" + timer1.count()));
         } catch (MeterNotFoundException e) {
-            fail(e.getMessage() + "\nFound: " + registry.find("scheduled.methods").meters().stream()
-                    .map(Meter::getId).map(Object::toString).collect(Collectors.joining("\n\t- ")));
+            fail(e.getMessage() + "\nFound: " + registry.find("scheduled.methods").meters().stream().map(Meter::getId)
+                    .map(Object::toString).collect(Collectors.joining("\n\t- ")));
         }
 
         try {
-            Timer timer2 = registry.get("foo")
-                    .tag("method", "anotherEverySecond")
-                    .tag("class", "io.quarkus.scheduler.test.metrics.MicrometerTimedTest$Jobs")
-                    .tag("exception", "none")
+            Timer timer2 = registry.get("foo").tag("method", "anotherEverySecond")
+                    .tag("class", "io.quarkus.scheduler.test.metrics.MicrometerTimedTest$Jobs").tag("exception", "none")
                     .timer();
             assertNotNull(timer2);
-            Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS)
-                    .atMost(2, TimeUnit.SECONDS)
+            Awaitility.await().pollInterval(10, TimeUnit.MILLISECONDS).atMost(2, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertTrue(timer2.count() > 0, "Count=" + timer2.count()));
         } catch (MeterNotFoundException e) {
-            fail(e.getMessage() + "\nFound: " + registry.find("foo").meters().stream()
-                    .map(Meter::getId).map(Object::toString).collect(Collectors.joining("\n\t- ")));
+            fail(e.getMessage() + "\nFound: " + registry.find("foo").meters().stream().map(Meter::getId)
+                    .map(Object::toString).collect(Collectors.joining("\n\t- ")));
         }
     }
 

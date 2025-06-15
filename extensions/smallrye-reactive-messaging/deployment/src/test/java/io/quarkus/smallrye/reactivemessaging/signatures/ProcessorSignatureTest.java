@@ -33,21 +33,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProcessorSignatureTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanProducingAProcessorOfMessage.class,
-                            BeanProducingAProcessorOfPayload.class,
-                            BeanProducingAProcessorBuilderOfMessage.class,
-                            BeanProducingAProcessorBuilderOfPayload.class,
-                            BeanProducingAPublisherOfPayload.class,
-                            BeanProducingAPublisherOfMessage.class,
-                            BeanProducingAPublisherBuilderOfPayload.class,
-                            BeanProducingAPublisherBuilderOfMessage.class,
-                            BeanConsumingMessages.class,
-                            BeanConsumingPayloads.class,
-                            BeanConsumingMessagesAsynchronously.class,
-                            BeanConsumingPayloadsAsynchronously.class,
-                            Spy.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(BeanProducingAProcessorOfMessage.class, BeanProducingAProcessorOfPayload.class,
+                    BeanProducingAProcessorBuilderOfMessage.class, BeanProducingAProcessorBuilderOfPayload.class,
+                    BeanProducingAPublisherOfPayload.class, BeanProducingAPublisherOfMessage.class,
+                    BeanProducingAPublisherBuilderOfPayload.class, BeanProducingAPublisherBuilderOfMessage.class,
+                    BeanConsumingMessages.class, BeanConsumingPayloads.class, BeanConsumingMessagesAsynchronously.class,
+                    BeanConsumingPayloadsAsynchronously.class, Spy.class));
 
     @Inject
     BeanProducingAProcessorOfMessage beanProducingAProcessorOfMessage;
@@ -116,8 +108,8 @@ public class ProcessorSignatureTest {
         }).start();
 
         await().until(() -> spy.getItems().size() == 20);
-        assertThat(spy.getItems()).containsExactly("0", "0", "1", "1", "2", "2", "3", "3", "4", "4",
-                "5", "5", "6", "6", "7", "7", "8", "8", "9", "9");
+        assertThat(spy.getItems()).containsExactly("0", "0", "1", "1", "2", "2", "3", "3", "4", "4", "5", "5", "6", "6",
+                "7", "7", "8", "8", "9", "9");
     }
 
     @ApplicationScoped
@@ -134,8 +126,7 @@ public class ProcessorSignatureTest {
         @Incoming("A")
         @Outgoing("AA")
         public Processor<Message<Integer>, Message<String>> process() {
-            return ReactiveStreams.<Message<Integer>> builder()
-                    .map(m -> Message.of(Integer.toString(m.getPayload())))
+            return ReactiveStreams.<Message<Integer>> builder().map(m -> Message.of(Integer.toString(m.getPayload())))
                     .buildRs();
         }
 
@@ -160,8 +151,7 @@ public class ProcessorSignatureTest {
         @Incoming("B")
         @Outgoing("BB")
         public ProcessorBuilder<Message<Integer>, Message<String>> process() {
-            return ReactiveStreams.<Message<Integer>> builder()
-                    .map(m -> Message.of(Integer.toString(m.getPayload())));
+            return ReactiveStreams.<Message<Integer>> builder().map(m -> Message.of(Integer.toString(m.getPayload())));
         }
 
         @Incoming("BB")
@@ -185,9 +175,7 @@ public class ProcessorSignatureTest {
         @Incoming("C")
         @Outgoing("CC")
         public Processor<Integer, String> process() {
-            return ReactiveStreams.<Integer> builder()
-                    .map(m -> Integer.toString(m))
-                    .buildRs();
+            return ReactiveStreams.<Integer> builder().map(m -> Integer.toString(m)).buildRs();
         }
 
         @Incoming("CC")
@@ -211,8 +199,7 @@ public class ProcessorSignatureTest {
         @Incoming("D")
         @Outgoing("DD")
         public ProcessorBuilder<Integer, String> process() {
-            return ReactiveStreams.<Integer> builder()
-                    .map(m -> Integer.toString(m));
+            return ReactiveStreams.<Integer> builder().map(m -> Integer.toString(m));
         }
 
         @Incoming("DD")
@@ -261,8 +248,7 @@ public class ProcessorSignatureTest {
         @Outgoing("FF")
         public Publisher<Message<String>> process(Message<Integer> item) {
             return ReactiveStreams.of(item.getPayload(), item.getPayload()).map(i -> Integer.toString(i))
-                    .map(Message::of)
-                    .buildRs();
+                    .map(Message::of).buildRs();
         }
 
         @Incoming("FF")

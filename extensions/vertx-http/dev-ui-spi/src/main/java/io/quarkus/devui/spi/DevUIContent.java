@@ -71,8 +71,7 @@ public class DevUIContent {
 
         public DevUIContent build() {
             if (fileName == null) {
-                throw new RuntimeException(
-                        ERROR + " FileName is mandatory, for example 'index.html'");
+                throw new RuntimeException(ERROR + " FileName is mandatory, for example 'index.html'");
             }
 
             if (template == null) {

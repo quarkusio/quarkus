@@ -10,10 +10,8 @@ import io.quarkus.test.QuarkusUnitTest;
 class PanacheEntityResourceInjectResourcesMethodTest extends AbstractInjectResourcesMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PanacheEntityBase.class, PanacheEntity.class, Collection.class, CollectionsResource.class,
-                            AbstractEntity.class, AbstractItem.class, Item.class, ItemsResource.class, InjectionResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(PanacheEntityBase.class, PanacheEntity.class, Collection.class, CollectionsResource.class,
+                    AbstractEntity.class, AbstractItem.class, Item.class, ItemsResource.class, InjectionResource.class)
+            .addAsResource("application.properties").addAsResource("import.sql"));
 }

@@ -39,29 +39,27 @@ public class ServerJacksonMessageBodyReader extends AbstractServerJacksonMessage
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         try {
             return doReadFrom(type, genericType, entityStream);
         } catch (MismatchedInputException | InvalidDefinitionException e) {
             /*
              * To extract additional details when running in dev mode or test mode, Quarkus previously offered the
-             * DefaultMismatchedInputException(Mapper). That mapper provides additional details about bad input,
-             * beyond Jackson's default, when running in Dev or Test mode. To preserve that behavior, we rethrow
-             * MismatchedInputExceptions we encounter.
-             *
-             * An InvalidDefinitionException is thrown when there is a problem with the way a type is
-             * set up/annotated for consumption by the Jackson API. We don't wrap it in a WebApplicationException
-             * (as a Server Error), since unhandled exceptions will end up as a 500 anyway. In addition, this
-             * allows built-in features like the NativeInvalidDefinitionExceptionMapper to be registered and
-             * communicate potential Jackson integration issues, and potential solutions for resolving them.
+             * DefaultMismatchedInputException(Mapper). That mapper provides additional details about bad input, beyond
+             * Jackson's default, when running in Dev or Test mode. To preserve that behavior, we rethrow
+             * MismatchedInputExceptions we encounter. An InvalidDefinitionException is thrown when there is a problem
+             * with the way a type is set up/annotated for consumption by the Jackson API. We don't wrap it in a
+             * WebApplicationException (as a Server Error), since unhandled exceptions will end up as a 500 anyway. In
+             * addition, this allows built-in features like the NativeInvalidDefinitionExceptionMapper to be registered
+             * and communicate potential Jackson integration issues, and potential solutions for resolving them.
              */
             throw e;
         } catch (StreamReadException | DatabindException e) {
             /*
-             * As JSON is evaluated, it can be invalid due to one of two reasons:
-             * 1) Malformed JSON. Un-parsable JSON results in a StreamReadException
-             * 2) Valid JSON that violates some binding constraint, i.e., a required property, mismatched data types, etc.
-             * Violations of these types are captured via a DatabindException.
+             * As JSON is evaluated, it can be invalid due to one of two reasons: 1) Malformed JSON. Un-parsable JSON
+             * results in a StreamReadException 2) Valid JSON that violates some binding constraint, i.e., a required
+             * property, mismatched data types, etc. Violations of these types are captured via a DatabindException.
              */
             throw new WebApplicationException(e, Response.Status.BAD_REQUEST);
         }
@@ -73,7 +71,8 @@ public class ServerJacksonMessageBodyReader extends AbstractServerJacksonMessage
     }
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return isReadable(mediaType, type);
     }
 

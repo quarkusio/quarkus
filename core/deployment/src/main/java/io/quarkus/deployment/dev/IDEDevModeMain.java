@@ -73,8 +73,7 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
         Map<String, Object> params = new HashMap<>();
         params.put(DevModeContext.class.getName(), devModeContext);
         params.put(DevModeType.class.getName(), DevModeType.LOCAL);
-        delegate.accept(curatedApplication,
-                params);
+        delegate.accept(curatedApplication, params);
     }
 
     @Override
@@ -124,15 +123,11 @@ public class IDEDevModeMain implements BiConsumer<CuratedApplication, Map<String
             }
         }
 
-        return new DevModeContext.ModuleInfo.Builder()
-                .setArtifactKey(module.getKey())
+        return new DevModeContext.ModuleInfo.Builder().setArtifactKey(module.getKey())
                 .setProjectDirectory(module.getWorkspaceModule().getModuleDir().getPath())
-                .setSourcePaths(srcPaths.build())
-                .setClassesPath(classesDir)
-                .setGeneratedSourcesPath(generatedSourcesDir)
-                .setResourcePaths(resourcesPaths.build())
-                .setResourcesOutputPath(resourceDirectory)
-                .setSourceParents(PathList.from(sourceParents))
+                .setSourcePaths(srcPaths.build()).setClassesPath(classesDir)
+                .setGeneratedSourcesPath(generatedSourcesDir).setResourcePaths(resourcesPaths.build())
+                .setResourcesOutputPath(resourceDirectory).setSourceParents(PathList.from(sourceParents))
                 .setPreBuildOutputDir(module.getWorkspaceModule().getBuildDir().toPath().resolve("generated-sources")
                         .toAbsolutePath().toString())
                 .setTargetDir(module.getWorkspaceModule().getBuildDir().toString()).build();

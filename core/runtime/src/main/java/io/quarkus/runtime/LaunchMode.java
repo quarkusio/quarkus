@@ -2,8 +2,8 @@ package io.quarkus.runtime;
 
 public enum LaunchMode {
     /**
-     * A normal production build. At the moment this can be both native image or
-     * JVM mode, but eventually these will likely be split
+     * A normal production build. At the moment this can be both native image or JVM mode, but eventually these will
+     * likely be split
      */
     NORMAL(LaunchMode.PROD_PROFILE, "quarkus.profile"),
     /**
@@ -57,7 +57,6 @@ public enum LaunchMode {
     }
 
     /**
-     *
      * @return The current launch mode
      */
     public static LaunchMode current() {

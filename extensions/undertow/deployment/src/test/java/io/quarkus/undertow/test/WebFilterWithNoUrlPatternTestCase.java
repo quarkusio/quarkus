@@ -12,13 +12,10 @@ public class WebFilterWithNoUrlPatternTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NoUrlPatternWebFilter.class, NamedServlet.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NoUrlPatternWebFilter.class, NamedServlet.class));
 
     @Test
     public void testFilterWithNoUrlPattern() {
-        when().get("/named").then()
-                .statusCode(200)
-                .body(is("Goodbye"));
+        when().get("/named").then().statusCode(200).body(is("Goodbye"));
     }
 }

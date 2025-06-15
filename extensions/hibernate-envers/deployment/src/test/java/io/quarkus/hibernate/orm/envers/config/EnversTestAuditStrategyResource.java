@@ -22,6 +22,7 @@ public class EnversTestAuditStrategyResource extends AbstractEnversResource {
             return "OK";
         }
 
-        return "Expected that audit strategy " + actualClass.getName() + " is not as expected: " + expectedClass.getName();
+        return "Expected that audit strategy " + actualClass.getName() + " is not as expected: "
+                + expectedClass.getName();
     }
 }

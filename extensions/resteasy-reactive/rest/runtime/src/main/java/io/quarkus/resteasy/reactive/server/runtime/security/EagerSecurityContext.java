@@ -52,8 +52,8 @@ public final class EagerSecurityContext {
     EagerSecurityContext(Event<AuthorizationFailureEvent> authorizationFailureEvent,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
             Event<AuthorizationSuccessEvent> authorizationSuccessEvent, BeanManager beanManager,
-            InjectableInstance<CurrentIdentityAssociation> identityAssociation, AuthorizationController authorizationController,
-            VertxHttpBuildTimeConfig httpBuildTimeConfig,
+            InjectableInstance<CurrentIdentityAssociation> identityAssociation,
+            AuthorizationController authorizationController, VertxHttpBuildTimeConfig httpBuildTimeConfig,
             JaxRsPathMatchingHttpSecurityPolicy jaxRsPathMatchingPolicy) {
         this.isProactiveAuthDisabled = !httpBuildTimeConfig.auth().proactive();
         this.identityAssociation = identityAssociation;
@@ -96,8 +96,8 @@ public final class EagerSecurityContext {
         record SecurityCheckWithIdentity(SecurityIdentity identity, HttpSecurityPolicy.CheckResult checkResult) {
         }
         return jaxRsPathMatchingPolicy
-                .checkPermission(routingContext, identity == null ? getDeferredIdentity() : Uni.createFrom().item(identity),
-                        invokedMethodDesc)
+                .checkPermission(routingContext,
+                        identity == null ? getDeferredIdentity() : Uni.createFrom().item(identity), invokedMethodDesc)
                 .flatMap(new Function<HttpSecurityPolicy.CheckResult, Uni<? extends SecurityCheckWithIdentity>>() {
                     @Override
                     public Uni<SecurityCheckWithIdentity> apply(HttpSecurityPolicy.CheckResult checkResult) {
@@ -116,8 +116,7 @@ public final class EagerSecurityContext {
                             }
                         });
                     }
-                })
-                .map(new Function<SecurityCheckWithIdentity, SecurityIdentity>() {
+                }).map(new Function<SecurityCheckWithIdentity, SecurityIdentity>() {
                     @Override
                     public SecurityIdentity apply(SecurityCheckWithIdentity checkWithIdentity) {
                         final HttpSecurityPolicy.CheckResult checkResult = checkWithIdentity.checkResult();
@@ -162,32 +161,26 @@ public final class EagerSecurityContext {
     Uni<?> runSecurityCheck(SecurityCheck check, MethodDescription invokedMethodDesc,
             ResteasyReactiveRequestContext requestContext, SecurityIdentity securityIdentity) {
         preventRepeatedSecurityChecks(requestContext, invokedMethodDesc);
-        var checkResult = check.nonBlockingApply(securityIdentity, invokedMethodDesc,
-                requestContext.getParameters());
+        var checkResult = check.nonBlockingApply(securityIdentity, invokedMethodDesc, requestContext.getParameters());
         if (eventHelper.fireEventOnFailure()) {
-            checkResult = checkResult
-                    .onFailure()
-                    .invoke(new Consumer<Throwable>() {
-                        @Override
-                        public void accept(Throwable throwable) {
-                            eventHelper
-                                    .fireFailureEvent(new AuthorizationFailureEvent(
-                                            securityIdentity, throwable, check.getClass().getName(),
-                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
-                        }
-                    });
+            checkResult = checkResult.onFailure().invoke(new Consumer<Throwable>() {
+                @Override
+                public void accept(Throwable throwable) {
+                    eventHelper.fireFailureEvent(
+                            new AuthorizationFailureEvent(securityIdentity, throwable, check.getClass().getName(),
+                                    createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
+                }
+            });
         }
         if (eventHelper.fireEventOnSuccess()) {
-            checkResult = checkResult
-                    .invoke(new Runnable() {
-                        @Override
-                        public void run() {
-                            eventHelper.fireSuccessEvent(
-                                    new AuthorizationSuccessEvent(securityIdentity,
-                                            check.getClass().getName(),
-                                            createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
-                        }
-                    });
+            checkResult = checkResult.invoke(new Runnable() {
+                @Override
+                public void run() {
+                    eventHelper.fireSuccessEvent(
+                            new AuthorizationSuccessEvent(securityIdentity, check.getClass().getName(),
+                                    createEventPropsWithRoutingCtx(requestContext), invokedMethodDesc));
+                }
+            });
         }
         return checkResult;
     }
@@ -210,7 +203,8 @@ public final class EagerSecurityContext {
 
     static EagerSecurityContext getInstance() {
         if (instance == null) {
-            InjectableInstance<EagerSecurityContext> contextInstance = Arc.container().select(EagerSecurityContext.class);
+            InjectableInstance<EagerSecurityContext> contextInstance = Arc.container()
+                    .select(EagerSecurityContext.class);
             if (contextInstance.isResolvable()) {
                 instance = contextInstance.get();
             } else {

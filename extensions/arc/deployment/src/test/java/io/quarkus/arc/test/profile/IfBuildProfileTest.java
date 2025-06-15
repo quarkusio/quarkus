@@ -28,9 +28,8 @@ public class IfBuildProfileTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Producer.class, OtherProducer.class, AnotherProducer.class,
-                            TestInterceptor.class, ProdInterceptor.class, Logging.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Producer.class, OtherProducer.class, AnotherProducer.class,
+                    TestInterceptor.class, ProdInterceptor.class, Logging.class));
 
     @Inject
     Hello hello;

@@ -51,7 +51,8 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
                 return -1;
             }
 
-            ConfigValue encryptionKey = findKey(lines, "smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key");
+            ConfigValue encryptionKey = findKey(lines,
+                    "smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key");
             if (encryptionKey.getValue() != null) {
                 args.add("--key=" + encryptionKey.getValue());
             }
@@ -75,10 +76,12 @@ public class SetConfig extends BaseConfigCommand implements Callable<Integer> {
         ConfigValue configValue = findKey(lines, name);
         String actualValue = value != null ? value : "empty value";
         if (configValue.getLineNumber() != -1) {
-            output.info(SUCCESS_ICON + " Setting configuration @|bold " + name + "|@ to value @|bold " + actualValue + "|@");
+            output.info(SUCCESS_ICON + " Setting configuration @|bold " + name + "|@ to value @|bold " + actualValue
+                    + "|@");
             lines.set(configValue.getLineNumber(), name + "=" + (value != null ? value : ""));
         } else {
-            output.info(SUCCESS_ICON + " Adding configuration @|bold " + name + "|@ with value @|bold " + actualValue + "|@");
+            output.info(SUCCESS_ICON + " Adding configuration @|bold " + name + "|@ with value @|bold " + actualValue
+                    + "|@");
             lines.add(name + "=" + (value != null ? value : ""));
         }
 

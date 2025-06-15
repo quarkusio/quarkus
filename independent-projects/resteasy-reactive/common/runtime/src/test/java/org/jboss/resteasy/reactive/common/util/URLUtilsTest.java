@@ -40,11 +40,9 @@ class URLUtilsTest {
         String formEncoded = "test+path";
         String japanese = "%E3%83%86%E3%82%B9%E3%83%88"; // テスト
 
-        assertEquals("test path",
-                URLUtils.decode(path, StandardCharsets.UTF_8, true, new StringBuilder()));
+        assertEquals("test path", URLUtils.decode(path, StandardCharsets.UTF_8, true, new StringBuilder()));
         assertEquals("test path",
                 URLUtils.decode(formEncoded, StandardCharsets.UTF_8, true, true, new StringBuilder()));
-        assertEquals("テスト",
-                URLUtils.decode(japanese, StandardCharsets.UTF_8, true, new StringBuilder()));
+        assertEquals("テスト", URLUtils.decode(japanese, StandardCharsets.UTF_8, true, new StringBuilder()));
     }
 }

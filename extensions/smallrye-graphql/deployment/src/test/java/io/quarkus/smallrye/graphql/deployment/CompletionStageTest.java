@@ -33,38 +33,22 @@ public class CompletionStageTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BookGraphQLApi.class, Book.class)
+            .withApplicationRoot((jar) -> jar.addClasses(BookGraphQLApi.class, Book.class)
                     .addAsResource(new StringAsset(getPropertyAsString()), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void testSourcePost() {
-        String booksRequest = getPayload("{\n" +
-                "    books {\n" +
-                "       title\n" +
-                "       published\n" +
-                "       buyLink\n" +
-                "       asyncAuthors {\n" +
-                "           name\n" +
-                "           bornName\n" +
-                "       }\n" +
-                "    }\n" +
-                "}");
+        String booksRequest = getPayload("{\n" + "    books {\n" + "       title\n" + "       published\n"
+                + "       buyLink\n" + "       asyncAuthors {\n" + "           name\n" + "           bornName\n"
+                + "       }\n" + "    }\n" + "}");
 
-        RestAssured.given()
-                .filter(new ResponseLoggingFilter())
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(booksRequest)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .body(CoreMatchers.containsString("Lord of the Flies"),
-                        CoreMatchers.containsString("https://www.amazon.com/s?k=Lord+of+the+Flies&i=stripbooks-intl-ship"), // Test source
+        RestAssured.given().filter(new ResponseLoggingFilter()).when().accept(MEDIATYPE_JSON)
+                .contentType(MEDIATYPE_JSON).body(booksRequest).post("/graphql").then().assertThat().statusCode(200)
+                .and().body(CoreMatchers.containsString("Lord of the Flies"),
+                        CoreMatchers
+                                .containsString("https://www.amazon.com/s?k=Lord+of+the+Flies&i=stripbooks-intl-ship"), // Test
+                        // source
                         CoreMatchers.containsString("William Gerald Golding")); // Test batch
 
     }
@@ -112,8 +96,8 @@ public class CompletionStageTest extends AbstractGraphQLTest {
             Book book2 = new Book("0-582-53008-3", "Animal Farm", LocalDate.of(1945, Month.AUGUST, 17),
                     "George Orwell");
             BOOKS.put(book2.title, book2);
-            AUTHORS.put("George Orwell", new Author("George Orwell", "Eric Arthur Blair", LocalDate.of(1903, Month.JUNE, 25),
-                    "Motihari, Bengal Presidency, British India"));
+            AUTHORS.put("George Orwell", new Author("George Orwell", "Eric Arthur Blair",
+                    LocalDate.of(1903, Month.JUNE, 25), "Motihari, Bengal Presidency, British India"));
         }
     }
 

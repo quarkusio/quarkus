@@ -16,17 +16,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InterfaceValidationSuccessTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Metrics.class, Count.class, Wrapper.class, NumericWrapper.class)
-                    .addAsResource(new StringAsset("{@java.util.List list}"
-                            + "{list.empty}:{list.toString}"),
-                            "templates/list.html")
-                    .addAsResource(
-                            new StringAsset(
-                                    "{@io.quarkus.qute.deployment.typesafe.InterfaceValidationSuccessTest$Metrics metrics}"
-                                            + "{metrics.responses.value}:{metrics.responses.name(1)}:{metrics.requests.value??}"),
-                            "templates/metrics.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Metrics.class, Count.class, Wrapper.class, NumericWrapper.class)
+            .addAsResource(new StringAsset("{@java.util.List list}" + "{list.empty}:{list.toString}"),
+                    "templates/list.html")
+            .addAsResource(new StringAsset(
+                    "{@io.quarkus.qute.deployment.typesafe.InterfaceValidationSuccessTest$Metrics metrics}"
+                            + "{metrics.responses.value}:{metrics.responses.name(1)}:{metrics.requests.value??}"),
+                    "templates/metrics.html"));
 
     @Inject
     Template list;
@@ -41,30 +38,29 @@ public class InterfaceValidationSuccessTest {
 
     @Test
     public void testInterfaceHierarchy() {
-        assertEquals("5:Andy:",
-                metrics.data("metrics", new Metrics() {
+        assertEquals("5:Andy:", metrics.data("metrics", new Metrics() {
+
+            @Override
+            public Count responses() {
+                return new Count() {
 
                     @Override
-                    public Count responses() {
-                        return new Count() {
-
-                            @Override
-                            public Integer value() {
-                                return 5;
-                            }
-
-                            @Override
-                            public String name(int age) {
-                                return "Andy";
-                            }
-                        };
+                    public Integer value() {
+                        return 5;
                     }
 
                     @Override
-                    public Count requests() {
-                        return null;
+                    public String name(int age) {
+                        return "Andy";
                     }
-                }).render());
+                };
+            }
+
+            @Override
+            public Count requests() {
+                return null;
+            }
+        }).render());
 
     }
 

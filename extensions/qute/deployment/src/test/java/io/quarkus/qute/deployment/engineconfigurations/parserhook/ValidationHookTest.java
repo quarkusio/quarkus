@@ -20,10 +20,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ValidationHookTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(
-                    root -> root.addClasses(Foo.class)
-                            .addAsResource(new StringAsset("{foo.bar}"), "templates/foo.html"))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClasses(Foo.class).addAsResource(new StringAsset("{foo.bar}"), "templates/foo.html"))
             .assertException(t -> {
                 Throwable e = t;
                 TemplateException te = null;
@@ -52,8 +50,7 @@ public class ValidationHookTest {
                             }
                         }));
                     }
-                }).produces(ValidationParserHookBuildItem.class)
-                        .build();
+                }).produces(ValidationParserHookBuildItem.class).build();
 
             }
         };

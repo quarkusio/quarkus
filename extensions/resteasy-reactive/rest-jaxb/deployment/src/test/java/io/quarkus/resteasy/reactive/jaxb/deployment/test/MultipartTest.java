@@ -34,27 +34,19 @@ public class MultipartTest {
     private static final String EXPECTED_RESPONSE_PERSON_NAME = "Michal";
     private static final int EXPECTED_RESPONSE_PERSON_AGE = 23;
     private static final String EXPECTED_RESPONSE_PERSON = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-            + "<person>"
-            + "<age>" + EXPECTED_RESPONSE_PERSON_AGE + "</age>"
-            + "<name>" + EXPECTED_RESPONSE_PERSON_NAME + "</name>"
-            + "</person>";
-    private static final String SCHOOL = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
-            + "<school>"
-            + "<name>Divino Pastor</name>"
-            + "</school>";
+            + "<person>" + "<age>" + EXPECTED_RESPONSE_PERSON_AGE + "</age>" + "<name>" + EXPECTED_RESPONSE_PERSON_NAME
+            + "</name>" + "</person>";
+    private static final String SCHOOL = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" + "<school>"
+            + "<name>Divino Pastor</name>" + "</school>";
     private final File HTML_FILE = new File("./src/test/resources/test.html");
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MultipartOutputResource.class, MultipartOutputResponse.class, Person.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .addClasses(MultipartOutputResource.class, MultipartOutputResponse.class, Person.class));
 
     @Test
     public void testOutput() {
-        String response = RestAssured.get("/multipart/output")
-                .then()
-                .contentType(ContentType.MULTIPART)
-                .statusCode(200)
+        String response = RestAssured.get("/multipart/output").then().contentType(ContentType.MULTIPART).statusCode(200)
                 .extract().asString();
 
         assertContains(response, "name", MediaType.TEXT_PLAIN, EXPECTED_RESPONSE_NAME);
@@ -63,13 +55,8 @@ public class MultipartTest {
 
     @Test
     public void testInput() {
-        String response = RestAssured
-                .given()
-                .multiPart("name", "John")
-                .multiPart("school", SCHOOL, MediaType.APPLICATION_XML)
-                .post("/multipart/input")
-                .then()
-                .statusCode(200)
+        String response = RestAssured.given().multiPart("name", "John")
+                .multiPart("school", SCHOOL, MediaType.APPLICATION_XML).post("/multipart/input").then().statusCode(200)
                 .extract().asString();
 
         assertThat(response).isEqualTo("John-Divino Pastor");
@@ -77,27 +64,17 @@ public class MultipartTest {
 
     @Test
     public void testInputParam() {
-        String response = RestAssured
-                .given()
-                .multiPart("name", "John")
-                .multiPart("school", SCHOOL, MediaType.APPLICATION_XML)
-                .post("/multipart/param/input")
-                .then()
-                .statusCode(200)
-                .extract().asString();
+        String response = RestAssured.given().multiPart("name", "John")
+                .multiPart("school", SCHOOL, MediaType.APPLICATION_XML).post("/multipart/param/input").then()
+                .statusCode(200).extract().asString();
 
         assertThat(response).isEqualTo("John-Divino Pastor");
     }
 
     @Test
     public void testInputFile() throws IOException {
-        String response = RestAssured
-                .given()
-                .multiPart("file", HTML_FILE, "text/html")
-                .post("/multipart/input/file")
-                .then()
-                .statusCode(200)
-                .extract().asString();
+        String response = RestAssured.given().multiPart("file", HTML_FILE, "text/html").post("/multipart/input/file")
+                .then().statusCode(200).extract().asString();
 
         assertThat(response).isEqualTo(String.valueOf(Files.readAllBytes(HTML_FILE.toPath()).length));
     }
@@ -134,8 +111,7 @@ public class MultipartTest {
         @POST
         @Path("/param/input")
         @Consumes(MediaType.MULTIPART_FORM_DATA)
-        public String input(@RestForm String name,
-                @RestForm @PartType(MediaType.APPLICATION_XML) School school) {
+        public String input(@RestForm String name, @RestForm @PartType(MediaType.APPLICATION_XML) School school) {
             return name + "-" + school.name;
         }
 

@@ -16,8 +16,10 @@ public final class LogCategoryBuildItem extends MultiBuildItem {
     /**
      * Construct a new instance.
      *
-     * @param category the category (must not be {@code null} or empty)
-     * @param level the level (must not be {@code null})
+     * @param category
+     *        the category (must not be {@code null} or empty)
+     * @param level
+     *        the level (must not be {@code null})
      */
     public LogCategoryBuildItem(final String category, final Level level) {
         this(category, level, false);
@@ -26,9 +28,12 @@ public final class LogCategoryBuildItem extends MultiBuildItem {
     /**
      * Construct a new instance.
      *
-     * @param category the category (must not be {@code null} or empty)
-     * @param level the level (must not be {@code null})
-     * @param setMinLevelDefault if the default minimum level for the category should be set
+     * @param category
+     *        the category (must not be {@code null} or empty)
+     * @param level
+     *        the level (must not be {@code null})
+     * @param setMinLevelDefault
+     *        if the default minimum level for the category should be set
      */
     public LogCategoryBuildItem(final String category, final Level level, boolean setMinLevelDefault) {
         Assert.checkNotNullParam("category", category);

@@ -81,16 +81,15 @@ public class MediaTypeNegotiationServerQualityTest {
     private static Client client;
 
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter.class, FakeResource.class,
-                            NotFoundExceptionMapper.class);
-                    return war;
-                }
-            });
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class, CustomMessageBodyWriter.class, FakeResource.class,
+                    NotFoundExceptionMapper.class);
+            return war;
+        }
+    });
 
     @BeforeAll
     public static void setup() {

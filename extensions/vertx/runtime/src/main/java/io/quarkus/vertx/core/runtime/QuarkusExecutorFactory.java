@@ -48,7 +48,8 @@ public class QuarkusExecutorFactory implements ExecutorServiceFactory {
             } else {
                 // In dev mode we use a special executor for the worker pool
                 // where the underlying executor can be shut down and then replaced with a new re-initialized executor
-                // This is a workaround to solve the problem described in https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
+                // This is a workaround to solve the problem described in
+                // https://github.com/quarkusio/quarkus/issues/16833#issuecomment-1917042589
                 // The Vertx instance is reused between restarts but we must attempt to shut down this executor,
                 // for example to cancel/interrupt the scheduled methods
                 devModeExecutor = new DevModeExecutorService(new Supplier<ExecutorService>() {
@@ -75,9 +76,9 @@ public class QuarkusExecutorFactory implements ExecutorServiceFactory {
         }
     }
 
-    private ExecutorService internalCreateExecutor(ThreadFactory threadFactory, Integer concurrency, Integer maxConcurrency) {
-        final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder()
-                .setRegisterMBean(false)
+    private ExecutorService internalCreateExecutor(ThreadFactory threadFactory, Integer concurrency,
+            Integer maxConcurrency) {
+        final EnhancedQueueExecutor.Builder builder = new EnhancedQueueExecutor.Builder().setRegisterMBean(false)
                 .setHandoffExecutor(JBossExecutors.rejectingExecutor())
                 .setThreadFactory(JBossExecutors.resettingThreadFactory(threadFactory));
         // run time config variables

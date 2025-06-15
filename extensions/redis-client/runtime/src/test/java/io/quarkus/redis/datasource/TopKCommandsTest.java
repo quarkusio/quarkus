@@ -46,8 +46,7 @@ public class TopKCommandsTest extends DatasourceTestBase {
         Person leia = new Person("leia", "ordana");
         Person anakin = new Person("anakin", "skywalker");
 
-        assertThatThrownBy(() -> topk.topkAdd(key, luke))
-                .hasMessageContaining("TopK");
+        assertThatThrownBy(() -> topk.topkAdd(key, luke)).hasMessageContaining("TopK");
 
         topk.topkReserve(key, 2);
         assertThat(topk.topkAdd(key, luke)).isEmpty();
@@ -55,7 +54,8 @@ public class TopKCommandsTest extends DatasourceTestBase {
         assertThat(topk.topkAdd(key, leia)).isEmpty();
         assertThat(topk.topkAdd(key, anakin)).contains(leia);
 
-        assertThat(topk.topkAdd(key, luke, luke, leia, leia, leia, luke)).containsExactly(null, null, anakin, null, null, null);
+        assertThat(topk.topkAdd(key, luke, luke, leia, leia, leia, luke)).containsExactly(null, null, anakin, null,
+                null, null);
 
         assertThat(topk.topkList(key)).containsExactly(luke, leia);
         assertThat(topk.topkListWithCount(key)).contains(entry(luke, 5), entry(leia, 4));
@@ -87,8 +87,7 @@ public class TopKCommandsTest extends DatasourceTestBase {
             // Empty on purpose
         });
 
-        assertThatThrownBy(() -> topk.topkAdd(key, l1))
-                .hasMessageContaining("TopK");
+        assertThatThrownBy(() -> topk.topkAdd(key, l1)).hasMessageContaining("TopK");
 
         topk.topkReserve(key, 2);
         assertThat(topk.topkAdd(key, l1)).isEmpty();

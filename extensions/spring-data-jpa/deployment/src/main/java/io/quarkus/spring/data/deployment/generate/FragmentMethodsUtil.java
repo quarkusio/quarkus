@@ -12,8 +12,7 @@ final class FragmentMethodsUtil {
     }
 
     /**
-     * Returns the simple expected implementation of a Fragment interface or throws an
-     * exception indicating the problem
+     * Returns the simple expected implementation of a Fragment interface or throws an exception indicating the problem
      */
     static DotName getImplementationDotName(DotName customInterfaceToImplement, IndexView index) {
         Collection<ClassInfo> knownImplementors = index.getAllKnownImplementors(customInterfaceToImplement);
@@ -21,12 +20,13 @@ final class FragmentMethodsUtil {
         if (knownImplementors.size() > 1) {
             DotName previouslyFound = null;
             for (ClassInfo knownImplementor : knownImplementors) {
-                if (knownImplementor.name().toString().endsWith("Impl")) { // the default suffix that Spring Data JPA looks for is 'Impl'
-                    if (previouslyFound != null) { // make sure we don't have multiple implementations suffixed with 'Impl'
-                        throw new IllegalArgumentException(
-                                "Interface " + customInterfaceToImplement
-                                        + " must contain a single implementation whose name ends with 'Impl'. Multiple implementations were found: "
-                                        + previouslyFound + "," + knownImplementor);
+                if (knownImplementor.name().toString().endsWith("Impl")) { // the default suffix that Spring Data JPA
+                                                                           // looks for is 'Impl'
+                    if (previouslyFound != null) { // make sure we don't have multiple implementations suffixed with
+                                                   // 'Impl'
+                        throw new IllegalArgumentException("Interface " + customInterfaceToImplement
+                                + " must contain a single implementation whose name ends with 'Impl'. Multiple implementations were found: "
+                                + previouslyFound + "," + knownImplementor);
                     }
                     previouslyFound = knownImplementor.name();
                 }

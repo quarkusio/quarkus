@@ -37,9 +37,7 @@ public class RbacServiceSecurityTest extends SecurityTestBase {
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -49,14 +47,16 @@ public class RbacServiceSecurityTest extends SecurityTestBase {
             client.sendAndAwait("hello"); // admin service
             client.sendAndAwait("hi"); // forbidden
             client.waitForMessages(2);
-            assertEquals(Set.of("24", "forbidden"), Set.copyOf(client.getMessages().stream().map(Object::toString).toList()));
+            assertEquals(Set.of("24", "forbidden"),
+                    Set.copyOf(client.getMessages().stream().map(Object::toString).toList()));
         }
         try (WSClient client = new WSClient(vertx)) {
             client.connect(basicAuth("user", "user"), endUri);
             client.sendAndAwait("hello"); // forbidden
             client.sendAndAwait("hi"); // user service
             client.waitForMessages(2);
-            assertEquals(Set.of("42", "forbidden"), Set.copyOf(client.getMessages().stream().map(Object::toString).toList()));
+            assertEquals(Set.of("42", "forbidden"),
+                    Set.copyOf(client.getMessages().stream().map(Object::toString).toList()));
         }
     }
 

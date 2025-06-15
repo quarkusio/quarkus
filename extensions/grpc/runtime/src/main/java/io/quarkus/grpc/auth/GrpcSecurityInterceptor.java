@@ -69,10 +69,8 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     private final SecurityEventHelper<AuthenticationSuccessEvent, AuthenticationFailureEvent> securityEventHelper;
 
     @Inject
-    public GrpcSecurityInterceptor(
-            CurrentIdentityAssociation identityAssociation,
-            IdentityProviderManager identityProviderManager,
-            Instance<GrpcSecurityMechanism> securityMechanisms,
+    public GrpcSecurityInterceptor(CurrentIdentityAssociation identityAssociation,
+            IdentityProviderManager identityProviderManager, Instance<GrpcSecurityMechanism> securityMechanisms,
             Instance<AuthExceptionHandlerProvider> exceptionHandlers,
             @ConfigProperty(name = "quarkus.grpc.server.use-separate-server") boolean usingSeparateGrpcServer,
             @ConfigProperty(name = "quarkus.security.events.enabled") boolean securityEventsEnabled,
@@ -106,23 +104,26 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     }
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
-            Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata,
+            ServerCallHandler<ReqT, RespT> serverCallHandler) {
         boolean identityAssociationNotSet = true;
         if (securityMechanisms != null) {
             Exception error = null;
             for (GrpcSecurityMechanism securityMechanism : securityMechanisms) {
                 if (securityMechanism.handles(metadata)) {
                     try {
-                        AuthenticationRequest authenticationRequest = securityMechanism.createAuthenticationRequest(metadata);
+                        AuthenticationRequest authenticationRequest = securityMechanism
+                                .createAuthenticationRequest(metadata);
                         Context context = Vertx.currentContext();
                         boolean onEventLoopThread = Context.isOnEventLoopThread();
 
                         final boolean isBlockingMethod;
                         if (hasBlockingMethods) {
-                            var methods = serviceToBlockingMethods.get(serverCall.getMethodDescriptor().getServiceName());
+                            var methods = serviceToBlockingMethods
+                                    .get(serverCall.getMethodDescriptor().getServiceName());
                             if (methods != null) {
-                                isBlockingMethod = methods.contains(serverCall.getMethodDescriptor().getFullMethodName());
+                                isBlockingMethod = methods
+                                        .contains(serverCall.getMethodDescriptor().getFullMethodName());
                             } else {
                                 isBlockingMethod = false;
                             }
@@ -131,8 +132,7 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                         }
 
                         if (authenticationRequest != null) {
-                            Uni<SecurityIdentity> auth = identityProviderManager
-                                    .authenticate(authenticationRequest)
+                            Uni<SecurityIdentity> auth = identityProviderManager.authenticate(authenticationRequest)
                                     .emitOn(new Executor() {
                                         @Override
                                         public void execute(Runnable command) {
@@ -152,8 +152,8 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                                 auth = auth.invoke(new Consumer<SecurityIdentity>() {
                                     @Override
                                     public void accept(SecurityIdentity securityIdentity) {
-                                        securityEventHelper
-                                                .fireSuccessEvent(new AuthenticationSuccessEvent(securityIdentity, null));
+                                        securityEventHelper.fireSuccessEvent(
+                                                new AuthenticationSuccessEvent(securityIdentity, null));
                                     }
                                 });
                             }
@@ -161,7 +161,8 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
                                 auth = auth.onFailure().invoke(new Consumer<Throwable>() {
                                     @Override
                                     public void accept(Throwable throwable) {
-                                        securityEventHelper.fireFailureEvent(new AuthenticationFailureEvent(throwable, null));
+                                        securityEventHelper
+                                                .fireFailureEvent(new AuthenticationFailureEvent(throwable, null));
                                     }
                                 });
                             }
@@ -209,7 +210,8 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
             }
         }
         if (identityAssociationNotSet) {
-            Uni<SecurityIdentity> identityUni = identityProviderManager.authenticate(AnonymousAuthenticationRequest.INSTANCE);
+            Uni<SecurityIdentity> identityUni = identityProviderManager
+                    .authenticate(AnonymousAuthenticationRequest.INSTANCE);
             identityAssociation.setIdentity(identityUni);
         }
         ServerCall.Listener<ReqT> listener = serverCallHandler.startCall(serverCall, metadata);
@@ -232,7 +234,8 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
             if (event.user() instanceof QuarkusHttpUser existing) {
                 getCapturedVertxContext().putLocal(IDENTITY_KEY, existing.getSecurityIdentity());
             } else {
-                getCapturedVertxContext().putLocal(DEFERRED_IDENTITY_KEY, QuarkusHttpUser.getSecurityIdentity(event, null));
+                getCapturedVertxContext().putLocal(DEFERRED_IDENTITY_KEY,
+                        QuarkusHttpUser.getSecurityIdentity(event, null));
                 // we will handle failures ourselves, so that response is written once
                 // do this even if the authentication failure handler is not DefaultAuthFailureHandler because
                 // it might be the failure handler added by the Quarkus REST when it is present
@@ -242,7 +245,8 @@ public final class GrpcSecurityInterceptor implements ServerInterceptor, Priorit
     }
 
     private static Context getCapturedVertxContext() {
-        // this is only running when gRPC is run as Vert.x HTTP route handler, therefore we should be on duplicated context
+        // this is only running when gRPC is run as Vert.x HTTP route handler, therefore we should be on duplicated
+        // context
         Context capturedVertxContext = Vertx.currentContext();
         if (capturedVertxContext == null || !isDuplicatedContext(capturedVertxContext)
                 || isExplicitlyMarkedAsUnsafe(capturedVertxContext)) {

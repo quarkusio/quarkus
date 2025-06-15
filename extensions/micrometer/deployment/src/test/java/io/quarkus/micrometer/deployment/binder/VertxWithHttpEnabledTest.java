@@ -18,8 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class VertxWithHttpEnabledTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
@@ -28,9 +27,8 @@ public class VertxWithHttpEnabledTest {
             .overrideConfigKey("quarkus.micrometer.binder.vertx.match-patterns", "/one=/two")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.ignore-patterns", "/two")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withApplicationRoot(
+                    (jar) -> jar.addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class));
 
     @Inject
     HttpBinderConfiguration httpBinderConfiguration;
@@ -50,7 +48,8 @@ public class VertxWithHttpEnabledTest {
 
         // Use vertx.match-patterns (http-server version is missing)
         Assertions.assertEquals(1, httpBinderConfiguration.getServerMatchPatterns().size());
-        Map.Entry<Pattern, String> entry = httpBinderConfiguration.getServerMatchPatterns().entrySet().iterator().next();
+        Map.Entry<Pattern, String> entry = httpBinderConfiguration.getServerMatchPatterns().entrySet().iterator()
+                .next();
         Assertions.assertTrue(entry.getKey().matcher("/one").matches());
         Assertions.assertEquals("/two", entry.getValue());
 

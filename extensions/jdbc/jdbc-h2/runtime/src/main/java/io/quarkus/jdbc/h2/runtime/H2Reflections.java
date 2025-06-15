@@ -11,10 +11,8 @@ import org.graalvm.nativeimage.hosted.Feature;
 import org.graalvm.nativeimage.hosted.RuntimeReflection;
 
 /**
- * Custom GraalVM feature to automatically register DataType and StatefulDataType
- * implementors for reflective access.
- * These are identified using Jandex, looking both into the H2 core jar and in
- * user's indexed code.
+ * Custom GraalVM feature to automatically register DataType and StatefulDataType implementors for reflective access.
+ * These are identified using Jandex, looking both into the H2 core jar and in user's indexed code.
  */
 public final class H2Reflections implements Feature {
 
@@ -28,13 +26,14 @@ public final class H2Reflections implements Feature {
     }
 
     private void metaTypeReachable(DuringAnalysisAccess access) {
-        //Register some common metatypes - these are dynamically loaded depending on the data content.
+        // Register some common metatypes - these are dynamically loaded depending on the data content.
         register(REZ_NAME_DATA_TYPE_SINGLETONS, this::registerSingletonAccess, access);
-        //Now register implementors of org.h2.mvstore.type.StatefulDataType.Factory
+        // Now register implementors of org.h2.mvstore.type.StatefulDataType.Factory
         register(REZ_NAME_STATEFUL_DATATYPES, this::registerForReflection, access);
     }
 
-    void register(final String resourceName, BiConsumer<String, DuringAnalysisAccess> action, DuringAnalysisAccess access) {
+    void register(final String resourceName, BiConsumer<String, DuringAnalysisAccess> action,
+            DuringAnalysisAccess access) {
         try (InputStream resource = access.getApplicationClassLoader().getResourceAsStream(resourceName)) {
             Scanner s = new Scanner(resource);
             while (s.hasNext()) {
@@ -48,17 +47,14 @@ public final class H2Reflections implements Feature {
 
     void registerSingletonAccess(String className, DuringAnalysisAccess access) {
         try {
-            final Field instance = access.findClassByName(className)
-                    .getDeclaredField("INSTANCE");
+            final Field instance = access.findClassByName(className).getDeclaredField("INSTANCE");
             RuntimeReflection.register(instance);
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);
         }
     }
 
-    void registerForReflection(
-            String className,
-            DuringAnalysisAccess duringAnalysisAccess) {
+    void registerForReflection(String className, DuringAnalysisAccess duringAnalysisAccess) {
         final Class<?> aClass = duringAnalysisAccess.findClassByName(className);
         final Constructor<?>[] z = aClass.getDeclaredConstructors();
         RuntimeReflection.register(aClass);

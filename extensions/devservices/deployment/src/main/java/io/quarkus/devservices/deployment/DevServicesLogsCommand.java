@@ -42,12 +42,8 @@ public class DevServicesLogsCommand implements Command {
                         frame -> commandInvocation.print(frame.getUtf8String()));
                 resultCallback.addConsumer(OutputFrame.OutputType.STDOUT,
                         frame -> commandInvocation.print(frame.getUtf8String()));
-                LogContainerCmd logCmd = DockerClientFactory.lazyClient()
-                        .logContainerCmd(desc.getContainerInfo().id())
-                        .withFollowStream(follow)
-                        .withTail(tail)
-                        .withStdErr(true)
-                        .withStdOut(true);
+                LogContainerCmd logCmd = DockerClientFactory.lazyClient().logContainerCmd(desc.getContainerInfo().id())
+                        .withFollowStream(follow).withTail(tail).withStdErr(true).withStdOut(true);
                 logCmd.exec(resultCallback);
 
                 if (follow) {

@@ -36,8 +36,7 @@ public class TemplatePathExcludeBuildItemTest {
                     public void execute(BuildContext context) {
                         context.produce(new TemplatePathExcludeBuildItem("hi.txt"));
                     }
-                }).produces(TemplatePathExcludeBuildItem.class)
-                        .build();
+                }).produces(TemplatePathExcludeBuildItem.class).build();
 
             }
         };

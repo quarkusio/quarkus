@@ -34,8 +34,7 @@ public class MojoTestBase {
     public Invoker initInvoker(File root) {
         Invoker invoker = new DefaultInvoker() {
             @Override
-            public InvocationResult execute(InvocationRequest request)
-                    throws MavenInvocationException {
+            public InvocationResult execute(InvocationRequest request) throws MavenInvocationException {
                 passUserSettings(request);
                 getEnv().forEach(request::addShellEnvironment);
                 enableDevToolsTestConfig(request);
@@ -74,8 +73,7 @@ public class MojoTestBase {
 
         initDotMvn();
 
-        Logger.getLogger(MojoTestBase.class.getName())
-                .log(Level.FINE, "test-classes created? %s", mkdirs);
+        Logger.getLogger(MojoTestBase.class.getName()).log(Level.FINE, "test-classes created? %s", mkdirs);
         return tc;
     }
 
@@ -83,8 +81,7 @@ public class MojoTestBase {
         File tc = new File("target/test-classes");
         if (!tc.isDirectory()) {
             boolean mkdirs = tc.mkdirs();
-            Logger.getLogger(MojoTestBase.class.getName())
-                    .log(Level.FINE, "test-classes created? %s", mkdirs);
+            Logger.getLogger(MojoTestBase.class.getName()).log(Level.FINE, "test-classes created? %s", mkdirs);
         }
 
         File in = new File(tc, name);
@@ -105,8 +102,7 @@ public class MojoTestBase {
         File tc = new File("target/test-classes");
         if (!tc.isDirectory()) {
             boolean mkdirs = tc.mkdirs();
-            Logger.getLogger(MojoTestBase.class.getName())
-                    .log(Level.FINE, "test-classes created? %s", mkdirs);
+            Logger.getLogger(MojoTestBase.class.getName()).log(Level.FINE, "test-classes created? %s", mkdirs);
         }
 
         File in = new File(tc, name);
@@ -119,8 +115,7 @@ public class MojoTestBase {
             FileUtils.deleteQuietly(out);
         }
         boolean mkdirs = out.mkdirs();
-        Logger.getLogger(MojoTestBase.class.getName())
-                .log(Level.FINE, out.getAbsolutePath() + " created? " + mkdirs);
+        Logger.getLogger(MojoTestBase.class.getName()).log(Level.FINE, out.getAbsolutePath() + " created? " + mkdirs);
 
         initDotMvn();
 

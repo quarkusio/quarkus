@@ -34,17 +34,14 @@ public class DevServicesCommand implements GroupCommand {
     }
 
     static Optional<DevServiceDescriptionBuildItem> findDevService(String devServiceName) {
-        return serviceDescriptions.stream()
-                .filter(d -> d.getName().equals(devServiceName))
-                .findFirst();
+        return serviceDescriptions.stream().filter(d -> d.getName().equals(devServiceName)).findFirst();
     }
 
     public static class DevServiceCompleter extends SetCompleter {
 
         @Override
         protected Set<String> allOptions(String soFar) {
-            return serviceDescriptions.stream()
-                    .map(DevServiceDescriptionBuildItem::getName)
+            return serviceDescriptions.stream().map(DevServiceDescriptionBuildItem::getName)
                     .collect(Collectors.toSet());
         }
     }

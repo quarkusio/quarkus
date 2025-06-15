@@ -8,8 +8,7 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * BuildItem used to publish the list of detected Bean Validation annotations
- * for consumption by other extensions.
+ * BuildItem used to publish the list of detected Bean Validation annotations for consumption by other extensions.
  */
 public final class BeanValidationAnnotationsBuildItem extends SimpleBuildItem {
 

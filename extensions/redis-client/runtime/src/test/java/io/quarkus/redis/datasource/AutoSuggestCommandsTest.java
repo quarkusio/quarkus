@@ -57,15 +57,13 @@ public class AutoSuggestCommandsTest extends DatasourceTestBase {
 
         assertThat(auto.ftSugAdd(key, "hell", 3)).isEqualTo(3L);
 
-        assertThat(auto.ftSugGet(key, "hell")).hasSize(2)
-                .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hell"))
+        assertThat(auto.ftSugGet(key, "hell")).hasSize(2).anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hell"))
                 .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hello world"));
 
-        assertThat(auto.ftSugGet(key, "hel", new GetArgs().max(1).withScores())).hasSize(1)
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hell");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                });
+        assertThat(auto.ftSugGet(key, "hel", new GetArgs().max(1).withScores())).hasSize(1).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hell");
+            assertThat(s.score()).isGreaterThan(0.0);
+        });
 
         assertThat(auto.ftSugAdd(key, "hill", 3)).isEqualTo(4L);
 
@@ -74,19 +72,16 @@ public class AutoSuggestCommandsTest extends DatasourceTestBase {
                 .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hello world"))
                 .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hill"));
 
-        assertThat(auto.ftSugGet(key, "hell", new GetArgs().fuzzy().withScores())).hasSize(3)
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hell");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                })
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hello world");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                })
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hill");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                });
+        assertThat(auto.ftSugGet(key, "hell", new GetArgs().fuzzy().withScores())).hasSize(3).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hell");
+            assertThat(s.score()).isGreaterThan(0.0);
+        }).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hello world");
+            assertThat(s.score()).isGreaterThan(0.0);
+        }).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hill");
+            assertThat(s.score()).isGreaterThan(0.0);
+        });
     }
 
     @Test
@@ -111,15 +106,13 @@ public class AutoSuggestCommandsTest extends DatasourceTestBase {
 
         assertThat(auto.ftSugAdd(key, "hell", 3)).isEqualTo(3L);
 
-        assertThat(auto.ftSugGet(key, "hell")).hasSize(2)
-                .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hell"))
+        assertThat(auto.ftSugGet(key, "hell")).hasSize(2).anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hell"))
                 .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hello world"));
 
-        assertThat(auto.ftSugGet(key, "hel", new GetArgs().max(1).withScores())).hasSize(1)
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hell");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                });
+        assertThat(auto.ftSugGet(key, "hel", new GetArgs().max(1).withScores())).hasSize(1).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hell");
+            assertThat(s.score()).isGreaterThan(0.0);
+        });
 
         assertThat(auto.ftSugAdd(key, "hill", 3)).isEqualTo(4L);
 
@@ -128,19 +121,16 @@ public class AutoSuggestCommandsTest extends DatasourceTestBase {
                 .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hello world"))
                 .anySatisfy(s -> assertThat(s.suggestion()).isEqualTo("hill"));
 
-        assertThat(auto.ftSugGet(key, "hell", new GetArgs().fuzzy().withScores())).hasSize(3)
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hell");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                })
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hello world");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                })
-                .anySatisfy(s -> {
-                    assertThat(s.suggestion()).isEqualTo("hill");
-                    assertThat(s.score()).isGreaterThan(0.0);
-                });
+        assertThat(auto.ftSugGet(key, "hell", new GetArgs().fuzzy().withScores())).hasSize(3).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hell");
+            assertThat(s.score()).isGreaterThan(0.0);
+        }).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hello world");
+            assertThat(s.score()).isGreaterThan(0.0);
+        }).anySatisfy(s -> {
+            assertThat(s.suggestion()).isEqualTo("hill");
+            assertThat(s.score()).isGreaterThan(0.0);
+        });
     }
 
 }

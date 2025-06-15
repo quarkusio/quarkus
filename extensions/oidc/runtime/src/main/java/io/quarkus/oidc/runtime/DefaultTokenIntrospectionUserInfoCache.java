@@ -16,14 +16,14 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.core.Vertx;
 
 /**
- * Default TokenIntrospection and UserInfo Cache implementation.
- * A single cache entry can keep TokenIntrospection and/or UserInfo.
+ * Default TokenIntrospection and UserInfo Cache implementation. A single cache entry can keep TokenIntrospection and/or
+ * UserInfo.
  * <p>
- * In most cases it is the opaque bearer access tokens which are introspected
- * but the code flow access tokens can also be introspected if they have the roles claims.
+ * In most cases it is the opaque bearer access tokens which are introspected but the code flow access tokens can also
+ * be introspected if they have the roles claims.
  * <p>
- * In either case, if a remote request to fetch UserInfo is required then it will be the same access token
- * which has been introspected which will be used to request UserInfo.
+ * In either case, if a remote request to fetch UserInfo is required then it will be the same access token which has
+ * been introspected which will be used to request UserInfo.
  */
 public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectionCache, UserInfoCache {
     private static final Logger LOG = Logger.getLogger(DefaultTokenIntrospectionUserInfoCache.class);
@@ -68,8 +68,7 @@ public class DefaultTokenIntrospectionUserInfoCache implements TokenIntrospectio
 
     private static boolean isTokenExpired(Long exp, OidcTenantConfig oidcConfig) {
         final long lifespanGrace = oidcConfig != null ? oidcConfig.token().lifespanGrace().orElse(0) : 0;
-        return exp != null
-                && System.currentTimeMillis() / 1000 > (exp + lifespanGrace);
+        return exp != null && System.currentTimeMillis() / 1000 > (exp + lifespanGrace);
     }
 
     @Override

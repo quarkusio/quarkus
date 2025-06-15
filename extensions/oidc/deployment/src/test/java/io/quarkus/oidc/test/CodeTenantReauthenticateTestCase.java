@@ -25,17 +25,12 @@ import io.quarkus.test.keycloak.server.KeycloakTestResourceLifecycleManager;
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class CodeTenantReauthenticateTestCase {
-    private static Class<?>[] testClasses = {
-            TenantReauthentication.class,
-            CustomTenantResolver.class,
-            CustomTenantConfigResolver.class
-    };
+    private static Class<?>[] testClasses = { TenantReauthentication.class, CustomTenantResolver.class,
+            CustomTenantConfigResolver.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-tenant-reauthenticate.properties", "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("application-tenant-reauthenticate.properties", "application.properties"));
 
     @Test
     public void testDefaultTenant() throws Exception {
@@ -153,8 +148,8 @@ public class CodeTenantReauthenticateTestCase {
         assertNotNull(getSessionCookie(webClient, tenant));
     }
 
-    private static void expectReauthentication(WebClient webClient, String relativePath,
-            String oldTenant) throws Exception {
+    private static void expectReauthentication(WebClient webClient, String relativePath, String oldTenant)
+            throws Exception {
         webClient.getOptions().setRedirectEnabled(false);
         webClient.getOptions().setThrowExceptionOnFailingStatusCode(false);
 

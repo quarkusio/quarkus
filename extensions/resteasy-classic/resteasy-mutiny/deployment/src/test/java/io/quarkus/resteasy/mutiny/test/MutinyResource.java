@@ -46,18 +46,16 @@ public class MutinyResource {
     @Path("web-failure")
     @GET
     public Uni<String> failing() {
-        return Uni.createFrom().item("not ok")
-                .onItem().failWith(s -> new WebApplicationException(
-                        Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(s).build()));
+        return Uni.createFrom().item("not ok").onItem().failWith(s -> new WebApplicationException(
+                Response.status(Response.Status.SERVICE_UNAVAILABLE).entity(s).build()));
     }
 
     @Path("app-failure")
     @GET
     public Uni<String> failingBecauseOfApplicationCode() {
-        return Uni.createFrom().item("not ok")
-                .onItem().transform(s -> {
-                    throw new IllegalStateException("BOOM!");
-                });
+        return Uni.createFrom().item("not ok").onItem().transform(s -> {
+            throw new IllegalStateException("BOOM!");
+        });
     }
 
     @Path("response/tea-pot")
@@ -81,8 +79,7 @@ public class MutinyResource {
     @Path("response/conditional/{test}")
     @GET
     public Uni<Response> conditional(@PathParam("test") boolean test) {
-        return Uni.createFrom().item(test)
-                .map(b -> b ? Response.accepted() : Response.noContent())
+        return Uni.createFrom().item(test).map(b -> b ? Response.accepted() : Response.noContent())
                 .map(Response.ResponseBuilder::build);
     }
 }

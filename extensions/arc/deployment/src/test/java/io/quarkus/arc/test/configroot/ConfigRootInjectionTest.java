@@ -17,8 +17,7 @@ public class ConfigRootInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ConfigRootInjectionTest.class, Client.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ConfigRootInjectionTest.class, Client.class));
 
     @Inject
     Client client;

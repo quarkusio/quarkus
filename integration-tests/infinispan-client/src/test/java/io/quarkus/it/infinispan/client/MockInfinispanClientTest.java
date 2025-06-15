@@ -32,8 +32,8 @@ public class MockInfinispanClientTest {
     @Remote(CacheSetup.BOOKS_CACHE)
     RemoteCache<String, Book> bookRemoteCache;
 
-    private final Book BOOK = new Book("Full Saga of Harry Potter", "Best saga ever", 1997,
-            Collections.emptySet(), Type.FANTASY, new BigDecimal("500.99"));
+    private final Book BOOK = new Book("Full Saga of Harry Potter", "Best saga ever", 1997, Collections.emptySet(),
+            Type.FANTASY, new BigDecimal("500.99"));
 
     @Test
     public void mockRemoteCacheManager() {
@@ -41,10 +41,12 @@ public class MockInfinispanClientTest {
         when(localMockCache.get("harry_potter")).thenReturn(BOOK);
         when(cacheManager.<String, Book> getCache(CacheSetup.BOOKS_CACHE)).thenReturn(localMockCache);
 
-        assertThat(bookService.getBookDescriptionById(CacheSetup.BOOKS_CACHE, "non_exist")).isEqualTo(DEFAULT_DESCRIPTION);
-        assertThat(bookService.getBookDescriptionById(CacheSetup.BOOKS_CACHE, "harry_potter")).isEqualTo("Best saga ever");
-        assertThatIllegalArgumentException().isThrownBy(
-                () -> bookService.getBookDescriptionById(CacheSetup.DEFAULT_CACHE, "non_exist"));
+        assertThat(bookService.getBookDescriptionById(CacheSetup.BOOKS_CACHE, "non_exist"))
+                .isEqualTo(DEFAULT_DESCRIPTION);
+        assertThat(bookService.getBookDescriptionById(CacheSetup.BOOKS_CACHE, "harry_potter"))
+                .isEqualTo("Best saga ever");
+        assertThatIllegalArgumentException()
+                .isThrownBy(() -> bookService.getBookDescriptionById(CacheSetup.DEFAULT_CACHE, "non_exist"));
     }
 
     @Test

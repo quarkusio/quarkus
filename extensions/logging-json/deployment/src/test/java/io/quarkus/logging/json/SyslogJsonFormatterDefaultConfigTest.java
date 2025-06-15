@@ -49,8 +49,7 @@ public class SyslogJsonFormatterDefaultConfigTest {
         assertThat(Logger.getLogger("").getHandlers()).contains(delayedHandler);
         assertThat(delayedHandler.getLevel()).isEqualTo(Level.ALL);
 
-        Handler handler = Arrays.stream(delayedHandler.getHandlers())
-                .filter(h -> (h instanceof SyslogHandler))
+        Handler handler = Arrays.stream(delayedHandler.getHandlers()).filter(h -> (h instanceof SyslogHandler))
                 .findFirst().orElse(null);
         assertThat(handler).isNotNull();
         assertThat(handler.getLevel()).isEqualTo(Level.WARNING);

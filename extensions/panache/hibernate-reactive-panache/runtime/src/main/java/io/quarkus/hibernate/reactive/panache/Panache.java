@@ -18,11 +18,13 @@ import io.smallrye.mutiny.Uni;
 public class Panache {
 
     /**
-     * Obtains a {@link Uni} within the scope of a reactive session. If a reactive session exists then it is reused. If it
-     * does not exist not exist then open a new session that is automatically closed when the provided {@link Uni} completes.
+     * Obtains a {@link Uni} within the scope of a reactive session. If a reactive session exists then it is reused. If
+     * it does not exist not exist then open a new session that is automatically closed when the provided {@link Uni}
+     * completes.
      *
      * @param <T>
      * @param uniSupplier
+     *
      * @return a new {@link Uni}
      */
     public static <T> Uni<T> withSession(Supplier<Uni<T>> uniSupplier) {
@@ -39,13 +41,17 @@ public class Panache {
     }
 
     /**
-     * Performs the given work within the scope of a database transaction, automatically flushing the session.
-     * The transaction will be rolled back if the work completes with an uncaught exception, or if
+     * Performs the given work within the scope of a database transaction, automatically flushing the session. The
+     * transaction will be rolled back if the work completes with an uncaught exception, or if
      * {@link Mutiny.Transaction#markForRollback()} is called.
      *
-     * @param <T> The function's return type
-     * @param work The function to execute in the new transaction
+     * @param <T>
+     *        The function's return type
+     * @param work
+     *        The function to execute in the new transaction
+     *
      * @return the result of executing the function
+     *
      * @see Panache#currentTransaction()
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
@@ -55,8 +61,11 @@ public class Panache {
     /**
      * Executes a database update operation and return the number of rows operated on.
      *
-     * @param query a normal HQL query
-     * @param params optional list of indexed parameters
+     * @param query
+     *        a normal HQL query
+     * @param params
+     *        optional list of indexed parameters
+     *
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Object... params) {
@@ -66,8 +75,11 @@ public class Panache {
     /**
      * Executes a database update operation and return the number of rows operated on.
      *
-     * @param query a normal HQL query
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a normal HQL query
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Map<String, Object> params) {
@@ -77,8 +89,11 @@ public class Panache {
     /**
      * Executes a database update operation and return the number of rows operated on.
      *
-     * @param query a normal HQL query
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a normal HQL query
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return the number of rows operated on.
      */
     public static Uni<Integer> executeUpdate(String query, Parameters params) {
@@ -98,6 +113,7 @@ public class Panache {
      * Returns the current transaction, if any, or <code>null</code>.
      *
      * @return the current transaction, if any, or <code>null</code>.
+     *
      * @see Panache#withTransaction(Supplier)
      */
     public static Uni<Mutiny.Transaction> currentTransaction() {

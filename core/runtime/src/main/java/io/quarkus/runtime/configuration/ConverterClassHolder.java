@@ -20,8 +20,7 @@ final class ConverterClassHolder {
         if (o == null || getClass() != o.getClass())
             return false;
         ConverterClassHolder that = (ConverterClassHolder) o;
-        return Objects.equals(type, that.type) &&
-                Objects.equals(converterType, that.converterType);
+        return Objects.equals(type, that.type) && Objects.equals(converterType, that.converterType);
     }
 
     @Override

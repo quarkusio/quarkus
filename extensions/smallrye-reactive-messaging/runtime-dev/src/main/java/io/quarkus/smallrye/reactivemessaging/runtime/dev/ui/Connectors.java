@@ -61,8 +61,7 @@ public class Connectors {
                 desc.append("</li>");
             }
             desc.append("</ul>");
-            incomingConnectors.put(channel,
-                    new Component(ComponentType.CONNECTOR, desc.toString()));
+            incomingConnectors.put(channel, new Component(ComponentType.CONNECTOR, desc.toString()));
         }
 
         for (String source : sourceConnectorsProperties) {
@@ -72,7 +71,8 @@ public class Connectors {
             desc.append(connector);
             desc.append("<ul>");
             desc.append("<li>Config property: ");
-            desc.append(DevReactiveMessagingInfos.asCode(source.substring(0, source.length() - connectorSuffix.length())));
+            desc.append(
+                    DevReactiveMessagingInfos.asCode(source.substring(0, source.length() - connectorSuffix.length())));
             desc.append("</li>");
             for (Entry<String, String> entry : getProperties(config, connectorSuffix, source).entrySet()) {
                 desc.append("<li>");
@@ -82,8 +82,7 @@ public class Connectors {
                 desc.append("</li>");
             }
             desc.append("</ul>");
-            outgoingConnectors.put(channel,
-                    new Component(ComponentType.CONNECTOR, desc.toString()));
+            outgoingConnectors.put(channel, new Component(ComponentType.CONNECTOR, desc.toString()));
         }
     }
 

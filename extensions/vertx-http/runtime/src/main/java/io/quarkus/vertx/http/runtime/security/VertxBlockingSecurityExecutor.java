@@ -33,17 +33,12 @@ public class VertxBlockingSecurityExecutor implements BlockingSecurityExecutor {
                 } else {
                     Context local = getOrCreateDuplicatedContext(vertx);
                     setContextSafe(local, true);
-                    return Uni
-                            .createFrom()
-                            .completionStage(
-                                    local
-                                            .executeBlocking(new Callable<T>() {
-                                                @Override
-                                                public T call() {
-                                                    return supplier.get();
-                                                }
-                                            }, false)
-                                            .toCompletionStage());
+                    return Uni.createFrom().completionStage(local.executeBlocking(new Callable<T>() {
+                        @Override
+                        public T call() {
+                            return supplier.get();
+                        }
+                    }, false).toCompletionStage());
                 }
             }
         });

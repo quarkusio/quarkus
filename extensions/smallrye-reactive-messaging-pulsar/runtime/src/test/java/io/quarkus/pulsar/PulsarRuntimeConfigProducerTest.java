@@ -14,20 +14,18 @@ class PulsarRuntimeConfigProducerTest {
 
     @Test
     void testMapConfig() {
-        SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", Map.of("pulsar.client.serviceUrl", "pulsar://pulsar:6650")) {
-                })
-                .build();
+        SmallRyeConfig config = new SmallRyeConfigBuilder().withSources(
+                new MapBackedConfigSource("test", Map.of("pulsar.client.serviceUrl", "pulsar://pulsar:6650")) {
+                }).build();
         Map<String, Object> configMap = PulsarRuntimeConfigProducer.getMapFromConfig(config, "pulsar.client");
         assertThat(configMap).containsKeys("serviceUrl");
     }
 
     @Test
     void testMapConfigFromEnvVars() {
-        SmallRyeConfig config = new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", Map.of("PULSAR_CLIENT_SERVICE_URL", "pulsar://pulsar:6650")) {
-                })
-                .build();
+        SmallRyeConfig config = new SmallRyeConfigBuilder().withSources(
+                new MapBackedConfigSource("test", Map.of("PULSAR_CLIENT_SERVICE_URL", "pulsar://pulsar:6650")) {
+                }).build();
         Map<String, Object> configMap = PulsarRuntimeConfigProducer.getMapFromConfig(config, "pulsar.client");
         assertThat(configMap).containsKeys("serviceUrl");
     }

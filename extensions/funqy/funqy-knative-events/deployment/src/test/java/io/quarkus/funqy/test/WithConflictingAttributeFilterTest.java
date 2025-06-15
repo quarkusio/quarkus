@@ -23,20 +23,13 @@ public class WithConflictingAttributeFilterTest {
         }
 
         assertTrue(found, "Build failed with wrong exception, expected IllegalStateException but got " + t);
-    })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WithConflictingAttributeFilter.class, Identity.class));
+    }).withApplicationRoot((jar) -> jar.addClasses(WithConflictingAttributeFilter.class, Identity.class));
 
     @Test
     public void testAttributeFilterMatch() {
-        RestAssured.given().contentType("application/json")
-                .body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
-                .header("ce-id", "42")
-                .header("ce-type", "listOfStrings")
-                .header("ce-source", "test")
-                .header("ce-specversion", "1.0")
-                .post("/")
-                .then().statusCode(404);
+        RestAssured.given().contentType("application/json").body("[{\"name\": \"Bill\"}, {\"name\": \"Matej\"}]")
+                .header("ce-id", "42").header("ce-type", "listOfStrings").header("ce-source", "test")
+                .header("ce-specversion", "1.0").post("/").then().statusCode(404);
     }
 
 }

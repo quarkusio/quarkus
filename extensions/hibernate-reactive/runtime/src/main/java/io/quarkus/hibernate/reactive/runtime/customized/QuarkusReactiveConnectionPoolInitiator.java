@@ -9,8 +9,7 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import io.quarkus.hibernate.orm.runtime.migration.MultiTenancyStrategy;
 import io.vertx.sqlclient.Pool;
 
-public final class QuarkusReactiveConnectionPoolInitiator
-        implements StandardServiceInitiator<ReactiveConnectionPool> {
+public final class QuarkusReactiveConnectionPoolInitiator implements StandardServiceInitiator<ReactiveConnectionPool> {
 
     private final Pool pool;
 
@@ -25,7 +24,7 @@ public final class QuarkusReactiveConnectionPoolInitiator
 
     @Override
     public ReactiveConnectionPool initiateService(Map configurationValues, ServiceRegistryImplementor registry) {
-        //First, check that this setup won't need to deal with multi-tenancy at the connection pool level:
+        // First, check that this setup won't need to deal with multi-tenancy at the connection pool level:
         final MultiTenancyStrategy strategy = MultiTenancyStrategy.determineMultiTenancyStrategy(configurationValues);
         if (strategy == MultiTenancyStrategy.DATABASE || strategy == MultiTenancyStrategy.SCHEMA) {
             // nothing to do, but given the separate hierarchies have to handle this here.

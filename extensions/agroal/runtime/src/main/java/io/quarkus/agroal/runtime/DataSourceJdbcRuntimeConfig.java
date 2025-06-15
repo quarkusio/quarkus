@@ -24,9 +24,9 @@ public interface DataSourceJdbcRuntimeConfig {
     Optional<@WithConverter(TrimmedStringConverter.class) String> url();
 
     /**
-     * The initial size of the pool. Usually you will want to set the initial size to match at least the
-     * minimal size, but this is not enforced so to allow for architectures which prefer a lazy initialization
-     * of the connections on boot, while being able to sustain a minimal pool size after boot.
+     * The initial size of the pool. Usually you will want to set the initial size to match at least the minimal size,
+     * but this is not enforced so to allow for architectures which prefer a lazy initialization of the connections on
+     * boot, while being able to sustain a minimal pool size after boot.
      */
     OptionalInt initialSize();
 
@@ -98,11 +98,9 @@ public interface DataSourceJdbcRuntimeConfig {
     boolean flushOnClose();
 
     /**
-     * When enabled, Agroal will be able to produce a warning when a connection is returned
-     * to the pool without the application having closed all open statements.
-     * This is unrelated with tracking of open connections.
-     * Disable for peak performance, but only when there's high confidence that
-     * no leaks are happening.
+     * When enabled, Agroal will be able to produce a warning when a connection is returned to the pool without the
+     * application having closed all open statements. This is unrelated with tracking of open connections. Disable for
+     * peak performance, but only when there's high confidence that no leaks are happening.
      */
     @WithDefault("true")
     boolean detectStatementLeaks();
@@ -125,15 +123,15 @@ public interface DataSourceJdbcRuntimeConfig {
     /**
      * Forces connection validation prior to acquisition (foreground validation) regardless of the idle status.
      * <p>
-     * Because of the overhead of performing validation on every call, it’s recommended to rely on default idle validation
-     * instead, and to leave this to `false`.
+     * Because of the overhead of performing validation on every call, it’s recommended to rely on default idle
+     * validation instead, and to leave this to `false`.
      */
     @WithDefault("false")
     boolean validateOnBorrow();
 
     /**
-     * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle
-     * of Connections.
+     * Disable pooling to prevent reuse of Connections. Use this when an external pool manages the life-cycle of
+     * Connections.
      */
     @WithDefault("true")
     boolean poolingEnabled();
@@ -141,21 +139,20 @@ public interface DataSourceJdbcRuntimeConfig {
     /**
      * Whether to enable recovery for this datasource.
      * <p>
-     * Normally a transaction manager will call xa_recover () on an XA connection during recovery to obtain
-     * a list of transaction branches that are currently in a prepared or heuristically completed state.
-     * However, it can happen that multiple XA connections connect to the same datasource which would all
-     * return the same set of branches and for reasons of improved performance only one should be used
-     * for recover() calls. The default value for this configuration property is true because when there
-     * is only one connection it is vital for data consistency that the connection is able to report its
-     * list of prepared or heuristically completed branches.
+     * Normally a transaction manager will call xa_recover () on an XA connection during recovery to obtain a list of
+     * transaction branches that are currently in a prepared or heuristically completed state. However, it can happen
+     * that multiple XA connections connect to the same datasource which would all return the same set of branches and
+     * for reasons of improved performance only one should be used for recover() calls. The default value for this
+     * configuration property is true because when there is only one connection it is vital for data consistency that
+     * the connection is able to report its list of prepared or heuristically completed branches.
      */
     @WithDefault("true")
     boolean enableRecovery();
 
     /**
-     * Require an active transaction when acquiring a connection. Recommended for production.
-     * WARNING: Some extensions acquire connections without holding a transaction for things like schema updates and schema
-     * validation. Setting this setting to STRICT may lead to failures in those cases.
+     * Require an active transaction when acquiring a connection. Recommended for production. WARNING: Some extensions
+     * acquire connections without holding a transaction for things like schema updates and schema validation. Setting
+     * this setting to STRICT may lead to failures in those cases.
      */
     Optional<AgroalConnectionPoolConfiguration.TransactionRequirement> transactionRequirement();
 

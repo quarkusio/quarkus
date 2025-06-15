@@ -24,29 +24,24 @@ import io.restassured.http.ContentType;
 public class ContextResolverTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(EnumsResource.class, Type.class, TypeContextResolver.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(EnumsResource.class, Type.class,
+                    TypeContextResolver.class);
+        }
+    });
 
     @Test
     public void shouldUseCustomObjectMapper() {
-        with().accept(ContentType.JSON).get("/enums/type/foo")
-                .then().statusCode(200).body(equalTo("0"));
-        with().accept(ContentType.JSON).get("/enums/type/bar")
-                .then().statusCode(200).body(equalTo("1"));
+        with().accept(ContentType.JSON).get("/enums/type/foo").then().statusCode(200).body(equalTo("0"));
+        with().accept(ContentType.JSON).get("/enums/type/bar").then().statusCode(200).body(equalTo("1"));
     }
 
     @Test
     public void shouldUseDefaultObjectMapper() {
-        with().accept(ContentType.JSON).get("/enums/color/red")
-                .then().statusCode(200).body(equalTo("\"RED\""));
-        with().accept(ContentType.JSON).get("/enums/color/black")
-                .then().statusCode(200).body(equalTo("\"BLACK\""));
+        with().accept(ContentType.JSON).get("/enums/color/red").then().statusCode(200).body(equalTo("\"RED\""));
+        with().accept(ContentType.JSON).get("/enums/color/black").then().statusCode(200).body(equalTo("\"BLACK\""));
     }
 
     @Path("enums")

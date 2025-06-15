@@ -13,12 +13,9 @@ import picocli.CommandLine;
 import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.Unmatched;
 
-@CommandLine.Command(name = "plugin", aliases = { "plug" }, header = "Configure plugins of the Quarkus CLI.", subcommands = {
-        CliPluginsList.class,
-        CliPluginsAdd.class,
-        CliPluginsRemove.class,
-        CliPluginsSync.class
-})
+@CommandLine.Command(name = "plugin", aliases = {
+        "plug" }, header = "Configure plugins of the Quarkus CLI.", subcommands = { CliPluginsList.class,
+                CliPluginsAdd.class, CliPluginsRemove.class, CliPluginsSync.class })
 public class CliPlugins implements Callable<Integer> {
 
     @CommandLine.Mixin(name = "output")

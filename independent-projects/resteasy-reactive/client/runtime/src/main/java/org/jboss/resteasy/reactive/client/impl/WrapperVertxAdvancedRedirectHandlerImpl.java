@@ -22,7 +22,8 @@ class WrapperVertxAdvancedRedirectHandlerImpl implements Function<HttpClientResp
     public Future<RequestOptions> apply(HttpClientResponse httpClientResponse) {
         Response jaxRsResponse = RedirectUtil.toResponse(httpClientResponse);
 
-        var result = redirectHandler.handle(new AdvancedRedirectHandler.Context(jaxRsResponse, httpClientResponse.request()));
+        var result = redirectHandler
+                .handle(new AdvancedRedirectHandler.Context(jaxRsResponse, httpClientResponse.request()));
         if (result != null) {
             return Future.succeededFuture(result);
         }

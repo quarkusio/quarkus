@@ -28,89 +28,49 @@ public class FileTestCase {
     URI uri;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FileResource.class, WithWriterInterceptor.class, WriterInterceptor.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FileResource.class, WithWriterInterceptor.class, WriterInterceptor.class));
 
     @Test
     public void testFiles() throws Exception {
         String content = Files.readString(Path.of(FILE));
         String contentLength = String.valueOf(content.length());
-        RestAssured.get("/providers/file/file")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
+        RestAssured.get("/providers/file/file").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, contentLength)
                 .body(Matchers.equalTo(content));
-        RestAssured.given().header("Range", "bytes=0-9").get("/providers/file/file")
-                .then()
-                .statusCode(206)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
-                .header("Content-Range", "bytes 0-9/" + contentLength)
+        RestAssured.given().header("Range", "bytes=0-9").get("/providers/file/file").then().statusCode(206)
+                .header(HttpHeaders.CONTENT_LENGTH, "10").header("Content-Range", "bytes 0-9/" + contentLength)
                 .body(Matchers.equalTo(content.substring(0, 10)));
-        RestAssured.given().header("Range", "bytes=10-19").get("/providers/file/file")
-                .then()
-                .statusCode(206)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
-                .header("Content-Range", "bytes 10-19/" + contentLength)
+        RestAssured.given().header("Range", "bytes=10-19").get("/providers/file/file").then().statusCode(206)
+                .header(HttpHeaders.CONTENT_LENGTH, "10").header("Content-Range", "bytes 10-19/" + contentLength)
                 .body(Matchers.equalTo(content.substring(10, 20)));
-        RestAssured.given().header("Range", "bytes=10-").get("/providers/file/file")
-                .then()
-                .statusCode(206)
+        RestAssured.given().header("Range", "bytes=10-").get("/providers/file/file").then().statusCode(206)
                 .header(HttpHeaders.CONTENT_LENGTH, String.valueOf(content.length() - 10))
                 .header("Content-Range", "bytes 10-" + (content.length() - 1) + "/" + contentLength)
                 .body(Matchers.equalTo(content.substring(10)));
-        RestAssured.given().header("Range", "bytes=-10").get("/providers/file/file")
-                .then()
-                .statusCode(206)
+        RestAssured.given().header("Range", "bytes=-10").get("/providers/file/file").then().statusCode(206)
                 .header(HttpHeaders.CONTENT_LENGTH, "10")
                 .header("Content-Range",
                         "bytes " + (content.length() - 10) + "-" + (content.length() - 1) + "/" + contentLength)
                 .body(Matchers.equalTo(content.substring((content.length() - 10))));
-        RestAssured.given().header("Range", "bytes=" + (content.length() + 1) + "-").get("/providers/file/file")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
-                .body(Matchers.equalTo(content));
-        RestAssured.given().header("Range", "bytes=0-1, 3-4").get("/providers/file/file")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
-                .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/file-partial")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
+        RestAssured.given().header("Range", "bytes=" + (content.length() + 1) + "-").get("/providers/file/file").then()
+                .statusCode(200).header(HttpHeaders.CONTENT_LENGTH, contentLength).body(Matchers.equalTo(content));
+        RestAssured.given().header("Range", "bytes=0-1, 3-4").get("/providers/file/file").then().statusCode(200)
+                .header(HttpHeaders.CONTENT_LENGTH, contentLength).body(Matchers.equalTo(content));
+        RestAssured.get("/providers/file/file-partial").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, "10")
                 .body(Matchers.equalTo(content.substring(20, 30)));
-        RestAssured.get("/providers/file/path")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, contentLength)
+        RestAssured.get("/providers/file/path").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, contentLength)
                 .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/path-partial")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
+        RestAssured.get("/providers/file/path-partial").then().statusCode(200).header(HttpHeaders.CONTENT_LENGTH, "10")
                 .body(Matchers.equalTo(content.substring(20, 30)));
-        RestAssured.get("/providers/file/async-file")
-                .then()
-                .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())
-                .statusCode(200)
+        RestAssured.get("/providers/file/async-file").then().header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())
+                .statusCode(200).body(Matchers.equalTo(content));
+        RestAssured.get("/providers/file/rest-response-async-file").then().header("foo", "bar").statusCode(200)
                 .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/rest-response-async-file")
-                .then()
-                .header("foo", "bar")
-                .statusCode(200)
+        RestAssured.get("/providers/file/mutiny-async-file").then()
+                .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue()).statusCode(200)
                 .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/mutiny-async-file")
-                .then()
-                .header(HttpHeaders.CONTENT_LENGTH, Matchers.nullValue())
-                .statusCode(200)
-                .body(Matchers.equalTo(content));
-        RestAssured.get("/providers/file/async-file-partial")
-                .then()
-                .statusCode(200)
-                .header(HttpHeaders.CONTENT_LENGTH, "10")
-                .body(Matchers.equalTo(content.substring(20, 30)));
+        RestAssured.get("/providers/file/async-file-partial").then().statusCode(200)
+                .header(HttpHeaders.CONTENT_LENGTH, "10").body(Matchers.equalTo(content.substring(20, 30)));
     }
 
     @Test

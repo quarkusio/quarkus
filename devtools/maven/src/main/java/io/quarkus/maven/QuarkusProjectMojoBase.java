@@ -93,22 +93,19 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
         final QuarkusProject quarkusProject;
         if (BuildTool.MAVEN.equals(buildTool) && project.getFile() != null) {
             try {
-                quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(), baseDir(),
-                        project.getModel().getProperties(), artifactResolver(), getExtensionCatalogResolver(),
-                        getMessageWriter(),
-                        null);
+                quarkusProject = MavenProjectBuildFile.getProject(projectArtifact(), project.getOriginalModel(),
+                        baseDir(), project.getModel().getProperties(), artifactResolver(),
+                        getExtensionCatalogResolver(), getMessageWriter(), null);
             } catch (RegistryResolutionException e) {
                 throw new MojoExecutionException("Failed to initialize Quarkus Maven extension manager", e);
             }
         } else {
             final ExtensionCatalog extensionCatalog = resolveExtensionCatalog();
             final List<ResourceLoader> codestartsResourceLoader = CodestartResourceLoadersBuilder
-                    .codestartLoadersBuilder(log)
-                    .artifactResolver(artifactResolver())
-                    .catalog(extensionCatalog)
+                    .codestartLoadersBuilder(log).artifactResolver(artifactResolver()).catalog(extensionCatalog)
                     .build();
-            quarkusProject = QuarkusProject.of(baseDir(), extensionCatalog,
-                    codestartsResourceLoader, log, buildTool, JavaVersion.NA);
+            quarkusProject = QuarkusProject.of(baseDir(), extensionCatalog, codestartsResourceLoader, log, buildTool,
+                    JavaVersion.NA);
         }
 
         doExecute(quarkusProject, getMessageWriter());
@@ -185,13 +182,10 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     }
 
     protected MavenArtifactResolver initArtifactResolver() throws MojoExecutionException {
-        var config = BootstrapMavenContext.config()
-                .setArtifactTransferLogging(getLog().isDebugEnabled())
+        var config = BootstrapMavenContext.config().setArtifactTransferLogging(getLog().isDebugEnabled())
                 .setRemoteRepositoryManager(workspaceProvider.getRemoteRepositoryManager())
-                .setRepositorySystem(workspaceProvider.getRepositorySystem())
-                .setRemoteRepositories(repos)
-                .setWorkspaceDiscovery(false)
-                .setRepositorySystemSession(repoSession);
+                .setRepositorySystem(workspaceProvider.getRepositorySystem()).setRemoteRepositories(repos)
+                .setWorkspaceDiscovery(false).setRepositorySystemSession(repoSession);
         return workspaceProvider.createArtifactResolver(config);
     }
 
@@ -218,8 +212,7 @@ public abstract class QuarkusProjectMojoBase extends AbstractMojo {
     protected void validateParameters() throws MojoExecutionException {
     }
 
-    protected abstract void doExecute(QuarkusProject quarkusProject, MessageWriter log)
-            throws MojoExecutionException;
+    protected abstract void doExecute(QuarkusProject quarkusProject, MessageWriter log) throws MojoExecutionException;
 
     private Artifact projectArtifact() {
         return projectArtifact == null

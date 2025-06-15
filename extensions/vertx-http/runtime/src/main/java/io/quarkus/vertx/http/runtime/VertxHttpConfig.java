@@ -58,13 +58,11 @@ public interface VertxHttpConfig {
      * <p>
      * In dev/test mode this defaults to localhost, in prod mode this defaults to 0.0.0.0
      * <p>
-     * Defaulting to 0.0.0.0 makes it easier to deploy Quarkus to container, however it
-     * is not suitable for dev/test mode as other people on the network can connect to your
-     * development machine.
+     * Defaulting to 0.0.0.0 makes it easier to deploy Quarkus to container, however it is not suitable for dev/test
+     * mode as other people on the network can connect to your development machine.
      * <p>
-     * As an exception, when running in Windows Subsystem for Linux (WSL), the HTTP host
-     * defaults to 0.0.0.0 even in dev/test mode since using localhost makes the application
-     * inaccessible.
+     * As an exception, when running in Windows Subsystem for Linux (WSL), the HTTP host defaults to 0.0.0.0 even in
+     * dev/test mode since using localhost makes the application inaccessible.
      */
     String host();
 
@@ -93,20 +91,18 @@ public interface VertxHttpConfig {
     int testSslPort();
 
     /**
-     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running
-     * to configure the test to use SSL.
+     * Used when {@code QuarkusIntegrationTest} is meant to execute against an application that is already running to
+     * configure the test to use SSL.
      */
     Optional<Boolean> testSslEnabled();
 
     /**
-     * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled}
-     * then http works as normal. {@code redirect} will still open the http port, but
-     * all requests will be redirected to the HTTPS port. {@code disabled} will prevent the HTTP
-     * port from opening at all.
+     * If insecure (i.e. http rather than https) requests are allowed. If this is {@code enabled} then http works as
+     * normal. {@code redirect} will still open the http port, but all requests will be redirected to the HTTPS port.
+     * {@code disabled} will prevent the HTTP port from opening at all.
      * <p>
      * Default is {@code enabled} except when client auth is set to {@code required} (configured using
-     * {@code quarkus.http.ssl.client-auth=required}).
-     * In this case, the default is {@code disabled}.
+     * {@code quarkus.http.ssl.client-auth=required}). In this case, the default is {@code disabled}.
      */
     Optional<InsecureRequests> insecureRequests();
 
@@ -119,9 +115,8 @@ public interface VertxHttpConfig {
     boolean http2();
 
     /**
-     * Enables or Disable the HTTP/2 Push feature.
-     * This setting can be used to disable server push. The server will not send a {@code PUSH_PROMISE} frame if it
-     * receives this parameter set to {@code false}.
+     * Enables or Disable the HTTP/2 Push feature. This setting can be used to disable server push. The server will not
+     * send a {@code PUSH_PROMISE} frame if it receives this parameter set to {@code false}.
      */
     @WithDefault("true")
     boolean http2PushEnabled();
@@ -140,11 +135,12 @@ public interface VertxHttpConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used. If a
+     * name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but no
+     * TLS configuration is found with that name then an error will be thrown.
      * <p>
-     * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then, `quarkus.http.ssl` will be used.
+     * If no TLS configuration is set, and {@code quarkus.tls.*} is not configured, then, `quarkus.http.ssl` will be
+     * used.
      */
     Optional<String> tlsConfigurationName();
 
@@ -155,20 +151,20 @@ public interface VertxHttpConfig {
     StaticResourcesConfig staticResources();
 
     /**
-     * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE`
-     * response when the request expects it (with the `Expect: 100-Continue` header).
+     * When set to {@code true}, the HTTP server automatically sends `100 CONTINUE` response when the request expects it
+     * (with the `Expect: 100-Continue` header).
      */
     @WithName("handle-100-continue-automatically")
     @WithDefault("false")
     boolean handle100ContinueAutomatically();
 
     /**
-     * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on
-     * the number of CPU cores if it is not provided. If this is set to a higher value than the number of Vert.x event
-     * loops then it will be capped at the number of event loops.
+     * The number if IO threads used to perform IO. This will be automatically set to a reasonable value based on the
+     * number of CPU cores if it is not provided. If this is set to a higher value than the number of Vert.x event loops
+     * then it will be capped at the number of event loops.
      * <p>
-     * In general this should be controlled by setting quarkus.vertx.event-loops-pool-size, this setting should only
-     * be used if you want to limit the number of HTTP io threads to a smaller number than the total number of IO threads.
+     * In general this should be controlled by setting quarkus.vertx.event-loops-pool-size, this setting should only be
+     * used if you want to limit the number of HTTP io threads to a smaller number than the total number of IO threads.
      */
     OptionalInt ioThreads();
 
@@ -185,9 +181,8 @@ public interface VertxHttpConfig {
     Duration idleTimeout();
 
     /**
-     * Http connection read timeout for blocking IO. This is the maximum amount of time
-     * a thread will wait for data, before an IOException will be thrown and the connection
-     * closed.
+     * Http connection read timeout for blocking IO. This is the maximum amount of time a thread will wait for data,
+     * before an IOException will be thrown and the connection closed.
      */
     @WithDefault("60s")
     Duration readTimeout();
@@ -198,11 +193,12 @@ public interface VertxHttpConfig {
     BodyConfig body();
 
     /**
-     * The encryption key that is used to store persistent logins (e.g. for form auth). Logins are stored in a persistent
-     * cookie that is encrypted with AES-256 using a key derived from a SHA-256 hash of the key that is provided here.
+     * The encryption key that is used to store persistent logins (e.g. for form auth). Logins are stored in a
+     * persistent cookie that is encrypted with AES-256 using a key derived from a SHA-256 hash of the key that is
+     * provided here.
      * <p>
-     * If no key is provided then an in-memory one will be generated, this will change on every restart though so it
-     * is not suitable for production environments. This must be more than 16 characters long for security reasons
+     * If no key is provided then an in-memory one will be generated, this will change on every restart though so it is
+     * not suitable for production environments. This must be more than 16 characters long for security reasons
      */
     @WithName("auth.session.encryption-key")
     Optional<String> encryptionKey();
@@ -232,15 +228,15 @@ public interface VertxHttpConfig {
     boolean tcpFastOpen();
 
     /**
-     * The accept backlog, this is how many connections can be waiting to be accepted before connections start being rejected
+     * The accept backlog, this is how many connections can be waiting to be accepted before connections start being
+     * rejected
      */
     @WithDefault("-1")
     int acceptBacklog();
 
     /**
-     * Set the SETTINGS_INITIAL_WINDOW_SIZE HTTP/2 setting.
-     * Indicates the sender's initial window size (in octets) for stream-level flow control.
-     * The initial value is {@code 2^16-1} (65,535) octets.
+     * Set the SETTINGS_INITIAL_WINDOW_SIZE HTTP/2 setting. Indicates the sender's initial window size (in octets) for
+     * stream-level flow control. The initial value is {@code 2^16-1} (65,535) octets.
      */
     OptionalInt initialWindowSize();
 
@@ -282,12 +278,11 @@ public interface VertxHttpConfig {
     Map<String, SameSiteCookieConfig> sameSiteCookie();
 
     /**
-     * Provides a hint (optional) for the default content type of responses generated for
-     * the errors not handled by the application.
+     * Provides a hint (optional) for the default content type of responses generated for the errors not handled by the
+     * application.
      * <p>
-     * If the client requested a supported content-type in request headers
-     * (e.g. "Accept: application/json", "Accept: text/html"),
-     * Quarkus will use that content type.
+     * If the client requested a supported content-type in request headers (e.g. "Accept: application/json", "Accept:
+     * text/html"), Quarkus will use that content type.
      * <p>
      * Otherwise, it will default to the content type configured here.
      * </p>

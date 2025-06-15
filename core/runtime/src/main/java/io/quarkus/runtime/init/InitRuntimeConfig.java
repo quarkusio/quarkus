@@ -18,9 +18,7 @@ import io.smallrye.config.WithDefault;
 @ConfigDocPrefix("quarkus.init")
 public interface InitRuntimeConfig {
     /**
-     * true to quit exit right after the initialization.
-     * The option is not meant be used directly by users.
-     *
+     * true to quit exit right after the initialization. The option is not meant be used directly by users.
      */
     @WithDefault("false")
     @WithConverter(BooleanConverter.class)

@@ -30,54 +30,40 @@ import io.restassured.response.Response;
 
 class CrudAndPagedResourceTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AbstractEntity.class, Record.class, CrudAndPagedRecordsRepository.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(AbstractEntity.class, Record.class, CrudAndPagedRecordsRepository.class)
+                    .addAsResource("application.properties").addAsResource("import.sql"));
 
     @Test
     void shouldGet() {
-        given().accept("application/json")
-                .when().get("/crud-and-paged-records/1")
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(1)))
-                .and().body("name", is(equalTo("first")));
+        given().accept("application/json").when().get("/crud-and-paged-records/1").then().statusCode(200).and()
+                .body("id", is(equalTo(1))).and().body("name", is(equalTo("first")));
     }
 
     @Test
     void shouldNotGetNonExistent() {
-        given().accept("application/json")
-                .when().get("/crud-and-paged-records/1000")
-                .then().statusCode(404);
+        given().accept("application/json").when().get("/crud-and-paged-records/1000").then().statusCode(404);
     }
 
     @Test
     void shouldGetHal() {
-        given().accept("application/hal+json")
-                .when().get("/crud-and-paged-records/1")
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(1)))
-                .and().body("name", is(equalTo("first")))
-                .and().body("_links.add.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.list.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.self.href", endsWith("/crud-and-paged-records/1"))
-                .and().body("_links.update.href", endsWith("/crud-and-paged-records/1"))
-                .and().body("_links.remove.href", endsWith("/crud-and-paged-records/1"));
+        given().accept("application/hal+json").when().get("/crud-and-paged-records/1").then().statusCode(200).and()
+                .body("id", is(equalTo(1))).and().body("name", is(equalTo("first"))).and()
+                .body("_links.add.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.list.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.self.href", endsWith("/crud-and-paged-records/1")).and()
+                .body("_links.update.href", endsWith("/crud-and-paged-records/1")).and()
+                .body("_links.remove.href", endsWith("/crud-and-paged-records/1"));
     }
 
     @Test
     void shouldNotGetNonExistentHal() {
-        given().accept("application/hal+json")
-                .when().get("/crud-and-paged-records/1000")
-                .then().statusCode(404);
+        given().accept("application/hal+json").when().get("/crud-and-paged-records/1000").then().statusCode(404);
     }
 
     @Test
     void shouldList() {
-        Response response = given().accept("application/json")
-                .when().get("/crud-and-paged-records")
-                .thenReturn();
+        Response response = given().accept("application/json").when().get("/crud-and-paged-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).contains(1, 2);
@@ -91,12 +77,9 @@ class CrudAndPagedResourceTest {
 
     @Test
     void shouldListHal() {
-        given().accept("application/hal+json")
-                .when().get("/crud-and-paged-records")
-                .then().statusCode(200).log().all()
-                .and().body("_embedded.crud-and-paged-records.id", hasItems(1, 2))
-                .and().body("_embedded.crud-and-paged-records.name", hasItems("first", "second"))
-                .and()
+        given().accept("application/hal+json").when().get("/crud-and-paged-records").then().statusCode(200).log().all()
+                .and().body("_embedded.crud-and-paged-records.id", hasItems(1, 2)).and()
+                .body("_embedded.crud-and-paged-records.name", hasItems("first", "second")).and()
                 .body("_embedded.crud-and-paged-records._links.add.href",
                         hasItems(endsWith("/crud-and-paged-records"), endsWith("/crud-and-paged-records")))
                 .and()
@@ -111,26 +94,21 @@ class CrudAndPagedResourceTest {
                 .and()
                 .body("_embedded.crud-and-paged-records._links.remove.href",
                         hasItems(endsWith("/crud-and-paged-records/1"), endsWith("/crud-and-paged-records/2")))
-                .and().body("_links.add.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.list.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.first.href", endsWith("/crud-and-paged-records?page=0&size=20"))
-                .and().body("_links.last.href", endsWith("/crud-and-paged-records?page=0&size=20"));
+                .and().body("_links.add.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.list.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.first.href", endsWith("/crud-and-paged-records?page=0&size=20")).and()
+                .body("_links.last.href", endsWith("/crud-and-paged-records?page=0&size=20"));
     }
 
     @Test
     void shouldListFirstPage() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/crud-and-paged-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/crud-and-paged-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        Response response = given().accept("application/json")
-                .and().queryParam("page", 0)
-                .and().queryParam("size", 1)
-                .when().get("/crud-and-paged-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().queryParam("page", 0).and().queryParam("size", 1)
+                .when().get("/crud-and-paged-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).containsOnly(ids.get(0));
@@ -145,21 +123,15 @@ class CrudAndPagedResourceTest {
 
     @Test
     void shouldListFirstPageHal() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/crud-and-paged-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/crud-and-paged-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        given().accept("application/hal+json")
-                .and().queryParam("page", 0)
-                .and().queryParam("size", 1)
-                .when().get("/crud-and-paged-records")
-                .then().statusCode(200)
-                .and().body("_embedded.crud-and-paged-records.id", contains(ids.get(0)))
-                .and().body("_embedded.crud-and-paged-records.name", contains(names.get(0)))
-                .and()
+        given().accept("application/hal+json").and().queryParam("page", 0).and().queryParam("size", 1).when()
+                .get("/crud-and-paged-records").then().statusCode(200).and()
+                .body("_embedded.crud-and-paged-records.id", contains(ids.get(0))).and()
+                .body("_embedded.crud-and-paged-records.name", contains(names.get(0))).and()
                 .body("_embedded.crud-and-paged-records._links.add.href",
                         hasItems(endsWith("/crud-and-paged-records"), endsWith("/crud-and-paged-records")))
                 .and()
@@ -174,27 +146,22 @@ class CrudAndPagedResourceTest {
                 .and()
                 .body("_embedded.crud-and-paged-records._links.remove.href",
                         contains(endsWith("/crud-and-paged-records/" + ids.get(0))))
-                .and().body("_links.add.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.list.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.first.href", endsWith("/crud-and-paged-records?page=0&size=1"))
-                .and().body("_links.last.href", endsWith("/crud-and-paged-records?page=" + lastPage + "&size=1"))
-                .and().body("_links.next.href", endsWith("/crud-and-paged-records?page=1&size=1"));
+                .and().body("_links.add.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.list.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.first.href", endsWith("/crud-and-paged-records?page=0&size=1")).and()
+                .body("_links.last.href", endsWith("/crud-and-paged-records?page=" + lastPage + "&size=1")).and()
+                .body("_links.next.href", endsWith("/crud-and-paged-records?page=1&size=1"));
     }
 
     @Test
     void shouldListLastPage() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/crud-and-paged-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/crud-and-paged-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        Response response = given().accept("application/json")
-                .and().queryParam("page", lastPage)
-                .and().queryParam("size", 1)
-                .when().get("/crud-and-paged-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().queryParam("page", lastPage).and()
+                .queryParam("size", 1).when().get("/crud-and-paged-records").thenReturn();
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.body().jsonPath().getList("id")).containsOnly(ids.get(lastPage));
@@ -209,21 +176,15 @@ class CrudAndPagedResourceTest {
 
     @Test
     void shouldListLastPageHal() {
-        Response initResponse = given().accept("application/json")
-                .when().get("/crud-and-paged-records")
-                .thenReturn();
+        Response initResponse = given().accept("application/json").when().get("/crud-and-paged-records").thenReturn();
         List<Integer> ids = initResponse.body().jsonPath().getList("id");
         List<String> names = initResponse.body().jsonPath().getList("name");
         int lastPage = ids.size() - 1;
 
-        given().accept("application/hal+json")
-                .and().queryParam("page", lastPage)
-                .and().queryParam("size", 1)
-                .when().get("/crud-and-paged-records")
-                .then().statusCode(200)
-                .and().body("_embedded.crud-and-paged-records.id", contains(ids.get(lastPage)))
-                .and().body("_embedded.crud-and-paged-records.name", contains(names.get(lastPage)))
-                .and()
+        given().accept("application/hal+json").and().queryParam("page", lastPage).and().queryParam("size", 1).when()
+                .get("/crud-and-paged-records").then().statusCode(200).and()
+                .body("_embedded.crud-and-paged-records.id", contains(ids.get(lastPage))).and()
+                .body("_embedded.crud-and-paged-records.name", contains(names.get(lastPage))).and()
                 .body("_embedded.crud-and-paged-records._links.add.href",
                         hasItems(endsWith("/crud-and-paged-records"), endsWith("/crud-and-paged-records")))
                 .and()
@@ -238,37 +199,30 @@ class CrudAndPagedResourceTest {
                 .and()
                 .body("_embedded.crud-and-paged-records._links.remove.href",
                         contains(endsWith("/crud-and-paged-records/" + ids.get(lastPage))))
-                .and().body("_links.add.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.list.href", endsWith("/crud-and-paged-records"))
-                .and().body("_links.first.href", endsWith("/crud-and-paged-records?page=0&size=1"))
-                .and().body("_links.last.href", endsWith("/crud-and-paged-records?page=" + lastPage + "&size=1"))
-                .and().body("_links.previous.href", endsWith("/crud-and-paged-records?page=" + (lastPage - 1) + "&size=1"));
+                .and().body("_links.add.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.list.href", endsWith("/crud-and-paged-records")).and()
+                .body("_links.first.href", endsWith("/crud-and-paged-records?page=0&size=1")).and()
+                .body("_links.last.href", endsWith("/crud-and-paged-records?page=" + lastPage + "&size=1")).and()
+                .body("_links.previous.href", endsWith("/crud-and-paged-records?page=" + (lastPage - 1) + "&size=1"));
     }
 
     @Test
     void shouldNotGetNonExistentPage() {
-        given().accept("application/json")
-                .and().queryParam("page", 100)
-                .when().get("/crud-and-paged-records")
-                .then().statusCode(200)
-                .and().body("id", is(empty()));
+        given().accept("application/json").and().queryParam("page", 100).when().get("/crud-and-paged-records").then()
+                .statusCode(200).and().body("id", is(empty()));
     }
 
     @Test
     void shouldNotGetNegativePageOrSize() {
-        given().accept("application/json")
-                .and().queryParam("page", -1)
-                .and().queryParam("size", -1)
-                .when().get("/crud-and-paged-records")
-                .then().statusCode(200)
+        given().accept("application/json").and().queryParam("page", -1).and().queryParam("size", -1).when()
+                .get("/crud-and-paged-records").then().statusCode(200)
                 // Invalid page and size parameters are replaced with defaults
                 .and().body("id", hasItems(1, 2));
     }
 
     @Test
     void shouldListAscending() {
-        Response response = given().accept("application/json")
-                .when().get("/crud-and-paged-records?sort=name,id")
+        Response response = given().accept("application/json").when().get("/crud-and-paged-records?sort=name,id")
                 .thenReturn();
 
         List<String> actualNames = response.body().jsonPath().getList("name");
@@ -279,8 +233,7 @@ class CrudAndPagedResourceTest {
 
     @Test
     void shouldListDescending() {
-        Response response = given().accept("application/json")
-                .when().get("/crud-and-paged-records?sort=-name,id")
+        Response response = given().accept("application/json").when().get("/crud-and-paged-records?sort=-name,id")
                 .thenReturn();
 
         List<String> actualNames = response.body().jsonPath().getList("name");
@@ -291,11 +244,8 @@ class CrudAndPagedResourceTest {
 
     @Test
     void shouldCreate() {
-        Response response = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-create\"}")
-                .when().post("/crud-and-paged-records")
-                .thenReturn();
+        Response response = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-create\"}").when().post("/crud-and-paged-records").thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
 
         String location = response.header("Location");
@@ -304,20 +254,14 @@ class CrudAndPagedResourceTest {
         assertThat(body.getInt("id")).isEqualTo(id);
         assertThat(body.getString("name")).isEqualTo("test-create");
 
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-create")));
     }
 
     @Test
     void shouldCreateHal() {
-        Response response = given().accept("application/hal+json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-create-hal\"}")
-                .when().post("/crud-and-paged-records")
-                .thenReturn();
+        Response response = given().accept("application/hal+json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-create-hal\"}").when().post("/crud-and-paged-records").thenReturn();
         assertThat(response.statusCode()).isEqualTo(201);
 
         String location = response.header("Location");
@@ -331,20 +275,14 @@ class CrudAndPagedResourceTest {
         assertThat(body.getString("_links.update.href")).endsWith("/crud-and-paged-records/" + id);
         assertThat(body.getString("_links.remove.href")).endsWith("/crud-and-paged-records/" + id);
 
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-create-hal")));
     }
 
     @Test
     void shouldCreateAndUpdate() {
-        Response createResponse = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-update-create\"}")
-                .when().post("/crud-and-paged-records/")
-                .thenReturn();
+        Response createResponse = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-update-create\"}").when().post("/crud-and-paged-records/").thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
         String location = createResponse.header("Location");
@@ -353,26 +291,17 @@ class CrudAndPagedResourceTest {
         assertThat(body.getInt("id")).isEqualTo(id);
         assertThat(body.getString("name")).isEqualTo("test-update-create");
 
-        given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"" + id + "\", \"name\": \"test-update\"}")
-                .when().put(location)
-                .then()
+        given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"id\": \"" + id + "\", \"name\": \"test-update\"}").when().put(location).then()
                 .statusCode(204);
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-update")));
     }
 
     @Test
     void shouldCreateAndUpdateHal() {
-        Response createResponse = given().accept("application/hal+json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-update-create-hal\"}")
-                .when().post("/crud-and-paged-records/")
-                .thenReturn();
+        Response createResponse = given().accept("application/hal+json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-update-create-hal\"}").when().post("/crud-and-paged-records/").thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
         String location = createResponse.header("Location");
@@ -386,39 +315,27 @@ class CrudAndPagedResourceTest {
         assertThat(body.getString("_links.update.href")).endsWith("/crud-and-paged-records/" + id);
         assertThat(body.getString("_links.remove.href")).endsWith("/crud-and-paged-records/" + id);
 
-        given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"id\": \"" + id + "\", \"name\": \"test-update-hal\"}")
-                .when().put(location)
-                .then()
+        given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"id\": \"" + id + "\", \"name\": \"test-update-hal\"}").when().put(location).then()
                 .statusCode(204);
-        given().accept("application/json")
-                .when().get(location)
-                .then().statusCode(200)
-                .and().body("id", is(equalTo(id)))
+        given().accept("application/json").when().get(location).then().statusCode(200).and().body("id", is(equalTo(id)))
                 .and().body("name", is(equalTo("test-update-hal")));
     }
 
     @Test
     void shouldCreateAndDelete() {
-        Response createResponse = given().accept("application/json")
-                .and().contentType("application/json")
-                .and().body("{\"name\": \"test-delete\"}")
-                .when().post("/crud-and-paged-records")
-                .thenReturn();
+        Response createResponse = given().accept("application/json").and().contentType("application/json").and()
+                .body("{\"name\": \"test-delete\"}").when().post("/crud-and-paged-records").thenReturn();
         assertThat(createResponse.statusCode()).isEqualTo(201);
 
         String location = createResponse.header("Location");
-        when().delete(location)
-                .then().statusCode(204);
-        when().get(location)
-                .then().statusCode(404);
+        when().delete(location).then().statusCode(204);
+        when().get(location).then().statusCode(404);
     }
 
     @Test
     void shouldNotDeleteNonExistent() {
-        when().delete("/crud-and-paged-records/1000")
-                .then().statusCode(404);
+        when().delete("/crud-and-paged-records/1000").then().statusCode(404);
     }
 
     private void assertLinks(Headers headers, Map<String, String> expectedLinks) {

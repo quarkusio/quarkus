@@ -111,9 +111,7 @@ public class LogCollectingTestResource implements QuarkusTestResourceLifecycleMa
         if (raw == null) {
             return Collections.emptyList();
         }
-        return Arrays.stream(raw.split(","))
-                .map(Pattern::compile)
-                .collect(Collectors.toList());
+        return Arrays.stream(raw.split(",")).map(Pattern::compile).collect(Collectors.toList());
     }
 
     @Override

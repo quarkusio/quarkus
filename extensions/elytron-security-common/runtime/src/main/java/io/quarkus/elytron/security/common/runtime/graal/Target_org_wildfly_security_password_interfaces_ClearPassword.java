@@ -8,8 +8,8 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * Replace the {@linkplain ClearPassword} interface due to an issue with char[].clone() failures during native image gen.
- * https://github.com/oracle/graal/issues/877
+ * Replace the {@linkplain ClearPassword} interface due to an issue with char[].clone() failures during native image
+ * gen. https://github.com/oracle/graal/issues/877
  */
 @TargetClass(value = ClearPassword.class)
 final class Target_org_wildfly_security_password_interfaces_ClearPassword {

@@ -25,8 +25,7 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 public class ConfigInstantiatorTestCase {
 
     private static final Map<String, String> TEST_CONFIG_MAP = Map.ofEntries(
-            entry("quarkus.log.category.\"foo.bar\".level", "DEBUG"),
-            entry("quarkus.log.category.baz.level", "TRACE"),
+            entry("quarkus.log.category.\"foo.bar\".level", "DEBUG"), entry("quarkus.log.category.baz.level", "TRACE"),
 
             entry("quarkus.map-of-maps.map-of-string-maps.outer1.inner1", "o1i1"),
             entry("quarkus.map-of-maps.map-of-string-maps.outer1.inner2", "o1i2"),
@@ -45,9 +44,7 @@ public class ConfigInstantiatorTestCase {
 
     @BeforeAll
     static void registerTestConfig() {
-        var localTestConfig = new SmallRyeConfigBuilder()
-                .addDiscoveredConverters()
-                .withSources(new TestConfigSource())
+        var localTestConfig = new SmallRyeConfigBuilder().addDiscoveredConverters().withSources(new TestConfigSource())
                 .build();
 
         var cfgProviderResolver = ConfigProviderResolver.instance();
@@ -78,8 +75,7 @@ public class ConfigInstantiatorTestCase {
         ConfigInstantiator.handleObject(mapOfMapsConfig);
 
         assertThat(mapOfMapsConfig.mapOfStringMaps).hasSize(2);
-        assertThat(mapOfMapsConfig.mapOfStringMaps.get("outer1"))
-                .isEqualTo(Map.of("inner1", "o1i1", "inner2", "o1i2"));
+        assertThat(mapOfMapsConfig.mapOfStringMaps.get("outer1")).isEqualTo(Map.of("inner1", "o1i1", "inner2", "o1i2"));
         assertThat(mapOfMapsConfig.mapOfStringMaps.get("outer2.key"))
                 .isEqualTo(Map.of("inner1", "o2i1", "inner2.key", "o2i2"));
 

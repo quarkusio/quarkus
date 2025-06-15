@@ -12,11 +12,9 @@ import io.quarkus.websockets.next.WebSocketException;
 public class TooManyOnCloseInSubEndpointTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ParentEndpoint.class, ParentEndpoint.SubEndpointWithTooManyOnClose.class);
-            })
-            .setExpectedException(WebSocketException.class);
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ParentEndpoint.class, ParentEndpoint.SubEndpointWithTooManyOnClose.class);
+    }).setExpectedException(WebSocketException.class);
 
     @Test
     void verifyThatSubEndpointWithoutTooManyOnCloseFailsToDeploy() {

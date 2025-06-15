@@ -11,20 +11,15 @@ import io.restassured.RestAssured;
 
 @QuarkusTestResource(LdapServerTestResource.class)
 public class CacheTest {
-    protected static Class[] testClasses = {
-            SingleRoleSecuredServlet.class
-    };
+    protected static Class[] testClasses = { SingleRoleSecuredServlet.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("cache/application.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("cache/application.properties", "application.properties"));
 
     @Test()
     public void testNoCacheFailure() {
-        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword")
-                .when().get("/servlet-secured").then()
-                .statusCode(200);
+        RestAssured.given().auth().preemptive().basic("standardUser", "standardUserPassword").when()
+                .get("/servlet-secured").then().statusCode(200);
     }
 }

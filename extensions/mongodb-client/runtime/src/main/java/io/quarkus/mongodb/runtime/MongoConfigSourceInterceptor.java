@@ -15,10 +15,7 @@ import io.smallrye.config.RelocateConfigSourceInterceptor;
 
 public class MongoConfigSourceInterceptor extends RelocateConfigSourceInterceptor {
     public MongoConfigSourceInterceptor() {
-        super(Map.of(
-                DNS_LOG_ACTIVITY, NATIVE_DNS_LOG_ACTIVITY,
-                DNS_LOOKUP_TIMEOUT, NATIVE_DNS_LOOKUP_TIMEOUT,
-                DNS_SERVER, NATIVE_DNS_SERVER,
-                DNS_SERVER_PORT, NATIVE_DNS_SERVER_PORT));
+        super(Map.of(DNS_LOG_ACTIVITY, NATIVE_DNS_LOG_ACTIVITY, DNS_LOOKUP_TIMEOUT, NATIVE_DNS_LOOKUP_TIMEOUT,
+                DNS_SERVER, NATIVE_DNS_SERVER, DNS_SERVER_PORT, NATIVE_DNS_SERVER_PORT));
     }
 }

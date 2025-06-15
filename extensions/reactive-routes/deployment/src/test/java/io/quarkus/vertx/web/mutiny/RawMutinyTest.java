@@ -14,8 +14,7 @@ public class RawMutinyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class))
             .setExpectedException(IllegalStateException.class);
 
     @Test

@@ -20,11 +20,7 @@ public class ChunkedHeaderTest {
 
     @Test
     public void testReturnUni() {
-        given()
-                .get("/test/hello")
-                .then()
-                .statusCode(200)
-                .headers("Transfer-Encoding", "chunked")
+        given().get("/test/hello").then().statusCode(200).headers("Transfer-Encoding", "chunked")
                 .headers("Content-Length", is(nullValue()));
     }
 

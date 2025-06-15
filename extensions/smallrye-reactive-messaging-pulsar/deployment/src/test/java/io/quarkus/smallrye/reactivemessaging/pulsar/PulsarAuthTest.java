@@ -13,9 +13,9 @@ import io.restassured.RestAssured;
 public class PulsarAuthTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(ConsumingBean.class, ProducingBean.class, TestResource.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(ConsumingBean.class,
+                    ProducingBean.class, TestResource.class))
             .withConfigurationResource("application-secured.properties");
 
     @Test

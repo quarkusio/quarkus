@@ -16,8 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class LiquibaseExtensionConfigActiveFalseDefaultDatasourceDynamicInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.datasource.active", "false");
+    static final QuarkusUnitTest config = new QuarkusUnitTest().overrideConfigKey("quarkus.datasource.active", "false");
 
     @Inject
     Instance<LiquibaseFactory> liquibase;
@@ -25,12 +24,12 @@ public class LiquibaseExtensionConfigActiveFalseDefaultDatasourceDynamicInjectio
     @Test
     @DisplayName("If the default datasource is deactivated, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibase.get().getConfiguration())
-                .isInstanceOf(InactiveBeanException.class)
+        assertThatThrownBy(() -> liquibase.get().getConfiguration()).isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
                         "Liquibase for datasource '<default>' was deactivated automatically because this datasource was deactivated",
                         "Datasource '<default>' was deactivated through configuration properties.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                        // hints
                         "To activate the datasource, set configuration property 'quarkus.datasource.active'"
                                 + " to 'true' and configure datasource '<default>'",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");

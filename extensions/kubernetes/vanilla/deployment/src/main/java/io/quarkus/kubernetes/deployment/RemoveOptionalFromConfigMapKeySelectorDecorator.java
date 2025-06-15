@@ -9,7 +9,8 @@ import io.dekorate.kubernetes.decorator.ApplicationContainerDecorator;
 import io.dekorate.kubernetes.decorator.Decorator;
 import io.fabric8.kubernetes.api.model.ConfigMapKeySelectorFluent;
 
-public class RemoveOptionalFromConfigMapKeySelectorDecorator extends ApplicationContainerDecorator<ConfigMapKeySelectorFluent> {
+public class RemoveOptionalFromConfigMapKeySelectorDecorator
+        extends ApplicationContainerDecorator<ConfigMapKeySelectorFluent> {
 
     @Override
     public void andThenVisit(ConfigMapKeySelectorFluent fluent) {
@@ -18,8 +19,8 @@ public class RemoveOptionalFromConfigMapKeySelectorDecorator extends Application
 
     @Override
     public Class<? extends Decorator>[] after() {
-        return new Class[] { AddEnvVarDecorator.class,
-                AddSecretVolumeDecorator.class, AddSecretVolumeToRevisionDecorator.class,
-                AddConfigMapVolumeToRevisionDecorator.class, AddConfigMapVolumeDecorator.class };
+        return new Class[] { AddEnvVarDecorator.class, AddSecretVolumeDecorator.class,
+                AddSecretVolumeToRevisionDecorator.class, AddConfigMapVolumeToRevisionDecorator.class,
+                AddConfigMapVolumeDecorator.class };
     }
 }

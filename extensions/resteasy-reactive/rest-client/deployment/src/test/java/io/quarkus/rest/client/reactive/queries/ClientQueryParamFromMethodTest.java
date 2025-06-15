@@ -24,53 +24,47 @@ public class ClientQueryParamFromMethodTest {
     URI baseUri;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(Client.class, SubClient.class, Resource.class, ComputedParam.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Client.class, SubClient.class, Resource.class, ComputedParam.class));
 
     @Test
     void shouldUseValuesOnlyFromClass() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.setFromClass()).isEqualTo("1/");
     }
 
     @Test
     void shouldUseValuesFromClassAndMethod() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.setFromMethodAndClass()).isEqualTo("1/2");
     }
 
     @Test
     void shouldUseValuesFromMethodWithParam() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.setFromMethodWithParam()).isEqualTo("-11/-2");
     }
 
     @Test
     void shouldUseValuesFromQueryParam() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.setFromQueryParam("111")).isEqualTo("111/2");
     }
 
     @Test
     void shouldUseValuesFromQueryParams() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.setFromQueryParams("111", "222")).isEqualTo("111/222");
     }
 
     @Test
     void shouldUseValuesFromSubclientAnnotations() {
-        Client client = RestClientBuilder.newBuilder().baseUri(baseUri)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
 
         assertThat(client.sub().sub("22")).isEqualTo("11/22");
     }

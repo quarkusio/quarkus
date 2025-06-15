@@ -28,16 +28,14 @@ public abstract class TelemetrySupport {
     }
 
     /**
-     * Collects telemetry when WebSocket connection is opened.
-     * Only supported when {@link #interceptConnection()}.
+     * Collects telemetry when WebSocket connection is opened. Only supported when {@link #interceptConnection()}.
      */
     public void connectionOpened() {
         connectionInterceptor.connectionOpened();
     }
 
     /**
-     * Collects telemetry when WebSocket connection opening failed.
-     * Only supported when {@link #interceptConnection()}.
+     * Collects telemetry when WebSocket connection opening failed. Only supported when {@link #interceptConnection()}.
      */
     public void connectionOpeningFailed(Throwable throwable) {
         connectionInterceptor.connectionOpeningFailed(throwable);

@@ -4,9 +4,8 @@ import io.quarkus.vertx.core.runtime.VertxMDC;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Provide entries from the MDC section of the RoutingContext.
- * This is especially helpful to put OTel data 'traceId' and 'spanId'
- * into the access log.
+ * Provide entries from the MDC section of the RoutingContext. This is especially helpful to put OTel data 'traceId' and
+ * 'spanId' into the access log.
  */
 public class VertxMDCDataAttribute implements ExchangeAttribute {
 

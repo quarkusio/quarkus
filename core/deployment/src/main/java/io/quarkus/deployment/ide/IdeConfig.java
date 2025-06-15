@@ -13,8 +13,8 @@ import io.smallrye.config.WithDefault;
 public interface IdeConfig {
 
     /**
-     * The Ide to use to open files from the DevUI.
-     * {@code auto} means that Quarkus will attempt to determine the Ide being used.
+     * The Ide to use to open files from the DevUI. {@code auto} means that Quarkus will attempt to determine the Ide
+     * being used.
      */
     @WithDefault("auto")
     Target target();

@@ -24,15 +24,15 @@ public class ConfigUrlMissingNamedDatasourceStaticInjectionTest {
             .overrideConfigKey("quarkus.devservices.enabled", "false")
             // We need at least one build-time property for the datasource,
             // otherwise it's considered unconfigured at build time...
-            .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "mysql")
-            .assertException(e -> assertThat(e)
+            .overrideConfigKey("quarkus.datasource.ds-1.db-kind", "mysql").assertException(e -> assertThat(e)
                     // Can't use isInstanceOf due to weird classloading in tests
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))
-                    .hasMessageContainingAll("Datasource 'ds-1' was deactivated automatically because its URL is not set.",
-                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                    .hasMessageContainingAll(
+                            "Datasource 'ds-1' was deactivated automatically because its URL is not set.",
+                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                            // hints
                             "To activate the datasource, set configuration property 'quarkus.datasource.\"ds-1\".reactive.url'",
-                            "Refer to https://quarkus.io/guides/datasource for guidance.",
-                            "This bean is injected into",
+                            "Refer to https://quarkus.io/guides/datasource for guidance.", "This bean is injected into",
                             MyBean.class.getName() + "#pool"));
 
     @Inject

@@ -19,22 +19,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ReceiveInputStreamTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.rest-client.test.url", "http://localhost:${quarkus.http.test-port:8081}");
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().overrideConfigKey("quarkus.rest-client.test.url",
+            "http://localhost:${quarkus.http.test-port:8081}");
 
     @Test
     public void test() {
-        when()
-                .get("test/string")
-                .then()
-                .statusCode(200)
-                .body(is("origin"));
+        when().get("test/string").then().statusCode(200).body(is("origin"));
 
-        when()
-                .get("test/inputStream")
-                .then()
-                .statusCode(200)
-                .body(is("origin"));
+        when().get("test/inputStream").then().statusCode(200).body(is("origin"));
     }
 
     @Path("test")

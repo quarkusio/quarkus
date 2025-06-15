@@ -29,15 +29,12 @@ public class EagerSecurityCheckTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityProvider.class, TestIdentityController.class, JsonResource.class,
-                            AbstractJsonResource.class, JsonSubResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TestIdentityProvider.class, TestIdentityController.class,
+                    JsonResource.class, AbstractJsonResource.class, JsonSubResource.class));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -101,9 +98,7 @@ public class EagerSecurityCheckTest {
         if (username != null) {
             req = req.auth().preemptive().basic(username, username);
         }
-        return req
-                .contentType(ContentType.JSON)
-                .body((invalid ? "}" : "") + "{\"simple\": \"obj\"}").post(path);
+        return req.contentType(ContentType.JSON).body((invalid ? "}" : "") + "{\"simple\": \"obj\"}").post(path);
     }
 
     @Path("/")

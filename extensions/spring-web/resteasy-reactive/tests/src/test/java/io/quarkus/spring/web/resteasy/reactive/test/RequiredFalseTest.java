@@ -17,20 +17,13 @@ public class RequiredFalseTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Controller.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Controller.class));
 
     @Test
     public void test() {
-        when().get("/endpoint/boxed")
-                .then()
-                .statusCode(200)
-                .body(is(""));
+        when().get("/endpoint/boxed").then().statusCode(200).body(is(""));
 
-        when().get("/endpoint/primitive")
-                .then()
-                .statusCode(200)
-                .body(is("0"));
+        when().get("/endpoint/primitive").then().statusCode(200).body(is("0"));
     }
 
     @RestController

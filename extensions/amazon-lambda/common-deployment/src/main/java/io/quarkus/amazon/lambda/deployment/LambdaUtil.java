@@ -12,12 +12,11 @@ import io.quarkus.deployment.pkg.builditem.OutputTargetBuildItem;
 public class LambdaUtil {
 
     /**
-     * Strips period, dash, and numbers. Turns characters after to uppercase. i.e.
-     * Also strips "-SNAPSHOT" from end of name.
-     *
-     * "foo.bar-1.0-SNAPSHOT" to "FooBar"
+     * Strips period, dash, and numbers. Turns characters after to uppercase. i.e. Also strips "-SNAPSHOT" from end of
+     * name. "foo.bar-1.0-SNAPSHOT" to "FooBar"
      *
      * @param basename
+     *
      * @return
      */
     public static String artifactToLambda(String basename) {
@@ -43,14 +42,15 @@ public class LambdaUtil {
 
     public static void writeFile(OutputTargetBuildItem target, String name, String output) throws IOException {
         Path artifact = target.getOutputDirectory().resolve(name);
-        String targetUri = target.getOutputDirectory().resolve("function.zip").toUri().toString().replace("file:", "fileb:");
+        String targetUri = target.getOutputDirectory().resolve("function.zip").toUri().toString().replace("file:",
+                "fileb:");
         output = output.replace("${artifactId}", target.getBaseName())
-                .replace("${buildDir}", target.getOutputDirectory().toString())
-                .replace("${targetUri}", targetUri);
+                .replace("${buildDir}", target.getOutputDirectory().toString()).replace("${targetUri}", targetUri);
         Files.writeString(artifact, output);
     }
 
-    public static void writeExecutableFile(OutputTargetBuildItem target, String name, String output) throws IOException {
+    public static void writeExecutableFile(OutputTargetBuildItem target, String name, String output)
+            throws IOException {
         writeFile(target, name, output);
 
         Path artifact = target.getOutputDirectory().resolve(name);
@@ -80,18 +80,14 @@ public class LambdaUtil {
 
         String lambdaName = artifactToLambda(target.getBaseName());
 
-        output = copyResource("lambda/manage.sh")
-                .replace("${handler}", handler)
-                .replace("${lambdaName}", lambdaName);
+        output = copyResource("lambda/manage.sh").replace("${handler}", handler).replace("${lambdaName}", lambdaName);
         writeExecutableFile(target, "manage.sh", output);
 
-        output = copyResource("lambda/sam.jvm.yaml")
-                .replace("${handler}", handler)
-                .replace("${lambdaName}", lambdaName);
+        output = copyResource("lambda/sam.jvm.yaml").replace("${handler}", handler).replace("${lambdaName}",
+                lambdaName);
         writeFile(target, "sam.jvm.yaml", output);
 
-        output = copyResource("lambda/sam.native.yaml")
-                .replace("${lambdaName}", lambdaName);
+        output = copyResource("lambda/sam.native.yaml").replace("${lambdaName}", lambdaName);
         writeFile(target, "sam.native.yaml", output);
     }
 }

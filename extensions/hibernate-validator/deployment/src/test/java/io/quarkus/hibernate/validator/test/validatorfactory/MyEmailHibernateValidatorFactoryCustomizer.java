@@ -15,9 +15,7 @@ public class MyEmailHibernateValidatorFactoryCustomizer implements HibernateVali
     public void customize(BaseHibernateValidatorConfiguration<?> configuration) {
         ConstraintMapping constraintMapping = configuration.createConstraintMapping();
 
-        constraintMapping
-                .constraintDefinition(Email.class)
-                .includeExistingValidators(false)
+        constraintMapping.constraintDefinition(Email.class).includeExistingValidators(false)
                 .validatedBy(MyEmailValidator.class);
 
         configuration.addMapping(constraintMapping);

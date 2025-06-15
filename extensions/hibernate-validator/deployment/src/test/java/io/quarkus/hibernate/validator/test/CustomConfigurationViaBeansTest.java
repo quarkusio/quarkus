@@ -42,8 +42,8 @@ public class CustomConfigurationViaBeansTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class));
 
     @Test
     public void testCustomConfigurationViaBeans() {
@@ -58,8 +58,8 @@ public class CustomConfigurationViaBeansTest {
         assertThat(hibernateValidatorFactory.getGetterPropertySelectionStrategy())
                 .isInstanceOf(MyGetterPropertySelectionStrategy.class);
         // Waiting for https://hibernate.atlassian.net/browse/HV-1841 to be released
-        //assertThat(hibernateValidatorFactory.getPropertyNodeNameProvider())
-        //        .isInstanceOf(MyPropertyNodeNameProvider.class);
+        // assertThat(hibernateValidatorFactory.getPropertyNodeNameProvider())
+        // .isInstanceOf(MyPropertyNodeNameProvider.class);
     }
 
     @ApplicationScoped
@@ -78,8 +78,8 @@ public class CustomConfigurationViaBeansTest {
         public <T extends ConstraintValidator<?, ?>> T getInstance(Class<T> key) {
             try {
                 return key.getConstructor().newInstance();
-            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-                    | NoSuchMethodException | SecurityException e) {
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+                    | InvocationTargetException | NoSuchMethodException | SecurityException e) {
                 throw new ValidationException("Unable to create constraint validator instance", e);
             }
         }

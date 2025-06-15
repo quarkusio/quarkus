@@ -18,19 +18,14 @@ public class BuildMetricsDevUIProcessor {
 
     @BuildStep
     @Record(RUNTIME_INIT)
-    public void create(BuildMetricsDevUIRecorder recorder,
-            BuildSystemTargetBuildItem buildSystemTarget) {
+    public void create(BuildMetricsDevUIRecorder recorder, BuildSystemTargetBuildItem buildSystemTarget) {
         recorder.setBuildMetricsPath(buildSystemTarget.getOutputDirectory().resolve("build-metrics.json").toString());
     }
 
     @BuildStep
     AdditionalBeanBuildItem additionalBeans() {
-        return AdditionalBeanBuildItem
-                .builder()
-                .addBeanClass(BuildMetricsJsonRPCService.class)
-                .setUnremovable()
-                .setDefaultScope(DotNames.APPLICATION_SCOPED)
-                .build();
+        return AdditionalBeanBuildItem.builder().addBeanClass(BuildMetricsJsonRPCService.class).setUnremovable()
+                .setDefaultScope(DotNames.APPLICATION_SCOPED).build();
     }
 
     @BuildStep

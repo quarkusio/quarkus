@@ -34,37 +34,36 @@ public class AccessTokenAnnotationTest {
     final static OidcTestClient client = new OidcTestClient();
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DefaultClientDefaultExchange.class, DefaultClientEnabledExchange.class,
-                            NamedClientDefaultExchange.class, MultiProviderFrontendResource.class, ProtectedResource.class,
-                            CustomAccessTokenRequestFilter.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    """
-                                            quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test}/realms/quarkus
-                                            quarkus.oidc.client-id=quarkus-app
-                                            quarkus.oidc.credentials.secret=secret
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(DefaultClientDefaultExchange.class, DefaultClientEnabledExchange.class,
+                    NamedClientDefaultExchange.class, MultiProviderFrontendResource.class, ProtectedResource.class,
+                    CustomAccessTokenRequestFilter.class)
+            .addAsResource(
+                    new StringAsset(
+                            """
+                                    quarkus.oidc.auth-server-url=${keycloak.url:replaced-by-test}/realms/quarkus
+                                    quarkus.oidc.client-id=quarkus-app
+                                    quarkus.oidc.credentials.secret=secret
 
-                                            quarkus.oidc-client.auth-server-url=${quarkus.oidc.auth-server-url}
-                                            quarkus.oidc-client.client-id=${quarkus.oidc.client-id}
-                                            quarkus.oidc-client.credentials.client-secret.value=${quarkus.oidc.credentials.secret}
-                                            quarkus.oidc-client.credentials.client-secret.method=post
-                                            quarkus.oidc-client.grant.type=jwt
-                                            quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
-                                            quarkus.oidc-client.grant-options.jwt.requested_token_use=on_behalf_of
-                                            quarkus.oidc-client.token-path=${keycloak.url}/realms/quarkus/jwt-bearer-token
+                                    quarkus.oidc-client.auth-server-url=${quarkus.oidc.auth-server-url}
+                                    quarkus.oidc-client.client-id=${quarkus.oidc.client-id}
+                                    quarkus.oidc-client.credentials.client-secret.value=${quarkus.oidc.credentials.secret}
+                                    quarkus.oidc-client.credentials.client-secret.method=post
+                                    quarkus.oidc-client.grant.type=jwt
+                                    quarkus.oidc-client.scopes=https://graph.microsoft.com/user.read,offline_access
+                                    quarkus.oidc-client.grant-options.jwt.requested_token_use=on_behalf_of
+                                    quarkus.oidc-client.token-path=${keycloak.url}/realms/quarkus/jwt-bearer-token
 
-                                            quarkus.oidc-client.named.auth-server-url=${quarkus.oidc-client.auth-server-url}
-                                            quarkus.oidc-client.named.client-id=${quarkus.oidc-client.client-id}
-                                            quarkus.oidc-client.named.credentials.client-secret.value=${quarkus.oidc-client.credentials.client-secret.value}
-                                            quarkus.oidc-client.named.credentials.client-secret.method=${quarkus.oidc-client.credentials.client-secret.method}
-                                            quarkus.oidc-client.named.grant.type=${quarkus.oidc-client.grant.type}
-                                            quarkus.oidc-client.named.scopes=${quarkus.oidc-client.scopes}
-                                            quarkus.oidc-client.named.grant-options.jwt.requested_token_use=${quarkus.oidc-client.grant-options.jwt.requested_token_use}
-                                            quarkus.oidc-client.named.token-path=${quarkus.oidc-client.token-path}
-                                            """),
-                            "application.properties"));
+                                    quarkus.oidc-client.named.auth-server-url=${quarkus.oidc-client.auth-server-url}
+                                    quarkus.oidc-client.named.client-id=${quarkus.oidc-client.client-id}
+                                    quarkus.oidc-client.named.credentials.client-secret.value=${quarkus.oidc-client.credentials.client-secret.value}
+                                    quarkus.oidc-client.named.credentials.client-secret.method=${quarkus.oidc-client.credentials.client-secret.method}
+                                    quarkus.oidc-client.named.grant.type=${quarkus.oidc-client.grant.type}
+                                    quarkus.oidc-client.named.scopes=${quarkus.oidc-client.scopes}
+                                    quarkus.oidc-client.named.grant-options.jwt.requested_token_use=${quarkus.oidc-client.grant-options.jwt.requested_token_use}
+                                    quarkus.oidc-client.named.token-path=${quarkus.oidc-client.token-path}
+                                    """),
+                    "application.properties"));
 
     @AfterAll
     public static void close() {
@@ -88,11 +87,8 @@ public class AccessTokenAnnotationTest {
 
     private void testRestClientTokenPropagation(boolean exchangeEnabled, String clientKey) {
         String newTokenUsername = exchangeEnabled ? "bob" : "alice";
-        RestAssured.given().auth().oauth2(getBearerAccessToken())
-                .queryParam("client-key", clientKey)
-                .when().get("/frontend/token-propagation")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(getBearerAccessToken()).queryParam("client-key", clientKey).when()
+                .get("/frontend/token-propagation").then().statusCode(200)
                 .body(equalTo("original token username: alice new token username: " + newTokenUsername));
     }
 

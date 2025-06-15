@@ -11,8 +11,8 @@ public interface GlobalAutoScalingConfig {
     Optional<AutoScalerClass> autoScalerClass();
 
     /**
-     * The exact amount of requests allowed to the replica at a time. Its default value is “0”, which means an
-     * unlimited number of requests are allowed to flow Integer>o the replica.
+     * The exact amount of requests allowed to the replica at a time. Its default value is “0”, which means an unlimited
+     * number of requests are allowed to flow Integer>o the replica.
      *
      * @see <a href="https://knative.dev/docs/serving/autoscaling/concurrency/#hard-limit">Knative Knative: Configuring
      *      concurrency: Hard Limit</a>

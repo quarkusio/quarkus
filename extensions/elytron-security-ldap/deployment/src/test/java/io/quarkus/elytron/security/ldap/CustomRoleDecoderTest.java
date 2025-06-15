@@ -9,14 +9,13 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class CustomRoleDecoderTest extends LdapSecurityRealmTest {
 
-    static Class[] testClassesWithCustomRoleDecoder = Stream.concat(
-            Arrays.stream(testClasses),
-            Arrays.stream(new Class[] { CustomRoleDecoder.class })).toArray(Class[]::new);
+    static Class[] testClassesWithCustomRoleDecoder = Stream
+            .concat(Arrays.stream(testClasses), Arrays.stream(new Class[] { CustomRoleDecoder.class }))
+            .toArray(Class[]::new);
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClassesWithCustomRoleDecoder)
+            .withApplicationRoot((jar) -> jar.addClasses(testClassesWithCustomRoleDecoder)
                     .addAsResource("custom-role-decoder/application.properties", "application.properties"));
 
 }

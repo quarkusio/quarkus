@@ -18,9 +18,9 @@ public class RestLinksWithFailureInjectionMultipleRestLinkIdTest {
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertThat(rootCause).isInstanceOf(IllegalStateException.class)
-                        .hasMessageContaining("Cannot generate web links for the class " +
-                                "io.quarkus.resteasy.reactive.links.deployment.TestRecordMultipleRestLinkIds" +
-                                " because it has multiple fields annotated with `@RestLinkId`, where a maximum of one is allowed");
+                        .hasMessageContaining("Cannot generate web links for the class "
+                                + "io.quarkus.resteasy.reactive.links.deployment.TestRecordMultipleRestLinkIds"
+                                + " because it has multiple fields annotated with `@RestLinkId`, where a maximum of one is allowed");
             });
 
     @Test

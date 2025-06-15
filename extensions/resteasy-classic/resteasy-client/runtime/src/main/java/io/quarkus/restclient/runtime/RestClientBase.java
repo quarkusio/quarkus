@@ -44,7 +44,8 @@ public class RestClientBase {
     private final RestClientsConfig configRoot;
     private final RestClientConfig restClientConfig;
 
-    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey, Class<?>[] clientProviders) {
+    public RestClientBase(Class<?> proxyType, String baseUriFromAnnotation, String configKey,
+            Class<?>[] clientProviders) {
         this(proxyType, baseUriFromAnnotation, configKey, clientProviders,
                 ConfigProvider.getConfig().unwrap(SmallRyeConfig.class).getConfigMapping(RestClientsConfig.class));
     }
@@ -90,8 +91,7 @@ public class RestClientBase {
 
         OptionalInt connectionTTL = oneOf(restClientConfig.connectionTTL(), configRoot.connectionTTL());
         if (connectionTTL.isPresent()) {
-            builder.property("resteasy.connectionTTL",
-                    Arrays.asList(connectionTTL.getAsInt(), TimeUnit.MILLISECONDS));
+            builder.property("resteasy.connectionTTL", Arrays.asList(connectionTTL.getAsInt(), TimeUnit.MILLISECONDS));
         }
     }
 
@@ -103,7 +103,8 @@ public class RestClientBase {
             int lastColonIndex = proxyString.lastIndexOf(':');
 
             if (lastColonIndex <= 0 || lastColonIndex == proxyString.length() - 1) {
-                throw new RuntimeException("Invalid proxy string. Expected <hostname>:<port>, found '" + proxyString + "'");
+                throw new RuntimeException(
+                        "Invalid proxy string. Expected <hostname>:<port>, found '" + proxyString + "'");
             }
 
             String host = proxyString.substring(0, lastColonIndex);
@@ -111,7 +112,8 @@ public class RestClientBase {
             try {
                 port = Integer.parseInt(proxyString.substring(lastColonIndex + 1));
             } catch (NumberFormatException e) {
-                throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'", e);
+                throw new RuntimeException("Invalid proxy setting. The port is not a number in '" + proxyString + "'",
+                        e);
             }
 
             builder.proxyAddress(host, port);
@@ -126,7 +128,8 @@ public class RestClientBase {
     }
 
     protected void configureQueryParamStyle(RestClientBuilder builder) {
-        Optional<QueryParamStyle> queryParamStyle = oneOf(restClientConfig.queryParamStyle(), configRoot.queryParamStyle());
+        Optional<QueryParamStyle> queryParamStyle = oneOf(restClientConfig.queryParamStyle(),
+                configRoot.queryParamStyle());
         if (queryParamStyle.isPresent()) {
             builder.queryParamStyle(queryParamStyle.get());
         }
@@ -165,13 +168,11 @@ public class RestClientBase {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException("Could not find hostname verifier class " + verifier, e);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(
-                    "Failed to instantiate hostname verifier class " + verifier
-                            + ". Make sure it has a public, no-argument constructor",
-                    e);
+            throw new RuntimeException("Failed to instantiate hostname verifier class " + verifier
+                    + ". Make sure it has a public, no-argument constructor", e);
         } catch (ClassCastException e) {
-            throw new RuntimeException("The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier",
-                    e);
+            throw new RuntimeException(
+                    "The provided hostname verifier " + verifier + " is not an instance of HostnameVerifier", e);
         }
     }
 
@@ -180,7 +181,8 @@ public class RestClientBase {
             Optional<String> keyStoreType = oneOf(restClientConfig.keyStoreType(), configRoot.keyStoreType());
             KeyStore keyStore = KeyStore.getInstance(keyStoreType.orElse("JKS"));
 
-            Optional<String> keyStorePassword = oneOf(restClientConfig.keyStorePassword(), configRoot.keyStorePassword());
+            Optional<String> keyStorePassword = oneOf(restClientConfig.keyStorePassword(),
+                    configRoot.keyStorePassword());
             if (keyStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for keystore");
             }
@@ -189,8 +191,8 @@ public class RestClientBase {
             try (InputStream input = locateStream(keyStorePath)) {
                 keyStore.load(input, password.toCharArray());
             } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
-                throw new IllegalArgumentException("Failed to initialize trust store from classpath resource " + keyStorePath,
-                        e);
+                throw new IllegalArgumentException(
+                        "Failed to initialize trust store from classpath resource " + keyStorePath, e);
             }
 
             builder.keyStore(keyStore, password);
@@ -204,7 +206,8 @@ public class RestClientBase {
             Optional<String> trustStoreType = oneOf(restClientConfig.trustStoreType(), configRoot.trustStoreType());
             KeyStore trustStore = KeyStore.getInstance(trustStoreType.orElse("JKS"));
 
-            Optional<String> trustStorePassword = oneOf(restClientConfig.trustStorePassword(), configRoot.trustStorePassword());
+            Optional<String> trustStorePassword = oneOf(restClientConfig.trustStorePassword(),
+                    configRoot.trustStorePassword());
             if (trustStorePassword.isEmpty()) {
                 throw new IllegalArgumentException("No password provided for truststore");
             }
@@ -213,8 +216,8 @@ public class RestClientBase {
             try (InputStream input = locateStream(trustStorePath)) {
                 trustStore.load(input, password.toCharArray());
             } catch (IOException | CertificateException | NoSuchAlgorithmException e) {
-                throw new IllegalArgumentException("Failed to initialize trust store from classpath resource " + trustStorePath,
-                        e);
+                throw new IllegalArgumentException(
+                        "Failed to initialize trust store from classpath resource " + trustStorePath, e);
             }
 
             builder.trustStore(trustStore);
@@ -290,14 +293,11 @@ public class RestClientBase {
         Optional<String> baseUrlOptional = oneOf(restClientConfig.uriReload(), restClientConfig.urlReload());
         if (((baseUriFromAnnotation == null) || baseUriFromAnnotation.isEmpty()) && baseUrlOptional.isEmpty()) {
             String propertyPrefix = configKey != null ? configKey : proxyType.getName();
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Unable to determine the proper baseUrl/baseUri. " +
-                                    "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
-                                    +
-                                    "or by adding '%s' or '%s' to your Quarkus configuration",
-                            String.format(QUARKUS_CONFIG_REST_URL_FORMAT, propertyPrefix),
-                            String.format(QUARKUS_CONFIG_REST_URI_FORMAT, propertyPrefix)));
+            throw new IllegalArgumentException(String.format("Unable to determine the proper baseUrl/baseUri. "
+                    + "Consider registering using @RegisterRestClient(baseUri=\"someuri\"), @RegisterRestClient(configKey=\"orkey\"), "
+                    + "or by adding '%s' or '%s' to your Quarkus configuration",
+                    String.format(QUARKUS_CONFIG_REST_URL_FORMAT, propertyPrefix),
+                    String.format(QUARKUS_CONFIG_REST_URI_FORMAT, propertyPrefix)));
         }
         String baseUrl = baseUrlOptional.orElse(baseUriFromAnnotation);
 

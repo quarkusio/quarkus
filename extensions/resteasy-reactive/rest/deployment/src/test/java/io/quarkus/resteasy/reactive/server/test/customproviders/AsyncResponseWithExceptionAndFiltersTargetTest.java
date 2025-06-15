@@ -28,17 +28,14 @@ public class AsyncResponseWithExceptionAndFiltersTargetTest {
     private static final String RESOURCE_INFO_CLASS_HEADER = "resourceInfoClass";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(CsResource.class, UniResource.class,
-                                    CustomResponseFilter.class,
-                                    DummyException.class, DummyExceptionMapper.class,
-                                    DummyException2.class, DummyException2.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(CsResource.class, UniResource.class,
+                    CustomResponseFilter.class, DummyException.class, DummyExceptionMapper.class, DummyException2.class,
+                    DummyException2.class);
+        }
+    });
 
     @Path("cs")
     public static class CsResource {
@@ -98,73 +95,56 @@ public class AsyncResponseWithExceptionAndFiltersTargetTest {
 
     @Test
     public void csHandled() {
-        when().get("/cs/handled")
-                .then()
-                .statusCode(999)
-                .header(RESOURCE_INFO_CLASS_HEADER, CsResource.class.getSimpleName());
+        when().get("/cs/handled").then().statusCode(999).header(RESOURCE_INFO_CLASS_HEADER,
+                CsResource.class.getSimpleName());
     }
 
     @Test
     public void csHandled2() {
-        when().get("/cs/handled2")
-                .then()
-                .statusCode(999)
-                .header(RESOURCE_INFO_CLASS_HEADER, CsResource.class.getSimpleName());
+        when().get("/cs/handled2").then().statusCode(999).header(RESOURCE_INFO_CLASS_HEADER,
+                CsResource.class.getSimpleName());
     }
 
     @Test
     public void csUnhandled() {
-        when().get("/cs/unhandled")
-                .then()
-                .statusCode(500)
-                .header(RESOURCE_INFO_CLASS_HEADER, nullValue());
+        when().get("/cs/unhandled").then().statusCode(500).header(RESOURCE_INFO_CLASS_HEADER, nullValue());
     }
 
     @Test
     public void csUnhandled2() {
-        when().get("/cs/unhandled2")
-                .then()
-                .statusCode(204)
-                .header(RESOURCE_INFO_CLASS_HEADER, CsResource.class.getSimpleName());
+        when().get("/cs/unhandled2").then().statusCode(204).header(RESOURCE_INFO_CLASS_HEADER,
+                CsResource.class.getSimpleName());
     }
 
     @Test
     public void uniHandled() {
-        when().get("/uni/handled")
-                .then()
-                .statusCode(999)
-                .header(RESOURCE_INFO_CLASS_HEADER, UniResource.class.getSimpleName());
+        when().get("/uni/handled").then().statusCode(999).header(RESOURCE_INFO_CLASS_HEADER,
+                UniResource.class.getSimpleName());
     }
 
     @Test
     public void uniHandled2() {
-        when().get("/uni/handled2")
-                .then()
-                .statusCode(999)
-                .header(RESOURCE_INFO_CLASS_HEADER, UniResource.class.getSimpleName());
+        when().get("/uni/handled2").then().statusCode(999).header(RESOURCE_INFO_CLASS_HEADER,
+                UniResource.class.getSimpleName());
     }
 
     @Test
     public void uniUnhandled() {
-        when().get("/uni/unhandled")
-                .then()
-                .statusCode(500)
-                .header(RESOURCE_INFO_CLASS_HEADER, nullValue());
+        when().get("/uni/unhandled").then().statusCode(500).header(RESOURCE_INFO_CLASS_HEADER, nullValue());
     }
 
     @Test
     public void uniUnhandled2() {
-        when().get("/uni/unhandled2")
-                .then()
-                .statusCode(204)
-                .header(RESOURCE_INFO_CLASS_HEADER, UniResource.class.getSimpleName());
+        when().get("/uni/unhandled2").then().statusCode(204).header(RESOURCE_INFO_CLASS_HEADER,
+                UniResource.class.getSimpleName());
     }
 
     public static class CustomResponseFilter {
 
         @ServerResponseFilter
         public void filter(ContainerResponseContext responseContext, ResourceInfo resourceInfo) {
-            responseContext.getHeaders().add(RESOURCE_INFO_CLASS_HEADER, resourceInfo.getResourceClass().getSimpleName());
+            responseContext.getHeaders().add(RESOURCE_INFO_CLASS_HEADER,
+                    resourceInfo.getResourceClass().getSimpleName());
         }
     }
 

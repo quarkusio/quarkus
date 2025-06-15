@@ -29,9 +29,9 @@ import io.quarkus.runtime.util.HashUtil;
 import io.smallrye.mutiny.Uni;
 
 /**
- * {@link io.quarkus.rest.data.panache.ReactiveRestDataResource} implementor that generates data access logic depending on which
- * sub-interfaces are used in the application.
- * The method implementation differs depending on a data access strategy (active record or repository).
+ * {@link io.quarkus.rest.data.panache.ReactiveRestDataResource} implementor that generates data access logic depending
+ * on which sub-interfaces are used in the application. The method implementation differs depending on a data access
+ * strategy (active record or repository).
  */
 class ResourceImplementor {
 
@@ -44,22 +44,21 @@ class ResourceImplementor {
     }
 
     /**
-     * Implements {@link io.quarkus.rest.data.panache.ReactiveRestDataResource} interfaces defined in a user application.
-     * Instances of this class are registered as beans and are later used in the generated JAX-RS controllers.
+     * Implements {@link io.quarkus.rest.data.panache.ReactiveRestDataResource} interfaces defined in a user
+     * application. Instances of this class are registered as beans and are later used in the generated JAX-RS
+     * controllers.
      */
     String implement(ClassOutput classOutput, DataAccessImplementor dataAccessImplementor, ClassInfo resourceInterface,
             String entityType, List<ClassInfo> resourceMethodListeners) {
         String resourceType = resourceInterface.name().toString();
         String className = resourceType + "Impl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
-        ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(className)
-                .interfaces(resourceType)
-                .build();
+        ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput).className(className)
+                .interfaces(resourceType).build();
 
         classCreator.addAnnotation(ApplicationScoped.class);
-        // The same resource is generated as part of the JaxRsResourceImplementor, so we need to avoid ambiguous resolution
+        // The same resource is generated as part of the JaxRsResourceImplementor, so we need to avoid ambiguous
+        // resolution
         // when injecting the resource in user beans:
         classCreator.addAnnotation(Alternative.class);
         classCreator.addAnnotation(Priority.class).add("value", Integer.MAX_VALUE);
@@ -87,11 +86,13 @@ class ResourceImplementor {
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle sort = methodCreator.getMethodParam(1);
         ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
-        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class),
+                columns);
 
         BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
         isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
+        isEmptySortBranch.falseBranch()
+                .returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort));
 
         methodCreator.close();
     }
@@ -104,13 +105,14 @@ class ResourceImplementor {
         ResultHandle query = methodCreator.getMethodParam(2);
         ResultHandle queryParams = methodCreator.getMethodParam(3);
         ResultHandle columns = methodCreator.invokeVirtualMethod(ofMethod(Sort.class, "getColumns", List.class), sort);
-        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class), columns);
+        ResultHandle isEmptySort = methodCreator.invokeInterfaceMethod(ofMethod(List.class, "isEmpty", boolean.class),
+                columns);
 
         BranchResult isEmptySortBranch = methodCreator.ifTrue(isEmptySort);
-        isEmptySortBranch.trueBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query,
-                queryParams));
-        isEmptySortBranch.falseBranch().returnValue(dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort,
-                query, queryParams));
+        isEmptySortBranch.trueBranch()
+                .returnValue(dataAccessImplementor.findAll(isEmptySortBranch.trueBranch(), page, query, queryParams));
+        isEmptySortBranch.falseBranch().returnValue(
+                dataAccessImplementor.findAll(isEmptySortBranch.falseBranch(), page, sort, query, queryParams));
 
         methodCreator.close();
     }
@@ -125,12 +127,12 @@ class ResourceImplementor {
     }
 
     /**
-     * Generate list page count method.
-     * This method is used when building page URLs for list operation response and is not exposed to a user.
+     * Generate list page count method. This method is used when building page URLs for list operation response and is
+     * not exposed to a user.
      */
     private void implementListPageCount(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor) {
-        MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list", Uni.class,
-                Page.class, String.class, Map.class);
+        MethodCreator methodCreator = classCreator.getMethodCreator(Constants.PAGE_COUNT_METHOD_PREFIX + "list",
+                Uni.class, Page.class, String.class, Map.class);
         ResultHandle page = methodCreator.getMethodParam(0);
         ResultHandle query = methodCreator.getMethodParam(1);
         ResultHandle queryParams = methodCreator.getMethodParam(2);
@@ -157,8 +159,8 @@ class ResourceImplementor {
         methodCreator.close();
     }
 
-    private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor, String entityType,
-            HibernateReactiveResourceMethodListenerImplementor resourceMethodListenerImplementor) {
+    private void implementUpdate(ClassCreator classCreator, DataAccessImplementor dataAccessImplementor,
+            String entityType, HibernateReactiveResourceMethodListenerImplementor resourceMethodListenerImplementor) {
         MethodCreator methodCreator = classCreator.getMethodCreator("update", Uni.class, Object.class, Object.class);
         methodCreator.addAnnotation(WithTransaction.class);
         ResultHandle id = methodCreator.getMethodParam(0);

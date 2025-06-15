@@ -55,10 +55,8 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
     protected final long readTimeout;
     protected boolean customNotFoundExist = false;
 
-    public VertxRequestHandler(Vertx vertx,
-            ResteasyDeployment deployment,
-            String rootPath,
-            BufferAllocator allocator, Executor executor, long readTimeout) {
+    public VertxRequestHandler(Vertx vertx, ResteasyDeployment deployment, String rootPath, BufferAllocator allocator,
+            Executor executor, long readTimeout) {
         this.vertx = vertx;
         this.dispatcher = new RequestDispatcher((SynchronousDispatcher) deployment.getDispatcher(),
                 deployment.getProviderFactory(), null, Thread.currentThread().getContextClassLoader());
@@ -66,8 +64,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
         this.allocator = allocator;
         this.executor = executor;
         this.readTimeout = readTimeout;
-        this.customNotFoundExist = deployment.getProviderFactory()
-                .getExceptionMapper(NotFoundException.class) != null;
+        this.customNotFoundExist = deployment.getProviderFactory().getExceptionMapper(NotFoundException.class) != null;
         Instance<CurrentIdentityAssociation> association = CDI.current().select(CurrentIdentityAssociation.class);
         this.association = association.isResolvable() ? association.get() : null;
         currentVertxRequest = CDI.current().select(CurrentVertxRequest.class).get();
@@ -75,7 +72,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
 
     @Override
     public void handle(RoutingContext request) {
-        // have to create input stream here.  Cannot execute in another thread
+        // have to create input stream here. Cannot execute in another thread
         // otherwise request handlers may not get set up before request ends
         InputStream is;
         if (request.getBody() != null) {
@@ -136,12 +133,13 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
             VertxHttpResponse vertxResponse = new VertxHttpResponse(request, dispatcher.getProviderFactory(),
                     request.method(), allocator, output, routingContext);
 
-            // using a supplier to make the remote Address resolution lazy: often it's not needed and it's not very cheap to create.
+            // using a supplier to make the remote Address resolution lazy: often it's not needed and it's not very
+            // cheap to create.
             LazyHostSupplier hostSupplier = new LazyHostSupplier(request);
 
-            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, routingContext, headers, uriInfo, request.method().name(),
-                    hostSupplier,
-                    dispatcher.getDispatcher(), vertxResponse, requestContext, executor);
+            VertxHttpRequest vertxRequest = new VertxHttpRequest(ctx, routingContext, headers, uriInfo,
+                    request.method().name(), hostSupplier, dispatcher.getDispatcher(), vertxResponse, requestContext,
+                    executor);
             vertxRequest.setInputStream(is);
             Map<Class<?>, Object> map = new HashMap<>();
             map.put(SecurityContext.class, new QuarkusResteasySecurityContext(request, routingContext));
@@ -177,7 +175,7 @@ public class VertxRequestHandler implements Handler<RoutingContext> {
                     }
                 }
             } else {
-                //we need the request context to stick around
+                // we need the request context to stick around
                 requestContext.deactivate();
             }
         } catch (Throwable t) {

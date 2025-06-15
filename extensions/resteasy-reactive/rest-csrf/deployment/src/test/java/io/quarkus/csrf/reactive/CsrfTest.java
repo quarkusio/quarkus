@@ -29,139 +29,67 @@ public class CsrfTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class)
-                    .addAsResource("templates/csrfToken.html"));
+            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class).addAsResource("templates/csrfToken.html"));
 
     private final static String COOKIE_NAME = "csrf-token";
     private final static String HEADER_NAME = "X-CSRF-TOKEN";
 
     @Test
     public void testForm() {
-        String token = when()
-                .get("/csrfTokenForm")
-                .then()
-                .statusCode(200)
-                .cookie(COOKIE_NAME)
-                .extract()
+        String token = when().get("/csrfTokenForm").then().statusCode(200).cookie(COOKIE_NAME).extract()
                 .cookie(COOKIE_NAME);
         EncoderConfig encoderConfig = EncoderConfig.encoderConfig().encodeContentTypeAs("multipart/form-data",
                 ContentType.TEXT);
         RestAssuredConfig restAssuredConfig = RestAssured.config().encoderConfig(encoderConfig);
 
-        //no token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .config(restAssuredConfig)
-                .formParam("name", "testName")
-                .contentType(ContentType.URLENC)
-                .when()
-                .post("csrfTokenForm")
-                .then()
+        // no token
+        given().cookie(COOKIE_NAME, token).config(restAssuredConfig).formParam("name", "testName")
+                .contentType(ContentType.URLENC).when().post("csrfTokenForm").then().statusCode(400);
+
+        // wrong token
+        given().cookie(COOKIE_NAME, token).config(restAssuredConfig).formParam(COOKIE_NAME, "WRONG")
+                .formParam("name", "testName").contentType(ContentType.URLENC).when().post("csrfTokenForm").then()
                 .statusCode(400);
 
-        //wrong token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .config(restAssuredConfig)
-                .formParam(COOKIE_NAME, "WRONG")
-                .formParam("name", "testName")
-                .contentType(ContentType.URLENC)
-                .when()
-                .post("csrfTokenForm")
-                .then()
-                .statusCode(400);
-
-        //valid token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .config(restAssuredConfig)
-                .formParam(COOKIE_NAME, token)
-                .formParam("name", "testName")
-                .contentType(ContentType.URLENC)
-                .when()
-                .post("csrfTokenForm")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("testName"));
+        // valid token
+        given().cookie(COOKIE_NAME, token).config(restAssuredConfig).formParam(COOKIE_NAME, token)
+                .formParam("name", "testName").contentType(ContentType.URLENC).when().post("csrfTokenForm").then()
+                .statusCode(200).body(Matchers.equalTo("testName"));
     }
 
     @Test
     public void testNoBody() {
-        String token = when().get("/csrfTokenForm")
-                .then().statusCode(200).cookie(COOKIE_NAME)
-                .extract().cookie(COOKIE_NAME);
+        String token = when().get("/csrfTokenForm").then().statusCode(200).cookie(COOKIE_NAME).extract()
+                .cookie(COOKIE_NAME);
 
         // no token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .when()
-                .post("csrfTokenPost")
-                .then()
+        given().cookie(COOKIE_NAME, token).when().post("csrfTokenPost").then().statusCode(400);
+
+        // wrong token
+        given().cookie(COOKIE_NAME, token).header(HEADER_NAME, "WRONG").when().post("csrfTokenPost").then()
                 .statusCode(400);
 
-        //wrong token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .header(HEADER_NAME, "WRONG")
-                .when()
-                .post("csrfTokenPost")
-                .then()
-                .statusCode(400);
-
-        //valid token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .header(HEADER_NAME, token)
-                .when()
-                .post("csrfTokenPost")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("no user"));
+        // valid token
+        given().cookie(COOKIE_NAME, token).header(HEADER_NAME, token).when().post("csrfTokenPost").then()
+                .statusCode(200).body(Matchers.equalTo("no user"));
     }
 
     @Test
     public void testWithBody() {
-        String token = when()
-                .get("/csrfTokenForm")
-                .then()
-                .statusCode(200)
-                .cookie(COOKIE_NAME)
-                .extract()
+        String token = when().get("/csrfTokenForm").then().statusCode(200).cookie(COOKIE_NAME).extract()
                 .cookie(COOKIE_NAME);
 
         // no token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .body("testName")
-                .contentType(ContentType.TEXT)
-                .when()
-                .post("csrfTokenPostBody")
-                .then()
-                .statusCode(400);
+        given().cookie(COOKIE_NAME, token).body("testName").contentType(ContentType.TEXT).when()
+                .post("csrfTokenPostBody").then().statusCode(400);
 
-        //wrong token
-        given()
-                .cookie(COOKIE_NAME, token)
-                .header(HEADER_NAME, "WRONG")
-                .body("testName")
-                .contentType(ContentType.TEXT)
-                .when()
-                .post("csrfTokenPostBody")
-                .then()
-                .statusCode(400);
+        // wrong token
+        given().cookie(COOKIE_NAME, token).header(HEADER_NAME, "WRONG").body("testName").contentType(ContentType.TEXT)
+                .when().post("csrfTokenPostBody").then().statusCode(400);
 
-        //valid token => This test fails but should work
-        given()
-                .cookie(COOKIE_NAME, token)
-                .header(HEADER_NAME, token)
-                .body("testName")
-                .contentType(ContentType.TEXT)
-                .when()
-                .post("csrfTokenPostBody")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("testName"));
+        // valid token => This test fails but should work
+        given().cookie(COOKIE_NAME, token).header(HEADER_NAME, token).body("testName").contentType(ContentType.TEXT)
+                .when().post("csrfTokenPostBody").then().statusCode(200).body(Matchers.equalTo("testName"));
     }
 
     @Path("")

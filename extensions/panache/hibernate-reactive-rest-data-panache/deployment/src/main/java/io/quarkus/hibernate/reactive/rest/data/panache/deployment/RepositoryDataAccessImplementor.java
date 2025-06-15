@@ -46,7 +46,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     public ResultHandle findAll(BytecodeCreator creator, ResultHandle page) {
         ResultHandle query = creator.invokeInterfaceMethod(
                 ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class), getRepositoryInstance(creator));
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), query);
     }
 
@@ -58,7 +59,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         ResultHandle query = creator.invokeInterfaceMethod(
                 ofMethod(PanacheRepositoryBase.class, "findAll", PanacheQuery.class, Sort.class),
                 getRepositoryInstance(creator), sort);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query, page);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), query,
+                page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), query);
     }
 
@@ -66,11 +68,13 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
      * Implements <code>repository.find(query, params).page(page).list()</code>
      */
     @Override
-    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
+    public ResultHandle findAll(BytecodeCreator creator, ResultHandle page, ResultHandle query,
+            ResultHandle queryParams) {
         ResultHandle panacheQuery = creator.invokeInterfaceMethod(
                 ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class, String.class, Map.class),
                 getRepositoryInstance(creator), query, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), panacheQuery);
     }
 
@@ -83,7 +87,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         ResultHandle panacheQuery = creator.invokeInterfaceMethod(
                 ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class, String.class, Sort.class, Map.class),
                 getRepositoryInstance(creator), query, sort, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", Uni.class), panacheQuery);
     }
 
@@ -97,7 +102,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
     }
 
     /**
-     * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already set.
+     * Persist this entity in the database, if not already persisted. This will set your ID field if it is not already
+     * set.
      *
      * @return
      *
@@ -105,12 +111,11 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle update(BytecodeCreator creator, ResultHandle entity) {
-        ResultHandle uniSession = creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "getSession", Uni.class),
-                getRepositoryInstance(creator));
+        ResultHandle uniSession = creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "getSession", Uni.class), getRepositoryInstance(creator));
         return UniImplementor.flatMap(creator, uniSession, "Failed to retrieve session",
-                (body, session) -> body.returnValue(
-                        body.invokeInterfaceMethod(ofMethod(Mutiny.Session.class, "merge", Uni.class, Object.class),
-                                session, entity)));
+                (body, session) -> body.returnValue(body.invokeInterfaceMethod(
+                        ofMethod(Mutiny.Session.class, "merge", Uni.class, Object.class), session, entity)));
     }
 
     /**
@@ -118,7 +123,8 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
      */
     @Override
     public ResultHandle deleteById(BytecodeCreator creator, ResultHandle id) {
-        return creator.invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "deleteById", Uni.class, Object.class),
+        return creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "deleteById", Uni.class, Object.class),
                 getRepositoryInstance(creator), id);
     }
 
@@ -126,11 +132,13 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
      * Implements <code>repository.find(query, params).page(page).pageCount()</code>
      */
     @Override
-    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query, ResultHandle queryParams) {
-        ResultHandle panacheQuery = creator
-                .invokeInterfaceMethod(ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class,
-                        String.class, Map.class), getRepositoryInstance(creator), query, queryParams);
-        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class), panacheQuery, page);
+    public ResultHandle pageCount(BytecodeCreator creator, ResultHandle page, ResultHandle query,
+            ResultHandle queryParams) {
+        ResultHandle panacheQuery = creator.invokeInterfaceMethod(
+                ofMethod(PanacheRepositoryBase.class, "find", PanacheQuery.class, String.class, Map.class),
+                getRepositoryInstance(creator), query, queryParams);
+        creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "page", PanacheQuery.class, Page.class),
+                panacheQuery, page);
         return creator.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "pageCount", Uni.class), panacheQuery);
     }
 
@@ -152,11 +160,11 @@ final class RepositoryDataAccessImplementor implements DataAccessImplementor {
         ResultHandle instanceHandle = creator.invokeInterfaceMethod(
                 ofMethod(ArcContainer.class, "instance", InstanceHandle.class, Class.class, Annotation[].class),
                 arcContainer, creator.loadClass(repositoryClassName), creator.newArray(Annotation.class, 0));
-        ResultHandle instance = creator.invokeInterfaceMethod(
-                ofMethod(InstanceHandle.class, "get", Object.class), instanceHandle);
+        ResultHandle instance = creator.invokeInterfaceMethod(ofMethod(InstanceHandle.class, "get", Object.class),
+                instanceHandle);
 
-        creator.ifNull(instance).trueBranch()
-                .throwException(RuntimeException.class, repositoryClassName + " instance was not found");
+        creator.ifNull(instance).trueBranch().throwException(RuntimeException.class,
+                repositoryClassName + " instance was not found");
 
         return instance;
     }

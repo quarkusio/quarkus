@@ -24,7 +24,8 @@ public class FlywayExtensionWithJavaMigrationDevModeTestEndpoint {
     @GET
     public String result() throws Exception {
         int count = 0;
-        try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
+        try (Connection connection = defaultDataSource.getConnection();
+                Statement stat = connection.createStatement()) {
             try (ResultSet countQuery = stat.executeQuery("select count(1) from quarked_flyway")) {
                 countQuery.first();
                 count = countQuery.getInt(1);

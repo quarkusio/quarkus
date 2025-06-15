@@ -93,8 +93,8 @@ public class ResteasyReactiveCommonProcessor {
         if (!ignoreStackMixingItems.isEmpty()) {
             return;
         }
-        List<ResolvedDependency> resteasyClassicDeps = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
-                .filter(d -> d.getGroupId().equals("org.jboss.resteasy")).collect(Collectors.toList());
+        List<ResolvedDependency> resteasyClassicDeps = curateOutcomeBuildItem.getApplicationModel().getDependencies()
+                .stream().filter(d -> d.getGroupId().equals("org.jboss.resteasy")).collect(Collectors.toList());
         boolean hasResteasyCoreDep = resteasyClassicDeps.stream()
                 .anyMatch(IS_NOT_TEST_SCOPED.and(IS_RESTEASY_CLASSIC_CORE_DEP));
         if (!hasResteasyCoreDep) {
@@ -102,12 +102,12 @@ public class ResteasyReactiveCommonProcessor {
         }
         boolean hasResteasyClassicClient = resteasyClassicDeps.stream()
                 .anyMatch(IS_NOT_TEST_SCOPED.and(IS_RESTEASY_CLASSIC_CLIENT_DEP));
-        if (!hasResteasyClassicClient) { // there is no bulletproof way of knowing whether a server specific dependency has been included, so we deduce it by the absence of client dependency
+        if (!hasResteasyClassicClient) { // there is no bulletproof way of knowing whether a server specific dependency
+                                         // has been included, so we deduce it by the absence of client dependency
             throw new DeploymentException("Mixing Quarkus REST and RESTEasy Classic server parts is not supported");
         }
         if (capabilities.isPresent(Capability.REST_CLIENT_REACTIVE)) {
-            throw new DeploymentException(
-                    "Mixing Quarkus REST and RESTEasy Classic client parts is not supported");
+            throw new DeploymentException("Mixing Quarkus REST and RESTEasy Classic client parts is not supported");
         } else {
             LOG.warn(
                     "Mixing Quarkus REST server and RESTEasy Classic client parts might lead to unexpected results. Consider using 'quarkus-rest-client' instead of 'quarkus-resteasy-client'.");
@@ -119,8 +119,13 @@ public class ResteasyReactiveCommonProcessor {
             BuildProducer<AdditionalApplicationArchiveMarkerBuildItem> producer) {
         if (capabilities.isPresent(Capability.RESTEASY) || capabilities.isPresent(Capability.RESTEASY_CLIENT)
                 || QuarkusClassLoader.isClassPresentAtRuntime(
-                        "org.jboss.resteasy.plugins.providers.JaxrsServerFormUrlEncodedProvider")) { // RESTEasy Classic could be imported via non-Quarkus dependencies
-            // in this weird case we don't want the providers to be registered automatically as this would lead to multiple bean definitions
+                        "org.jboss.resteasy.plugins.providers.JaxrsServerFormUrlEncodedProvider")) { // RESTEasy Classic
+                                                                                                                                                                                                                                                         // could be
+                                                                                                                                                                                                                                                         // imported via
+                                                                                                                                                                                                                                                         // non-Quarkus
+                                                                                                                                                                                                                                                         // dependencies
+                                                                                                                                                                                                                                                         // in this weird case we don't want the providers to be registered automatically as this would lead to
+                                                                                                                                                                                                                                                         // multiple bean definitions
             return;
         }
         // TODO: should we also be looking for the specific provider files?
@@ -141,14 +146,13 @@ public class ResteasyReactiveCommonProcessor {
     @BuildStep
     ApplicationResultBuildItem handleApplication(CombinedIndexBuildItem combinedIndexBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
-            List<BuildTimeConditionBuildItem> buildTimeConditions,
-            ResteasyReactiveConfig config) {
-        ApplicationScanningResult result = ResteasyReactiveScanner
-                .scanForApplicationClass(combinedIndexBuildItem.getComputingIndex(),
-                        config.buildTimeConditionAware() ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
+            List<BuildTimeConditionBuildItem> buildTimeConditions, ResteasyReactiveConfig config) {
+        ApplicationScanningResult result = ResteasyReactiveScanner.scanForApplicationClass(
+                combinedIndexBuildItem.getComputingIndex(),
+                config.buildTimeConditionAware() ? getExcludedClasses(buildTimeConditions) : Collections.emptySet());
         if (result.getSelectedAppClass() != null) {
-            reflectiveClass.produce(ReflectiveClassBuildItem.builder(result.getSelectedAppClass().name().toString())
-                    .build());
+            reflectiveClass
+                    .produce(ReflectiveClassBuildItem.builder(result.getSelectedAppClass().name().toString()).build());
         }
         return new ApplicationResultBuildItem(result);
     }
@@ -160,18 +164,17 @@ public class ResteasyReactiveCommonProcessor {
             @Override
             public void accept(ResourceInterceptors interceptors) {
                 ResteasyReactiveInterceptorScanner.scanForIOInterceptors(interceptors,
-                        combinedIndexBuildItem.getComputingIndex(),
-                        applicationResultBuildItem.getResult());
+                        combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
             }
         });
     }
 
     @BuildStep
-    public ResourceInterceptorsBuildItem buildResourceInterceptors(List<ResourceInterceptorsContributorBuildItem> scanningTasks,
+    public ResourceInterceptorsBuildItem buildResourceInterceptors(
+            List<ResourceInterceptorsContributorBuildItem> scanningTasks,
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
-            List<WriterInterceptorBuildItem> writerInterceptors,
-            List<ReaderInterceptorBuildItem> readerInterceptors,
+            List<WriterInterceptorBuildItem> writerInterceptors, List<ReaderInterceptorBuildItem> readerInterceptors,
             List<ContainerRequestFilterBuildItem> requestFilters,
             List<ContainerResponseFilterBuildItem> responseFilters) {
         ResourceInterceptors resourceInterceptors = new ResourceInterceptors();
@@ -194,7 +197,8 @@ public class ResteasyReactiveCommonProcessor {
             registerInterceptors(globalNameBindings, resourceInterceptors.getContainerRequestFilters(), i, beanBuilder);
         }
         for (ContainerResponseFilterBuildItem i : responseFilters) {
-            registerInterceptors(globalNameBindings, resourceInterceptors.getContainerResponseFilters(), i, beanBuilder);
+            registerInterceptors(globalNameBindings, resourceInterceptors.getContainerResponseFilters(), i,
+                    beanBuilder);
         }
         additionalBeanBuildItemBuildProducer.produce(beanBuilder.setUnremovable().build());
         return new ResourceInterceptorsBuildItem(resourceInterceptors);
@@ -275,16 +279,15 @@ public class ResteasyReactiveCommonProcessor {
         Indexer indexer = new Indexer();
         for (GeneratedJaxRsResourceBuildItem generatedJaxRsResource : generatedJaxRsResources) {
             indexer.index(new ByteArrayInputStream(generatedJaxRsResource.getData()));
-            generatedBeansProducer
-                    .produce(new GeneratedBeanBuildItem(generatedJaxRsResource.internalName(),
-                            generatedJaxRsResource.getData()));
+            generatedBeansProducer.produce(new GeneratedBeanBuildItem(generatedJaxRsResource.internalName(),
+                    generatedJaxRsResource.getData()));
         }
-        return new JaxRsResourceIndexBuildItem(CompositeIndex.create(combinedIndex.getComputingIndex(), indexer.complete()));
+        return new JaxRsResourceIndexBuildItem(
+                CompositeIndex.create(combinedIndex.getComputingIndex(), indexer.complete()));
     }
 
     @BuildStep
-    void scanResources(
-            JaxRsResourceIndexBuildItem jaxRsResourceIndexBuildItem,
+    void scanResources(JaxRsResourceIndexBuildItem jaxRsResourceIndexBuildItem,
             List<AdditionalResourceClassBuildItem> additionalResourceClassBuildItems,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformerBuildItemBuildProducer,
             BuildProducer<ResourceScanningResultBuildItem> resourceScanningResultBuildItemBuildProducer) {
@@ -301,21 +304,20 @@ public class ResteasyReactiveCommonProcessor {
             return;
         }
         if (!res.getResourcesThatNeedCustomProducer().isEmpty()) {
-            annotationsTransformerBuildItemBuildProducer
-                    .produce(new AnnotationsTransformerBuildItem(
-                            new VetoingAnnotationTransformer(res.getResourcesThatNeedCustomProducer().keySet())));
+            annotationsTransformerBuildItemBuildProducer.produce(new AnnotationsTransformerBuildItem(
+                    new VetoingAnnotationTransformer(res.getResourcesThatNeedCustomProducer().keySet())));
         }
         resourceScanningResultBuildItemBuildProducer.produce(new ResourceScanningResultBuildItem(res));
     }
 
     @BuildStep
     public void setupEndpoints(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
-            ApplicationResultBuildItem applicationResultBuildItem,
-            BeanContainerBuildItem beanContainerBuildItem,
+            ApplicationResultBuildItem applicationResultBuildItem, BeanContainerBuildItem beanContainerBuildItem,
             Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<MessageBodyWriterBuildItem> messageBodyWriterBuildItemBuildProducer,
-            BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderBuildItemBuildProducer) throws NoSuchMethodException {
+            BuildProducer<MessageBodyReaderBuildItem> messageBodyReaderBuildItemBuildProducer)
+            throws NoSuchMethodException {
 
         if (!resourceScanningResultBuildItem.isPresent()) {
             // no detected @Path, bail out
@@ -326,14 +328,15 @@ public class ResteasyReactiveCommonProcessor {
         SerializerScanningResult serializers = ResteasyReactiveScanner.scanForSerializers(index,
                 applicationResultBuildItem.getResult());
         for (var i : serializers.getReaders()) {
-            messageBodyReaderBuildItemBuildProducer.produce(new MessageBodyReaderBuildItem(i.getClassName(),
-                    i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
-            reflectiveClass.produce(
-                    ReflectiveClassBuildItem.builder(i.getClassName()).build());
+            messageBodyReaderBuildItemBuildProducer
+                    .produce(new MessageBodyReaderBuildItem(i.getClassName(), i.getHandledClassName(),
+                            i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
+            reflectiveClass.produce(ReflectiveClassBuildItem.builder(i.getClassName()).build());
         }
         for (var i : serializers.getWriters()) {
-            messageBodyWriterBuildItemBuildProducer.produce(new MessageBodyWriterBuildItem(i.getClassName(),
-                    i.getHandledClassName(), i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
+            messageBodyWriterBuildItemBuildProducer
+                    .produce(new MessageBodyWriterBuildItem(i.getClassName(), i.getHandledClassName(),
+                            i.getMediaTypeStrings(), i.getRuntimeType(), i.isBuiltin(), i.getPriority()));
         }
     }
 
@@ -343,45 +346,45 @@ public class ResteasyReactiveCommonProcessor {
     }
 
     /*
-     * There are some MessageBodyReaders and MessageBodyWriters that are brought in transitively
-     * by the inclusion of the extension like the 'quarkus-keycloak-admin-client'.
-     * We need to make sure that these providers are not selected over the ones that our Quarkus extensions provide.
-     * To do that, we first need to make them built-in (as the spec mandates that non-build-in providers are chosen
-     * over built-in ones) and then we also need to change their priority
+     * There are some MessageBodyReaders and MessageBodyWriters that are brought in transitively by the inclusion of the
+     * extension like the 'quarkus-keycloak-admin-client'. We need to make sure that these providers are not selected
+     * over the ones that our Quarkus extensions provide. To do that, we first need to make them built-in (as the spec
+     * mandates that non-build-in providers are chosen over built-in ones) and then we also need to change their
+     * priority
      */
     @BuildStep
     void deprioritizeLegacyProviders(BuildProducer<MessageBodyReaderOverrideBuildItem> readers,
             BuildProducer<MessageBodyWriterOverrideBuildItem> writers) {
         readers.produce(new MessageBodyReaderOverrideBuildItem(
                 "org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider", LEGACY_READER_PRIORITY, true));
-        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider",
-                LEGACY_READER_PRIORITY, true));
-        readers.produce(new MessageBodyReaderOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.JacksonJaxbJsonProvider",
-                LEGACY_READER_PRIORITY, true));
+        readers.produce(new MessageBodyReaderOverrideBuildItem(
+                "com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider", LEGACY_READER_PRIORITY, true));
+        readers.produce(new MessageBodyReaderOverrideBuildItem(
+                "com.fasterxml.jackson.jakarta.rs.JacksonJaxbJsonProvider", LEGACY_READER_PRIORITY, true));
         readers.produce(new MessageBodyReaderOverrideBuildItem("org.keycloak.admin.client.JacksonProvider",
                 LEGACY_READER_PRIORITY, true));
 
         writers.produce(new MessageBodyWriterOverrideBuildItem(
                 "org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider", LEGACY_WRITER_PRIORITY, true));
-        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider",
-                LEGACY_WRITER_PRIORITY, true));
-        writers.produce(new MessageBodyWriterOverrideBuildItem("com.fasterxml.jackson.jakarta.rs.json.JacksonJaxbJsonProvider",
-                LEGACY_WRITER_PRIORITY, true));
+        writers.produce(new MessageBodyWriterOverrideBuildItem(
+                "com.fasterxml.jackson.jakarta.rs.json.JacksonJsonProvider", LEGACY_WRITER_PRIORITY, true));
+        writers.produce(new MessageBodyWriterOverrideBuildItem(
+                "com.fasterxml.jackson.jakarta.rs.json.JacksonJaxbJsonProvider", LEGACY_WRITER_PRIORITY, true));
         writers.produce(new MessageBodyWriterOverrideBuildItem("org.keycloak.admin.client.JacksonProvider",
                 LEGACY_WRITER_PRIORITY, true));
     }
 
     /**
-     * @param buildTimeConditions the build time conditions from which the excluded classes are extracted.
+     * @param buildTimeConditions
+     *        the build time conditions from which the excluded classes are extracted.
+     *
      * @return the set of classes that have been annotated with unsuccessful build time conditions.
      */
     public static Set<String> getExcludedClasses(List<BuildTimeConditionBuildItem> buildTimeConditions) {
-        return buildTimeConditions.stream()
-                .filter(item -> !item.isEnabled())
+        return buildTimeConditions.stream().filter(item -> !item.isEnabled())
                 .map(BuildTimeConditionBuildItem::getTarget)
                 .filter(target -> target.kind() == AnnotationTarget.Kind.CLASS)
-                .map(target -> target.asClass().toString())
-                .collect(Collectors.toSet());
+                .map(target -> target.asClass().toString()).collect(Collectors.toSet());
     }
 
     @BuildStep

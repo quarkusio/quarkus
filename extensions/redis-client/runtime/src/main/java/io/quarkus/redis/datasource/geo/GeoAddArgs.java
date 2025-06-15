@@ -32,8 +32,8 @@ public class GeoAddArgs implements RedisCommandExtraArguments {
     }
 
     /**
-     * Modify the return value from the number of new elements added, to the total number of elements changed.
-     * (CH is an abbreviation of changed).
+     * Modify the return value from the number of new elements added, to the total number of elements changed. (CH is an
+     * abbreviation of changed).
      *
      * @return the current {@code GeoaddArgs}
      **/

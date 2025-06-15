@@ -36,12 +36,9 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Consume(RuntimeConfigSetupCompleteBuildItem.class)
     void produceProviderComponent(Optional<KeycloakDevServicesConfigBuildItem> configProps,
-            BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer,
-            VertxHttpConfig httpConfig,
-            OidcDevUiRecorder recorder,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            BeanContainerBuildItem beanContainer,
-            Capabilities capabilities) {
+            BuildProducer<KeycloakAdminPageBuildItem> keycloakAdminPageProducer, VertxHttpConfig httpConfig,
+            OidcDevUiRecorder recorder, NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            BeanContainerBuildItem beanContainer, Capabilities capabilities) {
         final String keycloakAdminUrl = KeycloakDevServicesConfigBuildItem.getKeycloakUrl(configProps);
         if (keycloakAdminUrl != null) {
             String realmUrl = configProps.get().getConfig().get("quarkus.oidc.auth-server-url");
@@ -51,25 +48,14 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
             @SuppressWarnings("unchecked")
             final List<String> keycloakRealms = (List<String>) configProps.get().getProperties().get("keycloak.realms");
 
-            CardPageBuildItem cardPageBuildItem = createProviderWebComponent(
-                    recorder,
-                    capabilities,
-                    "Keycloak",
+            CardPageBuildItem cardPageBuildItem = createProviderWebComponent(recorder, capabilities, "Keycloak",
                     getApplicationType(),
                     oidcConfig.devui().grant().type().orElse(DevUiConfig.Grant.Type.CODE).getGrantType(),
-                    realmUrl + "/protocol/openid-connect/auth",
-                    realmUrl + "/protocol/openid-connect/token",
-                    realmUrl + "/protocol/openid-connect/logout",
-                    true,
-                    beanContainer,
-                    oidcConfig.devui().webClientTimeout(),
-                    oidcConfig.devui().grantOptions(),
-                    nonApplicationRootPathBuildItem,
-                    keycloakAdminUrl,
-                    users,
-                    keycloakRealms,
-                    configProps.get().isContainerRestarted(),
-                    httpConfig, false, null);
+                    realmUrl + "/protocol/openid-connect/auth", realmUrl + "/protocol/openid-connect/token",
+                    realmUrl + "/protocol/openid-connect/logout", true, beanContainer,
+                    oidcConfig.devui().webClientTimeout(), oidcConfig.devui().grantOptions(),
+                    nonApplicationRootPathBuildItem, keycloakAdminUrl, users, keycloakRealms,
+                    configProps.get().isContainerRestarted(), httpConfig, false, null);
 
             cardPageBuildItem.setLogo("keycloak_logo.svg", "keycloak_logo.svg");
 
@@ -87,7 +73,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     AdditionalBeanBuildItem registerOidcDevLoginObserver() {
         // TODO: this is called even when Keycloak DEV UI is disabled and OIDC DEV UI is enabled
-        //   we should fine a mechanism to switch where the endpoints are registered or have shared build steps
+        // we should fine a mechanism to switch where the endpoints are registered or have shared build steps
         return AdditionalBeanBuildItem.unremovableOf(OidcDevLoginObserver.class);
     }
 
@@ -96,7 +82,7 @@ public class KeycloakDevUIProcessor extends AbstractDevUIProcessor {
     void invokeEndpoint(BuildProducer<RouteBuildItem> routeProducer, OidcDevUiRecorder recorder,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem) {
         // TODO: this is called even when Keycloak DEV UI is disabled and OIDC DEV UI is enabled
-        //   we should fine a mechanism to switch where the endpoints are registered or have shared build steps
+        // we should fine a mechanism to switch where the endpoints are registered or have shared build steps
         registerOidcWebAppRoutes(routeProducer, recorder, nonApplicationRootPathBuildItem);
     }
 

@@ -17,26 +17,27 @@ public class SharedLiteralWithPrivateDefaultTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(WithPrivateDefault.TO_IMPORT)
+            .withApplicationRoot((jar) -> jar.addClasses(WithPrivateDefault.TO_IMPORT)
                     .addClasses(PrivateDefaultBean.class, MySupplier.class, OtherSupplier.class));
 
     @Inject
     PrivateDefaultBean privateDefaultBean;
 
     private WithPrivateDefault.HasPrivateDefault findAnnotation(InjectedField field) {
-        return (WithPrivateDefault.HasPrivateDefault) field.injectionPoint.getAnnotated().getAnnotations()
-                .stream().filter(ann -> ann.annotationType().equals(WithPrivateDefault.HasPrivateDefault.class))
-                .findFirst().orElseThrow(() -> new IllegalStateException("Didn't found HasPrivateDefault annotation"));
+        return (WithPrivateDefault.HasPrivateDefault) field.injectionPoint.getAnnotated().getAnnotations().stream()
+                .filter(ann -> ann.annotationType().equals(WithPrivateDefault.HasPrivateDefault.class)).findFirst()
+                .orElseThrow(() -> new IllegalStateException("Didn't found HasPrivateDefault annotation"));
     }
 
     @Test
     public void testLoadBeanAnnotatedWithPrivateDefault() {
         WithPrivateDefault.HasPrivateDefault defaultAnnotation = findAnnotation(privateDefaultBean.usingDefault);
         Assertions.assertEquals(WithPrivateDefault.PRIVATE_STRING_SUPPLIER, defaultAnnotation.privateDefault());
-        Assertions.assertArrayEquals(
-                new Class<?>[] { WithPrivateDefault.PRIVATE_STRING_SUPPLIER, WithPrivateDefault.PublicStringSupplier.class },
-                defaultAnnotation.privateDefaultArray());
+        Assertions
+                .assertArrayEquals(
+                        new Class<?>[] { WithPrivateDefault.PRIVATE_STRING_SUPPLIER,
+                                WithPrivateDefault.PublicStringSupplier.class },
+                        defaultAnnotation.privateDefaultArray());
 
         WithPrivateDefault.HasPrivateDefault overwriteAnnotation = findAnnotation(privateDefaultBean.overwriteDefault);
         Assertions.assertEquals(MySupplier.class, overwriteAnnotation.privateDefault());
@@ -51,8 +52,8 @@ public class SharedLiteralWithPrivateDefaultTest {
         @Inject
         InjectedField usingDefault;
 
-        @WithPrivateDefault.HasPrivateDefault(privateDefault = MySupplier.class, privateDefaultArray = { MySupplier.class,
-                OtherSupplier.class })
+        @WithPrivateDefault.HasPrivateDefault(privateDefault = MySupplier.class, privateDefaultArray = {
+                MySupplier.class, OtherSupplier.class })
         @Inject
         InjectedField overwriteDefault;
     }

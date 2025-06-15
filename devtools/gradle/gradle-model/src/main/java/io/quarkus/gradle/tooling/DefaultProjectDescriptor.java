@@ -31,8 +31,6 @@ public class DefaultProjectDescriptor implements Serializable, ProjectDescriptor
 
     @Override
     public String toString() {
-        return "DefaultProjectDescriptor{" +
-                "\nmodule=" + module +
-                "\n}";
+        return "DefaultProjectDescriptor{" + "\nmodule=" + module + "\n}";
     }
 }

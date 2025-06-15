@@ -27,17 +27,14 @@ public class EventBusCodecTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(MyBean.class, MyNonLocalBean.class,
-                            MyPetCodec.class, Person.class, Pet.class,
-                            Event.class, SubclassEvent.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyBean.class,
+                    MyNonLocalBean.class, MyPetCodec.class, Person.class, Pet.class, Event.class, SubclassEvent.class));
 
     @Inject
     MyBean bean;
 
     /**
-     * Bean setting the consumption to be non-local.
-     * So, the user must configure the codec explicitly.
+     * Bean setting the consumption to be non-local. So, the user must configure the codec explicitly.
      */
     @Inject
     MyNonLocalBean nonLocalBean;
@@ -47,38 +44,33 @@ public class EventBusCodecTest {
 
     @Test
     public void testWithGenericCodec() {
-        Greeting hello = vertx.eventBus().<Greeting> request("person", new Person("bob", "morane"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        Greeting hello = vertx.eventBus().<Greeting> request("person", new Person("bob", "morane")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello bob morane");
     }
 
     @Test
     public void testWithUserCodec() {
-        Greeting hello = vertx.eventBus().<Greeting> request("pet", new Pet("neo", "rabbit"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        Greeting hello = vertx.eventBus().<Greeting> request("pet", new Pet("neo", "rabbit")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello NEO");
     }
 
     @Test
     public void testWithUserCodecNonLocal() {
-        String hello = vertx.eventBus().<String> request("nl-pet", new Pet("neo", "rabbit"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        String hello = vertx.eventBus().<String> request("nl-pet", new Pet("neo", "rabbit")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertEquals("Non Local Hello NEO", hello);
     }
 
     @Test
     public void testWithSubclass() {
-        Greeting hello = vertx.eventBus().<Greeting> request("subevent", new Event("my-event"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        Greeting hello = vertx.eventBus().<Greeting> request("subevent", new Event("my-event")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello my-event");
 
-        hello = vertx.eventBus().<Greeting> request("subevent", new SubclassEvent("my-subclass-event"))
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+        hello = vertx.eventBus().<Greeting> request("subevent", new SubclassEvent("my-subclass-event")).onItem()
+                .transform(Message::body).await().indefinitely();
         assertThat(hello.getMessage()).isEqualTo("Hello my-subclass-event");
     }
 
@@ -90,9 +82,7 @@ public class EventBusCodecTest {
                     public String apply(String value) {
                         return value.toLowerCase();
                     }
-                })
-                .onItem().transform(Message::body)
-                .await().indefinitely();
+                }).onItem().transform(Message::body).await().indefinitely();
         assertEquals("foo", supplier.get());
     }
 

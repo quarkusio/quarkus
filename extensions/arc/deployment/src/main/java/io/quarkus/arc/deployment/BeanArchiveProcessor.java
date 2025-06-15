@@ -54,8 +54,7 @@ public class BeanArchiveProcessor {
             List<BeanArchivePredicateBuildItem> beanArchivePredicates,
             List<KnownCompatibleBeanArchiveBuildItem> knownCompatibleBeanArchives,
             BuildCompatibleExtensionsBuildItem buildCompatibleExtensions,
-            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformations)
-            throws Exception {
+            BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformations) throws Exception {
 
         // First build an index from application archives
         IndexView applicationIndex = buildApplicationIndex(config, applicationArchivesBuildItem,
@@ -99,9 +98,8 @@ public class BeanArchiveProcessor {
             IndexingUtil.indexClass(generatedBean.getName(), additionalBeanIndexer, applicationIndex, additionalIndex,
                     knownMissingClasses, Thread.currentThread().getContextClassLoader(), generatedBean.getData());
             generatedClassNames.add(DotName.createSimple(generatedBean.getName().replace('/', '.')));
-            generatedClass.produce(new GeneratedClassBuildItem(generatedBean.isApplicationClass(), generatedBean.getName(),
-                    generatedBean.getData(),
-                    generatedBean.getSource()));
+            generatedClass.produce(new GeneratedClassBuildItem(generatedBean.isApplicationClass(),
+                    generatedBean.getName(), generatedBean.getData(), generatedBean.getSource()));
         }
 
         PersistentClassIndex index = liveReloadBuildItem.getContextObject(PersistentClassIndex.class);
@@ -118,8 +116,7 @@ public class BeanArchiveProcessor {
         IndexView immutableBeanArchiveIndex = BeanArchives.buildImmutableBeanArchiveIndex(applicationIndex,
                 additionalBeanIndexer.complete());
         IndexView computingBeanArchiveIndex = BeanArchives.buildComputingBeanArchiveIndex(
-                Thread.currentThread().getContextClassLoader(),
-                additionalClasses, immutableBeanArchiveIndex);
+                Thread.currentThread().getContextClassLoader(), additionalClasses, immutableBeanArchiveIndex);
         return new BeanArchiveIndexBuildItem(computingBeanArchiveIndex, immutableBeanArchiveIndex, generatedClassNames);
     }
 
@@ -175,8 +172,7 @@ public class BeanArchiveProcessor {
                 continue;
             }
             IndexView index = archive.getIndex();
-            if (isExplicitBeanArchive(archive)
-                    || isImplicitBeanArchive(index, beanDefiningAnnotations)
+            if (isExplicitBeanArchive(archive) || isImplicitBeanArchive(index, beanDefiningAnnotations)
                     || isAdditionalBeanArchive(archive, beanArchivePredicates)) {
                 indexes.add(index);
             }
@@ -192,7 +188,8 @@ public class BeanArchiveProcessor {
     }
 
     private boolean isImplicitBeanArchive(IndexView index, Set<DotName> beanDefiningAnnotations) {
-        // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining annotation and no extension
+        // NOTE: Implicit bean archive without beans.xml contains one or more bean classes with a bean defining
+        // annotation and no extension
         return index.getAllKnownImplementors(DotNames.EXTENSION).isEmpty()
                 && index.getAllKnownImplementors(DotNames.BUILD_COMPATIBLE_EXTENSION).isEmpty()
                 && containsBeanDefiningAnnotation(index, beanDefiningAnnotations);
@@ -234,7 +231,8 @@ public class BeanArchiveProcessor {
                                         + "this is not portable in CDI Lite and is treated as 'annotated' in Quarkus! "
                                         + "Path to beans.xml: %s",
                                         archive.getResolvedDependency() != null
-                                                ? archive.getResolvedDependency().toCompactCoords() + ":" + pathVisit.getPath()
+                                                ? archive.getResolvedDependency().toCompactCoords() + ":"
+                                                        + pathVisit.getPath()
                                                 : pathVisit.getPath());
                             }
                         }
@@ -249,8 +247,8 @@ public class BeanArchiveProcessor {
         });
     }
 
-    private boolean isApplicationArchiveExcluded(ArcConfig config, List<ExcludeDependencyBuildItem> excludeDependencyBuildItems,
-            ApplicationArchive archive) {
+    private boolean isApplicationArchiveExcluded(ArcConfig config,
+            List<ExcludeDependencyBuildItem> excludeDependencyBuildItems, ApplicationArchive archive) {
         if (archive.getKey() != null) {
             final ArtifactKey key = archive.getKey();
             for (IndexDependencyConfig excludeDependency : config.excludeDependency().values()) {

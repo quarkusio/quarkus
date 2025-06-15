@@ -13,14 +13,11 @@ public class SpringMultiValueListParamExtractor implements ParameterExtractor {
 
     /**
      * Returns a List containing all query parameters from the request, splitting values by commas if necessary.
-     *
      * <p>
-     * Spring MVC maps comma-delimited request parameters into a {@code List<String>}.
-     * To maintain compatibility, this method follows the same approach:
-     * If a query parameter contains multiple values, separated by commas, it adds those multiple values; otherwise, it is added
-     * directly.
+     * Spring MVC maps comma-delimited request parameters into a {@code List<String>}. To maintain compatibility, this
+     * method follows the same approach: If a query parameter contains multiple values, separated by commas, it adds
+     * those multiple values; otherwise, it is added directly.
      * </p>
-     *
      * <p>
      * Example:
      *
@@ -35,7 +32,9 @@ public class SpringMultiValueListParamExtractor implements ParameterExtractor {
      * </pre>
      * </p>
      *
-     * @param context The ResteasyReactiveRequestContext containing the HTTP request.
+     * @param context
+     *        The ResteasyReactiveRequestContext containing the HTTP request.
+     *
      * @return An immutable list of all extracted query parameters.
      */
     public Object extractParameter(ResteasyReactiveRequestContext context) {

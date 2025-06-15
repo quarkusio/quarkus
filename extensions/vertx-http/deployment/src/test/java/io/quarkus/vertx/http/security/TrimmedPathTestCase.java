@@ -21,14 +21,12 @@ public class TrimmedPathTestCase {
         TestIdentityController.resetRoles().add("test", "test", "test");
     }
 
-    private static final String APP_PROPS = "" +
-            "# Add your application.properties here, if applicable.\n" +
-            "quarkus.http.auth.permission.authenticated.paths=/*\n" +
-            "quarkus.http.auth.permission.authenticated.policy=authenticated\n" +
-            "#allow /health/* always for probeness\n" +
-            "quarkus.http.auth.permission.health.paths=/health/*                            \n" + //note the spaces
-            "quarkus.http.auth.permission.health.policy=permit\n" +
-            "quarkus.http.auth.permission.health.methods=GET\n";
+    private static final String APP_PROPS = "" + "# Add your application.properties here, if applicable.\n"
+            + "quarkus.http.auth.permission.authenticated.paths=/*\n"
+            + "quarkus.http.auth.permission.authenticated.policy=authenticated\n"
+            + "#allow /health/* always for probeness\n"
+            + "quarkus.http.auth.permission.health.paths=/health/*                            \n" + // note the spaces
+            "quarkus.http.auth.permission.health.policy=permit\n" + "quarkus.http.auth.permission.health.methods=GET\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
@@ -43,31 +41,11 @@ public class TrimmedPathTestCase {
     @Test
     public void testHealthAccessible() {
 
-        RestAssured
-                .given()
-                .when()
-                .get("/health/liveliness")
-                .then()
-                .assertThat()
-                .statusCode(200);
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/health/liveliness")
-                .then()
-                .assertThat()
-                .statusCode(200);
+        RestAssured.given().when().get("/health/liveliness").then().assertThat().statusCode(200);
+        RestAssured.given().auth().preemptive().basic("test", "test").when().get("/health/liveliness").then()
+                .assertThat().statusCode(200);
 
-        RestAssured
-                .given()
-                .when()
-                .get("/foo")
-                .then()
-                .assertThat()
-                .statusCode(401);
+        RestAssured.given().when().get("/foo").then().assertThat().statusCode(401);
     }
 
 }

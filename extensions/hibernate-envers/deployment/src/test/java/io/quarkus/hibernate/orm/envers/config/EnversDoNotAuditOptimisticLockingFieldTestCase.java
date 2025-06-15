@@ -13,16 +13,14 @@ import io.restassured.RestAssured;
 public class EnversDoNotAuditOptimisticLockingFieldTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedVersionEntity.class, EnversTestDoNotAuditOptimisticLockingFieldResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-do-not-audit-optimistic-locking-field.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedVersionEntity.class, EnversTestDoNotAuditOptimisticLockingFieldResource.class,
+                    AbstractEnversResource.class)
+            .addAsResource("application-with-do-not-audit-optimistic-locking-field.properties",
+                    "application.properties"));
 
     @Test
     public void testDoNotAuditOptimisticLockingFieldAsNonDefault() {
-        RestAssured.when().get("/envers-do-not-audit-optimistic-locking-field").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-do-not-audit-optimistic-locking-field").then().body(is("OK"));
     }
 }

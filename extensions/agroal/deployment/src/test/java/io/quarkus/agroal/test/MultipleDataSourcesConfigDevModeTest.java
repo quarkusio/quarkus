@@ -16,8 +16,7 @@ public class MultipleDataSourcesConfigDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MultipleDataSourcesTestUtil.class, DevModeTestEndpoint.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MultipleDataSourcesTestUtil.class, DevModeTestEndpoint.class)
                     .addAsResource("application-multiple-datasources.properties", "application.properties"));
 
     @Test
@@ -35,13 +34,10 @@ public class MultipleDataSourcesConfigDevModeTest {
         runTest("inventory", "jdbc:h2:tcp://localhost/mem:inventory", "username2", 2, 19);
     }
 
-    static void runTest(String dataSourceName, String jdbcUrl, String username,
-            int minSize, int maxSize) throws UnsupportedEncodingException {
-        RestAssured
-                .get("/test/" + dataSourceName + "/" + URLEncoder.encode(jdbcUrl, StandardCharsets.UTF_8.name()) + "/"
-                        + username + "/" + maxSize)
-                .then()
-                .statusCode(200).body(Matchers.equalTo("ok"));
+    static void runTest(String dataSourceName, String jdbcUrl, String username, int minSize, int maxSize)
+            throws UnsupportedEncodingException {
+        RestAssured.get("/test/" + dataSourceName + "/" + URLEncoder.encode(jdbcUrl, StandardCharsets.UTF_8.name())
+                + "/" + username + "/" + maxSize).then().statusCode(200).body(Matchers.equalTo("ok"));
     }
 
 }

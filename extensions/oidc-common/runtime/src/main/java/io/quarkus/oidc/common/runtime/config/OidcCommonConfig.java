@@ -13,40 +13,37 @@ import io.smallrye.config.WithDefault;
 @ConfigGroup
 public interface OidcCommonConfig {
     /**
-     * The base URL of the OpenID Connect (OIDC) server, for example, `https://host:port/auth`.
-     * Do not set this property if you use 'quarkus-oidc' and the public key verification ({@link #publicKey})
-     * or certificate chain verification only ({@link #certificateChain}) is required.
-     * The OIDC discovery endpoint is called by default by appending a `.well-known/openid-configuration` path to this URL.
-     * For Keycloak, use `https://host:port/realms/{realm}`, replacing `{realm}` with the Keycloak realm name.
+     * The base URL of the OpenID Connect (OIDC) server, for example, `https://host:port/auth`. Do not set this property
+     * if you use 'quarkus-oidc' and the public key verification ({@link #publicKey}) or certificate chain verification
+     * only ({@link #certificateChain}) is required. The OIDC discovery endpoint is called by default by appending a
+     * `.well-known/openid-configuration` path to this URL. For Keycloak, use `https://host:port/realms/{realm}`,
+     * replacing `{realm}` with the Keycloak realm name.
      */
     Optional<String> authServerUrl();
 
     /**
-     * Discovery of the OIDC endpoints.
-     * If not enabled, you must configure the OIDC endpoint URLs individually.
+     * Discovery of the OIDC endpoints. If not enabled, you must configure the OIDC endpoint URLs individually.
      */
     @ConfigDocDefault("true")
     Optional<Boolean> discoveryEnabled();
 
     /**
-     * The relative path or absolute URL of the OIDC dynamic client registration endpoint.
-     * Set if {@link #discoveryEnabled} is `false` or a discovered token endpoint path must be customized.
+     * The relative path or absolute URL of the OIDC dynamic client registration endpoint. Set if
+     * {@link #discoveryEnabled} is `false` or a discovered token endpoint path must be customized.
      */
     Optional<String> registrationPath();
 
     /**
-     * The duration to attempt the initial connection to an OIDC server.
-     * For example, setting the duration to `20S` allows 10 retries, each 2 seconds apart.
-     * This property is only effective when the initial OIDC connection is created.
-     * For dropped connections, use the `connection-retry-count` property instead.
+     * The duration to attempt the initial connection to an OIDC server. For example, setting the duration to `20S`
+     * allows 10 retries, each 2 seconds apart. This property is only effective when the initial OIDC connection is
+     * created. For dropped connections, use the `connection-retry-count` property instead.
      */
     Optional<Duration> connectionDelay();
 
     /**
-     * The number of times to retry re-establishing an existing OIDC connection if it is temporarily lost.
-     * Different from `connection-delay`, which applies only to initial connection attempts.
-     * For instance, if a request to the OIDC token endpoint fails due to a connection issue, it will be retried as per this
-     * setting.
+     * The number of times to retry re-establishing an existing OIDC connection if it is temporarily lost. Different
+     * from `connection-delay`, which applies only to initial connection attempts. For instance, if a request to the
+     * OIDC token endpoint fails due to a connection issue, it will be retried as per this setting.
      */
     @WithDefault("3")
     int connectionRetryCount();
@@ -58,8 +55,8 @@ public interface OidcCommonConfig {
     Duration connectionTimeout();
 
     /**
-     * Whether DNS lookup should be performed on the worker thread.
-     * Use this option when you can see logged warnings about blocked Vert.x event loop by HTTP requests to OIDC server.
+     * Whether DNS lookup should be performed on the worker thread. Use this option when you can see logged warnings
+     * about blocked Vert.x event loop by HTTP requests to OIDC server.
      */
     @WithDefault("false")
     boolean useBlockingDnsLookup();
@@ -70,9 +67,9 @@ public interface OidcCommonConfig {
     OptionalInt maxPoolSize();
 
     /**
-     * Follow redirects automatically when WebClient gets HTTP 302.
-     * When this property is disabled only a single redirect to exactly the same original URI
-     * is allowed but only if one or more cookies were set during the redirect request.
+     * Follow redirects automatically when WebClient gets HTTP 302. When this property is disabled only a single
+     * redirect to exactly the same original URI is allowed but only if one or more cookies were set during the redirect
+     * request.
      */
     @WithDefault("true")
     boolean followRedirects();
@@ -94,8 +91,8 @@ public interface OidcCommonConfig {
         /**
          * The name of the TLS configuration to use.
          * <p>
-         * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-         * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+         * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured,
+         * but no TLS configuration is found with that name then an error will be thrown.
          * <p>
          * The default TLS configuration is <strong>not</strong> used by default.
          */
@@ -120,8 +117,7 @@ public interface OidcCommonConfig {
 
         /**
          * Certificate validation and hostname verification, which can be one of the following {@link Verification}
-         * values.
-         * Default is `required`.
+         * values. Default is `required`.
          *
          * @deprecated Use the TLS registry instead.
          */
@@ -145,8 +141,8 @@ public interface OidcCommonConfig {
         Optional<String> keyStoreFileType();
 
         /**
-         * The provider of the keystore file. If not given, the provider is automatically detected based on the
-         * keystore file type.
+         * The provider of the keystore file. If not given, the provider is automatically detected based on the keystore
+         * file type.
          *
          * @deprecated Use the TLS registry instead.
          */
@@ -162,9 +158,8 @@ public interface OidcCommonConfig {
         Optional<String> keyStorePassword();
 
         /**
-         * The alias of a specific key in the keystore.
-         * When SNI is disabled, if the keystore contains multiple
-         * keys and no alias is specified, the behavior is undefined.
+         * The alias of a specific key in the keystore. When SNI is disabled, if the keystore contains multiple keys and
+         * no alias is specified, the behavior is undefined.
          *
          * @deprecated Use the TLS registry instead.
          */
@@ -204,9 +199,7 @@ public interface OidcCommonConfig {
         Optional<String> trustStoreCertAlias();
 
         /**
-         * The type of the truststore file.
-         * If not given, the type is automatically detected
-         * based on the file name.
+         * The type of the truststore file. If not given, the type is automatically detected based on the file name.
          *
          * @deprecated Use the TLS registry instead.
          */
@@ -214,9 +207,8 @@ public interface OidcCommonConfig {
         Optional<String> trustStoreFileType();
 
         /**
-         * The provider of the truststore file.
-         * If not given, the provider is automatically detected
-         * based on the truststore file type.
+         * The provider of the truststore file. If not given, the provider is automatically detected based on the
+         * truststore file type.
          *
          * @deprecated Use the TLS registry instead.
          */
@@ -229,8 +221,8 @@ public interface OidcCommonConfig {
 
         /**
          * The host name or IP address of the Proxy.<br/>
-         * Note: If the OIDC adapter requires a Proxy to talk with the OIDC server (Provider),
-         * set this value to enable the usage of a Proxy.
+         * Note: If the OIDC adapter requires a Proxy to talk with the OIDC server (Provider), set this value to enable
+         * the usage of a Proxy.
          */
         Optional<String> host();
 

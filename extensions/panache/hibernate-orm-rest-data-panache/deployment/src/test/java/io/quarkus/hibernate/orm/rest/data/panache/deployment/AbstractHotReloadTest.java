@@ -14,12 +14,8 @@ public abstract class AbstractHotReloadTest {
     public void shouldModifyPathAndDisableHal() {
         getTestArchive().modifySourceFile(getResourceClass(),
                 s -> s.replaceAll(".*@ResourceProperties.*", "@ResourceProperties(path = \"col\")"));
-        given().accept("application/json")
-                .when().get("/col")
-                .then().statusCode(200);
-        given().accept("application/hal+json")
-                .when().get("/col")
-                .then().statusCode(406);
+        given().accept("application/json").when().get("/col").then().statusCode(200);
+        given().accept("application/hal+json").when().get("/col").then().statusCode(406);
     }
 
     protected abstract Class<?> getResourceClass();

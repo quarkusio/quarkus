@@ -28,10 +28,9 @@ public class PanacheJAXBTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(JAXBEntity.class, JAXBTestResource.class)
-                    .addAsResource(new StringAsset("quarkus.hibernate-orm.schema-management.strategy=none"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(JAXBEntity.class, JAXBTestResource.class).addAsResource(
+                    new StringAsset("quarkus.hibernate-orm.schema-management.strategy=none"),
+                    "application.properties"));
 
     @Test
     public void testJaxbAnnotationTransfer() throws Exception {
@@ -83,10 +82,8 @@ public class PanacheJAXBTest {
 
     @Test
     public void testPanacheSerialisation() {
-        RestAssured.given().accept(ContentType.XML)
-                .when().get("/test/ignored-properties")
-                .then().body(is(
-                        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><JAXBEntity><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick></JAXBEntity>"));
+        RestAssured.given().accept(ContentType.XML).when().get("/test/ignored-properties").then().body(is(
+                "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><JAXBEntity><id>666</id><name>Eddie</name><serialisationTrick>1</serialisationTrick></JAXBEntity>"));
     }
 
     @Test

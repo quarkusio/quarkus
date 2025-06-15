@@ -9,8 +9,8 @@ import org.hibernate.engine.spi.SessionFactoryImplementor;
 /**
  * A delegate for opening a JTA-enabled Hibernate ORM StatelessSession.
  * <p>
- * The main purpose of this class is to cache session options when possible;
- * if we didn't care about caching, we could just replace any call to
+ * The main purpose of this class is to cache session options when possible; if we didn't care about caching, we could
+ * just replace any call to
  */
 public class JTAStatelessSessionOpener {
     public static JTAStatelessSessionOpener create(SessionFactory sessionFactory) {

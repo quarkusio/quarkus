@@ -14,8 +14,7 @@ public class LocalizedFileOutsideRootTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot(root -> root.addClass(BravoMessages.class))
-            .overrideConfigKey("quarkus.default-locale", "en")
-            .withAdditionalDependency(
+            .overrideConfigKey("quarkus.default-locale", "en").withAdditionalDependency(
                     d -> d.addAsResource(new StringAsset("hello=Ahoj!"), "messages/msg_cs.properties"));
 
     @Localized("cs")

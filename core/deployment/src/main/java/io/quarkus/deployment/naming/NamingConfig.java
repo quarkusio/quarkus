@@ -13,8 +13,8 @@ import io.smallrye.config.WithDefault;
 public interface NamingConfig {
 
     /**
-     * By default, Quarkus will install a non-functional JNDI initial context, to help
-     * mitigate against Log4Shell style attacks.
+     * By default, Quarkus will install a non-functional JNDI initial context, to help mitigate against Log4Shell style
+     * attacks.
      * <p>
      * If your application does need to use JNDI you can change this flag.
      */

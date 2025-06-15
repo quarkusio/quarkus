@@ -21,9 +21,8 @@ import org.jboss.logging.Logger;
 import io.quarkus.narayana.jta.runtime.TransactionScopedNotifier.TransactionId;
 
 /**
- * A delegating transaction manager which receives an instance of Narayana transaction manager
- * and delegates all calls to it.
- * On top of it the implementation adds the CDI events processing for {@link TransactionScoped}.
+ * A delegating transaction manager which receives an instance of Narayana transaction manager and delegates all calls
+ * to it. On top of it the implementation adds the CDI events processing for {@link TransactionScoped}.
  */
 public class NotifyingTransactionManager extends TransactionScopedNotifier implements TransactionManager, Serializable {
 
@@ -39,10 +38,9 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
     }
 
     /**
-     * Overrides {@link TransactionManager#begin()} to
-     * additionally {@linkplain Event#fire(Object) fire} an {@link Object}
-     * representing the {@linkplain Initialized initialization}
-     * of the {@linkplain TransactionScoped transaction scope}.
+     * Overrides {@link TransactionManager#begin()} to additionally {@linkplain Event#fire(Object) fire} an
+     * {@link Object} representing the {@linkplain Initialized initialization} of the {@linkplain TransactionScoped
+     * transaction scope}.
      *
      * @see TransactionManager#begin()
      */
@@ -53,17 +51,15 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
     }
 
     /**
-     * Overrides {@link TransactionManager#commit()} to
-     * additionally {@linkplain Event#fire(Object) fire} an {@link Object}
-     * representing the {@linkplain BeforeDestroyed before destruction} and
-     * the {@linkplain Destroyed destruction}
-     * of the {@linkplain TransactionScoped transaction scope}.
+     * Overrides {@link TransactionManager#commit()} to additionally {@linkplain Event#fire(Object) fire} an
+     * {@link Object} representing the {@linkplain BeforeDestroyed before destruction} and the {@linkplain Destroyed
+     * destruction} of the {@linkplain TransactionScoped transaction scope}.
      *
      * @see TransactionManager#commit()
      */
     @Override
-    public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException, SecurityException,
-            IllegalStateException, SystemException {
+    public void commit() throws RollbackException, HeuristicMixedException, HeuristicRollbackException,
+            SecurityException, IllegalStateException, SystemException {
         TransactionId id = getTransactionId();
         beforeDestroyed(id);
         try {
@@ -74,11 +70,9 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
     }
 
     /**
-     * Overrides {@link TransactionManager#rollback()} to
-     * additionally {@linkplain Event#fire(Object) fire} an {@link Object}
-     * representing the {@linkplain BeforeDestroyed before destruction} and
-     * the {@linkplain Destroyed destruction}
-     * of the {@linkplain TransactionScoped transaction scope}.
+     * Overrides {@link TransactionManager#rollback()} to additionally {@linkplain Event#fire(Object) fire} an
+     * {@link Object} representing the {@linkplain BeforeDestroyed before destruction} and the {@linkplain Destroyed
+     * destruction} of the {@linkplain TransactionScoped transaction scope}.
      *
      * @see TransactionManager#rollback()
      */
@@ -93,7 +87,7 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
         try {
             delegate.rollback();
         } finally {
-            //we don't need a catch block here, if this one fails we just let the exception propagate
+            // we don't need a catch block here, if this one fails we just let the exception propagate
             destroyed(id);
         }
     }
@@ -118,7 +112,8 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
      * {@inheritDoc}
      */
     @Override
-    public void resume(Transaction transaction) throws InvalidTransactionException, IllegalStateException, SystemException {
+    public void resume(Transaction transaction)
+            throws InvalidTransactionException, IllegalStateException, SystemException {
         delegate.resume(transaction);
     }
 
@@ -142,7 +137,9 @@ public class NotifyingTransactionManager extends TransactionScopedNotifier imple
      * Returns transaction timeout in seconds.
      *
      * @return transaction timeout set currently
-     * @throws SystemException on an undefined error
+     *
+     * @throws SystemException
+     *         on an undefined error
      */
     public int getTransactionTimeout() throws SystemException {
         return delegate.getTimeout();

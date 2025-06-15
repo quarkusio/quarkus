@@ -71,18 +71,15 @@ import io.smallrye.mutiny.Multi;
 public class GrpcOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(TestSpanExporter.class.getPackage())
-                    .addClasses(HelloService.class)
-                    .addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
-                            Greeter.class, GreeterBean.class, GreeterClient.class,
-                            HelloProto.class, HelloRequest.class, HelloRequestOrBuilder.class,
-                            HelloReply.class, HelloReplyOrBuilder.class)
+            .withApplicationRoot((jar) -> jar.addPackage(TestSpanExporter.class.getPackage())
+                    .addClasses(HelloService.class).addClasses(GreeterGrpc.class, MutinyGreeterGrpc.class,
+                            Greeter.class, GreeterBean.class, GreeterClient.class, HelloProto.class, HelloRequest.class,
+                            HelloRequestOrBuilder.class, HelloReply.class, HelloReplyOrBuilder.class)
                     .addClasses(StreamingService.class)
-                    .addClasses(StreamingGrpc.class, MutinyStreamingGrpc.class,
-                            Streaming.class, StreamingBean.class, StreamingClient.class,
-                            StreamingProto.class, Item.class, ItemOrBuilder.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    .addClasses(StreamingGrpc.class, MutinyStreamingGrpc.class, Streaming.class, StreamingBean.class,
+                            StreamingClient.class, StreamingProto.class, Item.class, ItemOrBuilder.class)
+                    .addAsResource(
+                            new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
                     .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
                             "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
@@ -110,10 +107,8 @@ public class GrpcOpenTelemetryTest {
 
     @Test
     void grpc() {
-        String response = greeterStub.sayHello(
-                HelloRequest.newBuilder().setName("Naruto").build())
-                .map(HelloReply::getMessage)
-                .await().atMost(Duration.ofSeconds(5));
+        String response = greeterStub.sayHello(HelloRequest.newBuilder().setName("Naruto").build())
+                .map(HelloReply::getMessage).await().atMost(Duration.ofSeconds(5));
         assertEquals("Hello Naruto", response);
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(3);
@@ -148,9 +143,7 @@ public class GrpcOpenTelemetryTest {
     @Test
     void error() {
         try {
-            greeterStub.sayHello(HelloRequest.newBuilder().setName("error").build())
-                    .map(HelloReply::getMessage)
-                    .await()
+            greeterStub.sayHello(HelloRequest.newBuilder().setName("error").build()).map(HelloReply::getMessage).await()
                     .atMost(Duration.ofSeconds(5));
             fail();
         } catch (Exception e) {
@@ -276,9 +269,7 @@ public class GrpcOpenTelemetryTest {
             }
 
             Tracer tracer = GlobalOpenTelemetry.getTracer(INSTRUMENTATION_NAME);
-            Span span = tracer.spanBuilder("span.internal")
-                    .setSpanKind(INTERNAL)
-                    .setAttribute("grpc.internal", "value")
+            Span span = tracer.spanBuilder("span.internal").setSpanKind(INTERNAL).setAttribute("grpc.internal", "value")
                     .startSpan();
             span.end();
 
@@ -295,11 +286,8 @@ public class GrpcOpenTelemetryTest {
         // TODO - radcortez - how to propagate the context if this is a Uni?
         @WithSpan
         public String hello(String name) {
-            return greeter.sayHello(HelloRequest.newBuilder().setName(name).build())
-                    .onItem()
-                    .transform(HelloReply::getMessage)
-                    .await()
-                    .atMost(Duration.ofSeconds(5));
+            return greeter.sayHello(HelloRequest.newBuilder().setName(name).build()).onItem()
+                    .transform(HelloReply::getMessage).await().atMost(Duration.ofSeconds(5));
         }
     }
 

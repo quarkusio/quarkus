@@ -13,8 +13,7 @@ import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
 /**
- * Here is where surgery happens
- * * Remove JMX
+ * Here is where surgery happens * Remove JMX
  */
 
 @TargetClass(value = AppInfoParser.class)

@@ -49,13 +49,15 @@ public class ExecUtil {
 
         @Override
         public void run() {
-            try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {
+            try (InputStreamReader isr = new InputStreamReader(is);
+                    BufferedReader reader = new BufferedReader(isr)) {
                 for (String line = reader.readLine(); line != null; line = reader.readLine()) {
                     final String l = line;
                     logLevel.ifPresentOrElse(level -> logger.log(level, l), () -> System.out.println(l));
                 }
             } catch (IOException e) {
-                logLevel.ifPresentOrElse(level -> logger.log(level, "Failed to handle output", e), () -> e.printStackTrace());
+                logLevel.ifPresentOrElse(level -> logger.log(level, "Failed to handle output", e),
+                        () -> e.printStackTrace());
             }
         }
     }
@@ -63,8 +65,11 @@ public class ExecUtil {
     /**
      * Execute the specified command from within the current directory.
      *
-     * @param command The command
-     * @param args The command arguments
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean exec(String command, String... args) {
@@ -74,9 +79,13 @@ public class ExecUtil {
     /**
      * Execute the specified command until the given timeout from within the current directory.
      *
-     * @param timeout The timeout
-     * @param command The command
-     * @param args The command arguments
+     * @param timeout
+     *        The timeout
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean execWithTimeout(Duration timeout, String command, String... args) {
@@ -86,9 +95,13 @@ public class ExecUtil {
     /**
      * Execute the specified command from within the specified directory.
      *
-     * @param directory The directory
-     * @param command The command
-     * @param args The command arguments
+     * @param directory
+     *        The directory
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean exec(File directory, String command, String... args) {
@@ -98,10 +111,15 @@ public class ExecUtil {
     /**
      * Execute the specified command until the given timeout from within the specified directory.
      *
-     * @param directory The directory
-     * @param timeout The timeout
-     * @param command The command
-     * @param args The command arguments
+     * @param directory
+     *        The directory
+     * @param timeout
+     *        The timeout
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean execWithTimeout(File directory, Duration timeout, String command, String... args) {
@@ -109,13 +127,18 @@ public class ExecUtil {
     }
 
     /**
-     * Execute the specified command from within the specified directory.
-     * The method allows specifying an output filter that processes the command output.
+     * Execute the specified command from within the specified directory. The method allows specifying an output filter
+     * that processes the command output.
      *
-     * @param directory The directory
-     * @param outputFilterFunction A {@link Function} that gets an {@link InputStream} and returns an outputFilter.
-     * @param command The command
-     * @param args The command arguments
+     * @param directory
+     *        The directory
+     * @param outputFilterFunction
+     *        A {@link Function} that gets an {@link InputStream} and returns an outputFilter.
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean exec(File directory, Function<InputStream, Runnable> outputFilterFunction, String command,
@@ -159,14 +182,20 @@ public class ExecUtil {
     }
 
     /**
-     * Execute the specified command until the given timeout from within the specified directory.
-     * The method allows specifying an output filter that processes the command output.
+     * Execute the specified command until the given timeout from within the specified directory. The method allows
+     * specifying an output filter that processes the command output.
      *
-     * @param directory The directory
-     * @param outputFilterFunction A {@link Function} that gets an {@link InputStream} and returns an outputFilter.
-     * @param timeout The timeout
-     * @param command The command
-     * @param args The command arguments
+     * @param directory
+     *        The directory
+     * @param outputFilterFunction
+     *        A {@link Function} that gets an {@link InputStream} and returns an outputFilter.
+     * @param timeout
+     *        The timeout
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean execWithTimeout(File directory, Function<InputStream, Runnable> outputFilterFunction,
@@ -177,8 +206,11 @@ public class ExecUtil {
     /**
      * Execute the specified command from within the current directory using debug logging.
      *
-     * @param command The command
-     * @param args The command arguments
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean execWithDebugLogging(String command, String... args) {
@@ -188,9 +220,13 @@ public class ExecUtil {
     /**
      * Execute the specified command from within the specified directory using debug logging.
      *
-     * @param directory The directory
-     * @param command The command
-     * @param args The command arguments
+     * @param directory
+     *        The directory
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean execWithDebugLogging(File directory, String command, String... args) {
@@ -200,8 +236,11 @@ public class ExecUtil {
     /**
      * Execute the specified command from within the current directory using system logging.
      *
-     * @param command The command
-     * @param args The command arguments
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean execWithSystemLogging(String command, String... args) {
@@ -211,9 +250,13 @@ public class ExecUtil {
     /**
      * Execute the specified command from within the specified directory using system logging.
      *
-     * @param directory The directory
-     * @param command The command
-     * @param args The command arguments
+     * @param directory
+     *        The directory
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return true if commands where executed successfully
      */
     public static boolean execWithSystemLogging(File directory, String command, String... args) {
@@ -223,21 +266,24 @@ public class ExecUtil {
     /**
      * Start a process executing given command with arguments within the specified directory.
      *
-     * @param directory The directory
-     * @param command The command and args
-     * @param environment The command environment
+     * @param directory
+     *        The directory
+     * @param command
+     *        The command and args
+     * @param environment
+     *        The command environment
+     *
      * @return the process
      */
-    public static Process startProcess(File directory, Map<String, String> environment, String command, String... args) {
+    public static Process startProcess(File directory, Map<String, String> environment, String command,
+            String... args) {
         try {
             String[] cmd = new String[args.length + 1];
             cmd[0] = command;
             if (args.length > 0) {
                 System.arraycopy(args, 0, cmd, 1, args.length);
             }
-            ProcessBuilder processBuilder = new ProcessBuilder()
-                    .directory(directory)
-                    .command(cmd)
+            ProcessBuilder processBuilder = new ProcessBuilder().directory(directory).command(cmd)
                     .redirectErrorStream(true);
             if (environment != null && !environment.isEmpty()) {
                 Map<String, String> env = processBuilder.environment();
@@ -258,9 +304,13 @@ public class ExecUtil {
     /**
      * Start a process executing given command with arguments within the specified directory.
      *
-     * @param directory The directory
-     * @param command The command
-     * @param args The command arguments
+     * @param directory
+     *        The directory
+     * @param command
+     *        The command
+     * @param args
+     *        The command arguments
+     *
      * @return the process
      */
     public static Process startProcess(File directory, String command, String... args) {
@@ -270,7 +320,8 @@ public class ExecUtil {
     /**
      * Kill the process, if still alive, kill it forcibly
      *
-     * @param process the process to kill
+     * @param process
+     *        the process to kill
      */
     public static void destroyProcess(Process process) {
         process.destroy();

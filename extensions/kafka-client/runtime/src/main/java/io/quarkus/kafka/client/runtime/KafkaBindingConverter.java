@@ -42,17 +42,15 @@ public class KafkaBindingConverter implements ServiceBindingConverter {
         String password = binding.getProperties().get("password");
         if ((user != null) && (password != null)) {
             if ("PLAIN".equals(saslMechanism)) {
-                properties.put("kafka.sasl.jaas.config",
-                        String.format(
-                                "org.apache.kafka.common.security.plain.PlainLoginModule required username='%s' password='%s';",
-                                user, password));
+                properties.put("kafka.sasl.jaas.config", String.format(
+                        "org.apache.kafka.common.security.plain.PlainLoginModule required username='%s' password='%s';",
+                        user, password));
             }
 
             if ("SCRAM-SHA-512".equals(saslMechanism) || "SCRAM-SHA-256".equals(saslMechanism)) {
-                properties.put("kafka.sasl.jaas.config",
-                        String.format(
-                                "org.apache.kafka.common.security.scram.ScramLoginModule required username='%s' password='%s';",
-                                user, password));
+                properties.put("kafka.sasl.jaas.config", String.format(
+                        "org.apache.kafka.common.security.scram.ScramLoginModule required username='%s' password='%s';",
+                        user, password));
             }
         }
 

@@ -27,8 +27,7 @@ public class RequestContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyRoutes.class, Ping.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyRoutes.class, Ping.class));
 
     @Test
     public void test() throws InterruptedException, ExecutionException, TimeoutException {
@@ -46,8 +45,7 @@ public class RequestContextPropagationTest {
         void ping(RoutingContext ctx) {
             // Init the Ping bean
             ping.init("foo_");
-            Uni.createFrom().item(ctx.request().getParam("val"))
-                    .onItem().delayIt().by(Duration.ofMillis(500))
+            Uni.createFrom().item(ctx.request().getParam("val")).onItem().delayIt().by(Duration.ofMillis(500))
                     .subscribe().with(
                             // The context should be propagated inside the mutiny callback
                             i -> ctx.response().end(ping.pong(i)));

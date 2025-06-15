@@ -8,8 +8,8 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.vertx.http.runtime.VertxHttpRecorder;
 
 /**
- * This is a marker that indicates that the body handler should be installed
- * on all routes, as an extension requires the request to be fully buffered.
+ * This is a marker that indicates that the body handler should be installed on all routes, as an extension requires the
+ * request to be fully buffered.
  */
 public final class RequireBodyHandlerBuildItem extends MultiBuildItem {
 
@@ -23,10 +23,11 @@ public final class RequireBodyHandlerBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Creates {@link RequireBodyHandlerBuildItem} that requires body handler installed on all routes if the supplier returns
-     * true.
+     * Creates {@link RequireBodyHandlerBuildItem} that requires body handler installed on all routes if the supplier
+     * returns true.
      *
-     * @param bodyHandlerRequiredCondition supplier that returns true at runtime if the body handler should be created
+     * @param bodyHandlerRequiredCondition
+     *        supplier that returns true at runtime if the body handler should be created
      */
     public RequireBodyHandlerBuildItem(BooleanSupplier bodyHandlerRequiredCondition) {
         this.bodyHandlerRequiredCondition = bodyHandlerRequiredCondition;
@@ -36,14 +37,13 @@ public final class RequireBodyHandlerBuildItem extends MultiBuildItem {
         return bodyHandlerRequiredCondition;
     }
 
-    public static BooleanSupplier[] getBodyHandlerRequiredConditions(List<RequireBodyHandlerBuildItem> bodyHandlerBuildItems) {
+    public static BooleanSupplier[] getBodyHandlerRequiredConditions(
+            List<RequireBodyHandlerBuildItem> bodyHandlerBuildItems) {
         if (bodyHandlerBuildItems.isEmpty()) {
             return new BooleanSupplier[] {};
         }
-        BooleanSupplier[] customRuntimeConditions = bodyHandlerBuildItems
-                .stream()
-                .map(RequireBodyHandlerBuildItem::getBodyHandlerRequiredCondition)
-                .filter(Objects::nonNull)
+        BooleanSupplier[] customRuntimeConditions = bodyHandlerBuildItems.stream()
+                .map(RequireBodyHandlerBuildItem::getBodyHandlerRequiredCondition).filter(Objects::nonNull)
                 .toArray(BooleanSupplier[]::new);
         if (customRuntimeConditions.length == bodyHandlerBuildItems.size()) {
             return customRuntimeConditions;

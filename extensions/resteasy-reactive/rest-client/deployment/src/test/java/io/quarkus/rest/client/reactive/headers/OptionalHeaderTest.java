@@ -21,9 +21,8 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class OptionalHeaderTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addClasses(Resource.class,
-                    Client.class, OtherClient.class, OtherSubClient.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Resource.class, Client.class, OtherClient.class, OtherSubClient.class));
 
     @TestHTTPResource
     URI baseUri;
@@ -69,8 +68,7 @@ public class OptionalHeaderTest {
 
         @Path("test")
         @GET
-        public String test(@RestQuery String query, @RestHeader String header1,
-                @RestHeader String header2,
+        public String test(@RestQuery String query, @RestHeader String header1, @RestHeader String header2,
                 @RestHeader Integer header3) {
             StringBuilder result = new StringBuilder("query=");
             result.append(query);

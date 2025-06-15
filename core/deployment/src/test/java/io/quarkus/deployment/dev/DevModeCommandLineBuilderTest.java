@@ -22,10 +22,7 @@ public class DevModeCommandLineBuilderTest {
     public void extensionSetsJvmOptionWoValue() throws Exception {
 
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
-                ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .add("enable-preview")
-                        .build(),
+                ArtifactKey.fromString("org.acme:acme-magic"), JvmOptions.builder().add("enable-preview").build(),
                 Set.of());
 
         var args = getCliArguments(acmeMagic);
@@ -37,10 +34,7 @@ public class DevModeCommandLineBuilderTest {
 
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
                 ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .add("enable-native-access", "ALL-UNNAMED")
-                        .build(),
-                Set.of());
+                JvmOptions.builder().add("enable-native-access", "ALL-UNNAMED").build(), Set.of());
 
         var args = getCliArguments(acmeMagic);
         assertThat(args).contains("--enable-native-access=ALL-UNNAMED");
@@ -51,10 +45,8 @@ public class DevModeCommandLineBuilderTest {
 
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
                 ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .add("add-modules", "jdk.incubator.vector")
-                        .addAll("add-modules", List.of("jdk.incubator.vector", "java.management"))
-                        .build(),
+                JvmOptions.builder().add("add-modules", "jdk.incubator.vector")
+                        .addAll("add-modules", List.of("jdk.incubator.vector", "java.management")).build(),
                 Set.of());
 
         var args = getCliArguments(acmeMagic);
@@ -66,11 +58,9 @@ public class DevModeCommandLineBuilderTest {
 
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
                 ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .add("add-opens", "java.base/java.util=ALL-UNNAMED")
+                JvmOptions.builder().add("add-opens", "java.base/java.util=ALL-UNNAMED")
                         .add("add-opens", "java.base/java.io=ALL-UNNAMED")
-                        .add("add-opens", "java.base/java.nio=ALL-UNNAMED")
-                        .build(),
+                        .add("add-opens", "java.base/java.nio=ALL-UNNAMED").build(),
                 Set.of());
 
         var args = getCliArguments(acmeMagic);
@@ -88,8 +78,7 @@ public class DevModeCommandLineBuilderTest {
 
         // extension locking the default value of TieredStopAtLevel
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
-                ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder().build(),
+                ArtifactKey.fromString("org.acme:acme-magic"), JvmOptions.builder().build(),
                 Set.of("TieredStopAtLevel"));
         args = getCliArguments(acmeMagic);
         assertThat(args).doesNotContain("-XX:TieredStopAtLevel=1");
@@ -110,9 +99,7 @@ public class DevModeCommandLineBuilderTest {
 
         // extension locking the default value of -agentlib:jdwp
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
-                ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder().build(),
-                Set.of("agentlib:jdwp"));
+                ArtifactKey.fromString("org.acme:acme-magic"), JvmOptions.builder().build(), Set.of("agentlib:jdwp"));
         args = getCliBuilder(acmeMagic).debug(null).build().getArguments();
         assertThat(args).doesNotContain(agentlibJdwpArg);
 
@@ -125,33 +112,21 @@ public class DevModeCommandLineBuilderTest {
     public void extensionSetsXxBooleanOption() throws Exception {
 
         // false
-        var args = getCliArguments(new ExtensionDevModeConfig(
-                ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .addXxOption("UseThreadPriorities", "false")
-                        .build(),
-                Set.of()));
+        var args = getCliArguments(new ExtensionDevModeConfig(ArtifactKey.fromString("org.acme:acme-magic"),
+                JvmOptions.builder().addXxOption("UseThreadPriorities", "false").build(), Set.of()));
         assertThat(args).contains("-XX:-UseThreadPriorities");
 
         // true
-        args = getCliArguments(new ExtensionDevModeConfig(
-                ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .addXxOption("UseThreadPriorities", "true")
-                        .build(),
-                Set.of()));
+        args = getCliArguments(new ExtensionDevModeConfig(ArtifactKey.fromString("org.acme:acme-magic"),
+                JvmOptions.builder().addXxOption("UseThreadPriorities", "true").build(), Set.of()));
         assertThat(args).contains("-XX:+UseThreadPriorities");
     }
 
     @Test
     public void extensionSetsXxNumericOption() throws Exception {
 
-        var args = getCliArguments(new ExtensionDevModeConfig(
-                ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .addXxOption("AllocatePrefetchStyle", "1")
-                        .build(),
-                Set.of()));
+        var args = getCliArguments(new ExtensionDevModeConfig(ArtifactKey.fromString("org.acme:acme-magic"),
+                JvmOptions.builder().addXxOption("AllocatePrefetchStyle", "1").build(), Set.of()));
         assertThat(args).contains("-XX:AllocatePrefetchStyle=1");
     }
 
@@ -160,18 +135,14 @@ public class DevModeCommandLineBuilderTest {
 
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
                 ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .add("add-opens", "java.base/java.io=ALL-UNNAMED")
-                        .add("add-opens", "java.base/java.nio=ALL-UNNAMED")
-                        .build(),
+                JvmOptions.builder().add("add-opens", "java.base/java.io=ALL-UNNAMED")
+                        .add("add-opens", "java.base/java.nio=ALL-UNNAMED").build(),
                 Set.of("TieredStopAtLevel"));
 
         final ExtensionDevModeConfig otherMagic = new ExtensionDevModeConfig(
                 ArtifactKey.fromString("org.other:other-magic"),
-                JvmOptions.builder()
-                        .add("add-opens", "java.base/java.util=ALL-UNNAMED")
-                        .add("add-opens", "java.base/java.io=ALL-UNNAMED")
-                        .build(),
+                JvmOptions.builder().add("add-opens", "java.base/java.util=ALL-UNNAMED")
+                        .add("add-opens", "java.base/java.io=ALL-UNNAMED").build(),
                 Set.of());
 
         // all enabled
@@ -184,9 +155,7 @@ public class DevModeCommandLineBuilderTest {
         // all disabled
         final ExtensionDevModeJvmOptionFilter filter = new ExtensionDevModeJvmOptionFilter();
         filter.setDisableAll(true);
-        args = getCliBuilder(acmeMagic, otherMagic)
-                .extensionDevModeJvmOptionFilter(filter)
-                .build().getArguments();
+        args = getCliBuilder(acmeMagic, otherMagic).extensionDevModeJvmOptionFilter(filter).build().getArguments();
         assertThat(args).doesNotContain("--add-opens");
         assertThat(args).contains("-XX:TieredStopAtLevel=1");
     }
@@ -196,18 +165,14 @@ public class DevModeCommandLineBuilderTest {
 
         final ExtensionDevModeConfig acmeMagic = new ExtensionDevModeConfig(
                 ArtifactKey.fromString("org.acme:acme-magic"),
-                JvmOptions.builder()
-                        .add("add-opens", "java.base/java.io=ALL-UNNAMED")
-                        .add("add-opens", "java.base/java.nio=ALL-UNNAMED")
-                        .build(),
+                JvmOptions.builder().add("add-opens", "java.base/java.io=ALL-UNNAMED")
+                        .add("add-opens", "java.base/java.nio=ALL-UNNAMED").build(),
                 Set.of("TieredStopAtLevel"));
 
         final ExtensionDevModeConfig otherMagic = new ExtensionDevModeConfig(
                 ArtifactKey.fromString("org.other:other-magic"),
-                JvmOptions.builder()
-                        .add("add-opens", "java.base/java.util=ALL-UNNAMED")
-                        .add("add-opens", "java.base/java.io=ALL-UNNAMED")
-                        .build(),
+                JvmOptions.builder().add("add-opens", "java.base/java.util=ALL-UNNAMED")
+                        .add("add-opens", "java.base/java.io=ALL-UNNAMED").build(),
                 Set.of());
 
         // all enabled
@@ -220,9 +185,7 @@ public class DevModeCommandLineBuilderTest {
         // all disabled
         final ExtensionDevModeJvmOptionFilter filter = new ExtensionDevModeJvmOptionFilter();
         filter.setDisableFor(List.of("org.acme:acme-magic"));
-        args = getCliBuilder(acmeMagic, otherMagic)
-                .extensionDevModeJvmOptionFilter(filter)
-                .build().getArguments();
+        args = getCliBuilder(acmeMagic, otherMagic).extensionDevModeJvmOptionFilter(filter).build().getArguments();
         assertThat(args).containsSequence("--add-opens", "java.base/java.io=ALL-UNNAMED");
         assertThat(args).containsSequence("--add-opens", "java.base/java.util=ALL-UNNAMED");
         assertThat(args).contains("-XX:TieredStopAtLevel=1");
@@ -233,10 +196,7 @@ public class DevModeCommandLineBuilderTest {
     }
 
     private DevModeCommandLineBuilder getCliBuilder(ExtensionDevModeConfig... extensionDevModeConfigs) {
-        return DevModeCommandLine.builder("java")
-                .applicationName("test")
-                .outputDir(outputDir)
-                .buildDir(outputDir)
+        return DevModeCommandLine.builder("java").applicationName("test").outputDir(outputDir).buildDir(outputDir)
                 .debug("false") // disable debug port check
                 .extensionDevModeConfig(List.of(extensionDevModeConfigs));
     }

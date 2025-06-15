@@ -70,7 +70,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     private static boolean ssl;
 
     private static Class<? extends QuarkusTestProfile> quarkusTestProfile;
-    private static Throwable firstException; //if this is set then it will be thrown from the very first test that is run, the rest are aborted
+    private static Throwable firstException; // if this is set then it will be thrown from the very first test that is
+                                             // run, the rest are aborted
 
     private static Class<?> currentJUnitTestClass;
 
@@ -151,9 +152,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         }
         // we reload the test resources if we changed test class and if we had or will have per-test test resources
         boolean reloadTestResources = false;
-        if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass
-                && TestResourceUtil.testResourcesRequireReload(state, extensionContext.getRequiredTestClass(),
-                        selectedProfile))) {
+        if ((state == null && !failedBoot) || wrongProfile || (reloadTestResources = isNewTestClass && TestResourceUtil
+                .testResourcesRequireReload(state, extensionContext.getRequiredTestClass(), selectedProfile))) {
             if (wrongProfile || reloadTestResources) {
                 if (state != null) {
                     try {
@@ -186,8 +186,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
     }
 
     private QuarkusTestExtensionState doProcessStart(Properties quarkusArtifactProperties,
-            Class<? extends QuarkusTestProfile> profile, ExtensionContext context)
-            throws Throwable {
+            Class<? extends QuarkusTestProfile> profile, ExtensionContext context) throws Throwable {
         JBossVersion.disableVersionLogging();
 
         SmallRyeConfig config = ConfigProvider.getConfig().unwrap(SmallRyeConfig.class);
@@ -211,7 +210,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             for (String devServicesProp : devServicesProps.keySet()) {
                 sysPropRestore.put(devServicesProp, null); // used to signal that the property needs to be cleared
             }
-            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile, sysPropRestore);
+            TestProfileAndProperties testProfileAndProperties = determineTestProfileAndProperties(profile,
+                    sysPropRestore);
 
             testResourceManager = new TestResourceManager(requiredTestClass, quarkusTestProfile,
                     copyEntriesFromProfile(testProfileAndProperties.testProfile,
@@ -219,9 +219,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                     testProfileAndProperties.testProfile != null
                             && testProfileAndProperties.testProfile.disableGlobalTestResources(),
                     devServicesProps, containerNetworkId == null ? Optional.empty() : Optional.of(containerNetworkId));
-            testResourceManager.init(
-                    testProfileAndProperties.testProfile != null ? testProfileAndProperties.testProfile.getClass().getName()
-                            : null);
+            testResourceManager.init(testProfileAndProperties.testProfile != null
+                    ? testProfileAndProperties.testProfile.getClass().getName()
+                    : null);
 
             if (isCallbacksEnabledForIntegrationTests()) {
                 populateCallbacks(requiredTestClass.getClassLoader());
@@ -233,7 +233,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             Properties existingSysProps = System.getProperties();
             for (String name : existingSysProps.stringPropertyNames()) {
                 if (name.startsWith("quarkus.")
-                        // don't include 'quarkus.profile' as that has already been taken into account when determining the launch profile
+                        // don't include 'quarkus.profile' as that has already been taken into account when determining
+                        // the launch profile
                         // so we don't want this to end up in multiple launch arguments
                         && !name.equals("quarkus.profile")) {
                     additionalProperties.put(name, existingSysProps.getProperty(name));
@@ -241,7 +242,7 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
             }
 
             additionalProperties.putAll(testProfileAndProperties.properties);
-            //we also make the dev services config accessible from the test itself
+            // we also make the dev services config accessible from the test itself
             Map<String, String> resourceManagerProps = new HashMap<>(QuarkusIntegrationTestExtension.devServicesProps);
             // Allow override of dev services props by integration test extensions
             resourceManagerProps.putAll(testResourceManager.start());
@@ -281,17 +282,17 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
                 launcher = new TestHostLauncher();
             } else {
                 String target = TestConfigUtil.runTarget(config);
-                // try to execute a run command published by an extension if it exists.  We do this so that extensions that have a custom run don't have to create any special artifact type
-                launcher = RunCommandLauncher.tryLauncher(devServicesLaunchResult.getCuratedApplication().getQuarkusBootstrap(),
-                        target, testConfig.waitTime());
+                // try to execute a run command published by an extension if it exists. We do this so that extensions
+                // that have a custom run don't have to create any special artifact type
+                launcher = RunCommandLauncher.tryLauncher(
+                        devServicesLaunchResult.getCuratedApplication().getQuarkusBootstrap(), target,
+                        testConfig.waitTime());
                 if (launcher == null) {
                     ServiceLoader<ArtifactLauncherProvider> loader = ServiceLoader.load(ArtifactLauncherProvider.class);
                     for (ArtifactLauncherProvider launcherProvider : loader) {
                         if (launcherProvider.supportsArtifactType(artifactType, testConfig.integrationTestProfile())) {
-                            launcher = launcherProvider.create(
-                                    new DefaultArtifactLauncherCreateContext(quarkusArtifactProperties, context,
-                                            requiredTestClass,
-                                            devServicesLaunchResult));
+                            launcher = launcherProvider.create(new DefaultArtifactLauncherCreateContext(
+                                    quarkusArtifactProperties, context, requiredTestClass, devServicesLaunchResult));
                             break;
                         }
                     }
@@ -356,13 +357,9 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         Object testInstance = context.getTestInstance().orElse(null);
         List<Object> outerInstances = context.getTestInstances()
                 .map(testInstances -> testInstances.getAllInstances().stream()
-                        .filter(instance -> instance != testInstance)
-                        .collect(Collectors.toList()))
+                        .filter(instance -> instance != testInstance).collect(Collectors.toList()))
                 .orElse(Collections.emptyList());
-        return new QuarkusTestMethodContext(
-                testInstance,
-                outerInstances,
-                context.getTestMethod().orElse(null),
+        return new QuarkusTestMethodContext(testInstance, outerInstances, context.getTestMethod().orElse(null),
                 getState(context).getTestErrorCause());
     }
 
@@ -373,7 +370,8 @@ public class QuarkusIntegrationTestExtension extends AbstractQuarkusTestWithCont
         private final ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult;
 
         DefaultArtifactLauncherCreateContext(Properties quarkusArtifactProperties, ExtensionContext context,
-                Class<?> requiredTestClass, ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
+                Class<?> requiredTestClass,
+                ArtifactLauncher.InitContext.DevServicesLaunchResult devServicesLaunchResult) {
             this.quarkusArtifactProperties = quarkusArtifactProperties;
             this.context = context;
             this.requiredTestClass = requiredTestClass;

@@ -83,49 +83,48 @@ import io.vertx.ext.web.RoutingContext;
 public class WebAuthnSecurity {
 
     /*
-     * Android Keystore Root is not published anywhere.
-     * This certificate was extracted from one of the attestations
-     * The last certificate in x5c must match this certificate
-     * This needs to be checked to ensure that malicious party won't generate fake attestations
+     * Android Keystore Root is not published anywhere. This certificate was extracted from one of the attestations The
+     * last certificate in x5c must match this certificate This needs to be checked to ensure that malicious party won't
+     * generate fake attestations
      */
-    private static final String ANDROID_KEYSTORE_ROOT = "MIICizCCAjKgAwIBAgIJAKIFntEOQ1tXMAoGCCqGSM49BAMCMIGYMQswCQYDVQQG" +
-            "EwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNTW91bnRhaW4gVmll" +
-            "dzEVMBMGA1UECgwMR29vZ2xlLCBJbmMuMRAwDgYDVQQLDAdBbmRyb2lkMTMwMQYD" +
-            "VQQDDCpBbmRyb2lkIEtleXN0b3JlIFNvZnR3YXJlIEF0dGVzdGF0aW9uIFJvb3Qw" +
-            "HhcNMTYwMTExMDA0MzUwWhcNMzYwMTA2MDA0MzUwWjCBmDELMAkGA1UEBhMCVVMx" +
-            "EzARBgNVBAgMCkNhbGlmb3JuaWExFjAUBgNVBAcMDU1vdW50YWluIFZpZXcxFTAT" +
-            "BgNVBAoMDEdvb2dsZSwgSW5jLjEQMA4GA1UECwwHQW5kcm9pZDEzMDEGA1UEAwwq" +
-            "QW5kcm9pZCBLZXlzdG9yZSBTb2Z0d2FyZSBBdHRlc3RhdGlvbiBSb290MFkwEwYH" +
-            "KoZIzj0CAQYIKoZIzj0DAQcDQgAE7l1ex+HA220Dpn7mthvsTWpdamguD/9/SQ59" +
-            "dx9EIm29sa/6FsvHrcV30lacqrewLVQBXT5DKyqO107sSHVBpKNjMGEwHQYDVR0O" +
-            "BBYEFMit6XdMRcOjzw0WEOR5QzohWjDPMB8GA1UdIwQYMBaAFMit6XdMRcOjzw0W" +
-            "EOR5QzohWjDPMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgKEMAoGCCqG" +
-            "SM49BAMCA0cAMEQCIDUho++LNEYenNVg8x1YiSBq3KNlQfYNns6KGYxmSGB7AiBN" +
-            "C/NR2TB8fVvaNTQdqEcbY6WFZTytTySn502vQX3xvw==";
+    private static final String ANDROID_KEYSTORE_ROOT = "MIICizCCAjKgAwIBAgIJAKIFntEOQ1tXMAoGCCqGSM49BAMCMIGYMQswCQYDVQQG"
+            + "EwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwNTW91bnRhaW4gVmll"
+            + "dzEVMBMGA1UECgwMR29vZ2xlLCBJbmMuMRAwDgYDVQQLDAdBbmRyb2lkMTMwMQYD"
+            + "VQQDDCpBbmRyb2lkIEtleXN0b3JlIFNvZnR3YXJlIEF0dGVzdGF0aW9uIFJvb3Qw"
+            + "HhcNMTYwMTExMDA0MzUwWhcNMzYwMTA2MDA0MzUwWjCBmDELMAkGA1UEBhMCVVMx"
+            + "EzARBgNVBAgMCkNhbGlmb3JuaWExFjAUBgNVBAcMDU1vdW50YWluIFZpZXcxFTAT"
+            + "BgNVBAoMDEdvb2dsZSwgSW5jLjEQMA4GA1UECwwHQW5kcm9pZDEzMDEGA1UEAwwq"
+            + "QW5kcm9pZCBLZXlzdG9yZSBTb2Z0d2FyZSBBdHRlc3RhdGlvbiBSb290MFkwEwYH"
+            + "KoZIzj0CAQYIKoZIzj0DAQcDQgAE7l1ex+HA220Dpn7mthvsTWpdamguD/9/SQ59"
+            + "dx9EIm29sa/6FsvHrcV30lacqrewLVQBXT5DKyqO107sSHVBpKNjMGEwHQYDVR0O"
+            + "BBYEFMit6XdMRcOjzw0WEOR5QzohWjDPMB8GA1UdIwQYMBaAFMit6XdMRcOjzw0W"
+            + "EOR5QzohWjDPMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgKEMAoGCCqG"
+            + "SM49BAMCA0cAMEQCIDUho++LNEYenNVg8x1YiSBq3KNlQfYNns6KGYxmSGB7AiBN"
+            + "C/NR2TB8fVvaNTQdqEcbY6WFZTytTySn502vQX3xvw==";
 
     // https://aboutssl.org/globalsign-root-certificates-licensing-and-use/
-    //  Name 	gsr1
+    // Name gsr1
     // Thumbprint: b1:bc:96:8b:d4:f4:9d:62:2a:a8:9a:81:f2:15:01:52:a4:1d:82:9c
-    //  Valid Until 	28 January 2028
-    private static final String GSR1 = "MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG\n" +
-            "A1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYtc2ExEDAOBgNVBAsTB1Jv\n" +
-            "b3QgQ0ExGzAZBgNVBAMTEkdsb2JhbFNpZ24gUm9vdCBDQTAeFw05ODA5MDExMjAw\n" +
-            "MDBaFw0yODAxMjgxMjAwMDBaMFcxCzAJBgNVBAYTAkJFMRkwFwYDVQQKExBHbG9i\n" +
-            "YWxTaWduIG52LXNhMRAwDgYDVQQLEwdSb290IENBMRswGQYDVQQDExJHbG9iYWxT\n" +
-            "aWduIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDaDuaZ\n" +
-            "jc6j40+Kfvvxi4Mla+pIH/EqsLmVEQS98GPR4mdmzxzdzxtIK+6NiY6arymAZavp\n" +
-            "xy0Sy6scTHAHoT0KMM0VjU/43dSMUBUc71DuxC73/OlS8pF94G3VNTCOXkNz8kHp\n" +
-            "1Wrjsok6Vjk4bwY8iGlbKk3Fp1S4bInMm/k8yuX9ifUSPJJ4ltbcdG6TRGHRjcdG\n" +
-            "snUOhugZitVtbNV4FpWi6cgKOOvyJBNPc1STE4U6G7weNLWLBYy5d4ux2x8gkasJ\n" +
-            "U26Qzns3dLlwR5EiUWMWea6xrkEmCMgZK9FGqkjWZCrXgzT/LCrBbBlDSgeF59N8\n" +
-            "9iFo7+ryUp9/k5DPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8E\n" +
-            "BTADAQH/MB0GA1UdDgQWBBRge2YaRQ2XyolQL30EzTSo//z9SzANBgkqhkiG9w0B\n" +
-            "AQUFAAOCAQEA1nPnfE920I2/7LqivjTFKDK1fPxsnCwrvQmeU79rXqoRSLblCKOz\n" +
-            "yj1hTdNGCbM+w6DjY1Ub8rrvrTnhQ7k4o+YviiY776BQVvnGCv04zcQLcFGUl5gE\n" +
-            "38NflNUVyRRBnMRddWQVDf9VMOyGj/8N7yy5Y0b2qvzfvGn9LhJIZJrglfCm7ymP\n" +
-            "AbEVtQwdpf5pLGkkeB6zpxxxYu7KyJesF12KwvhHhm4qxFYxldBniYUr+WymXUad\n" +
-            "DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME\n" +
-            "HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==";
+    // Valid Until 28 January 2028
+    private static final String GSR1 = "MIIDdTCCAl2gAwIBAgILBAAAAAABFUtaw5QwDQYJKoZIhvcNAQEFBQAwVzELMAkG\n"
+            + "A1UEBhMCQkUxGTAXBgNVBAoTEEdsb2JhbFNpZ24gbnYtc2ExEDAOBgNVBAsTB1Jv\n"
+            + "b3QgQ0ExGzAZBgNVBAMTEkdsb2JhbFNpZ24gUm9vdCBDQTAeFw05ODA5MDExMjAw\n"
+            + "MDBaFw0yODAxMjgxMjAwMDBaMFcxCzAJBgNVBAYTAkJFMRkwFwYDVQQKExBHbG9i\n"
+            + "YWxTaWduIG52LXNhMRAwDgYDVQQLEwdSb290IENBMRswGQYDVQQDExJHbG9iYWxT\n"
+            + "aWduIFJvb3QgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDaDuaZ\n"
+            + "jc6j40+Kfvvxi4Mla+pIH/EqsLmVEQS98GPR4mdmzxzdzxtIK+6NiY6arymAZavp\n"
+            + "xy0Sy6scTHAHoT0KMM0VjU/43dSMUBUc71DuxC73/OlS8pF94G3VNTCOXkNz8kHp\n"
+            + "1Wrjsok6Vjk4bwY8iGlbKk3Fp1S4bInMm/k8yuX9ifUSPJJ4ltbcdG6TRGHRjcdG\n"
+            + "snUOhugZitVtbNV4FpWi6cgKOOvyJBNPc1STE4U6G7weNLWLBYy5d4ux2x8gkasJ\n"
+            + "U26Qzns3dLlwR5EiUWMWea6xrkEmCMgZK9FGqkjWZCrXgzT/LCrBbBlDSgeF59N8\n"
+            + "9iFo7+ryUp9/k5DPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNVHRMBAf8E\n"
+            + "BTADAQH/MB0GA1UdDgQWBBRge2YaRQ2XyolQL30EzTSo//z9SzANBgkqhkiG9w0B\n"
+            + "AQUFAAOCAQEA1nPnfE920I2/7LqivjTFKDK1fPxsnCwrvQmeU79rXqoRSLblCKOz\n"
+            + "yj1hTdNGCbM+w6DjY1Ub8rrvrTnhQ7k4o+YviiY776BQVvnGCv04zcQLcFGUl5gE\n"
+            + "38NflNUVyRRBnMRddWQVDf9VMOyGj/8N7yy5Y0b2qvzfvGn9LhJIZJrglfCm7ymP\n"
+            + "AbEVtQwdpf5pLGkkeB6zpxxxYu7KyJesF12KwvhHhm4qxFYxldBniYUr+WymXUad\n"
+            + "DKqC5JlR3XC321Y9YeRq4VzW9v493kHMB65jUr9TU/Qr6cf9tveCX4XSQRjbgbME\n"
+            + "HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==";
 
     /**
      * Apple WebAuthn Root CA PEM
@@ -134,18 +133,17 @@ public class WebAuthnSecurity {
      * <p>
      * Valid until 03/14/2045 @ 5:00 PM PST
      */
-    private static final String APPLE_WEBAUTHN_ROOT_CA = "MIICEjCCAZmgAwIBAgIQaB0BbHo84wIlpQGUKEdXcTAKBggqhkjOPQQDAzBLMR8w" +
-            "HQYDVQQDDBZBcHBsZSBXZWJBdXRobiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJ" +
-            "bmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMB4XDTIwMDMxODE4MjEzMloXDTQ1MDMx" +
-            "NTAwMDAwMFowSzEfMB0GA1UEAwwWQXBwbGUgV2ViQXV0aG4gUm9vdCBDQTETMBEG" +
-            "A1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTB2MBAGByqGSM49" +
-            "AgEGBSuBBAAiA2IABCJCQ2pTVhzjl4Wo6IhHtMSAzO2cv+H9DQKev3//fG59G11k" +
-            "xu9eI0/7o6V5uShBpe1u6l6mS19S1FEh6yGljnZAJ+2GNP1mi/YK2kSXIuTHjxA/" +
-            "pcoRf7XkOtO4o1qlcaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUJtdk" +
-            "2cV4wlpn0afeaxLQG2PxxtcwDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2cA" +
-            "MGQCMFrZ+9DsJ1PW9hfNdBywZDsWDbWFp28it1d/5w2RPkRX3Bbn/UbDTNLx7Jr3" +
-            "jAGGiQIwHFj+dJZYUJR786osByBelJYsVZd2GbHQu209b5RCmGQ21gpSAk9QZW4B" +
-            "1bWeT0vT";
+    private static final String APPLE_WEBAUTHN_ROOT_CA = "MIICEjCCAZmgAwIBAgIQaB0BbHo84wIlpQGUKEdXcTAKBggqhkjOPQQDAzBLMR8w"
+            + "HQYDVQQDDBZBcHBsZSBXZWJBdXRobiBSb290IENBMRMwEQYDVQQKDApBcHBsZSBJ"
+            + "bmMuMRMwEQYDVQQIDApDYWxpZm9ybmlhMB4XDTIwMDMxODE4MjEzMloXDTQ1MDMx"
+            + "NTAwMDAwMFowSzEfMB0GA1UEAwwWQXBwbGUgV2ViQXV0aG4gUm9vdCBDQTETMBEG"
+            + "A1UECgwKQXBwbGUgSW5jLjETMBEGA1UECAwKQ2FsaWZvcm5pYTB2MBAGByqGSM49"
+            + "AgEGBSuBBAAiA2IABCJCQ2pTVhzjl4Wo6IhHtMSAzO2cv+H9DQKev3//fG59G11k"
+            + "xu9eI0/7o6V5uShBpe1u6l6mS19S1FEh6yGljnZAJ+2GNP1mi/YK2kSXIuTHjxA/"
+            + "pcoRf7XkOtO4o1qlcaNCMEAwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUJtdk"
+            + "2cV4wlpn0afeaxLQG2PxxtcwDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2cA"
+            + "MGQCMFrZ+9DsJ1PW9hfNdBywZDsWDbWFp28it1d/5w2RPkRX3Bbn/UbDTNLx7Jr3"
+            + "jAGGiQIwHFj+dJZYUJR786osByBelJYsVZd2GbHQu209b5RCmGQ21gpSAk9QZW4B" + "1bWeT0vT";
 
     /**
      * Default FIDO2 MDS3 ROOT Certificate
@@ -155,25 +153,23 @@ public class WebAuthnSecurity {
      * Valid until 18 March 2029
      */
     private static final String FIDO_MDS3_ROOT_CERTIFICATE = "MIIDXzCCAkegAwIBAgILBAAAAAABIVhTCKIwDQYJKoZIhvcNAQELBQAwTDEgMB4G"
-            +
-            "A1UECxMXR2xvYmFsU2lnbiBSb290IENBIC0gUjMxEzARBgNVBAoTCkdsb2JhbFNp" +
-            "Z24xEzARBgNVBAMTCkdsb2JhbFNpZ24wHhcNMDkwMzE4MTAwMDAwWhcNMjkwMzE4" +
-            "MTAwMDAwWjBMMSAwHgYDVQQLExdHbG9iYWxTaWduIFJvb3QgQ0EgLSBSMzETMBEG" +
-            "A1UEChMKR2xvYmFsU2lnbjETMBEGA1UEAxMKR2xvYmFsU2lnbjCCASIwDQYJKoZI" +
-            "hvcNAQEBBQADggEPADCCAQoCggEBAMwldpB5BngiFvXAg7aEyiie/QV2EcWtiHL8" +
-            "RgJDx7KKnQRfJMsuS+FggkbhUqsMgUdwbN1k0ev1LKMPgj0MK66X17YUhhB5uzsT" +
-            "gHeMCOFJ0mpiLx9e+pZo34knlTifBtc+ycsmWQ1z3rDI6SYOgxXG71uL0gRgykmm" +
-            "KPZpO/bLyCiR5Z2KYVc3rHQU3HTgOu5yLy6c+9C7v/U9AOEGM+iCK65TpjoWc4zd" +
-            "QQ4gOsC0p6Hpsk+QLjJg6VfLuQSSaGjlOCZgdbKfd/+RFO+uIEn8rUAVSNECMWEZ" +
-            "XriX7613t2Saer9fwRPvm2L7DWzgVGkWqQPabumDk3F2xmmFghcCAwEAAaNCMEAw" +
-            "DgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFI/wS3+o" +
-            "LkUkrk1Q+mOai97i3Ru8MA0GCSqGSIb3DQEBCwUAA4IBAQBLQNvAUKr+yAzv95ZU" +
-            "RUm7lgAJQayzE4aGKAczymvmdLm6AC2upArT9fHxD4q/c2dKg8dEe3jgr25sbwMp" +
-            "jjM5RcOO5LlXbKr8EpbsU8Yt5CRsuZRj+9xTaGdWPoO4zzUhw8lo/s7awlOqzJCK" +
-            "6fBdRoyV3XpYKBovHd7NADdBj+1EbddTKJd+82cEHhXXipa0095MJ6RMG3NzdvQX" +
-            "mcIfeg7jLQitChws/zyrVQ4PkX4268NXSb7hLi18YIvDQVETI53O9zJrlAGomecs" +
-            "Mx86OyXShkDOOyyGeMlhLxS67ttVb9+E7gUJTb0o2HLO02JQZR7rkpeDMdmztcpH" +
-            "WD9f";
+            + "A1UECxMXR2xvYmFsU2lnbiBSb290IENBIC0gUjMxEzARBgNVBAoTCkdsb2JhbFNp"
+            + "Z24xEzARBgNVBAMTCkdsb2JhbFNpZ24wHhcNMDkwMzE4MTAwMDAwWhcNMjkwMzE4"
+            + "MTAwMDAwWjBMMSAwHgYDVQQLExdHbG9iYWxTaWduIFJvb3QgQ0EgLSBSMzETMBEG"
+            + "A1UEChMKR2xvYmFsU2lnbjETMBEGA1UEAxMKR2xvYmFsU2lnbjCCASIwDQYJKoZI"
+            + "hvcNAQEBBQADggEPADCCAQoCggEBAMwldpB5BngiFvXAg7aEyiie/QV2EcWtiHL8"
+            + "RgJDx7KKnQRfJMsuS+FggkbhUqsMgUdwbN1k0ev1LKMPgj0MK66X17YUhhB5uzsT"
+            + "gHeMCOFJ0mpiLx9e+pZo34knlTifBtc+ycsmWQ1z3rDI6SYOgxXG71uL0gRgykmm"
+            + "KPZpO/bLyCiR5Z2KYVc3rHQU3HTgOu5yLy6c+9C7v/U9AOEGM+iCK65TpjoWc4zd"
+            + "QQ4gOsC0p6Hpsk+QLjJg6VfLuQSSaGjlOCZgdbKfd/+RFO+uIEn8rUAVSNECMWEZ"
+            + "XriX7613t2Saer9fwRPvm2L7DWzgVGkWqQPabumDk3F2xmmFghcCAwEAAaNCMEAw"
+            + "DgYDVR0PAQH/BAQDAgEGMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYEFI/wS3+o"
+            + "LkUkrk1Q+mOai97i3Ru8MA0GCSqGSIb3DQEBCwUAA4IBAQBLQNvAUKr+yAzv95ZU"
+            + "RUm7lgAJQayzE4aGKAczymvmdLm6AC2upArT9fHxD4q/c2dKg8dEe3jgr25sbwMp"
+            + "jjM5RcOO5LlXbKr8EpbsU8Yt5CRsuZRj+9xTaGdWPoO4zzUhw8lo/s7awlOqzJCK"
+            + "6fBdRoyV3XpYKBovHd7NADdBj+1EbddTKJd+82cEHhXXipa0095MJ6RMG3NzdvQX"
+            + "mcIfeg7jLQitChws/zyrVQ4PkX4268NXSb7hLi18YIvDQVETI53O9zJrlAGomecs"
+            + "Mx86OyXShkDOOyyGeMlhLxS67ttVb9+E7gUJTb0o2HLO02JQZR7rkpeDMdmztcpH" + "WD9f";
 
     @Inject
     TlsConfigurationRegistry certificates;
@@ -222,10 +218,10 @@ public class WebAuthnSecurity {
             }
         } else {
             this.pubKeyCredParams = new ArrayList<>(2);
-            this.pubKeyCredParams
-                    .add(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.ES256));
-            this.pubKeyCredParams
-                    .add(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY, COSEAlgorithmIdentifier.RS256));
+            this.pubKeyCredParams.add(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY,
+                    COSEAlgorithmIdentifier.ES256));
+            this.pubKeyCredParams.add(new PublicKeyCredentialParameters(PublicKeyCredentialType.PUBLIC_KEY,
+                    COSEAlgorithmIdentifier.RS256));
         }
         this.authenticatorAttachment = config.authenticatorAttachment().orElse(null);
         this.userVerification = config.userVerification().orElse(UserVerification.REQUIRED);
@@ -243,8 +239,7 @@ public class WebAuthnSecurity {
     }
 
     private WebAuthnAsyncManager makeWebAuthn(Vertx vertx, WebAuthnRunTimeConfig config) {
-        if (config.attestation().isPresent()
-                && config.attestation().get() != WebAuthnRunTimeConfig.Attestation.NONE) {
+        if (config.attestation().isPresent() && config.attestation().get() != WebAuthnRunTimeConfig.Attestation.NONE) {
             TrustAnchorAsyncRepository something;
             // FIXME: make config name configurable?
             Optional<TlsConfiguration> webauthnTlsConfiguration = certificates.get("webauthn");
@@ -267,7 +262,8 @@ public class WebAuthnSecurity {
             try {
                 Enumeration<String> aliases = trustStore.aliases();
                 while (aliases.hasMoreElements()) {
-                    trustAnchors.add(new TrustAnchor((X509Certificate) trustStore.getCertificate(aliases.nextElement()), null));
+                    trustAnchors.add(
+                            new TrustAnchor((X509Certificate) trustStore.getCertificate(aliases.nextElement()), null));
                 }
             } catch (KeyStoreException e) {
                 throw new RuntimeException("Failed to configure WebAuthn trust store", e);
@@ -276,22 +272,20 @@ public class WebAuthnSecurity {
             something = new KeyStoreTrustAnchorAsyncRepository(trustStore);
             if (config.loadMetadata().orElse(false)) {
                 HttpAsyncClient httpClient = new VertxHttpAsyncClient(vertx);
-                FidoMDS3MetadataBLOBAsyncProvider blobAsyncProvider = new FidoMDS3MetadataBLOBAsyncProvider(objectConverter,
-                        FidoMDS3MetadataBLOBAsyncProvider.DEFAULT_BLOB_ENDPOINT, httpClient, trustAnchors);
+                FidoMDS3MetadataBLOBAsyncProvider blobAsyncProvider = new FidoMDS3MetadataBLOBAsyncProvider(
+                        objectConverter, FidoMDS3MetadataBLOBAsyncProvider.DEFAULT_BLOB_ENDPOINT, httpClient,
+                        trustAnchors);
                 something = new MetadataBLOBBasedTrustAnchorAsyncRepository(blobAsyncProvider);
             }
 
             return new WebAuthnAsyncManager(
-                    Arrays.asList(
-                            new FIDOU2FAttestationStatementAsyncVerifier(),
-                            new PackedAttestationStatementAsyncVerifier(),
-                            new TPMAttestationStatementAsyncVerifier(),
+                    Arrays.asList(new FIDOU2FAttestationStatementAsyncVerifier(),
+                            new PackedAttestationStatementAsyncVerifier(), new TPMAttestationStatementAsyncVerifier(),
                             new AndroidKeyAttestationStatementAsyncVerifier(),
                             new AndroidSafetyNetAttestationStatementAsyncVerifier(),
                             new AppleAnonymousAttestationStatementAsyncVerifier()),
                     new DefaultCertPathTrustworthinessAsyncVerifier(something),
-                    new DefaultSelfAttestationTrustworthinessAsyncVerifier(),
-                    objectConverter);
+                    new DefaultSelfAttestationTrustworthinessAsyncVerifier(), objectConverter);
 
         } else {
             return WebAuthnAsyncManager.createNonStrictWebAuthnAsyncManager(objectConverter);
@@ -312,12 +306,16 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Obtains a registration challenge for the given required username and displayName. This will also
-     * create and save a challenge in a session cookie.
+     * Obtains a registration challenge for the given required username and displayName. This will also create and save
+     * a challenge in a session cookie.
      *
-     * @param username the username for the registration
-     * @param displayName the displayName for the registration
-     * @param ctx the Vert.x context
+     * @param username
+     *        the username for the registration
+     * @param displayName
+     *        the displayName for the registration
+     * @param ctx
+     *        the Vert.x context
+     *
      * @return the registration challenge.
      */
     @SuppressWarnings("unused")
@@ -335,55 +333,45 @@ public class WebAuthnSecurity {
         Origin origin = Origin.create(!this.origins.isEmpty() ? this.origins.get(0) : ctx.request().absoluteURI());
         String rpId = this.rpId != null ? this.rpId : origin.getHost();
 
-        return storage.findByUsername(username)
-                .map(credentials -> {
-                    List<PublicKeyCredentialDescriptor> excluded;
-                    // See https://github.com/quarkusio/quarkus/issues/44292 for why this is currently disabled
-                    if (false) {
-                        excluded = new ArrayList<>(credentials.size());
-                        for (WebAuthnCredentialRecord credential : credentials) {
-                            excluded.add(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY,
-                                    credential.getAttestedCredentialData().getCredentialId(),
-                                    credential.getTransports()));
-                        }
-                    } else {
-                        excluded = Collections.emptyList();
-                    }
-                    PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions = new PublicKeyCredentialCreationOptions(
-                            new PublicKeyCredentialRpEntity(
-                                    rpId,
-                                    rpName),
-                            new PublicKeyCredentialUserEntity(
-                                    uUIDBytes(UUID.randomUUID()),
-                                    username,
-                                    finalDisplayName),
-                            new DefaultChallenge(challenge),
-                            pubKeyCredParams,
-                            timeout.getSeconds() * 1000,
-                            excluded,
-                            new AuthenticatorSelectionCriteria(
-                                    authenticatorAttachment != null ? authenticatorAttachment.toWebAuthn4J() : null,
-                                    residentKey == ResidentKey.REQUIRED,
-                                    residentKey.toWebAuthn4J(),
-                                    userVerification.toWebAuthn4J()),
-                            attestation.toWebAuthn4J(),
-                            new AuthenticationExtensionsClientInputs<>());
+        return storage.findByUsername(username).map(credentials -> {
+            List<PublicKeyCredentialDescriptor> excluded;
+            // See https://github.com/quarkusio/quarkus/issues/44292 for why this is currently disabled
+            if (false) {
+                excluded = new ArrayList<>(credentials.size());
+                for (WebAuthnCredentialRecord credential : credentials) {
+                    excluded.add(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY,
+                            credential.getAttestedCredentialData().getCredentialId(), credential.getTransports()));
+                }
+            } else {
+                excluded = Collections.emptyList();
+            }
+            PublicKeyCredentialCreationOptions publicKeyCredentialCreationOptions = new PublicKeyCredentialCreationOptions(
+                    new PublicKeyCredentialRpEntity(rpId, rpName),
+                    new PublicKeyCredentialUserEntity(uUIDBytes(UUID.randomUUID()), username, finalDisplayName),
+                    new DefaultChallenge(challenge), pubKeyCredParams, timeout.getSeconds() * 1000, excluded,
+                    new AuthenticatorSelectionCriteria(
+                            authenticatorAttachment != null ? authenticatorAttachment.toWebAuthn4J() : null,
+                            residentKey == ResidentKey.REQUIRED, residentKey.toWebAuthn4J(),
+                            userVerification.toWebAuthn4J()),
+                    attestation.toWebAuthn4J(), new AuthenticationExtensionsClientInputs<>());
 
-                    // save challenge to the session
-                    authMech.getLoginManager().save(challenge, ctx, challengeCookie, null,
-                            ctx.request().isSSL());
+            // save challenge to the session
+            authMech.getLoginManager().save(challenge, ctx, challengeCookie, null, ctx.request().isSSL());
 
-                    return publicKeyCredentialCreationOptions;
-                });
+            return publicKeyCredentialCreationOptions;
+        });
 
     }
 
     /**
-     * Obtains a login challenge for the given optional username. This will also
-     * create and save a challenge in a session cookie.
+     * Obtains a login challenge for the given optional username. This will also create and save a challenge in a
+     * session cookie.
      *
-     * @param username the optional username for the login
-     * @param ctx the Vert.x context
+     * @param username
+     *        the optional username for the login
+     * @param ctx
+     *        the Vert.x context
+     *
      * @return the login challenge.
      */
     @SuppressWarnings("unused")
@@ -404,38 +392,31 @@ public class WebAuthnSecurity {
         } else {
             credentialsUni = storage.findByUsername(username);
         }
-        return credentialsUni
-                .map(credentials -> {
-                    List<PublicKeyCredentialDescriptor> allowedCredentials;
-                    // See https://github.com/quarkusio/quarkus/issues/44292 for why this is currently disabled
-                    if (false) {
+        return credentialsUni.map(credentials -> {
+            List<PublicKeyCredentialDescriptor> allowedCredentials;
+            // See https://github.com/quarkusio/quarkus/issues/44292 for why this is currently disabled
+            if (false) {
 
-                        if (credentials.isEmpty()) {
-                            throw new RuntimeException("No credentials found for " + finalUsername);
-                        }
-                        allowedCredentials = new ArrayList<>(credentials.size());
-                        for (WebAuthnCredentialRecord credential : credentials) {
-                            allowedCredentials.add(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY,
-                                    credential.getAttestedCredentialData().getCredentialId(),
-                                    credential.getTransports()));
-                        }
-                    } else {
-                        allowedCredentials = Collections.emptyList();
-                    }
-                    PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions = new PublicKeyCredentialRequestOptions(
-                            new DefaultChallenge(challenge),
-                            timeout.getSeconds() * 1000,
-                            rpId,
-                            allowedCredentials,
-                            userVerification.toWebAuthn4J(),
-                            null);
+                if (credentials.isEmpty()) {
+                    throw new RuntimeException("No credentials found for " + finalUsername);
+                }
+                allowedCredentials = new ArrayList<>(credentials.size());
+                for (WebAuthnCredentialRecord credential : credentials) {
+                    allowedCredentials.add(new PublicKeyCredentialDescriptor(PublicKeyCredentialType.PUBLIC_KEY,
+                            credential.getAttestedCredentialData().getCredentialId(), credential.getTransports()));
+                }
+            } else {
+                allowedCredentials = Collections.emptyList();
+            }
+            PublicKeyCredentialRequestOptions publicKeyCredentialRequestOptions = new PublicKeyCredentialRequestOptions(
+                    new DefaultChallenge(challenge), timeout.getSeconds() * 1000, rpId, allowedCredentials,
+                    userVerification.toWebAuthn4J(), null);
 
-                    // save challenge to the session
-                    authMech.getLoginManager().save(challenge, ctx, challengeCookie, null,
-                            ctx.request().isSSL());
+            // save challenge to the session
+            authMech.getLoginManager().save(challenge, ctx, challengeCookie, null, ctx.request().isSSL());
 
-                    return publicKeyCredentialRequestOptions;
-                });
+            return publicKeyCredentialRequestOptions;
+        });
     }
 
     private String getOrCreateChallenge(RoutingContext ctx) {
@@ -452,30 +433,37 @@ public class WebAuthnSecurity {
 
     /**
      * Registers a new WebAuthn credentials. This will check it, clear the challenge cookie and return it in case of
-     * success, but not invoke {@link WebAuthnUserProvider#store(WebAuthnCredentialRecord)}, you have to do
-     * it manually in case of success. This will also not set a login cookie, you have to do it manually using
-     * {@link #rememberUser(String, RoutingContext)}
-     * or using any other way.
+     * success, but not invoke {@link WebAuthnUserProvider#store(WebAuthnCredentialRecord)}, you have to do it manually
+     * in case of success. This will also not set a login cookie, you have to do it manually using
+     * {@link #rememberUser(String, RoutingContext)} or using any other way.
      *
-     * @param the username to register credentials for
-     * @param response the Webauthn registration info
-     * @param ctx the current request
+     * @param the
+     *        username to register credentials for
+     * @param response
+     *        the Webauthn registration info
+     * @param ctx
+     *        the current request
+     *
      * @return the newly created credentials
      */
-    public Uni<WebAuthnCredentialRecord> register(String username, WebAuthnRegisterResponse response, RoutingContext ctx) {
+    public Uni<WebAuthnCredentialRecord> register(String username, WebAuthnRegisterResponse response,
+            RoutingContext ctx) {
         return register(username, response.toJsonObject(), ctx);
     }
 
     /**
      * Registers a new WebAuthn credentials. This will check it, clear the challenge cookie and return it in case of
-     * success, but not invoke {@link WebAuthnUserProvider#store(WebAuthnCredentialRecord)}, you have to do
-     * it manually in case of success. This will also not set a login cookie, you have to do it manually using
-     * {@link #rememberUser(String, RoutingContext)}
-     * or using any other way.
+     * success, but not invoke {@link WebAuthnUserProvider#store(WebAuthnCredentialRecord)}, you have to do it manually
+     * in case of success. This will also not set a login cookie, you have to do it manually using
+     * {@link #rememberUser(String, RoutingContext)} or using any other way.
      *
-     * @param the username to register credentials for
-     * @param response the Webauthn registration info
-     * @param ctx the current request
+     * @param the
+     *        username to register credentials for
+     * @param response
+     *        the Webauthn registration info
+     * @param ctx
+     *        the current request
+     *
      * @return the newly created credentials
      */
     public Uni<WebAuthnCredentialRecord> register(String username, JsonObject response, RoutingContext ctx) {
@@ -488,13 +476,10 @@ public class WebAuthnSecurity {
         }
 
         // input validation
-        if (response == null ||
-                !containsRequiredString(response, "id") ||
-                !containsRequiredString(response, "rawId") ||
-                !containsRequiredObject(response, "response") ||
-                !containsOptionalString(response.getJsonObject("response"), "userHandle") ||
-                !containsRequiredString(response, "type") ||
-                !"public-key".equals(response.getString("type"))) {
+        if (response == null || !containsRequiredString(response, "id") || !containsRequiredString(response, "rawId")
+                || !containsRequiredObject(response, "response")
+                || !containsOptionalString(response.getJsonObject("response"), "userHandle")
+                || !containsRequiredString(response, "type") || !"public-key".equals(response.getString("type"))) {
 
             return Uni.createFrom().failure(new IllegalArgumentException(
                     "Response missing one or more of id/rawId/response[.userHandle]/type fields, or type is not public-key"));
@@ -506,14 +491,13 @@ public class WebAuthnSecurity {
                 userVerification == UserVerification.REQUIRED, userPresenceRequired);
 
         return Uni.createFrom()
-                .completionStage(webAuthn.verifyRegistrationResponseJSON(registrationResponseJSON, registrationParameters))
+                .completionStage(
+                        webAuthn.verifyRegistrationResponseJSON(registrationResponseJSON, registrationParameters))
                 .eventually(() -> {
                     removeCookie(ctx, challengeCookie);
-                }).map(registrationData -> new WebAuthnCredentialRecord(
-                        username,
-                        registrationData.getAttestationObject(),
-                        registrationData.getCollectedClientData(),
-                        registrationData.getClientExtensions(),
+                })
+                .map(registrationData -> new WebAuthnCredentialRecord(username, registrationData.getAttestationObject(),
+                        registrationData.getCollectedClientData(), registrationData.getClientExtensions(),
                         registrationData.getTransports()));
     }
 
@@ -534,19 +518,21 @@ public class WebAuthnSecurity {
         }
         String rpId = this.rpId != null ? this.rpId : firstOrigin.getHost();
         DefaultChallenge challengeObject = new DefaultChallenge(challenge.getPrincipal());
-        return new ServerProperty(origins, rpId, challengeObject, /* this is deprecated in Level 3, so ignore it */ null);
+        return new ServerProperty(origins, rpId, challengeObject,
+                /* this is deprecated in Level 3, so ignore it */ null);
     }
 
     /**
-     * Logs an existing WebAuthn user in. This will check it, clear the challenge cookie and return the updated credentials in
-     * case of
-     * success, but not invoke {@link WebAuthnUserProvider#update(String, long)}, you have to do
+     * Logs an existing WebAuthn user in. This will check it, clear the challenge cookie and return the updated
+     * credentials in case of success, but not invoke {@link WebAuthnUserProvider#update(String, long)}, you have to do
      * it manually in case of success. This will also not set a login cookie, you have to do it manually using
-     * {@link #rememberUser(String, RoutingContext)}
-     * or using any other way.
+     * {@link #rememberUser(String, RoutingContext)} or using any other way.
      *
-     * @param response the Webauthn login info
-     * @param ctx the current request
+     * @param response
+     *        the Webauthn login info
+     * @param ctx
+     *        the current request
+     *
      * @return the updated credentials
      */
     public Uni<WebAuthnCredentialRecord> login(WebAuthnLoginResponse response, RoutingContext ctx) {
@@ -554,15 +540,16 @@ public class WebAuthnSecurity {
     }
 
     /**
-     * Logs an existing WebAuthn user in. This will check it, clear the challenge cookie and return the updated credentials in
-     * case of
-     * success, but not invoke {@link WebAuthnUserProvider#update(String, long)}, you have to do
+     * Logs an existing WebAuthn user in. This will check it, clear the challenge cookie and return the updated
+     * credentials in case of success, but not invoke {@link WebAuthnUserProvider#update(String, long)}, you have to do
      * it manually in case of success. This will also not set a login cookie, you have to do it manually using
-     * {@link #rememberUser(String, RoutingContext)}
-     * or using any other way.
+     * {@link #rememberUser(String, RoutingContext)} or using any other way.
      *
-     * @param response the Webauthn login info
-     * @param ctx the current request
+     * @param response
+     *        the Webauthn login info
+     * @param ctx
+     *        the current request
+     *
      * @return the updated credentials
      */
     public Uni<WebAuthnCredentialRecord> login(JsonObject response, RoutingContext ctx) {
@@ -574,13 +561,10 @@ public class WebAuthnSecurity {
         }
 
         // input validation
-        if (response == null ||
-                !containsRequiredString(response, "id") ||
-                !containsRequiredString(response, "rawId") ||
-                !containsRequiredObject(response, "response") ||
-                !containsOptionalString(response.getJsonObject("response"), "userHandle") ||
-                !containsRequiredString(response, "type") ||
-                !"public-key".equals(response.getString("type"))) {
+        if (response == null || !containsRequiredString(response, "id") || !containsRequiredString(response, "rawId")
+                || !containsRequiredObject(response, "response")
+                || !containsOptionalString(response.getJsonObject("response"), "userHandle")
+                || !containsRequiredString(response, "type") || !"public-key".equals(response.getString("type"))) {
 
             return Uni.createFrom().failure(new IllegalArgumentException(
                     "Response missing one or more of id/rawId/response[.userHandle]/type fields, or type is not public-key"));
@@ -592,20 +576,18 @@ public class WebAuthnSecurity {
 
         ServerProperty serverProperty = makeServerProperty(challenge, ctx);
 
-        return storage.findByCredID(rawId)
-                .chain(credentialRecord -> {
-                    List<byte[]> allowCredentials = List.of(Base64UrlUtil.decode(rawId));
-                    AuthenticationParameters authenticationParameters = new AuthenticationParameters(serverProperty,
-                            credentialRecord, allowCredentials,
-                            userVerification == UserVerification.REQUIRED, userPresenceRequired);
+        return storage.findByCredID(rawId).chain(credentialRecord -> {
+            List<byte[]> allowCredentials = List.of(Base64UrlUtil.decode(rawId));
+            AuthenticationParameters authenticationParameters = new AuthenticationParameters(serverProperty,
+                    credentialRecord, allowCredentials, userVerification == UserVerification.REQUIRED,
+                    userPresenceRequired);
 
-                    return Uni.createFrom()
-                            .completionStage(webAuthn.verifyAuthenticationResponseJSON(authenticationResponseJSON,
-                                    authenticationParameters))
-                            .eventually(() -> {
-                                removeCookie(ctx, challengeCookie);
-                            }).map(authenticationData -> credentialRecord);
-                });
+            return Uni.createFrom().completionStage(
+                    webAuthn.verifyAuthenticationResponseJSON(authenticationResponseJSON, authenticationParameters))
+                    .eventually(() -> {
+                        removeCookie(ctx, challengeCookie);
+                    }).map(authenticationData -> credentialRecord);
+        });
     }
 
     static void removeCookie(RoutingContext ctx, String name) {
@@ -630,8 +612,10 @@ public class WebAuthnSecurity {
     /**
      * Adds a login cookie to the current request for the given user ID
      *
-     * @param userID the user ID to use as {@link Principal}
-     * @param ctx the current request, in order to add a cookie
+     * @param userID
+     *        the user ID to use as {@link Principal}
+     * @param ctx
+     *        the current request, in order to add a cookie
      */
     public void rememberUser(String userID, RoutingContext ctx) {
         QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder();
@@ -642,7 +626,8 @@ public class WebAuthnSecurity {
     /**
      * Clears the login cookie on the current request
      *
-     * @param ctx the current request, in order to clear the login cookie
+     * @param ctx
+     *        the current request, in order to clear the login cookie
      */
     public void logout(RoutingContext ctx) {
         authMech.getLoginManager().clear(ctx);

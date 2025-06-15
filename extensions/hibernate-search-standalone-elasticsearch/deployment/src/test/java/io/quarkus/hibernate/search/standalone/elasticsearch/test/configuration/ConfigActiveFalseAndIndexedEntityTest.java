@@ -17,8 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigActiveFalseAndIndexedEntityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-standalone.active", "false");
 
@@ -32,11 +32,9 @@ public class ConfigActiveFalseAndIndexedEntityTest {
         assertThat(searchMapping).isNotNull();
         // However, any attempt to use it at runtime will fail.
         CreationException e = assertThrows(CreationException.class, () -> searchMapping.allIndexedEntities());
-        assertThat(e.getCause())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContainingAll(
-                        "Cannot retrieve the SearchMapping",
-                        "Hibernate Search Standalone was deactivated through configuration properties");
+        assertThat(e.getCause()).isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
+                "Cannot retrieve the SearchMapping",
+                "Hibernate Search Standalone was deactivated through configuration properties");
     }
 
 }

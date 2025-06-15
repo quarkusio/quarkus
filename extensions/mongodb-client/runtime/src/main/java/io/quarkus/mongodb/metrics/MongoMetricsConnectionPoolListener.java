@@ -88,10 +88,8 @@ public class MongoMetricsConnectionPoolListener implements ConnectionPoolListene
     }
 
     private Tag[] createTags(ServerId server) {
-        return new Tag[] {
-                new Tag("host", server.getAddress().getHost()),
-                new Tag("port", String.valueOf(server.getAddress().getPort())),
-        };
+        return new Tag[] { new Tag("host", server.getAddress().getHost()),
+                new Tag("port", String.valueOf(server.getAddress().getPort())), };
     }
 
     private MetricID createMetricID(String metricName, ServerId server) {

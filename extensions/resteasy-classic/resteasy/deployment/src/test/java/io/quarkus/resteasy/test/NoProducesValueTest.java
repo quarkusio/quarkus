@@ -16,13 +16,11 @@ public class NoProducesValueTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class));
 
     @Test
     public void testSomething() {
-        given().when().get("/test/hello")
-                .then().statusCode(200);
+        given().when().get("/test/hello").then().statusCode(200);
     }
 
     @Produces

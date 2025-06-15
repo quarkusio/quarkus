@@ -17,8 +17,8 @@ public class DoubleScopedStereotypeTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DoubleScopedStereotype.class, DoubleScopedStereotypeBean.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(DoubleScopedStereotype.class, DoubleScopedStereotypeBean.class))
             .setExpectedException(DeploymentException.class);
 
     @Inject

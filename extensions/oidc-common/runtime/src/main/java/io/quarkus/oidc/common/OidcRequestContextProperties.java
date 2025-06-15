@@ -23,7 +23,9 @@ public class OidcRequestContextProperties {
     /**
      * Get property value
      *
-     * @param name property name
+     * @param name
+     *        property name
+     *
      * @return property value
      */
     public <T> T get(String name) {
@@ -35,7 +37,9 @@ public class OidcRequestContextProperties {
     /**
      * Get property value as String
      *
-     * @param name property name
+     * @param name
+     *        property name
+     *
      * @return property value as String
      */
     public String getString(String name) {
@@ -45,8 +49,11 @@ public class OidcRequestContextProperties {
     /**
      * Get typed property value
      *
-     * @param name property name
-     * @param type property type
+     * @param name
+     *        property name
+     * @param type
+     *        property type
+     *
      * @return typed property value
      */
     public <T> T get(String name, Class<T> type) {
@@ -65,8 +72,11 @@ public class OidcRequestContextProperties {
     /**
      * Set the property
      *
-     * @param name property name
-     * @param value property value
+     * @param name
+     *        property name
+     * @param value
+     *        property value
+     *
      * @return this OidcRequestContextProperties instance
      */
     public OidcRequestContextProperties put(String name, Object value) {

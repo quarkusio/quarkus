@@ -54,8 +54,7 @@ public class FunctionInvoker {
                     }
                 }
                 if (outputType == null) {
-                    throw new IllegalArgumentException(
-                            "Uni must be used with type parameter (e.g. Uni<String>).");
+                    throw new IllegalArgumentException("Uni must be used with type parameter (e.g. Uni<String>).");
                 }
             } else {
                 outputType = method.getGenericReturnType();
@@ -64,8 +63,7 @@ public class FunctionInvoker {
     }
 
     /**
-     * Allow storage of binding specific objects that are specific to the function.
-     * i.e. json marshallers
+     * Allow storage of binding specific objects that are specific to the function. i.e. json marshallers
      *
      * @return
      */
@@ -122,8 +120,7 @@ public class FunctionInvoker {
         try {
             Object result = method.invoke(target, args);
             if (isAsync()) {
-                response.setOutput(((Uni<?>) result)
-                        .onFailure().transform(t -> new ApplicationException(t)));
+                response.setOutput(((Uni<?>) result).onFailure().transform(t -> new ApplicationException(t)));
             } else {
                 response.setOutput(Uni.createFrom().item(result));
             }

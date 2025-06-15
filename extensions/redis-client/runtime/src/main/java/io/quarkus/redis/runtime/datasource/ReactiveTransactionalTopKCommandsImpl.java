@@ -75,6 +75,7 @@ public class ReactiveTransactionalTopKCommandsImpl<K, V> extends AbstractTransac
     @Override
     public Uni<Void> topkReserve(K key, int topk, int width, int depth, double decay) {
         this.tx.enqueue(r -> null); // Uni<Void>
-        return this.reactive._topkReserve(key, topk, width, depth, decay).invoke(this::queuedOrDiscard).replaceWithVoid();
+        return this.reactive._topkReserve(key, topk, width, depth, decay).invoke(this::queuedOrDiscard)
+                .replaceWithVoid();
     }
 }

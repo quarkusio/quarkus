@@ -97,7 +97,8 @@ public class SecurityCheckRecorder {
         return new Supplier<String[]>() {
             @Override
             public String[] get() {
-                final var config = ConfigProviderResolver.instance().getConfig(Thread.currentThread().getContextClassLoader());
+                final var config = ConfigProviderResolver.instance()
+                        .getConfig(Thread.currentThread().getContextClassLoader());
                 if (config.getOptionalValue(Config.PROPERTY_EXPRESSIONS_ENABLED, Boolean.class).orElse(Boolean.TRUE)
                         && Expressions.isEnabled()) {
                     // property expressions are enabled
@@ -112,7 +113,8 @@ public class SecurityCheckRecorder {
                             if (strArr.length >= 1) {
                                 // role order is irrelevant as logical operator between them is OR
 
-                                // first role will go to the original place, double escaped comma will be parsed correctly
+                                // first role will go to the original place, double escaped comma will be parsed
+                                // correctly
                                 strVal = strArr[0];
 
                                 if (strArr.length > 1) {
@@ -195,8 +197,8 @@ public class SecurityCheckRecorder {
     }
 
     /**
-     * Creates {@link SecurityCheck} for a permission groups.
-     * User must have at least one of security check permissions from each permission group.
+     * Creates {@link SecurityCheck} for a permission groups. User must have at least one of security check permissions
+     * from each permission group.
      *
      * @return SecurityCheck
      */
@@ -263,10 +265,15 @@ public class SecurityCheckRecorder {
     /**
      * Creates permission.
      *
-     * @param name permission name
-     * @param clazz permission class
-     * @param actions nullable actions
-     * @param passActionsToConstructor flag signals whether Permission constructor accepts (name) or (name, actions)
+     * @param name
+     *        permission name
+     * @param clazz
+     *        permission class
+     * @param actions
+     *        nullable actions
+     * @param passActionsToConstructor
+     *        flag signals whether Permission constructor accepts (name) or (name, actions)
+     *
      * @return {@link RuntimeValue<Permission>}
      */
     public RuntimeValue<Permission> createPermission(String name, String clazz, String[] actions,
@@ -287,21 +294,28 @@ public class SecurityCheckRecorder {
     }
 
     /**
-     * Creates function that transform arguments of a method annotated with {@link io.quarkus.security.PermissionsAllowed}
-     * to custom {@link Permission}.
+     * Creates function that transform arguments of a method annotated with
+     * {@link io.quarkus.security.PermissionsAllowed} to custom {@link Permission}.
      *
-     * @param permissionName permission name
-     * @param clazz permission class
-     * @param actions permission actions
-     * @param passActionsToConstructor flag signals whether Permission constructor accepts (name) or (name, actions)
-     * @param formalParamIndexes indexes of secured method params that should be passed to permission constructor
-     * @param formalParamConverters converts method parameter to constructor parameter; most of the time, this will be
-     *        either identity function or a method calling method parameter getter
+     * @param permissionName
+     *        permission name
+     * @param clazz
+     *        permission class
+     * @param actions
+     *        permission actions
+     * @param passActionsToConstructor
+     *        flag signals whether Permission constructor accepts (name) or (name, actions)
+     * @param formalParamIndexes
+     *        indexes of secured method params that should be passed to permission constructor
+     * @param formalParamConverters
+     *        converts method parameter to constructor parameter; most of the time, this will be either identity
+     *        function or a method calling method parameter getter
+     *
      * @return computed permission
      */
-    public Function<Object[], Permission> createComputedPermission(String permissionName, String clazz, String[] actions,
-            boolean passActionsToConstructor, int[] formalParamIndexes, String[] formalParamConverters,
-            Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle) {
+    public Function<Object[], Permission> createComputedPermission(String permissionName, String clazz,
+            String[] actions, boolean passActionsToConstructor, int[] formalParamIndexes,
+            String[] formalParamConverters, Map<String, RuntimeValue<MethodHandle>> converterNameToMethodHandle) {
         final int addActions = (passActionsToConstructor ? 1 : 0);
         final int argsCount = 1 + addActions + formalParamIndexes.length;
         final int methodArgsStart = 1 + addActions;
@@ -312,7 +326,8 @@ public class SecurityCheckRecorder {
                 try {
                     final Object[] initArgs = initArgs(securedMethodArgs);
                     return (Permission) permissionClassConstructor.newInstance(initArgs);
-                } catch (InstantiationException | IllegalAccessException | InvocationTargetException | RuntimeException e) {
+                } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                        | RuntimeException e) {
                     LOGGER.errorf(e,
                             "Failed to create computed Permission - class '%s', name '%s', actions '%s', access will be denied",
                             clazz, permissionName, Arrays.toString(actions));
@@ -346,10 +361,8 @@ public class SecurityCheckRecorder {
         return new RuntimeValue<>(new SecurityCheckStorageBuilder());
     }
 
-    public void addMethod(RuntimeValue<SecurityCheckStorageBuilder> builder, String className,
-            String methodName,
-            String[] parameterTypes,
-            SecurityCheck securityCheck) {
+    public void addMethod(RuntimeValue<SecurityCheckStorageBuilder> builder, String className, String methodName,
+            String[] parameterTypes, SecurityCheck securityCheck) {
         builder.getValue().registerCheck(className, methodName, parameterTypes, securityCheck);
     }
 
@@ -374,11 +387,13 @@ public class SecurityCheckRecorder {
         }
     }
 
-    public void registerDefaultSecurityCheck(RuntimeValue<SecurityCheckStorageBuilder> builder, SecurityCheck securityCheck) {
+    public void registerDefaultSecurityCheck(RuntimeValue<SecurityCheckStorageBuilder> builder,
+            SecurityCheck securityCheck) {
         builder.getValue().registerDefaultSecurityCheck(securityCheck);
     }
 
-    public Supplier<SecurityConstrainer> createSecurityConstrainer(Supplier<Map<String, Object>> additionalEventPropsSupplier) {
+    public Supplier<SecurityConstrainer> createSecurityConstrainer(
+            Supplier<Map<String, Object>> additionalEventPropsSupplier) {
         return new Supplier<SecurityConstrainer>() {
             @Override
             public SecurityConstrainer get() {
@@ -390,8 +405,8 @@ public class SecurityCheckRecorder {
                         return Map.of();
                     }
                 } : additionalEventPropsSupplier;
-                return new SecurityConstrainer(container.instance(SecurityCheckStorage.class).get(),
-                        beanManager, beanManager.getEvent().select(AuthorizationFailureEvent.class),
+                return new SecurityConstrainer(container.instance(SecurityCheckStorage.class).get(), beanManager,
+                        beanManager.getEvent().select(AuthorizationFailureEvent.class),
                         beanManager.getEvent().select(AuthorizationSuccessEvent.class), runtimeConfigReady,
                         container.select(CurrentIdentityAssociation.class), eventPropsSupplier);
             }
@@ -432,7 +447,8 @@ public class SecurityCheckRecorder {
             return converter.invokeExact(methodArg);
         } catch (Throwable e) {
             throw new RuntimeException(
-                    "Failed to convert method argument '%s' to Permission constructor parameter".formatted(methodArg), e);
+                    "Failed to convert method argument '%s' to Permission constructor parameter".formatted(methodArg),
+                    e);
         }
     }
 
@@ -441,7 +457,8 @@ public class SecurityCheckRecorder {
             @Override
             public QuarkusPermissionSecurityIdentityAugmentor apply(
                     SyntheticCreationalContext<QuarkusPermissionSecurityIdentityAugmentor> ctx) {
-                return new QuarkusPermissionSecurityIdentityAugmentor(ctx.getInjectedReference(BlockingSecurityExecutor.class));
+                return new QuarkusPermissionSecurityIdentityAugmentor(
+                        ctx.getInjectedReference(BlockingSecurityExecutor.class));
             }
         };
     }

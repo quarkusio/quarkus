@@ -21,7 +21,8 @@ public class JsonStructureHandler implements MessageBodyReader<JsonStructure>, M
     }
 
     public void writeTo(JsonStructure o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         try (JsonWriter writer = JsonpUtil.writer(entityStream, mediaType)) {
             writer.write(o);
         }
@@ -33,8 +34,9 @@ public class JsonStructureHandler implements MessageBodyReader<JsonStructure>, M
     }
 
     @Override
-    public JsonStructure readFrom(Class<JsonStructure> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+    public JsonStructure readFrom(Class<JsonStructure> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return JsonpUtil.reader(entityStream, mediaType).read();
     }
 }

@@ -35,19 +35,13 @@ public class InfinispanClientFunctionalityTest {
 
     @Test
     public void testCounterIncrement() {
-        RestAssured.given()
-                .queryParam("type", CounterType.BOUNDED_STRONG)
-                .queryParam("storage", Storage.VOLATILE)
+        RestAssured.given().queryParam("type", CounterType.BOUNDED_STRONG).queryParam("storage", Storage.VOLATILE)
                 .post("test/counter/strong-1").body().print();
 
-        RestAssured.given()
-                .queryParam("type", CounterType.WEAK)
-                .queryParam("storage", Storage.VOLATILE)
+        RestAssured.given().queryParam("type", CounterType.WEAK).queryParam("storage", Storage.VOLATILE)
                 .post("test/counter/weak-1").body().print();
 
-        RestAssured.given()
-                .queryParam("type", CounterType.UNBOUNDED_STRONG)
-                .queryParam("storage", Storage.PERSISTENT)
+        RestAssured.given().queryParam("type", CounterType.UNBOUNDED_STRONG).queryParam("storage", Storage.PERSISTENT)
                 .post("test/counter/strong-2").body().print();
 
         assertCounterIncrement("strong-1");
@@ -56,8 +50,7 @@ public class InfinispanClientFunctionalityTest {
     }
 
     private void assertCounterIncrement(String counterName) {
-        String initialValue = RestAssured.given()
-                .get("test/incr/" + counterName).body().print();
+        String initialValue = RestAssured.given().get("test/incr/" + counterName).body().print();
         String nextValue = RestAssured.when().get("test/incr/" + counterName).body().print();
         assertEquals(Integer.parseInt(initialValue) + 1, Integer.parseInt(nextValue));
     }
@@ -79,49 +72,31 @@ public class InfinispanClientFunctionalityTest {
 
     @Test
     public void testAuthor() {
-        RestAssured.when().get("/test/create-cache-default-config/authors").then().body(is("[George,J. K. Rowling,Son]"));
+        RestAssured.when().get("/test/create-cache-default-config/authors").then()
+                .body(is("[George,J. K. Rowling,Son]"));
     }
 
     @Test
     public void testCacheAnnotations() {
-        RestAssured.when().get("/books/hp-1")
-                .then()
-                .body(containsString("Philosopher's Stone"));
+        RestAssured.when().get("/books/hp-1").then().body(containsString("Philosopher's Stone"));
 
-        RestAssured.when().get("/books/hp-2")
-                .then()
-                .body(containsString("Chamber of Secrets"));
+        RestAssured.when().get("/books/hp-2").then().body(containsString("Chamber of Secrets"));
 
-        RestAssured.when().get("/books/hp-3")
-                .then()
-                .body(containsString("Prisoner of Azkaban"));
+        RestAssured.when().get("/books/hp-3").then().body(containsString("Prisoner of Azkaban"));
 
-        RestAssured.when().get("/books/hp-4")
-                .then()
-                .body(containsString("computed book"));
+        RestAssured.when().get("/books/hp-4").then().body(containsString("computed book"));
 
-        RestAssured.when().get("/books/hp-3/extra-params")
-                .then().statusCode(500);
+        RestAssured.when().get("/books/hp-3/extra-params").then().statusCode(500);
 
-        RestAssured.when().delete("/books/hp-1")
-                .then()
-                .statusCode(200);
+        RestAssured.when().delete("/books/hp-1").then().statusCode(200);
 
-        RestAssured.when().get("/books/hp-1")
-                .then()
-                .body(containsString("computed book"));
+        RestAssured.when().get("/books/hp-1").then().body(containsString("computed book"));
 
-        RestAssured.when().delete("/books")
-                .then()
-                .statusCode(200);
+        RestAssured.when().delete("/books").then().statusCode(200);
 
-        RestAssured.when().get("/books/hp-2")
-                .then()
-                .body(containsString("computed book"));
+        RestAssured.when().get("/books/hp-2").then().body(containsString("computed book"));
 
-        RestAssured.when().get("/books/hp-3")
-                .then()
-                .body(containsString("computed book"));
+        RestAssured.when().get("/books/hp-3").then().body(containsString("computed book"));
 
     }
 }

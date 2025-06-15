@@ -75,20 +75,17 @@ public class DevBeanInfo implements Comparable<DevBeanInfo> {
             } else {
                 throw new IllegalArgumentException("Invalid annotation target: " + target);
             }
-            return new DevBeanInfo(bean.getIdentifier(), kind, isApplicationBean, providerType, memberName, types, qualifiers,
-                    scope, declaringClass,
-                    interceptors, isGenerated);
+            return new DevBeanInfo(bean.getIdentifier(), kind, isApplicationBean, providerType, memberName, types,
+                    qualifiers, scope, declaringClass, interceptors, isGenerated);
         } else {
             // Synthetic bean
-            return new DevBeanInfo(bean.getIdentifier(), DevBeanKind.SYNTHETIC, false, providerType, null, types, qualifiers,
-                    scope, null,
-                    interceptors, bean.getImplClazz().isSynthetic());
+            return new DevBeanInfo(bean.getIdentifier(), DevBeanKind.SYNTHETIC, false, providerType, null, types,
+                    qualifiers, scope, null, interceptors, bean.getImplClazz().isSynthetic());
         }
     }
 
     public DevBeanInfo(String id, DevBeanKind kind, boolean isApplicationBean, Name providerType, String memberName,
-            Set<Name> types,
-            Set<Name> qualifiers, Name scope, Name declaringClass, List<String> boundInterceptors,
+            Set<Name> types, Set<Name> qualifiers, Name scope, Name declaringClass, List<String> boundInterceptors,
             boolean isGenerated) {
         this.id = id;
         this.kind = kind;

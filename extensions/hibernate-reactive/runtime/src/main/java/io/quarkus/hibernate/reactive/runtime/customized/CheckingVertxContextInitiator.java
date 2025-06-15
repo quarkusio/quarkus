@@ -7,8 +7,7 @@ import org.hibernate.reactive.context.Context;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * Custom Quarkus initiator for the {@link Context} service; this
- * one creates instances of {@link CheckingVertxContext}.
+ * Custom Quarkus initiator for the {@link Context} service; this one creates instances of {@link CheckingVertxContext}.
  */
 public class CheckingVertxContextInitiator implements StandardServiceInitiator<Context> {
 

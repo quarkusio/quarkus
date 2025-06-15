@@ -21,8 +21,7 @@ public class JacksonSupportRecorder {
                             try {
                                 var value = (PropertyNamingStrategies.NamingBase) Class
                                         .forName(propertyNamingStrategyClassName.get(), true,
-                                                Thread.currentThread()
-                                                        .getContextClassLoader())
+                                                Thread.currentThread().getContextClassLoader())
                                         .getDeclaredConstructor().newInstance();
                                 return Optional.of(value);
                             } catch (Exception e) {

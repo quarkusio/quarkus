@@ -76,8 +76,8 @@ public class OidcClientRecorder {
                 .atMost(oidcConfig.connectionTimeout());
     }
 
-    protected static Uni<OidcClient> createOidcClientUni(OidcClientConfig oidcConfig, String oidcClientId,
-            Vertx vertx, OidcTlsSupport tlsSupport) {
+    protected static Uni<OidcClient> createOidcClientUni(OidcClientConfig oidcConfig, String oidcClientId, Vertx vertx,
+            OidcTlsSupport tlsSupport) {
         if (!oidcConfig.clientEnabled()) {
             String message = String.format("'%s' client configuration is disabled", oidcClientId);
             LOG.debug(message);
@@ -114,9 +114,8 @@ public class OidcClientRecorder {
         Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters = OidcCommonUtils.getOidcResponseFilters();
         Uni<OidcConfigurationMetadata> tokenUrisUni = null;
         if (OidcCommonUtils.isAbsoluteUrl(oidcConfig.tokenPath())) {
-            tokenUrisUni = Uni.createFrom().item(
-                    new OidcConfigurationMetadata(oidcConfig.tokenPath().get(),
-                            OidcCommonUtils.isAbsoluteUrl(oidcConfig.revokePath()) ? oidcConfig.revokePath().get() : null));
+            tokenUrisUni = Uni.createFrom().item(new OidcConfigurationMetadata(oidcConfig.tokenPath().get(),
+                    OidcCommonUtils.isAbsoluteUrl(oidcConfig.revokePath()) ? oidcConfig.revokePath().get() : null));
         } else {
             String authServerUriString = OidcCommonUtils.getAuthServerUrl(oidcConfig);
             if (!oidcConfig.discoveryEnabled().orElse(true)) {
@@ -126,8 +125,7 @@ public class OidcClientRecorder {
                                 OidcCommonUtils.getOidcEndpointUrl(authServerUriString, oidcConfig.revokePath())));
             } else {
                 tokenUrisUni = discoverTokenUris(client, oidcRequestFilters, oidcResponseFilters,
-                        authServerUriString.toString(), oidcConfig,
-                        mutinyVertx);
+                        authServerUriString.toString(), oidcConfig, mutinyVertx);
             }
         }
         return tokenUrisUni.onItemOrFailure()
@@ -157,10 +155,12 @@ public class OidcClientRecorder {
                                 if (grantOptions != null) {
                                     if (oidcConfig.grant().type() == Grant.Type.PASSWORD) {
                                         // Without this block `password` will be listed first, before `username`
-                                        // which is not a technical problem but might affect Wiremock tests or the endpoints
+                                        // which is not a technical problem but might affect Wiremock tests or the
+                                        // endpoints
                                         // which expect a specific order.
                                         final String userName = grantOptions.get(OidcConstants.PASSWORD_GRANT_USERNAME);
-                                        final String userPassword = grantOptions.get(OidcConstants.PASSWORD_GRANT_PASSWORD);
+                                        final String userPassword = grantOptions
+                                                .get(OidcConstants.PASSWORD_GRANT_PASSWORD);
                                         if (userName == null || userPassword == null) {
                                             throw new ConfigurationException(
                                                     "Username and password must be set when a password grant is used",
@@ -182,7 +182,8 @@ public class OidcClientRecorder {
                             }
                         }
 
-                        MultiMap commonRefreshGrantParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
+                        MultiMap commonRefreshGrantParams = new MultiMap(
+                                io.vertx.core.MultiMap.caseInsensitiveMultiMap());
                         setGrantClientParams(oidcConfig, commonRefreshGrantParams, OidcConstants.REFRESH_TOKEN_GRANT);
 
                         return new OidcClientImpl(client, metadata.tokenRequestUri, metadata.tokenRevokeUri, grantType,
@@ -200,19 +201,21 @@ public class OidcClientRecorder {
     private static void setGrantClientParams(OidcClientConfig oidcConfig, MultiMap grantParams, String grantType) {
         grantParams.add(OidcConstants.GRANT_TYPE, grantType);
         if (oidcConfig.scopes().isPresent()) {
-            grantParams.add(OidcConstants.TOKEN_SCOPE, oidcConfig.scopes().get().stream().collect(Collectors.joining(" ")));
+            grantParams.add(OidcConstants.TOKEN_SCOPE,
+                    oidcConfig.scopes().get().stream().collect(Collectors.joining(" ")));
         }
     }
 
     private static Uni<OidcConfigurationMetadata> discoverTokenUris(WebClient client,
             Map<OidcEndpoint.Type, List<OidcRequestFilter>> oidcRequestFilters,
-            Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters,
-            String authServerUrl, OidcClientConfig oidcConfig, io.vertx.mutiny.core.Vertx vertx) {
+            Map<OidcEndpoint.Type, List<OidcResponseFilter>> oidcResponseFilters, String authServerUrl,
+            OidcClientConfig oidcConfig, io.vertx.mutiny.core.Vertx vertx) {
         final long connectionDelayInMillisecs = OidcCommonUtils.getConnectionDelayInMillis(oidcConfig);
         OidcRequestContextProperties contextProps = new OidcRequestContextProperties(
                 Map.of(CLIENT_ID_ATTRIBUTE, oidcConfig.id().orElse(DEFAULT_OIDC_CLIENT_ID)));
-        return OidcCommonUtils.discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters,
-                authServerUrl, connectionDelayInMillisecs, vertx, oidcConfig.useBlockingDnsLookup())
+        return OidcCommonUtils
+                .discoverMetadata(client, oidcRequestFilters, contextProps, oidcResponseFilters, authServerUrl,
+                        connectionDelayInMillisecs, vertx, oidcConfig.useBlockingDnsLookup())
                 .onItem().transform(json -> new OidcConfigurationMetadata(json.getString("token_endpoint"),
                         json.getString("revocation_endpoint")));
     }

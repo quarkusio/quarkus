@@ -22,24 +22,26 @@ import io.quarkus.websockets.next.deployment.Callback.Target;
 interface CallbackArgument {
 
     /**
-     *
      * @param context
+     *
      * @return {@code true} if this provider matches the given parameter context, {@code false} otherwise
-     * @throws WebSocketException If an invalid parameter is detected
+     *
+     * @throws WebSocketException
+     *         If an invalid parameter is detected
      */
     boolean matches(ParameterContext context);
 
     /**
-     * This method is only used if {@link #matches(ParameterContext)} previously returned {@code true} for the same parameter
-     * context.
+     * This method is only used if {@link #matches(ParameterContext)} previously returned {@code true} for the same
+     * parameter context.
      *
      * @param context
+     *
      * @return the result handle to be passed as an argument to a callback method
      */
     ResultHandle get(InvocationBytecodeContext context);
 
     /**
-     *
      * @return the priority
      */
     default int priotity() {
@@ -51,37 +53,31 @@ interface CallbackArgument {
     interface ParameterContext {
 
         /**
-         *
          * @return the callback target
          */
         Target callbackTarget();
 
         /**
-         *
          * @return the endpoint path or {@code null} for global error handlers
          */
         String endpointPath();
 
         /**
-         *
          * @return the index that can be used to inspect parameter types
          */
         IndexView index();
 
         /**
-         *
          * @return the callback marker annotation
          */
         AnnotationInstance callbackAnnotation();
 
         /**
-         *
          * @return the Java method parameter
          */
         MethodParameterInfo parameter();
 
         /**
-         *
          * @return the set of parameter annotations, potentially transformed
          */
         Set<AnnotationInstance> parameterAnnotations();
@@ -98,7 +94,6 @@ interface CallbackArgument {
     interface InvocationBytecodeContext extends ParameterContext {
 
         /**
-         *
          * @return the bytecode
          */
         BytecodeCreator bytecode();
@@ -114,7 +109,9 @@ interface CallbackArgument {
          * Attempts to obtain the decoded message directly in the bytecode.
          *
          * @param parameterType
-         * @return the decoded message object or {@code null} for {@link OnOpen}, {@link OnClose} and {@link OnError} callbacks
+         *
+         * @return the decoded message object or {@code null} for {@link OnOpen}, {@link OnClose} and {@link OnError}
+         *         callbacks
          */
         ResultHandle getDecodedMessage(Type parameterType);
 

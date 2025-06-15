@@ -68,7 +68,8 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
 
         ConnectionProvider provider = providerMap.get(tenantIdentifier);
         if (provider == null) {
-            final ConnectionProvider connectionProvider = resolveConnectionProvider(persistenceUnitName, tenantIdentifier);
+            final ConnectionProvider connectionProvider = resolveConnectionProvider(persistenceUnitName,
+                    tenantIdentifier);
             providerMap.put(tenantIdentifier, connectionProvider);
             return connectionProvider;
         }
@@ -80,16 +81,14 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
         LOG.debugv("resolveConnectionProvider(persistenceUnitName={0}, tenantIdentifier={1})", persistenceUnitName,
                 tenantIdentifier);
         // TODO when we switch to the non-legacy method, don't forget to update the definition of the default bean
-        //   of type DataSourceTenantConnectionResolver (add the @PersistenceUnitExtension qualifier to that bean)
+        // of type DataSourceTenantConnectionResolver (add the @PersistenceUnitExtension qualifier to that bean)
         InjectableInstance<TenantConnectionResolver> instance = PersistenceUnitUtil
-                .legacySingleExtensionInstanceForPersistenceUnit(
-                        TenantConnectionResolver.class, persistenceUnitName);
+                .legacySingleExtensionInstanceForPersistenceUnit(TenantConnectionResolver.class, persistenceUnitName);
         if (instance.isUnsatisfied()) {
-            throw new IllegalStateException(
-                    String.format(
-                            Locale.ROOT, "No instance of %1$s was found for persistence unit %2$s. "
-                                    + "You need to create an implementation for this interface to allow resolving the current tenant connection.",
-                            TenantConnectionResolver.class.getSimpleName(), persistenceUnitName));
+            throw new IllegalStateException(String.format(Locale.ROOT,
+                    "No instance of %1$s was found for persistence unit %2$s. "
+                            + "You need to create an implementation for this interface to allow resolving the current tenant connection.",
+                    TenantConnectionResolver.class.getSimpleName(), persistenceUnitName));
         }
         TenantConnectionResolver resolver = instance.get();
         ConnectionProvider cp = resolver.resolve(tenantIdentifier);
@@ -107,8 +106,7 @@ public final class HibernateMultiTenantConnectionProvider extends AbstractMultiT
      */
     private static InstanceHandle<TenantResolver> tenantResolver(String persistenceUnitName) {
         InjectableInstance<TenantResolver> instance = PersistenceUnitUtil
-                .legacySingleExtensionInstanceForPersistenceUnit(
-                        TenantResolver.class, persistenceUnitName);
+                .legacySingleExtensionInstanceForPersistenceUnit(TenantResolver.class, persistenceUnitName);
 
         if (instance.isUnsatisfied()) {
             throw new IllegalStateException(String.format(Locale.ROOT,

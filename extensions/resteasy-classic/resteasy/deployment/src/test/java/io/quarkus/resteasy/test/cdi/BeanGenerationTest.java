@@ -16,15 +16,11 @@ public class BeanGenerationTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(PublicHello.class.getPackage())
-                    .addClasses(Greeting.class, MorningGreeting.class, GreetingEndpoint.class));
+            .withApplicationRoot((jar) -> jar.addPackage(PublicHello.class.getPackage()).addClasses(Greeting.class,
+                    MorningGreeting.class, GreetingEndpoint.class));
 
     @Test
     public void testInvocation() throws Exception {
-        when().get("/cdi-greeting/greet")
-                .then()
-                .statusCode(200)
-                .body(Matchers.is("Good Morning"));
+        when().get("/cdi-greeting/greet").then().statusCode(200).body(Matchers.is("Good Morning"));
     }
 }

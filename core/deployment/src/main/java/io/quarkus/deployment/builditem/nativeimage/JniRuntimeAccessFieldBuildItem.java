@@ -7,8 +7,7 @@ import org.jboss.jandex.FieldInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * JNI access registration fine-grained to single fields
- * for a given class.
+ * JNI access registration fine-grained to single fields for a given class.
  */
 public final class JniRuntimeAccessFieldBuildItem extends MultiBuildItem {
 

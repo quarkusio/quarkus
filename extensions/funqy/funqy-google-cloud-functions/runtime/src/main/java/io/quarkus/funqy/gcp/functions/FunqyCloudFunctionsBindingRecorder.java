@@ -80,7 +80,7 @@ public class FunqyCloudFunctionsBindingRecorder {
      * @param context
      */
     public static void handle(String event, Context context) {
-        //TODO allow to access the context from the function somehow.
+        // TODO allow to access the context from the function somehow.
         try {
             Object input = null;
             if (invoker.hasInput()) {

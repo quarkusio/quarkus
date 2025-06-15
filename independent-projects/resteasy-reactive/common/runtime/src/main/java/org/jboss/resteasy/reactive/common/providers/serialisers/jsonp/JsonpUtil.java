@@ -19,11 +19,13 @@ public final class JsonpUtil {
     private static final JsonWriterFactory jsonWriterFactory = Json.createWriterFactory(null);
 
     public static JsonReader reader(InputStream entityStream, MediaType mediaType) {
-        return jsonReaderFactory.createReader(entityStream, Charset.forName(MessageReaderUtil.charsetFromMediaType(mediaType)));
+        return jsonReaderFactory.createReader(entityStream,
+                Charset.forName(MessageReaderUtil.charsetFromMediaType(mediaType)));
     }
 
     public static JsonWriter writer(OutputStream entityStream, MediaType mediaType) {
-        return jsonWriterFactory.createWriter(entityStream, Charset.forName(MessageReaderUtil.charsetFromMediaType(mediaType)));
+        return jsonWriterFactory.createWriter(entityStream,
+                Charset.forName(MessageReaderUtil.charsetFromMediaType(mediaType)));
     }
 
 }

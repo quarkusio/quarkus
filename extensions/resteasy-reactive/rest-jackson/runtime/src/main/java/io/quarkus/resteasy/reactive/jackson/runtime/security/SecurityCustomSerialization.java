@@ -16,15 +16,18 @@ public class SecurityCustomSerialization implements BiFunction<ObjectMapper, Typ
         if (writer == null) {
             synchronized (this) {
                 if (writer == null) {
-                    writer = objectMapper
-                            .copy() // we need to make the copy in order to avoid adding the Introspector to the default mapper
-                            .setAnnotationIntrospector(new SecurityJacksonAnnotationIntrospector()) // needed in order to trigger the inclusion of the filter
-                            .writer(
-                                    new SimpleFilterProvider().addFilter(SecurityPropertyFilter.FILTER_ID,
-                                            new SecurityPropertyFilter())); // register the actual filter
+                    writer = objectMapper.copy() // we need to make the copy in order to avoid adding the Introspector
+                            // to the default mapper
+                            .setAnnotationIntrospector(new SecurityJacksonAnnotationIntrospector()) // needed in order
+                            // to trigger the
+                            // inclusion of the
+                            // filter
+                            .writer(new SimpleFilterProvider().addFilter(SecurityPropertyFilter.FILTER_ID,
+                                    new SecurityPropertyFilter())); // register the actual filter
                 }
             }
         }
-        return writer; // we can use the same writer for all usages of @SecurityCustomSerialization because there is nothing resource method specific to it
+        return writer; // we can use the same writer for all usages of @SecurityCustomSerialization because there is
+                       // nothing resource method specific to it
     }
 }

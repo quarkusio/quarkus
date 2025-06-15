@@ -83,8 +83,7 @@ public class CuckooCommandsTest extends DatasourceTestBase {
 
         assertThat(cuckoo.cfdel(key, anakin)).isFalse();
 
-        assertThatThrownBy(() -> cuckoo.cfdel("missing", anakin))
-                .hasMessageContaining("Not found");
+        assertThatThrownBy(() -> cuckoo.cfdel("missing", anakin)).hasMessageContaining("Not found");
     }
 
     @Test
@@ -102,8 +101,8 @@ public class CuckooCommandsTest extends DatasourceTestBase {
         assertThat(cuckoo.cfcount(key, luke)).isEqualTo(1);
         assertThat(cuckoo.cfaddnx(key, luke)).isFalse();
 
-        assertThatThrownBy(() -> cuckoo.cfinsert("key2",
-                new CfInsertArgs().capacity(600000).nocreate(), luke, leia, anakin));
+        assertThatThrownBy(
+                () -> cuckoo.cfinsert("key2", new CfInsertArgs().capacity(600000).nocreate(), luke, leia, anakin));
         assertThatThrownBy(() -> cuckoo.cfinsert("key3", new CfInsertArgs().capacity(600000)));
     }
 
@@ -113,8 +112,8 @@ public class CuckooCommandsTest extends DatasourceTestBase {
         Person leia = new Person("leia", "ordana");
         Person anakin = new Person("anakin", "skywalker");
 
-        assertThat(cuckoo.cfinsertnx(key, new CfInsertArgs().capacity(600000), luke, leia, leia))
-                .containsExactly(true, true, false);
+        assertThat(cuckoo.cfinsertnx(key, new CfInsertArgs().capacity(600000), luke, leia, leia)).containsExactly(true,
+                true, false);
 
         assertThat(cuckoo.cfexists(key, luke)).isTrue();
         assertThat(cuckoo.cfexists(key, leia)).isTrue();
@@ -123,8 +122,8 @@ public class CuckooCommandsTest extends DatasourceTestBase {
         assertThat(cuckoo.cfcount(key, luke)).isEqualTo(1);
         assertThat(cuckoo.cfaddnx(key, luke)).isFalse();
 
-        assertThatThrownBy(() -> cuckoo.cfinsertnx("key2",
-                new CfInsertArgs().capacity(600000).nocreate(), luke, leia, anakin));
+        assertThatThrownBy(
+                () -> cuckoo.cfinsertnx("key2", new CfInsertArgs().capacity(600000).nocreate(), luke, leia, anakin));
         assertThatThrownBy(() -> cuckoo.cfinsertnx("key3", new CfInsertArgs().capacity(600000)));
     }
 

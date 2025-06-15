@@ -15,8 +15,7 @@ public class UserTagTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("{it}"), "templates/tags/hello.txt")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("{it}"), "templates/tags/hello.txt")
                     .addAsResource(new StringAsset("{#hello name /}"), "templates/foo.txt"));
 
     @Inject

@@ -23,13 +23,11 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 public class ConnectionLimitsTest {
-    private static final String APP_PROPS = "" +
-            "quarkus.http.limits.max-connections=1\n";
+    private static final String APP_PROPS = "" + "quarkus.http.limits.max-connections=1\n";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties")
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset(APP_PROPS), "application.properties")
                     .addClasses(BeanRegisteringRouteUsingObserves.class));
 
     @TestHTTPResource
@@ -38,8 +36,8 @@ public class ConnectionLimitsTest {
     @Test
     public void testConnectionLimits() throws Exception {
         try (Socket one = new Socket(uri.getHost(), uri.getPort())) {
-            one.getOutputStream().write("GET /hello HTTP/1.1\r\nHost: localhost\r\n\r\n"
-                    .getBytes(StandardCharsets.UTF_8));
+            one.getOutputStream()
+                    .write("GET /hello HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes(StandardCharsets.UTF_8));
             StringBuilder sb = new StringBuilder();
             byte[] data = new byte[1024];
             int j;
@@ -50,12 +48,12 @@ public class ConnectionLimitsTest {
                 }
                 sb.append(new String(data, 0, j, StandardCharsets.US_ASCII));
             }
-            //we now have one connection, and it has performed a request
-            //start another one, it should fail
+            // we now have one connection, and it has performed a request
+            // start another one, it should fail
 
             try (Socket two = new Socket(uri.getHost(), uri.getPort())) {
-                two.getOutputStream().write("GET /hello HTTP/1.1\r\nHost: localhost\r\n\r\n"
-                        .getBytes(StandardCharsets.UTF_8));
+                two.getOutputStream()
+                        .write("GET /hello HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes(StandardCharsets.UTF_8));
                 int res = two.getInputStream().read(data);
                 if (res > 0) {
                     Assertions.fail("Expected connection to fail");
@@ -63,7 +61,7 @@ public class ConnectionLimitsTest {
             } catch (IOException expected) {
 
             }
-            //verify the first connection is still fine
+            // verify the first connection is still fine
             sb.setLength(0);
             one.getOutputStream().write("GET /hello HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
                     .getBytes(StandardCharsets.UTF_8));
@@ -73,7 +71,7 @@ public class ConnectionLimitsTest {
                     .untilAsserted(new ThrowingRunnable() {
                         @Override
                         public void run() throws Throwable {
-                            //first connection is closed, try second connection
+                            // first connection is closed, try second connection
                             try (Socket two = new Socket(uri.getHost(), uri.getPort())) {
                                 two.getOutputStream()
                                         .write("GET /hello HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"

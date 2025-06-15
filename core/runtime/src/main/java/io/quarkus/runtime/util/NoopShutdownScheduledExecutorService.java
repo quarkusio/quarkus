@@ -6,8 +6,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.jboss.logging.Logger;
 
 /**
- * Forwards all method calls to the scheduled executor service returned from the {@link #delegate()} method.
- * Does not allow shutdown
+ * Forwards all method calls to the scheduled executor service returned from the {@link #delegate()} method. Does not
+ * allow shutdown
  */
 public class NoopShutdownScheduledExecutorService extends ForwardingScheduledExecutorService {
 

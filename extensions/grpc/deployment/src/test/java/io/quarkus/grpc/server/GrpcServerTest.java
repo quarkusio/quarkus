@@ -21,8 +21,7 @@ public class GrpcServerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyFakeService.class, MySecondFakeService.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyFakeService.class, MySecondFakeService.class))
             .withConfigurationResource("grpc-server-no-health-configuration.properties");
 
     @Inject

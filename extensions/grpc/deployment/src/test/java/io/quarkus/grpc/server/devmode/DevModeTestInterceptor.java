@@ -16,16 +16,15 @@ public class DevModeTestInterceptor implements ServerInterceptor {
     private volatile String lastStatus = "initial";
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall,
-            Metadata metadata, ServerCallHandler<ReqT, RespT> serverCallHandler) {
-        return serverCallHandler
-                .startCall(new ForwardingServerCall.SimpleForwardingServerCall<>(serverCall) {
-                    @Override
-                    protected ServerCall<ReqT, RespT> delegate() {
-                        lastStatus = getStatus();
-                        return super.delegate();
-                    }
-                }, metadata);
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> serverCall, Metadata metadata,
+            ServerCallHandler<ReqT, RespT> serverCallHandler) {
+        return serverCallHandler.startCall(new ForwardingServerCall.SimpleForwardingServerCall<>(serverCall) {
+            @Override
+            protected ServerCall<ReqT, RespT> delegate() {
+                lastStatus = getStatus();
+                return super.delegate();
+            }
+        }, metadata);
     }
 
     public String getLastStatus() {

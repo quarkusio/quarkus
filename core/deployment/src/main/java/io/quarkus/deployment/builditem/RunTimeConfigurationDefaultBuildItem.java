@@ -15,8 +15,10 @@ public final class RunTimeConfigurationDefaultBuildItem extends MultiBuildItem {
     /**
      * Construct a new instance.
      *
-     * @param key the configuration key (must not be {@code null} or empty)
-     * @param value the configuration value (must not be {@code null})
+     * @param key
+     *        the configuration key (must not be {@code null} or empty)
+     * @param value
+     *        the configuration value (must not be {@code null})
      */
     public RunTimeConfigurationDefaultBuildItem(final String key, final String value) {
         Assert.checkNotNullParam("key", key);

@@ -23,28 +23,21 @@ import io.smallrye.mutiny.Uni;
 public class MutinyAsCompletionStageTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(TestResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(TestResource.class);
+        }
+    });
 
     @Test
     public void testOk() {
-        RestAssured.get("/test/ok")
-                .then()
-                .statusCode(200)
-                .body(equalTo("test"));
+        RestAssured.get("/test/ok").then().statusCode(200).body(equalTo("test"));
     }
 
     @Test
     public void testError() {
-        RestAssured.get("/test/error")
-                .then()
-                .statusCode(400);
+        RestAssured.get("/test/error").then().statusCode(400);
     }
 
     @Path("test")

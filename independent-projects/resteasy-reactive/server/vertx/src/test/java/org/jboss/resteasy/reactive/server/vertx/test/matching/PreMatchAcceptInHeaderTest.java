@@ -35,124 +35,72 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 public class PreMatchAcceptInHeaderTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class);
+        }
+    });
 
     @Test
     void browserDefault() {
-        given().accept("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8")
-                .when()
-                .get("test")
-                .then()
-                .statusCode(200)
-                .body(containsString("<html>"));
+        given().accept("text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8").when()
+                .get("test").then().statusCode(200).body(containsString("<html>"));
     }
 
     @Test
     void text() {
-        given().accept("text/plain")
-                .when()
-                .get("test")
-                .then()
-                .statusCode(200)
-                .body(equalTo("text"));
+        given().accept("text/plain").when().get("test").then().statusCode(200).body(equalTo("text"));
     }
 
     @Test
     void html() {
-        given().accept("text/html")
-                .when()
-                .get("test")
-                .then()
-                .statusCode(200)
-                .body(containsString("<html>"));
+        given().accept("text/html").when().get("test").then().statusCode(200).body(containsString("<html>"));
     }
 
     @Test
     void json() {
-        given().accept("application/json")
-                .when()
-                .get("test")
-                .then()
-                .statusCode(406);
+        given().accept("application/json").when().get("test").then().statusCode(406);
     }
 
     @Test
     void setAcceptToTextInFilter() {
-        given().accept("application/json")
-                .header("x-set-accept-to-text", "true")
-                .when()
-                .get("test")
-                .then()
-                .statusCode(200)
-                .body(equalTo("text"));
+        given().accept("application/json").header("x-set-accept-to-text", "true").when().get("test").then()
+                .statusCode(200).body(equalTo("text"));
     }
 
     @Test
     void entityJsonWithoutAcceptToTextInFilter() {
-        given().accept("application/json")
-                .when()
-                .get("test/entity")
-                .then()
-                .statusCode(200)
+        given().accept("application/json").when().get("test/entity").then().statusCode(200)
                 .body(containsString("\"text\""));
     }
 
     @Test
     void entityTextWithoutAcceptToTextInFilter() {
-        given().accept("text/plain")
-                .when()
-                .get("test/entity")
-                .then()
-                .statusCode(200)
-                .body(equalTo("text"));
+        given().accept("text/plain").when().get("test/entity").then().statusCode(200).body(equalTo("text"));
     }
 
     @Test
     void entityTextWithAcceptToTextInFilter() {
-        given().accept("application/json")
-                .header("x-set-accept-to-text", "true")
-                .when()
-                .get("test/entity")
-                .then()
-                .statusCode(200)
-                .body(equalTo("text"));
+        given().accept("application/json").header("x-set-accept-to-text", "true").when().get("test/entity").then()
+                .statusCode(200).body(equalTo("text"));
     }
 
     @Test
     void responseEntityJsonWithoutAcceptToTextInFilter() {
-        given().accept("application/json")
-                .when()
-                .get("test/response")
-                .then()
-                .statusCode(200)
+        given().accept("application/json").when().get("test/response").then().statusCode(200)
                 .body(containsString("\"text\""));
     }
 
     @Test
     void responseEntityTextWithoutAcceptToTextInFilter() {
-        given().accept("text/plain")
-                .when()
-                .get("test/response")
-                .then()
-                .statusCode(200)
-                .body(equalTo("text"));
+        given().accept("text/plain").when().get("test/response").then().statusCode(200).body(equalTo("text"));
     }
 
     @Test
     void responseEntityTextWithAcceptToTextInFilter() {
-        given().accept("application/json")
-                .header("x-set-accept-to-text", "true")
-                .when()
-                .get("test/response")
-                .then()
-                .statusCode(200)
-                .body(equalTo("text"));
+        given().accept("application/json").header("x-set-accept-to-text", "true").when().get("test/response").then()
+                .statusCode(200).body(equalTo("text"));
     }
 
     @Path("/test")

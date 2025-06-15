@@ -35,10 +35,10 @@ public class FlywayExtensionConfigUrlMissingNamedDataSourceStaticInjectionTest {
                     .hasMessageContainingAll(
                             "Flyway for datasource 'users' was deactivated automatically because this datasource was deactivated.",
                             "Datasource 'users' was deactivated automatically because its URL is not set.",
-                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                            // hints
                             "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'.",
-                            "This bean is injected into",
-                            MyBean.class.getName() + "#flyway"));
+                            "This bean is injected into", MyBean.class.getName() + "#flyway"));
 
     @Inject
     MyBean myBean;

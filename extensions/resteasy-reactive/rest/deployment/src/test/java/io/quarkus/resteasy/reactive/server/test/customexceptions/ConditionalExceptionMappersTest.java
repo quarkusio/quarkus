@@ -24,16 +24,14 @@ import io.smallrye.mutiny.Uni;
 public class ConditionalExceptionMappersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(AbstractException.class, FirstException.class, SecondException.class,
-                                    WontBeEnabledMappers.class, WillBeEnabledMappers.class, AlwaysEnabledMappers.class,
-                                    TestResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(AbstractException.class, FirstException.class,
+                    SecondException.class, WontBeEnabledMappers.class, WillBeEnabledMappers.class,
+                    AlwaysEnabledMappers.class, TestResource.class);
+        }
+    });
 
     @Test
     public void test() {

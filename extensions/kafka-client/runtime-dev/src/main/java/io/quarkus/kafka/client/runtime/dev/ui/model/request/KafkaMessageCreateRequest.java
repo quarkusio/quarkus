@@ -16,7 +16,8 @@ public class KafkaMessageCreateRequest {
     public KafkaMessageCreateRequest() {
     }
 
-    public KafkaMessageCreateRequest(String topic, Integer partition, String value, String key, Map<String, String> headers) {
+    public KafkaMessageCreateRequest(String topic, Integer partition, String value, String key,
+            Map<String, String> headers) {
         this.topic = topic;
         this.partition = partition;
         this.value = value;

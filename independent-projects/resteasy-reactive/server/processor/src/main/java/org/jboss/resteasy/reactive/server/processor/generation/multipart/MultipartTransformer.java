@@ -45,7 +45,8 @@ public class MultipartTransformer implements BiFunction<String, ClassVisitor, Cl
         }
 
         @Override
-        public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
+        public void visit(int version, int access, String name, String signature, String superName,
+                String[] interfaces) {
             thisDescriptor = "L" + name + ";";
 
             // make the class public
@@ -71,8 +72,7 @@ public class MultipartTransformer implements BiFunction<String, ClassVisitor, Cl
         @Override
         public void visitEnd() {
             MethodVisitor injectMethod = visitMethod(Opcodes.ACC_PUBLIC | Opcodes.ACC_SYNTHETIC, INJECT_METHOD_NAME,
-                    INJECT_METHOD_DESCRIPTOR, null,
-                    null);
+                    INJECT_METHOD_DESCRIPTOR, null, null);
             injectMethod.visitParameter("ctx", 0 /* modifiers */);
             injectMethod.visitCode();
 
@@ -82,8 +82,7 @@ public class MultipartTransformer implements BiFunction<String, ClassVisitor, Cl
             injectMethod.visitIntInsn(Opcodes.ALOAD, 1);
 
             // call the populator
-            injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, populatorName.replace('.', '/'),
-                    POPULATE_METHOD_NAME,
+            injectMethod.visitMethodInsn(Opcodes.INVOKESTATIC, populatorName.replace('.', '/'), POPULATE_METHOD_NAME,
                     String.format("(%s%s)V", thisDescriptor, INJECTION_CONTEXT_DESCRIPTOR), false);
 
             injectMethod.visitInsn(Opcodes.RETURN);

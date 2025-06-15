@@ -22,9 +22,8 @@ public class CustomNamedHttpSecPolicyTest {
         TestIdentityController.resetRoles().add("test", "test", "test");
     }
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.permission.authenticated.paths=admin\n" +
-            "quarkus.http.auth.permission.authenticated.policy=custom123\n";
+    private static final String APP_PROPS = "" + "quarkus.http.auth.permission.authenticated.paths=admin\n"
+            + "quarkus.http.auth.permission.authenticated.policy=custom123\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
@@ -39,43 +38,12 @@ public class CustomNamedHttpSecPolicyTest {
 
     @Test
     public void testAdminPath() {
-        RestAssured
-                .given()
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(401);
-        RestAssured
-                .given()
-                .when()
-                .header("hush-hush", "ignored")
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
+        RestAssured.given().when().get("/admin").then().assertThat().statusCode(401);
+        RestAssured.given().when().header("hush-hush", "ignored").get("/admin").then().assertThat().statusCode(200)
                 .body(Matchers.equalTo(":/admin"));
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .header("hush-hush", "ignored")
-                .get("/admin")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .body(Matchers.equalTo("test:/admin"));
-        RestAssured
-                .given()
-                .auth()
-                .preemptive()
-                .basic("test", "test")
-                .when()
-                .get("/admin")
-                .then()
-                .assertThat()
+        RestAssured.given().auth().preemptive().basic("test", "test").when().header("hush-hush", "ignored")
+                .get("/admin").then().assertThat().statusCode(200).body(Matchers.equalTo("test:/admin"));
+        RestAssured.given().auth().preemptive().basic("test", "test").when().get("/admin").then().assertThat()
                 .statusCode(403);
     }
 

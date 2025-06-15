@@ -60,8 +60,7 @@ public class FakeSmtpTestBase {
 
     protected ReactiveMailer getMailer(MailersRuntimeConfig config, boolean trustAll) {
         Mailers mailers = new Mailers(vertx.getDelegate(), vertx, config, LaunchMode.NORMAL,
-                new MailerSupport(true, Set.of()),
-                new TlsConfigurationRegistry() {
+                new MailerSupport(true, Set.of()), new TlsConfigurationRegistry() {
 
                     @Override
                     public Optional<TlsConfiguration> get(String name) {
@@ -93,8 +92,7 @@ public class FakeSmtpTestBase {
 
     protected ReactiveMailer getMailer(MailersRuntimeConfig config, String confName, TlsConfiguration configuration) {
         Mailers mailers = new Mailers(vertx.getDelegate(), vertx, config, LaunchMode.NORMAL,
-                new MailerSupport(true, Set.of()),
-                new TlsConfigurationRegistry() {
+                new MailerSupport(true, Set.of()), new TlsConfigurationRegistry() {
 
                     @Override
                     public Optional<TlsConfiguration> get(String name) {

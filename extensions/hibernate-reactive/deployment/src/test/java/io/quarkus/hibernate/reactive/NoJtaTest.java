@@ -25,9 +25,7 @@ public class NoJtaTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addAsResource("application.properties"));
 
     @Inject
     Mutiny.SessionFactory factory;
@@ -35,8 +33,7 @@ public class NoJtaTest {
     @Test
     @RunOnVertxContext
     public void test(UniAsserter asserter) {
-        ServiceRegistry serviceRegistry = ((MutinySessionFactoryImpl) ClientProxy.unwrap(factory))
-                .getServiceRegistry();
+        ServiceRegistry serviceRegistry = ((MutinySessionFactoryImpl) ClientProxy.unwrap(factory)).getServiceRegistry();
 
         // Two assertions are necessary, because these values are influenced by separate configuration
         assertThat(serviceRegistry.getService(JtaPlatform.class).retrieveTransactionManager()).isNull();
@@ -45,8 +42,10 @@ public class NoJtaTest {
         // Quick test to make sure HRX works
         MyEntity entity = new MyEntity("default");
 
-        asserter.assertThat(() -> factory.withTransaction((session, tx) -> session.persist(entity))
-                .chain(() -> factory.withTransaction((session, tx) -> session.clear().find(MyEntity.class, entity.getId()))),
+        asserter.assertThat(
+                () -> factory.withTransaction((session, tx) -> session.persist(entity))
+                        .chain(() -> factory.withTransaction(
+                                (session, tx) -> session.clear().find(MyEntity.class, entity.getId()))),
                 retrievedEntity -> assertThat(retrievedEntity).isNotSameAs(entity).returns(entity.getName(),
                         MyEntity::getName));
     }

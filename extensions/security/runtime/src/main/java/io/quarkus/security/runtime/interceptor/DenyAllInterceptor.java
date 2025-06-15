@@ -10,7 +10,6 @@ import jakarta.interceptor.InvocationContext;
 import io.quarkus.security.spi.runtime.AuthorizationController;
 
 /**
- *
  * @author Michal Szynkiewicz, michal.l.szynkiewicz@gmail.com
  */
 @Interceptor

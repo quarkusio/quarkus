@@ -18,23 +18,17 @@ public class ContinuousTestingSharedStateListener implements TestListener {
         if (lastState == null) {
             ContinuousTestingSharedStateManager.setRunning(true);
         } else {
-            ContinuousTestingSharedStateManager
-                    .setLastState((s) -> {
-                        if (s.getLastRun() > lastState.lastRun) {
-                            //small chance of race, next run already completed
-                            return s.setRunning(true).build();
-                        } else {
-                            return s.setRunning(true)
-                                    .setCurrentFailed(lastState.currentFailed)
-                                    .setCurrentSkipped(lastState.currentSkipped)
-                                    .setCurrentFailed(lastState.currentFailed)
-                                    .setFailed(lastState.failed)
-                                    .setSkipped(lastState.skipped)
-                                    .setPassed(lastState.passed)
-                                    .setRun(lastState.run)
-                                    .build();
-                        }
-                    });
+            ContinuousTestingSharedStateManager.setLastState((s) -> {
+                if (s.getLastRun() > lastState.lastRun) {
+                    // small chance of race, next run already completed
+                    return s.setRunning(true).build();
+                } else {
+                    return s.setRunning(true).setCurrentFailed(lastState.currentFailed)
+                            .setCurrentSkipped(lastState.currentSkipped).setCurrentFailed(lastState.currentFailed)
+                            .setFailed(lastState.failed).setSkipped(lastState.skipped).setPassed(lastState.passed)
+                            .setRun(lastState.run).build();
+                }
+            });
         }
     }
 
@@ -51,18 +45,14 @@ public class ContinuousTestingSharedStateListener implements TestListener {
             @Override
             public void runComplete(TestRunResults testRunResults) {
                 ContinuousTestingSharedStateManager.setLastState(s -> {
-                    return lastState = s.setLastRun(testRunResults.getId())
-                            .setInProgress(false)
-                            .setRun(testRunResults.getPassedCount() +
-                                    testRunResults.getFailedCount() +
-                                    testRunResults.getSkippedCount())
-                            .setPassed(testRunResults.getPassedCount())
-                            .setFailed(testRunResults.getFailedCount())
+                    return lastState = s.setLastRun(testRunResults.getId()).setInProgress(false)
+                            .setRun(testRunResults.getPassedCount() + testRunResults.getFailedCount()
+                                    + testRunResults.getSkippedCount())
+                            .setPassed(testRunResults.getPassedCount()).setFailed(testRunResults.getFailedCount())
                             .setSkipped(testRunResults.getSkippedCount())
                             .setCurrentPassed(testRunResults.getCurrentPassedCount())
                             .setCurrentFailed(testRunResults.getCurrentFailedCount())
-                            .setCurrentSkipped(testRunResults.getCurrentSkippedCount())
-                            .build();
+                            .setCurrentSkipped(testRunResults.getCurrentSkippedCount()).build();
 
                 });
             }

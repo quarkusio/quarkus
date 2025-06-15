@@ -27,10 +27,10 @@ import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.client.WebClientOptions;
 
 @Certificates(baseDir = "target/certs", certificates = @Certificate(name = "ssl-test-sni", password = "secret", formats = {
-        Format.JKS, Format.PKCS12, Format.PEM }, cn = "acme.org", subjectAlternativeNames = "DNS:example.com", aliases = {
+        Format.JKS, Format.PKCS12,
+        Format.PEM }, cn = "acme.org", subjectAlternativeNames = "DNS:example.com", aliases = {
                 @Alias(name = "alias", cn = "foo.com", subjectAlternativeNames = "DNS:acme.org", password = "secret"),
-                @Alias(name = "alias-2", cn = "bar.biz", subjectAlternativeNames = "DNS:localhost", password = "secret")
-        }))
+                @Alias(name = "alias-2", cn = "bar.biz", subjectAlternativeNames = "DNS:localhost", password = "secret") }))
 public class SslServerWithPemWithSniMatchingSanDNSTest {
 
     @TestHTTPResource(value = "/ssl", ssl = true)
@@ -47,16 +47,14 @@ public class SslServerWithPemWithSniMatchingSanDNSTest {
             """;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addAsResource(new StringAsset((configuration)), "application.properties")
-                    .addAsResource(new File("target/certs/ssl-test-sni.key"), "server-key.pem")
-                    .addAsResource(new File("target/certs/ssl-test-sni.crt"), "server-cert.pem")
-                    .addAsResource(new File("target/certs/alias.key"), "alias.key")
-                    .addAsResource(new File("target/certs/alias.crt"), "alias.crt")
-                    .addAsResource(new File("target/certs/alias-2.key"), "alias-2.key")
-                    .addAsResource(new File("target/certs/alias-2.crt"), "alias-2.crt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBean.class).addAsResource(new StringAsset((configuration)), "application.properties")
+            .addAsResource(new File("target/certs/ssl-test-sni.key"), "server-key.pem")
+            .addAsResource(new File("target/certs/ssl-test-sni.crt"), "server-cert.pem")
+            .addAsResource(new File("target/certs/alias.key"), "alias.key")
+            .addAsResource(new File("target/certs/alias.crt"), "alias.crt")
+            .addAsResource(new File("target/certs/alias-2.key"), "alias-2.key")
+            .addAsResource(new File("target/certs/alias-2.crt"), "alias-2.crt"));
 
     @Inject
     Vertx vertx;
@@ -64,15 +62,13 @@ public class SslServerWithPemWithSniMatchingSanDNSTest {
     @Test
     public void testSslServerWithPkcs12() {
         // Cannot use RESTAssured as it does not validate the certificate names (even when forced.)
-        WebClientOptions options = new WebClientOptions()
-                .setSsl(true)
-                .setTrustOptions(new io.vertx.core.net.JksOptions()
-                        .setPath("target/certs/ssl-test-sni-truststore.jks")
+        WebClientOptions options = new WebClientOptions().setSsl(true)
+                .setTrustOptions(new io.vertx.core.net.JksOptions().setPath("target/certs/ssl-test-sni-truststore.jks")
                         .setPassword("secret"))
                 .setForceSni(true);
         WebClient client = WebClient.create(vertx, options);
-        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm()).send().toCompletionStage().toCompletableFuture()
-                .join();
+        HttpResponse<Buffer> response = client.getAbs(url.toExternalForm()).send().toCompletionStage()
+                .toCompletableFuture().join();
         Assertions.assertThat(response.statusCode()).isEqualTo(200);
         Assertions.assertThat(response.bodyAsString()).isEqualTo("ssl");
     }

@@ -132,12 +132,9 @@ public class TransactionalHashCommandsTest extends DatasourceTestBase {
     public void hgetReactiveWithWatchAndDiscard() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
-            return hash.hget(KEY, "field")
-                    .chain(() -> hash.hset(KEY, "field", "hello"))
-                    .chain(() -> hash.hget(KEY, "field"))
-                    .chain(() -> reactive.hash(String.class).hset(KEY, "a", "b"))
-                    .chain(() -> hash.hdel(KEY, "field", "field2"))
-                    .chain(() -> hash.hget(KEY, "field"));
+            return hash.hget(KEY, "field").chain(() -> hash.hset(KEY, "field", "hello"))
+                    .chain(() -> hash.hget(KEY, "field")).chain(() -> reactive.hash(String.class).hset(KEY, "a", "b"))
+                    .chain(() -> hash.hdel(KEY, "field", "field2")).chain(() -> hash.hget(KEY, "field"));
         }, KEY).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(0);
         assertThat(result.discarded()).isTrue();

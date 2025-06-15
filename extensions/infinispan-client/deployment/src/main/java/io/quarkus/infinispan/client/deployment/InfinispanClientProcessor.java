@@ -108,7 +108,8 @@ class InfinispanClientProcessor {
     private static final Log log = LogFactory.getLog(InfinispanClientProcessor.class);
 
     private static final String SERVICE_BINDING_INTERFACE_NAME = "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter";
-    private static final DotName INFINISPAN_CLIENT_ANNOTATION = DotName.createSimple(InfinispanClientName.class.getName());
+    private static final DotName INFINISPAN_CLIENT_ANNOTATION = DotName
+            .createSimple(InfinispanClientName.class.getName());
     private static final DotName INFINISPAN_REMOTE_ANNOTATION = DotName.createSimple(Remote.class.getName());
 
     private static final DotName INFINISPAN_CLIENT = DotName.createSimple(RemoteCacheManager.class.getName());
@@ -121,9 +122,7 @@ class InfinispanClientProcessor {
 
     private static final List<DotName> SUPPORTED_INJECTION_TYPE = List.of(
             // Client types
-            INFINISPAN_CLIENT,
-            INFINISPAN_COUNTER_MANAGER,
-            INFINISPAN_CACHE_CLIENT);
+            INFINISPAN_CLIENT, INFINISPAN_COUNTER_MANAGER, INFINISPAN_CACHE_CLIENT);
 
     /**
      * The Infinispan client build time configuration.
@@ -153,12 +152,11 @@ class InfinispanClientProcessor {
         protostreamPropertiesBuildItem.produce(new MarshallingBuildItem(properties, marshallers));
     }
 
-    private static void initMarshaller(String clientName, Optional<String> marshallerOpt, Map<String, Object> marshallers)
-            throws ClassNotFoundException {
+    private static void initMarshaller(String clientName, Optional<String> marshallerOpt,
+            Map<String, Object> marshallers) throws ClassNotFoundException {
 
         if (marshallerOpt.isPresent()) {
-            Class<?> marshallerClass = Class.forName(
-                    marshallerOpt.get(), false,
+            Class<?> marshallerClass = Class.forName(marshallerOpt.get(), false,
                     Thread.currentThread().getContextClassLoader());
             marshallers.put(clientName, Util.getInstance(marshallerClass));
         } else {
@@ -171,15 +169,13 @@ class InfinispanClientProcessor {
     InfinispanPropertiesBuildItem setup(ApplicationArchivesBuildItem applicationArchivesBuildItem,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,
-            BuildProducer<SystemPropertyBuildItem> systemProperties,
-            BuildProducer<FeatureBuildItem> feature,
+            BuildProducer<SystemPropertyBuildItem> systemProperties, BuildProducer<FeatureBuildItem> feature,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
             BuildProducer<NativeImageSecurityProviderBuildItem> nativeImageSecurityProviders,
             BuildProducer<NativeImageConfigBuildItem> nativeImageConfig,
             BuildProducer<InfinispanClientNameBuildItem> infinispanClientNames,
-            MarshallingBuildItem marshallingBuildItem,
-            BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
+            MarshallingBuildItem marshallingBuildItem, BuildProducer<NativeImageResourceBuildItem> resourceBuildItem,
             CombinedIndexBuildItem applicationIndexBuildItem) throws ClassNotFoundException, IOException {
 
         feature.produce(new FeatureBuildItem(Feature.INFINISPAN_CLIENT));
@@ -193,16 +189,18 @@ class InfinispanClientProcessor {
 
         resourceBuildItem.produce(new NativeImageResourceBuildItem("proto/generated/query.proto"));
         resourceBuildItem.produce(new NativeImageResourceBuildItem(WrappedMessage.PROTO_FILE));
-        hotDeployment
-                .produce(new HotDeploymentWatchedFileBuildItem(META_INF + File.separator + DEFAULT_HOTROD_CLIENT_PROPERTIES));
+        hotDeployment.produce(
+                new HotDeploymentWatchedFileBuildItem(META_INF + File.separator + DEFAULT_HOTROD_CLIENT_PROPERTIES));
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.INFINISPAN_CLIENT));
         nativeImageSecurityProviders.produce(new NativeImageSecurityProviderBuildItem(SASL_SECURITY_PROVIDER));
 
         // add per cache file config
-        handlePerCacheFileConfig(infinispanClientsBuildTimeConfig.defaultInfinispanClient(), resourceBuildItem, hotDeployment);
-        for (InfinispanClientBuildTimeConfig config : infinispanClientsBuildTimeConfig.namedInfinispanClients().values()) {
+        handlePerCacheFileConfig(infinispanClientsBuildTimeConfig.defaultInfinispanClient(), resourceBuildItem,
+                hotDeployment);
+        for (InfinispanClientBuildTimeConfig config : infinispanClientsBuildTimeConfig.namedInfinispanClients()
+                .values()) {
             handlePerCacheFileConfig(config, resourceBuildItem, hotDeployment);
         }
 
@@ -227,14 +225,12 @@ class InfinispanClientProcessor {
 
                     if (metaPath != null) {
                         try (Stream<Path> dirElements = Files.list(metaPath)) {
-                            Iterator<Path> protoFiles = dirElements
-                                    .filter(Files::isRegularFile)
-                                    .filter(p -> p.toString().endsWith(PROTO_EXTENSION))
-                                    .iterator();
+                            Iterator<Path> protoFiles = dirElements.filter(Files::isRegularFile)
+                                    .filter(p -> p.toString().endsWith(PROTO_EXTENSION)).iterator();
                             // We monitor the entire meta inf directory if properties are available
                             if (protoFiles.hasNext()) {
                                 // Quarkus doesn't currently support hot deployment watching directories
-                                //                hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
+                                // hotDeployment.produce(new HotDeploymentConfigFileBuildItem(META_INF));
                             }
                             while (protoFiles.hasNext()) {
                                 Path path = protoFiles.next();
@@ -250,8 +246,8 @@ class InfinispanClientProcessor {
                     }
                 }
                 properties.putAll(marshallingBuildItem.getProperties());
-                Collection<ClassInfo> initializerClasses = index.getAllKnownImplementors(DotName.createSimple(
-                        SerializationContextInitializer.class.getName()));
+                Collection<ClassInfo> initializerClasses = index
+                        .getAllKnownImplementors(DotName.createSimple(SerializationContextInitializer.class.getName()));
                 initializerClasses
                         .addAll(index.getAllKnownImplementors(DotName.createSimple(GeneratedSchema.class.getName())));
 
@@ -275,37 +271,33 @@ class InfinispanClientProcessor {
         }
 
         // Add any user project listeners to allow reflection in native code
-        Collection<AnnotationInstance> listenerInstances = index.getAnnotations(
-                DotName.createSimple(ClientListener.class.getName()));
+        Collection<AnnotationInstance> listenerInstances = index
+                .getAnnotations(DotName.createSimple(ClientListener.class.getName()));
         for (AnnotationInstance instance : listenerInstances) {
             AnnotationTarget target = instance.target();
             if (target.kind() == AnnotationTarget.Kind.CLASS) {
-                reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                        target.asClass().name().toString())
-                        .methods().build());
+                reflectiveClass.produce(
+                        ReflectiveClassBuildItem.builder(target.asClass().name().toString()).methods().build());
             }
         }
 
         // This is required for netty to work properly
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                "io.netty.channel.socket.nio.NioSocketChannel").build());
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel").build());
         // We use reflection to have continuous queries work
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                "org.infinispan.client.hotrod.event.impl.ContinuousQueryImpl$ClientEntryListener")
-                .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("org.infinispan.client.hotrod.event.impl.ContinuousQueryImpl$ClientEntryListener").methods()
+                .build());
         // We use reflection to allow for near cache invalidations
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                "org.infinispan.client.hotrod.near.NearCacheService$InvalidatedNearCacheListener")
-                .methods().build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("org.infinispan.client.hotrod.near.NearCacheService$InvalidatedNearCacheListener").methods()
+                .build());
         // This is required when a cache is clustered to tell us topology
-        reflectiveClass.produce(
-                ReflectiveClassBuildItem.builder(
-                        "org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash")
-                        .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem
+                .builder("org.infinispan.client.hotrod.impl.consistenthash.SegmentConsistentHash").build());
 
         // Elytron Classes
-        String[] elytronClasses = new String[] {
-                "org.wildfly.security.sasl.plain.PlainSaslClientFactory",
+        String[] elytronClasses = new String[] { "org.wildfly.security.sasl.plain.PlainSaslClientFactory",
                 "org.wildfly.security.sasl.scram.ScramSaslClientFactory",
                 "org.wildfly.security.sasl.digest.DigestClientFactory",
                 "org.wildfly.security.credential.BearerTokenCredential",
@@ -313,11 +305,9 @@ class InfinispanClientProcessor {
                 "org.wildfly.security.credential.KeyPairCredential",
                 "org.wildfly.security.credential.PasswordCredential",
                 "org.wildfly.security.credential.PublicKeyCredential",
-                "org.wildfly.security.credential.SecretKeyCredential",
-                "org.wildfly.security.credential.SSHCredential",
+                "org.wildfly.security.credential.SecretKeyCredential", "org.wildfly.security.credential.SSHCredential",
                 "org.wildfly.security.digest.SHA512_256MessageDigest",
-                "org.wildfly.security.credential.X509CertificateChainPrivateCredential"
-        };
+                "org.wildfly.security.credential.X509CertificateChainPrivateCredential" };
 
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(elytronClasses).reason(getClass().getName()).build());
         return new InfinispanPropertiesBuildItem(propertiesMap);
@@ -339,11 +329,10 @@ class InfinispanClientProcessor {
     BeanContainerListenerBuildItem build(InfinispanRecorder recorder, InfinispanPropertiesBuildItem builderBuildItem) {
         Map<String, Properties> propertiesMap = builderBuildItem.getProperties();
 
-        addMaxEntries(DEFAULT_INFINISPAN_CLIENT_NAME,
-                infinispanClientsBuildTimeConfig.defaultInfinispanClient(), propertiesMap.get(DEFAULT_INFINISPAN_CLIENT_NAME));
+        addMaxEntries(DEFAULT_INFINISPAN_CLIENT_NAME, infinispanClientsBuildTimeConfig.defaultInfinispanClient(),
+                propertiesMap.get(DEFAULT_INFINISPAN_CLIENT_NAME));
         for (Map.Entry<String, InfinispanClientBuildTimeConfig> config : infinispanClientsBuildTimeConfig
-                .namedInfinispanClients()
-                .entrySet()) {
+                .namedInfinispanClients().entrySet()) {
             addMaxEntries(config.getKey(), config.getValue(), propertiesMap.get(config.getKey()));
         }
 
@@ -354,7 +343,9 @@ class InfinispanClientProcessor {
     /**
      * Reads all the contents of the file as a single string using default charset
      *
-     * @param fileName file on class path to read contents of
+     * @param fileName
+     *        file on class path to read contents of
+     *
      * @return string containing the contents of the file
      */
     private static String getContents(String fileName) {
@@ -365,7 +356,9 @@ class InfinispanClientProcessor {
     /**
      * Reads all the contents of the input stream as a single string using default charset
      *
-     * @param stream to read contents of
+     * @param stream
+     *        to read contents of
+     *
      * @return string containing the contents of the file
      */
     private static String getContents(InputStream stream) {
@@ -379,7 +372,8 @@ class InfinispanClientProcessor {
         Set<String> clientNames = new HashSet<>();
         IndexView indexView = indexBuildItem.getIndex();
         // adds to clientNames all the client names scanned from @InfinispanClientName annotation
-        Collection<AnnotationInstance> infinispanClientAnnotations = indexView.getAnnotations(INFINISPAN_CLIENT_ANNOTATION);
+        Collection<AnnotationInstance> infinispanClientAnnotations = indexView
+                .getAnnotations(INFINISPAN_CLIENT_ANNOTATION);
         for (AnnotationInstance annotation : infinispanClientAnnotations) {
             clientNames.add(annotation.value().asString());
         }
@@ -397,8 +391,7 @@ class InfinispanClientProcessor {
         return clientNames;
     }
 
-    private Properties loadHotrodProperties(String clientName,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
+    private Properties loadHotrodProperties(String clientName, BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             MarshallingBuildItem marshallingBuildItem) {
         String filePath;
         if (InfinispanClientUtil.isDefault(clientName)) {
@@ -406,8 +399,7 @@ class InfinispanClientProcessor {
         } else {
             filePath = META_INF + "/" + clientName + "-" + DEFAULT_HOTROD_CLIENT_PROPERTIES;
         }
-        InputStream stream = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(filePath);
+        InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(filePath);
         Properties properties;
         if (stream == null) {
             properties = new Properties();
@@ -480,9 +472,8 @@ class InfinispanClientProcessor {
     @BuildStep
     void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> buildProducer) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            buildProducer.produce(
-                    new ServiceProviderBuildItem(SERVICE_BINDING_INTERFACE_NAME,
-                            InfinispanServiceBindingConverter.class.getName()));
+            buildProducer.produce(new ServiceProviderBuildItem(SERVICE_BINDING_INTERFACE_NAME,
+                    InfinispanServiceBindingConverter.class.getName()));
         }
     }
 
@@ -498,8 +489,8 @@ class InfinispanClientProcessor {
             if (o == null || getClass() != o.getClass())
                 return false;
             RemoteCacheBean that = (RemoteCacheBean) o;
-            return Objects.equals(type, that.type) && Objects.equals(clientName, that.clientName) && Objects.equals(
-                    cacheName, that.cacheName);
+            return Objects.equals(type, that.type) && Objects.equals(clientName, that.clientName)
+                    && Objects.equals(cacheName, that.cacheName);
         }
 
         @Override
@@ -514,13 +505,13 @@ class InfinispanClientProcessor {
             @Override
             public void transform(TransformationContext ctx) {
                 // If annotated with @Remote and no @InfinispanClientName is used, we need to add the default
-                AnnotationInstance cacheNameAnnotation = Annotations.find(ctx.getQualifiers(), INFINISPAN_REMOTE_ANNOTATION);
-                AnnotationInstance infinispanClientName = Annotations.find(ctx.getQualifiers(), INFINISPAN_CLIENT_ANNOTATION);
+                AnnotationInstance cacheNameAnnotation = Annotations.find(ctx.getQualifiers(),
+                        INFINISPAN_REMOTE_ANNOTATION);
+                AnnotationInstance infinispanClientName = Annotations.find(ctx.getQualifiers(),
+                        INFINISPAN_CLIENT_ANNOTATION);
                 if (cacheNameAnnotation != null && infinispanClientName == null) {
-                    ctx.transform()
-                            .add(INFINISPAN_CLIENT_ANNOTATION,
-                                    AnnotationValue.createStringValue("value", DEFAULT_INFINISPAN_CLIENT_NAME))
-                            .done();
+                    ctx.transform().add(INFINISPAN_CLIENT_ANNOTATION,
+                            AnnotationValue.createStringValue("value", DEFAULT_INFINISPAN_CLIENT_NAME)).done();
                 }
             }
 
@@ -533,18 +524,15 @@ class InfinispanClientProcessor {
 
     @Record(RUNTIME_INIT)
     @BuildStep
-    void generateClientBeans(InfinispanRecorder recorder,
-            BeanRegistrationPhaseBuildItem registrationPhase,
-            BeanDiscoveryFinishedBuildItem finishedBuildItem,
-            List<InfinispanClientNameBuildItem> infinispanClientNames,
+    void generateClientBeans(InfinispanRecorder recorder, BeanRegistrationPhaseBuildItem registrationPhase,
+            BeanDiscoveryFinishedBuildItem finishedBuildItem, List<InfinispanClientNameBuildItem> infinispanClientNames,
             BeanDiscoveryFinishedBuildItem beans,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
 
         Set<String> clientNames = infinispanClientNames.stream().map(icn -> icn.getName()).collect(Collectors.toSet());
 
         Set<RemoteCacheBean> remoteCacheBeans = beans.getInjectionPoints().stream()
-                .filter(ip -> ip.getRequiredQualifier(INFINISPAN_REMOTE_ANNOTATION) != null)
-                .map(ip -> {
+                .filter(ip -> ip.getRequiredQualifier(INFINISPAN_REMOTE_ANNOTATION) != null).map(ip -> {
                     AnnotationInstance remoteCacheQualifier = ip.getRequiredQualifier(INFINISPAN_REMOTE_ANNOTATION);
                     AnnotationInstance clientNameQualifier = ip.getRequiredQualifier(INFINISPAN_CLIENT_ANNOTATION);
 
@@ -554,15 +542,13 @@ class InfinispanClientProcessor {
                     remoteCacheBean.clientName = clientNameQualifier == null ? DEFAULT_INFINISPAN_CLIENT_NAME
                             : clientNameQualifier.value().asString();
                     return remoteCacheBean;
-                })
-                .collect(Collectors.toSet());
+                }).collect(Collectors.toSet());
 
         if (!clientNames.contains(DEFAULT_INFINISPAN_CLIENT_NAME)) {
             boolean createDefaultCacheManager = finishedBuildItem.getInjectionPoints().stream()
                     .filter(i -> SUPPORTED_INJECTION_TYPE.contains(i.getRequiredType().name())
                             && i.getRequiredQualifier(INFINISPAN_CLIENT_ANNOTATION) == null)
-                    .findAny()
-                    .isPresent();
+                    .findAny().isPresent();
             if (createDefaultCacheManager) {
                 clientNames.add(DEFAULT_INFINISPAN_CLIENT_NAME);
             }
@@ -570,33 +556,24 @@ class InfinispanClientProcessor {
 
         // Produce default and/or named RemoteCacheManager and CounterManager beans
         for (String clientName : clientNames) {
-            syntheticBeanBuildItemBuildProducer.produce(
-                    configureAndCreateSyntheticBean(clientName, RemoteCacheManager.class,
-                            recorder.infinispanClientSupplier(clientName)));
-            syntheticBeanBuildItemBuildProducer.produce(
-                    configureAndCreateSyntheticBean(clientName, CounterManager.class,
-                            recorder.infinispanCounterManagerSupplier(clientName)));
+            syntheticBeanBuildItemBuildProducer.produce(configureAndCreateSyntheticBean(clientName,
+                    RemoteCacheManager.class, recorder.infinispanClientSupplier(clientName)));
+            syntheticBeanBuildItemBuildProducer.produce(configureAndCreateSyntheticBean(clientName,
+                    CounterManager.class, recorder.infinispanCounterManagerSupplier(clientName)));
         }
 
         // Produce RemoteCache beans
         for (RemoteCacheBean remoteCacheBean : remoteCacheBeans) {
-            syntheticBeanBuildItemBuildProducer.produce(
-                    configureAndCreateSyntheticBean(remoteCacheBean,
-                            recorder.infinispanRemoteCacheClientSupplier(remoteCacheBean.clientName,
-                                    remoteCacheBean.cacheName)));
+            syntheticBeanBuildItemBuildProducer.produce(configureAndCreateSyntheticBean(remoteCacheBean, recorder
+                    .infinispanRemoteCacheClientSupplier(remoteCacheBean.clientName, remoteCacheBean.cacheName)));
         }
     }
 
-    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name,
-            Class<T> type,
+    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(String name, Class<T> type,
             Supplier<T> supplier) {
 
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
-                .configure(type)
-                .supplier(supplier)
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .setRuntimeInit();
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(type)
+                .supplier(supplier).scope(ApplicationScoped.class).unremovable().setRuntimeInit();
 
         if (InfinispanClientUtil.isDefault(name)) {
             configurator.addQualifier(Default.class);
@@ -608,19 +585,17 @@ class InfinispanClientProcessor {
         return configurator.done();
     }
 
-    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(RemoteCacheBean remoteCacheBean, Supplier<T> supplier) {
-        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem.configure(RemoteCache.class)
-                .types(remoteCacheBean.type)
-                .scope(ApplicationScoped.class)
-                .supplier(supplier)
-                .unremovable()
-                .setRuntimeInit();
+    static <T> SyntheticBeanBuildItem configureAndCreateSyntheticBean(RemoteCacheBean remoteCacheBean,
+            Supplier<T> supplier) {
+        SyntheticBeanBuildItem.ExtendedBeanConfigurator configurator = SyntheticBeanBuildItem
+                .configure(RemoteCache.class).types(remoteCacheBean.type).scope(ApplicationScoped.class)
+                .supplier(supplier).unremovable().setRuntimeInit();
 
-        configurator.addQualifier().annotation(INFINISPAN_REMOTE_ANNOTATION).addValue("value", remoteCacheBean.cacheName)
-                .done();
+        configurator.addQualifier().annotation(INFINISPAN_REMOTE_ANNOTATION)
+                .addValue("value", remoteCacheBean.cacheName).done();
 
-        configurator.addQualifier().annotation(INFINISPAN_CLIENT_ANNOTATION).addValue("value", remoteCacheBean.clientName)
-                .done();
+        configurator.addQualifier().annotation(INFINISPAN_CLIENT_ANNOTATION)
+                .addValue("value", remoteCacheBean.clientName).done();
         return configurator.done();
     }
 

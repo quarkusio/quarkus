@@ -47,20 +47,14 @@ public class MicrometerObservationCollector
         public MicrometerContext(String channel) {
             Tags tags = Tags.of(Tag.of("channel", channel));
             this.msgCount = Counter.builder("quarkus.messaging.message.count")
-                    .description("The number of messages observed")
-                    .tags(tags)
-                    .register(Metrics.globalRegistry);
+                    .description("The number of messages observed").tags(tags).register(Metrics.globalRegistry);
             this.duration = Timer.builder("quarkus.messaging.message.duration")
-                    .description("The duration of the message processing")
-                    .tags(tags)
-                    .register(Metrics.globalRegistry);
+                    .description("The duration of the message processing").tags(tags).register(Metrics.globalRegistry);
             this.acks = Counter.builder("quarkus.messaging.message.acks")
-                    .description("The number of messages processed successfully")
-                    .tags(tags)
+                    .description("The number of messages processed successfully").tags(tags)
                     .register(Metrics.globalRegistry);
             this.nacks = Counter.builder("quarkus.messaging.message.failures")
-                    .description("The number of messages processed with failures")
-                    .tags(tags)
+                    .description("The number of messages processed with failures").tags(tags)
                     .register(Metrics.globalRegistry);
         }
 

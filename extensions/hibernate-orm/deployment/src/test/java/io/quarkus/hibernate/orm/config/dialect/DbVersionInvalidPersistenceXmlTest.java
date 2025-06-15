@@ -37,23 +37,19 @@ public class DbVersionInvalidPersistenceXmlTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class)
                     .addAsManifestResource(new StringAsset(loadResourceAndReplacePlaceholders(
                             "META-INF/some-persistence-with-h2-version-placeholder.xml",
-                            Map.of("H2_VERSION", "999.999"))),
-                            "persistence.xml"))
+                            Map.of("H2_VERSION", "999.999"))), "persistence.xml"))
             .withConfigurationResource("application-datasource-only.properties")
-            .assertException(throwable -> assertThat(throwable)
-                    .rootCause()
-                    .hasMessageContainingAll(
-                            "Persistence unit 'templatePU' was configured to run with a database version"
-                                    + " of at least '" + CONFIGURED_DB_VERSION_REPORTED + "', but the actual version is '"
-                                    + ACTUAL_H2_VERSION + "'",
-                            "Consider upgrading your database",
-                            "Alternatively, rebuild your application with 'jakarta.persistence.database-product-version="
-                                    + ACTUAL_H2_VERSION + "'",
-                            "this may disable some features and/or impact performance negatively"));
+            .assertException(throwable -> assertThat(throwable).rootCause().hasMessageContainingAll(
+                    "Persistence unit 'templatePU' was configured to run with a database version" + " of at least '"
+                            + CONFIGURED_DB_VERSION_REPORTED + "', but the actual version is '" + ACTUAL_H2_VERSION
+                            + "'",
+                    "Consider upgrading your database",
+                    "Alternatively, rebuild your application with 'jakarta.persistence.database-product-version="
+                            + ACTUAL_H2_VERSION + "'",
+                    "this may disable some features and/or impact performance negatively"));
 
     @Inject
     SessionFactory sessionFactory;

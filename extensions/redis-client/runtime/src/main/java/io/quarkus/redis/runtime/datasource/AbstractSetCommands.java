@@ -56,8 +56,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         if (keys.length <= 1) {
             return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
-        RedisCommand cmd = RedisCommand.of(Command.SDIFFSTORE)
-                .put(marshaller.encode(destination))
+        RedisCommand cmd = RedisCommand.of(Command.SDIFFSTORE).put(marshaller.encode(destination))
                 .putAll(marshaller.encode(keys));
         return execute(cmd);
     }
@@ -82,7 +81,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         return execute(cmd);
     }
 
-    //TODO To be tested
+    // TODO To be tested
     Uni<Response> _sintercard(int limit, K... keys) {
         notNullOrEmpty(keys, "keys");
         doesNotContainNull(keys, "keys");
@@ -103,8 +102,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         if (keys.length <= 1) {
             return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
-        RedisCommand cmd = RedisCommand.of(Command.SINTERSTORE)
-                .put(marshaller.encode(destination))
+        RedisCommand cmd = RedisCommand.of(Command.SINTERSTORE).put(marshaller.encode(destination))
                 .putAll(marshaller.encode(keys));
         return execute(cmd);
     }
@@ -137,9 +135,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         nonNull(source, "source");
         nonNull(destination, "destination");
         nonNull(member, "member");
-        return execute(RedisCommand.of(Command.SMOVE)
-                .put(marshaller.encode(source))
-                .put(marshaller.encode(destination))
+        return execute(RedisCommand.of(Command.SMOVE).put(marshaller.encode(source)).put(marshaller.encode(destination))
                 .put(marshaller.encode(member)));
     }
 
@@ -198,8 +194,7 @@ class AbstractSetCommands<K, V> extends ReactiveSortable<K, V> {
         if (keys.length <= 1) {
             return Uni.createFrom().failure(new IllegalArgumentException("`keys` must contain at least 2 keys"));
         }
-        RedisCommand cmd = RedisCommand.of(Command.SUNIONSTORE)
-                .put(marshaller.encode(destination))
+        RedisCommand cmd = RedisCommand.of(Command.SUNIONSTORE).put(marshaller.encode(destination))
                 .putAll(marshaller.encode(keys));
         return execute(cmd);
     }

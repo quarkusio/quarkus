@@ -26,8 +26,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 
 public class SimpleJaxbTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withEmptyApplication();
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withEmptyApplication();
 
     @TestHTTPResource
     URI uri;

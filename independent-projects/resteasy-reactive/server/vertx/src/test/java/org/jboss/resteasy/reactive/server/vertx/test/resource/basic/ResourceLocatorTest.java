@@ -39,8 +39,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @tpSubChapter Resource
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Tests path encoding
+ *
  * @tpSince RESTEasy 3.0.20
  */
 @DisplayName("Resource Locator Test")
@@ -59,22 +62,21 @@ public class ResourceLocatorTest {
     }
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClass(ResourceLocatorQueueReceiver.class).addClass(ResourceLocatorReceiver.class)
-                            .addClass(ResourceLocatorRootInterface.class).addClass(ResourceLocatorSubInterface.class)
-                            .addClass(ResourceLocatorSubresource3Interface.class);
-                    war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResouce.class,
-                            ResourceLocatorAnnotationFreeSubResource.class, ResourceLocatorBaseResource.class,
-                            ResourceLocatorCollectionResource.class, ResourceLocatorDirectory.class,
-                            ResourceLocatorSubresource.class, ResourceLocatorSubresource2.class,
-                            ResourceLocatorSubresource3.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClass(ResourceLocatorQueueReceiver.class).addClass(ResourceLocatorReceiver.class)
+                    .addClass(ResourceLocatorRootInterface.class).addClass(ResourceLocatorSubInterface.class)
+                    .addClass(ResourceLocatorSubresource3Interface.class);
+            war.addClasses(PortProviderUtil.class, ResourceLocatorAbstractAnnotationFreeResouce.class,
+                    ResourceLocatorAnnotationFreeSubResource.class, ResourceLocatorBaseResource.class,
+                    ResourceLocatorCollectionResource.class, ResourceLocatorDirectory.class,
+                    ResourceLocatorSubresource.class, ResourceLocatorSubresource2.class,
+                    ResourceLocatorSubresource3.class);
+            return war;
+        }
+    });
 
     private String generateURL(String path) {
         return PortProviderUtil.generateURL(path, ResourceLocatorTest.class.getSimpleName());
@@ -82,6 +84,7 @@ public class ResourceLocatorTest {
 
     /**
      * @tpTestDetails Resource locator returns proxied resource.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -95,6 +98,7 @@ public class ResourceLocatorTest {
 
     /**
      * @tpTestDetails 1) Resource locator returns resource; 2) Resource locator returns resource locator.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -106,14 +110,17 @@ public class ResourceLocatorTest {
             Assertions.assertEquals(ResourceLocatorSubresource.class.getName(), response.readEntity(String.class));
         }
         {
-            Response response = client.target(generateURL("/base/1/resources/subresource2/stuff/2/bar")).request().get();
+            Response response = client.target(generateURL("/base/1/resources/subresource2/stuff/2/bar")).request()
+                    .get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-            Assertions.assertEquals(ResourceLocatorSubresource2.class.getName() + "-2", response.readEntity(String.class));
+            Assertions.assertEquals(ResourceLocatorSubresource2.class.getName() + "-2",
+                    response.readEntity(String.class));
         }
     }
 
     /**
      * @tpTestDetails Two matching metods, one a resource locator, the other a resource method.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -126,6 +133,7 @@ public class ResourceLocatorTest {
 
     /**
      * @tpTestDetails Locator returns resource which inherits annotations from an interface.
+     *
      * @tpSince RESTEasy 3.0.20
      */
     @Test
@@ -136,8 +144,7 @@ public class ResourceLocatorTest {
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals(response.readEntity(String.class), "got");
             Assertions.assertNotNull(response.getHeaderString("Content-Type"));
-            Assertions.assertEquals("text/plain;charset=UTF-8",
-                    response.getHeaderString("Content-Type"));
+            Assertions.assertEquals("text/plain;charset=UTF-8", response.getHeaderString("Content-Type"));
         }
         {
             Builder request = client.target(generateURL("/collection/annotation_free_subresource")).request();
@@ -150,16 +157,12 @@ public class ResourceLocatorTest {
     @Test
     @DisplayName("Test @BeanParam annotation in Subresources")
     public void testBeanParamsInSubresource() {
-        given().get("/sub3/first/resources/subresource3?value=second")
-                .then()
-                .body(is("first and second"));
+        given().get("/sub3/first/resources/subresource3?value=second").then().body(is("first and second"));
     }
 
     @Test
     @DisplayName("Test @BeanParam annotation using generics in Subresources")
     public void testBeanParamsWithGenericsInSubresource() {
-        given().get("/sub3/first/resources/subresource4?value=second")
-                .then()
-                .body(is("first and second"));
+        given().get("/sub3/first/resources/subresource4?value=second").then().body(is("first and second"));
     }
 }

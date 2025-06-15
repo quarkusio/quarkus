@@ -24,7 +24,8 @@ public class KotlinSerializationCommonProcessor {
     // Kotlin Serialization generates classes at compile time which need to be available via reflection
     // for serialization to work properly
     @BuildStep
-    public void registerReflection(CombinedIndexBuildItem index, BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
+    public void registerReflection(CombinedIndexBuildItem index,
+            BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         var serializableInstances = index.getIndex().getAnnotations(SERIALIZABLE);
         if (serializableInstances.isEmpty()) {
             return;
@@ -44,14 +45,14 @@ public class KotlinSerializationCommonProcessor {
                 supportClassNames.add(field.type().name().toString());
             }
         }
-        // the companion classes need to be registered for reflection so Kotlin can construct them and invoke methods reflectively
+        // the companion classes need to be registered for reflection so Kotlin can construct them and invoke methods
+        // reflectively
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(supportClassNames.toArray(EMPTY_ARRAY))
-                .reason(getClass().getName())
-                .methods().build());
-        // the serializable classes need to be registered for reflection, so they can be constructed and also Kotlin can determine the companion field at runtime
+                .reason(getClass().getName()).methods().build());
+        // the serializable classes need to be registered for reflection, so they can be constructed and also Kotlin can
+        // determine the companion field at runtime
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(serializableClassNames.toArray(EMPTY_ARRAY))
-                .reason(getClass().getName())
-                .fields().build());
+                .reason(getClass().getName()).fields().build());
     }
 
     @BuildStep

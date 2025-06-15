@@ -30,9 +30,7 @@ public class AvroProtocolCodeGenProvider extends AvroCodeGenProviderBase impleme
     void init() {
     }
 
-    void compileSingleFile(Path filePath,
-            Path outputDirectory,
-            AvroOptions options) throws CodeGenException {
+    void compileSingleFile(Path filePath, Path outputDirectory, AvroOptions options) throws CodeGenException {
         try {
             final Protocol protocol = Protocol.parse(filePath.toFile());
             final SpecificCompiler compiler = new SpecificCompiler(protocol);

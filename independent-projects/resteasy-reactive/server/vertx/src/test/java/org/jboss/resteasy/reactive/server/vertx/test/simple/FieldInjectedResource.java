@@ -32,7 +32,8 @@ public class FieldInjectedResource {
         return "OK";
     }
 
-    protected void checkInjections(String path, String query, String header, UriInfo uriInfo, SimpleBeanParam beanParam) {
+    protected void checkInjections(String path, String query, String header, UriInfo uriInfo,
+            SimpleBeanParam beanParam) {
         Assertions.assertEquals("one-query", query);
         Assertions.assertEquals("one-header", header);
         Assertions.assertNotNull(uriInfo);
@@ -43,10 +44,8 @@ public class FieldInjectedResource {
 
     @Path("param")
     @GET
-    public String param(@QueryParam("query") String query,
-            @HeaderParam("header") String header,
-            @Context UriInfo uriInfo,
-            @BeanParam SimpleBeanParam beanParam) {
+    public String param(@QueryParam("query") String query, @HeaderParam("header") String header,
+            @Context UriInfo uriInfo, @BeanParam SimpleBeanParam beanParam) {
         checkInjections("/injection/param", query, header, uriInfo, beanParam);
         return "OK";
     }

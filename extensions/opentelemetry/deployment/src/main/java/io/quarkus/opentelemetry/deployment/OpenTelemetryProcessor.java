@@ -99,20 +99,15 @@ public class OpenTelemetryProcessor {
 
     @BuildStep(onlyIfNot = MetricProcessor.MetricEnabled.class)
     void registerForReflection(BuildProducer<ReflectiveMethodBuildItem> reflectiveItem) {
-        if (isClassPresentAtRuntime(
-                "io.opentelemetry.exporter.logging.LoggingMetricExporter")) {
-            reflectiveItem.produce(new ReflectiveMethodBuildItem(
-                    "Used by OpenTelemetry Export Logging",
-                    false,
-                    "io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil",
-                    "addMeterConfiguratorCondition"));
+        if (isClassPresentAtRuntime("io.opentelemetry.exporter.logging.LoggingMetricExporter")) {
+            reflectiveItem.produce(new ReflectiveMethodBuildItem("Used by OpenTelemetry Export Logging", false,
+                    "io.opentelemetry.sdk.metrics.internal.SdkMeterProviderUtil", "addMeterConfiguratorCondition"));
         }
     }
 
     @BuildStep
     AdditionalBeanBuildItem ensureProducerIsRetained() {
-        return AdditionalBeanBuildItem.builder()
-                .setUnremovable()
+        return AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClasses(
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.SimpleLogRecordProcessorCustomizer.class,
                         AutoConfiguredOpenTelemetrySdkBuilderCustomizer.ResourceCustomizer.class,
@@ -128,68 +123,57 @@ public class OpenTelemetryProcessor {
     @Record(ExecutionTime.STATIC_INIT)
     SyntheticBeanBuildItem setupDelayedAttribute(OpenTelemetryRecorder recorder, ApplicationInfoBuildItem appInfo) {
         return SyntheticBeanBuildItem.configure(DelayedAttributes.class).types(Attributes.class)
-                .supplier(recorder.delayedAttributes(Version.getVersion(),
-                        appInfo.getName(), appInfo.getVersion()))
-                .scope(Singleton.class)
-                .setRuntimeInit()
-                .done();
+                .supplier(recorder.delayedAttributes(Version.getVersion(), appInfo.getName(), appInfo.getVersion()))
+                .scope(Singleton.class).setRuntimeInit().done();
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void openTelemetryBean(OpenTelemetryRecorder recorder,
-            OTelRuntimeConfig oTelRuntimeConfig,
-            OTelBuildConfig oTelBuildConfig,
-            BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
+    void openTelemetryBean(OpenTelemetryRecorder recorder, OTelRuntimeConfig oTelRuntimeConfig,
+            OTelBuildConfig oTelBuildConfig, BuildProducer<SyntheticBeanBuildItem> syntheticProducer,
             BuildProducer<OpenTelemetrySdkBuildItem> openTelemetrySdkBuildItemBuildProducer) {
-        syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class)
-                .defaultBean()
-                .setRuntimeInit()
-                .unremovable()
-                .scope(Singleton.class)
-                .addInjectionPoint(
-                        ParameterizedType.create(
-                                DotName.createSimple(Instance.class),
-                                new Type[] { ClassType.create(
-                                        DotName.createSimple(
-                                                AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class.getName())) },
-                                null))
-                .createWith(recorder.opentelemetryBean(oTelRuntimeConfig))
-                .destroyer(OpenTelemetryDestroyer.class)
+        syntheticProducer.produce(SyntheticBeanBuildItem.configure(OpenTelemetry.class).defaultBean().setRuntimeInit()
+                .unremovable().scope(Singleton.class)
+                .addInjectionPoint(ParameterizedType.create(DotName.createSimple(Instance.class),
+                        new Type[] { ClassType.create(DotName
+                                .createSimple(AutoConfiguredOpenTelemetrySdkBuilderCustomizer.class.getName())) },
+                        null))
+                .createWith(recorder.opentelemetryBean(oTelRuntimeConfig)).destroyer(OpenTelemetryDestroyer.class)
                 .done());
 
         // same as `TracerEnabled`
-        boolean tracingEnabled = oTelBuildConfig.traces().enabled()
-                .map(it -> it && oTelBuildConfig.enabled())
+        boolean tracingEnabled = oTelBuildConfig.traces().enabled().map(it -> it && oTelBuildConfig.enabled())
                 .orElseGet(oTelBuildConfig::enabled);
         // same as `MetricProcessor.MetricEnabled`
-        boolean metricsEnabled = oTelBuildConfig.metrics().enabled()
-                .map(it -> it && oTelBuildConfig.enabled())
+        boolean metricsEnabled = oTelBuildConfig.metrics().enabled().map(it -> it && oTelBuildConfig.enabled())
                 .orElseGet(oTelBuildConfig::enabled);
         // same as `LogHandlerProcessor.LogsEnabled`
-        boolean loggingEnabled = oTelBuildConfig.logs().enabled()
-                .map(it -> it && oTelBuildConfig.enabled())
+        boolean loggingEnabled = oTelBuildConfig.logs().enabled().map(it -> it && oTelBuildConfig.enabled())
                 .orElseGet(oTelBuildConfig::enabled);
 
-        openTelemetrySdkBuildItemBuildProducer.produce(new OpenTelemetrySdkBuildItem(
-                tracingEnabled, metricsEnabled, loggingEnabled, recorder.isOtelSdkEnabled(oTelRuntimeConfig)));
+        openTelemetrySdkBuildItemBuildProducer.produce(new OpenTelemetrySdkBuildItem(tracingEnabled, metricsEnabled,
+                loggingEnabled, recorder.isOtelSdkEnabled(oTelRuntimeConfig)));
     }
 
     @BuildStep
-    void handleServices(OTelBuildConfig config,
-            BuildProducer<ServiceProviderBuildItem> services,
+    void handleServices(OTelBuildConfig config, BuildProducer<ServiceProviderBuildItem> services,
             BuildProducer<RemovedResourceBuildItem> removedResources,
             BuildProducer<RuntimeReinitializedClassBuildItem> runtimeReinitialized) throws IOException {
 
-        final List<String> spanExporterProviders = ServiceUtil.classNamesNamedIn(
-                Thread.currentThread().getContextClassLoader(),
-                SPI_ROOT + ConfigurableSpanExporterProvider.class.getName())
-                .stream()
-                .filter(p -> !OtlpSpanExporterProvider.class.getName().equals(p))
-                .collect(toList()); // filter out OtlpSpanExporterProvider since it depends on OkHttp
+        final List<String> spanExporterProviders = ServiceUtil
+                .classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                        SPI_ROOT + ConfigurableSpanExporterProvider.class.getName())
+                .stream().filter(p -> !OtlpSpanExporterProvider.class.getName().equals(p)).collect(toList()); // filter
+                                                                                                                                                                                                                                                                                                   // out
+                                                                                                                                                                                                                                                                                                   // OtlpSpanExporterProvider
+                                                                                                                                                                                                                                                                                                   // since
+                                                                                                                                                                                                                                                                                                   // it
+                                                                                                                                                                                                                                                                                                   // depends
+                                                                                                                                                                                                                                                                                                   // on
+                                                                                                                                                                                                                                                                                                   // OkHttp
         if (!spanExporterProviders.isEmpty()) {
-            services.produce(
-                    new ServiceProviderBuildItem(ConfigurableSpanExporterProvider.class.getName(), spanExporterProviders));
+            services.produce(new ServiceProviderBuildItem(ConfigurableSpanExporterProvider.class.getName(),
+                    spanExporterProviders));
         }
         // remove the service file that contains OtlpSpanExporterProvider
         if (config.traces().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
@@ -198,15 +182,20 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")));
         }
 
-        final List<String> metricExporterProviders = ServiceUtil.classNamesNamedIn(
-                Thread.currentThread().getContextClassLoader(),
-                SPI_ROOT + ConfigurableMetricExporterProvider.class.getName())
-                .stream()
-                .filter(p -> !OtlpMetricExporterProvider.class.getName().equals(p))
-                .collect(toList()); // filter out OtlpMetricExporterProvider since it depends on OkHttp
+        final List<String> metricExporterProviders = ServiceUtil
+                .classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                        SPI_ROOT + ConfigurableMetricExporterProvider.class.getName())
+                .stream().filter(p -> !OtlpMetricExporterProvider.class.getName().equals(p)).collect(toList()); // filter
+                                                                                                                                                                                                                                                                                                         // out
+                                                                                                                                                                                                                                                                                                         // OtlpMetricExporterProvider
+                                                                                                                                                                                                                                                                                                         // since
+                                                                                                                                                                                                                                                                                                         // it
+                                                                                                                                                                                                                                                                                                         // depends
+                                                                                                                                                                                                                                                                                                         // on
+                                                                                                                                                                                                                                                                                                         // OkHttp
         if (!metricExporterProviders.isEmpty()) {
-            services.produce(
-                    new ServiceProviderBuildItem(ConfigurableMetricExporterProvider.class.getName(), metricExporterProviders));
+            services.produce(new ServiceProviderBuildItem(ConfigurableMetricExporterProvider.class.getName(),
+                    metricExporterProviders));
         }
         if (config.metrics().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
             removedResources.produce(new RemovedResourceBuildItem(
@@ -214,16 +203,20 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")));
         }
 
-        final List<String> logRecordExporterProviders = ServiceUtil.classNamesNamedIn(
-                Thread.currentThread().getContextClassLoader(),
-                SPI_ROOT + ConfigurableLogRecordExporterProvider.class.getName())
-                .stream()
-                .filter(p -> !OtlpLogRecordExporterProvider.class.getName().equals(p))
-                .collect(toList()); // filter out OtlpLogRecordExporterProvider since it depends on OkHttp
+        final List<String> logRecordExporterProviders = ServiceUtil
+                .classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
+                        SPI_ROOT + ConfigurableLogRecordExporterProvider.class.getName())
+                .stream().filter(p -> !OtlpLogRecordExporterProvider.class.getName().equals(p)).collect(toList()); // filter
+                                                                                                                                                                                                                                                                                                                  // out
+                                                                                                                                                                                                                                                                                                                  // OtlpLogRecordExporterProvider
+                                                                                                                                                                                                                                                                                                                  // since
+                                                                                                                                                                                                                                                                                                                  // it
+                                                                                                                                                                                                                                                                                                                  // depends
+                                                                                                                                                                                                                                                                                                                  // on
+                                                                                                                                                                                                                                                                                                                  // OkHttp
         if (!logRecordExporterProviders.isEmpty()) {
-            services.produce(
-                    new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
-                            logRecordExporterProviders));
+            services.produce(new ServiceProviderBuildItem(ConfigurableLogRecordExporterProvider.class.getName(),
+                    logRecordExporterProviders));
         }
         if (config.logs().exporter().stream().noneMatch(ExporterType.Constants.OTLP_VALUE::equals)) {
             removedResources.produce(new RemovedResourceBuildItem(
@@ -231,56 +224,49 @@ public class OpenTelemetryProcessor {
                     Set.of("META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")));
         }
 
-        runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
-        runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
-        runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
-        runtimeReinitialized.produce(
-                new RuntimeReinitializedClassBuildItem("io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
+        runtimeReinitialized.produce(new RuntimeReinitializedClassBuildItem(
+                "io.opentelemetry.sdk.autoconfigure.TracerProviderConfiguration"));
+        runtimeReinitialized.produce(new RuntimeReinitializedClassBuildItem(
+                "io.opentelemetry.sdk.autoconfigure.MeterProviderConfiguration"));
+        runtimeReinitialized.produce(new RuntimeReinitializedClassBuildItem(
+                "io.opentelemetry.sdk.autoconfigure.LoggerProviderConfiguration"));
+        runtimeReinitialized.produce(new RuntimeReinitializedClassBuildItem(
+                "io.quarkus.opentelemetry.runtime.logs.OpenTelemetryLogHandler"));
 
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
-                ConfigurableSamplerProvider.class.getName()));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath(ConfigurableSamplerProvider.class.getName()));
 
         // The following are added but not officially supported, yet.
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
-                AutoConfigurationCustomizerProvider.class.getName()));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
-                ResourceProvider.class.getName()));
-        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(
-                ConfigurablePropagatorProvider.class.getName()));
+        services.produce(ServiceProviderBuildItem
+                .allProvidersFromClassPath(AutoConfigurationCustomizerProvider.class.getName()));
+        services.produce(ServiceProviderBuildItem.allProvidersFromClassPath(ResourceProvider.class.getName()));
+        services.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath(ConfigurablePropagatorProvider.class.getName()));
     }
 
     @BuildStep
-    void registerOpenTelemetryContextStorage(
-            BuildProducer<NativeImageResourceBuildItem> resource,
+    void registerOpenTelemetryContextStorage(BuildProducer<NativeImageResourceBuildItem> resource,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        resource.produce(new NativeImageResourceBuildItem(
-                "META-INF/services/io.opentelemetry.context.ContextStorageProvider"));
+        resource.produce(
+                new NativeImageResourceBuildItem("META-INF/services/io.opentelemetry.context.ContextStorageProvider"));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(QuarkusContextStorage.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
+                .reason(getClass().getName()).methods().fields().build());
     }
 
     @BuildStep
-    void registerWithSpan(
-            BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrar,
+    void registerWithSpan(BuildProducer<InterceptorBindingRegistrarBuildItem> interceptorBindingRegistrar,
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
 
-        interceptorBindingRegistrar.produce(new InterceptorBindingRegistrarBuildItem(
-                new InterceptorBindingRegistrar() {
-                    @Override
-                    public List<InterceptorBinding> getAdditionalBindings() {
-                        return List.of(
-                                InterceptorBinding.of(WithSpan.class, Set.of("value", "kind")),
-                                InterceptorBinding.of(AddingSpanAttributes.class, Set.of("value")));
-                    }
-                }));
+        interceptorBindingRegistrar.produce(new InterceptorBindingRegistrarBuildItem(new InterceptorBindingRegistrar() {
+            @Override
+            public List<InterceptorBinding> getAdditionalBindings() {
+                return List.of(InterceptorBinding.of(WithSpan.class, Set.of("value", "kind")),
+                        InterceptorBinding.of(AddingSpanAttributes.class, Set.of("value")));
+            }
+        }));
 
-        additionalBeans.produce(new AdditionalBeanBuildItem(
-                WithSpanInterceptor.class,
-                AddingSpanAttributesInterceptor.class));
+        additionalBeans
+                .produce(new AdditionalBeanBuildItem(WithSpanInterceptor.class, AddingSpanAttributesInterceptor.class));
     }
 
     @BuildStep
@@ -297,7 +283,8 @@ public class OpenTelemetryProcessor {
                 }
             } else if (target.kind() == AnnotationTarget.Kind.METHOD) {
                 MethodInfo methodInfo = target.asMethod();
-                // WITH_SPAN_INTERCEPTOR and ADD_SPAN_ATTRIBUTES must not be applied at the same time and the first has priority.
+                // WITH_SPAN_INTERCEPTOR and ADD_SPAN_ATTRIBUTES must not be applied at the same time and the first has
+                // priority.
                 if (methodInfo.hasAnnotation(WITH_SPAN) && methodInfo.hasAnnotation(ADD_SPAN_ATTRIBUTES)) {
                     transform.remove(isAddSpanAttribute);
                 }
@@ -308,10 +295,7 @@ public class OpenTelemetryProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createOpenTelemetry(
-            OpenTelemetryRecorder recorder,
-            CoreVertxBuildItem vertx,
-            LaunchModeBuildItem launchMode) {
+    void createOpenTelemetry(OpenTelemetryRecorder recorder, CoreVertxBuildItem vertx, LaunchModeBuildItem launchMode) {
 
         if (launchMode.getLaunchMode() == LaunchMode.DEVELOPMENT || launchMode.getLaunchMode() == LaunchMode.TEST) {
             recorder.resetGlobalOpenTelemetryForDevMode();
@@ -331,10 +315,7 @@ public class OpenTelemetryProcessor {
                 || capabilities.isPresent(Capability.REACTIVE_ORACLE_CLIENT)
                 || capabilities.isPresent(Capability.REACTIVE_PG_CLIENT);
         boolean redisClientAvailable = capabilities.isPresent(Capability.REDIS_CLIENT);
-        recorder.setupVertxTracer(beanContainerBuildItem.getValue(),
-                sqlClientAvailable,
-                redisClientAvailable,
-                config);
+        recorder.setupVertxTracer(beanContainerBuildItem.getValue(), sqlClientAvailable, redisClientAvailable, config);
     }
 
     @BuildStep
@@ -345,12 +326,9 @@ public class OpenTelemetryProcessor {
 
             // verify that no datasource is using OpenTelemetryDriver as that is not supported anymore
             if (dataSourceUsesOTelJdbcDriver(dataSourceName)) {
-                validationErrors.produce(
-                        new ValidationErrorBuildItem(
-                                new ConfigurationException(
-                                        String.format(
-                                                "Data source '%s' is using unsupported JDBC driver '%s', please activate JDBC instrumentation by setting the 'quarkus.datasource.jdbc.telemetry' configuration property to 'true' instead",
-                                                dataSourceName, OPEN_TELEMETRY_DRIVER))));
+                validationErrors.produce(new ValidationErrorBuildItem(new ConfigurationException(String.format(
+                        "Data source '%s' is using unsupported JDBC driver '%s', please activate JDBC instrumentation by setting the 'quarkus.datasource.jdbc.telemetry' configuration property to 'true' instead",
+                        dataSourceName, OPEN_TELEMETRY_DRIVER))));
             }
         }
     }

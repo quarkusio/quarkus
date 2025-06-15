@@ -41,7 +41,8 @@ public class ApplicationIndexBuildStep {
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (file.getFileName().toString().endsWith(".class")) {
                         if (isRemovedApplicationClass(file, removedApplicationClasses)) {
-                            log.debugf("File %s will not be indexed because the class has been configured as part of '%s'",
+                            log.debugf(
+                                    "File %s will not be indexed because the class has been configured as part of '%s'",
                                     file, "quarkus.class-loading.removed-resources");
                         } else {
                             log.debugf("Indexing %s", file);
@@ -82,7 +83,8 @@ public class ApplicationIndexBuildStep {
         return new ApplicationIndexBuildItem(appIndex);
     }
 
-    private Set<String> removedApplicationClasses(CurateOutcomeBuildItem curation, ClassLoadingConfig classLoadingConfig) {
+    private Set<String> removedApplicationClasses(CurateOutcomeBuildItem curation,
+            ClassLoadingConfig classLoadingConfig) {
         ResolvedDependency appArtifact = curation.getApplicationModel().getAppArtifact();
         Set<String> entry = classLoadingConfig.removedResources()
                 .get(appArtifact.getGroupId() + ":" + appArtifact.getArtifactId());

@@ -25,13 +25,12 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
         final File file = new File("target/jbang-resteasy");
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
-        assertCreateJBangProject(newCreateJBangProject(projectDir)
-                .setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, false));
+        assertCreateJBangProject(
+                newCreateJBangProject(projectDir).setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, false));
 
         assertThat(projectDir.resolve("jbang")).exists();
 
-        assertThat(projectDir.resolve("src/main.java"))
-                .exists()
+        assertThat(projectDir.resolve("src/main.java")).exists()
                 .satisfies(checkContains("//usr/bin/env jbang \"$0\" \"$@\" ; exit $?"))
                 .satisfies(checkContains("//DEPS io.quarkus:quarkus-resteasy"));
     }
@@ -41,13 +40,12 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
         final File file = new File("target/jbang-resteasy");
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
-        assertCreateJBangProject(newCreateJBangProject(projectDir)
-                .setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, true));
+        assertCreateJBangProject(
+                newCreateJBangProject(projectDir).setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, true));
 
         assertThat(projectDir.resolve("jbang")).doesNotExist();
 
-        assertThat(projectDir.resolve("src/main.java"))
-                .exists()
+        assertThat(projectDir.resolve("src/main.java")).exists()
                 .satisfies(checkContains("//usr/bin/env jbang \"$0\" \"$@\" ; exit $?"))
                 .satisfies(checkContains("//DEPS io.quarkus:quarkus-resteasy"));
     }
@@ -60,14 +58,12 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
         Set<String> extensions = new HashSet<>();
         extensions.add("resteasy-jsonb");
 
-        assertCreateJBangProject(newCreateJBangProject(projectDir)
-                .extensions(extensions)
+        assertCreateJBangProject(newCreateJBangProject(projectDir).extensions(extensions)
                 .setValue(CreateJBangProjectKey.NO_JBANG_WRAPPER, false));
 
         assertThat(projectDir.resolve("jbang")).exists();
 
-        assertThat(projectDir.resolve("src/main.java"))
-                .exists()
+        assertThat(projectDir.resolve("src/main.java")).exists()
                 .satisfies(checkContains("//usr/bin/env jbang \"$0\" \"$@\" ; exit $?"))
                 .satisfies(checkContains("//DEPS io.quarkus:quarkus-resteasy"))
                 .satisfies(checkContains("//DEPS io.quarkus:quarkus-resteasy-jsonb"));
@@ -77,8 +73,7 @@ public class CreateJBangProjectTest extends PlatformAwareTestBase {
         return new CreateJBangProject(QuarkusProjectHelper.getProject(dir, BuildTool.MAVEN));
     }
 
-    private void assertCreateJBangProject(CreateJBangProject createJBangProjectProject)
-            throws QuarkusCommandException {
+    private void assertCreateJBangProject(CreateJBangProject createJBangProjectProject) throws QuarkusCommandException {
         final QuarkusCommandOutcome result = createJBangProjectProject.execute();
         assertTrue(result.isSuccess());
     }

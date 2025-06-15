@@ -28,8 +28,8 @@ public class BeanParamParserTest {
     @Test
     public void mustRecursivelyParseAllParamTypes() throws IOException {
         Index index = Index.of(BeanExample.class, BeanExample.InnerBean.class);
-        List<Item> parseResult = BeanParamParser.parse(index.getClassByName(DotName.createSimple(BeanExample.class.getName())),
-                index);
+        List<Item> parseResult = BeanParamParser
+                .parse(index.getClassByName(DotName.createSimple(BeanExample.class.getName())), index);
         assertNotNull(parseResult);
         parseResult.sort(Comparator.comparing(Item::type));
 
@@ -58,12 +58,10 @@ public class BeanParamParserTest {
     @Test
     public void mustDetectCycleInBeanParamsChain() throws IOException {
         Index index = Index.of(CyclingBeanParamsExample.class, CyclingBeanParamsExample.InnerBean.class);
-        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
-                () -> BeanParamParser.parse(
-                        index.getClassByName(DotName.createSimple(CyclingBeanParamsExample.class.getName())),
-                        index));
-        assertThat(thrown.getMessage()).isEqualTo(
-                "Cycle detected in BeanParam annotations; already processed class " + CyclingBeanParamsExample.class.getName());
+        IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class, () -> BeanParamParser
+                .parse(index.getClassByName(DotName.createSimple(CyclingBeanParamsExample.class.getName())), index));
+        assertThat(thrown.getMessage()).isEqualTo("Cycle detected in BeanParam annotations; already processed class "
+                + CyclingBeanParamsExample.class.getName());
     }
 
     @SuppressWarnings("unchecked")

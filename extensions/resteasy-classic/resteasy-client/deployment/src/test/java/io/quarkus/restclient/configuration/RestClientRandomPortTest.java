@@ -17,10 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 class RestClientRandomPortTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, EchoClient.class))
-            .overrideRuntimeConfigKey("quarkus.http.port", "0")
-            .overrideRuntimeConfigKey("quarkus.http.test-port", "0")
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, EchoClient.class))
+            .overrideRuntimeConfigKey("quarkus.http.port", "0").overrideRuntimeConfigKey("quarkus.http.test-port", "0")
             .overrideRuntimeConfigKey("quarkus.rest-client.EchoClient.url", "http://localhost:${quarkus.http.port}");
 
     @Inject

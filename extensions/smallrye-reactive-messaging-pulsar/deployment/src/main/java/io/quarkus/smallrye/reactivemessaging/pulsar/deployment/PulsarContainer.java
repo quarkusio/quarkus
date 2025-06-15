@@ -55,9 +55,7 @@ public class PulsarContainer extends GenericContainer<PulsarContainer> {
         String command = "#!/bin/bash \n";
         command += "export PULSAR_PREFIX_advertisedListeners=" + advertisedListeners + " \n";
         command += "bin/apply-config-from-env.py conf/standalone.conf && bin/pulsar standalone -nfw -nss";
-        copyFileToContainer(
-                Transferable.of(command.getBytes(StandardCharsets.UTF_8), 700),
-                STARTER_SCRIPT);
+        copyFileToContainer(Transferable.of(command.getBytes(StandardCharsets.UTF_8), 700), STARTER_SCRIPT);
     }
 
     public PulsarContainer withPort(final int fixedPort) {

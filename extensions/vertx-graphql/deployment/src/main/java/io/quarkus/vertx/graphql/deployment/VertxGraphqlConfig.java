@@ -15,8 +15,8 @@ public interface VertxGraphqlConfig {
 
     interface VertxGraphqlUiConfig {
         /**
-         * If GraphQL UI should be included every time. By default, this is only included when the application is running
-         * in dev mode.
+         * If GraphQL UI should be included every time. By default, this is only included when the application is
+         * running in dev mode.
          */
         @WithDefault("false")
         boolean alwaysInclude();

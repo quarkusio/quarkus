@@ -27,7 +27,8 @@ public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder 
     private static volatile GenericTypeMapping genericTypeMapping;
     private static volatile Map<Class<?>, MultipartResponseData> multipartResponsesData;
 
-    private static volatile ClientProxies clientProxies = new ClientProxies(Collections.emptyMap(), Collections.emptyMap());
+    private static volatile ClientProxies clientProxies = new ClientProxies(Collections.emptyMap(),
+            Collections.emptyMap());
 
     public static ClientProxies getClientProxies() {
         return clientProxies;
@@ -87,8 +88,8 @@ public class JaxrsClientReactiveRecorder extends ResteasyReactiveCommonRecorder 
         genericTypeMapping = typeMapping;
     }
 
-    public void registerInvocationHandlerGenericType(GenericTypeMapping genericTypeMapping, String invocationHandlerClass,
-            String resolvedType) {
+    public void registerInvocationHandlerGenericType(GenericTypeMapping genericTypeMapping,
+            String invocationHandlerClass, String resolvedType) {
         genericTypeMapping.addInvocationCallback(loadClass(invocationHandlerClass), loadClass(resolvedType));
     }
 }

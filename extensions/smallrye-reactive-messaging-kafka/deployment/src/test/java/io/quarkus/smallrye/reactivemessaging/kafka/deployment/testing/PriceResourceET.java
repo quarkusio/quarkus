@@ -34,13 +34,9 @@ class PriceResourceET {
             source.register(inboundSseEvent -> received.add(Double.valueOf(inboundSseEvent.readData())));
             source.open();
 
-            Awaitility.await()
-                    .atMost(Duration.ofSeconds(1))
-                    .until(() -> received.size() >= 2);
+            Awaitility.await().atMost(Duration.ofSeconds(1)).until(() -> received.size() >= 2);
         }
 
-        Assertions.assertThat(received)
-                .hasSizeGreaterThanOrEqualTo(2)
-                .allMatch(value -> (value >= 0) && (value < 100));
+        Assertions.assertThat(received).hasSizeGreaterThanOrEqualTo(2).allMatch(value -> (value >= 0) && (value < 100));
     }
 }

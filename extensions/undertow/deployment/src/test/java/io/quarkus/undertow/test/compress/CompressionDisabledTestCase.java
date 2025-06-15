@@ -15,14 +15,12 @@ public class CompressionDisabledTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleServlet.class))
+            .withApplicationRoot(root -> root.addClasses(SimpleServlet.class))
             .overrideConfigKey("quarkus.http.enable-compression", "false");
 
     @Test
     public void testCompressed() throws Exception {
-        ExtractableResponse<Response> response = get(SimpleServlet.SERVLET_ENDPOINT)
-                .then().statusCode(200).extract();
+        ExtractableResponse<Response> response = get(SimpleServlet.SERVLET_ENDPOINT).then().statusCode(200).extract();
         assertTrue(response.header("Content-Encoding") == null, response.headers().toString());
         assertEquals("ok", response.asString());
     }

@@ -3,8 +3,8 @@ package io.quarkus.redis.datasource.timeseries;
 import java.util.Locale;
 
 /**
- * Configure the bucket timestamp of an aggregation in the {@code TS.MRANGE} command.
- * It controls how bucket timestamps are reported.
+ * Configure the bucket timestamp of an aggregation in the {@code TS.MRANGE} command. It controls how bucket timestamps
+ * are reported.
  */
 public enum BucketTimestamp {
 

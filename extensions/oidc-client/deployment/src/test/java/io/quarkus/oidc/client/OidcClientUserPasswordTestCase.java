@@ -21,48 +21,31 @@ import io.restassured.response.Response;
 @QuarkusTestResource(KeycloakRealmUserPasswordManager.class)
 public class OidcClientUserPasswordTestCase {
 
-    private static Class<?>[] testClasses = {
-            OidcClientResource.class,
-            OidcPublicClientResource.class,
-            ProtectedResource.class
-    };
+    private static Class<?>[] testClasses = { OidcClientResource.class, OidcPublicClientResource.class,
+            ProtectedResource.class };
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("application-oidc-client-user-password.properties", "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("application-oidc-client-user-password.properties", "application.properties"));
 
     @Test
     public void testPasswordGrantToken() {
         String token = RestAssured.when().get("/client/token").body().asString();
-        RestAssured.given().auth().oauth2(token)
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
-                .body(equalTo("alice"));
+        RestAssured.given().auth().oauth2(token).when().get("/protected").then().statusCode(200).body(equalTo("alice"));
 
     }
 
     @Test
     public void testPasswordGrantTokenProvider() {
         String token = RestAssured.when().get("/client/tokenprovider").body().asString();
-        RestAssured.given().auth().oauth2(token)
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
-                .body(equalTo("alice"));
+        RestAssured.given().auth().oauth2(token).when().get("/protected").then().statusCode(200).body(equalTo("alice"));
 
     }
 
     @Test
     public void testPublicClientPasswordGrantToken() {
         String token = RestAssured.when().get("/public-client/token").body().asString();
-        RestAssured.given().auth().oauth2(token)
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
-                .body(equalTo("alice"));
+        RestAssured.given().auth().oauth2(token).when().get("/protected").then().statusCode(200).body(equalTo("alice"));
 
     }
 
@@ -71,10 +54,7 @@ public class OidcClientUserPasswordTestCase {
         String[] tokens = RestAssured.when().get("/client/tokens").body().asString().split(" ");
         assertTokensNotNull(tokens);
 
-        RestAssured.given().auth().oauth2(tokens[0])
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(tokens[0]).when().get("/protected").then().statusCode(200)
                 .body(equalTo("alice"));
 
     }
@@ -84,33 +64,24 @@ public class OidcClientUserPasswordTestCase {
         String[] tokens = RestAssured.when().get("/client/tokens").body().asString().split(" ");
         assertTokensNotNull(tokens);
 
-        RestAssured.given().auth().oauth2(tokens[0])
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(tokens[0]).when().get("/protected").then().statusCode(200)
                 .body(equalTo("alice"));
 
         // Wait until the access token has expired
-        await().atMost(5, TimeUnit.SECONDS)
-                .pollInterval(Duration.ofSeconds(1))
-                .until(new Callable<Boolean>() {
-                    @Override
-                    public Boolean call() throws Exception {
-                        Response r = RestAssured.given().auth().oauth2(tokens[0])
-                                .when().get("/protected").andReturn();
-                        return r.getStatusCode() == 401;
-                    }
-                });
+        await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofSeconds(1)).until(new Callable<Boolean>() {
+            @Override
+            public Boolean call() throws Exception {
+                Response r = RestAssured.given().auth().oauth2(tokens[0]).when().get("/protected").andReturn();
+                return r.getStatusCode() == 401;
+            }
+        });
 
-        String[] refreshedTokens = RestAssured.given().queryParam("refreshToken", tokens[1])
-                .when().get("/client/refresh-tokens").body().asString().split(" ");
+        String[] refreshedTokens = RestAssured.given().queryParam("refreshToken", tokens[1]).when()
+                .get("/client/refresh-tokens").body().asString().split(" ");
         assertTokensNotNull(refreshedTokens);
         assertNotEquals(tokens[0], refreshedTokens[0]);
 
-        RestAssured.given().auth().oauth2(refreshedTokens[0])
-                .when().get("/protected")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().oauth2(refreshedTokens[0]).when().get("/protected").then().statusCode(200)
                 .body(equalTo("alice"));
     }
 

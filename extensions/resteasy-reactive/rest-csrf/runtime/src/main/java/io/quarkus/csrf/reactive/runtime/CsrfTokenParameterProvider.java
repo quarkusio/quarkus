@@ -33,7 +33,8 @@ public class CsrfTokenParameterProvider {
     /**
      * Gets the CSRF token value.
      *
-     * @throws IllegalStateException if the {@link RoutingContext} does not contain a CSRF token value.
+     * @throws IllegalStateException
+     *         if the {@link RoutingContext} does not contain a CSRF token value.
      */
     public String getToken() {
         String token = (String) context.get(CSRF_TOKEN_KEY);

@@ -37,14 +37,11 @@ public class CustomAuth implements HttpAuthenticationMechanism {
     private static final String LOWERCASE_BASIC_PREFIX = BASIC_PREFIX.toLowerCase(Locale.ENGLISH);
     private static final int PREFIX_LENGTH = BASIC_PREFIX.length();
     private static final String COLON = ":";
-    protected static final ChallengeData CHALLENGE_DATA = new ChallengeData(
-            HttpResponseStatus.UNAUTHORIZED.code(),
-            HttpHeaderNames.WWW_AUTHENTICATE,
-            "BASIC realm=CUSTOM");
+    protected static final ChallengeData CHALLENGE_DATA = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+            HttpHeaderNames.WWW_AUTHENTICATE, "BASIC realm=CUSTOM");
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         List<String> authHeaders = context.request().headers().getAll(HttpHeaderNames.AUTHORIZATION);
         if (authHeaders != null) {
             for (String current : authHeaders) {
@@ -55,14 +52,15 @@ public class CustomAuth implements HttpAuthenticationMechanism {
                     byte[] decode = Base64.getDecoder().decode(base64Challenge);
 
                     plainChallenge = new String(decode, StandardCharsets.UTF_8);
-                    log.debugf("Found basic auth header %s (decoded using charset %s)", plainChallenge, StandardCharsets.UTF_8);
+                    log.debugf("Found basic auth header %s (decoded using charset %s)", plainChallenge,
+                            StandardCharsets.UTF_8);
                     int colonPos;
                     if ((colonPos = plainChallenge.indexOf(COLON)) > -1) {
                         String userName = plainChallenge.substring(0, colonPos);
                         char[] password = plainChallenge.substring(colonPos + 1).toCharArray();
 
-                        UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(userName,
-                                new PasswordCredential(password));
+                        UsernamePasswordAuthenticationRequest credential = new UsernamePasswordAuthenticationRequest(
+                                userName, new PasswordCredential(password));
                         return identityProviderManager.authenticate(credential);
                     }
 

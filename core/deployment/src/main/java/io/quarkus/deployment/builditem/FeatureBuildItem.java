@@ -6,11 +6,11 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.deployment.Feature;
 
 /**
- * Represents functionality provided by an extension. The name of the feature gets displayed in the log during application
- * bootstrap.
+ * Represents functionality provided by an extension. The name of the feature gets displayed in the log during
+ * application bootstrap.
  * <p>
- * An extension should provide at most one feature. The name must be unique. If multiple extensions register a feature of the
- * same name the build fails.
+ * An extension should provide at most one feature. The name must be unique. If multiple extensions register a feature
+ * of the same name the build fails.
  * <p>
  * The name of the feature should only contain lowercase characters, words are separated by dash {@code -}; e.g.
  * {@code security-jpa}. Features provided by core extensions should be listed in the {@link Feature} enum.

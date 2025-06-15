@@ -16,8 +16,8 @@ import org.jboss.resteasy.reactive.RestStreamElementType;
 public class ResourceMethod {
 
     /**
-     * The HTTP Method. Will be null if this is a resource locator method. Note that only one method is allowed in this class,
-     * if a method has multiple method annotations then it should be added multiple times.
+     * The HTTP Method. Will be null if this is a resource locator method. Note that only one method is allowed in this
+     * class, if a method has multiple method annotations then it should be added multiple times.
      */
     private String httpMethod;
 
@@ -27,27 +27,26 @@ public class ResourceMethod {
     private String path;
 
     /**
-     * The value of the {@link Produces} annotation, if none is specified on the method
-     * then this represents the value inherited from the class level, or null if not specified.
+     * The value of the {@link Produces} annotation, if none is specified on the method then this represents the value
+     * inherited from the class level, or null if not specified.
      */
     private String[] produces;
 
     /**
-     * The value of the {@link RestStreamElementType} or the {@link RestSseElementType} annotation, if none is specified on the
-     * method
-     * then this represents the value inherited from the class level, or null if not specified.
+     * The value of the {@link RestStreamElementType} or the {@link RestSseElementType} annotation, if none is specified
+     * on the method then this represents the value inherited from the class level, or null if not specified.
      */
     private String streamElementType;
 
     /**
-     * The value of the {@link Consumes} annotation, if none is specified on the method
-     * then this represents the value inherited from the class level, or null if not specified.
+     * The value of the {@link Consumes} annotation, if none is specified on the method then this represents the value
+     * inherited from the class level, or null if not specified.
      */
     private String[] consumes;
 
     /**
-     * The class names of the {@code @NameBinding} annotations that the method is annotated with.
-     * If none is specified on the method then this represents the value inherited from the class level.
+     * The class names of the {@code @NameBinding} annotations that the method is annotated with. If none is specified
+     * on the method then this represents the value inherited from the class level.
      */
     private Set<String> nameBindingNames = Collections.emptySet();
 
@@ -77,10 +76,10 @@ public class ResourceMethod {
     public ResourceMethod() {
     }
 
-    public ResourceMethod(String httpMethod, String path, String[] produces, String streamElementType, String[] consumes,
-            Set<String> nameBindingNames, String name, String returnType, String simpleReturnType, MethodParameter[] parameters,
-            boolean blocking, boolean suspended, boolean isSse, boolean isFormParamRequired,
-            List<ResourceMethod> subResourceMethods, boolean encoded) {
+    public ResourceMethod(String httpMethod, String path, String[] produces, String streamElementType,
+            String[] consumes, Set<String> nameBindingNames, String name, String returnType, String simpleReturnType,
+            MethodParameter[] parameters, boolean blocking, boolean suspended, boolean isSse,
+            boolean isFormParamRequired, List<ResourceMethod> subResourceMethods, boolean encoded) {
         this.httpMethod = httpMethod;
         this.path = path;
         this.produces = produces;

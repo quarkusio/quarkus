@@ -14,11 +14,11 @@ public class InheritanceNoFieldsTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MappedParent.class, ChildEntity.class, InheritanceResource.class)
-                    .addAsResource(new StringAsset("INSERT INTO ChildEntity(id, name) VALUES(1, 'my name');\n"), "import.sql")
-                    .addAsResource("application-test.properties",
-                            "application.properties"));
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(MappedParent.class, ChildEntity.class, InheritanceResource.class)
+                            .addAsResource(new StringAsset("INSERT INTO ChildEntity(id, name) VALUES(1, 'my name');\n"),
+                                    "import.sql")
+                            .addAsResource("application-test.properties", "application.properties"));
 
     @Test
     public void testInheritanceNoFields() {

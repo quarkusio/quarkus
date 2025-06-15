@@ -14,7 +14,8 @@ import org.jboss.resteasy.reactive.common.providers.serialisers.PrimitiveBodyHan
 
 import io.vertx.core.json.JsonObject;
 
-public class VertxJsonObjectBasicMessageBodyReader extends PrimitiveBodyHandler implements MessageBodyReader<JsonObject> {
+public class VertxJsonObjectBasicMessageBodyReader extends PrimitiveBodyHandler
+        implements MessageBodyReader<JsonObject> {
 
     @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
@@ -27,7 +28,8 @@ public class VertxJsonObjectBasicMessageBodyReader extends PrimitiveBodyHandler 
 
     @Override
     public JsonObject readFrom(Class<JsonObject> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return readFrom(entityStream);
     }
 

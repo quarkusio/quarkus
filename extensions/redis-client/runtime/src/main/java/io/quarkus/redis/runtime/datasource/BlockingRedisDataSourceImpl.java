@@ -161,8 +161,8 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         }
 
         BlockingRedisDataSourceImpl source = reactive.redis.connect()
-                .map(rc -> new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, rc, timeout))
-                .await().atMost(timeout);
+                .map(rc -> new BlockingRedisDataSourceImpl(reactive.getVertx(), reactive.redis, rc, timeout)).await()
+                .atMost(timeout);
 
         try {
             consumer.accept(source);
@@ -173,18 +173,17 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public void select(long index) {
-        reactive.select(index)
-                .await().atMost(timeout);
+        reactive.select(index).await().atMost(timeout);
     }
 
     @Override
     public void flushall() {
-        reactive.flushall()
-                .await().atMost(timeout);
+        reactive.flushall().await().atMost(timeout);
     }
 
     @Override
-    public <K1, F, V1> HashCommands<K1, F, V1> hash(Class<K1> redisKeyType, Class<F> typeOfField, Class<V1> typeOfValue) {
+    public <K1, F, V1> HashCommands<K1, F, V1> hash(Class<K1> redisKeyType, Class<F> typeOfField,
+            Class<V1> typeOfValue) {
         return new BlockingHashCommandsImpl<>(this, reactive.hash(redisKeyType, typeOfField, typeOfValue), timeout);
     }
 
@@ -265,7 +264,8 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
     }
 
     @Override
-    public <K1, V1> HyperLogLogCommands<K1, V1> hyperloglog(TypeReference<K1> redisKeyType, TypeReference<V1> memberType) {
+    public <K1, V1> HyperLogLogCommands<K1, V1> hyperloglog(TypeReference<K1> redisKeyType,
+            TypeReference<V1> memberType) {
         return new BlockingHyperLogLogCommandsImpl<>(this, reactive.hyperloglog(redisKeyType, memberType), timeout);
     }
 
@@ -382,20 +382,17 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
 
     @Override
     public Response execute(String command, String... args) {
-        return reactive.execute(command, args)
-                .await().atMost(timeout);
+        return reactive.execute(command, args).await().atMost(timeout);
     }
 
     @Override
     public Response execute(Command command, String... args) {
-        return reactive.execute(command, args)
-                .await().atMost(timeout);
+        return reactive.execute(command, args).await().atMost(timeout);
     }
 
     @Override
     public Response execute(io.vertx.redis.client.Command command, String... args) {
-        return reactive.execute(command, args)
-                .await().atMost(timeout);
+        return reactive.execute(command, args).await().atMost(timeout);
     }
 
     @Override

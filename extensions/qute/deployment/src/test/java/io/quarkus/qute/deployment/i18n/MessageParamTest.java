@@ -14,8 +14,7 @@ public class MessageParamTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBundle.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyBundle.class));
 
     @Test
     public void testValidation() {

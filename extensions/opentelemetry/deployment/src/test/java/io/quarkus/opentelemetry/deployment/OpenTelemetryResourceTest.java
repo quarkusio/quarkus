@@ -31,15 +31,14 @@ import io.smallrye.config.SmallRyeConfig;
 
 public class OpenTelemetryResourceTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(InMemoryExporter.class.getPackage())
-                    .addAsResource("resource-config/application.properties", "application.properties")
-                    .addAsResource(
-                            "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addPackage(InMemoryExporter.class.getPackage())
+            .addAsResource("resource-config/application.properties", "application.properties")
+            .addAsResource(
+                    "META-INF/services-config/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider",
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider"));
 
     @Inject
     SmallRyeConfig config;
@@ -53,10 +52,7 @@ public class OpenTelemetryResourceTest {
 
     @Test
     void resource() {
-        RestAssured.when()
-                .get("/hello").then()
-                .statusCode(200)
-                .body(is("hello"));
+        RestAssured.when().get("/hello").then().statusCode(200).body(is("hello"));
 
         List<SpanData> spans = exporter.getSpanExporter().getFinishedSpanItems(1);
 

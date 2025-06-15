@@ -21,33 +21,22 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ContentTypeCaseTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().header("test", "TeXt/Plain").get("/hello")
-                .then()
-                .statusCode(200)
-                .contentType("text/plain")
+        given().header("test", "TeXt/Plain").get("/hello").then().statusCode(200).contentType("text/plain")
                 .body(is("text/plain"));
 
-        given().header("test", "text/plain").get("/hello")
-                .then()
-                .statusCode(200)
-                .contentType("text/plain")
+        given().header("test", "text/plain").get("/hello").then().statusCode(200).contentType("text/plain")
                 .body(is("text/plain"));
 
-        given().header("test", "TEXT/PLAIN").get("/hello")
-                .then()
-                .statusCode(200)
-                .contentType("text/plain")
+        given().header("test", "TEXT/PLAIN").get("/hello").then().statusCode(200).contentType("text/plain")
                 .body(is("text/plain"));
     }
 

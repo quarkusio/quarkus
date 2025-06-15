@@ -11,11 +11,9 @@ import io.quarkus.test.QuarkusProdModeTest;
 public class HalLinksWithJacksonTest extends AbstractHalLinksTest {
     @RegisterExtension
     static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AbstractEntity.class, TestRecord.class, TestResource.class))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-resteasy-jackson", Version.getVersion()),
-                    Dependency.of("io.quarkus", "quarkus-hal", Version.getVersion())))
-            .setLogFileName("app.log")
-            .setRun(true);
+            .withApplicationRoot((jar) -> jar.addClasses(AbstractEntity.class, TestRecord.class, TestResource.class))
+            .setForcedDependencies(
+                    List.of(Dependency.of("io.quarkus", "quarkus-resteasy-jackson", Version.getVersion()),
+                            Dependency.of("io.quarkus", "quarkus-hal", Version.getVersion())))
+            .setLogFileName("app.log").setRun(true);
 }

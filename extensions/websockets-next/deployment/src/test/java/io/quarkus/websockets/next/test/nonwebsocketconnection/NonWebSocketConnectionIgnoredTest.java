@@ -16,18 +16,13 @@ import io.vertx.ext.web.Router;
 public class NonWebSocketConnectionIgnoredTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class);
+    });
 
     @Test
     void testNonWebSocketConnection() {
-        given().when()
-                .get("/echo")
-                .then()
-                .statusCode(200)
-                .body(is("ok"));
+        given().when().get("/echo").then().statusCode(200).body(is("ok"));
     }
 
     @WebSocket(path = "/echo")

@@ -27,8 +27,10 @@ public class AsmUtil {
     /**
      * Calls the right unboxing method for the given Jandex Type if it is a primitive.
      *
-     * @param mv The MethodVisitor on which to visit the unboxing instructions
-     * @param jandexType The Jandex Type to unbox if it is a primitive.
+     * @param mv
+     *        The MethodVisitor on which to visit the unboxing instructions
+     * @param jandexType
+     *        The Jandex Type to unbox if it is a primitive.
      */
     public static void unboxIfRequired(MethodVisitor mv, Type jandexType) {
         if (jandexType.kind() == Kind.PRIMITIVE) {
@@ -66,8 +68,10 @@ public class AsmUtil {
     /**
      * Calls the right unboxing method for the given Jandex Type if it is a primitive.
      *
-     * @param mv The MethodVisitor on which to visit the unboxing instructions
-     * @param type The Jandex Type to unbox if it is a primitive.
+     * @param mv
+     *        The MethodVisitor on which to visit the unboxing instructions
+     * @param type
+     *        The Jandex Type to unbox if it is a primitive.
      */
     public static void unboxIfRequired(MethodVisitor mv, org.objectweb.asm.Type type) {
         if (type.getSort() <= org.objectweb.asm.Type.DOUBLE) {
@@ -106,10 +110,12 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the bytecode instruction to load the given Jandex Type. This returns the specialised
-     * bytecodes <tt>ILOAD, DLOAD, FLOAD and LLOAD</tt> for primitives, or <tt>ALOAD</tt> otherwise.
+     * Returns the bytecode instruction to load the given Jandex Type. This returns the specialised bytecodes
+     * <tt>ILOAD, DLOAD, FLOAD and LLOAD</tt> for primitives, or <tt>ALOAD</tt> otherwise.
      *
-     * @param jandexType The Jandex Type whose load instruction to return.
+     * @param jandexType
+     *        The Jandex Type whose load instruction to return.
+     *
      * @return The bytecode instruction to load the given Jandex Type.
      */
     public static int getLoadOpcode(Type jandexType) {
@@ -135,10 +141,12 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the bytecode instruction to store the given Jandex Type. This returns the specialised
-     * bytecodes <tt>ISTORE, DSTORE, FSTORE and LSTORE</tt> for primitives, or <tt>ASTORE</tt> otherwise.
+     * Returns the bytecode instruction to store the given Jandex Type. This returns the specialised bytecodes
+     * <tt>ISTORE, DSTORE, FSTORE and LSTORE</tt> for primitives, or <tt>ASTORE</tt> otherwise.
      *
-     * @param jandexType The Jandex Type whose store instruction to return.
+     * @param jandexType
+     *        The Jandex Type whose store instruction to return.
+     *
      * @return The bytecode instruction to store the given Jandex Type.
      */
     public static int getStoreOpcode(Type jandexType) {
@@ -189,10 +197,12 @@ public class AsmUtil {
     }
 
     /**
-     * Returns the number of underlying bytecode parameters taken by the given Jandex parameter Type.
-     * This will be 2 for doubles and longs, 1 otherwise.
+     * Returns the number of underlying bytecode parameters taken by the given Jandex parameter Type. This will be 2 for
+     * doubles and longs, 1 otherwise.
      *
-     * @param paramType the Jandex parameter Type
+     * @param paramType
+     *        the Jandex parameter Type
+     *
      * @return the number of underlying bytecode parameters required.
      */
     public static int getParameterSize(Type paramType) {

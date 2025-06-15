@@ -36,9 +36,8 @@ public class InterceptedStaticMethodTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(InterceptMe.class, NotNull.class, WithClassPolicy.class, Simple.class, AnotherSimple.class,
-                            SimpleInterceptor.class))
+            .withApplicationRoot(root -> root.addClasses(InterceptMe.class, NotNull.class, WithClassPolicy.class,
+                    Simple.class, AnotherSimple.class, SimpleInterceptor.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -50,10 +49,8 @@ public class InterceptedStaticMethodTest {
 
                     @Override
                     public void execute(BuildContext context) {
-                        context.produce(new AnnotationsTransformerBuildItem(
-                                AnnotationTransformation.forMethods()
-                                        .whenMethod(AnotherSimple.class, "ping")
-                                        .transform(tc -> tc.add(InterceptMe.class))));
+                        context.produce(new AnnotationsTransformerBuildItem(AnnotationTransformation.forMethods()
+                                .whenMethod(AnotherSimple.class, "ping").transform(tc -> tc.add(InterceptMe.class))));
                     }
                 }).produces(AnnotationsTransformerBuildItem.class).build();
             }

@@ -16,14 +16,12 @@ import io.restassured.RestAssured;
 
 public class PrometheusEnabledTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withEmptyApplication();
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withEmptyApplication();
 
     @Inject
     MeterRegistry registry;
@@ -49,16 +47,8 @@ public class PrometheusEnabledTest {
     @Test
     public void metricsEndpoint() {
         // RestAssured prepends /app for us
-        RestAssured.given()
-                .accept("application/json")
-                .get("/q/metrics")
-                .then()
-                .log().all()
-                .statusCode(406);
+        RestAssured.given().accept("application/json").get("/q/metrics").then().log().all().statusCode(406);
 
-        RestAssured.given()
-                .get("/q/metrics")
-                .then()
-                .statusCode(200);
+        RestAssured.given().get("/q/metrics").then().statusCode(200);
     }
 }

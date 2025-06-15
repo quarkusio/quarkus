@@ -61,21 +61,17 @@ public class ResteasyReactiveJaxbProcessor {
             BuildProducer<MessageBodyWriterBuildItem> additionalWriters,
             BuildProducer<ContextResolverBuildItem> additionalResolvers) {
         // make these beans to they can get instantiated with the Quarkus CDI
-        additionalBean.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(ServerJaxbMessageBodyReader.class.getName())
-                .addBeanClass(ServerJaxbMessageBodyWriter.class.getName())
-                .setUnremovable().build());
+        additionalBean
+                .produce(AdditionalBeanBuildItem.builder().addBeanClass(ServerJaxbMessageBodyReader.class.getName())
+                        .addBeanClass(ServerJaxbMessageBodyWriter.class.getName()).setUnremovable().build());
 
-        additionalReaders
-                .produce(new MessageBodyReaderBuildItem(ServerJaxbMessageBodyReader.class.getName(), Object.class.getName(),
-                        XML_TYPES, RuntimeType.SERVER, true, Priorities.USER));
-        additionalWriters
-                .produce(new MessageBodyWriterBuildItem(ServerJaxbMessageBodyWriter.class.getName(), Object.class.getName(),
-                        XML_TYPES, RuntimeType.SERVER, true, Priorities.USER));
+        additionalReaders.produce(new MessageBodyReaderBuildItem(ServerJaxbMessageBodyReader.class.getName(),
+                Object.class.getName(), XML_TYPES, RuntimeType.SERVER, true, Priorities.USER));
+        additionalWriters.produce(new MessageBodyWriterBuildItem(ServerJaxbMessageBodyWriter.class.getName(),
+                Object.class.getName(), XML_TYPES, RuntimeType.SERVER, true, Priorities.USER));
 
-        additionalResolvers
-                .produce(new ContextResolverBuildItem(JAXBContextContextResolver.class.getName(), XML_TYPES,
-                        JAXBContext.class.getName()));
+        additionalResolvers.produce(new ContextResolverBuildItem(JAXBContextContextResolver.class.getName(), XML_TYPES,
+                JAXBContext.class.getName()));
     }
 
     @BuildStep
@@ -118,8 +114,8 @@ public class ResteasyReactiveJaxbProcessor {
                         throw new DeploymentException(
                                 "Cannot handle collections or arrays as parameters using JAXB. You need to wrap it "
                                         + "into a root element class. Problematic parameter is '" + parameter.name()
-                                        + "' in the method '" + entry.getActualClassInfo().name() + "." + methodInfo.name()
-                                        + "'");
+                                        + "' in the method '" + entry.getActualClassInfo().name() + "."
+                                        + methodInfo.name() + "'");
                     }
 
                     ClassInfo effectiveParameter = getEffectiveClassInfo(parameter.type(), indexView);
@@ -189,7 +185,8 @@ public class ResteasyReactiveJaxbProcessor {
         }
 
         ClassInfo effectiveReturnClassInfo = indexView.getClassByName(effectiveType.name());
-        if ((effectiveReturnClassInfo == null) || effectiveReturnClassInfo.name().equals(ResteasyReactiveDotNames.OBJECT)) {
+        if ((effectiveReturnClassInfo == null)
+                || effectiveReturnClassInfo.name().equals(ResteasyReactiveDotNames.OBJECT)) {
             return null;
         }
 
@@ -246,9 +243,9 @@ public class ResteasyReactiveJaxbProcessor {
     }
 
     private boolean isCollectionType(Type type) {
-        return type.name().equals(ResteasyReactiveDotNames.SET) ||
-                type.name().equals(ResteasyReactiveDotNames.COLLECTION) ||
-                type.name().equals(ResteasyReactiveDotNames.LIST);
+        return type.name().equals(ResteasyReactiveDotNames.SET)
+                || type.name().equals(ResteasyReactiveDotNames.COLLECTION)
+                || type.name().equals(ResteasyReactiveDotNames.LIST);
     }
 
     private boolean isMapType(Type type) {
@@ -256,12 +253,11 @@ public class ResteasyReactiveJaxbProcessor {
     }
 
     private boolean isContainerType(Type type) {
-        return type.name().equals(REST_RESPONSE) ||
-                type.name().equals(ResteasyReactiveDotNames.UNI) ||
-                type.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE) ||
-                type.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE) ||
-                type.name().equals(ResteasyReactiveDotNames.REST_MULTI) ||
-                type.name().equals(ResteasyReactiveDotNames.MULTI);
+        return type.name().equals(REST_RESPONSE) || type.name().equals(ResteasyReactiveDotNames.UNI)
+                || type.name().equals(ResteasyReactiveDotNames.COMPLETABLE_FUTURE)
+                || type.name().equals(ResteasyReactiveDotNames.COMPLETION_STAGE)
+                || type.name().equals(ResteasyReactiveDotNames.REST_MULTI)
+                || type.name().equals(ResteasyReactiveDotNames.MULTI);
     }
 
     private boolean isTypeCompatibleWithJaxb(Type type) {

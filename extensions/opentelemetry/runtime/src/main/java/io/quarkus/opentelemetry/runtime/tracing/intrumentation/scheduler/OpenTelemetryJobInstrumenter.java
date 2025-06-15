@@ -20,9 +20,8 @@ public class OpenTelemetryJobInstrumenter implements JobInstrumenter {
     private final Instrumenter<JobInstrumentationContext, Void> instrumenter;
 
     public OpenTelemetryJobInstrumenter(final OpenTelemetry openTelemetry, final OTelRuntimeConfig runtimeConfig) {
-        InstrumenterBuilder<JobInstrumentationContext, Void> instrumenterBuilder = Instrumenter.builder(
-                openTelemetry, "io.quarkus.opentelemetry",
-                new SpanNameExtractor<JobInstrumentationContext>() {
+        InstrumenterBuilder<JobInstrumentationContext, Void> instrumenterBuilder = Instrumenter.builder(openTelemetry,
+                "io.quarkus.opentelemetry", new SpanNameExtractor<JobInstrumentationContext>() {
                     @Override
                     public String extract(JobInstrumentationContext context) {
                         return context.getSpanName();
@@ -46,10 +45,8 @@ public class OpenTelemetryJobInstrumenter implements JobInstrumenter {
         if (instrumenter.shouldStart(parentCtx, instrumentationContext)) {
             Context context = instrumenter.start(parentCtx, instrumentationContext);
             try (Scope scope = context.makeCurrent()) {
-                return instrumentationContext
-                        .executeJob()
-                        .whenComplete(
-                                (result, throwable) -> instrumenter.end(context, instrumentationContext, null, throwable));
+                return instrumentationContext.executeJob().whenComplete(
+                        (result, throwable) -> instrumenter.end(context, instrumentationContext, null, throwable));
             }
         }
         return instrumentationContext.executeJob();

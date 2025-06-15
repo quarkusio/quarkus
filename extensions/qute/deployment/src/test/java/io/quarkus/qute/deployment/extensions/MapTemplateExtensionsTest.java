@@ -16,11 +16,9 @@ public class MapTemplateExtensionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClass(Templates.class)
-                    .addAsResource(new StringAsset(
-                            "{map.foo}::{map['bar']}::{map.containsKey('foo')}::{map.empty}::{map.get('foo')}"),
-                            "templates/map.html"));
+            .withApplicationRoot(root -> root.addClass(Templates.class).addAsResource(
+                    new StringAsset("{map.foo}::{map['bar']}::{map.containsKey('foo')}::{map.empty}::{map.get('foo')}"),
+                    "templates/map.html"));
 
     @Test
     public void testMap() {

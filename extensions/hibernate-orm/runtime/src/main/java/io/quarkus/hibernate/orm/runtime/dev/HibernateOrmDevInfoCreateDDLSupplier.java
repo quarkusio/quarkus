@@ -17,8 +17,8 @@ public class HibernateOrmDevInfoCreateDDLSupplier implements Supplier<String> {
 
     @Override
     public String get() {
-        Collection<HibernateOrmDevInfo.PersistenceUnit> persistenceUnits = HibernateOrmDevController.get()
-                .getInfo().getPersistenceUnits();
+        Collection<HibernateOrmDevInfo.PersistenceUnit> persistenceUnits = HibernateOrmDevController.get().getInfo()
+                .getPersistenceUnits();
         for (var p : persistenceUnits) {
             if (Objects.equals(puName, p.getName())) {
                 return p.getCreateDDL();

@@ -15,8 +15,7 @@ class HealthObserversTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ChangingCheck.class, HealthObserver.class));
+            .withApplicationRoot((jar) -> jar.addClasses(ChangingCheck.class, HealthObserver.class));
 
     @Test
     void testHealthObservers() {

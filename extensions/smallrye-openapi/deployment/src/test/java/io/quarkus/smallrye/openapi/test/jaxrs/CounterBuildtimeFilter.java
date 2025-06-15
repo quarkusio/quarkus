@@ -19,7 +19,6 @@ public class CounterBuildtimeFilter implements OASFilter {
     @Override
     public void filterOpenAPI(OpenAPI aOpenAPI) {
         int times = TIMES.incrementAndGet();
-        aOpenAPI.info(
-                OASFactory.createInfo().description("CounterBuildtimeFilter was called " + times + " time(s)"));
+        aOpenAPI.info(OASFactory.createInfo().description("CounterBuildtimeFilter was called " + times + " time(s)"));
     }
 }

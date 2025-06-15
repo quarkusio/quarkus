@@ -35,15 +35,15 @@ class RequestScopedTransaction {
     boolean autoCommit;
 
     @Inject
-    public RequestScopedTransaction(UserTransaction userTransaction,
-            TransactionManager transactionManager, TransactionManagerConfiguration transactionManagerConfiguration) {
+    public RequestScopedTransaction(UserTransaction userTransaction, TransactionManager transactionManager,
+            TransactionManagerConfiguration transactionManagerConfiguration) {
         this.userTransaction = userTransaction;
         this.transactionManager = transactionManager;
         this.transactionManagerConfiguration = transactionManagerConfiguration;
     }
 
     public RequestScopedTransaction() {
-        //for proxiability
+        // for proxiability
         this.userTransaction = null;
         this.transactionManagerConfiguration = null;
         this.transactionManager = null;

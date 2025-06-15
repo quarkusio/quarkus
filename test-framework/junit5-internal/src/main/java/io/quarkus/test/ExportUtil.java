@@ -37,8 +37,7 @@ final class ExportUtil {
                 throw new IllegalStateException("Export path is not a directory: " + exportPath);
             }
             try (Stream<Path> stream = Files.walk(exportDir.toPath())) {
-                stream.sorted(Comparator.reverseOrder()).map(Path::toFile)
-                        .forEach(File::delete);
+                stream.sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(File::delete);
             }
         } else if (!exportDir.mkdirs()) {
             throw new IllegalStateException("Export path could not be created: " + exportPath);

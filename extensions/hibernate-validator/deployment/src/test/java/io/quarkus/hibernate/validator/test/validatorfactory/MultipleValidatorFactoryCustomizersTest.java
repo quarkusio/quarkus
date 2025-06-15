@@ -20,11 +20,9 @@ public class MultipleValidatorFactoryCustomizersTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(MyEmailValidatorFactoryCustomizer.class, MyNumberValidatorFactoryCustomizer.class,
-                    MyEmailValidator.class,
-                    MyNumValidator.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(MyEmailValidatorFactoryCustomizer.class,
+                    MyNumberValidatorFactoryCustomizer.class, MyEmailValidator.class, MyNumValidator.class));
 
     @Test
     public void testOverrideConstraintValidatorConstraint() {

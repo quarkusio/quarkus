@@ -26,59 +26,37 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Tests internal server errors and other custom exceptions raised during
- * proactive authentication can be handled by the exception mappers.
- * For lazy authentication, it is important that these exceptions raised during authentication
+ * Tests internal server errors and other custom exceptions raised during proactive authentication can be handled by the
+ * exception mappers. For lazy authentication, it is important that these exceptions raised during authentication
  * required by HTTP permissions are also propagated.
  */
 public abstract class AbstractCustomExceptionMapperTest {
 
     @Test
     public void testNoExceptions() {
-        RestAssured.given()
-                .auth().preemptive().basic("gaston", "gaston-password")
-                .get("/hello")
-                .then()
-                .statusCode(200)
+        RestAssured.given().auth().preemptive().basic("gaston", "gaston-password").get("/hello").then().statusCode(200)
                 .body(Matchers.is("Hello Gaston"));
-        RestAssured.given()
-                .get("/hello")
-                .then()
-                .statusCode(401);
+        RestAssured.given().get("/hello").then().statusCode(401);
     }
 
     @Test
     public void testUnhandledRuntimeException() {
-        RestAssured.given()
-                .auth().preemptive().basic("gaston", "gaston-password")
-                .header("fail-unhandled", "true")
-                .get("/hello")
-                .then()
-                .statusCode(500)
+        RestAssured.given().auth().preemptive().basic("gaston", "gaston-password").header("fail-unhandled", "true")
+                .get("/hello").then().statusCode(500)
                 .body(Matchers.containsString(UnhandledRuntimeException.class.getName()))
                 .body(Matchers.containsString("Expected unhandled failure"));
     }
 
     @Test
     public void testCustomExceptionInIdentityProvider() {
-        RestAssured.given()
-                .auth().preemptive().basic("gaston", "gaston-password")
-                .header("fail-authentication", "true")
-                .get("/hello")
-                .then()
-                .statusCode(500)
-                .body(Matchers.is("Expected authentication failure"));
+        RestAssured.given().auth().preemptive().basic("gaston", "gaston-password").header("fail-authentication", "true")
+                .get("/hello").then().statusCode(500).body(Matchers.is("Expected authentication failure"));
     }
 
     @Test
     public void testCustomExceptionInIdentityAugmentor() {
-        RestAssured.given()
-                .auth().preemptive().basic("gaston", "gaston-password")
-                .header("fail-augmentation", "true")
-                .get("/hello")
-                .then()
-                .statusCode(500)
-                .body(Matchers.is("Expected identity augmentation failure"));
+        RestAssured.given().auth().preemptive().basic("gaston", "gaston-password").header("fail-augmentation", "true")
+                .get("/hello").then().statusCode(500).body(Matchers.is("Expected identity augmentation failure"));
     }
 
     @Path("/hello")

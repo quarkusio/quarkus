@@ -18,9 +18,8 @@ public class TimezoneDefaultStorageNormalizeTest extends AbstractTimezoneDefault
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithTimezones.class)
-                    .addClasses(SchemaUtil.class, SmokeTestUtils.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EntityWithTimezones.class).addClasses(SchemaUtil.class,
+                    SmokeTestUtils.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping.timezone.default-storage", "normalize")
             .overrideConfigKey("quarkus.hibernate-orm.jdbc.timezone", JDBC_TIMEZONE.getId());
@@ -38,11 +37,10 @@ public class TimezoneDefaultStorageNormalizeTest extends AbstractTimezoneDefault
     @Test
     public void persistAndLoad() {
         long id = persistWithValuesToTest();
-        assertLoadedValues(id,
-                PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneId.systemDefault()),
+        assertLoadedValues(id, PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(ZoneId.systemDefault()),
                 PERSISTED_OFFSET_DATE_TIME.withOffsetSameInstant(
                         ZoneId.systemDefault().getRules().getOffset(PERSISTED_OFFSET_DATE_TIME.toInstant())),
-                PERSISTED_OFFSET_TIME.withOffsetSameInstant(
-                        ZoneId.systemDefault().getRules().getOffset(Instant.now())));
+                PERSISTED_OFFSET_TIME
+                        .withOffsetSameInstant(ZoneId.systemDefault().getRules().getOffset(Instant.now())));
     }
 }

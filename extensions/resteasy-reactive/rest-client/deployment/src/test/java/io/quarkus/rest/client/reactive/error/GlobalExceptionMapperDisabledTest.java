@@ -21,8 +21,7 @@ public class GlobalExceptionMapperDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class))
             .overrideRuntimeConfigKey("quarkus.rest-client.test.url", "${test.url}")
             .overrideRuntimeConfigKey("microprofile.rest.client.disable.default.mapper", "true");
 

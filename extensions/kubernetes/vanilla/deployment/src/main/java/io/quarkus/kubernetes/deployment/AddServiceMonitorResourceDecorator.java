@@ -25,22 +25,10 @@ public class AddServiceMonitorResourceDecorator extends ResourceProvidingDecorat
     @Override
     public void visit(KubernetesListBuilder list) {
         ObjectMeta meta = getMandatoryDeploymentMetadata(list, ANY);
-        list.addToItems(new ServiceMonitorBuilder()
-                .withNewMetadata()
-                .withName(meta.getName())
-                .withLabels(meta.getLabels())
-                .endMetadata()
-                .withNewSpec()
-                .withNewSelector()
-                .addToMatchLabels(meta.getLabels())
-                .endSelector()
-                .addNewEndpoint()
-                .withScheme(scheme)
-                .withNewTargetPort(Integer.parseInt(targetPort)) //This needs to be passed as int
-                .withPath(path)
-                .withInterval(interval + "s")
-                .withHonorLabels(honorLabels)
-                .endEndpoint()
-                .endSpec());
+        list.addToItems(new ServiceMonitorBuilder().withNewMetadata().withName(meta.getName())
+                .withLabels(meta.getLabels()).endMetadata().withNewSpec().withNewSelector()
+                .addToMatchLabels(meta.getLabels()).endSelector().addNewEndpoint().withScheme(scheme)
+                .withNewTargetPort(Integer.parseInt(targetPort)) // This needs to be passed as int
+                .withPath(path).withInterval(interval + "s").withHonorLabels(honorLabels).endEndpoint().endSpec());
     }
 }

@@ -14,10 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MessageBundleNameCollisionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .overrideConfigKey("quarkus.default-locale", "en_US")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EmailBundles.class)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().overrideConfigKey("quarkus.default-locale", "en_US")
+            .withApplicationRoot((jar) -> jar.addClasses(EmailBundles.class)
                     .addAsResource("messages/EmailBundles_started.properties")
                     .addAsResource("messages/EmailBundles_started_en.properties")
                     .addAsResource("messages/EmailBundles_startedValidator.properties")

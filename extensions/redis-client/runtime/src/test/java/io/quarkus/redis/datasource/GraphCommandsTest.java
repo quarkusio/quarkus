@@ -86,24 +86,22 @@ public class GraphCommandsTest extends DatasourceTestBase {
 
     @Test
     public void testComplexGraph() {
-        String q = "CREATE (aldis:actor {name: \"Aldis Hodge\", birth_year: 1986}),\n" +
-                "                         (oshea:actor {name: \"OShea Jackson\", birth_year: 1991}),\n" +
-                "                         (corey:actor {name: \"Corey Hawkins\", birth_year: 1988}),\n" +
-                "                         (neil:actor {name: \"Neil Brown\", birth_year: 1980}),\n" +
-                "                         (compton:movie {title: \"Straight Outta Compton\", genre: \"Biography\", votes: 127258, rating: 7.9, year: 2015}),\n"
-                +
-                "                         (neveregoback:movie {title: \"Never Go Back\", genre: \"Action\", votes: 15821, rating: 6.4, year: 2016}),\n"
-                +
-                "                         (aldis)-[:act]->(neveregoback),\n" +
-                "                         (aldis)-[:act]->(compton),\n" +
-                "                         (oshea)-[:act]->(compton),\n" +
-                "                         (corey)-[:act]->(compton),\n" +
-                "                         (neil)-[:act]->(compton)";
+        String q = "CREATE (aldis:actor {name: \"Aldis Hodge\", birth_year: 1986}),\n"
+                + "                         (oshea:actor {name: \"OShea Jackson\", birth_year: 1991}),\n"
+                + "                         (corey:actor {name: \"Corey Hawkins\", birth_year: 1988}),\n"
+                + "                         (neil:actor {name: \"Neil Brown\", birth_year: 1980}),\n"
+                + "                         (compton:movie {title: \"Straight Outta Compton\", genre: \"Biography\", votes: 127258, rating: 7.9, year: 2015}),\n"
+                + "                         (neveregoback:movie {title: \"Never Go Back\", genre: \"Action\", votes: 15821, rating: 6.4, year: 2016}),\n"
+                + "                         (aldis)-[:act]->(neveregoback),\n"
+                + "                         (aldis)-[:act]->(compton),\n"
+                + "                         (oshea)-[:act]->(compton),\n"
+                + "                         (corey)-[:act]->(compton),\n"
+                + "                         (neil)-[:act]->(compton)";
 
         assertThat(graph.graphQuery("imdb", q)).isEmpty();
 
-        q = "MATCH (a:actor)-[:act]->(m:movie {title:\"Straight Outta Compton\"})\n" +
-                "RETURN m.title, SUM(2020-a.birth_year), MAX(2020-a.birth_year), MIN(2020-a.birth_year), AVG(2020-a.birth_year)";
+        q = "MATCH (a:actor)-[:act]->(m:movie {title:\"Straight Outta Compton\"})\n"
+                + "RETURN m.title, SUM(2020-a.birth_year), MAX(2020-a.birth_year), MIN(2020-a.birth_year), AVG(2020-a.birth_year)";
 
         List<Map<String, GraphQueryResponseItem>> imdb = graph.graphQuery("imdb", q);
         assertThat(imdb).hasSize(1);
@@ -114,8 +112,8 @@ public class GraphCommandsTest extends DatasourceTestBase {
         assertThat(map.get("MIN(2020-a.birth_year)").asScalarItem().asInteger()).isEqualTo(29);
         assertThat(map.get("AVG(2020-a.birth_year)").asScalarItem().asDouble()).isEqualTo(33.75);
 
-        q = "MATCH (actor)-[:act]->(movie) RETURN actor.name, COUNT(movie.title) AS movies_count ORDER BY\n" +
-                "movies_count DESC";
+        q = "MATCH (actor)-[:act]->(movie) RETURN actor.name, COUNT(movie.title) AS movies_count ORDER BY\n"
+                + "movies_count DESC";
         imdb = graph.graphQuery("imdb", q);
         assertThat(imdb).hasSize(4);
     }
@@ -193,8 +191,8 @@ public class GraphCommandsTest extends DatasourceTestBase {
         res = graph.graphQuery("cities",
                 "MATCH (c1:City {name:'Paris'})-[:is_in]->(s:Station)-[:connect]->(c:City) WHERE s.name='Gare de Lyon' RETURN toJson(c) as val");
         assertThat(res).hasSize(3);
-        assertThat(res)
-                .allSatisfy(map -> assertThat(new JsonObject(map.get("val").asScalarItem().asString()).getJsonArray("labels"))
+        assertThat(res).allSatisfy(
+                map -> assertThat(new JsonObject(map.get("val").asScalarItem().asString()).getJsonArray("labels"))
                         .containsExactly("City"));
     }
 

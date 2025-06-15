@@ -15,13 +15,10 @@ public class ObserverOnInnerClassTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IgnoredClass.class))
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(IgnoredClass.class)).assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
-                assertTrue(
-                        rootCause.getMessage().contains(
-                                "INNER class io.quarkus.arc.test.wrongannotations.ObserverOnInnerClassTest$IgnoredClass"),
+                assertTrue(rootCause.getMessage().contains(
+                        "INNER class io.quarkus.arc.test.wrongannotations.ObserverOnInnerClassTest$IgnoredClass"),
                         t.toString());
             });
 

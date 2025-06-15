@@ -17,7 +17,8 @@ public class DefaultExceptionHandlerProvider implements ExceptionHandlerProvider
 
     private final AuthExceptionHandlerProvider authExceptionHandlerProvider;
 
-    public DefaultExceptionHandlerProvider(Instance<AuthExceptionHandlerProvider> authExceptionHandlerProviderInstance) {
+    public DefaultExceptionHandlerProvider(
+            Instance<AuthExceptionHandlerProvider> authExceptionHandlerProviderInstance) {
         if (authExceptionHandlerProviderInstance.isResolvable()) {
             this.authExceptionHandlerProvider = authExceptionHandlerProviderInstance.get();
         } else {

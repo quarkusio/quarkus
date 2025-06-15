@@ -49,7 +49,8 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
     protected TsDependency platformPropsDep;
 
     protected void addToExpectedLib(TsArtifact entry) {
-        expectedLib.add(entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
+        expectedLib.add(
+                entry.getGroupId() + '.' + entry.getArtifactId() + '-' + entry.getVersion() + '.' + entry.getType());
     }
 
     protected void assertAppModel(ApplicationModel appModel) throws Exception {
@@ -62,8 +63,7 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
     protected TsDependency platformDescriptor() {
         if (platformDescriptor == null) {
             TsArtifact platformDescr = new TsArtifact("org.acme",
-                    "acme" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, "1.0", "json",
-                    "1.0");
+                    "acme" + BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX, "1.0", "json", "1.0");
             platformDescr.setContent(new ContentProvider() {
                 Path platformJson;
 
@@ -87,8 +87,7 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
     protected TsDependency platformProperties() {
         if (platformPropsDep == null) {
             TsArtifact platformProps = new TsArtifact("org.acme",
-                    "acme" + BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX, null, "properties",
-                    "1.0");
+                    "acme" + BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX, null, "properties", "1.0");
             platformProps.setContent(new ContentProvider() {
                 Path propsFile;
 
@@ -204,8 +203,7 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
             // assert the Class-Path contains all the entries in the lib dir
             final String cp = mainAttrs.getValue("Class-Path");
             assertNotNull(cp);
-            String[] cpEntries = Arrays.stream(cp.trim().split("\\s+"))
-                    .filter(s -> !s.trim().isEmpty())
+            String[] cpEntries = Arrays.stream(cp.trim().split("\\s+")).filter(s -> !s.trim().isEmpty())
                     .toArray(String[]::new);
             assertEquals(actualBootLib.size(), cpEntries.length);
             for (String entry : cpEntries) {
@@ -265,8 +263,8 @@ public abstract class PackageAppTestBase extends BootstrapTestBase {
         final Set<String> expectedDeployment = new HashSet<>(expectedExtensions.length);
         for (String rtId : expectedExtensions) {
             expectedRuntime.add(TsArtifact.DEFAULT_GROUP_ID + ":" + rtId + "::jar:" + TsArtifact.DEFAULT_VERSION);
-            expectedDeployment
-                    .add(TsArtifact.DEFAULT_GROUP_ID + ":" + rtId + "-deployment" + "::jar:" + TsArtifact.DEFAULT_VERSION);
+            expectedDeployment.add(
+                    TsArtifact.DEFAULT_GROUP_ID + ":" + rtId + "-deployment" + "::jar:" + TsArtifact.DEFAULT_VERSION);
         }
 
         final Collection<ResolvedDependency> rtDeps = appModel.getRuntimeDependencies();

@@ -24,17 +24,20 @@ public class ServerMutinyBufferMessageBodyWriter implements ServerMessageBodyWri
     }
 
     public void writeTo(Buffer buffer, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         entityStream.write(buffer.getBytes());
     }
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return true;
     }
 
     @Override
-    public void writeResponse(Buffer buffer, Type genericType, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(Buffer buffer, Type genericType, ServerRequestContext context)
+            throws WebApplicationException {
         context.serverResponse().end(buffer.getBytes());
     }
 }

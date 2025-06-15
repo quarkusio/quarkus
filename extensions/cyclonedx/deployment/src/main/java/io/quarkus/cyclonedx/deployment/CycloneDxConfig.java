@@ -19,9 +19,8 @@ public interface CycloneDxConfig {
     boolean skip();
 
     /**
-     * SBOM file format. Supported formats are {code json} and {code xml}.
-     * The default format is JSON.
-     * If both are desired then {@code all} could be used as the value of this option.
+     * SBOM file format. Supported formats are {code json} and {code xml}. The default format is JSON. If both are
+     * desired then {@code all} could be used as the value of this option.
      *
      * @return SBOM file format
      */

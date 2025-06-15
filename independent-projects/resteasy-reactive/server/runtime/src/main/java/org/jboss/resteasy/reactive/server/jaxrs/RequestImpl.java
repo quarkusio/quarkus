@@ -33,7 +33,7 @@ public class RequestImpl implements Request {
     }
 
     private boolean isRfc7232preconditions() {
-        return true;//todo: do we need config for this?
+        return true;// todo: do we need config for this?
     }
 
     @Override
@@ -50,7 +50,7 @@ public class RequestImpl implements Request {
 
         varyHeader = AbstractResponseBuilder.createVaryHeader(variants);
         requestContext.serverResponse().setResponseHeader(HttpHeaders.VARY, varyHeader);
-        //response.getOutputHeaders().add(VARY, varyHeader);
+        // response.getOutputHeaders().add(VARY, varyHeader);
         return negotiation.getBestMatch(variants);
     }
 
@@ -107,7 +107,8 @@ public class RequestImpl implements Request {
             builder = ifMatch(convertEtag(ifMatch), eTag);
         }
         if (builder == null) {
-            List<String> ifNoneMatch = requestContext.getHttpHeaders().getRequestHeaders().get(HttpHeaders.IF_NONE_MATCH);
+            List<String> ifNoneMatch = requestContext.getHttpHeaders().getRequestHeaders()
+                    .get(HttpHeaders.IF_NONE_MATCH);
             if (ifNoneMatch != null && ifNoneMatch.size() > 0) {
                 builder = ifNoneMatch(convertEtag(ifNoneMatch), eTag);
             }
@@ -141,9 +142,9 @@ public class RequestImpl implements Request {
     }
 
     /**
-     * We must compare header dates (seconds-precision) with dates that have the same precision,
-     * otherwise they may include milliseconds and they will never match the Last-Modified
-     * values that we generate from them (since we drop their milliseconds when we write the headers)
+     * We must compare header dates (seconds-precision) with dates that have the same precision, otherwise they may
+     * include milliseconds and they will never match the Last-Modified values that we generate from them (since we drop
+     * their milliseconds when we write the headers)
      */
     private long millisecondsWithSecondsPrecision(Date lastModified) {
         return (lastModified.getTime() / 1000) * 1000;
@@ -156,12 +157,14 @@ public class RequestImpl implements Request {
         Response.ResponseBuilder builder = null;
         MultivaluedMap<String, String> headers = requestContext.getHttpHeaders().getRequestHeaders();
         String ifModifiedSince = headers.getFirst(HttpHeaders.IF_MODIFIED_SINCE);
-        if (ifModifiedSince != null && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaders.IF_NONE_MATCH)))) {
+        if (ifModifiedSince != null
+                && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaders.IF_NONE_MATCH)))) {
             builder = ifModifiedSince(ifModifiedSince, lastModified);
         }
         if (builder == null) {
             String ifUnmodifiedSince = headers.getFirst(HttpHeaders.IF_UNMODIFIED_SINCE);
-            if (ifUnmodifiedSince != null && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaders.IF_MATCH)))) {
+            if (ifUnmodifiedSince != null
+                    && (!isRfc7232preconditions() || (!headers.containsKey(HttpHeaders.IF_MATCH)))) {
                 builder = ifUnmodifiedSince(ifUnmodifiedSince, lastModified);
             }
         }

@@ -20,8 +20,7 @@ import io.quarkus.hibernate.orm.runtime.config.DialectVersions;
 import io.quarkus.runtime.configuration.ConfigurationException;
 
 /**
- * A dialect factory used for runtime init;
- * simply restores the dialect used during static init.
+ * A dialect factory used for runtime init; simply restores the dialect used during static init.
  *
  * @see QuarkusStaticInitDialectFactory
  */
@@ -58,7 +57,8 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
 
     public void checkActualDbVersion() {
         if (!versionCheckEnabled) {
-            LOG.debugf("Persistence unit %1$s: Skipping database version check; expecting database version to be at least %2$s",
+            LOG.debugf(
+                    "Persistence unit %1$s: Skipping database version check; expecting database version to be at least %2$s",
                     persistenceUnitName, DialectVersions.toString(buildTimeDbVersion));
             return;
         }
@@ -72,26 +72,24 @@ public class QuarkusRuntimeInitDialectFactory implements DialectFactory {
                     "Persistence unit '%1$s' was configured to run with a database version"
                             + " of at least '%2$s', but the actual version is '%3$s'."
                             + " Consider upgrading your database.",
-                    persistenceUnitName,
-                    DialectVersions.toString(buildTimeDbVersion), DialectVersions.toString(actualDbVersion.get())));
+                    persistenceUnitName, DialectVersions.toString(buildTimeDbVersion),
+                    DialectVersions.toString(actualDbVersion.get())));
             // It shouldn't be possible to reach this code if datasourceName is not present,
             // but just let's be safe...
             if (datasourceName.isPresent()) {
                 errorMessage.append(String.format(Locale.ROOT,
-                        " Alternatively, rebuild your application with"
-                                + " '%1$s=%2$s'"
+                        " Alternatively, rebuild your application with" + " '%1$s=%2$s'"
                                 + " (but this may disable some features and/or impact performance negatively).",
                         isFromPersistenceXml ? AvailableSettings.JAKARTA_HBM2DDL_DB_VERSION
                                 : DataSourceUtil.dataSourcePropertyKey(datasourceName.get(), "db-version"),
                         DialectVersions.toString(actualDbVersion.get())));
             }
             if (!isFromPersistenceXml) {
-                errorMessage.append(String.format(Locale.ROOT,
-                        " As a last resort,"
-                                + " if you are certain your application will work correctly even though the database version is incorrect,"
-                                + " disable the check with"
-                                + " '%1$s=false'.",
-                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName, "database.version-check.enabled")));
+                errorMessage.append(String.format(Locale.ROOT, " As a last resort,"
+                        + " if you are certain your application will work correctly even though the database version is incorrect,"
+                        + " disable the check with" + " '%1$s=false'.",
+                        HibernateOrmRuntimeConfig.puPropertyKey(persistenceUnitName,
+                                "database.version-check.enabled")));
             }
             throw new ConfigurationException(errorMessage.toString());
         }

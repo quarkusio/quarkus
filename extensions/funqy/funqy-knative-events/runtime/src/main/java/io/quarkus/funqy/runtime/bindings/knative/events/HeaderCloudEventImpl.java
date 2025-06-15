@@ -127,9 +127,8 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
     }
 
     private static boolean isCEHeader(String value) {
-        return (value.charAt(0) == 'C' || value.charAt(0) == 'c') &&
-                (value.charAt(1) == 'E' || value.charAt(1) == 'e') &&
-                value.charAt(2) == '-';
+        return (value.charAt(0) == 'C' || value.charAt(0) == 'c') && (value.charAt(1) == 'E' || value.charAt(1) == 'e')
+                && value.charAt(2) == '-';
     }
 
     @Override
@@ -169,7 +168,8 @@ class HeaderCloudEventImpl<T> extends AbstractCloudEvent<T> implements CloudEven
         if (data != null) {
             return data;
         }
-        if (dataContentType() != null && dataContentType().startsWith("application/json") && !byte[].class.equals(dataType)) {
+        if (dataContentType() != null && dataContentType().startsWith("application/json")
+                && !byte[].class.equals(dataType)) {
             try {
                 data = reader.readValue(buffer.getBytes());
                 return data;

@@ -33,11 +33,11 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Access log handler. This handler will generate access log messages based on the provided format string,
- * and pass these messages into the provided {@link AccessLogReceiver}.
+ * Access log handler. This handler will generate access log messages based on the provided format string, and pass
+ * these messages into the provided {@link AccessLogReceiver}.
  * <p>
- * This handler can log any attribute that is provides via the {@link ExchangeAttribute}
- * mechanism. A general guide to the most common attribute is provided before, however this mechanism is extensible.
+ * This handler can log any attribute that is provides via the {@link ExchangeAttribute} mechanism. A general guide to
+ * the most common attribute is provided before, however this mechanism is extensible.
  * <p>
  * <p>
  * <p>
@@ -46,8 +46,7 @@ import io.vertx.ext.web.RoutingContext;
  * <ul>
  * <li><b>%a</b> - Remote IP address
  * <li><b>%A</b> - Local IP address
- * <li><b>%b</b> - Bytes sent, excluding HTTP headers, or '-' if no bytes
- * were sent
+ * <li><b>%b</b> - Bytes sent, excluding HTTP headers, or '-' if no bytes were sent
  * <li><b>%B</b> - Bytes sent, excluding HTTP headers
  * <li><b>%h</b> - Remote host name
  * <li><b>%H</b> - Request getProtocol
@@ -66,18 +65,15 @@ import io.vertx.ext.web.RoutingContext;
  * <li><b>%I</b> - current Request thread name (can compare later with stacktraces)
  * </ul>
  * <p>
- * In addition, the caller can specify one of the following aliases for
- * commonly utilized patterns:
+ * In addition, the caller can specify one of the following aliases for commonly utilized patterns:
  * </p>
  * <ul>
  * <li><b>common</b> - <code>%h %l %u %t "%r" %s %b</code>
- * <li><b>combined</b> -
- * <code>%h %l %u %t "%r" %s %b "%{i,Referer}" "%{i,User-Agent}"</code>
+ * <li><b>combined</b> - <code>%h %l %u %t "%r" %s %b "%{i,Referer}" "%{i,User-Agent}"</code>
  * </ul>
  * <p>
  * <p>
- * There is also support to write information from the cookie, incoming
- * header, or the session<br>
+ * There is also support to write information from the cookie, incoming header, or the session<br>
  * It is modeled after the apache syntax:
  * <ul>
  * <li><code>%{i,xxx}</code> for incoming headers
@@ -100,13 +96,12 @@ public class AccessLogHandler implements Handler<RoutingContext> {
     private final Pattern excludePattern;
 
     public AccessLogHandler(final AccessLogReceiver accessLogReceiver, final String formatString,
-            boolean consolidateReroutedRequests, ClassLoader classLoader,
-            Optional<String> excludePattern) {
+            boolean consolidateReroutedRequests, ClassLoader classLoader, Optional<String> excludePattern) {
         this.accessLogReceiver = accessLogReceiver;
         this.formatString = handleCommonNames(formatString);
         this.consolidateReroutedRequests = consolidateReroutedRequests;
-        this.tokens = new ExchangeAttributeParser(classLoader, Collections.singletonList(new SubstituteEmptyWrapper("-")))
-                .parse(this.formatString);
+        this.tokens = new ExchangeAttributeParser(classLoader,
+                Collections.singletonList(new SubstituteEmptyWrapper("-"))).parse(this.formatString);
         if (excludePattern.isPresent()) {
             this.excludePattern = Pattern.compile(excludePattern.get());
         } else {
@@ -114,8 +109,8 @@ public class AccessLogHandler implements Handler<RoutingContext> {
         }
     }
 
-    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, String formatString, boolean consolidateReroutedRequests,
-            final ExchangeAttribute attribute) {
+    public AccessLogHandler(final AccessLogReceiver accessLogReceiver, String formatString,
+            boolean consolidateReroutedRequests, final ExchangeAttribute attribute) {
         this.accessLogReceiver = accessLogReceiver;
         this.formatString = handleCommonNames(formatString);
         this.consolidateReroutedRequests = consolidateReroutedRequests;
@@ -130,10 +125,8 @@ public class AccessLogHandler implements Handler<RoutingContext> {
             case "combined":
                 return "%h %l %u %t \"%r\" %s %b \"%{i,Referer}\" \"%{i,User-Agent}\"";
             case "long":
-                return new StringJoiner(System.lineSeparator(), System.lineSeparator(), "")
-                        .add("%r")
-                        .add("%{ALL_REQUEST_HEADERS}")
-                        .toString();
+                return new StringJoiner(System.lineSeparator(), System.lineSeparator(), "").add("%r")
+                        .add("%{ALL_REQUEST_HEADERS}").toString();
             default:
                 return formatString;
         }
@@ -166,9 +159,7 @@ public class AccessLogHandler implements Handler<RoutingContext> {
 
     @Override
     public String toString() {
-        return "AccessLogHandler{" +
-                "formatString='" + formatString + '\'' +
-                '}';
+        return "AccessLogHandler{" + "formatString='" + formatString + '\'' + '}';
     }
 
 }

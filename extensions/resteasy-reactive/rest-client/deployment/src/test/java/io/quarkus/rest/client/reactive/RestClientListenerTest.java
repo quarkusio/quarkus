@@ -28,14 +28,10 @@ import io.smallrye.mutiny.Uni;
 public class RestClientListenerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class, TestHeaderConfig.class, TestRestClientListener.class)
-                    .addAsResource(
-                            new StringAsset(setUrlForClass(Client.class)),
-                            "application.properties")
-                    .addAsResource(
-                            new StringAsset(TestRestClientListener.class.getCanonicalName()),
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Client.class, Resource.class, TestHeaderConfig.class, TestRestClientListener.class)
+                    .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties")
+                    .addAsResource(new StringAsset(TestRestClientListener.class.getCanonicalName()),
                             "META-INF/services/org.eclipse.microprofile.rest.client.spi.RestClientListener"));
 
     @RestClient
@@ -43,8 +39,7 @@ public class RestClientListenerTest {
 
     @Test
     public void shouldCallRegisteredRestClient() {
-        String result = client.get()
-                .await().atMost(Duration.ofSeconds(10));
+        String result = client.get().await().atMost(Duration.ofSeconds(10));
         assertThat(result).isEqualTo(HEADER_PARAM_VALUE);
     }
 

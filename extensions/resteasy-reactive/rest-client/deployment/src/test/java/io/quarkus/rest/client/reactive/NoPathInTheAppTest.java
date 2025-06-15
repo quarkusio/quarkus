@@ -19,16 +19,14 @@ public class NoPathInTheAppTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PlaylistService.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PlaylistService.class));
 
     private WireMockServer server;
 
     @BeforeEach
     public void setUp() {
         server = new WireMockServer(8181);
-        server.stubFor(WireMock.get("/hello")
-                .willReturn(aResponse().withBody("hello, world!").withStatus(200)));
+        server.stubFor(WireMock.get("/hello").willReturn(aResponse().withBody("hello, world!").withStatus(200)));
         server.start();
     }
 
@@ -39,8 +37,8 @@ public class NoPathInTheAppTest {
 
     @Test
     void shouldGet() {
-        PlaylistService client = QuarkusRestClientBuilder.newBuilder().baseUri(URI.create("http://localhost:8181/hello"))
-                .build(PlaylistService.class);
+        PlaylistService client = QuarkusRestClientBuilder.newBuilder()
+                .baseUri(URI.create("http://localhost:8181/hello")).build(PlaylistService.class);
         assertThat(client.get()).isEqualTo("hello, world!");
     }
 }

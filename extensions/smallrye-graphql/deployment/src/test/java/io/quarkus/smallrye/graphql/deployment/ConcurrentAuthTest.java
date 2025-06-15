@@ -46,8 +46,7 @@ public class ConcurrentAuthTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FilmResource.class, Film.class, GalaxyService.class)
+            .withApplicationRoot((jar) -> jar.addClasses(FilmResource.class, Film.class, GalaxyService.class)
                     .addAsResource(new StringAsset(getPropertyAsString(PROPERTIES)), "application.properties")
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
@@ -72,32 +71,14 @@ public class ConcurrentAuthTest extends AbstractGraphQLTest {
     private static Optional<Boolean> getTestResult(ArrayList<CompletableFuture<Boolean>> futures)
             throws InterruptedException, ExecutionException {
         return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-                .thenApply(v -> futures.stream()
-                        .map(CompletableFuture::join)
-                        .reduce(Boolean::logicalAnd))
-                .get();
+                .thenApply(v -> futures.stream().map(CompletableFuture::join).reduce(Boolean::logicalAnd)).get();
     }
 
     private Response allFilmsRequestWithAuth() {
-        String requestBody = "{\"query\":" +
-                "\"" +
-                "{" +
-                " allFilmsSecured  {" +
-                " title" +
-                " director" +
-                " releaseDate" +
-                " episodeID" +
-                "}" +
-                "}" +
-                "\"" +
-                "}";
+        String requestBody = "{\"query\":" + "\"" + "{" + " allFilmsSecured  {" + " title" + " director"
+                + " releaseDate" + " episodeID" + "}" + "}" + "\"" + "}";
 
-        return given()
-                .body(requestBody)
-                .auth()
-                .preemptive()
-                .basic("scott", "jb0ss")
-                .post("/graphql/");
+        return given().body(requestBody).auth().preemptive().basic("scott", "jb0ss").post("/graphql/");
     }
 
     @GraphQLApi

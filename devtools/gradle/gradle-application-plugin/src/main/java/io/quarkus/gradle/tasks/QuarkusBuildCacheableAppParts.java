@@ -20,8 +20,8 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
 
     @Inject
     public QuarkusBuildCacheableAppParts() {
-        super("Quarkus application build with the ability to cache the built artifacts, excluding dependencies." +
-                " Do not use this task directly, use '" + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'", true);
+        super("Quarkus application build with the ability to cache the built artifacts, excluding dependencies."
+                + " Do not use this task directly, use '" + QuarkusPlugin.QUARKUS_BUILD_TASK_NAME + "'", true);
     }
 
     @SuppressWarnings("deprecation") // legacy JAR
@@ -93,8 +93,7 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
         Path genDir = genBuildDir();
         Path appDir = appBuildDir();
 
-        getLogger().info("Synchronizing Quarkus legacy-jar app for JAR type {} into {}", jarType(),
-                appDir);
+        getLogger().info("Synchronizing Quarkus legacy-jar app for JAR type {} into {}", jarType(), appDir);
 
         getFileSystemOperations().sync(sync -> {
             sync.into(appDir);
@@ -118,15 +117,12 @@ public abstract class QuarkusBuildCacheableAppParts extends QuarkusBuildTask {
 
         if (nativeEnabled()) {
             if (nativeSourcesOnly()) {
-                getLogger().info("Synchronizing Quarkus fast-jar-like app for native sources into {}",
-                        appDir);
+                getLogger().info("Synchronizing Quarkus fast-jar-like app for native sources into {}", appDir);
             } else {
-                getLogger().info("Synchronizing Quarkus fast-jar-like app for native into {}",
-                        appDir);
+                getLogger().info("Synchronizing Quarkus fast-jar-like app for native into {}", appDir);
             }
         } else {
-            getLogger().info("Synchronizing Quarkus fast-jar-like app for JAR type {} into {}", jarType(),
-                    appDir);
+            getLogger().info("Synchronizing Quarkus fast-jar-like app for JAR type {} into {}", jarType(), appDir);
         }
 
         getFileSystemOperations().sync(sync -> {

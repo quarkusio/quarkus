@@ -9,12 +9,12 @@ import org.eclipse.microprofile.config.spi.ConfigSource;
 
 /**
  * Config source that is used to handle {@code io.quarkus.bootstrap.app.StartupAction#overrideConfig(java.util.Map)}
- *
  */
 public class RuntimeOverrideConfigSource implements ConfigSource {
 
     public static final String FIELD_NAME = "CONFIG";
-    public static final String GENERATED_CLASS_NAME = RuntimeOverrideConfigSource.class.getName() + "$$GeneratedMapHolder";
+    public static final String GENERATED_CLASS_NAME = RuntimeOverrideConfigSource.class.getName()
+            + "$$GeneratedMapHolder";
 
     final Map<String, String> values;
 
@@ -49,7 +49,7 @@ public class RuntimeOverrideConfigSource implements ConfigSource {
 
     @Override
     public int getOrdinal() {
-        return 399; //one less that system properties
+        return 399; // one less that system properties
     }
 
     @Override

@@ -24,9 +24,7 @@ public class NativeImageResourceAccessor extends AbstractPathResourceAccessor {
     public NativeImageResourceAccessor() {
         FileSystem fs;
         try {
-            fs = FileSystems.newFileSystem(
-                    NATIVE_IMAGE_FILESYSTEM_URI,
-                    Collections.singletonMap("create", "true"));
+            fs = FileSystems.newFileSystem(NATIVE_IMAGE_FILESYSTEM_URI, Collections.singletonMap("create", "true"));
             log.debug("Creating new filesystem for native image");
         } catch (FileSystemAlreadyExistsException ex) {
             fs = FileSystems.getFileSystem(NATIVE_IMAGE_FILESYSTEM_URI);

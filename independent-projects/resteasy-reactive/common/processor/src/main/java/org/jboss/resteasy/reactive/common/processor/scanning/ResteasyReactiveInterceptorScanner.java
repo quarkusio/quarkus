@@ -40,7 +40,8 @@ public class ResteasyReactiveInterceptorScanner {
     /**
      * Creates a fully populated resource interceptors instance, that are created via reflection.
      */
-    public static ResourceInterceptors createResourceInterceptors(IndexView indexView, ApplicationScanningResult result) {
+    public static ResourceInterceptors createResourceInterceptors(IndexView indexView,
+            ApplicationScanningResult result) {
         return createResourceInterceptors(indexView, result, null);
     }
 
@@ -60,32 +61,28 @@ public class ResteasyReactiveInterceptorScanner {
 
     public static void scanForContainerRequestFilters(ResourceInterceptors interceptors, IndexView index,
             ApplicationScanningResult applicationScanningResult) {
-        //the quarkus version of these filters will not be in the index
-        //so you need an explicit check for both
+        // the quarkus version of these filters will not be in the index
+        // so you need an explicit check for both
 
-        Collection<ClassInfo> specReqFilters = new HashSet<>(index
-                .getAllKnownImplementors(CONTAINER_REQUEST_FILTER));
+        Collection<ClassInfo> specReqFilters = new HashSet<>(index.getAllKnownImplementors(CONTAINER_REQUEST_FILTER));
         Collection<ClassInfo> allReqFilters = new HashSet<>(specReqFilters);
-        allReqFilters.addAll(index
-                .getAllKnownImplementors(RESTEASY_REACTIVE_CONTAINER_REQUEST_FILTER));
+        allReqFilters.addAll(index.getAllKnownImplementors(RESTEASY_REACTIVE_CONTAINER_REQUEST_FILTER));
         for (var filterClass : allReqFilters) {
-            var interceptor = handleDiscoveredInterceptor(applicationScanningResult, interceptors.getContainerRequestFilters(),
-                    index, filterClass);
+            var interceptor = handleDiscoveredInterceptor(applicationScanningResult,
+                    interceptors.getContainerRequestFilters(), index, filterClass);
             if (interceptor == null) {
                 continue;
             }
             setFilterMethodSourceForReqFilter(index, specReqFilters, filterClass, interceptor);
         }
 
-        Collection<ClassInfo> specRespFilters = new HashSet<>(index
-                .getAllKnownImplementors(CONTAINER_RESPONSE_FILTER));
+        Collection<ClassInfo> specRespFilters = new HashSet<>(index.getAllKnownImplementors(CONTAINER_RESPONSE_FILTER));
         Collection<ClassInfo> allRespFilters = new HashSet<>(specRespFilters);
-        allRespFilters.addAll(index
-                .getAllKnownImplementors(RESTEASY_REACTIVE_CONTAINER_RESPONSE_FILTER));
+        allRespFilters.addAll(index.getAllKnownImplementors(RESTEASY_REACTIVE_CONTAINER_RESPONSE_FILTER));
 
         for (var filterClass : allRespFilters) {
-            var interceptor = handleDiscoveredInterceptor(applicationScanningResult, interceptors.getContainerResponseFilters(),
-                    index, filterClass);
+            var interceptor = handleDiscoveredInterceptor(applicationScanningResult,
+                    interceptors.getContainerResponseFilters(), index, filterClass);
             if (interceptor == null) {
                 continue;
             }
@@ -146,14 +143,14 @@ public class ResteasyReactiveInterceptorScanner {
                 }
                 List<Type> parameterTypes = method.parameterTypes();
                 if (isSpecFilter) {
-                    if (parameterTypes.get(0).name().equals(CONTAINER_REQUEST_CONTEXT) &&
-                            parameterTypes.get(1).name().equals(CONTAINER_RESPONSE_CONTEXT)) {
+                    if (parameterTypes.get(0).name().equals(CONTAINER_REQUEST_CONTEXT)
+                            && parameterTypes.get(1).name().equals(CONTAINER_RESPONSE_CONTEXT)) {
                         filterSourceMethod = method;
                         break;
                     }
                 } else {
-                    if (parameterTypes.get(0).name().equals(RESTEASY_REACTIVE_CONTAINER_REQUEST_CONTEXT) &&
-                            parameterTypes.get(1).name().equals(CONTAINER_RESPONSE_CONTEXT)) {
+                    if (parameterTypes.get(0).name().equals(RESTEASY_REACTIVE_CONTAINER_REQUEST_CONTEXT)
+                            && parameterTypes.get(1).name().equals(CONTAINER_RESPONSE_CONTEXT)) {
                         filterSourceMethod = method;
                         break;
                     }
@@ -179,26 +176,27 @@ public class ResteasyReactiveInterceptorScanner {
 
     public static void scanForIOInterceptors(ResourceInterceptors interceptors, IndexView index,
             ApplicationScanningResult applicationScanningResult) {
-        Collection<ClassInfo> readerInterceptors = index
-                .getAllKnownImplementors(READER_INTERCEPTOR);
-        Collection<ClassInfo> writerInterceptors = index
-                .getAllKnownImplementors(WRITER_INTERCEPTOR);
+        Collection<ClassInfo> readerInterceptors = index.getAllKnownImplementors(READER_INTERCEPTOR);
+        Collection<ClassInfo> writerInterceptors = index.getAllKnownImplementors(WRITER_INTERCEPTOR);
 
         for (ClassInfo filterClass : writerInterceptors) {
-            handleDiscoveredInterceptor(applicationScanningResult, interceptors.getWriterInterceptors(), index, filterClass);
+            handleDiscoveredInterceptor(applicationScanningResult, interceptors.getWriterInterceptors(), index,
+                    filterClass);
         }
         for (ClassInfo filterClass : readerInterceptors) {
-            handleDiscoveredInterceptor(applicationScanningResult, interceptors.getReaderInterceptors(), index, filterClass);
+            handleDiscoveredInterceptor(applicationScanningResult, interceptors.getReaderInterceptors(), index,
+                    filterClass);
         }
     }
 
     private static <T> ResourceInterceptor<T> handleDiscoveredInterceptor(
-            ApplicationScanningResult applicationResultBuildItem, InterceptorContainer<T> interceptorContainer, IndexView index,
-            ClassInfo filterClass) {
+            ApplicationScanningResult applicationResultBuildItem, InterceptorContainer<T> interceptorContainer,
+            IndexView index, ClassInfo filterClass) {
         if (Modifier.isAbstract(filterClass.flags())) {
             return null;
         }
-        ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.keepProvider(filterClass);
+        ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem
+                .keepProvider(filterClass);
         if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
             ResourceInterceptor<T> interceptor = interceptorContainer.create();
             interceptor.setClassName(filterClass.name().toString());

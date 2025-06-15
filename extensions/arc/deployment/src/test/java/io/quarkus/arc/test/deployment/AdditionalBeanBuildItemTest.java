@@ -12,7 +12,8 @@ public class AdditionalBeanBuildItemTest {
     public void testNullNames() {
         assertThrows(NullPointerException.class, () -> AdditionalBeanBuildItem.unremovableOf((String) null));
         assertThrows(NullPointerException.class, () -> AdditionalBeanBuildItem.unremovableOf((Class<?>) null));
-        assertThrows(NullPointerException.class, () -> AdditionalBeanBuildItem.builder().addBeanClasses(null, "Foo").build());
+        assertThrows(NullPointerException.class,
+                () -> AdditionalBeanBuildItem.builder().addBeanClasses(null, "Foo").build());
         assertThrows(NullPointerException.class, () -> new AdditionalBeanBuildItem("Bar", null));
         assertThrows(NullPointerException.class, () -> new AdditionalBeanBuildItem(String.class, null));
     }

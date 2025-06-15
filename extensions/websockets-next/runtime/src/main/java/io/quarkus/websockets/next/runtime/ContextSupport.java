@@ -24,8 +24,7 @@ public class ContextSupport {
     private final ManagedContext sessionContext;
     private final ManagedContext requestContext;
 
-    ContextSupport(WebSocketConnectionBase connection, ContextState sessionContextState,
-            ManagedContext sessionContext,
+    ContextSupport(WebSocketConnectionBase connection, ContextState sessionContextState, ManagedContext sessionContext,
             ManagedContext requestContext) {
         this.connection = connection;
         this.sessionContext = sessionContext;

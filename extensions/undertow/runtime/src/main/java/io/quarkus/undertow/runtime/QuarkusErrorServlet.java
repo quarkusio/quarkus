@@ -52,7 +52,7 @@ public class QuarkusErrorServlet extends HttpServlet {
                     .append("\",\"stack\":\"").append(escapedStack).append("\"}");
             resp.getWriter().write(jsonPayload.toString());
         } else {
-            //We default to HTML representation
+            // We default to HTML representation
             resp.setContentType("text/html");
             resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
             final TemplateHtmlBuilder htmlBuilder = new TemplateHtmlBuilder("Internal Server Error", details, details);

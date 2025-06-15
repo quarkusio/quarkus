@@ -39,8 +39,8 @@ public class TypeWithUnsupportedSqlCode implements UserType<String> {
     }
 
     @Override
-    public String nullSafeGet(ResultSet resultSet, int i, SharedSessionContractImplementor sharedSessionContractImplementor,
-            Object o) {
+    public String nullSafeGet(ResultSet resultSet, int i,
+            SharedSessionContractImplementor sharedSessionContractImplementor, Object o) {
         throw new UnsupportedOperationException("Should not be called - this type is not used at runtime");
     }
 

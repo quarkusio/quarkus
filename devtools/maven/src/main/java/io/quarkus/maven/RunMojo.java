@@ -66,51 +66,50 @@ public class RunMojo extends QuarkusBootstrapMojo {
             AtomicReference<Boolean> exists = new AtomicReference<>();
             AtomicReference<String> tooMany = new AtomicReference<>();
             String target = System.getProperty("quarkus.run.target");
-            action.performCustomBuild(StartDevServicesAndRunCommandHandler.class.getName(), new Consumer<Map<String, List>>() {
-                @Override
-                public void accept(Map<String, List> cmds) {
-                    List cmd = null;
-                    if (target != null) {
-                        cmd = cmds.get(target);
-                        if (cmd == null) {
-                            exists.set(false);
-                            return;
+            action.performCustomBuild(StartDevServicesAndRunCommandHandler.class.getName(),
+                    new Consumer<Map<String, List>>() {
+                        @Override
+                        public void accept(Map<String, List> cmds) {
+                            List cmd = null;
+                            if (target != null) {
+                                cmd = cmds.get(target);
+                                if (cmd == null) {
+                                    exists.set(false);
+                                    return;
+                                }
+                            } else if (cmds.size() == 1) { // defaults to pure java run
+                                cmd = cmds.values().iterator().next();
+                            } else if (cmds.size() == 2) { // choose not default
+                                for (Map.Entry<String, List> entry : cmds.entrySet()) {
+                                    if (entry.getKey().equals("java"))
+                                        continue;
+                                    cmd = entry.getValue();
+                                    break;
+                                }
+                            } else if (cmds.size() > 2) {
+                                tooMany.set(cmds.keySet().stream().collect(Collectors.joining(" ")));
+                                return;
+                            } else {
+                                throw new RuntimeException("Should never reach this!");
+                            }
+                            List<String> args = (List<String>) cmd.get(0);
+                            if (getLog().isInfoEnabled()) {
+                                getLog().info("Executing \"" + String.join(" ", args) + "\"");
+                            }
+                            Path workingDirectory = (Path) cmd.get(1);
+                            try {
+                                ProcessBuilder builder = new ProcessBuilder().command(args).inheritIO();
+                                if (workingDirectory != null) {
+                                    builder.directory(workingDirectory.toFile());
+                                }
+                                Process process = builder.start();
+                                int exit = process.waitFor();
+                            } catch (Exception e) {
+                                throw new RuntimeException(e);
+                            }
                         }
-                    } else if (cmds.size() == 1) { // defaults to pure java run
-                        cmd = cmds.values().iterator().next();
-                    } else if (cmds.size() == 2) { // choose not default
-                        for (Map.Entry<String, List> entry : cmds.entrySet()) {
-                            if (entry.getKey().equals("java"))
-                                continue;
-                            cmd = entry.getValue();
-                            break;
-                        }
-                    } else if (cmds.size() > 2) {
-                        tooMany.set(cmds.keySet().stream().collect(Collectors.joining(" ")));
-                        return;
-                    } else {
-                        throw new RuntimeException("Should never reach this!");
-                    }
-                    List<String> args = (List<String>) cmd.get(0);
-                    if (getLog().isInfoEnabled()) {
-                        getLog().info("Executing \"" + String.join(" ", args) + "\"");
-                    }
-                    Path workingDirectory = (Path) cmd.get(1);
-                    try {
-                        ProcessBuilder builder = new ProcessBuilder()
-                                .command(args)
-                                .inheritIO();
-                        if (workingDirectory != null) {
-                            builder.directory(workingDirectory.toFile());
-                        }
-                        Process process = builder.start();
-                        int exit = process.waitFor();
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            },
-                    RunCommandActionResultBuildItem.class.getName(), DevServicesLauncherConfigResultBuildItem.class.getName());
+                    }, RunCommandActionResultBuildItem.class.getName(),
+                    DevServicesLauncherConfigResultBuildItem.class.getName());
             if (target != null && !exists.get()) {
                 getLog().error("quarkus.run.target " + target + " is not found");
                 return;

@@ -26,7 +26,8 @@ import io.quarkus.test.common.http.TestHTTPResourceManager;
 
 public class DefaultNativeImageLauncher implements NativeImageLauncher {
 
-    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("windows");
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ROOT)
+            .contains("windows");
 
     private int httpPort;
     private int httpsPort;
@@ -127,7 +128,8 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         if (DefaultJarLauncher.HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);
             args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-            // this won't be correct when using the random port but it's really only used by us for the rest client tests
+            // this won't be correct when using the random port but it's really only used by us for the rest client
+            // tests
             // in the main module, since those tests hit the application itself
             args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         }
@@ -179,8 +181,8 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
     }
 
     private String guessPath(Class<?> testClass) {
-        //ok, lets make a guess
-        //this is a horrible hack, but it is intended to make this work in IDE's
+        // ok, lets make a guess
+        // this is a horrible hack, but it is intended to make this work in IDE's
 
         ClassLoader cl = testClass.getClassLoader();
 
@@ -214,15 +216,15 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         }
         String file = null;
         if (url.getProtocol().equals("file") && url.getPath().endsWith("test-classes/")) {
-            //we have the maven test classes dir
+            // we have the maven test classes dir
             File testClasses = new File(url.getPath());
             file = guessPathFromDir(testClasses.getParentFile());
         } else if (url.getProtocol().equals("file") && url.getPath().endsWith("test/")) {
-            //we have the gradle test classes dir, build/classes/java/test
+            // we have the gradle test classes dir, build/classes/java/test
             File testClasses = new File(url.getPath());
             file = guessPathFromDir(testClasses.getParentFile().getParentFile().getParentFile());
         } else if (url.getProtocol().equals("file") && url.getPath().contains("/target/surefire/")) {
-            //this will make mvn failsafe:integration-test work
+            // this will make mvn failsafe:integration-test work
             String path = url.getPath();
             int index = path.lastIndexOf("/target/");
             File targetDir = new File(path.substring(0, index) + "/target/");

@@ -24,7 +24,9 @@ public class JdbcRecorder {
     /**
      * Create a runtime value for a {@linkplain JdbcSecurityRealm}
      *
-     * @param config - the realm config
+     * @param config
+     *        - the realm config
+     *
      * @return - runtime value wrapper for the SecurityRealm
      */
     public RuntimeValue<SecurityRealm> createRealm(JdbcSecurityRealmRuntimeConfig config) {
@@ -44,12 +46,13 @@ public class JdbcRecorder {
 
     private void registerPrincipalQuery(PrincipalQueryConfig principalQuery, JdbcSecurityRealmBuilder builder) {
 
-        QueryBuilder queryBuilder = builder.principalQuery(principalQuery.sql().orElseThrow(
-                () -> new IllegalStateException("quarkus.security.jdbc.principal-query.sql property must be set")))
+        QueryBuilder queryBuilder = builder
+                .principalQuery(principalQuery.sql()
+                        .orElseThrow(() -> new IllegalStateException(
+                                "quarkus.security.jdbc.principal-query.sql property must be set")))
                 .from(getDataSource(principalQuery));
 
-        AttributeMapper[] mappers = principalQuery.attributeMappings().entrySet()
-                .stream()
+        AttributeMapper[] mappers = principalQuery.attributeMappings().entrySet().stream()
                 .map(entry -> new AttributeMapper(entry.getValue().index(), entry.getValue().to()))
                 .toArray(size -> new AttributeMapper[size]);
         queryBuilder.withMapper(mappers);

@@ -27,10 +27,9 @@ import io.vertx.core.http.WebSocketConnectOptions;
 public class OnClosePathParamConnectionArgumentTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(MontyEcho.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(MontyEcho.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;
@@ -41,7 +40,8 @@ public class OnClosePathParamConnectionArgumentTest {
     @Test
     void testArguments() throws InterruptedException {
         String header = "fool";
-        WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header), testUri);
+        WSClient client = WSClient.create(vertx).connect(new WebSocketConnectOptions().addHeader("X-Test", header),
+                testUri);
         client.disconnect();
         assertTrue(MontyEcho.CLOSED_LATCH.await(5, TimeUnit.SECONDS));
         assertEquals("foo:monty:fool", MontyEcho.CLOSED_MESSAGE.get());

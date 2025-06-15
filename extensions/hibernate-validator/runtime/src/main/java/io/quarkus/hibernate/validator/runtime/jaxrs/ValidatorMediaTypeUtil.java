@@ -10,11 +10,8 @@ import jakarta.ws.rs.core.MediaType;
  */
 public final class ValidatorMediaTypeUtil {
 
-    static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(
-            MediaType.APPLICATION_JSON_TYPE,
-            MediaType.APPLICATION_XML_TYPE,
-            MediaType.TEXT_XML_TYPE,
-            MediaType.TEXT_PLAIN_TYPE);
+    static final List<MediaType> SUPPORTED_MEDIA_TYPES = Arrays.asList(MediaType.APPLICATION_JSON_TYPE,
+            MediaType.APPLICATION_XML_TYPE, MediaType.TEXT_XML_TYPE, MediaType.TEXT_PLAIN_TYPE);
 
     private ValidatorMediaTypeUtil() {
 
@@ -24,8 +21,11 @@ public final class ValidatorMediaTypeUtil {
      * Look up the right media type taking into account the HTTP request and the media types defined in the `@Produces`
      * annotation.
      *
-     * @param mediaTypesFromRequest list of media types in the HTTP request.
-     * @param mediaTypesFromProducesAnnotation list of media types set in the `@Produces` annotation.
+     * @param mediaTypesFromRequest
+     *        list of media types in the HTTP request.
+     * @param mediaTypesFromProducesAnnotation
+     *        list of media types set in the `@Produces` annotation.
+     *
      * @return one supported media type from either the HTTP request or the annotation.
      */
     public static MediaType getAcceptMediaType(List<MediaType> mediaTypesFromRequest,

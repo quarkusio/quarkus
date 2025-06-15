@@ -5,9 +5,9 @@ import org.jboss.jandex.ClassInfo;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Can be used by extensions that want to make classes not annotated with JAX-RS {@code @Path}
- * part of the ResourceClass scanning process.
- * This will likely be used in conjunction with {@code io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem}
+ * Can be used by extensions that want to make classes not annotated with JAX-RS {@code @Path} part of the ResourceClass
+ * scanning process. This will likely be used in conjunction with
+ * {@code io.quarkus.resteasy.reactive.server.spi.AnnotationsTransformerBuildItem}
  */
 public final class AdditionalResourceClassBuildItem extends MultiBuildItem {
 

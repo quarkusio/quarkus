@@ -28,18 +28,13 @@ public class SmallRyeMetricsDotNames {
             .createSimple(org.eclipse.microprofile.metrics.Metric.class.getName());
     public static final DotName GAUGE_INTERFACE = DotName
             .createSimple(org.eclipse.microprofile.metrics.Gauge.class.getName());
-    public static final DotName COUNTER_INTERFACE = DotName
-            .createSimple(Counter.class.getName());
+    public static final DotName COUNTER_INTERFACE = DotName.createSimple(Counter.class.getName());
     public static final DotName CONCURRENT_GAUGE_INTERFACE = DotName
             .createSimple(org.eclipse.microprofile.metrics.ConcurrentGauge.class.getName());
-    public static final DotName METER_INTERFACE = DotName
-            .createSimple(Meter.class.getName());
-    public static final DotName SIMPLE_TIMER_INTERFACE = DotName
-            .createSimple(SimpleTimer.class.getName());
-    public static final DotName TIMER_INTERFACE = DotName
-            .createSimple(Timer.class.getName());
-    public static final DotName HISTOGRAM_INTERFACE = DotName
-            .createSimple(Histogram.class.getName());
+    public static final DotName METER_INTERFACE = DotName.createSimple(Meter.class.getName());
+    public static final DotName SIMPLE_TIMER_INTERFACE = DotName.createSimple(SimpleTimer.class.getName());
+    public static final DotName TIMER_INTERFACE = DotName.createSimple(Timer.class.getName());
+    public static final DotName HISTOGRAM_INTERFACE = DotName.createSimple(Histogram.class.getName());
 
     // annotations
     public static final DotName GAUGE = DotName.createSimple(Gauge.class.getName());
@@ -51,13 +46,8 @@ public class SmallRyeMetricsDotNames {
     public static final DotName METRICS_BINDING = DotName.createSimple(MetricsBinding.class.getName());
     public static final DotName CONCURRENT_GAUGE = DotName.createSimple(ConcurrentGauge.class.getName());
 
-    public static final Set<DotName> METRICS_ANNOTATIONS = new HashSet<>(Arrays.asList(
-            GAUGE,
-            TIMED,
-            SIMPLY_TIMED,
-            COUNTED,
-            METERED,
-            CONCURRENT_GAUGE));
+    public static final Set<DotName> METRICS_ANNOTATIONS = new HashSet<>(
+            Arrays.asList(GAUGE, TIMED, SIMPLY_TIMED, COUNTED, METERED, CONCURRENT_GAUGE));
 
     public static boolean isMetricAnnotation(AnnotationInstance instance) {
         return METRICS_ANNOTATIONS.contains(instance.name());

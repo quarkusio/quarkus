@@ -31,15 +31,13 @@ public class WebsocketDevModeTestCase {
     URI echoUri;
 
     @RegisterExtension
-    public static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(EchoWebSocket.class, EchoService.class)
-                            .addAsResource(new StringAsset("quarkus.http.root-path=/api/"), "application.properties");
-                }
-            });
+    public static final QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(EchoWebSocket.class, EchoService.class)
+                    .addAsResource(new StringAsset("quarkus.http.root-path=/api/"), "application.properties");
+        }
+    });
 
     @Test
     public void testWebsocketHotReplacement() throws Exception {

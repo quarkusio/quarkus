@@ -32,12 +32,8 @@ public class Encode {
     static {
         /*
          * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
-         *
-         * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-         * sub-delims = "!" / "$" / "&" / "'" / "(" / ")"
-         * / "*" / "+" / "," / ";" / "="
-         * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
-         *
+         * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~" sub-delims = "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+"
+         * / "," / ";" / "=" pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
          */
         for (int i = 0; i < 128; i++) {
             if (i >= 'a' && i <= 'z')
@@ -77,11 +73,8 @@ public class Encode {
         System.arraycopy(pathEncoding, 0, pathSegmentEncoding, 0, pathEncoding.length);
         pathSegmentEncoding['/'] = "%2F";
         /*
-         * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>.
-         *
-         * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-         * space encoded as '+'
-         *
+         * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. unreserved = ALPHA / DIGIT / "-" /
+         * "." / "_" / "~" space encoded as '+'
          */
         for (int i = 0; i < 128; i++) {
             if (i >= 'a' && i <= 'z')
@@ -108,7 +101,6 @@ public class Encode {
 
         /*
          * query = *( pchar / "/" / "?" )
-         *
          */
         for (int i = 0; i < 128; i++) {
             if (i >= 'a' && i <= 'z')
@@ -149,7 +141,9 @@ public class Encode {
     /**
      * Keep encoded values "%..." and template parameters intact.
      *
-     * @param value query string
+     * @param value
+     *        query string
+     *
      * @return encoded query string
      */
     public static String encodeQueryString(String value) {
@@ -159,7 +153,9 @@ public class Encode {
     /**
      * Keep encoded values "%...", matrix parameters, template parameters, and '/' characters intact.
      *
-     * @param value path
+     * @param value
+     *        path
+     *
      * @return encoded path
      */
     public static String encodePath(String value) {
@@ -169,7 +165,9 @@ public class Encode {
     /**
      * Keep encoded values "%...", matrix parameters and template parameters intact.
      *
-     * @param value path segment
+     * @param value
+     *        path segment
+     *
      * @return encoded path segment
      */
     public static String encodePathSegment(String value) {
@@ -179,7 +177,9 @@ public class Encode {
     /**
      * Keep encoded values "%..." and template parameters intact.
      *
-     * @param value uri fragment
+     * @param value
+     *        uri fragment
+     *
      * @return encoded uri fragment
      */
     public static String encodeFragment(String value) {
@@ -189,7 +189,9 @@ public class Encode {
     /**
      * Keep encoded values "%..." and template parameters intact.
      *
-     * @param value matrix parameter
+     * @param value
+     *        matrix parameter
+     *
      * @return encoded matrix parameter
      */
     public static String encodeMatrixParam(String value) {
@@ -199,14 +201,16 @@ public class Encode {
     /**
      * Keep encoded values "%..." and template parameters intact.
      *
-     * @param value query parameter
+     * @param value
+     *        query parameter
+     *
      * @return encoded query parameter
      */
     public static String encodeQueryParam(String value) {
         return encodeValue(value, queryNameValueEncoding);
     }
 
-    //private static final Pattern nonCodes = Pattern.compile("%([^a-fA-F0-9]|$)");
+    // private static final Pattern nonCodes = Pattern.compile("%([^a-fA-F0-9]|$)");
     private static final Pattern nonCodes = Pattern.compile("%([^a-fA-F0-9]|[a-fA-F0-9]$|$|[a-fA-F0-9][^a-fA-F0-9])");
     private static final Pattern encodedChars = Pattern.compile("%([a-fA-F0-9][a-fA-F0-9])");
     private static final Pattern encodedCharsMulti = Pattern.compile("((%[a-fA-F0-9][a-fA-F0-9])+)");
@@ -214,7 +218,7 @@ public class Encode {
     public static String decodePath(String path) {
         // FIXME: this doesn't appear to pass the TCK, because it fails to decode what it throws at it
         // also it doesn't decode slashes (it should) and it decodes + (it should not)
-        //        return URLUtils.decode(path, StandardCharsets.UTF_8, false, null);
+        // return URLUtils.decode(path, StandardCharsets.UTF_8, false, null);
         // So let's use the Vertx decoder for now
         return URIDecoder.decodeURIComponent(path, false);
     }
@@ -237,7 +241,9 @@ public class Encode {
     /**
      * Encode '%' if it is not an encoding sequence
      *
-     * @param string value to encode
+     * @param string
+     *        value to encode
+     *
      * @return encoded value
      */
     public static String encodeNonCodes(String string) {
@@ -245,10 +251,10 @@ public class Encode {
         StringBuilder builder = new StringBuilder();
 
         // FYI: we do not use the no-arg matcher.find()
-        //      coupled with matcher.appendReplacement()
-        //      because the matched text may contain
-        //      a second % and we must make sure we
-        //      encode it (if necessary).
+        // coupled with matcher.appendReplacement()
+        // because the matched text may contain
+        // a second % and we must make sure we
+        // encode it (if necessary).
         int idx = 0;
         while (matcher.find(idx)) {
             int start = matcher.start();
@@ -262,7 +268,7 @@ public class Encode {
 
     public static boolean savePathParams(String segmentString, StringBuilder newSegment, List<String> params) {
         boolean foundParam = false;
-        // Regular expressions can have '{' and '}' characters.  Replace them to do match
+        // Regular expressions can have '{' and '}' characters. Replace them to do match
         CharSequence segment = PathHelper.replaceEnclosedCurlyBracesCS(segmentString);
         Matcher matcher = PathHelper.URI_TEMPLATE_PATTERN.matcher(segment);
         int start = 0;
@@ -270,7 +276,7 @@ public class Encode {
             newSegment.append(segment, start, matcher.start());
             foundParam = true;
             String group = matcher.group();
-            // Regular expressions can have '{' and '}' characters.  Recover earlier replacement
+            // Regular expressions can have '{' and '}' characters. Recover earlier replacement
             params.add(PathHelper.recoverEnclosedCurlyBraces(group));
             newSegment.append("_resteasy_uri_parameter");
             start = matcher.end();
@@ -282,8 +288,11 @@ public class Encode {
     /**
      * Keep encoded values "%..." and template parameters intact i.e. "{x}"
      *
-     * @param segment value to encode
-     * @param encoding encoding
+     * @param segment
+     *        value to encode
+     * @param encoding
+     *        encoding
+     *
      * @return encoded value
      */
     public static String encodeValue(String segment, String[] encoding) {
@@ -306,12 +315,12 @@ public class Encode {
     /**
      * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
      * <p>
-     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-     * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"
-     * / "*" / "+" / "," / ";" / "="
-     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
+     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~" sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")" / "*" /
+     * "+" / "," / ";" / "=" pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
      *
-     * @param segment value to encode
+     * @param segment
+     *        value to encode
+     *
      * @return encoded value
      */
     public static String encodePathAsIs(String segment) {
@@ -321,7 +330,9 @@ public class Encode {
     /**
      * Keep any valid encodings from string i.e. keep "%2D" but don't keep "%p"
      *
-     * @param segment value to encode
+     * @param segment
+     *        value to encode
+     *
      * @return encoded value
      */
     public static String encodePathSaveEncodings(String segment) {
@@ -333,12 +344,12 @@ public class Encode {
     /**
      * Encode via <a href="https://www.ietf.org/rfc/rfc3986.txt">RFC 3986</a>. PCHAR is allowed allong with '/'
      * <p>
-     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~"
-     * sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")"
-     * / "*" / "+" / "," / ";" / "="
-     * pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
+     * unreserved = ALPHA / DIGIT / "-" / "." / "_" / "~" sub-delims = "!" / "$" / "&#x26;" / "'" / "(" / ")" / "*" /
+     * "+" / "," / ";" / "=" pchar = unreserved / pct-encoded / sub-delims / ":" / "@"
      *
-     * @param segment value to encode
+     * @param segment
+     *        value to encode
+     *
      * @return encoded value
      */
     public static String encodePathSegmentAsIs(String segment) {
@@ -348,7 +359,9 @@ public class Encode {
     /**
      * Keep any valid encodings from string i.e. keep "%2D" but don't keep "%p"
      *
-     * @param segment value to encode
+     * @param segment
+     *        value to encode
+     *
      * @return encoded value
      */
     public static String encodePathSegmentSaveEncodings(String segment) {
@@ -360,7 +373,9 @@ public class Encode {
     /**
      * Encodes everything of a query parameter name or value.
      *
-     * @param nameOrValue value to encode
+     * @param nameOrValue
+     *        value to encode
+     *
      * @return encoded value
      */
     public static String encodeQueryParamAsIs(String nameOrValue) {
@@ -370,7 +385,9 @@ public class Encode {
     /**
      * Keep any valid encodings from string i.e. keep "%2D" but don't keep "%p"
      *
-     * @param segment value to encode
+     * @param segment
+     *        value to encode
+     *
      * @return encoded value
      */
     public static String encodeQueryParamSaveEncodings(String segment) {
@@ -408,8 +425,11 @@ public class Encode {
     }
 
     /**
-     * @param zhar integer representation of character
-     * @param encodingMap encoding map
+     * @param zhar
+     *        integer representation of character
+     * @param encodingMap
+     *        encoding map
+     *
      * @return URL encoded character
      */
     private static String encode(int zhar, String[] encodingMap) {
@@ -425,7 +445,9 @@ public class Encode {
     /**
      * Calls URLEncoder.encode(s, "UTF-8") on given input.
      *
-     * @param s string to encode
+     * @param s
+     *        string to encode
+     *
      * @return encoded string returned by URLEncoder.encode(s, "UTF-8")
      */
     public static String encodeString(String s) {
@@ -455,7 +477,9 @@ public class Encode {
     /**
      * decode an encoded map
      *
-     * @param map map
+     * @param map
+     *        map
+     *
      * @return decoded map
      */
     public static MultivaluedMap<String, String> decode(MultivaluedMap<String, String> map) {
@@ -476,8 +500,11 @@ public class Encode {
     /**
      * decode an encoded map
      *
-     * @param map map
-     * @param charset charset
+     * @param map
+     *        map
+     * @param charset
+     *        charset
+     *
      * @return decoded map
      */
     public static MultivaluedMap<String, String> decode(MultivaluedMap<String, String> map, String charset) {

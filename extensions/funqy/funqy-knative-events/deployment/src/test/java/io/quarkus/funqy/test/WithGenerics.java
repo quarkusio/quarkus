@@ -13,17 +13,12 @@ public class WithGenerics {
     @Funq
     @CloudEventMapping(trigger = "listOfStrings")
     public String toCommaSeparated(List<Identity> identityList) {
-        return identityList
-                .stream()
-                .map(Identity::getName)
-                .collect(Collectors.joining(","));
+        return identityList.stream().map(Identity::getName).collect(Collectors.joining(","));
     }
 
     @Funq
     @CloudEventMapping(trigger = "integer")
     public Uni<List<Integer>> range(int n) {
-        return Uni.createFrom().item(() -> IntStream.range(0, n)
-                .boxed()
-                .collect(Collectors.toList()));
+        return Uni.createFrom().item(() -> IntStream.range(0, n).boxed().collect(Collectors.toList()));
     }
 }

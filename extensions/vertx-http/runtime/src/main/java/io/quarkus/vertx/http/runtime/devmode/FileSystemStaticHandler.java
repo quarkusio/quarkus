@@ -93,7 +93,8 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
     /**
      * Resolves the web roots based on the webRootConfigurations
      *
-     * @throws IOException if an I/O error occurs
+     * @throws IOException
+     *         if an I/O error occurs
      */
     private void resolveWebRoots() throws IOException {
         if (resolvedWebRoots == null) {
@@ -119,10 +120,11 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
     }
 
     /**
-     *
      * @param context
      * @param path
-     * @throws IOException if an I/O error occurs
+     *
+     * @throws IOException
+     *         if an I/O error occurs
      */
     private void sendStatic(RoutingContext context, String path) throws IOException {
         resolveWebRoots();
@@ -187,7 +189,8 @@ public class FileSystemStaticHandler implements Handler<RoutingContext>, Closeab
 
         /**
          * Root directory inside the file system to service static files from. This is relative to the fileSystem. For a
-         * directory fileSystem, this has to be a subdirectory. For jar files, this has to be a directory inside the jar.
+         * directory fileSystem, this has to be a subdirectory. For jar files, this has to be a directory inside the
+         * jar.
          */
         private String webRoot;
 

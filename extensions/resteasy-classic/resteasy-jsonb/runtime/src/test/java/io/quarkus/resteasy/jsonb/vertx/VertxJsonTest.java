@@ -40,17 +40,9 @@ class VertxJsonTest {
     @Test
     public void testSerializationOfJsonObject() {
         Instant instant = Instant.now();
-        JsonObject object = new JsonObject()
-                .put("string", "value")
-                .put("enum", MyEnum.VALUE)
-                .put("long", 1000000L)
-                .put("float", 24.2f)
-                .put("int", 2)
-                .put("true", true)
-                .put("false", false)
-                .put("binary", "hello".getBytes())
-                .put("instant", instant)
-                .putNull("null");
+        JsonObject object = new JsonObject().put("string", "value").put("enum", MyEnum.VALUE).put("long", 1000000L)
+                .put("float", 24.2f).put("int", 2).put("true", true).put("false", false)
+                .put("binary", "hello".getBytes()).put("instant", instant).putNull("null");
 
         String serialized = jsonb.toJson(object);
         JsonObject json = jsonb.fromJson(serialized, JsonObject.class);
@@ -60,14 +52,11 @@ class VertxJsonTest {
     @Test
     public void testSerializationAndDeserialization() {
         Instant instant = Instant.now();
-        JsonArray array = new JsonArray()
-                .add("s").add(MyEnum.VALUE).add(2222222L).add(21.3f).add(12).add(55.55).add(true).add(false)
-                .add("hello".getBytes())
-                .add(instant)
-                .add(new JsonObject().put("hello", "world")).add(new JsonArray().add(1).add(2).add("3"));
+        JsonArray array = new JsonArray().add("s").add(MyEnum.VALUE).add(2222222L).add(21.3f).add(12).add(55.55)
+                .add(true).add(false).add("hello".getBytes()).add(instant).add(new JsonObject().put("hello", "world"))
+                .add(new JsonArray().add(1).add(2).add("3"));
 
-        JsonObject json2 = new JsonObject()
-                .put("sub", new JsonObject().put("hello", "world").put("int", 3))
+        JsonObject json2 = new JsonObject().put("sub", new JsonObject().put("hello", "world").put("int", 3))
                 .put("array", array);
 
         List<JsonObject> list = new ArrayList<>();

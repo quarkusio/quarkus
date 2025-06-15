@@ -17,8 +17,8 @@ public class WebXmlInitParamsFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest req, ServletResponse resp,
-            FilterChain chain) throws IOException, ServletException {
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain)
+            throws IOException, ServletException {
         resp.getWriter().println("invoked-before-chain");
         resp.getWriter().println(filterConfig.getInitParameter("MyFilterParamName1"));
         resp.getWriter().println(filterConfig.getInitParameter("MyFilterParamName2"));

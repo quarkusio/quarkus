@@ -14,17 +14,16 @@ public class StaticInitConfigInjectionFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(StaticInitBean.class, StaticInitEagerBean.class, UnsafeConfigSource.class)
-                    .addAsServiceProvider(ConfigSource.class, UnsafeConfigSource.class)
-                    // the value from application.properties should be injected during STATIC_INIT
-                    .addAsResource(new StringAsset("apfelstrudel=jandex"), "application.properties"))
+            .withApplicationRoot(
+                    root -> root.addClasses(StaticInitBean.class, StaticInitEagerBean.class, UnsafeConfigSource.class)
+                            .addAsServiceProvider(ConfigSource.class, UnsafeConfigSource.class)
+                            // the value from application.properties should be injected during STATIC_INIT
+                            .addAsResource(new StringAsset("apfelstrudel=jandex"), "application.properties"))
             .assertException(t -> {
-                assertThat(t).isInstanceOf(IllegalStateException.class)
-                        .hasMessageContainingAll(
-                                "A runtime config property value differs from the value that was injected during the static intialization phase",
-                                "the runtime value of 'apfelstrudel' is [gizmo] but the value [jandex] was injected into io.quarkus.arc.test.config.staticinit.StaticInitBean#value",
-                                "the runtime value of 'apfelstrudel' is [gizmo] but the value [jandex] was injected into io.quarkus.arc.test.config.staticinit.StaticInitEagerBean#value");
+                assertThat(t).isInstanceOf(IllegalStateException.class).hasMessageContainingAll(
+                        "A runtime config property value differs from the value that was injected during the static intialization phase",
+                        "the runtime value of 'apfelstrudel' is [gizmo] but the value [jandex] was injected into io.quarkus.arc.test.config.staticinit.StaticInitBean#value",
+                        "the runtime value of 'apfelstrudel' is [gizmo] but the value [jandex] was injected into io.quarkus.arc.test.config.staticinit.StaticInitEagerBean#value");
             });
 
     @Test

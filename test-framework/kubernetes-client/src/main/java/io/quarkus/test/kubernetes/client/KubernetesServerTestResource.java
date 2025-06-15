@@ -9,7 +9,8 @@ import java.util.function.Consumer;
 import io.fabric8.kubernetes.client.NamespacedKubernetesClient;
 import io.quarkus.test.common.QuarkusTestResourceConfigurableLifecycleManager;
 
-public class KubernetesServerTestResource extends AbstractKubernetesTestResource<KubernetesServer, NamespacedKubernetesClient>
+public class KubernetesServerTestResource
+        extends AbstractKubernetesTestResource<KubernetesServer, NamespacedKubernetesClient>
         implements QuarkusTestResourceConfigurableLifecycleManager<WithKubernetesTestServer> {
 
     private boolean https = false;
@@ -24,7 +25,8 @@ public class KubernetesServerTestResource extends AbstractKubernetesTestResource
         this.port = annotation.port();
         try {
             this.setup = annotation.setup().getDeclaredConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
     }

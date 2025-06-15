@@ -36,25 +36,18 @@ public class JsonRegistryProcessor {
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     public void initializeJsonRegistry(MicrometerConfig config,
-            BuildProducer<MicrometerRegistryProviderBuildItem> registryProviders,
-            BuildProducer<RouteBuildItem> routes,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            BuildProducer<RegistryBuildItem> registries,
+            BuildProducer<MicrometerRegistryProviderBuildItem> registryProviders, BuildProducer<RouteBuildItem> routes,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, BuildProducer<RegistryBuildItem> registries,
             NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig,
-            LaunchModeBuildItem launchModeBuildItem,
+            ManagementInterfaceBuildTimeConfig managementBuildTimeConfig, LaunchModeBuildItem launchModeBuildItem,
             JsonRecorder recorder) {
-        additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JsonMeterRegistryProvider.class)
+        additionalBeans.produce(AdditionalBeanBuildItem.builder().addBeanClass(JsonMeterRegistryProvider.class)
                 .setUnremovable().build());
         registryProviders.produce(new MicrometerRegistryProviderBuildItem(JsonMeterRegistry.class));
 
-        routes.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .management()
+        routes.produce(nonApplicationRootPathBuildItem.routeBuilder().management()
                 .routeFunction(config.export().json().path(), recorder.route())
-                .routeConfigKey("quarkus.micrometer.export.json.path")
-                .handler(recorder.getHandler())
-                .blockingRoute()
+                .routeConfigKey("quarkus.micrometer.export.json.path").handler(recorder.getHandler()).blockingRoute()
                 .build());
 
         var path = nonApplicationRootPathBuildItem.resolveManagementPath(config.export().json().path(),

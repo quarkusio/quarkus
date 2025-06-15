@@ -39,22 +39,20 @@ public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
         cmd.put(key);
         cmd.put(Long.toString(pos));
         cmd.putAll(extra);
-        return execute(cmd)
-                .invoke(response -> cursor = response.get(0).toLong())
-                .map(response -> {
-                    Response array = response.get(1);
-                    V value = null;
-                    List<ScoredValue<V>> list = new ArrayList<>();
-                    for (Response nested : array) {
-                        if (value == null) {
-                            value = marshaller.decode(typeOfValue, nested.toBytes());
-                        } else {
-                            list.add(new ScoredValue<>(value, nested.toDouble()));
-                            value = null;
-                        }
-                    }
-                    return list;
-                });
+        return execute(cmd).invoke(response -> cursor = response.get(0).toLong()).map(response -> {
+            Response array = response.get(1);
+            V value = null;
+            List<ScoredValue<V>> list = new ArrayList<>();
+            for (Response nested : array) {
+                if (value == null) {
+                    value = marshaller.decode(typeOfValue, nested.toBytes());
+                } else {
+                    list.add(new ScoredValue<>(value, nested.toDouble()));
+                    value = null;
+                }
+            }
+            return list;
+        });
     }
 
     @Override
@@ -64,9 +62,7 @@ public class ZScanReactiveCursorImpl<V> extends AbstractRedisCommands implements
 
     @Override
     public Multi<ScoredValue<V>> toMulti() {
-        return Multi.createBy().repeating()
-                .uni(this::next)
-                .whilst(m -> hasNext())
-                .onItem().transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
+        return Multi.createBy().repeating().uni(this::next).whilst(m -> hasNext()).onItem()
+                .transformToMultiAndConcatenate(list -> Multi.createFrom().items(list.stream()));
     }
 }

@@ -25,7 +25,8 @@ final class RecordableBootstrapFactory {
         return ssrBuilder;
     }
 
-    private static InitialInitiatorListProvider getInitiatorListProvider(QuarkusPersistenceUnitDefinition puDefinition) {
+    private static InitialInitiatorListProvider getInitiatorListProvider(
+            QuarkusPersistenceUnitDefinition puDefinition) {
         if (puDefinition.isReactive()) {
             if (reactiveInitiatorListProvider == null) {
                 throw new IllegalStateException(
@@ -42,22 +43,25 @@ final class RecordableBootstrapFactory {
         // N.B. support for custom IntegratorProvider injected via Properties (as
         // instance) removed
 
-        final QuarkusIntegratorServiceImpl integratorService = new QuarkusIntegratorServiceImpl(providedClassLoaderService);
-        final StrategySelector strategySelector = QuarkusStrategySelectorBuilder.buildSelector(providedClassLoaderService);
+        final QuarkusIntegratorServiceImpl integratorService = new QuarkusIntegratorServiceImpl(
+                providedClassLoaderService);
+        final StrategySelector strategySelector = QuarkusStrategySelectorBuilder
+                .buildSelector(providedClassLoaderService);
         return new BootstrapServiceRegistryImpl(true, providedClassLoaderService, strategySelector, integratorService);
     }
 
     private static InitialInitiatorListProvider initReactiveListProviderMaybe() {
         try {
-            //Use reflection as we don't want the Hibernate ORM extension to depend on the Hibernate Reactive extension:
-            final Class<?> forName = Class
-                    .forName("io.quarkus.hibernate.reactive.runtime.boot.registry.ReactiveHibernateInitiatorListProvider");
+            // Use reflection as we don't want the Hibernate ORM extension to depend on the Hibernate Reactive
+            // extension:
+            final Class<?> forName = Class.forName(
+                    "io.quarkus.hibernate.reactive.runtime.boot.registry.ReactiveHibernateInitiatorListProvider");
             final Object o = forName.getDeclaredConstructor().newInstance();
             return (InitialInitiatorListProvider) o;
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException
                 | InvocationTargetException e) {
-            //Be silent as this is a static initializer: most likely the Hibernate Reactive extension is
-            //not on the classpath, which implies we won't need this.
+            // Be silent as this is a static initializer: most likely the Hibernate Reactive extension is
+            // not on the classpath, which implies we won't need this.
             return null;
         }
     }

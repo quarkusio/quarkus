@@ -34,16 +34,15 @@ public class LiquibaseExtensionCleanAtStartTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml")
+            .withApplicationRoot((jar) -> jar.addAsResource("db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("clean-at-start-config.properties", "application.properties"));
 
     @Test
     @DisplayName("Clean at start correctly")
     public void testLiquibaseConfigInjection() throws Exception {
-        try (Connection connection = defaultDataSource.getConnection(); Statement stat = connection.createStatement()) {
-            try (ResultSet executeQuery = stat
-                    .executeQuery("select * from fake_existing_tbl")) {
+        try (Connection connection = defaultDataSource.getConnection();
+                Statement stat = connection.createStatement()) {
+            try (ResultSet executeQuery = stat.executeQuery("select * from fake_existing_tbl")) {
                 fail("fake_existing_tbl should not exist");
             } catch (JdbcSQLSyntaxErrorException e) {
                 // expected fake_existing_tbl does not exist

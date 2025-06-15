@@ -10,9 +10,8 @@ import io.restassured.RestAssured;
 public class ServingUIFromCustomPathTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.vertx-graphql.ui.path=/custom\n"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.vertx-graphql.ui.path=/custom\n"), "application.properties"));
 
     @Test
     public void shouldServeVertxGraphqlUiFromCustomPath() {

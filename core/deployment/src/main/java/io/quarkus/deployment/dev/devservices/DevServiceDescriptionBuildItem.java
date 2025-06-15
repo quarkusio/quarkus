@@ -16,8 +16,7 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     public DevServiceDescriptionBuildItem() {
     }
 
-    public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo,
-            Map<String, String> configs) {
+    public DevServiceDescriptionBuildItem(String name, ContainerInfo containerInfo, Map<String, String> configs) {
         this(name, null, containerInfo, configs);
     }
 
@@ -66,8 +65,6 @@ public final class DevServiceDescriptionBuildItem extends MultiBuildItem {
     }
 
     public String formatConfigs() {
-        return configs.entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue())
-                .collect(Collectors.joining(", "));
+        return configs.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue()).collect(Collectors.joining(", "));
     }
 }

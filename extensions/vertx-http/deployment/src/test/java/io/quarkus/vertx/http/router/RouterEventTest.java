@@ -24,12 +24,7 @@ public class RouterEventTest {
     public void testRoute() {
         RestAssured.when().get("/boom").then().statusCode(200).body(is("ok"));
 
-        RestAssured.given()
-                .body("An example body")
-                .contentType("text/plain")
-                .post("/post")
-                .then()
-                .body(is("1"));
+        RestAssured.given().body("An example body").contentType("text/plain").post("/post").then().body(is("1"));
     }
 
     @Singleton

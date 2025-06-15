@@ -36,52 +36,31 @@ public class ContinuousTestingJsonRPCService implements Consumer<ContinuousTesti
         final List<Item> skippedTests = new LinkedList<>();
         final Set<String> tags = new TreeSet<>();
         if (null != results) {
-            results
-                    .getResults()
-                    .values()
-                    .stream()
-                    .flatMap(result -> result.getResults().stream())
+            results.getResults().values().stream().flatMap(result -> result.getResults().stream())
                     .filter(TestResultInterface::isTest)
-                    .sorted(
-                            Comparator
-                                    .comparing(TestResultInterface::getTestClass)
-                                    .thenComparing(TestResultInterface::getDisplayName)
-                                    .thenComparing(TestResultInterface::getDisplayName))
-                    .forEach(
-                            result -> {
-                                (switch (result.getState()) {
-                                    case PASSED -> passedTests;
-                                    case FAILED -> failedTests;
-                                    case SKIPPED -> skippedTests;
-                                })
-                                        .add(
-                                                new Item()
-                                                        .setClassName(result.getTestClass())
-                                                        .setDisplayName(result.getDisplayName())
-                                                        .setProblems(result.getProblems().toArray(new Throwable[0]))
-                                                        .setTime(result.getTime())
-                                                        .setTags(result.getTags().toArray(new String[0])));
-                                tags.addAll(result.getTags());
-                            });
+                    .sorted(Comparator.comparing(TestResultInterface::getTestClass)
+                            .thenComparing(TestResultInterface::getDisplayName)
+                            .thenComparing(TestResultInterface::getDisplayName))
+                    .forEach(result -> {
+                        (switch (result.getState()) {
+                            case PASSED -> passedTests;
+                            case FAILED -> failedTests;
+                            case SKIPPED -> skippedTests;
+                        }).add(new Item().setClassName(result.getTestClass()).setDisplayName(result.getDisplayName())
+                                .setProblems(result.getProblems().toArray(new Throwable[0])).setTime(result.getTime())
+                                .setTags(result.getTags().toArray(new String[0])));
+                        tags.addAll(result.getTags());
+                    });
         }
-        this.currentState = new ContinuousTestingJsonRPCState()
-                .setInProgress(state.inProgress)
-                .setConfig(
-                        new Config()
-                                .setEnabled(state.running)
-                                .setBrokenOnly(state.isBrokenOnly))
-                .setResult(
-                        new Result()
-                                .setCounts(
-                                        new Counts()
-                                                .setPassed(state.passed)
-                                                .setFailed(state.failed)
-                                                .setSkipped(state.skipped))
-                                .setTags(tags.toArray(new String[0]))
-                                .setTotalTime(results == null ? 0L : results.getTotalTime())
-                                .setPassed(passedTests.toArray(new Item[0]))
-                                .setFailed(failedTests.toArray(new Item[0]))
-                                .setSkipped(skippedTests.toArray(new Item[0])));
+        this.currentState = new ContinuousTestingJsonRPCState().setInProgress(state.inProgress)
+                .setConfig(new Config().setEnabled(state.running).setBrokenOnly(state.isBrokenOnly))
+                .setResult(new Result()
+                        .setCounts(
+                                new Counts().setPassed(state.passed).setFailed(state.failed).setSkipped(state.skipped))
+                        .setTags(tags.toArray(new String[0]))
+                        .setTotalTime(results == null ? 0L : results.getTotalTime())
+                        .setPassed(passedTests.toArray(new Item[0])).setFailed(failedTests.toArray(new Item[0]))
+                        .setSkipped(skippedTests.toArray(new Item[0])));
         this.stateBroadcaster.onNext(this.currentState);
     }
 

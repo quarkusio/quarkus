@@ -33,15 +33,13 @@ public class PathMatchingHttpSecurityPolicyTest {
     private static WebClient client;
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestIdentityController.class, TestIdentityProvider.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @BeforeAll
     public static void setup() {
-        TestIdentityController.resetRoles()
-                .add("test", "test", "test");
+        TestIdentityController.resetRoles().add("test", "test", "test");
     }
 
     @AfterAll
@@ -65,9 +63,7 @@ public class PathMatchingHttpSecurityPolicyTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {
-            "/q/openapi", "///q/openapi", "/q///openapi", "/q/openapi/", "/q/openapi///"
-    })
+    @ValueSource(strings = { "/q/openapi", "///q/openapi", "/q///openapi", "/q/openapi/", "/q/openapi///" })
     public void testOpenApiPath(String path) {
         assurePath(path, 401);
         assurePathAuthenticated(path, "openapi");

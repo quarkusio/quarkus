@@ -16,26 +16,21 @@ import io.restassured.RestAssured;
 public class RawListQueryParamTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(HelloResource.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(HelloResource.class));
 
     @Test
     public void noQueryParams() {
-        RestAssured.get("/hello")
-                .then().statusCode(200).body(Matchers.equalTo("hello world"));
+        RestAssured.get("/hello").then().statusCode(200).body(Matchers.equalTo("hello world"));
     }
 
     @Test
     public void singleQueryParam() {
-        RestAssured.get("/hello?name=foo")
-                .then().statusCode(200).body(Matchers.equalTo("hello foo"));
+        RestAssured.get("/hello?name=foo").then().statusCode(200).body(Matchers.equalTo("hello foo"));
     }
 
     @Test
     public void multipleQueryParams() {
-        RestAssured.get("/hello?name=foo&name=bar")
-                .then().statusCode(200).body(Matchers.equalTo("hello foo,bar"));
+        RestAssured.get("/hello?name=foo&name=bar").then().statusCode(200).body(Matchers.equalTo("hello foo,bar"));
     }
 
     @Path("hello")

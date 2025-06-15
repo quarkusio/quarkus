@@ -24,8 +24,10 @@ public interface ClassPermitAllInterfaceWithoutPath_SecurityOnInterface {
     @PermitAll
     @POST
     @Path(CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH)
-    default String classPathOnResource_ImplOnInterface_ImplMethodWithPath_ClassPermitAllMethodPermitAll(JsonObject array) {
-        return CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
+    default String classPathOnResource_ImplOnInterface_ImplMethodWithPath_ClassPermitAllMethodPermitAll(
+            JsonObject array) {
+        return CLASS_PATH_ON_RESOURCE + IMPL_ON_INTERFACE + IMPL_METHOD_WITH_PATH
+                + CLASS_PERMIT_ALL_METHOD_PERMIT_ALL_PATH;
     }
 
 }

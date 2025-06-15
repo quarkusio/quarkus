@@ -44,8 +44,8 @@ public class KubernetesConfigSourceFactoryTest {
         when(config.namespace()).thenReturn(Optional.of("demo"));
         when(config.configMaps()).thenReturn(Optional.of(List.of("cm1")));
 
-        ConfigMap configMap = configMapBuilder("cm1")
-                .addToData("some.key", "someValue").addToData("some.other", "someOtherValue").build();
+        ConfigMap configMap = configMapBuilder("cm1").addToData("some.key", "someValue")
+                .addToData("some.other", "someOtherValue").build();
 
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
         stubNamespacedConfigMap(kubernetesClient, configMap, "cm1");
@@ -78,8 +78,8 @@ public class KubernetesConfigSourceFactoryTest {
         when(config.enabled()).thenReturn(true);
         when(config.configMaps()).thenReturn(Optional.of(List.of("cm1")));
 
-        ConfigMap configMap = configMapBuilder("cm1")
-                .addToData("some.key", "someValue").addToData("some.other", "someOtherValue").build();
+        ConfigMap configMap = configMapBuilder("cm1").addToData("some.key", "someValue")
+                .addToData("some.other", "someOtherValue").build();
 
         KubernetesClient kubernetesClient = Mockito.mock(KubernetesClient.class);
         stubConfigMap(kubernetesClient, configMap, "cm1");
@@ -184,8 +184,7 @@ public class KubernetesConfigSourceFactoryTest {
     }
 
     private SecretBuilder secretMapBuilder(String name) {
-        return new SecretBuilder().withNewMetadata()
-                .withName(name).endMetadata();
+        return new SecretBuilder().withNewMetadata().withName(name).endMetadata();
     }
 
     private String encodeValue(String value) {
@@ -203,8 +202,7 @@ public class KubernetesConfigSourceFactoryTest {
     }
 
     private ConfigMapBuilder configMapBuilder(String name) {
-        return new ConfigMapBuilder().withNewMetadata()
-                .withName(name).endMetadata();
+        return new ConfigMapBuilder().withNewMetadata().withName(name).endMetadata();
     }
 
 }

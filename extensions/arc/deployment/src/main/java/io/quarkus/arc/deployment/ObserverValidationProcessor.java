@@ -16,8 +16,8 @@ import io.quarkus.deployment.annotations.BuildStep;
 import io.quarkus.deployment.builditem.ApplicationArchivesBuildItem;
 
 /**
- * Validates observer methods from application classes.
- * If an observer listening for {@code @Initialized(ApplicationScoped.class)} is found, it logs a warning.
+ * Validates observer methods from application classes. If an observer listening for
+ * {@code @Initialized(ApplicationScoped.class)} is found, it logs a warning.
  */
 public class ObserverValidationProcessor {
 
@@ -37,15 +37,15 @@ public class ObserverValidationProcessor {
             DotName declaringBeanDotName = observer.getDeclaringBean().getBeanClass();
             AnnotationInstance instance = Annotations.getParameterAnnotation(observer.getObserverMethod(),
                     DotNames.INITIALIZED);
-            if (applicationClassesIndex.getClassByName(declaringBeanDotName) != null && instance != null &&
-                    instance.value().asClass().name().equals(BuiltinScope.APPLICATION.getName())) {
+            if (applicationClassesIndex.getClassByName(declaringBeanDotName) != null && instance != null
+                    && instance.value().asClass().name().equals(BuiltinScope.APPLICATION.getName())) {
                 // found an observer for @Initialized(ApplicationScoped.class)
                 // log a warning and recommend to use StartupEvent instead
-                final String observerWarning = "The method %s#%s is an observer for " +
-                        "@Initialized(ApplicationScoped.class). Observer notification for this event may " +
-                        "vary between JVM and native modes! We strongly recommend to observe StartupEvent " +
-                        "instead as that one is consistently delivered in both modes once the container is " +
-                        "running.";
+                final String observerWarning = "The method %s#%s is an observer for "
+                        + "@Initialized(ApplicationScoped.class). Observer notification for this event may "
+                        + "vary between JVM and native modes! We strongly recommend to observe StartupEvent "
+                        + "instead as that one is consistently delivered in both modes once the container is "
+                        + "running.";
                 LOGGER.warnf(observerWarning, observer.getDeclaringBean().getImplClazz(),
                         observer.getObserverMethod().name());
             }

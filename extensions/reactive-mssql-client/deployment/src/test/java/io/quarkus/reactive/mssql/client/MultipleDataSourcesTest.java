@@ -17,10 +17,8 @@ public class MultipleDataSourcesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("application-multiple-datasources.properties")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanUsingDefaultDataSource.class)
-                    .addClass(BeanUsingHibernateDataSource.class));
+            .withConfigurationResource("application-multiple-datasources.properties").withApplicationRoot((jar) -> jar
+                    .addClasses(BeanUsingDefaultDataSource.class).addClass(BeanUsingHibernateDataSource.class));
 
     @Inject
     BeanUsingDefaultDataSource beanUsingDefaultDataSource;
@@ -30,10 +28,8 @@ public class MultipleDataSourcesTest {
 
     @Test
     public void testMultipleDataSources() {
-        beanUsingDefaultDataSource.verify()
-                .thenCompose(v -> beanUsingHibernateDataSource.verify())
-                .toCompletableFuture()
-                .join();
+        beanUsingDefaultDataSource.verify().thenCompose(v -> beanUsingHibernateDataSource.verify())
+                .toCompletableFuture().join();
     }
 
     @ApplicationScoped

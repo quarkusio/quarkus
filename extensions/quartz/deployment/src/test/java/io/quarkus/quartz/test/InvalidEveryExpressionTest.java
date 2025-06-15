@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InvalidEveryExpressionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(InvalidEveryExpressionTest.InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(InvalidEveryExpressionTest.InvalidBean.class));
 
     @Test
     public void test() throws InterruptedException {

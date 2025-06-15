@@ -23,9 +23,8 @@ public class ProducerReturnTypePackagePrivateNoArgsConstructorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(ProducerReturnTypePackagePrivateNoArgsConstructorTest.class, ResourceProducer.class,
-                            Resource.class));
+            .withApplicationRoot(root -> root.addClasses(ProducerReturnTypePackagePrivateNoArgsConstructorTest.class,
+                    ResourceProducer.class, Resource.class));
 
     @Inject
     Instance<Resource> instance;

@@ -47,9 +47,9 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
     }
 
     /**
-     * We need this class to work around a bug in Mutiny where we can register our cancel listener
-     * after the subscription is cancelled, and we never get notified
-     * See <a href="https://github.com/smallrye/smallrye-mutiny/issues/417">...</a>
+     * We need this class to work around a bug in Mutiny where we can register our cancel listener after the
+     * subscription is cancelled, and we never get notified See
+     * <a href="https://github.com/smallrye/smallrye-mutiny/issues/417">...</a>
      */
     static class MultiRequest<R> {
 
@@ -120,8 +120,8 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         // FIXME: backpressure setting?
         return Multi.createFrom().emitter(emitter -> {
             MultiRequest<R> multiRequest = new MultiRequest<>(emitter);
-            RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity, responseType,
-                    false);
+            RestClientRequestContext restClientRequestContext = invoker.performRequestInternal(name, entity,
+                    responseType, false);
             restClientRequestContext.getResult().handle((response, connectionError) -> {
                 if (connectionError != null) {
                     emitter.fail(connectionError);
@@ -130,19 +130,18 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     if (!emitter.isCancelled()) {
                         if (response.getStatus() == 200
                                 && MediaType.SERVER_SENT_EVENTS_TYPE.isCompatible(response.getMediaType())) {
-                            registerForSse(
-                                    multiRequest, responseType, vertxResponse,
+                            registerForSse(multiRequest, responseType, vertxResponse,
                                     (String) restClientRequestContext.getProperties()
                                             .get(RestClientRequestContext.DEFAULT_CONTENT_TYPE_PROP),
                                     restClientRequestContext.getInvokedMethod());
-                        } else if (response.getStatus() == 200
-                                && isNewlineDelimited(response)) {
+                        } else if (response.getStatus() == 200 && isNewlineDelimited(response)) {
                             registerForJsonStream(multiRequest, restClientRequestContext, responseType, response,
                                     vertxResponse);
 
                         } else {
                             // read stuff in chunks
-                            registerForChunks(multiRequest, restClientRequestContext, responseType, response, vertxResponse);
+                            registerForChunks(multiRequest, restClientRequestContext, responseType, response,
+                                    vertxResponse);
                         }
                         vertxResponse.resume();
                     } else {
@@ -155,15 +154,13 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
     }
 
     private boolean isNewlineDelimited(ResponseImpl response) {
-        return RestMediaType.APPLICATION_STREAM_JSON_TYPE.isCompatible(response.getMediaType()) ||
-                RestMediaType.APPLICATION_NDJSON_TYPE.isCompatible(response.getMediaType());
+        return RestMediaType.APPLICATION_STREAM_JSON_TYPE.isCompatible(response.getMediaType())
+                || RestMediaType.APPLICATION_NDJSON_TYPE.isCompatible(response.getMediaType());
     }
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private <R> void registerForSse(MultiRequest<? super R> multiRequest,
-            GenericType<R> responseType,
-            HttpClientResponse vertxResponse, String defaultContentType,
-            Method invokedMethod) {
+    private <R> void registerForSse(MultiRequest<? super R> multiRequest, GenericType<R> responseType,
+            HttpClientResponse vertxResponse, String defaultContentType, Method invokedMethod) {
 
         boolean returnSseEvent = SseEvent.class.equals(responseType.getRawType());
         GenericType responseTypeFirstParam = responseType.getType() instanceof ParameterizedType
@@ -175,8 +172,8 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
         // honestly, isn't reconnect contradictory with completion?
         // FIXME: Reconnect settings?
         // For now we don't want multi to reconnect
-        SseEventSourceImpl sseSource = new SseEventSourceImpl(invocationBuilder.getTarget(),
-                invocationBuilder, Integer.MAX_VALUE, TimeUnit.SECONDS, defaultContentType);
+        SseEventSourceImpl sseSource = new SseEventSourceImpl(invocationBuilder.getTarget(), invocationBuilder,
+                Integer.MAX_VALUE, TimeUnit.SECONDS, defaultContentType);
 
         multiRequest.onCancel(sseSource::close);
         sseSource.register(event -> {
@@ -210,7 +207,8 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                 }
             }
 
-            // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type header or
+            // DO NOT pass the response mime type because it's SSE: let the event pick between the X-SSE-Content-Type
+            // header or
             // the content-type SSE field
 
             if (returnSseEvent) {
@@ -263,15 +261,14 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
         try {
             return filterAnnotation.value().getConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException
+                | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }
 
     private <R> void registerForChunks(MultiRequest<? super R> multiRequest,
-            RestClientRequestContext restClientRequestContext,
-            GenericType<R> responseType,
-            ResponseImpl response,
+            RestClientRequestContext restClientRequestContext, GenericType<R> responseType, ResponseImpl response,
             HttpClientResponse vertxClientResponse) {
         // make sure we get exceptions on the response, like close events, otherwise they
         // will be logged as errors by vertx
@@ -292,12 +289,8 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
                     byte[] bytes = buffer.getBytes();
                     MediaType mediaType = response.getMediaType();
                     ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-                    R item = restClientRequestContext.readEntity(
-                            in,
-                            responseType,
-                            mediaType,
-                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
-                            response.getMetadata());
+                    R item = restClientRequestContext.readEntity(in, responseType, mediaType,
+                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(), response.getMetadata());
                     multiRequest.emitter.emit(item);
 
                 } catch (Throwable t) {
@@ -319,9 +312,7 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
     }
 
     private <R> void registerForJsonStream(MultiRequest<? super R> multiRequest,
-            RestClientRequestContext restClientRequestContext,
-            GenericType<R> responseType,
-            ResponseImpl response,
+            RestClientRequestContext restClientRequestContext, GenericType<R> responseType, ResponseImpl response,
             HttpClientResponse vertxClientResponse) {
         RecordParser parser = RecordParser.newDelimited("\n");
         parser.handler(new Handler<Buffer>() {
@@ -330,11 +321,8 @@ public class MultiInvoker extends AbstractRxInvoker<Multi<?>> {
 
                 ByteArrayInputStream in = new ByteArrayInputStream(chunk.getBytes());
                 try {
-                    R item = restClientRequestContext.readEntity(in,
-                            responseType,
-                            response.getMediaType(),
-                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(),
-                            response.getMetadata());
+                    R item = restClientRequestContext.readEntity(in, responseType, response.getMediaType(),
+                            restClientRequestContext.getMethodDeclaredAnnotationsSafe(), response.getMetadata());
                     multiRequest.emit(item);
                 } catch (IOException e) {
                     multiRequest.fail(e);

@@ -17,16 +17,13 @@ import io.vertx.ext.web.RoutingContext;
 
 public class HttpPathParamLimitWithReactiveRoutes500Test {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-server.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Util.class,
-                            Resource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, Resource.class));
 
     @Inject
     MeterRegistry registry;
@@ -44,12 +41,10 @@ public class HttpPathParamLimitWithReactiveRoutes500Test {
 
         Util.waitForMeters(registry.find("http.server.requests").timers(), COUNT);
 
-        Assertions.assertEquals(COUNT, registry.find("http.server.requests")
-                .tag("uri", "/rr").tag("method", "GET")
+        Assertions.assertEquals(COUNT, registry.find("http.server.requests").tag("uri", "/rr").tag("method", "GET")
                 .timers().iterator().next().count());
-        Assertions.assertEquals(COUNT, registry.find("http.server.requests")
-                .tag("method", "GET").tag("uri", "/rr/{message}")
-                .timers().iterator().next().count());
+        Assertions.assertEquals(COUNT, registry.find("http.server.requests").tag("method", "GET")
+                .tag("uri", "/rr/{message}").timers().iterator().next().count());
     }
 
     @Singleton

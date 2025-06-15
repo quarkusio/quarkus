@@ -2,7 +2,6 @@ package org.jboss.resteasy.reactive.common.util;
 
 /**
  * A CharSequence backed by a char[] (no copy on creation)
- *
  */
 public class ArrayCharSequence implements CharSequence {
     private final char[] buf;
@@ -44,8 +43,7 @@ public class ArrayCharSequence implements CharSequence {
         if (beginIndex > endIndex) {
             throw new StringIndexOutOfBoundsException(endIndex - beginIndex);
         }
-        return ((beginIndex == 0) && (endIndex == count))
-                ? this
+        return ((beginIndex == 0) && (endIndex == count)) ? this
                 : new ArrayCharSequence(buf, offset + beginIndex, endIndex - beginIndex);
     }
 

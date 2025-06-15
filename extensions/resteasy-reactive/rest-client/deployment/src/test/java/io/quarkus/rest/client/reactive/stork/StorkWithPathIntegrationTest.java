@@ -21,8 +21,7 @@ import io.smallrye.stork.api.NoSuchServiceDefinitionException;
 public class StorkWithPathIntegrationTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloClient.class, HelloResource.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloClient.class, HelloResource.class))
             .withConfigurationResource("stork-application-with-path.properties");
 
     @RestClient
@@ -31,12 +30,10 @@ public class StorkWithPathIntegrationTest {
     @Test
     void shouldDetermineUrlViaStork() {
         String greeting = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service"))
-                .build(HelloClient.class)
-                .echo("black and white bird");
+                .build(HelloClient.class).echo("black and white bird");
         assertThat(greeting).isEqualTo("hello, black and white bird");
 
-        greeting = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service"))
-                .build(HelloClient.class)
+        greeting = RestClientBuilder.newBuilder().baseUri(URI.create("stork://hello-service")).build(HelloClient.class)
                 .helloWithPathParam("black and white bird");
         assertThat(greeting).isEqualTo("Hello, black and white bird");
     }
@@ -70,8 +67,7 @@ public class StorkWithPathIntegrationTest {
     @Test
     @Timeout(20)
     void shouldFailOnUnknownService() {
-        HelloClient client = RestClientBuilder.newBuilder()
-                .baseUri(URI.create("stork://nonexistent-service"))
+        HelloClient client = RestClientBuilder.newBuilder().baseUri(URI.create("stork://nonexistent-service"))
                 .build(HelloClient.class);
         assertThatThrownBy(() -> client.echo("foo")).isInstanceOf(NoSuchServiceDefinitionException.class);
     }

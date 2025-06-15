@@ -34,8 +34,7 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
 
     @Override
     public <T> T invokeAndTransform(io.smallrye.graphql.api.Context c, DataFetchingEnvironment dfe,
-            DataFetcherResult.Builder<Object> resultBuilder,
-            Object[] transformedArguments) throws Exception {
+            DataFetcherResult.Builder<Object> resultBuilder, Object[] transformedArguments) throws Exception {
 
         ManagedContext requestContext = Arc.container().requestContext();
         try {
@@ -70,8 +69,8 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
 
     @SuppressWarnings("unchecked")
     private <T> T invokeAndTransformBlocking(final io.smallrye.graphql.api.Context c, final DataFetchingEnvironment dfe,
-            DataFetcherResult.Builder<Object> resultBuilder,
-            Object[] transformedArguments, Context vc) throws Exception {
+            DataFetcherResult.Builder<Object> resultBuilder, Object[] transformedArguments, Context vc)
+            throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
         final Promise<T> result = Promise.promise();
@@ -135,12 +134,11 @@ public class QuarkusDefaultDataFetcher<K, T> extends DefaultDataFetcher<K, T> {
 
         // Here call blocking with context
         BlockingHelper.runBlocking(vc, contextualCallable, result);
-        return result.future().toCompletionStage()
-                .whenComplete((resultList, error) -> {
-                    if (error != null) {
-                        onErrorConsumer.accept(error);
-                    }
-                });
+        return result.future().toCompletionStage().whenComplete((resultList, error) -> {
+            if (error != null) {
+                onErrorConsumer.accept(error);
+            }
+        });
     }
 
     private boolean runBlocking(DataFetchingEnvironment dfe) {

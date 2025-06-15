@@ -6,7 +6,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * A response header
- *
  */
 public class ResponseHeaderAttribute implements ExchangeAttribute {
 

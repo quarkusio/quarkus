@@ -17,8 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class NullConverterTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(NullConverterBean.class)
+            .withApplicationRoot((jar) -> jar.addClass(NullConverterBean.class)
                     .addAsServiceProvider(Converter.class, CustomTypeConverter.class)
                     .addAsResource(new StringAsset("my.prop=1234\n"), "application.properties"))
             .setExpectedException(DeploymentException.class);
@@ -42,8 +41,7 @@ public class NullConverterTest {
 
     public static class CustomTypeConverter implements Converter<CustomTypeConverter> {
         @Override
-        public CustomTypeConverter convert(final String value)
-                throws IllegalArgumentException, NullPointerException {
+        public CustomTypeConverter convert(final String value) throws IllegalArgumentException, NullPointerException {
             return null;
         }
     }

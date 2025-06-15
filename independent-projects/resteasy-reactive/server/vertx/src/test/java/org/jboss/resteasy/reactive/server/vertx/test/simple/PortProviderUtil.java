@@ -10,7 +10,9 @@ public class PortProviderUtil {
     /**
      * Create a URI for the provided path, using the configured port
      *
-     * @param path the request path
+     * @param path
+     *        the request path
+     *
      * @return a full URI
      */
     public static URI createURI(String path) {
@@ -29,7 +31,9 @@ public class PortProviderUtil {
     /**
      * Generate a URL with port, hostname
      *
-     * @param path the path
+     * @param path
+     *        the path
+     *
      * @return a full URL
      */
     public static String generateURL(String path) {

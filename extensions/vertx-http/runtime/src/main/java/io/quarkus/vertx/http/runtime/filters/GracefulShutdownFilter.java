@@ -46,7 +46,7 @@ public class GracefulShutdownFilter implements ShutdownListener, Handler<HttpSer
             return;
         }
         currentRequestCount.incrementAndGet();
-        //todo: some way to do this without a wrapper solution
+        // todo: some way to do this without a wrapper solution
         ((QuarkusRequestWrapper) event).addRequestDoneHandler(requestDoneHandler);
         next.handle(event);
     }

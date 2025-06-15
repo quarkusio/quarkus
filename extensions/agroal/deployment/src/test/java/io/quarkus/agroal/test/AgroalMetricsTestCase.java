@@ -59,10 +59,10 @@ public class AgroalMetricsTestCase {
 
     @Test
     public void testMetricsOfDs1() throws SQLException {
-        Counter acquireCount = registry.getCounters().get(new MetricID("agroal.acquire.count",
-                new Tag("datasource", "ds1")));
-        Gauge<?> maxUsed = registry.getGauges().get(new MetricID("agroal.max.used.count",
-                new Tag("datasource", "ds1")));
+        Counter acquireCount = registry.getCounters()
+                .get(new MetricID("agroal.acquire.count", new Tag("datasource", "ds1")));
+        Gauge<?> maxUsed = registry.getGauges()
+                .get(new MetricID("agroal.max.used.count", new Tag("datasource", "ds1")));
         Assertions.assertNotNull(acquireCount, "Agroal metrics should be registered eagerly");
         Assertions.assertNotNull(maxUsed, "Agroal metrics should be registered eagerly");
 

@@ -14,8 +14,7 @@ public class SecurityAnnotationMixingTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SomeBean.class))
+            .withApplicationRoot((jar) -> jar.addClasses(SomeBean.class))
             .setExpectedException(IllegalArgumentException.class);
 
     @Test

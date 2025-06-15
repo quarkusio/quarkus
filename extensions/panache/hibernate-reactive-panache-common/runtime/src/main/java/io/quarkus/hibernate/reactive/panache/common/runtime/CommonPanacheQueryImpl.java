@@ -39,8 +39,9 @@ public class CommonPanacheQueryImpl<Entity> {
      */
     private String originalQuery;
     /**
-     * This is only used by the Spring Data JPA extension, due to Spring's Query annotation allowing a custom count query
-     * See https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html#jpa.query-methods.at-query.native
+     * This is only used by the Spring Data JPA extension, due to Spring's Query annotation allowing a custom count
+     * query See
+     * https://docs.spring.io/spring-data/jpa/reference/jpa/query-methods.html#jpa.query-methods.at-query.native
      * Otherwise we do not use this, and rely on ORM to generate count queries
      */
     protected String customCountQueryForSpring;
@@ -68,8 +69,7 @@ public class CommonPanacheQueryImpl<Entity> {
     }
 
     private CommonPanacheQueryImpl(CommonPanacheQueryImpl<?> previousQuery, String newQueryString,
-            String customCountQueryForSpring,
-            Class<?> projectionType) {
+            String customCountQueryForSpring, Class<?> projectionType) {
         this.em = previousQuery.em;
         this.query = newQueryString;
         this.customCountQueryForSpring = customCountQueryForSpring;
@@ -95,7 +95,8 @@ public class CommonPanacheQueryImpl<Entity> {
         String lowerCasedTrimmedQuery = PanacheJpaUtil.trimForAnalysis(selectQuery);
         if (lowerCasedTrimmedQuery.startsWith("select new ")
                 || lowerCasedTrimmedQuery.startsWith("select distinct new ")) {
-            throw new PanacheQueryException("Unable to perform a projection on a 'select [distinct]? new' query: " + query);
+            throw new PanacheQueryException(
+                    "Unable to perform a projection on a 'select [distinct]? new' query: " + query);
         }
 
         // If the query starts with a select clause, we pass it on to ORM which can handle that via a projection type
@@ -118,11 +119,10 @@ public class CommonPanacheQueryImpl<Entity> {
         // so the projection class must have only one constructor,
         // and the application must be built with parameter names.
         // TODO: Maybe this should be improved some days ...
-        Constructor<?> constructor = getConstructor(type); //type.getDeclaredConstructors()[0];
+        Constructor<?> constructor = getConstructor(type); // type.getDeclaredConstructors()[0];
         selectClause.append("new ").append(type.getName()).append(" (");
         String parametersListStr = Stream.of(constructor.getParameters())
-                .map(parameter -> getParameterName(type, parentParameter, parameter))
-                .collect(Collectors.joining(","));
+                .map(parameter -> getParameterName(type, parentParameter, parameter)).collect(Collectors.joining(","));
         selectClause.append(parametersListStr);
         selectClause.append(") ");
         return selectClause;
@@ -139,13 +139,14 @@ public class CommonPanacheQueryImpl<Entity> {
             parameterName = getNameFromProjectedFieldName(parameter);
         } else if (!parameter.isNamePresent()) {
             throw new PanacheQueryException(
-                    "Your application must be built with parameter names, this should be the default if" +
-                            " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
+                    "Your application must be built with parameter names, this should be the default if"
+                            + " using Quarkus project generation. Check the Maven or Gradle compiler configuration to include '-parameters'.");
         } else {
             // Check if class field with same parameter name exists and contains @ProjectFieldName annotation
             try {
                 Field field = parentType.getDeclaredField(parameter.getName());
-                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field) : parameter.getName();
+                parameterName = hasProjectedFieldName(field) ? getNameFromProjectedFieldName(field)
+                        : parameter.getName();
             } catch (NoSuchFieldException e) {
                 parameterName = parameter.getName();
             }
@@ -238,12 +239,12 @@ public class CommonPanacheQueryImpl<Entity> {
     private void checkPagination() {
         // FIXME: turn into Uni
         if (page == null) {
-            throw new UnsupportedOperationException("Cannot call a page related method, " +
-                    "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
         if (range != null) {
-            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, " +
-                    "call page(Page) or page(int, int) to initiate pagination first");
+            throw new UnsupportedOperationException("Cannot call a page related method in a ranged query, "
+                    + "call page(Page) or page(int, int) to initiate pagination first");
         }
     }
 
@@ -299,8 +300,8 @@ public class CommonPanacheQueryImpl<Entity> {
 
     public <T extends Entity> Multi<T> stream() {
         // FIXME: requires Hibernate support
-        //        Mutiny.Query<?> jpaQuery = createQuery();
-        //        return applyFilters(jpaQuery.getResultStream());
+        // Mutiny.Query<?> jpaQuery = createQuery();
+        // return applyFilters(jpaQuery.getResultStream());
         Uni<List<T>> results = list();
         return (Multi<T>) results.toMulti().flatMap(list -> {
             return Multi.createFrom().iterable(list);
@@ -311,7 +312,8 @@ public class CommonPanacheQueryImpl<Entity> {
     public <T extends Entity> Uni<T> firstResult() {
         return em.flatMap(session -> {
             Mutiny.SelectionQuery<?> jpaQuery = createQuery(session, 1);
-            return applyFilters(session, () -> jpaQuery.getResultList().map(list -> list.isEmpty() ? null : (T) list.get(0)));
+            return applyFilters(session,
+                    () -> jpaQuery.getResultList().map(list -> list.isEmpty() ? null : (T) list.get(0)));
         });
     }
 
@@ -336,16 +338,17 @@ public class CommonPanacheQueryImpl<Entity> {
             jpaQuery.setFirstResult(page.index * page.size);
             jpaQuery.setMaxResults(page.size);
         } else {
-            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
+            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate
+            // 6.0
             // FIXME: requires Hibernate support
-            //            @SuppressWarnings("deprecation")
-            //            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
-            //            options.setFirstRow(null);
-            //            options.setMaxRows(null);
+            // @SuppressWarnings("deprecation")
+            // RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
+            // options.setFirstRow(null);
+            // options.setMaxRows(null);
             // FIXME: why would we even do that? those are the defaults, let's leave them blank
             // if we don't, we get a LIMIT
-            //            jpaQuery.setFirstResult(0);
-            //            jpaQuery.setMaxResults(Integer.MAX_VALUE);
+            // jpaQuery.setFirstResult(0);
+            // jpaQuery.setMaxResults(Integer.MAX_VALUE);
         }
 
         return jpaQuery;
@@ -359,11 +362,12 @@ public class CommonPanacheQueryImpl<Entity> {
         } else if (page != null) {
             jpaQuery.setFirstResult(page.index * page.size);
         } else {
-            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate 6.0
+            // Use deprecated API in org.hibernate.Query that will be moved to org.hibernate.query.Query on Hibernate
+            // 6.0
             // FIXME: requires Hibernate support
-            //            @SuppressWarnings("deprecation")
-            //            RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
-            //            options.setFirstRow(null);
+            // @SuppressWarnings("deprecation")
+            // RowSelection options = jpaQuery.unwrap(org.hibernate.query.Query.class).getQueryOptions();
+            // options.setFirstRow(null);
             jpaQuery.setFirstResult(0);
         }
         jpaQuery.setMaxResults(maxResults);
@@ -398,9 +402,9 @@ public class CommonPanacheQueryImpl<Entity> {
 
         if (hints != null) {
             // FIXME: requires Hibernate support
-            //            for (Map.Entry<String, Object> hint : hints.entrySet()) {
-            //                jpaQuery.setHint(hint.getKey(), hint.getValue());
-            //            }
+            // for (Map.Entry<String, Object> hint : hints.entrySet()) {
+            // jpaQuery.setHint(hint.getKey(), hint.getValue());
+            // }
         }
         return hibernateQuery;
     }

@@ -17,7 +17,7 @@ public class MyOtherTestResource {
     @Path("{id}")
     @Produces(MediaType.APPLICATION_JSON)
     public Uni<MyOtherEntity> get(@PathParam("id") long id) {
-        return MyOtherEntity.<MyOtherEntity> findById(id)
-                .onItem().ifNull().failWith(() -> new WebApplicationException(Response.Status.NOT_FOUND));
+        return MyOtherEntity.<MyOtherEntity> findById(id).onItem().ifNull()
+                .failWith(() -> new WebApplicationException(Response.Status.NOT_FOUND));
     }
 }

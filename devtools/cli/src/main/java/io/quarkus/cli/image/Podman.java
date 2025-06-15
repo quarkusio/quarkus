@@ -23,9 +23,8 @@ public class Podman extends BaseImageSubCommand {
         var properties = context.getPropertiesOptions().properties;
         properties.put(QUARKUS_CONTAINER_IMAGE_BUILDER, PODMAN);
 
-        dockerFile.ifPresent(d -> properties.put(
-                PODMAN_CONFIG_PREFIX + (context.getBuildOptions().buildNative ? DOCKERFILE_NATIVE_PATH : DOCKERFILE_JVM_PATH),
-                d));
+        dockerFile.ifPresent(d -> properties.put(PODMAN_CONFIG_PREFIX
+                + (context.getBuildOptions().buildNative ? DOCKERFILE_NATIVE_PATH : DOCKERFILE_JVM_PATH), d));
 
         context.getForcedExtensions().add(QUARKUS_CONTAINER_IMAGE_EXTENSION_KEY_PREFIX + PODMAN);
     }

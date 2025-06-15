@@ -40,27 +40,24 @@ public abstract class TrafficLoggerTest {
     }
 
     static void addApplicationProperties(JavaArchive archive, boolean server) {
-        archive.addAsResource(new StringAsset(
-                "quarkus.websockets-next." + (server ? "server" : "client") + ".traffic-logging.enabled=true\n"
-                        + "quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level=DEBUG"),
+        archive.addAsResource(
+                new StringAsset(
+                        "quarkus.websockets-next." + (server ? "server" : "client") + ".traffic-logging.enabled=true\n"
+                                + "quarkus.log.category.\"io.quarkus.websockets.next.traffic\".level=DEBUG"),
                 "application.properties");
     }
 
     static Consumer<List<LogRecord>> logRecordsConsumer(boolean received) {
         return recs -> {
-            assertTrue(recs.stream()
-                    .anyMatch(r -> r.getMessage().contains("%s connection opened:")));
-            assertTrue(recs.stream()
-                    .anyMatch(r -> r.getMessage()
-                            .contains("%s " + (received ? "received" : "sent") + " text message, Connection[%s]")));
-            assertTrue(recs.stream()
-                    .anyMatch(r -> r.getMessage().contains("%s connection closed,")));
+            assertTrue(recs.stream().anyMatch(r -> r.getMessage().contains("%s connection opened:")));
+            assertTrue(recs.stream().anyMatch(r -> r.getMessage()
+                    .contains("%s " + (received ? "received" : "sent") + " text message, Connection[%s]")));
+            assertTrue(recs.stream().anyMatch(r -> r.getMessage().contains("%s connection closed,")));
         };
     }
 
     static boolean isTrafficLogRecord(LogRecord r) {
-        return r.getLevel().equals(Level.FINE)
-                && r.getLoggerName().equals("io.quarkus.websockets.next.traffic");
+        return r.getLevel().equals(Level.FINE) && r.getLoggerName().equals("io.quarkus.websockets.next.traffic");
     }
 
 }

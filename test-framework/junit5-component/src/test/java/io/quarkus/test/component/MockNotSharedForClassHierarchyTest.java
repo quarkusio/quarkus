@@ -15,8 +15,7 @@ import io.quarkus.test.InjectMock;
 public class MockNotSharedForClassHierarchyTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
-            .ignoreNestedClasses()
+    static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder().ignoreNestedClasses()
             .build();
 
     @Inject

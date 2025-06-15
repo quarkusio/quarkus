@@ -20,8 +20,7 @@ import org.jboss.resteasy.reactive.common.util.CaseInsensitiveMap;
 import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 import org.jboss.resteasy.reactive.server.core.ServerSerialisers;
 
-public class WriterInterceptorContextImpl extends AbstractInterceptorContext
-        implements WriterInterceptorContext {
+public class WriterInterceptorContextImpl extends AbstractInterceptorContext implements WriterInterceptorContext {
 
     private final WriterInterceptor[] interceptors;
     private final MessageBodyWriter writer;
@@ -60,14 +59,14 @@ public class WriterInterceptorContextImpl extends AbstractInterceptorContext
             context.setResult(Response.fromResponse(response).replaceAll(headers).build());
             ServerSerialisers.encodeResponseHeaders(context);
             // this must be done AFTER encoding the headers, otherwise the HTTP response gets all messed up
-            effectiveWriter.writeTo(entity, type, genericType,
-                    annotations, mediaType, response.getHeaders(), context.getOrCreateOutputStream());
+            effectiveWriter.writeTo(entity, type, genericType, annotations, mediaType, response.getHeaders(),
+                    context.getOrCreateOutputStream());
             context.getOutputStream().close();
             done = true;
         } else {
             interceptors[index++].aroundWriteTo(this);
             if (!done) {
-                //TODO: how to handle
+                // TODO: how to handle
                 context.setResult(Response.fromResponse(response).replaceAll(headers).build());
                 ServerSerialisers.encodeResponseHeaders(context);
                 context.serverResponse().end();

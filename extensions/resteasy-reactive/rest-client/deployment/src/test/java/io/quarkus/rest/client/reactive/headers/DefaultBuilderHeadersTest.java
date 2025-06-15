@@ -88,8 +88,7 @@ public class DefaultBuilderHeadersTest {
 
     private static List<String> headerValues(final JsonObject headers, final String headerName) {
         final JsonArray headerValues = headers.getJsonArray(headerName);
-        assertNotNull(headerValues,
-                String.format("Expected header '%s' to be present in %s", headerName, headers));
+        assertNotNull(headerValues, String.format("Expected header '%s' to be present in %s", headerName, headers));
         return headerValues.stream().map(
                 v -> (v.getValueType() == JsonValue.ValueType.STRING ? ((JsonString) v).getString() : v.toString()))
                 .collect(Collectors.toList());

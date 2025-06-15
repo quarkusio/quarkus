@@ -46,28 +46,17 @@ import picocli.CommandLine.ParseResult;
 import picocli.CommandLine.ScopeType;
 import picocli.CommandLine.UnmatchedArgumentException;
 
-@CommandLine.Command(name = "quarkus", subcommands = {
-        Create.class,
-        Build.class,
-        Dev.class,
-        Run.class,
-        Test.class,
-        Config.class,
-        ProjectExtensions.class,
-        Image.class,
-        Deploy.class,
-        Registry.class,
-        Info.class,
-        Update.class,
-        Version.class,
-        CliPlugins.class,
+@CommandLine.Command(name = "quarkus", subcommands = { Create.class, Build.class, Dev.class, Run.class, Test.class,
+        Config.class, ProjectExtensions.class, Image.class, Deploy.class, Registry.class, Info.class, Update.class,
+        Version.class, CliPlugins.class,
         Completion.class }, scope = ScopeType.INHERIT, sortOptions = false, showDefaultValues = true, versionProvider = Version.class, subcommandsRepeatable = false, mixinStandardHelpOptions = false, commandListHeading = "%nCommands:%n", synopsisHeading = "%nUsage: ", optionListHeading = "Options:%n", headerHeading = "%n", parameterListHeading = "%n")
 public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     static {
         System.setProperty("picocli.endofoptions.description", "End of command line options.");
     }
 
-    private static final Set<String> CATCH_ALL_COMMANDS = Set.of("create", "image", "extension", "ext", "plugin", "plug");
+    private static final Set<String> CATCH_ALL_COMMANDS = Set.of("create", "image", "extension", "ext", "plugin",
+            "plug");
 
     @Inject
     CommandLine.IFactory factory;
@@ -101,9 +90,10 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
         cmd.getHelpSectionMap().put(SECTION_KEY_COMMAND_LIST, new SubCommandListRenderer());
         cmd.setParameterExceptionHandler(new ShortErrorMessageHandler());
 
-        //When running tests the cli should not prompt for user input.
+        // When running tests the cli should not prompt for user input.
         boolean interactiveMode = Arrays.stream(args).noneMatch(arg -> arg.equals("--cli-test"));
-        Optional<String> testDir = Arrays.stream(args).dropWhile(arg -> !arg.equals("--cli-test-dir")).skip(1).findFirst();
+        Optional<String> testDir = Arrays.stream(args).dropWhile(arg -> !arg.equals("--cli-test-dir")).skip(1)
+                .findFirst();
         boolean noCommand = args.length == 0 || args[0].startsWith("-");
         boolean helpCommand = Arrays.stream(args).anyMatch(arg -> arg.equals("--help"));
         boolean pluginCommand = args.length >= 1 && (args[0].equals("plug") || args[0].equals("plugin"));
@@ -113,9 +103,11 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             Optional<String> missingCommand = checkMissingCommand(cmd, args);
 
             boolean existingCommand = missingCommand.isEmpty();
-            // If the command already exists and is not a help command (that lists subcommands) or plugin command, then just execute
+            // If the command already exists and is not a help command (that lists subcommands) or plugin command, then
+            // just execute
             // without dealing with plugins.
-            // The reason that we check if its a plugin command is that plugin commands need PluginManager initialization.
+            // The reason that we check if its a plugin command is that plugin commands need PluginManager
+            // initialization.
             if (existingCommand && !noCommand && !helpCommand && !pluginCommand) {
                 return cmd.execute(args);
             }
@@ -134,16 +126,14 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                         Plugin candidate = installable.get(m);
                         PluginListItem item = new PluginListItem(false, candidate);
                         PluginListTable table = new PluginListTable(List.of(item));
-                        output.info("Plugin %s is available:\n%s", m,
-                                table.getContent());
-                        if (interactiveMode && Prompt.yesOrNo(true,
-                                "Would you like to install it now?",
-                                args)) {
+                        output.info("Plugin %s is available:\n%s", m, table.getContent());
+                        if (interactiveMode && Prompt.yesOrNo(true, "Would you like to install it now?", args)) {
                             pluginManager.addPlugin(m).ifPresent(added -> plugins.put(added.getName(), added));
                             pluginCommandFactory.populateCommands(cmd, plugins);
                         }
                     } else {
-                        output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.", m);
+                        output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.",
+                                m);
                     }
                 } catch (Exception e) {
                     output.error("Unable to match command `%s` and a corresponding plugin couldn't be installed.", m);
@@ -158,8 +148,11 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     /**
      * Process the arguments passed and return an identifier of the potentially missing subcommand if any.
      *
-     * @param root the root command
-     * @param args the arguments passed to the root command
+     * @param root
+     *        the root command
+     * @param args
+     *        the arguments passed to the root command
+     *
      * @return the missing subcommand wrapped in {@link Optional} or empty if no subcommand is missing.
      */
     public Optional<String> checkMissingCommand(CommandLine root, String[] args) {
@@ -184,8 +177,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
                 missingCommand.append(currentParseResult.commandSpec().name());
 
                 List<String> unmatchedSubcommands = currentParseResult.unmatched().stream()
-                        .takeWhile(u -> !u.startsWith("-"))
-                        .collect(Collectors.toList());
+                        .takeWhile(u -> !u.startsWith("-")).collect(Collectors.toList());
                 if (!unmatchedSubcommands.isEmpty()) {
                     missingCommand.append("-").append(unmatchedSubcommands.get(0));
                     // We don't want the root itself to be added to the result
@@ -275,14 +267,14 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
             Help.Column descriptions = new Help.Column(spec.usageMessage().width() - 24, 2,
                     CommandLine.Help.Column.Overflow.WRAP);
             Help.TextTable textTable = Help.TextTable.forColumns(help.colorScheme(), commands, descriptions);
-            textTable.setAdjustLineBreaksForWideCJKCharacters(spec.usageMessage().adjustLineBreaksForWideCJKCharacters());
+            textTable.setAdjustLineBreaksForWideCJKCharacters(
+                    spec.usageMessage().adjustLineBreaksForWideCJKCharacters());
 
             addHierarchy(spec.subcommands().values(), textTable, "");
             return textTable.toString();
         }
 
-        private void addHierarchy(Collection<CommandLine> collection, Help.TextTable textTable,
-                String indent) {
+        private void addHierarchy(Collection<CommandLine> collection, Help.TextTable textTable, String indent) {
             collection.stream().distinct().forEach(subcommand -> {
                 // create comma-separated list of command name and aliases
                 String names = String.join(", ", subcommand.getCommandSpec().names());
@@ -332,8 +324,21 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     }
 
     private PluginManager pluginManager(OutputOptionMixin output, Optional<String> testDir, boolean interactiveMode) {
-        PluginManagerSettings settings = PluginManagerSettings.defaultSettings()
-                .withInteractivetMode(interactiveMode); // Why not just getting it from output.isClieTest ? Cause args have not been parsed yet.
+        PluginManagerSettings settings = PluginManagerSettings.defaultSettings().withInteractivetMode(interactiveMode); // Why
+                                                                                                                        // not
+                                                                                                                        // just
+                                                                                                                        // getting
+                                                                                                                        // it
+                                                                                                                        // from
+                                                                                                                        // output.isClieTest
+                                                                                                                        // ?
+                                                                                                                        // Cause
+                                                                                                                        // args
+                                                                                                                        // have
+                                                                                                                        // not
+                                                                                                                        // been
+                                                                                                                        // parsed
+                                                                                                                        // yet.
         return PluginManager.create(settings, output, Optional.ofNullable(Paths.get(System.getProperty("user.home"))),
                 getProjectRoot(testDir), quarkusProject(testDir));
     }

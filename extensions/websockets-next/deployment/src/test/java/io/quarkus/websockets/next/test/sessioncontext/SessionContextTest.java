@@ -24,10 +24,9 @@ import io.vertx.core.Vertx;
 public class SessionContextTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Append.class, WSClient.class, SessionScopedBean.class, SessionContextListener.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Append.class, WSClient.class, SessionScopedBean.class, SessionContextListener.class);
+    });
 
     @Inject
     Vertx vertx;

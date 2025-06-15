@@ -27,8 +27,9 @@ public class ReaderBodyHandler implements MessageBodyWriter<Reader>, MessageBody
         return Reader.class.isAssignableFrom(type);
     }
 
-    public void writeTo(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException {
+    public void writeTo(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException {
         try {
             int c;
             while ((c = inputStream.read()) != -1) {

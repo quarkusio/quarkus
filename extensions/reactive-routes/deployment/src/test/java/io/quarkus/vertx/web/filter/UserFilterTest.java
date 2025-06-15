@@ -19,17 +19,13 @@ public class UserFilterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyFilters.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyFilters.class));
 
     @Test
     public void test() {
-        get("/").then().statusCode(200)
-                .header("X-Filter1", not(nullValue()))
-                .header("X-Filter2", not(nullValue()))
+        get("/").then().statusCode(200).header("X-Filter1", not(nullValue())).header("X-Filter2", not(nullValue()))
                 // filter 1 is called after filter 2 so override the value
-                .header("X-Filter", "filter 1")
-                .body(is("OK"));
+                .header("X-Filter", "filter 1").body(is("OK"));
     }
 
     public static class MyFilters {
@@ -49,9 +45,7 @@ public class UserFilterTest {
         }
 
         void register(@Observes Router router) {
-            router
-                    .get("/")
-                    .handler(rc -> rc.response().end("OK"));
+            router.get("/").handler(rc -> rc.response().end("OK"));
         }
 
     }

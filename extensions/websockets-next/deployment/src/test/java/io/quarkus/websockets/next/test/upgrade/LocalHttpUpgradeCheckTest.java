@@ -11,10 +11,9 @@ public class LocalHttpUpgradeCheckTest extends AbstractHttpUpgradeCheckTestBase 
 
     @RegisterExtension
     public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Opening.class, Responding.class, OpeningHttpUpgradeCheck.class,
-                            RejectingHttpUpgradeCheck.class, WSClient.class, Rejecting.class,
-                            AlwaysRejectingHttpUpgradeCheck.class, AlwaysInvokedOpeningHttpUpgradeCheck.class));
+            .withApplicationRoot(root -> root.addClasses(Opening.class, Responding.class, OpeningHttpUpgradeCheck.class,
+                    RejectingHttpUpgradeCheck.class, WSClient.class, Rejecting.class,
+                    AlwaysRejectingHttpUpgradeCheck.class, AlwaysInvokedOpeningHttpUpgradeCheck.class));
 
     @Singleton
     public static final class AlwaysInvokedOpeningHttpUpgradeCheck extends OpeningHttpUpgradeCheck {

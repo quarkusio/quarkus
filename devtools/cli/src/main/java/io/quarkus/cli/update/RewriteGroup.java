@@ -20,20 +20,15 @@ public class RewriteGroup {
     public String additionalUpdateRecipes;
 
     public static class RewriteRun {
-        @CommandLine.Option(order = 3, names = {
-                "--yes",
+        @CommandLine.Option(order = 3, names = { "--yes",
                 "-y" }, description = "Run the suggested update recipe for this project.", defaultValue = "false")
         public boolean yes = false;
 
-        @CommandLine.Option(order = 5, names = {
-                "--dry-run",
-                "-n"
-        }, description = "Do a dry run of the suggested update recipe for this project and create a patch file.", defaultValue = "false")
+        @CommandLine.Option(order = 5, names = { "--dry-run",
+                "-n" }, description = "Do a dry run of the suggested update recipe for this project and create a patch file.", defaultValue = "false")
         public boolean dryRun = false;
 
-        @CommandLine.Option(order = 4, names = {
-                "--no",
-                "--no-rewrite",
+        @CommandLine.Option(order = 4, names = { "--no", "--no-rewrite",
                 "-N" }, description = "Do NOT run the update.", defaultValue = "false")
         public boolean no = false;
 

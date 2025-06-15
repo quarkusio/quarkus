@@ -26,9 +26,7 @@ public class TestResource {
 
     @POST
     public void index(Fruit fruit) throws IOException {
-        Request request = new Request(
-                "PUT",
-                "/fruits/_doc/" + fruit.id + "?refresh=true");
+        Request request = new Request("PUT", "/fruits/_doc/" + fruit.id + "?refresh=true");
         request.setJsonEntity(JsonObject.mapFrom(fruit).toString());
         restClient.performRequest(request);
     }
@@ -36,10 +34,8 @@ public class TestResource {
     @GET
     @Path("/search")
     public List<Fruit> search(@QueryParam("term") String term, @QueryParam("match") String match) throws IOException {
-        Request request = new Request(
-                "GET",
-                "/fruits/_search");
-        //construct a JSON query like {"query": {"match": {"<term>": "<match"}}
+        Request request = new Request("GET", "/fruits/_search");
+        // construct a JSON query like {"query": {"match": {"<term>": "<match"}}
         JsonObject termJson = new JsonObject().put(term, match);
         JsonObject matchJson = new JsonObject().put("match", termJson);
         JsonObject queryJson = new JsonObject().put("query", matchJson);

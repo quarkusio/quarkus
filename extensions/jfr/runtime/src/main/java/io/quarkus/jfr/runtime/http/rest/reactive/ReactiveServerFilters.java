@@ -16,8 +16,8 @@ public class ReactiveServerFilters {
     }
 
     /**
-     * Executed if request processing proceeded correctly.
-     * We now have to update the start event with the resource class and method data and also commit the event.
+     * Executed if request processing proceeded correctly. We now have to update the start event with the resource class
+     * and method data and also commit the event.
      */
     @ServerRequestFilter
     public void requestFilter(SimpleResourceInfo resourceInfo) {
@@ -25,26 +25,23 @@ public class ReactiveServerFilters {
         if (resourceClass != null) { // should always be the case
             String resourceClassName = resourceClass.getName();
             String resourceMethodName = resourceInfo.getMethodName();
-            recorder
-                    .updateResourceInfo(new ResourceInfo(resourceClassName, resourceMethodName))
+            recorder.updateResourceInfo(new ResourceInfo(resourceClassName, resourceMethodName))
                     .commitStartEventIfNecessary();
         }
 
     }
 
     /**
-     * This will execute regardless of a processing failure or not.
-     * If there was a failure, we need to check if the start event was not commited
-     * (which happens when request was not matched to any resource method) and if so, commit it.
+     * This will execute regardless of a processing failure or not. If there was a failure, we need to check if the
+     * start event was not commited (which happens when request was not matched to any resource method) and if so,
+     * commit it.
      */
     @ServerResponseFilter
     public void responseFilter() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Enter Jfr Reactive Response Filter");
         }
-        recorder
-                .recordEndEvent()
-                .endPeriodEvent();
+        recorder.recordEndEvent().endPeriodEvent();
     }
 
 }

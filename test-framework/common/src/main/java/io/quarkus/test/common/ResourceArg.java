@@ -6,9 +6,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Used to define arguments for {@code QuarkusTestResource}.
- *
- * see {@link QuarkusTestResource#initArgs()}
+ * Used to define arguments for {@code QuarkusTestResource}. see {@link QuarkusTestResource#initArgs()}
  */
 @Target({})
 @Retention(RetentionPolicy.RUNTIME)

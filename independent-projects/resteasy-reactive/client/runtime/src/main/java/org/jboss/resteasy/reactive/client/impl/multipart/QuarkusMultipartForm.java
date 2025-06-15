@@ -20,7 +20,8 @@ import org.jboss.resteasy.reactive.common.util.MultivaluedTreeMap;
 import io.vertx.core.buffer.Buffer;
 
 /**
- * based on {@link io.vertx.ext.web.multipart.MultipartForm} and {@link io.vertx.ext.web.multipart.impl.MultipartFormImpl}
+ * based on {@link io.vertx.ext.web.multipart.MultipartForm} and
+ * {@link io.vertx.ext.web.multipart.impl.MultipartFormImpl}
  */
 public class QuarkusMultipartForm extends ClientMultipartForm implements Iterable<QuarkusMultipartFormDataPart> {
 
@@ -47,12 +48,12 @@ public class QuarkusMultipartForm extends ClientMultipartForm implements Iterabl
                 entityType = entityClass = pojo.type;
             }
 
-            List<MessageBodyWriter<?>> writers = serialisers.findWriters(context.getConfiguration(),
-                    entityClass, entity.getMediaType(),
-                    RuntimeType.CLIENT);
+            List<MessageBodyWriter<?>> writers = serialisers.findWriters(context.getConfiguration(), entityClass,
+                    entity.getMediaType(), RuntimeType.CLIENT);
             Buffer value = null;
             for (MessageBodyWriter<?> w : writers) {
-                Buffer ret = ClientSerialisers.invokeClientWriter(entity, entityObject, entityClass, entityType, headers, w,
+                Buffer ret = ClientSerialisers.invokeClientWriter(entity, entityObject, entityClass, entityType,
+                        headers, w,
                         context.getConfiguration().getWriterInterceptors().toArray(Serialisers.NO_WRITER_INTERCEPTOR),
                         context.getProperties(), context, serialisers, context.getConfiguration());
                 if (ret != null) {
@@ -73,7 +74,8 @@ public class QuarkusMultipartForm extends ClientMultipartForm implements Iterabl
         private final Class<?> type;
         private final int position;
 
-        public PojoFieldData(String name, String filename, Object entity, String mediaType, Class<?> type, int position) {
+        public PojoFieldData(String name, String filename, Object entity, String mediaType, Class<?> type,
+                int position) {
             this.name = name;
             this.filename = filename;
             this.entity = entity;

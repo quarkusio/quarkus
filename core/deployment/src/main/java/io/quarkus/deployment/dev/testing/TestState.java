@@ -155,12 +155,12 @@ public class TestState {
     public void pruneDeletedTests(Set<UniqueId> allDiscoveredIds, Set<UniqueId> dynamicIds) {
         Set<UniqueId> dynamicParents = dynamicIds.stream().map(UniqueId::removeLastSegment).collect(Collectors.toSet());
         this.dynamicIds.removeIf(s -> {
-            //was actually run, don't remove
+            // was actually run, don't remove
             if (dynamicIds.contains(s)) {
                 return false;
             }
             UniqueId parent = s.removeLastSegment();
-            //parent was run, but not this test, so it has been removed
+            // parent was run, but not this test, so it has been removed
             if (dynamicParents.contains(parent)) {
                 return true;
             }

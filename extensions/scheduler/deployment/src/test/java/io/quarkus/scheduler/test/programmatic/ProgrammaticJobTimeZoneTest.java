@@ -21,10 +21,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProgrammaticJobTimeZoneTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar.addAsResource(
-                    new StringAsset("quarkus.scheduler.start-mode=forced"),
-                    "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.scheduler.start-mode=forced"), "application.properties"));
 
     @Inject
     Scheduler scheduler;
@@ -39,25 +37,17 @@ public class ProgrammaticJobTimeZoneTest {
         String timeZone = findTimeZoneWithOffset(now);
         int job2Hour = now.withZoneSameInstant(ZoneId.of(timeZone)).getHour();
 
-        scheduler.newJob("simpleJobs0")
-                .setInterval("1s")
-                .setTask(ec -> {
-                    LATCH.countDown();
-                })
-                .schedule();
+        scheduler.newJob("simpleJobs0").setInterval("1s").setTask(ec -> {
+            LATCH.countDown();
+        }).schedule();
 
-        scheduler.newJob("simpleJobs1")
-                .setCron(String.format("0/1 * %s * * ?", now.getHour()))
-                .setTimeZone(timeZone)
+        scheduler.newJob("simpleJobs1").setCron(String.format("0/1 * %s * * ?", now.getHour())).setTimeZone(timeZone)
                 .setTask(ec -> {
                     // this method should not be executed in the test
                     TIME_ZONE_1_LATCH.countDown();
-                })
-                .schedule();
+                }).schedule();
 
-        scheduler.newJob("simpleJobs2")
-                .setCron(String.format("0/1 * %s * * ?", job2Hour))
-                .setTimeZone(timeZone)
+        scheduler.newJob("simpleJobs2").setCron(String.format("0/1 * %s * * ?", job2Hour)).setTimeZone(timeZone)
                 .setTask(ec -> {
                     TIME_ZONE_2_LATCH.countDown();
                 }).schedule();

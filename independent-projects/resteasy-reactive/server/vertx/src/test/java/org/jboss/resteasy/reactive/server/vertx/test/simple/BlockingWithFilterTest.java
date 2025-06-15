@@ -25,19 +25,17 @@ import io.smallrye.common.annotation.Blocking;
 public class BlockingWithFilterTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(TestFilter.class, TestResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(TestFilter.class, TestResource.class);
+        }
+    });
 
     @Test
     public void requestFilterTest() {
-        String response = RestAssured.get("/test/request")
-                .then().statusCode(200).contentType("text/plain").extract().body().asString();
+        String response = RestAssured.get("/test/request").then().statusCode(200).contentType("text/plain").extract()
+                .body().asString();
         String[] parts = response.split("/");
         assertEquals(2, parts.length);
         assertEquals(parts[0], parts[1]);

@@ -22,14 +22,15 @@ public class ProviderDisabledAutodiscoveryTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, HelloClient2.class, HelloClient.class, GlobalRequestFilter.class,
-                            GlobalResponseFilter.class)
-                    .addAsResource(
-                            new StringAsset(setUrlForClass(HelloClient.class)
-                                    + setUrlForClass(HelloClient2.class)
-                                    + "quarkus.rest-client.provider-autodiscovery=false"),
-                            "application.properties"));
+            .withApplicationRoot(
+                    (jar) -> jar
+                            .addClasses(HelloResource.class, HelloClient2.class, HelloClient.class,
+                                    GlobalRequestFilter.class, GlobalResponseFilter.class)
+                            .addAsResource(
+                                    new StringAsset(
+                                            setUrlForClass(HelloClient.class) + setUrlForClass(HelloClient2.class)
+                                                    + "quarkus.rest-client.provider-autodiscovery=false"),
+                                    "application.properties"));
 
     @RestClient
     HelloClient helloClient;
@@ -50,8 +51,6 @@ public class ProviderDisabledAutodiscoveryTest {
     }
 
     private HelloClient helloClient() {
-        return RestClientBuilder.newBuilder()
-                .baseUri(baseUri)
-                .build(HelloClient.class);
+        return RestClientBuilder.newBuilder().baseUri(baseUri).build(HelloClient.class);
     }
 }

@@ -5,8 +5,7 @@ import java.util.Set;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Contains the set of IDEs that could be potentially linked to project based
- * on the files present in the project
+ * Contains the set of IDEs that could be potentially linked to project based on the files present in the project
  */
 final class IdeFileBuildItem extends SimpleBuildItem {
 

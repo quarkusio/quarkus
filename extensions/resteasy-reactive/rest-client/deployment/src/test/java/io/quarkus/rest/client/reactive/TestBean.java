@@ -30,9 +30,7 @@ public class TestBean {
     }
 
     String helloViaBuiltClient(String name) {
-        HelloClient helloClient = RestClientBuilder.newBuilder()
-                .baseUrl(url)
-                .build(HelloClient.class);
+        HelloClient helloClient = RestClientBuilder.newBuilder().baseUrl(url).build(HelloClient.class);
         return helloClient.echo(name);
     }
 

@@ -30,19 +30,19 @@ public interface OtlpExporterConfig {
     Optional<String> endpoint();
 
     /**
-     * Key-value pairs to be used as headers associated with exporter requests.
-     * The format is similar to the {@code OTEL_EXPORTER_OTLP_HEADERS} environment variable,
-     * a list of key-value pairs separated by the "=" character. i.e.: key1=value1,key2=value2
+     * Key-value pairs to be used as headers associated with exporter requests. The format is similar to the
+     * {@code OTEL_EXPORTER_OTLP_HEADERS} environment variable, a list of key-value pairs separated by the "="
+     * character. i.e.: key1=value1,key2=value2
      * <p>
      * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-     * `quarkus.otel.exporter.otlp.<signal-type>.headers` where <signal-type> is one of the supported signal types,
-     * like `traces` or `metrics`.
+     * `quarkus.otel.exporter.otlp.<signal-type>.headers` where <signal-type> is one of the supported signal types, like
+     * `traces` or `metrics`.
      */
     Optional<List<String>> headers();
 
     /**
-     * Sets the method used to compress payloads. If unset, compression is disabled. Currently
-     * supported compression methods include `gzip` and `none`.
+     * Sets the method used to compress payloads. If unset, compression is disabled. Currently supported compression
+     * methods include `gzip` and `none`.
      * <p>
      * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
      * `quarkus.otel.exporter.otlp.<signal-type>.compression` where <signal-type> is one of the supported signal types,
@@ -51,12 +51,12 @@ public interface OtlpExporterConfig {
     Optional<CompressionType> compression();
 
     /**
-     * Sets the maximum time to wait for the collector to process an exported batch of telemetry data. If
-     * unset, defaults to {@value OtlpExporterRuntimeConfig#DEFAULT_TIMEOUT_SECS}s.
+     * Sets the maximum time to wait for the collector to process an exported batch of telemetry data. If unset,
+     * defaults to {@value OtlpExporterRuntimeConfig#DEFAULT_TIMEOUT_SECS}s.
      * <p>
      * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-     * `quarkus.otel.exporter.otlp.<signal-type>.timeout` where <signal-type> is one of the supported signal types,
-     * like `traces` or `metrics`.
+     * `quarkus.otel.exporter.otlp.<signal-type>.timeout` where <signal-type> is one of the supported signal types, like
+     * `traces` or `metrics`.
      */
     @ConfigDocDefault("10s")
     @WithConverter(DurationConverter.class)
@@ -100,14 +100,13 @@ public interface OtlpExporterConfig {
     /**
      * The name of the TLS configuration to use.
      * <p>
-     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used.
-     * If a name is configured, it uses the configuration from {@code quarkus.tls.<name>.*}
-     * If a name is configured, but no TLS configuration is found with that name then an error will be thrown.
+     * If not set and the default TLS configuration is configured ({@code quarkus.tls.*}) then that will be used. If a
+     * name is configured, it uses the configuration from {@code quarkus.tls.<name>.*} If a name is configured, but no
+     * TLS configuration is found with that name then an error will be thrown.
      * <p>
      * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-     * `quarkus.otel.exporter.otlp.<signal-type>.tls-configuration-name` where <signal-type> is one of the supported signal
-     * types,
-     * like `traces` or `metrics`.
+     * `quarkus.otel.exporter.otlp.<signal-type>.tls-configuration-name` where <signal-type> is one of the supported
+     * signal types, like `traces` or `metrics`.
      */
     Optional<String> tlsConfigurationName();
 
@@ -115,8 +114,8 @@ public interface OtlpExporterConfig {
      * Set proxy options.
      * <p>
      * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-     * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options` where <signal-type> is one of the supported signal types,
-     * like `traces` or `metrics`.
+     * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options` where <signal-type> is one of the supported signal
+     * types, like `traces` or `metrics`.
      */
     ProxyConfig proxyOptions();
 
@@ -125,9 +124,8 @@ public interface OtlpExporterConfig {
          * If proxy connection must be used.
          * <p>
          * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.enabled` where <signal-type> is one of the supported signal
-         * types,
-         * like `traces` or `metrics`.
+         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.enabled` where <signal-type> is one of the supported
+         * signal types, like `traces` or `metrics`.
          */
         @ConfigDocDefault("false")
         boolean enabled();
@@ -136,9 +134,8 @@ public interface OtlpExporterConfig {
          * Set proxy username.
          * <p>
          * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.username` where <signal-type> is one of the supported signal
-         * types,
-         * like `traces` or `metrics`.
+         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.username` where <signal-type> is one of the supported
+         * signal types, like `traces` or `metrics`.
          */
         Optional<String> username();
 
@@ -146,9 +143,8 @@ public interface OtlpExporterConfig {
          * Set proxy password.
          * <p>
          * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.password` where <signal-type> is one of the supported signal
-         * types,
-         * like `traces` or `metrics`.
+         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.password` where <signal-type> is one of the supported
+         * signal types, like `traces` or `metrics`.
          */
         Optional<String> password();
 
@@ -156,9 +152,8 @@ public interface OtlpExporterConfig {
          * Set proxy port.
          * <p>
          * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.port` where <signal-type> is one of the supported signal
-         * types,
-         * like `traces` or `metrics`.
+         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.port` where <signal-type> is one of the supported
+         * signal types, like `traces` or `metrics`.
          */
         OptionalInt port();
 
@@ -166,9 +161,8 @@ public interface OtlpExporterConfig {
          * Set proxy host.
          * <p>
          * There is a generic property, that will apply to all signals and a signal specific one, following the pattern:
-         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.host` where <signal-type> is one of the supported signal
-         * types,
-         * like `traces` or `metrics`.
+         * `quarkus.otel.exporter.otlp.<signal-type>.proxy-options.host` where <signal-type> is one of the supported
+         * signal types, like `traces` or `metrics`.
          */
         Optional<String> host();
     }

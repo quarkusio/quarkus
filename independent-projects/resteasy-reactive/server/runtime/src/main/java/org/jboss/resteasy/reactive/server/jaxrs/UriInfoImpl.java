@@ -82,8 +82,7 @@ public class UriInfoImpl implements UriInfo {
             ServerHttpRequest request = currentRequest.serverRequest();
             try {
                 // TCK says normalized
-                requestUri = new URI(currentRequest.getAbsoluteURI())
-                        .normalize();
+                requestUri = new URI(currentRequest.getAbsoluteURI()).normalize();
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
@@ -131,9 +130,7 @@ public class UriInfoImpl implements UriInfo {
                 else
                     prefix = prefix + "/";
             }
-            return new URI(currentRequest.getScheme(), currentRequest.getAuthority(),
-                    prefix,
-                    null, null);
+            return new URI(currentRequest.getScheme(), currentRequest.getAuthority(), prefix, null, null);
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -156,7 +153,8 @@ public class UriInfoImpl implements UriInfo {
         // pathParams have to be recreated when the target changes.
         // this happens e.g. when the ResteasyReactiveRequestContext#restart is called for sub resources
         // The sub resource, can have additional path params that are not present on the locator
-        if (pathParams == null && pathParamsTargetMarker == null || pathParamsTargetMarker != currentRequest.getTarget()) {
+        if (pathParams == null && pathParamsTargetMarker == null
+                || pathParamsTargetMarker != currentRequest.getTarget()) {
             pathParams = currentRequest.getAllPathParameters(false);
             pathParamsTargetMarker = currentRequest.getTarget();
         }

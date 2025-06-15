@@ -12,10 +12,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UnsupportedInitialDelayForCronTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(IllegalArgumentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnsupportedInitialDelayForCronTest.InvalidBean.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(IllegalArgumentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(UnsupportedInitialDelayForCronTest.InvalidBean.class));
 
     @Test
     public void test() {

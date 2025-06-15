@@ -33,8 +33,7 @@ public class SmallryeJwtPersistentDevModeSignedTest {
 
     @RegisterExtension
     static QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClass(GreetingResource.class))
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(GreetingResource.class))
             .addBuildChainCustomizer(new PersistentJwtChainBuilder());
 
     static class PersistentJwtChainBuilder implements Consumer<BuildChainBuilder> {
@@ -52,38 +51,28 @@ public class SmallryeJwtPersistentDevModeSignedTest {
                     assertThat(publicKeyFile).exists();
                     try {
                         // extract their keys
-                        String publicKey = Files.readAllLines(publicKeyFile.toPath())
-                                .stream().filter(l -> !l.startsWith("----"))
-                                .collect(Collectors.joining());
-                        String privateKey = Files.readAllLines(privateKeyFile.toPath())
-                                .stream().filter(l -> !l.startsWith("----"))
-                                .collect(Collectors.joining());
+                        String publicKey = Files.readAllLines(publicKeyFile.toPath()).stream()
+                                .filter(l -> !l.startsWith("----")).collect(Collectors.joining());
+                        String privateKey = Files.readAllLines(privateKeyFile.toPath()).stream()
+                                .filter(l -> !l.startsWith("----")).collect(Collectors.joining());
                         List<RunTimeConfigurationDefaultBuildItem> buildItems = context
                                 .consumeMulti(RunTimeConfigurationDefaultBuildItem.class);
                         // make sure we used them for configuration
                         assertThat(buildItems)
-                                .filteredOn(
-                                        item -> item.getKey()
-                                                .equals(SmallryeJwtDevModeProcessor.MP_JWT_VERIFY_PUBLIC_KEY))
-                                .first()
-                                .extracting(s -> s.getValue())
-                                .isEqualTo(publicKey);
+                                .filteredOn(item -> item.getKey()
+                                        .equals(SmallryeJwtDevModeProcessor.MP_JWT_VERIFY_PUBLIC_KEY))
+                                .first().extracting(s -> s.getValue()).isEqualTo(publicKey);
                         assertThat(buildItems)
                                 .filteredOn(
                                         item -> item.getKey().equals(SmallryeJwtDevModeProcessor.SMALLRYE_JWT_SIGN_KEY))
-                                .first()
-                                .extracting(s -> s.getValue())
-                                .isEqualTo(privateKey);
+                                .first().extracting(s -> s.getValue()).isEqualTo(privateKey);
                         context.produce(new FeatureBuildItem("dummy"));
                     } catch (IOException x) {
                         throw new UncheckedIOException(x);
                     }
                 }
-            })
-                    .consumes(RunTimeConfigurationDefaultBuildItem.class)
-                    .consumes(CurateOutcomeBuildItem.class)
-                    .produces(FeatureBuildItem.class)
-                    .build();
+            }).consumes(RunTimeConfigurationDefaultBuildItem.class).consumes(CurateOutcomeBuildItem.class)
+                    .produces(FeatureBuildItem.class).build();
             chain.addBuildStep(new BuildStep() {
                 @Override
                 public void execute(BuildContext context) {
@@ -94,22 +83,15 @@ public class SmallryeJwtPersistentDevModeSignedTest {
                     new File(buildDir, SmallryeJwtDevModeProcessor.DEV_PUBLIC_KEY_PEM).delete();
                     context.produce(new GeneratePersistentDevModeJwtKeysBuildItem());
                 }
-            })
-                    .produces(GeneratePersistentDevModeJwtKeysBuildItem.class)
-                    .consumes(CurateOutcomeBuildItem.class)
-                    .build();
+            }).produces(GeneratePersistentDevModeJwtKeysBuildItem.class).consumes(CurateOutcomeBuildItem.class).build();
         }
     }
 
     @Test
     void canBeSigned() {
         // make sure we can sign JWT tokens recognised by the server, since they use the same config
-        String token = Jwt.upn("jdoe@quarkus.io")
-                .groups("User")
-                .sign();
-        RestAssured.given()
-                .header(new Header("Authorization", "Bearer " + token))
-                .get("/only-user")
-                .then().assertThat().statusCode(200);
+        String token = Jwt.upn("jdoe@quarkus.io").groups("User").sign();
+        RestAssured.given().header(new Header("Authorization", "Bearer " + token)).get("/only-user").then().assertThat()
+                .statusCode(200);
     }
 }

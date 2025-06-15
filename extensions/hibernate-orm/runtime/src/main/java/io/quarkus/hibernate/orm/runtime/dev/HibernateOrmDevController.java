@@ -52,8 +52,8 @@ public class HibernateOrmDevController {
             Metadata metadata, ServiceRegistry serviceRegistry, String importFile) {
         List<HibernateOrmDevInfo.Entity> managedEntities = new ArrayList<>();
         for (PersistentClass entityBinding : metadata.getEntityBindings()) {
-            managedEntities.add(new HibernateOrmDevInfo.Entity(entityBinding.getJpaEntityName(), entityBinding.getClassName(),
-                    entityBinding.getTable().getName()));
+            managedEntities.add(new HibernateOrmDevInfo.Entity(entityBinding.getJpaEntityName(),
+                    entityBinding.getClassName(), entityBinding.getTable().getName()));
         }
         // Sort entities alphabetically by JPA entity name
         managedEntities.sort(Comparator.comparing(HibernateOrmDevInfo.Entity::getName));
@@ -82,8 +82,9 @@ public class HibernateOrmDevController {
         DDLSupplier dropDDLSupplier = new DDLSupplier(Action.DROP, metadata, serviceRegistry, importFile);
         DDLSupplier updateDDLSupplier = new DDLSupplier(Action.UPDATE, metadata, serviceRegistry, importFile);
 
-        info.add(new HibernateOrmDevInfo.PersistenceUnit(sessionFactoryImplementor, persistenceUnitName, managedEntities,
-                namedQueries, namedNativeQueries, createDDLSupplier, dropDDLSupplier, updateDDLSupplier));
+        info.add(
+                new HibernateOrmDevInfo.PersistenceUnit(sessionFactoryImplementor, persistenceUnitName, managedEntities,
+                        namedQueries, namedNativeQueries, createDDLSupplier, dropDDLSupplier, updateDDLSupplier));
     }
 
     class DDLSupplier implements Supplier<String> {
@@ -110,18 +111,17 @@ public class HibernateOrmDevController {
         info = new HibernateOrmDevInfo();
     }
 
-    private static String generateDDL(Action action, Metadata metadata, ServiceRegistry ssr,
-            String importFiles) {
-        //TODO see https://hibernate.atlassian.net/browse/HHH-16207
-        final HibernateSchemaManagementTool tool = (HibernateSchemaManagementTool) ssr.getService(SchemaManagementTool.class);
+    private static String generateDDL(Action action, Metadata metadata, ServiceRegistry ssr, String importFiles) {
+        // TODO see https://hibernate.atlassian.net/browse/HHH-16207
+        final HibernateSchemaManagementTool tool = (HibernateSchemaManagementTool) ssr
+                .getService(SchemaManagementTool.class);
         Map<String, Object> config = new HashMap<>(ssr.getService(ConfigurationService.class).getSettings());
         config.put(AvailableSettings.HBM2DDL_DELIMITER, ";");
         config.put(AvailableSettings.FORMAT_SQL, true);
         config.put(AvailableSettings.HBM2DDL_IMPORT_FILES, importFiles);
         ExceptionHandlerCollectingImpl exceptionHandler = new ExceptionHandlerCollectingImpl();
         try {
-            final ExecutionOptions executionOptions = SchemaManagementToolCoordinator.buildExecutionOptions(
-                    config,
+            final ExecutionOptions executionOptions = SchemaManagementToolCoordinator.buildExecutionOptions(config,
                     exceptionHandler);
             StringWriter writer = new StringWriter();
             final SourceDescriptor source = new SourceDescriptor() {
@@ -163,7 +163,7 @@ public class HibernateOrmDevController {
             }
             return writer.toString();
         } catch (RuntimeException e) {
-            //TODO unroll the exceptionHandler ?
+            // TODO unroll the exceptionHandler ?
             StringWriter stackTraceWriter = new StringWriter();
             e.printStackTrace(new PrintWriter(stackTraceWriter));
             return "Could not generate DDL: \n" + stackTraceWriter.toString();

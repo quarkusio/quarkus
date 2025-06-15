@@ -21,15 +21,11 @@ class NullHeaderTestCase {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest runner = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NullFilter.class, NullResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NullFilter.class, NullResource.class));
 
     @Test
     void nullHeaderTest() {
-        when()
-                .get("/null")
-                .then().statusCode(200)
-                .header("nullHeader", "");
+        when().get("/null").then().statusCode(200).header("nullHeader", "");
     }
 
     @Provider

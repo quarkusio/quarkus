@@ -75,8 +75,7 @@ public class MpJwtValidator implements IdentityProvider<TokenAuthenticationReque
         try {
             JsonWebToken jwtPrincipal = parser.parse(request.getToken().getToken());
             QuarkusSecurityIdentity.Builder builder = QuarkusSecurityIdentity.builder().setPrincipal(jwtPrincipal)
-                    .addCredential(request.getToken())
-                    .addRoles(jwtPrincipal.getGroups())
+                    .addCredential(request.getToken()).addRoles(jwtPrincipal.getGroups())
                     .addAttribute(SecurityIdentity.USER_ATTRIBUTE, jwtPrincipal);
             RoutingContext routingContext = HttpSecurityUtils.getRoutingContextAttribute(request);
             if (routingContext != null) {

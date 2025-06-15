@@ -33,41 +33,19 @@ import io.smallrye.config.WithParentName;
 
 public class ConfigMappingTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("config.my.prop=1234\n" +
-                            "config.override.my.prop=5678\n" +
-                            "group.host=localhost\n" +
-                            "group.port=8080\n" +
-                            "types.int=9\n" +
-                            "types.long=9999999999\n" +
-                            "types.float=99.9\n" +
-                            "types.double=99.99\n" +
-                            "types.char=c\n" +
-                            "types.boolean=true\n" +
-                            "types.value=1234\n" +
-                            "optionals.server.host=localhost\n" +
-                            "optionals.server.port=8080\n" +
-                            "optionals.optional=optional\n" +
-                            "optionals.optional.int=9\n" +
-                            "collections.strings=foo,bar\n" +
-                            "collections.ints=1,2,3\n" +
-                            "maps.server.host=localhost\n" +
-                            "maps.server.port=8080\n" +
-                            "maps.group.server.host=localhost\n" +
-                            "maps.group.server.port=8080\n" +
-                            "maps.base.server.host=localhost\n" +
-                            "maps.base.server.port=8080\n" +
-                            "maps.base.group.server.host=localhost\n" +
-                            "maps.base.group.server.port=8080\n" +
-                            "converters.foo=notbar\n" +
-                            "override.server.host=localhost\n" +
-                            "override.server.port=8080\n" +
-                            "cloud.server.host=cloud\n" +
-                            "cloud.server.port=9000\n" +
-                            "cloud.server.port=9000\n" +
-                            "hierarchy.foo=bar"),
-                            "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("config.my.prop=1234\n" + "config.override.my.prop=5678\n"
+                    + "group.host=localhost\n" + "group.port=8080\n" + "types.int=9\n" + "types.long=9999999999\n"
+                    + "types.float=99.9\n" + "types.double=99.99\n" + "types.char=c\n" + "types.boolean=true\n"
+                    + "types.value=1234\n" + "optionals.server.host=localhost\n" + "optionals.server.port=8080\n"
+                    + "optionals.optional=optional\n" + "optionals.optional.int=9\n" + "collections.strings=foo,bar\n"
+                    + "collections.ints=1,2,3\n" + "maps.server.host=localhost\n" + "maps.server.port=8080\n"
+                    + "maps.group.server.host=localhost\n" + "maps.group.server.port=8080\n"
+                    + "maps.base.server.host=localhost\n" + "maps.base.server.port=8080\n"
+                    + "maps.base.group.server.host=localhost\n" + "maps.base.group.server.port=8080\n"
+                    + "converters.foo=notbar\n" + "override.server.host=localhost\n" + "override.server.port=8080\n"
+                    + "cloud.server.host=cloud\n" + "cloud.server.port=9000\n" + "cloud.server.port=9000\n"
+                    + "hierarchy.foo=bar"), "application.properties"));
     @Inject
     Config config;
 

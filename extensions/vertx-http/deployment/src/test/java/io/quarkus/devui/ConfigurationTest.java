@@ -14,8 +14,7 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class ConfigurationTest extends DevUIJsonRPCTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withEmptyApplication();
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withEmptyApplication();
 
     public ConfigurationTest() {
         super("devui-configuration");
@@ -25,9 +24,7 @@ public class ConfigurationTest extends DevUIJsonRPCTest {
     public void testConfigurationUpdate() throws Exception {
 
         JsonNode updatePropertyResponse = super.executeJsonRPCMethod("updateProperty",
-                Map.of(
-                        "name", "quarkus.application.name",
-                        "value", "changedByTest"));
+                Map.of("name", "quarkus.application.name", "value", "changedByTest"));
         Assertions.assertNotNull(updatePropertyResponse);
         Assertions.assertTrue(updatePropertyResponse.asBoolean());
 

@@ -11,8 +11,8 @@ import io.quarkus.builder.item.SimpleBuildItem;
 final class ClassLevelExceptionMappersBuildItem extends SimpleBuildItem {
 
     /**
-     * The key is the DotName of the class which contains methods annotated with {@link ServerExceptionMapper}
-     * and the value is a map of from exception class name to generated exception mapper class name
+     * The key is the DotName of the class which contains methods annotated with {@link ServerExceptionMapper} and the
+     * value is a map of from exception class name to generated exception mapper class name
      */
     private final Map<DotName, Map<String, String>> mappers;
 

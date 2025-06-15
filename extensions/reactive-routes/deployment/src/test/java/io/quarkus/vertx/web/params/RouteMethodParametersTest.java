@@ -30,8 +30,7 @@ public class RouteMethodParametersTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SimpleBean.class));
 
     @Test
     public void testRoutes() {
@@ -43,34 +42,27 @@ public class RouteMethodParametersTest {
         when().get("/hello-params?name=foo&identifier=10").then().statusCode(200).body(is("Hello foo! Your id is 10"));
         when().get("/hello/42?name=foo&identifier=10").then().statusCode(200)
                 .body(is("Hello 42! Your name is foo and id is 10"));
-        when().get("/hello-multiple-params?id=foo&id=10").then().statusCode(200)
-                .body(is("foo,10"));
-        given().header("My-Header", "fooooo").header("My-Number-Header", "10000").get("/hello-header").then().statusCode(200)
-                .body(is("fooooo=10000"));
-        given().header("My-Header", "fooooo").header("My-Header", "baaar").get("/hello-multiple-headers").then().statusCode(200)
-                .body(is("fooooo,baaar"));
-        given().contentType("application/json").body("{\"name\":\"Eleven\"}")
-                .post("/hello-body").then().statusCode(200).body("name", is("Eleven"))
-                .body("id", is(11));
-        given().contentType("application/json").body("{\"name\":\"Eleven\"}")
-                .post("/hello-body-as-string").then().statusCode(200).body("NAME", is("ELEVEN"));
-        given().contentType("application/json").body("{\"name\":\"Eleven\"}")
-                .post("/hello-body-json-object").then().statusCode(200).body("name", is("Eleven"))
-                .body("id", is(11));
-        given().contentType("application/json").body("[11]")
-                .post("/hello-body-json-array").then().statusCode(200).body(is("[11,12]"));
-        given().contentType("application/json").body("{\"name\":\"Eleven\"}")
-                .post("/hello-body-pojo").then().statusCode(200).body("name", is("Eleven"))
-                .body("id", is(11));
-        given().contentType("application/json").body("{\"name\":\"Eleven\"}")
-                .post("/hello-body-pojo?id=13").then().statusCode(200).body("name", is("Eleven"))
-                .body("id", is(13));
+        when().get("/hello-multiple-params?id=foo&id=10").then().statusCode(200).body(is("foo,10"));
+        given().header("My-Header", "fooooo").header("My-Number-Header", "10000").get("/hello-header").then()
+                .statusCode(200).body(is("fooooo=10000"));
+        given().header("My-Header", "fooooo").header("My-Header", "baaar").get("/hello-multiple-headers").then()
+                .statusCode(200).body(is("fooooo,baaar"));
+        given().contentType("application/json").body("{\"name\":\"Eleven\"}").post("/hello-body").then().statusCode(200)
+                .body("name", is("Eleven")).body("id", is(11));
+        given().contentType("application/json").body("{\"name\":\"Eleven\"}").post("/hello-body-as-string").then()
+                .statusCode(200).body("NAME", is("ELEVEN"));
+        given().contentType("application/json").body("{\"name\":\"Eleven\"}").post("/hello-body-json-object").then()
+                .statusCode(200).body("name", is("Eleven")).body("id", is(11));
+        given().contentType("application/json").body("[11]").post("/hello-body-json-array").then().statusCode(200)
+                .body(is("[11,12]"));
+        given().contentType("application/json").body("{\"name\":\"Eleven\"}").post("/hello-body-pojo").then()
+                .statusCode(200).body("name", is("Eleven")).body("id", is(11));
+        given().contentType("application/json").body("{\"name\":\"Eleven\"}").post("/hello-body-pojo?id=13").then()
+                .statusCode(200).body("name", is("Eleven")).body("id", is(13));
         when().get("/hello-params-conversion?id=22&size=100&valid=false&doubles=2").then().statusCode(200)
                 .body(is("id=22,size=100,valid=false,doubles=[2.0]"));
-        when().get("/hello-param-conversion-optional").then().statusCode(200)
-                .body(is("hello 42"));
-        when().get("/hello-param-conversion-optional?id=1").then().statusCode(200)
-                .body(is("hello 1"));
+        when().get("/hello-param-conversion-optional").then().statusCode(200).body(is("hello 42"));
+        when().get("/hello-param-conversion-optional?id=1").then().statusCode(200).body(is("hello 1"));
     }
 
     static class SimpleBean {
@@ -163,7 +155,8 @@ public class RouteMethodParametersTest {
         }
 
         @Route
-        String helloParamsConversion(@Param Integer id, @Param Long size, @Param Boolean valid, @Param List<Double> doubles) {
+        String helloParamsConversion(@Param Integer id, @Param Long size, @Param Boolean valid,
+                @Param List<Double> doubles) {
             return String.format("id=%s,size=%s,valid=%s,doubles=%s", id, size, valid, doubles);
         }
 

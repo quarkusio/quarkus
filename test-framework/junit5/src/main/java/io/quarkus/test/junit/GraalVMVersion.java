@@ -22,8 +22,6 @@ public enum GraalVMVersion {
 
     @Override
     public String toString() {
-        return "GraalVMVersion{" +
-                "version=" + version.getVersionAsString() +
-                '}';
+        return "GraalVMVersion{" + "version=" + version.getVersionAsString() + '}';
     }
 }

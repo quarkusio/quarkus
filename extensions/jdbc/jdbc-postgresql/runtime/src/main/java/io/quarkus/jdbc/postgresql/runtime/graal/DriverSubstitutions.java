@@ -12,7 +12,7 @@ public final class DriverSubstitutions {
 
     @Substitute
     private void setupLoggerFromProperties(final Properties props) {
-        //We don't want it to mess with the logger config
+        // We don't want it to mess with the logger config
     }
 
 }

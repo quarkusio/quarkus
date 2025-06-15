@@ -38,8 +38,8 @@ import io.quarkus.vertx.http.runtime.handlers.DevStaticHandler;
 
 /**
  * {@link GeneratedStaticResourcesProcessor} is responsible for dealing {@link GeneratedStaticResourceBuildItem}
- * creating a {@link DevStaticHandler} to handle all static resources
- * generated from extensions through {@link GeneratedStaticResourceBuildItem} build item.
+ * creating a {@link DevStaticHandler} to handle all static resources generated from extensions through
+ * {@link GeneratedStaticResourceBuildItem} build item.
  */
 public class GeneratedStaticResourcesProcessor {
 
@@ -54,24 +54,22 @@ public class GeneratedStaticResourcesProcessor {
         for (GeneratedStaticResourceBuildItem generatedStaticResource : generatedStaticResources) {
             String generatedStaticResourceLocation = buildGeneratedStaticResourceLocation(generatedStaticResource);
             if (!generatedStaticResource.isFile()) {
-                generatedResourceBuildItem.produce(
-                        new GeneratedResourceBuildItem(generatedStaticResourceLocation,
-                                generatedStaticResource.getContent(), false));
+                generatedResourceBuildItem.produce(new GeneratedResourceBuildItem(generatedStaticResourceLocation,
+                        generatedStaticResource.getContent(), false));
             } else if (launchModeBuildItem.getLaunchMode() != LaunchMode.DEVELOPMENT) {
                 // For files, we need to read it and add it in the classpath for normal and test mode
                 try {
                     final byte[] content = Files.readAllBytes(generatedStaticResource.getFile());
-                    generatedResourceBuildItem.produce(
-                            new GeneratedResourceBuildItem(generatedStaticResourceLocation,
-                                    content, false));
+                    generatedResourceBuildItem
+                            .produce(new GeneratedResourceBuildItem(generatedStaticResourceLocation, content, false));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }
             // We can't use the vert.x StaticHandler for tests as it doesn't support 'quarkus' protocol
             if (launchModeBuildItem.getLaunchMode() == LaunchMode.NORMAL) {
-                additionalStaticResourcesProducer.produce(
-                        new AdditionalStaticResourceBuildItem(generatedStaticResource.getEndpoint(), false));
+                additionalStaticResourcesProducer
+                        .produce(new AdditionalStaticResourceBuildItem(generatedStaticResource.getEndpoint(), false));
                 nativeImageResourcesProducer.produce(new NativeImageResourceBuildItem(generatedStaticResourceLocation));
             }
         }
@@ -80,8 +78,8 @@ public class GeneratedStaticResourcesProcessor {
     @BuildStep(onlyIfNot = IsNormal.class)
     @Record(ExecutionTime.RUNTIME_INIT)
     public void process(List<GeneratedStaticResourceBuildItem> generatedStaticResources,
-            LaunchModeBuildItem launchModeBuildItem,
-            BuildProducer<RouteBuildItem> routes, GeneratedStaticResourcesRecorder generatedStaticResourcesRecorder,
+            LaunchModeBuildItem launchModeBuildItem, BuildProducer<RouteBuildItem> routes,
+            GeneratedStaticResourcesRecorder generatedStaticResourcesRecorder,
             BuildProducer<NotFoundPageDisplayableEndpointBuildItem> notFoundPageProducer) throws BuildException {
         if (generatedStaticResources.isEmpty()) {
             return;
@@ -93,24 +91,23 @@ public class GeneratedStaticResourcesProcessor {
                     "Duplicate endpoints detected, the endpoint for static resources must be unique: " + duplicates);
         }
 
-        Map<String, String> generatedFilesResources = generatedStaticResources.stream()
-                .peek(path -> notFoundPageProducer.produce(new NotFoundPageDisplayableEndpointBuildItem(path.getEndpoint())))
+        Map<String, String> generatedFilesResources = generatedStaticResources.stream().peek(
+                path -> notFoundPageProducer.produce(new NotFoundPageDisplayableEndpointBuildItem(path.getEndpoint())))
                 .filter(GeneratedStaticResourceBuildItem::isFile)
                 .collect(Collectors.toMap(GeneratedStaticResourceBuildItem::getEndpoint,
                         GeneratedStaticResourceBuildItem::getFileAbsolutePath));
         Set<String> generatedClassPathResources = generatedStaticResources.stream()
-                .map(GeneratedStaticResourceBuildItem::getEndpoint)
-                .collect(Collectors.toSet());
+                .map(GeneratedStaticResourceBuildItem::getEndpoint).collect(Collectors.toSet());
         routes.produce(RouteBuildItem.builder()
                 .orderedRoute("/*", ROUTE_ORDER, generatedStaticResourcesRecorder.createRouteCustomizer())
-                .handler(generatedStaticResourcesRecorder.createHandler(generatedClassPathResources, generatedFilesResources))
+                .handler(generatedStaticResourcesRecorder.createHandler(generatedClassPathResources,
+                        generatedFilesResources))
                 .build());
     }
 
     private static String buildGeneratedStaticResourceLocation(
             GeneratedStaticResourceBuildItem generatedStaticResourceBuildItem) {
-        return META_INF_RESOURCES +
-                generatedStaticResourceBuildItem.getEndpoint();
+        return META_INF_RESOURCES + generatedStaticResourceBuildItem.getEndpoint();
     }
 
     // THIS IS TO TEST DEV MODE
@@ -118,8 +115,7 @@ public class GeneratedStaticResourcesProcessor {
     private static final String META_INF_GENERATED_RESOURCES_TEST = "META-INF/generated-resources-test";
 
     @BuildStep(onlyIf = IsDevelopment.class)
-    public void devMode(
-            BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,
+    public void devMode(BuildProducer<HotDeploymentWatchedFileBuildItem> hotDeployment,
             BuildProducer<GeneratedStaticResourceBuildItem> generatedStaticResourceProducer,
             LaunchModeBuildItem launchMode) throws IOException {
         // this is only for dev-mode tests
@@ -127,10 +123,8 @@ public class GeneratedStaticResourcesProcessor {
             return;
         }
 
-        hotDeployment.produce(HotDeploymentWatchedFileBuildItem.builder()
-                .setRestartNeeded(true)
-                .setLocationPredicate(l -> l.startsWith(META_INF_GENERATED_RESOURCES_TEST + "/bytes"))
-                .build());
+        hotDeployment.produce(HotDeploymentWatchedFileBuildItem.builder().setRestartNeeded(true)
+                .setLocationPredicate(l -> l.startsWith(META_INF_GENERATED_RESOURCES_TEST + "/bytes")).build());
 
         Map<String, Path> classpathResources = getClasspathResources();
         for (Map.Entry<String, Path> entry : classpathResources.entrySet()) {
@@ -158,9 +152,8 @@ public class GeneratedStaticResourcesProcessor {
         final List<ClassPathElement> elements = QuarkusClassLoader.getElements(META_INF_GENERATED_RESOURCES_TEST,
                 false);
         if (!elements.isEmpty()) {
-            final PathFilter filter = PathFilter.forIncludes(List.of(
-                    META_INF_GENERATED_RESOURCES_TEST + "/**",
-                    META_INF_GENERATED_RESOURCES_TEST));
+            final PathFilter filter = PathFilter
+                    .forIncludes(List.of(META_INF_GENERATED_RESOURCES_TEST + "/**", META_INF_GENERATED_RESOURCES_TEST));
             for (var element : elements) {
                 if (element.isRuntime()) {
                     element.apply(tree -> {
@@ -174,9 +167,7 @@ public class GeneratedStaticResourcesProcessor {
 
     private static List<String> collectDuplicates(List<GeneratedStaticResourceBuildItem> generatedStaticResources) {
         Set<String> uniques = new HashSet<>();
-        return generatedStaticResources.stream()
-                .map(GeneratedStaticResourceBuildItem::getEndpoint)
-                .filter(e -> !uniques.add(e))
-                .toList();
+        return generatedStaticResources.stream().map(GeneratedStaticResourceBuildItem::getEndpoint)
+                .filter(e -> !uniques.add(e)).toList();
     }
 }

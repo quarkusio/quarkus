@@ -8,9 +8,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ProactiveAuthAuthorizationPolicyTest extends AbstractAuthorizationPolicyTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TEST_CLASSES)
-                    .addAsResource(new StringAsset(APPLICATION_PROPERTIES), "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(TEST_CLASSES)
+            .addAsResource(new StringAsset(APPLICATION_PROPERTIES), "application.properties"));
 
 }

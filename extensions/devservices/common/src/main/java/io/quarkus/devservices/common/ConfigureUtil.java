@@ -26,10 +26,8 @@ public final class ConfigureUtil {
     private ConfigureUtil() {
     }
 
-    public static String configureNetwork(GenericContainer<?> container,
-            String defaultNetworkId,
-            boolean useSharedNetwork,
-            String hostNamePrefix) {
+    public static String configureNetwork(GenericContainer<?> container, String defaultNetworkId,
+            boolean useSharedNetwork, String hostNamePrefix) {
         if (defaultNetworkId != null) {
             // Set the network`without creating the network
             container.setNetworkMode(defaultNetworkId);
@@ -51,8 +49,7 @@ public final class ConfigureUtil {
             // is what the test launching process (that has access to the curated application) has access to
             // FIXME: This is an ugly hack, but there is not much we can do...
             try {
-                Class<?> networkClass = tccl.getParent()
-                        .loadClass("org.testcontainers.containers.Network");
+                Class<?> networkClass = tccl.getParent().loadClass("org.testcontainers.containers.Network");
                 Object sharedNetwork = networkClass.getField("SHARED").get(null);
                 Consumer<CreateNetworkCmd> addDevservicesLabel = cmd -> cmd
                         .withLabels(Map.of("quarkus.devservices.network", "shared"));

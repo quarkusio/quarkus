@@ -23,29 +23,29 @@ abstract class AbstractKubernetesConfigSourceUtil {
 
     abstract OrdinalData ordinalData();
 
-    abstract ConfigSource createLiteralDataConfigSource(String kubernetesConfigSourceName, Map<String, String> propertyMap,
-            int ordinal);
+    abstract ConfigSource createLiteralDataConfigSource(String kubernetesConfigSourceName,
+            Map<String, String> propertyMap, int ordinal);
 
     abstract ConfigSource createPropertiesConfigSource(String kubernetesConfigSourceName, String fileName, String input,
             int ordinal);
 
-    abstract ConfigSource createYamlConfigSource(String kubernetesConfigSourceName, String fileName, String input, int ordinal);
+    abstract ConfigSource createYamlConfigSource(String kubernetesConfigSourceName, String fileName, String input,
+            int ordinal);
 
     /**
-     * Returns a list of {@code ConfigSource} for the literal data that is contained in the ConfigMap/Secret
-     * and for the application.{properties|yaml|yml} files that might be contained in it as well
-     *
-     * All the {@code ConfigSource} objects use the same ordinal which is higher than the ordinal
-     * of normal configuration files, but lower than that of environment variables
+     * Returns a list of {@code ConfigSource} for the literal data that is contained in the ConfigMap/Secret and for the
+     * application.{properties|yaml|yml} files that might be contained in it as well All the {@code ConfigSource}
+     * objects use the same ordinal which is higher than the ordinal of normal configuration files, but lower than that
+     * of environment variables
      */
     List<ConfigSource> toConfigSources(ObjectMeta metadata, Map<String, String> kubernetesConfigSourceDataMap,
             int ordinalOffset) {
         /*
-         * use a name that uniquely identifies the secret/configmap - which can be used an application
-         * to fully report its startup state or even respond to secret/configmap changes
+         * use a name that uniquely identifies the secret/configmap - which can be used an application to fully report
+         * its startup state or even respond to secret/configmap changes
          */
-        String kubernetesConfigSourceName = metadata.getNamespace() + "/" + metadata.getName() + "/" + metadata.getUid() + "/"
-                + metadata.getResourceVersion();
+        String kubernetesConfigSourceName = metadata.getNamespace() + "/" + metadata.getName() + "/" + metadata.getUid()
+                + "/" + metadata.getResourceVersion();
         if (log.isDebugEnabled()) {
             log.debug("Attempting to convert data in " + getType() + " '" + kubernetesConfigSourceName
                     + "' to a list of ConfigSource objects");
@@ -58,8 +58,8 @@ abstract class AbstractKubernetesConfigSourceUtil {
 
         if (!categorizedConfigSourceData.literalData.isEmpty()) {
             if (log.isDebugEnabled()) {
-                log.debug(
-                        "Adding a ConfigSource for the literal data of " + getType() + " '" + kubernetesConfigSourceName + "'");
+                log.debug("Adding a ConfigSource for the literal data of " + getType() + " '"
+                        + kubernetesConfigSourceName + "'");
             }
             result.add(createLiteralDataConfigSource(kubernetesConfigSourceName,
                     categorizedConfigSourceData.literalData, ordinal));
@@ -69,14 +69,14 @@ abstract class AbstractKubernetesConfigSourceUtil {
             String rawFileData = entry.getValue();
             if (APPLICATION_PROPERTIES.equals(fileName)) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Adding a Properties ConfigSource for file '" + fileName + "' of " + getType()
-                            + " '" + kubernetesConfigSourceName + "'");
+                    log.debug("Adding a Properties ConfigSource for file '" + fileName + "' of " + getType() + " '"
+                            + kubernetesConfigSourceName + "'");
                 }
                 result.add(createPropertiesConfigSource(kubernetesConfigSourceName, fileName, rawFileData, ordinal));
             } else if (APPLICATION_YAML.equals(fileName) || APPLICATION_YML.equals(fileName)) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Adding a YAML ConfigSource for file '" + fileName + "' of " + getType()
-                            + " '" + kubernetesConfigSourceName + "'");
+                    log.debug("Adding a YAML ConfigSource for file '" + fileName + "' of " + getType() + " '"
+                            + kubernetesConfigSourceName + "'");
                 }
                 result.add(createYamlConfigSource(kubernetesConfigSourceName, fileName, rawFileData, ordinal));
             }
@@ -92,10 +92,9 @@ abstract class AbstractKubernetesConfigSourceUtil {
     private int getOrdinal(int ordinalOffset) {
         final OrdinalData ordinalData = ordinalData();
         /*
-         * We don't want a large list of sources to cause an "overflow" into an Ordinal of another ConfigSource,
-         * so we just let the last ones all use the max ordinal
-         * this is not foolproof, but it's very unlikely that an application will need to define
-         * a list with 10+ sources...
+         * We don't want a large list of sources to cause an "overflow" into an Ordinal of another ConfigSource, so we
+         * just let the last ones all use the max ordinal this is not foolproof, but it's very unlikely that an
+         * application will need to define a list with 10+ sources...
          */
         return Math.min(ordinalData.getBase() + ordinalOffset, ordinalData.getMax());
     }
@@ -109,8 +108,8 @@ abstract class AbstractKubernetesConfigSourceUtil {
         List<Map.Entry<String, String>> fileData = new ArrayList<>();
         for (Map.Entry<String, String> entry : data.entrySet()) {
             String key = entry.getKey();
-            if ((key.startsWith("application")) &&
-                    ((key.endsWith(".yml") || key.endsWith(".yaml") || key.endsWith(".properties")))) {
+            if ((key.startsWith("application"))
+                    && ((key.endsWith(".yml") || key.endsWith(".yaml") || key.endsWith(".properties")))) {
                 fileData.add(entry);
             } else {
                 literalData.put(key, entry.getValue());

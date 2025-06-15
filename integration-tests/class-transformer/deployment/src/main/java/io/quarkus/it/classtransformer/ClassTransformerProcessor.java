@@ -26,16 +26,16 @@ import io.quarkus.gizmo.Gizmo;
 /**
  * class that adds an additional @GET @Path("/transformed") method to every JAX-RS endpoint.
  * <p>
- * This is intended as a test of the class transformation functionality, it should probably be removed
- * when we have better test frameworks
+ * This is intended as a test of the class transformation functionality, it should probably be removed when we have
+ * better test frameworks
  */
 public class ClassTransformerProcessor {
 
     private static final DotName PATH = DotName.createSimple(Path.class.getName());
 
     @BuildStep
-    public void build(CombinedIndexBuildItem combinedIndex,
-            BuildProducer<BytecodeTransformerBuildItem> transformers) throws Exception {
+    public void build(CombinedIndexBuildItem combinedIndex, BuildProducer<BytecodeTransformerBuildItem> transformers)
+            throws Exception {
         final Set<String> pathAnnotatedClasses = new HashSet<>();
 
         Collection<AnnotationInstance> annotations = combinedIndex.getIndex().getAnnotations(PATH);
@@ -46,34 +46,36 @@ public class ClassTransformerProcessor {
         }
         if (!pathAnnotatedClasses.isEmpty()) {
             for (String i : pathAnnotatedClasses) {
-                transformers.produce(new BytecodeTransformerBuildItem(i, new BiFunction<String, ClassVisitor, ClassVisitor>() {
-                    @Override
-                    public ClassVisitor apply(String className, ClassVisitor classVisitor) {
-                        ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
-
+                transformers.produce(
+                        new BytecodeTransformerBuildItem(i, new BiFunction<String, ClassVisitor, ClassVisitor>() {
                             @Override
-                            public void visit(int version, int access, String name, String signature, String superName,
-                                    String[] interfaces) {
-                                super.visit(version, access, name, signature, superName, interfaces);
-                                MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed", "()Ljava/lang/String;", null,
-                                        null);
+                            public ClassVisitor apply(String className, ClassVisitor classVisitor) {
+                                ClassVisitor cv = new ClassVisitor(Gizmo.ASM_API_VERSION, classVisitor) {
 
-                                AnnotationVisitor annotation = mv
-                                        .visitAnnotation("L" + Path.class.getName().replace('.', '/') + ";", true);
-                                annotation.visit("value", "/transformed");
-                                annotation.visitEnd();
-                                annotation = mv.visitAnnotation("L" + GET.class.getName().replace('.', '/') + ";", true);
-                                annotation.visitEnd();
+                                    @Override
+                                    public void visit(int version, int access, String name, String signature,
+                                            String superName, String[] interfaces) {
+                                        super.visit(version, access, name, signature, superName, interfaces);
+                                        MethodVisitor mv = visitMethod(Modifier.PUBLIC, "transformed",
+                                                "()Ljava/lang/String;", null, null);
 
-                                mv.visitLdcInsn("Transformed Endpoint");
-                                mv.visitInsn(Opcodes.ARETURN);
-                                mv.visitMaxs(1, 1);
-                                mv.visitEnd();
+                                        AnnotationVisitor annotation = mv.visitAnnotation(
+                                                "L" + Path.class.getName().replace('.', '/') + ";", true);
+                                        annotation.visit("value", "/transformed");
+                                        annotation.visitEnd();
+                                        annotation = mv.visitAnnotation(
+                                                "L" + GET.class.getName().replace('.', '/') + ";", true);
+                                        annotation.visitEnd();
+
+                                        mv.visitLdcInsn("Transformed Endpoint");
+                                        mv.visitInsn(Opcodes.ARETURN);
+                                        mv.visitMaxs(1, 1);
+                                        mv.visitEnd();
+                                    }
+                                };
+                                return cv;
                             }
-                        };
-                        return cv;
-                    }
-                }));
+                        }));
             }
         }
     }

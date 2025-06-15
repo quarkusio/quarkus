@@ -131,8 +131,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             builderDelegate.providerFactory(localProviderFactory);
         }
         if (getBeanManager() != null) {
-            builderDelegate.getProviderFactory()
-                    .setInjectorFactory(new QuarkusInjectorFactory());
+            builderDelegate.getProviderFactory().setInjectorFactory(new QuarkusInjectorFactory());
         }
         configurationWrapper = new ConfigurationWrapper(builderDelegate.getConfiguration());
 
@@ -298,9 +297,8 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
 
                 resteasyClientBuilder.defaultProxy(userProxyHost, userProxyPort, userProxyScheme);
             } else {
-                selectHttpProxy().ifPresent(
-                        proxyAddress -> resteasyClientBuilder.defaultProxy(proxyAddress.getHostString(),
-                                proxyAddress.getPort()));
+                selectHttpProxy().ifPresent(proxyAddress -> resteasyClientBuilder
+                        .defaultProxy(proxyAddress.getHostString(), proxyAddress.getPort()));
             }
         }
 
@@ -343,9 +341,8 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
                 }
             }
             if (!registerEngine && useURLConnection()) {
-                resteasyClientBuilder
-                        .httpEngine(new URLConnectionClientEngineBuilder().resteasyClientBuilder(resteasyClientBuilder)
-                                .build());
+                resteasyClientBuilder.httpEngine(
+                        new URLConnectionClientEngineBuilder().resteasyClientBuilder(resteasyClientBuilder).build());
                 resteasyClientBuilder.sslContext(null);
                 resteasyClientBuilder.trustStore(null);
                 resteasyClientBuilder.keyStore(null, "");
@@ -363,18 +360,14 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             resteasyClientBuilder.register(new AsyncInvocationInterceptorThreadContext(invocationInterceptorFactories));
         }
 
-        client = resteasyClientBuilder
-                .build();
+        client = resteasyClientBuilder.build();
         ((MpClient) client).setQueryParamStyle(queryParamStyle);
         client.register(AsyncInterceptorRxInvokerProvider.class);
-        actualClient = client.target(baseURI)
-                .proxyBuilder(aClass)
-                .classloader(classLoader)
-                .defaultConsumes(MediaType.APPLICATION_JSON)
-                .defaultProduces(MediaType.APPLICATION_JSON).build();
+        actualClient = client.target(baseURI).proxyBuilder(aClass).classloader(classLoader)
+                .defaultConsumes(MediaType.APPLICATION_JSON).defaultProduces(MediaType.APPLICATION_JSON).build();
 
-        return aClass.cast(QuarkusProxyInvocationHandler
-                .createProxy(aClass, actualClient, true, getLocalProviderInstances(), client));
+        return aClass.cast(QuarkusProxyInvocationHandler.createProxy(aClass, actualClient, true,
+                getLocalProviderInstances(), client));
     }
 
     private void configureTrustAll(ResteasyClientBuilder clientBuilder) {
@@ -386,8 +379,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             clientBuilder.hostnameVerifier(new NoopHostnameVerifier());
             try {
                 SSLContext sslContext = SSLContext.getInstance("TLS");
-                sslContext.init(null, new TrustManager[] { new PassthroughTrustManager() },
-                        new SecureRandom());
+                sslContext.init(null, new TrustManager[] { new PassthroughTrustManager() }, new SecureRandom());
                 clientBuilder.sslContext(sslContext);
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
                 throw new RuntimeException("Failed to initialized SSL context", e);
@@ -418,14 +410,14 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
     }
 
     /**
-     * Determines whether or not to default to using the URLConnection instead of the Apache HTTP Client.
-     * If the {@code org.jboss.resteasy.microprofile.defaultToURLConnectionHttpClient} system property is {@code true},
-     * then this method returns {@code true}. In all other cases it returns {@code false}
+     * Determines whether or not to default to using the URLConnection instead of the Apache HTTP Client. If the
+     * {@code org.jboss.resteasy.microprofile.defaultToURLConnectionHttpClient} system property is {@code true}, then
+     * this method returns {@code true}. In all other cases it returns {@code false}
      */
     private boolean useURLConnection() {
         if (useURLConnection == null) {
-            String defaultToURLConnection = System.getProperty(
-                    "org.jboss.resteasy.microprofile.defaultToURLConnectionHttpClient", "false");
+            String defaultToURLConnection = System
+                    .getProperty("org.jboss.resteasy.microprofile.defaultToURLConnectionHttpClient", "false");
             useURLConnection = defaultToURLConnection.equalsIgnoreCase("true");
         }
         return useURLConnection;
@@ -433,10 +425,8 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
 
     private Optional<InetSocketAddress> selectHttpProxy() {
         return ProxySelector.getDefault().select(baseURI).stream()
-                .filter(proxy -> proxy.type() == java.net.Proxy.Type.HTTP)
-                .map(java.net.Proxy::address)
-                .map(InetSocketAddress.class::cast)
-                .findFirst();
+                .filter(proxy -> proxy.type() == java.net.Proxy.Type.HTTP).map(java.net.Proxy::address)
+                .map(InetSocketAddress.class::cast).findFirst();
     }
 
     private void checkQueryParamStyleProperty(Class<?> aClass) {
@@ -445,24 +435,21 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         if (queryParamStyle == null) {
             if (config != null) {
                 // property using fully-qualified class name takes precedence
-                Optional<String> prop = config.getOptionalValue(
-                        aClass.getName() + "/mp-rest/queryParamStyle", String.class);
+                Optional<String> prop = config.getOptionalValue(aClass.getName() + "/mp-rest/queryParamStyle",
+                        String.class);
                 if (prop.isPresent()) {
-                    queryParamStyle(QueryParamStyle.valueOf(
-                            prop.get().trim().toUpperCase()));
+                    queryParamStyle(QueryParamStyle.valueOf(prop.get().trim().toUpperCase()));
 
                 } else {
                     RegisterRestClient registerRestClient = aClass.getAnnotation(RegisterRestClient.class);
-                    if (registerRestClient != null &&
-                            registerRestClient.configKey() != null &&
-                            !registerRestClient.configKey().isEmpty()) {
+                    if (registerRestClient != null && registerRestClient.configKey() != null
+                            && !registerRestClient.configKey().isEmpty()) {
 
-                        //property using configKey
-                        prop = config.getOptionalValue(registerRestClient.configKey()
-                                + "/mp-rest/queryParamStyle", String.class);
+                        // property using configKey
+                        prop = config.getOptionalValue(registerRestClient.configKey() + "/mp-rest/queryParamStyle",
+                                String.class);
                         if (prop.isPresent()) {
-                            queryParamStyle(QueryParamStyle.valueOf(
-                                    prop.get().trim().toUpperCase()));
+                            queryParamStyle(QueryParamStyle.valueOf(prop.get().trim().toUpperCase()));
                         }
                     }
                 }
@@ -479,21 +466,20 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
         if (!followRedirect) {
             if (config != null) {
                 // property using fully-qualified class name takes precedence
-                Optional<Boolean> prop = config.getOptionalValue(
-                        aClass.getName() + "/mp-rest/followRedirects", Boolean.class);
+                Optional<Boolean> prop = config.getOptionalValue(aClass.getName() + "/mp-rest/followRedirects",
+                        Boolean.class);
                 if (prop.isPresent()) {
                     if (prop.get() != followRedirect) {
                         followRedirects(prop.get());
                     }
                 } else {
                     RegisterRestClient registerRestClient = aClass.getAnnotation(RegisterRestClient.class);
-                    if (registerRestClient != null &&
-                            registerRestClient.configKey() != null &&
-                            !registerRestClient.configKey().isEmpty()) {
+                    if (registerRestClient != null && registerRestClient.configKey() != null
+                            && !registerRestClient.configKey().isEmpty()) {
 
-                        //property using configKey
-                        prop = config.getOptionalValue(
-                                registerRestClient.configKey() + "/mp-rest/followRedirects", Boolean.class);
+                        // property using configKey
+                        prop = config.getOptionalValue(registerRestClient.configKey() + "/mp-rest/followRedirects",
+                                Boolean.class);
                         if (prop.isPresent()) {
                             if (prop.get() != followRedirect) {
                                 followRedirects(prop.get());
@@ -623,8 +609,8 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
                 } else if (p.isAnnotationPresent(org.jboss.resteasy.annotations.jaxrs.PathParam.class)) {
                     org.jboss.resteasy.annotations.jaxrs.PathParam rePathParam = p
                             .getAnnotation(org.jboss.resteasy.annotations.jaxrs.PathParam.class);
-                    String name = rePathParam.value() == null || rePathParam.value()
-                            .length() == 0 ? p.getName() : rePathParam.value();
+                    String name = rePathParam.value() == null || rePathParam.value().length() == 0 ? p.getName()
+                            : rePathParam.value();
                     paramMap.put(name, "foobar");
                 } else if (p.isAnnotationPresent(BeanParam.class)) {
                     verifyBeanPathParam(p.getType(), paramMap);
@@ -657,11 +643,11 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             // Makes it possible to configure some of the ResteasyClientBuilder delegate properties
             String builderMethodName = name.substring(RESTEASY_PROPERTY_PREFIX.length());
             Method builderMethod = Arrays.stream(ResteasyClientBuilder.class.getMethods())
-                    .filter(m -> builderMethodName.equals(m.getName()) && m.getParameterCount() >= 1)
-                    .findFirst()
+                    .filter(m -> builderMethodName.equals(m.getName()) && m.getParameterCount() >= 1).findFirst()
                     .orElse(null);
             if (builderMethod == null) {
-                throw new IllegalArgumentException("ResteasyClientBuilder setter method not found: " + builderMethodName);
+                throw new IllegalArgumentException(
+                        "ResteasyClientBuilder setter method not found: " + builderMethodName);
             }
             Object[] arguments;
             if (builderMethod.getParameterCount() > 1) {
@@ -678,7 +664,8 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
             try {
                 builderMethod.invoke(builderDelegate, arguments);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                throw new IllegalStateException("Unable to invoke ResteasyClientBuilder method: " + builderMethodName, e);
+                throw new IllegalStateException("Unable to invoke ResteasyClientBuilder method: " + builderMethodName,
+                        e);
             }
         }
         builderDelegate.property(name, value);
@@ -833,8 +820,7 @@ public class QuarkusRestClientBuilder implements RestClientBuilder {
     private static Method[] resolveMethods(final Class<?> type) {
         // If the type extends Closeable or AutoCloseable, we need to filter out their methods
         if (AutoCloseable.class.isAssignableFrom(type)) {
-            return Stream.of(type.getMethods())
-                    .filter(method -> !IGNORED_METHODS.contains(method))
+            return Stream.of(type.getMethods()).filter(method -> !IGNORED_METHODS.contains(method))
                     .toArray(Method[]::new);
         }
         return type.getMethods();

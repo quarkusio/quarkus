@@ -14,16 +14,13 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class SecondPrometheusTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.export.prometheus.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
-            .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClass(PrometheusRegistryProcessor.REGISTRY_CLASS)
-                    .addClass(SecondPrometheusProvider.class));
+            .overrideConfigKey("quarkus.redis.devservices.enabled", "false").withApplicationRoot((jar) -> jar
+                    .addClass(PrometheusRegistryProcessor.REGISTRY_CLASS).addClass(SecondPrometheusProvider.class));
 
     @Inject
     MeterRegistry registry;

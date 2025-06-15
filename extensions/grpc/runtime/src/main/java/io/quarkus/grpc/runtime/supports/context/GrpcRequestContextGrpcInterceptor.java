@@ -30,8 +30,7 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
     }
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call,
-            Metadata headers,
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
 
         // This interceptor is called just after the duplicated context interceptor, so, we should be on the event loop.
@@ -46,7 +45,8 @@ public class GrpcRequestContextGrpcInterceptor implements ServerInterceptor, Pri
                 log.warn("Request context already active when gRPC request started");
             }
 
-            // a gRPC service can return a StreamObserver<Messages.StreamingInputCallRequest> and instead of doing the work
+            // a gRPC service can return a StreamObserver<Messages.StreamingInputCallRequest> and instead of doing the
+            // work
             // directly in the method body, do stuff that requires a request context in StreamObserver's methods
             // let's propagate the request context to these methods:
             try {

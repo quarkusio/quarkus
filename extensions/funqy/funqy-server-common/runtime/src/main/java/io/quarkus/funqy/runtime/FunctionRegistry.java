@@ -19,8 +19,9 @@ public class FunctionRegistry {
         if (fi != null) {
             String otherMethodDescription = fi.targetClass.getName() + "/" + fi.method.getName()
                     + getMethodDescriptor(fi.method);
-            String msg = String.format("Name conflict: the name \"%s\" is shared by \"%s\" and \"%s\"." +
-                    " Consider using @Func(\"name-here\") annotation parameter to distinguish them.",
+            String msg = String.format(
+                    "Name conflict: the name \"%s\" is shared by \"%s\" and \"%s\"."
+                            + " Consider using @Func(\"name-here\") annotation parameter to distinguish them.",
                     functionName, methodDescription, otherMethodDescription);
             log.warn(msg);
         }

@@ -17,8 +17,10 @@ public class ConverterTestCase {
     @Test
     public void testSocketAddress() {
         final InetSocketAddressConverter converter = new InetSocketAddressConverter();
-        assertEquals(new InetSocketAddress(Inet.parseInet4Address("127.0.0.1"), 1234), converter.convert("127.0.0.1:1234"));
-        assertEquals(new InetSocketAddress(Inet.parseInet4Address("127.0.0.1"), 1234), converter.convert("[127.0.0.1]:1234"));
+        assertEquals(new InetSocketAddress(Inet.parseInet4Address("127.0.0.1"), 1234),
+                converter.convert("127.0.0.1:1234"));
+        assertEquals(new InetSocketAddress(Inet.parseInet4Address("127.0.0.1"), 1234),
+                converter.convert("[127.0.0.1]:1234"));
         assertEquals(new InetSocketAddress(Inet.parseInet6Address("::"), 1234), converter.convert("[::]:1234"));
         assertEquals(new InetSocketAddress(Inet.parseInet6Address("::"), 1234), converter.convert("[[::]]:1234"));
         assertEquals(InetSocketAddress.createUnresolved("some-host-name.foo", 1234),
@@ -53,6 +55,7 @@ public class ConverterTestCase {
     public void testCidrAddress() {
         final CidrAddressConverter converter = new CidrAddressConverter();
         assertEquals(CidrAddress.create(Inet.getInet4Address(10, 20, 0, 0), 16), converter.convert("10.20.0.0/16"));
-        assertEquals(CidrAddress.create(Inet.parseInet6Address("::ffee:ddcc"), 52), converter.convert("::ffee:ddcc/52"));
+        assertEquals(CidrAddress.create(Inet.parseInet6Address("::ffee:ddcc"), 52),
+                converter.convert("::ffee:ddcc/52"));
     }
 }

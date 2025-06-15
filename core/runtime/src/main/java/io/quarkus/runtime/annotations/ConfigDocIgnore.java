@@ -8,8 +8,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 /**
- * A marker indicating that the configuration method should be ignored
- * when generating documentation.
+ * A marker indicating that the configuration method should be ignored when generating documentation.
  */
 @Documented
 @Retention(RUNTIME)

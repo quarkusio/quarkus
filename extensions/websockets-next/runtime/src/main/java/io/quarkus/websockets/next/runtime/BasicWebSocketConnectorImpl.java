@@ -148,9 +148,8 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
 
         URI serverEndpointUri;
         try {
-            serverEndpointUri = new URI(baseUri.getScheme(), baseUri.getUserInfo(), baseUri.getHost(), baseUri.getPort(),
-                    mergedPath,
-                    baseUri.getQuery(), baseUri.getFragment());
+            serverEndpointUri = new URI(baseUri.getScheme(), baseUri.getUserInfo(), baseUri.getHost(),
+                    baseUri.getPort(), mergedPath, baseUri.getQuery(), baseUri.getFragment());
         } catch (URISyntaxException e) {
             throw new WebSocketClientException(e);
         }
@@ -187,16 +186,8 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             WebSocket ws = wsOpen.websocket();
             String clientId = BasicWebSocketConnector.class.getName();
             TrafficLogger trafficLogger = TrafficLogger.forClient(config);
-            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId,
-                    ws,
-                    codecs,
-                    pathParams,
-                    serverEndpointUri,
-                    headers,
-                    trafficLogger,
-                    userData,
-                    null,
-                    wsOpen.cleanup());
+            WebSocketClientConnectionImpl connection = new WebSocketClientConnectionImpl(clientId, ws, codecs,
+                    pathParams, serverEndpointUri, headers, trafficLogger, userData, null, wsOpen.cleanup());
             if (trafficLogger != null) {
                 trafficLogger.connectionOpened(connection);
             }

@@ -25,8 +25,7 @@ public class FlywayExtensionConfigActiveFalseNamedDataSourceDynamicInjectionTest
             // We need this otherwise the *default* datasource may impact this test
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.username", "sa")
-            .overrideConfigKey("quarkus.datasource.password", "sa")
-            .overrideConfigKey("quarkus.datasource.jdbc.url",
+            .overrideConfigKey("quarkus.datasource.password", "sa").overrideConfigKey("quarkus.datasource.jdbc.url",
                     "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1");
 
     @Inject
@@ -36,13 +35,11 @@ public class FlywayExtensionConfigActiveFalseNamedDataSourceDynamicInjectionTest
     @Test
     @DisplayName("If a named datasource is deactivated, the application should boot, but Flyway should be deactivated for that datasource")
     public void testBootSucceedsButFlywayDeactivated() {
-        assertThatThrownBy(flyway::get)
-                .isInstanceOf(InactiveBeanException.class)
-                .hasMessageContainingAll(
-                        "Flyway for datasource 'users' was deactivated automatically because this datasource was deactivated.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
-                        "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".active'"
-                                + " to 'true' and configure datasource 'users'",
-                        "Refer to https://quarkus.io/guides/datasource for guidance.");
+        assertThatThrownBy(flyway::get).isInstanceOf(InactiveBeanException.class).hasMessageContainingAll(
+                "Flyway for datasource 'users' was deactivated automatically because this datasource was deactivated.",
+                "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".active'"
+                        + " to 'true' and configure datasource 'users'",
+                "Refer to https://quarkus.io/guides/datasource for guidance.");
     }
 }

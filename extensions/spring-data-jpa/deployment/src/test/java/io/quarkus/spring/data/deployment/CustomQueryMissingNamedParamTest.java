@@ -17,13 +17,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class CustomQueryMissingNamedParamTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("import_books.sql", "import.sql")
-                    .addClasses(Book.class, BookRepositoryNamedParameterWrongName.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addAsResource("import_books.sql", "import.sql")
+                            .addClasses(Book.class, BookRepositoryNamedParameterWrongName.class))
             .withConfigurationResource("application.properties")
-            .assertException(e -> assertThat(e).isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("BookRepositoryNamedParameterWrongName is missing the named parameters [name], "
+            .assertException(e -> assertThat(e).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(
+                    "BookRepositoryNamedParameterWrongName is missing the named parameters [name], "
                             + "provided are [wrong]"));
 
     @Test

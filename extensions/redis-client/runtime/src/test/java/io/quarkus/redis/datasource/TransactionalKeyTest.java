@@ -60,10 +60,8 @@ public class TransactionalKeyTest extends DatasourceTestBase {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalKeyCommands<String> keys = tx.key(String.class);
             ReactiveTransactionalHashCommands<String, String, String> hash = tx.hash(String.class);
-            return hash.hset("k1", Map.of("1", "a", "2", "b", "3", "c"))
-                    .chain(() -> hash.hset("k2", "4", "d"))
-                    .chain(() -> keys.type("k1"))
-                    .chain(() -> keys.expire("k2", Duration.ofSeconds(10)))
+            return hash.hset("k1", Map.of("1", "a", "2", "b", "3", "c")).chain(() -> hash.hset("k2", "4", "d"))
+                    .chain(() -> keys.type("k1")).chain(() -> keys.expire("k2", Duration.ofSeconds(10)))
                     .chain(() -> keys.del("k1"));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(5);

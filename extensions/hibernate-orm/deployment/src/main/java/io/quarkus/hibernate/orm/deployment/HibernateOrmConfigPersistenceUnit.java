@@ -85,11 +85,10 @@ public interface HibernateOrmConfigPersistenceUnit {
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> sqlLoadScript();
 
     /**
-     * The size of the batches used when loading entities and collections.
-     *
-     * `-1` means batch loading is disabled.
+     * The size of the batches used when loading entities and collections. `-1` means batch loading is disabled.
      *
      * @deprecated {@link #fetch} should be used to configure fetching properties.
+     *
      * @asciidoclet
      */
     @ConfigDocDefault("16")
@@ -97,43 +96,35 @@ public interface HibernateOrmConfigPersistenceUnit {
     OptionalInt batchFetchSize();
 
     /**
-     * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
-     *
-     * A `0` disables default outer join fetching.
+     * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one). A `0`
+     * disables default outer join fetching.
      *
      * @deprecated {@link #fetch} should be used to configure fetching properties.
+     *
      * @asciidoclet
      */
     @Deprecated
     OptionalInt maxFetchDepth();
 
     /**
-     * Pluggable strategy contract for applying physical naming rules for database object names.
-     *
-     * Class name of the Hibernate PhysicalNamingStrategy implementation
+     * Pluggable strategy contract for applying physical naming rules for database object names. Class name of the
+     * Hibernate PhysicalNamingStrategy implementation
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> physicalNamingStrategy();
 
     /**
-     * Pluggable strategy for applying implicit naming rules when an explicit name is not given.
-     *
-     * Class name of the Hibernate ImplicitNamingStrategy implementation
+     * Pluggable strategy for applying implicit naming rules when an explicit name is not given. Class name of the
+     * Hibernate ImplicitNamingStrategy implementation
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> implicitNamingStrategy();
 
     /**
      * Class name of a custom
      * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/boot/spi/MetadataBuilderContributor.html[`org.hibernate.boot.spi.MetadataBuilderContributor`]
-     * implementation.
-     *
-     * [NOTE]
-     * ====
-     * Not all customization options exposed by
+     * implementation. [NOTE] ==== Not all customization options exposed by
      * https://docs.jboss.org/hibernate/stable/orm/javadocs/org/hibernate/boot/MetadataBuilder.html[`org.hibernate.boot.MetadataBuilder`]
-     * will work correctly. Stay clear of options related to classpath scanning in particular.
-     *
-     * This setting is exposed mainly to allow registration of types, converters and SQL functions.
-     * ====
+     * will work correctly. Stay clear of options related to classpath scanning in particular. This setting is exposed
+     * mainly to allow registration of types, converters and SQL functions. ====
      *
      * @asciidoclet
      */
@@ -142,8 +133,7 @@ public interface HibernateOrmConfigPersistenceUnit {
     /**
      * XML files to configure the entity mapping, e.g. {@code META-INF/my-orm.xml}.
      * <p>
-     * Defaults to `META-INF/orm.xml` if it exists.
-     * Pass `no-file` to force Hibernate ORM to ignore `META-INF/orm.xml`.
+     * Defaults to `META-INF/orm.xml` if it exists. Pass `no-file` to force Hibernate ORM to ignore `META-INF/orm.xml`.
      */
     @ConfigDocDefault("META-INF/orm.xml if it exists; no-file otherwise")
     Optional<Set<@WithConverter(TrimmedStringConverter.class) String>> mappingFiles();
@@ -196,8 +186,8 @@ public interface HibernateOrmConfigPersistenceUnit {
     HibernateOrmConfigPersistenceUnitQuoteIdentifiers quoteIdentifiers();
 
     /**
-     * The default in Quarkus is for 2nd level caching to be enabled,
-     * and a good implementation is already integrated for you.
+     * The default in Quarkus is for 2nd level caching to be enabled, and a good implementation is already integrated
+     * for you.
      * <p>
      * Just cherry-pick which entities should be using the cache.
      * <p>
@@ -212,18 +202,18 @@ public interface HibernateOrmConfigPersistenceUnit {
     HibernateOrmConfigPersistenceValidation validation();
 
     /**
-     * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available in the
-     * https://javadoc.io/doc/org.hibernate/hibernate-core/5.6.10.Final/org/hibernate/MultiTenancyStrategy.html[Hibernate ORM
-     * JavaDoc].
-     * The type DISCRIMINATOR is currently not supported. The default value is NONE (no multi-tenancy).
+     * Defines the method for multi-tenancy (DATABASE, NONE, SCHEMA). The complete list of allowed values is available
+     * in the
+     * https://javadoc.io/doc/org.hibernate/hibernate-core/5.6.10.Final/org/hibernate/MultiTenancyStrategy.html[Hibernate
+     * ORM JavaDoc]. The type DISCRIMINATOR is currently not supported. The default value is NONE (no multi-tenancy).
      *
      * @asciidoclet
      */
     Optional<@WithConverter(TrimmedStringConverter.class) String> multitenant();
 
     /**
-     * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will be used
-     * if not set.
+     * Defines the name of the datasource to use in case of SCHEMA approach. The datasource of the persistence unit will
+     * be used if not set.
      *
      * @deprecated Use {@link #datasource()} instead.
      */
@@ -231,9 +221,8 @@ public interface HibernateOrmConfigPersistenceUnit {
     Optional<@WithConverter(TrimmedStringConverter.class) String> multitenantSchemaDatasource();
 
     /**
-     * If hibernate is not auto generating the schema, and Quarkus is running in development mode
-     * then Quarkus will attempt to validate the database after startup and print a log message if
-     * there are any problems.
+     * If hibernate is not auto generating the schema, and Quarkus is running in development mode then Quarkus will
+     * attempt to validate the database after startup and print a log message if there are any problems.
      */
     @WithDefault("true")
     boolean validateInDevMode();
@@ -243,54 +232,31 @@ public interface HibernateOrmConfigPersistenceUnit {
     Map<String, String> unsupportedProperties();
 
     default boolean isAnyPropertySet() {
-        return datasource().isPresent() ||
-                packages().isPresent() ||
-                dialect().isAnyPropertySet() ||
-                sqlLoadScript().isPresent() ||
-                batchFetchSize().isPresent() ||
-                maxFetchDepth().isPresent() ||
-                physicalNamingStrategy().isPresent() ||
-                implicitNamingStrategy().isPresent() ||
-                metadataBuilderContributor().isPresent() ||
-                mapping().isAnyPropertySet() ||
-                query().isAnyPropertySet() ||
-                database().isAnyPropertySet() ||
-                jdbc().isAnyPropertySet() ||
-                !cache().isEmpty() ||
-                !secondLevelCachingEnabled() ||
-                multitenant().isPresent() ||
-                multitenantSchemaDatasource().isPresent() ||
-                fetch().isAnyPropertySet() ||
-                discriminator().isAnyPropertySet() ||
-                quoteIdentifiers().isAnyPropertySet() ||
-                !unsupportedProperties().isEmpty();
+        return datasource().isPresent() || packages().isPresent() || dialect().isAnyPropertySet()
+                || sqlLoadScript().isPresent() || batchFetchSize().isPresent() || maxFetchDepth().isPresent()
+                || physicalNamingStrategy().isPresent() || implicitNamingStrategy().isPresent()
+                || metadataBuilderContributor().isPresent() || mapping().isAnyPropertySet()
+                || query().isAnyPropertySet() || database().isAnyPropertySet() || jdbc().isAnyPropertySet()
+                || !cache().isEmpty() || !secondLevelCachingEnabled() || multitenant().isPresent()
+                || multitenantSchemaDatasource().isPresent() || fetch().isAnyPropertySet()
+                || discriminator().isAnyPropertySet() || quoteIdentifiers().isAnyPropertySet()
+                || !unsupportedProperties().isEmpty();
     }
 
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitDialect {
 
         /**
-         * Name of the Hibernate ORM dialect.
-         *
-         * For xref:datasource.adoc#extensions-and-database-drivers-reference[supported databases],
-         * this property does not need to be set explicitly:
-         * it is selected automatically based on the datasource,
-         * and configured using the xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-version[DB version set on the
-         * datasource]
-         * to benefit from the best performance and latest features.
-         *
-         * If your database does not have a corresponding Quarkus extension,
-         * you *will* need to set this property explicitly.
-         * In that case, keep in mind that the JDBC driver and Hibernate ORM dialect
-         * may not work properly in GraalVM native executables.
-         *
-         * For built-in dialects, the expected value is one of the names
-         * in the link:{hibernate-orm-dialect-docs-url}[official list of dialects],
-         * *without* the `Dialect` suffix,
-         * for example `Cockroach` for `CockroachDialect`.
-         *
-         * For third-party dialects, the expected value is the fully-qualified class name,
-         * for example `com.acme.hibernate.AcmeDbDialect`.
+         * Name of the Hibernate ORM dialect. For
+         * xref:datasource.adoc#extensions-and-database-drivers-reference[supported databases], this property does not
+         * need to be set explicitly: it is selected automatically based on the datasource, and configured using the
+         * xref:datasource.adoc#quarkus-datasource_quarkus.datasource.db-version[DB version set on the datasource] to
+         * benefit from the best performance and latest features. If your database does not have a corresponding Quarkus
+         * extension, you *will* need to set this property explicitly. In that case, keep in mind that the JDBC driver
+         * and Hibernate ORM dialect may not work properly in GraalVM native executables. For built-in dialects, the
+         * expected value is one of the names in the link:{hibernate-orm-dialect-docs-url}[official list of dialects],
+         * *without* the `Dialect` suffix, for example `Cockroach` for `CockroachDialect`. For third-party dialects, the
+         * expected value is the fully-qualified class name, for example `com.acme.hibernate.AcmeDbDialect`.
          *
          * @asciidoclet
          */
@@ -299,9 +265,8 @@ public interface HibernateOrmConfigPersistenceUnit {
         Optional<@WithConverter(TrimmedStringConverter.class) String> dialect();
 
         /**
-         * The storage engine to use when the dialect supports multiple storage engines.
-         *
-         * E.g. `MyISAM` or `InnoDB` for MySQL.
+         * The storage engine to use when the dialect supports multiple storage engines. E.g. `MyISAM` or `InnoDB` for
+         * MySQL.
          *
          * @asciidoclet
          */
@@ -330,41 +295,21 @@ public interface HibernateOrmConfigPersistenceUnit {
         @ConfigGroup
         interface Timezone {
             /**
-             * How to store timezones in the database by default
-             * for properties of type `OffsetDateTime` and `ZonedDateTime`.
-             *
-             * This default may be overridden on a per-property basis using `@TimeZoneStorage`.
-             *
-             * NOTE: Properties of type `OffsetTime` are https://hibernate.atlassian.net/browse/HHH-16287[not affected by this
-             * setting].
-             *
-             * `default`::
-             * Equivalent to `native` if supported, `normalize-utc` otherwise.
-             * `auto`::
-             * Equivalent to `native` if supported, `column` otherwise.
-             * `native`::
-             * Stores the timestamp and timezone in a column of type `timestamp with time zone`.
-             * +
-             * Only available on some databases/dialects;
-             * if not supported, an exception will be thrown during static initialization.
-             * `column`::
-             * Stores the timezone in a separate column next to the timestamp column.
-             * +
-             * Use `@TimeZoneColumn` on the relevant entity property to customize the timezone column.
-             * `normalize-utc`::
-             * Does not store the timezone, and loses timezone information upon persisting.
-             * +
-             * Instead, normalizes the value to a timestamp in the UTC timezone.
-             * `normalize`::
-             * Does not store the timezone, and loses timezone information upon persisting.
-             * +
-             * Instead, normalizes the value:
-             * * upon persisting to the database, to a timestamp in the JDBC timezone
-             * set through `quarkus.hibernate-orm.jdbc.timezone`,
-             * or the JVM default timezone if not set.
-             * * upon reading back from the database, to the JVM default timezone.
-             * +
-             * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+             * How to store timezones in the database by default for properties of type `OffsetDateTime` and
+             * `ZonedDateTime`. This default may be overridden on a per-property basis using `@TimeZoneStorage`. NOTE:
+             * Properties of type `OffsetTime` are https://hibernate.atlassian.net/browse/HHH-16287[not affected by this
+             * setting]. `default`:: Equivalent to `native` if supported, `normalize-utc` otherwise. `auto`:: Equivalent
+             * to `native` if supported, `column` otherwise. `native`:: Stores the timestamp and timezone in a column of
+             * type `timestamp with time zone`. + Only available on some databases/dialects; if not supported, an
+             * exception will be thrown during static initialization. `column`:: Stores the timezone in a separate
+             * column next to the timestamp column. + Use `@TimeZoneColumn` on the relevant entity property to customize
+             * the timezone column. `normalize-utc`:: Does not store the timezone, and loses timezone information upon
+             * persisting. + Instead, normalizes the value to a timestamp in the UTC timezone. `normalize`:: Does not
+             * store the timezone, and loses timezone information upon persisting. + Instead, normalizes the value: *
+             * upon persisting to the database, to a timestamp in the JDBC timezone set through
+             * `quarkus.hibernate-orm.jdbc.timezone`, or the JVM default timezone if not set. * upon reading back from
+             * the database, to the JVM default timezone. + Use this to get the legacy behavior of Quarkus 2 / Hibernate
+             * ORM 5 or older.
              *
              * @asciidoclet
              */
@@ -383,15 +328,11 @@ public interface HibernateOrmConfigPersistenceUnit {
             @ConfigGroup
             interface Optimizer {
                 /**
-                 * The optimizer to apply to identifier generators
-                 * whose optimizer is not configured explicitly.
-                 *
-                 * Only relevant for table- and sequence-based identifier generators.
-                 * Other generators, such as UUID-based generators, will ignore this setting.
-                 *
-                 * The optimizer is responsible for pooling new identifier values,
-                 * in order to reduce the frequency of database calls to retrieve those values
-                 * and thereby improve performance.
+                 * The optimizer to apply to identifier generators whose optimizer is not configured explicitly. Only
+                 * relevant for table- and sequence-based identifier generators. Other generators, such as UUID-based
+                 * generators, will ignore this setting. The optimizer is responsible for pooling new identifier values,
+                 * in order to reduce the frequency of database calls to retrieve those values and thereby improve
+                 * performance.
                  *
                  * @asciidoclet
                  */
@@ -407,39 +348,32 @@ public interface HibernateOrmConfigPersistenceUnit {
         }
 
         default boolean isAnyPropertySet() {
-            return timezone().timeZoneDefaultStorage().isPresent()
-                    || id().optimizer().idOptimizerDefault().isPresent();
+            return timezone().timeZoneDefaultStorage().isPresent() || id().optimizer().idOptimizerDefault().isPresent();
         }
 
     }
 
     enum IdOptimizerType {
         /**
-         * Assumes the value retrieved from the table/sequence is the lower end of the pool.
-         *
-         * Upon retrieving value `N`, the new pool of identifiers will go from `N` to `N + <allocation size> - 1`, inclusive.
+         * Assumes the value retrieved from the table/sequence is the lower end of the pool. Upon retrieving value `N`,
+         * the new pool of identifiers will go from `N` to `N + <allocation size> - 1`, inclusive.
          *
          * @asciidoclet
          */
         POOLED_LO(StandardOptimizerDescriptor.POOLED_LO),
         /**
-         * Assumes the value retrieved from the table/sequence is the higher end of the pool.
-         *
-         * Upon retrieving value `N`, the new pool of identifiers will go from `N - <allocation size>` to `N + <allocation size>
-         * - 1`, inclusive.
-         *
-         * The first value, `1`, is handled differently to avoid negative identifiers.
-         *
-         * Use this to get the legacy behavior of Quarkus 2 / Hibernate ORM 5 or older.
+         * Assumes the value retrieved from the table/sequence is the higher end of the pool. Upon retrieving value `N`,
+         * the new pool of identifiers will go from `N - <allocation size>` to `N + <allocation size> - 1`, inclusive.
+         * The first value, `1`, is handled differently to avoid negative identifiers. Use this to get the legacy
+         * behavior of Quarkus 2 / Hibernate ORM 5 or older.
          *
          * @asciidoclet
          */
         POOLED(StandardOptimizerDescriptor.POOLED),
         /**
-         * No optimizer, resulting in a database call each and every time an identifier value is needed from the generator.
-         *
-         * Not recommended in production environments:
-         * may result in degraded performance and/or frequent gaps in identifier values.
+         * No optimizer, resulting in a database call each and every time an identifier value is needed from the
+         * generator. Not recommended in production environments: may result in degraded performance and/or frequent
+         * gaps in identifier values.
          *
          * @asciidoclet
          */
@@ -464,16 +398,14 @@ public interface HibernateOrmConfigPersistenceUnit {
         }
 
         /**
-         * The maximum size of the query plan cache.
-         * see #{@value org.hibernate.cfg.AvailableSettings#QUERY_PLAN_CACHE_MAX_SIZE}
+         * The maximum size of the query plan cache. see
+         * #{@value org.hibernate.cfg.AvailableSettings#QUERY_PLAN_CACHE_MAX_SIZE}
          */
         @WithDefault("2048")
         int queryPlanCacheMaxSize();
 
         /**
-         * Default precedence of null values in `ORDER BY` clauses.
-         *
-         * Valid values are: `none`, `first`, `last`.
+         * Default precedence of null values in `ORDER BY` clauses. Valid values are: `none`, `first`, `last`.
          *
          * @asciidoclet
          */
@@ -487,12 +419,10 @@ public interface HibernateOrmConfigPersistenceUnit {
         boolean inClauseParameterPadding();
 
         /**
-         * When limits cannot be applied on the database side,
-         * trigger an exception instead of attempting badly-performing in-memory result set limits.
-         *
-         * When pagination is used in combination with a fetch join applied to a collection or many-valued association,
-         * the limit must be applied in-memory instead of on the database.
-         * This should be avoided as it typically has terrible performance characteristics.
+         * When limits cannot be applied on the database side, trigger an exception instead of attempting
+         * badly-performing in-memory result set limits. When pagination is used in combination with a fetch join
+         * applied to a collection or many-valued association, the limit must be applied in-memory instead of on the
+         * database. This should be avoided as it typically has terrible performance characteristics.
          *
          * @asciidoclet
          */
@@ -501,8 +431,7 @@ public interface HibernateOrmConfigPersistenceUnit {
 
         default boolean isAnyPropertySet() {
             return queryPlanCacheMaxSize() != DEFAULT_QUERY_PLAN_CACHE_MAX_SIZE
-                    || defaultNullOrdering() != NullOrdering.NONE
-                    || !inClauseParameterPadding();
+                    || defaultNullOrdering() != NullOrdering.NONE || !inClauseParameterPadding();
         }
     }
 
@@ -529,8 +458,7 @@ public interface HibernateOrmConfigPersistenceUnit {
         boolean globallyQuotedIdentifiers();
 
         default boolean isAnyPropertySet() {
-            return !DEFAULT_CHARSET.equals(charset().name())
-                    || globallyQuotedIdentifiers();
+            return !DEFAULT_CHARSET.equals(charset().name()) || globallyQuotedIdentifiers();
         }
     }
 
@@ -538,9 +466,7 @@ public interface HibernateOrmConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitJdbc {
 
         /**
-         * The time zone pushed to the JDBC driver.
-         *
-         * See `quarkus.hibernate-orm.mapping.timezone.default-storage`.
+         * The time zone pushed to the JDBC driver. See `quarkus.hibernate-orm.mapping.timezone.default-storage`.
          */
         Optional<@WithConverter(TrimmedStringConverter.class) String> timezone();
 
@@ -550,7 +476,8 @@ public interface HibernateOrmConfigPersistenceUnit {
         OptionalInt statementFetchSize();
 
         /**
-         * The number of updates (inserts, updates and deletes) that are sent by the JDBC driver at one time for execution.
+         * The number of updates (inserts, updates and deletes) that are sent by the JDBC driver at one time for
+         * execution.
          */
         OptionalInt statementBatchSize();
 
@@ -591,9 +518,7 @@ public interface HibernateOrmConfigPersistenceUnit {
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitFetch {
         /**
-         * The size of the batches used when loading entities and collections.
-         *
-         * `-1` means batch loading is disabled.
+         * The size of the batches used when loading entities and collections. `-1` means batch loading is disabled.
          *
          * @asciidoclet
          */
@@ -601,9 +526,8 @@ public interface HibernateOrmConfigPersistenceUnit {
         OptionalInt batchSize();
 
         /**
-         * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one).
-         *
-         * A `0` disables default outer join fetching.
+         * The maximum depth of outer join fetch tree for single-ended associations (one-to-one, many-to-one). A `0`
+         * disables default outer join fetching.
          *
          * @asciidoclet
          */
@@ -621,12 +545,10 @@ public interface HibernateOrmConfigPersistenceUnit {
         /**
          * Identifiers can be quoted using one of the available strategies.
          * <p>
-         * Set to {@code none} by default, meaning no identifiers will be quoted. If set to {@code all}, all identifiers and
-         * column
-         * definitions will be quoted. Additionally, setting it to {@code all-except-column-definitions} will skip the column
-         * definitions, which can usually be required when they exist, or else use the option {@code only-keywords} to quote
-         * only
-         * identifiers deemed SQL keywords by the Hibernate ORM dialect.
+         * Set to {@code none} by default, meaning no identifiers will be quoted. If set to {@code all}, all identifiers
+         * and column definitions will be quoted. Additionally, setting it to {@code all-except-column-definitions} will
+         * skip the column definitions, which can usually be required when they exist, or else use the option
+         * {@code only-keywords} to quote only identifiers deemed SQL keywords by the Hibernate ORM dialect.
          */
         @WithDefault("none")
         IdentifierQuotingStrategy strategy();
@@ -637,16 +559,15 @@ public interface HibernateOrmConfigPersistenceUnit {
     }
 
     /**
-     * Discriminator configuration.
-     *
-     * Separated in a group configuration, in case it is necessary to add the another existing hibernate discriminator property.
+     * Discriminator configuration. Separated in a group configuration, in case it is necessary to add the another
+     * existing hibernate discriminator property.
      */
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitDiscriminator {
         /**
-         * Existing applications rely (implicitly or explicitly) on Hibernate ignoring any DiscriminatorColumn declarations on
-         * joined inheritance hierarchies. This setting allows these applications to maintain the legacy behavior of
-         * DiscriminatorColumn annotations being ignored when paired with joined inheritance.
+         * Existing applications rely (implicitly or explicitly) on Hibernate ignoring any DiscriminatorColumn
+         * declarations on joined inheritance hierarchies. This setting allows these applications to maintain the legacy
+         * behavior of DiscriminatorColumn annotations being ignored when paired with joined inheritance.
          */
         @WithDefault("false")
         boolean ignoreExplicitForJoined();

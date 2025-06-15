@@ -40,7 +40,8 @@ public class Sub {
             @OnTextMessage
             Uni<String> echo(String msg) {
                 assertTrue(Context.isOnEventLoopThread());
-                return Uni.createFrom().item(connection.pathParam("id") + ":" + connection.pathParam("name") + ":" + msg);
+                return Uni.createFrom()
+                        .item(connection.pathParam("id") + ":" + connection.pathParam("name") + ":" + msg);
             }
 
         }

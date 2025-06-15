@@ -21,16 +21,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PreExistingGetterTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PreExistingGetterEntity.class));
+            .withApplicationRoot((jar) -> jar.addClasses(PreExistingGetterEntity.class));
 
     @Test
     void testDeserialization() throws IOException {
         var objectMapper = new ObjectMapper()
                 // This module is necessary to reproduce the bug.
                 .registerModule(new JakartaXmlBindAnnotationModule());
-        PreExistingGetterEntity read = objectMapper.reader()
-                .readValue("{\"field\": \"foo\"}", PreExistingGetterEntity.class);
+        PreExistingGetterEntity read = objectMapper.reader().readValue("{\"field\": \"foo\"}",
+                PreExistingGetterEntity.class);
         assertThat(read).isNotNull();
         assertThat(read.getField()).isEqualTo("foo");
     }

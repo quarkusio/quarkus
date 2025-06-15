@@ -23,57 +23,25 @@ public class MavenProjectCreateForPlatformTest extends RegistryClientBuilderTest
 
     @BeforeAll
     static void configureRegistryAndMavenRepo() {
-        TestRegistryClientBuilder.newInstance()
-                .baseDir(registryConfigDir())
-                .persistPlatformDescriptorsAsMavenArtifacts()
-                .newRegistry("registry.acme.com")
-                .newPlatform("com.acme.quarkus.platform")
-                .newStream("9.0")
-                .newRelease("9.0.0")
-                .quarkusVersion("9.0.0.acme-1")
-                .upstreamQuarkusVersion("9.0.0")
-                .addCoreMember()
-                .alignPluginsOnQuarkusVersion()
-                .release()
-                .newMember("acme-bom")
+        TestRegistryClientBuilder.newInstance().baseDir(registryConfigDir())
+                .persistPlatformDescriptorsAsMavenArtifacts().newRegistry("registry.acme.com")
+                .newPlatform("com.acme.quarkus.platform").newStream("9.0").newRelease("9.0.0")
+                .quarkusVersion("9.0.0.acme-1").upstreamQuarkusVersion("9.0.0").addCoreMember()
+                .alignPluginsOnQuarkusVersion().release().newMember("acme-bom")
                 .addExtension("io.quarkus.platform", "acme-quarkus-supersonic", "9.0.0.acme-1")
-                .addExtension("io.quarkus.platform", "acme-quarkus-subatomic", "9.0.0.acme-1")
-                .release().stream().platform()
-                .newStream("8.0")
-                .newRelease("8.0.0")
-                .quarkusVersion("8.0.0.acme-1")
-                .upstreamQuarkusVersion("8.0.0")
-                .addCoreMember()
-                .alignPluginsOnQuarkusVersion()
-                .release()
+                .addExtension("io.quarkus.platform", "acme-quarkus-subatomic", "9.0.0.acme-1").release().stream()
+                .platform().newStream("8.0").newRelease("8.0.0").quarkusVersion("8.0.0.acme-1")
+                .upstreamQuarkusVersion("8.0.0").addCoreMember().alignPluginsOnQuarkusVersion().release()
                 .newMember("acme-supersonic-bom")
-                .addExtension("io.quarkus.platform", "acme-quarkus-supersonic", "8.0.0.acme-1")
-                .registry()
-                .clientBuilder()
-                .newRegistry("registry.acme.org")
-                .newPlatform("io.quarkus.platform")
-                .newStream("9.0")
-                .newRelease("9.0.0")
-                .quarkusVersion("9.0.0")
-                .addCoreMember()
-                .alignPluginsOnQuarkusVersion()
-                .release()
+                .addExtension("io.quarkus.platform", "acme-quarkus-supersonic", "8.0.0.acme-1").registry()
+                .clientBuilder().newRegistry("registry.acme.org").newPlatform("io.quarkus.platform").newStream("9.0")
+                .newRelease("9.0.0").quarkusVersion("9.0.0").addCoreMember().alignPluginsOnQuarkusVersion().release()
                 .newMember("acme-bom").addExtension("acme-quarkus-supersonic").addExtension("acme-quarkus-subatomic")
-                .release().stream().platform()
-                .newStream("8.0")
-                .newRelease("8.0.0")
-                .quarkusVersion("8.0.0")
-                .addCoreMember()
-                .alignPluginsOnQuarkusVersion()
-                .release()
-                .newMember("acme-supersonic-bom").addExtension("acme-quarkus-supersonic").release()
-                .newMember("acme-subatomic-bom").addExtension("acme-quarkus-subatomic")
-                .registry()
-                .newNonPlatformCatalog(getCurrentQuarkusVersion())
-                .addExtension("org.acme", "acme-quarkiverse-extension", "1.0")
-                .registry()
-                .clientBuilder()
-                .build();
+                .release().stream().platform().newStream("8.0").newRelease("8.0.0").quarkusVersion("8.0.0")
+                .addCoreMember().alignPluginsOnQuarkusVersion().release().newMember("acme-supersonic-bom")
+                .addExtension("acme-quarkus-supersonic").release().newMember("acme-subatomic-bom")
+                .addExtension("acme-quarkus-subatomic").registry().newNonPlatformCatalog(getCurrentQuarkusVersion())
+                .addExtension("org.acme", "acme-quarkiverse-extension", "1.0").registry().clientBuilder().build();
     }
 
     @Test
@@ -126,9 +94,8 @@ public class MavenProjectCreateForPlatformTest extends RegistryClientBuilderTest
         assertThat(bomImport.getType()).isEqualTo("pom");
         assertThat(bomImport.getScope()).isEqualTo("import");
 
-        final Set<ArtifactCoords> pomDeps = model.getDependencies().stream()
-                .map(d -> ArtifactCoords.of(d.getGroupId(), d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion()))
-                .collect(Collectors.toSet());
+        final Set<ArtifactCoords> pomDeps = model.getDependencies().stream().map(d -> ArtifactCoords.of(d.getGroupId(),
+                d.getArtifactId(), d.getClassifier(), d.getType(), d.getVersion())).collect(Collectors.toSet());
         assertThat(pomDeps).contains(ArtifactCoords.of("io.quarkus.platform", "acme-quarkus-subatomic",
                 ArtifactCoords.DEFAULT_CLASSIFIER, ArtifactCoords.TYPE_JAR, null));
         assertThat(pomDeps).contains(ArtifactCoords.of("io.quarkus.platform", "acme-quarkus-supersonic",

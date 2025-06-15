@@ -18,15 +18,14 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateDataTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Foos.class, TransactionType.class)
-                    .addAsResource(new StringAsset(
-                            "{foo.val} is not {foo.val.setScale(2,roundingMode)} and {foo.bar}={foo.hasBar} and {foo.baz}={foo.isBaz}"),
-                            "templates/foo.txt")
-                    .addAsResource(new StringAsset(
-                            "{#if tx == TransactionType:FOO}OK{/if}::{io_quarkus_qute_deployment_TemplateDataTest_Foos:BRAVO.toLowerCase}"),
-                            "templates/bar.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Foo.class, Foos.class, TransactionType.class)
+            .addAsResource(new StringAsset(
+                    "{foo.val} is not {foo.val.setScale(2,roundingMode)} and {foo.bar}={foo.hasBar} and {foo.baz}={foo.isBaz}"),
+                    "templates/foo.txt")
+            .addAsResource(new StringAsset(
+                    "{#if tx == TransactionType:FOO}OK{/if}::{io_quarkus_qute_deployment_TemplateDataTest_Foos:BRAVO.toLowerCase}"),
+                    "templates/bar.txt"));
 
     @Inject
     Template foo;
@@ -36,8 +35,8 @@ public class TemplateDataTest {
 
     @Test
     public void testTemplateData() {
-        assertEquals("123.4563 is not 123.46 and true=true and false=false",
-                foo.data("roundingMode", RoundingMode.HALF_UP).data("foo", new Foo(new BigDecimal("123.4563"))).render());
+        assertEquals("123.4563 is not 123.46 and true=true and false=false", foo
+                .data("roundingMode", RoundingMode.HALF_UP).data("foo", new Foo(new BigDecimal("123.4563"))).render());
         assertEquals("OK::bravo", bar.data("tx", TransactionType.FOO).render());
     }
 

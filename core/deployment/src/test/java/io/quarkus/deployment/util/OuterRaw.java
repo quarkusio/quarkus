@@ -7,8 +7,8 @@ public class OuterRaw {
         return null;
     }
 
-    public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T bbb(
-            U arg, OuterRaw self) {
+    public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T bbb(U arg,
+            OuterRaw self) {
         return null;
     }
 
@@ -27,8 +27,8 @@ public class OuterRaw {
     }
 
     public static class NestedParamBound<X extends Number & Comparable<X>> {
-        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T eee(
-                List<?> arg, X arg2, NestedParamBound<X> self) throws V {
+        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T eee(List<?> arg,
+                X arg2, NestedParamBound<X> self) throws V {
             return null;
         }
     }
@@ -48,14 +48,14 @@ public class OuterRaw {
     }
 
     public class InnerParamBound<X extends Number & Comparable<X>> {
-        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T hhh(
-                List<?> arg, X arg2, InnerParamBound<X> self) throws V {
+        public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T hhh(List<?> arg,
+                X arg2, InnerParamBound<X> self) throws V {
             return null;
         }
 
         public class DoubleInner<Y extends CharSequence> {
-            public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T iii(
-                    List<?> arg, Y arg2, X arg3, DoubleInner<Y> self) throws V {
+            public <T extends Number & Comparable<T>, U extends Comparable<U>, V extends Exception> T iii(List<?> arg,
+                    Y arg2, X arg3, DoubleInner<Y> self) throws V {
                 return null;
             }
         }

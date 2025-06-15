@@ -43,22 +43,22 @@ public class MultipleCachesTest {
         String key2FromCache1 = cachedService.cache1("2");
         assertNotEquals(key2FromCache1, key1FromCache1);
         newKeys = TestUtil.allRedisKeys(redisDataSource);
-        assertEquals(allKeysAtStart.size() + 2,
-                newKeys.size());
+        assertEquals(allKeysAtStart.size() + 2, newKeys.size());
         Assertions.assertThat(newKeys).contains(expectedCache1Key("1"), expectedCache1Key("2"));
 
         Double key1FromCache2 = cachedService.cache2(1d);
         assertEquals(key1FromCache2, cachedService.cache2(1d));
         newKeys = TestUtil.allRedisKeys(redisDataSource);
         assertEquals(allKeysAtStart.size() + 3, newKeys.size());
-        Assertions.assertThat(newKeys).contains(expectedCache1Key("1"), expectedCache1Key("2"), expectedCache2Key("1.0"));
+        Assertions.assertThat(newKeys).contains(expectedCache1Key("1"), expectedCache1Key("2"),
+                expectedCache2Key("1.0"));
 
         Double key2FromCache2 = cachedService.cache2(2d);
         assertNotEquals(key2FromCache2, key1FromCache2);
         newKeys = TestUtil.allRedisKeys(redisDataSource);
         assertEquals(allKeysAtStart.size() + 4, newKeys.size());
-        Assertions.assertThat(newKeys).contains(expectedCache1Key("1"), expectedCache1Key("2"), expectedCache2Key("1.0"),
-                expectedCache2Key("2.0"));
+        Assertions.assertThat(newKeys).contains(expectedCache1Key("1"), expectedCache1Key("2"),
+                expectedCache2Key("1.0"), expectedCache2Key("2.0"));
     }
 
     private static String expectedCache1Key(String key) {

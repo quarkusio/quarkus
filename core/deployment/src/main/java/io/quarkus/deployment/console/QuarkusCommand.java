@@ -29,5 +29,6 @@ public abstract class QuarkusCommand implements Command {
         return result;
     }
 
-    public abstract CommandResult doExecute(CommandInvocation commandInvocation) throws CommandException, InterruptedException;
+    public abstract CommandResult doExecute(CommandInvocation commandInvocation)
+            throws CommandException, InterruptedException;
 }

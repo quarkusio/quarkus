@@ -65,8 +65,7 @@ public class StreamingUtil {
         // FIXME: this should belong somewhere else as it's generic
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serialisers
-                .findWriters(null, entityClass, mediaType, RuntimeType.SERVER)
-                .toArray(ServerSerialisers.NO_WRITER);
+                .findWriters(null, entityClass, mediaType, RuntimeType.SERVER).toArray(ServerSerialisers.NO_WRITER);
         StreamingOutputStream baos = new StreamingOutputStream();
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
@@ -87,7 +86,8 @@ public class StreamingUtil {
 
     public static void setHeaders(ResteasyReactiveRequestContext context, ServerHttpResponse response,
             List<PublisherResponseHandler.StreamingResponseCustomizer> customizers) {
-        // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns, whichever
+        // FIXME: spec says we should flush the headers when first message is sent or when the resource method returns,
+        // whichever
         // happens first
         if (!response.headWritten()) {
             response.setStatusCode(Response.Status.OK.getStatusCode());

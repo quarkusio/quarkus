@@ -125,16 +125,22 @@ public final class ExtensionLoader {
     /**
      * Load all the build steps from the given class loader.
      *
-     * @param classLoader the class loader
-     * @param buildSystemProps the build system properties to use
-     * @param launchMode launch mode
+     * @param classLoader
+     *        the class loader
+     * @param buildSystemProps
+     *        the build system properties to use
+     * @param launchMode
+     *        launch mode
+     *
      * @return a consumer which adds the steps to the given chain builder
-     * @throws IOException if the class loader could not load a resource
-     * @throws ClassNotFoundException if a build step class is not found
+     *
+     * @throws IOException
+     *         if the class loader could not load a resource
+     * @throws ClassNotFoundException
+     *         if a build step class is not found
      */
-    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader,
-            Properties buildSystemProps, Properties runtimeProperties,
-            ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType)
+    public static Consumer<BuildChainBuilder> loadStepsFrom(ClassLoader classLoader, Properties buildSystemProps,
+            Properties runtimeProperties, ApplicationModel appModel, LaunchMode launchMode, DevModeType devModeType)
             throws IOException, ClassNotFoundException {
 
         final BuildTimeConfigurationReader reader = new BuildTimeConfigurationReader(classLoader);
@@ -143,7 +149,8 @@ public final class ExtensionLoader {
         // install globally
         QuarkusConfigFactory.setConfig(src);
         final BuildTimeConfigurationReader.ReadResult readResult = reader.readConfiguration(src);
-        final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(readResult, launchMode, devModeType);
+        final BooleanSupplierFactoryBuildItem bsf = new BooleanSupplierFactoryBuildItem(readResult, launchMode,
+                devModeType);
 
         Consumer<BuildChainBuilder> result = Functions.discardingConsumer();
         // BooleanSupplier factory
@@ -211,10 +218,11 @@ public final class ExtensionLoader {
                     @Override
                     public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
                         ConfigClass mapping = mappingClasses.get(obj);
-                        MethodDescriptor getConfig = MethodDescriptor.ofMethod(ConfigProvider.class, "getConfig", Config.class);
+                        MethodDescriptor getConfig = MethodDescriptor.ofMethod(ConfigProvider.class, "getConfig",
+                                Config.class);
                         ResultHandle config = body.invokeStaticMethod(getConfig);
-                        MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class, "getConfigMapping",
-                                Object.class, Class.class, String.class);
+                        MethodDescriptor getMapping = MethodDescriptor.ofMethod(SmallRyeConfig.class,
+                                "getConfigMapping", Object.class, Class.class, String.class);
                         return body.invokeVirtualMethod(getMapping, config, body.loadClass(mapping.getKlass()),
                                 body.load(mapping.getPrefix()));
                     }
@@ -234,10 +242,8 @@ public final class ExtensionLoader {
                 return ExtensionLoader.class.getName() + "#config";
             }
 
-        }).produces(ConfigurationBuildItem.class)
-                .produces(RunTimeConfigurationProxyBuildItem.class)
-                .produces(BytecodeRecorderObjectLoaderBuildItem.class)
-                .build());
+        }).produces(ConfigurationBuildItem.class).produces(RunTimeConfigurationProxyBuildItem.class)
+                .produces(BytecodeRecorderObjectLoaderBuildItem.class).build());
 
         return result;
     }
@@ -245,14 +251,18 @@ public final class ExtensionLoader {
     /**
      * Load all the build steps from the given class.
      *
-     * @param clazz the class to load from (must not be {@code null})
-     * @param readResult the build time configuration read result (must not be {@code null})
-     * @param runTimeProxies the map of run time proxy objects to populate for recorders (must not be {@code null})
+     * @param clazz
+     *        the class to load from (must not be {@code null})
+     * @param readResult
+     *        the build time configuration read result (must not be {@code null})
+     * @param runTimeProxies
+     *        the map of run time proxy objects to populate for recorders (must not be {@code null})
+     *
      * @return a consumer which adds the steps to the given chain builder
      */
     private static Consumer<BuildChainBuilder> loadStepsFromClass(Class<?> clazz,
-            BuildTimeConfigurationReader.ReadResult readResult,
-            Map<Class<?>, Object> runTimeProxies, BooleanSupplierFactoryBuildItem supplierFactory) {
+            BuildTimeConfigurationReader.ReadResult readResult, Map<Class<?>, Object> runTimeProxies,
+            BooleanSupplierFactoryBuildItem supplierFactory) {
         final Constructor<?>[] constructors = clazz.getDeclaredConstructors();
         // this is the chain configuration that will contain all steps on this class and be returned
         Consumer<BuildChainBuilder> chainConfig = Functions.discardingConsumer();
@@ -304,7 +314,8 @@ public final class ExtensionLoader {
                 } else if (isOptionalOf(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                             .asSubclass(SimpleBuildItem.class);
-                    stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
+                    stepConfig = stepConfig
+                            .andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
                     ctorParamFns.add(bc -> Optional.ofNullable(bc.consume(buildItemClass)));
                 } else if (isSupplierOf(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
@@ -314,7 +325,8 @@ public final class ExtensionLoader {
                 } else if (isSupplierOfOptionalOf(parameterType, SimpleBuildItem.class)) {
                     final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(
                             rawTypeOfParameter(parameterType, 0), 0).asSubclass(SimpleBuildItem.class);
-                    stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
+                    stepConfig = stepConfig
+                            .andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
                     ctorParamFns.add(bc -> (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional
                             .ofNullable(bc.consume(buildItemClass)));
                 } else if (rawTypeOf(parameterType) == Executor.class) {
@@ -362,29 +374,32 @@ public final class ExtensionLoader {
             final Type fieldType = field.getGenericType();
             final Class<?> fieldClass = field.getType();
             if (rawTypeExtends(fieldType, SimpleBuildItem.class)) {
-                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(fieldType).asSubclass(SimpleBuildItem.class);
+                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOf(fieldType)
+                        .asSubclass(SimpleBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consume(buildItemClass)));
             } else if (isAnEmptyBuildItemConsumer(fieldType)) {
-                throw reportError(field, "Cannot consume an empty build item, use @Consume(class) on the field instead");
+                throw reportError(field,
+                        "Cannot consume an empty build item, use @Consume(class) on the field instead");
             } else if (isAnEmptyBuildItemProducer(fieldType)) {
-                throw reportError(field, "Cannot produce an empty build item, use @Produce(class) on the field instead");
+                throw reportError(field,
+                        "Cannot produce an empty build item, use @Produce(class) on the field instead");
             } else if (isListOf(fieldType, MultiBuildItem.class)) {
                 final Class<? extends MultiBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0)
                         .asSubclass(MultiBuildItem.class);
                 stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
                 stepInstanceSetup = stepInstanceSetup
                         .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.consumeMulti(buildItemClass)));
-            } else if (isConsumerOf(fieldType, BuildItem.class)
-                    || isBuildProducerOf(fieldType, BuildItem.class)) {
+            } else if (isConsumerOf(fieldType, BuildItem.class) || isBuildProducerOf(fieldType, BuildItem.class)) {
                 throw unsupportedConstructorOrFieldProducer(field);
             } else if (isOptionalOf(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0)
                         .asSubclass(SimpleBuildItem.class);
-                stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
-                stepInstanceSetup = stepInstanceSetup
-                        .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, Optional.ofNullable(bc.consume(buildItemClass))));
+                stepConfig = stepConfig
+                        .andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
+                stepInstanceSetup = stepInstanceSetup.andThen(
+                        (bc, o) -> ReflectUtil.setFieldVal(field, o, Optional.ofNullable(bc.consume(buildItemClass))));
             } else if (isSupplierOf(fieldType, SimpleBuildItem.class)) {
                 final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(fieldType, 0)
                         .asSubclass(SimpleBuildItem.class);
@@ -392,13 +407,16 @@ public final class ExtensionLoader {
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o,
                         (Supplier<? extends SimpleBuildItem>) () -> bc.consume(buildItemClass)));
             } else if (isSupplierOfOptionalOf(fieldType, SimpleBuildItem.class)) {
-                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(rawTypeOfParameter(fieldType, 0), 0)
-                        .asSubclass(SimpleBuildItem.class);
-                stepConfig = stepConfig.andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
+                final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(
+                        rawTypeOfParameter(fieldType, 0), 0).asSubclass(SimpleBuildItem.class);
+                stepConfig = stepConfig
+                        .andThen(bsb -> bsb.consumes(buildItemClass, ConsumeFlags.of(ConsumeFlag.OPTIONAL)));
                 stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o,
-                        (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional.ofNullable(bc.consume(buildItemClass))));
+                        (Supplier<Optional<? extends SimpleBuildItem>>) () -> Optional
+                                .ofNullable(bc.consume(buildItemClass))));
             } else if (fieldClass == Executor.class) {
-                stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.getExecutor()));
+                stepInstanceSetup = stepInstanceSetup
+                        .andThen((bc, o) -> ReflectUtil.setFieldVal(field, o, bc.getExecutor()));
             } else if (fieldClass.isAnnotationPresent(ConfigRoot.class)) {
                 final ConfigRoot annotation = fieldClass.getAnnotation(ConfigRoot.class);
                 final ConfigPhase phase = annotation.phase();
@@ -406,8 +424,7 @@ public final class ExtensionLoader {
 
                 if (phase.isAvailableAtBuild()) {
                     stepInstanceSetup = stepInstanceSetup.andThen((bc, o) -> {
-                        final ConfigurationBuildItem configurationBuildItem = bc
-                                .consume(ConfigurationBuildItem.class);
+                        final ConfigurationBuildItem configurationBuildItem = bc.consume(ConfigurationBuildItem.class);
                         ReflectUtil.setFieldVal(field, o,
                                 configurationBuildItem.getReadResult().requireObjectForClass(fieldClass));
                     });
@@ -430,12 +447,14 @@ public final class ExtensionLoader {
         final BuildSteps buildSteps = clazz.getAnnotation(BuildSteps.class);
         final Class<? extends BooleanSupplier>[] classOnlyIf = buildSteps == null ? EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY
                 : buildSteps.onlyIf();
-        final Class<? extends BooleanSupplier>[] classOnlyIfNot = buildSteps == null ? EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY
+        final Class<? extends BooleanSupplier>[] classOnlyIfNot = buildSteps == null
+                ? EMPTY_BOOLEAN_SUPPLIER_CLASS_ARRAY
                 : buildSteps.onlyIfNot();
 
         // now iterate the methods
         final List<Method> methods = getMethods(clazz);
-        final Map<String, List<Method>> nameToMethods = methods.stream().collect(Collectors.groupingBy(m -> m.getName()));
+        final Map<String, List<Method>> nameToMethods = methods.stream()
+                .collect(Collectors.groupingBy(m -> m.getName()));
 
         MethodHandles.Lookup lookup = MethodHandles.publicLookup();
         for (Method method : methods) {
@@ -446,7 +465,8 @@ public final class ExtensionLoader {
             if (Modifier.isStatic(method.getModifiers())) {
                 throw new RuntimeException("A build step must be a non-static method: " + method);
             }
-            if (!Modifier.isPublic(method.getModifiers()) || !Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
+            if (!Modifier.isPublic(method.getModifiers())
+                    || !Modifier.isPublic(method.getDeclaringClass().getModifiers())) {
                 method.setAccessible(true);
             }
             final Class<? extends BooleanSupplier>[] onlyIf = buildStep.onlyIf();
@@ -454,7 +474,8 @@ public final class ExtensionLoader {
             final Parameter[] methodParameters = method.getParameters();
             final Record recordAnnotation = method.getAnnotation(Record.class);
             final boolean isRecorder = recordAnnotation != null;
-            final boolean identityComparison = isRecorder ? recordAnnotation.useIdentityComparisonForParameters() : true;
+            final boolean identityComparison = isRecorder ? recordAnnotation.useIdentityComparisonForParameters()
+                    : true;
             if (isRecorder) {
                 boolean recorderFound = false;
                 for (Class<?> p : method.getParameterTypes()) {
@@ -481,11 +502,10 @@ public final class ExtensionLoader {
                 final ExecutionTime executionTime = recordAnnotation.value();
                 final boolean optional = recordAnnotation.optional();
                 methodStepConfig = methodStepConfig.andThen(bsb -> {
-                    bsb
-                            .produces(
-                                    executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
-                                            : MainBytecodeRecorderBuildItem.class,
-                                    optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE);
+                    bsb.produces(
+                            executionTime == ExecutionTime.STATIC_INIT ? StaticBytecodeRecorderBuildItem.class
+                                    : MainBytecodeRecorderBuildItem.class,
+                            optional ? ProduceFlags.of(ProduceFlag.WEAK) : ProduceFlags.NONE);
                 });
             }
             EnumSet<ConfigPhase> methodConsumingConfigPhases = consumingConfigPhases.clone();
@@ -564,7 +584,8 @@ public final class ExtensionLoader {
                         final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(parameterType, 0)
                                 .asSubclass(SimpleBuildItem.class);
                         methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(buildItemClass));
-                        methodParamFns.add((bc, bri) -> (Supplier<? extends SimpleBuildItem>) () -> bc.consume(buildItemClass));
+                        methodParamFns.add(
+                                (bc, bri) -> (Supplier<? extends SimpleBuildItem>) () -> bc.consume(buildItemClass));
                     } else if (isSupplierOfOptionalOf(parameterType, SimpleBuildItem.class)) {
                         final Class<? extends SimpleBuildItem> buildItemClass = rawTypeOfParameter(
                                 rawTypeOfParameter(parameterType, 0), 0).asSubclass(SimpleBuildItem.class);
@@ -598,8 +619,8 @@ public final class ExtensionLoader {
                                 });
                                 runTimeProxies.computeIfAbsent(parameterClass, ConfigMappingUtils::newInstance);
                             } else {
-                                throw reportError(parameter,
-                                        phase + " configuration cannot be consumed here unless the method is a @Recorder");
+                                throw reportError(parameter, phase
+                                        + " configuration cannot be consumed here unless the method is a @Recorder");
                             }
                         } else {
                             throw reportError(parameterClass, "Unknown value for ConfigPhase");
@@ -613,8 +634,8 @@ public final class ExtensionLoader {
                             assert bri != null;
                             return bri.getRecordingProxy(parameterClass);
                         });
-                        //now look for recorder parameter injection
-                        //as we now inject config directly into recorders we need to look at the constructor params
+                        // now look for recorder parameter injection
+                        // as we now inject config directly into recorders we need to look at the constructor params
                         Constructor<?>[] ctors = parameter.getType().getDeclaredConstructors();
                         for (var ctor : ctors) {
                             if (ctors.length == 1 || ctor.isAnnotationPresent(Inject.class)) {
@@ -652,7 +673,8 @@ public final class ExtensionLoader {
                             || parameter.getType() == BytecodeRecorderImpl.class) {
                         if (!isRecorder) {
                             throw reportError(parameter,
-                                    "Cannot pass recorder context to method which is not annotated with " + Record.class);
+                                    "Cannot pass recorder context to method which is not annotated with "
+                                            + Record.class);
                         }
                         methodParamFns.add((bc, bri) -> bri);
                     } else {
@@ -667,7 +689,8 @@ public final class ExtensionLoader {
             final boolean overridable = method.isAnnotationPresent(Overridable.class);
             if (rawTypeIs(returnType, void.class)) {
                 resultConsumer = Functions.discardingBiConsumer();
-            } else if (rawTypeExtends(returnType, EmptyBuildItem.class) || isOptionalOf(returnType, EmptyBuildItem.class)) {
+            } else if (rawTypeExtends(returnType, EmptyBuildItem.class)
+                    || isOptionalOf(returnType, EmptyBuildItem.class)) {
                 throw reportError(method,
                         "Cannot produce an empty build item, use @Produce(class) on the build step method instead");
             } else if (rawTypeExtends(returnType, BuildItem.class)) {
@@ -708,7 +731,8 @@ public final class ExtensionLoader {
                 }
                 resultConsumer = (bc, o) -> ((Optional<? extends BuildItem>) o).ifPresent(bc::produce);
             } else if (isListOf(returnType, MultiBuildItem.class)) {
-                final Class<? extends MultiBuildItem> type = rawTypeOfParameter(returnType, 0).asSubclass(MultiBuildItem.class);
+                final Class<? extends MultiBuildItem> type = rawTypeOfParameter(returnType, 0)
+                        .asSubclass(MultiBuildItem.class);
                 if (overridable) {
                     if (weak) {
                         methodStepConfig = methodStepConfig
@@ -748,8 +772,7 @@ public final class ExtensionLoader {
 
             if (methodConsumingConfigPhases.contains(ConfigPhase.BUILD_AND_RUN_TIME_FIXED)
                     || methodConsumingConfigPhases.contains(ConfigPhase.BUILD_TIME)) {
-                methodStepConfig = methodStepConfig
-                        .andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
+                methodStepConfig = methodStepConfig.andThen(bsb -> bsb.consumes(ConfigurationBuildItem.class));
             }
 
             final Consume[] consumes = method.getAnnotationsByType(Consume.class);
@@ -785,105 +808,101 @@ public final class ExtensionLoader {
             if (methodsWithName.size() > 1) {
                 // Append the sha1 of the parameter types to resolve the ambiguity
                 stepId = name + "_" + HashUtil.sha1(Arrays.toString(method.getParameterTypes()));
-                loadLog.debugf("Build steps with ambiguous name detected: %s, using discriminator suffix for step id: %s", name,
-                        stepId);
+                loadLog.debugf(
+                        "Build steps with ambiguous name detected: %s, using discriminator suffix for step id: %s",
+                        name, stepId);
             } else {
                 stepId = name;
             }
 
             MethodHandle methodHandle = unreflect(method, lookup);
-            chainConfig = chainConfig
-                    .andThen(bcb -> {
-                        BuildStepBuilder bsb = bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
-                            public void execute(final BuildContext bc) {
-                                Object[] ctorArgs = new Object[ctorParamFns.size()];
-                                for (int i = 0; i < ctorArgs.length; i++) {
-                                    ctorArgs[i] = ctorParamFns.get(i).apply(bc);
-                                }
-                                Object instance;
-                                try {
-                                    instance = constructor.newInstance(ctorArgs);
-                                } catch (InstantiationException e) {
-                                    throw ReflectUtil.toError(e);
-                                } catch (IllegalAccessException e) {
-                                    throw ReflectUtil.toError(e);
-                                } catch (InvocationTargetException e) {
-                                    try {
-                                        throw e.getCause();
-                                    } catch (RuntimeException | Error e2) {
-                                        throw e2;
-                                    } catch (Throwable t) {
-                                        throw new IllegalStateException(t);
+            chainConfig = chainConfig.andThen(bcb -> {
+                BuildStepBuilder bsb = bcb.addBuildStep(new io.quarkus.builder.BuildStep() {
+                    public void execute(final BuildContext bc) {
+                        Object[] ctorArgs = new Object[ctorParamFns.size()];
+                        for (int i = 0; i < ctorArgs.length; i++) {
+                            ctorArgs[i] = ctorParamFns.get(i).apply(bc);
+                        }
+                        Object instance;
+                        try {
+                            instance = constructor.newInstance(ctorArgs);
+                        } catch (InstantiationException e) {
+                            throw ReflectUtil.toError(e);
+                        } catch (IllegalAccessException e) {
+                            throw ReflectUtil.toError(e);
+                        } catch (InvocationTargetException e) {
+                            try {
+                                throw e.getCause();
+                            } catch (RuntimeException | Error e2) {
+                                throw e2;
+                            } catch (Throwable t) {
+                                throw new IllegalStateException(t);
+                            }
+                        }
+                        finalStepInstanceSetup.accept(bc, instance);
+                        Object[] methodArgs = new Object[methodParamFns.size()];
+                        BytecodeRecorderImpl bri = isRecorder ? new BytecodeRecorderImpl(
+                                recordAnnotation.value() == ExecutionTime.STATIC_INIT, clazz.getSimpleName(),
+                                method.getName(), Integer.toString(Math.abs(method.toString().hashCode())),
+                                identityComparison, s -> {
+                                    if (s instanceof Class) {
+                                        var cfg = ((Class<?>) s).getAnnotation(ConfigRoot.class);
+                                        if (cfg == null || (cfg.phase() != ConfigPhase.BUILD_AND_RUN_TIME_FIXED
+                                                && recordAnnotation.value() == ExecutionTime.STATIC_INIT)) {
+                                            throw new RuntimeException(
+                                                    "Can only inject BUILD_AND_RUN_TIME_FIXED objects into a constructor, use RuntimeValue to inject runtime config: "
+                                                            + s);
+                                        }
+                                        return runTimeProxies.get(s);
                                     }
-                                }
-                                finalStepInstanceSetup.accept(bc, instance);
-                                Object[] methodArgs = new Object[methodParamFns.size()];
-                                BytecodeRecorderImpl bri = isRecorder
-                                        ? new BytecodeRecorderImpl(recordAnnotation.value() == ExecutionTime.STATIC_INIT,
-                                                clazz.getSimpleName(), method.getName(),
-                                                Integer.toString(Math.abs(method.toString().hashCode())), identityComparison,
-                                                s -> {
-                                                    if (s instanceof Class) {
-                                                        var cfg = ((Class<?>) s).getAnnotation(ConfigRoot.class);
-                                                        if (cfg == null
-                                                                || (cfg.phase() != ConfigPhase.BUILD_AND_RUN_TIME_FIXED
-                                                                        && recordAnnotation
-                                                                                .value() == ExecutionTime.STATIC_INIT)) {
-                                                            throw new RuntimeException(
-                                                                    "Can only inject BUILD_AND_RUN_TIME_FIXED objects into a constructor, use RuntimeValue to inject runtime config: "
-                                                                            + s);
-                                                        }
-                                                        return runTimeProxies.get(s);
-                                                    }
-                                                    if (s instanceof ParameterizedType) {
-                                                        ParameterizedType p = (ParameterizedType) s;
-                                                        if (p.getRawType() == RuntimeValue.class) {
-                                                            Object object = runTimeProxies.get(p.getActualTypeArguments()[0]);
-                                                            if (object == null) {
-                                                                return new RuntimeValue<>();
-                                                            }
-                                                            return new RuntimeValue<>(object);
-                                                        }
-                                                    }
-                                                    return null;
-                                                })
-                                        : null;
-                                for (int i = 0; i < methodArgs.length; i++) {
-                                    methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
-                                }
-                                Object result;
-                                try {
-                                    result = methodHandle.bindTo(instance).invokeWithArguments(methodArgs);
-                                } catch (IllegalAccessException e) {
-                                    throw ReflectUtil.toError(e);
-                                } catch (RuntimeException | Error e2) {
-                                    throw e2;
-                                } catch (Throwable t) {
-                                    throw new UndeclaredThrowableException(t);
-                                }
-                                resultConsumer.accept(bc, result);
-                                if (isRecorder) {
-                                    // commit recorded data
-                                    if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
-                                        bc.produce(new StaticBytecodeRecorderBuildItem(bri));
-                                    } else {
-                                        bc.produce(new MainBytecodeRecorderBuildItem(bri));
+                                    if (s instanceof ParameterizedType) {
+                                        ParameterizedType p = (ParameterizedType) s;
+                                        if (p.getRawType() == RuntimeValue.class) {
+                                            Object object = runTimeProxies.get(p.getActualTypeArguments()[0]);
+                                            if (object == null) {
+                                                return new RuntimeValue<>();
+                                            }
+                                            return new RuntimeValue<>(object);
+                                        }
                                     }
-
-                                }
+                                    return null;
+                                }) : null;
+                        for (int i = 0; i < methodArgs.length; i++) {
+                            methodArgs[i] = methodParamFns.get(i).apply(bc, bri);
+                        }
+                        Object result;
+                        try {
+                            result = methodHandle.bindTo(instance).invokeWithArguments(methodArgs);
+                        } catch (IllegalAccessException e) {
+                            throw ReflectUtil.toError(e);
+                        } catch (RuntimeException | Error e2) {
+                            throw e2;
+                        } catch (Throwable t) {
+                            throw new UndeclaredThrowableException(t);
+                        }
+                        resultConsumer.accept(bc, result);
+                        if (isRecorder) {
+                            // commit recorded data
+                            if (recordAnnotation.value() == ExecutionTime.STATIC_INIT) {
+                                bc.produce(new StaticBytecodeRecorderBuildItem(bri));
+                            } else {
+                                bc.produce(new MainBytecodeRecorderBuildItem(bri));
                             }
 
-                            @Override
-                            public String getId() {
-                                return stepId;
-                            }
+                        }
+                    }
 
-                            public String toString() {
-                                return name;
-                            }
-                        });
-                        finalStepConfig.accept(bsb);
-                    });
+                    @Override
+                    public String getId() {
+                        return stepId;
+                    }
+
+                    public String toString() {
+                        return name;
+                    }
+                });
+                finalStepConfig.accept(bsb);
+            });
         }
         return chainConfig;
     }
@@ -917,8 +936,7 @@ public final class ExtensionLoader {
     }
 
     private static boolean isAnEmptyBuildItemConsumer(Type parameterType) {
-        return rawTypeExtends(parameterType, EmptyBuildItem.class)
-                || isOptionalOf(parameterType, EmptyBuildItem.class)
+        return rawTypeExtends(parameterType, EmptyBuildItem.class) || isOptionalOf(parameterType, EmptyBuildItem.class)
                 || isConsumerOf(parameterType, EmptyBuildItem.class);
     }
 
@@ -948,8 +966,8 @@ public final class ExtensionLoader {
         if (e instanceof Member) {
             return new IllegalArgumentException(msg + " at " + e + " of " + ((Member) e).getDeclaringClass());
         } else if (e instanceof Parameter) {
-            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable() + " of "
-                    + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
+            return new IllegalArgumentException(msg + " at " + e + " of " + ((Parameter) e).getDeclaringExecutable()
+                    + " of " + ((Parameter) e).getDeclaringExecutable().getDeclaringClass());
         } else {
             return new IllegalArgumentException(msg + " at " + e);
         }

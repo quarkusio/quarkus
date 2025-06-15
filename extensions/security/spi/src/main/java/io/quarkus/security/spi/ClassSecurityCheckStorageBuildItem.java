@@ -9,8 +9,8 @@ import org.jboss.jandex.DotName;
 import io.quarkus.builder.item.SimpleBuildItem;
 
 /**
- * Security check storage containing additional security checks created for secured classes
- * matching one of the {@link ClassSecurityAnnotationBuildItem} filters during the static init.
+ * Security check storage containing additional security checks created for secured classes matching one of the
+ * {@link ClassSecurityAnnotationBuildItem} filters during the static init.
  */
 public final class ClassSecurityCheckStorageBuildItem extends SimpleBuildItem {
 
@@ -22,10 +22,12 @@ public final class ClassSecurityCheckStorageBuildItem extends SimpleBuildItem {
     }
 
     /**
-     * Returns additional security check created for classes annotated with standard
-     * security annotations based on the {@link ClassSecurityAnnotationBuildItem} filter.
+     * Returns additional security check created for classes annotated with standard security annotations based on the
+     * {@link ClassSecurityAnnotationBuildItem} filter.
      *
-     * @param className class name
+     * @param className
+     *        class name
+     *
      * @return security check (see runtime Security SPI for respective class)
      */
     public Object getSecurityCheck(DotName className) {

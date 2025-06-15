@@ -9,7 +9,8 @@ public final class RouteConstants {
     }
 
     /**
-     * Order value ({@value #ROUTE_ORDER_ACCESS_LOG_HANDLER}) for the access-log handler, if enabled in the configuration.
+     * Order value ({@value #ROUTE_ORDER_ACCESS_LOG_HANDLER}) for the access-log handler, if enabled in the
+     * configuration.
      */
     public static final int ROUTE_ORDER_ACCESS_LOG_HANDLER = Integer.MIN_VALUE;
     /**
@@ -46,8 +47,8 @@ public final class RouteConstants {
      */
     public static final int ROUTE_ORDER_COMPRESSION = 0;
     /**
-     * Order value ({@value #ROUTE_ORDER_BEFORE_DEFAULT}) for route with priority over the default route (add an offset from
-     * this value)
+     * Order value ({@value #ROUTE_ORDER_BEFORE_DEFAULT}) for route with priority over the default route (add an offset
+     * from this value)
      */
     public static final int ROUTE_ORDER_BEFORE_DEFAULT = 1_000;
     /**
@@ -55,8 +56,8 @@ public final class RouteConstants {
      */
     public static final int ROUTE_ORDER_DEFAULT = 10_000;
     /**
-     * Order value ({@value #ROUTE_ORDER_AFTER_DEFAULT}) for route without priority over the default route (add an offset
-     * from this value)
+     * Order value ({@value #ROUTE_ORDER_AFTER_DEFAULT}) for route without priority over the default route (add an
+     * offset from this value)
      */
     public static final int ROUTE_ORDER_AFTER_DEFAULT = 20_000;
 }

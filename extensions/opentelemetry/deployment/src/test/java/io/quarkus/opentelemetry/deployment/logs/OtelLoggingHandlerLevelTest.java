@@ -34,21 +34,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OtelLoggingHandlerLevelTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(JBossLoggingBean.class)
-                            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class,
-                                    TestSpanExporter.class, TestSpanExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
-                            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                            .add(new StringAsset(
-                                    "quarkus.otel.logs.enabled=true\n" +
-                                            "quarkus.otel.logs.level=ERROR\n" +
-                                            "quarkus.otel.traces.enabled=true\n"),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(JBossLoggingBean.class)
+            .addClasses(InMemoryLogRecordExporter.class, InMemoryLogRecordExporterProvider.class,
+                    TestSpanExporter.class, TestSpanExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider")
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .add(new StringAsset("quarkus.otel.logs.enabled=true\n" + "quarkus.otel.logs.level=ERROR\n"
+                    + "quarkus.otel.traces.enabled=true\n"), "application.properties"));
 
     @Inject
     InMemoryLogRecordExporter logRecordExporter;
@@ -76,12 +71,8 @@ public class OtelLoggingHandlerLevelTest {
         List<LogRecordData> finishedLogRecordItems = logRecordExporter.getFinishedLogRecordItemsAtLeast(1);
 
         // There should be only one log record, the error log
-        assertThat(finishedLogRecordItems.size())
-                .withFailMessage(() -> finishedLogRecordItems.stream()
-                        .map(LogRecordData::getBodyValue)
-                        .map(line -> line.asString() + "\n")
-                        .collect(toList())
-                        .toString())
+        assertThat(finishedLogRecordItems.size()).withFailMessage(() -> finishedLogRecordItems.stream()
+                .map(LogRecordData::getBodyValue).map(line -> line.asString() + "\n").collect(toList()).toString())
                 .isOne();
 
         LogRecordData last = finishedLogRecordItems.get(finishedLogRecordItems.size() - 1);
@@ -90,24 +81,20 @@ public class OtelLoggingHandlerLevelTest {
         assertThat(last.getSpanContext().getTraceId()).isEqualTo("00000000000000000000000000000000");
         assertThat(last.getSpanContext().getTraceFlags().asHex()).isEqualTo("00");
         assertThat(last.getTimestampEpochNanos()).isNotNull().isLessThan(System.currentTimeMillis() * 1_000_000);
-        assertThat(last)
-                .hasSeverity(Severity.ERROR)
-                .hasSeverityText("ERROR")
-                .hasAttributesSatisfying(
-                        attributes -> assertThat(attributes)
-                                .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
-                                .containsEntry(EXCEPTION_TYPE, "java.lang.RuntimeException")
-                                .containsEntry(EXCEPTION_MESSAGE, "crafted exception")
-                                .containsEntry(EXCEPTION_STACKTRACE, extractStackTrace(craftedException))
-                                .doesNotContainKey(LOG_FILE_PATH)
-                                // attributes do not duplicate tracing data
-                                .doesNotContainKey("spanId")
-                                .doesNotContainKey("traceId")
-                                .doesNotContainKey("sampled"));
+        assertThat(last).hasSeverity(Severity.ERROR).hasSeverityText("ERROR")
+                .hasAttributesSatisfying(attributes -> assertThat(attributes)
+                        .containsEntry("log.logger.namespace", "org.jboss.logging.Logger")
+                        .containsEntry(EXCEPTION_TYPE, "java.lang.RuntimeException")
+                        .containsEntry(EXCEPTION_MESSAGE, "crafted exception")
+                        .containsEntry(EXCEPTION_STACKTRACE, extractStackTrace(craftedException))
+                        .doesNotContainKey(LOG_FILE_PATH)
+                        // attributes do not duplicate tracing data
+                        .doesNotContainKey("spanId").doesNotContainKey("traceId").doesNotContainKey("sampled"));
     }
 
     private String extractStackTrace(final Throwable throwable) {
-        try (StringWriter sw = new StringWriter(1024); PrintWriter pw = new PrintWriter(sw)) {
+        try (StringWriter sw = new StringWriter(1024);
+                PrintWriter pw = new PrintWriter(sw)) {
             throwable.printStackTrace(pw);
             sw.flush();
             return sw.toString();

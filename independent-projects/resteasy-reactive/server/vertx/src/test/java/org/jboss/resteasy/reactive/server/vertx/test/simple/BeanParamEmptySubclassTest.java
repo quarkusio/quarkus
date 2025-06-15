@@ -19,13 +19,12 @@ public class BeanParamEmptySubclassTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, BaseParams.class, Params.class));
+            .withApplicationRoot((jar) -> jar.addClasses(TestResource.class, BaseParams.class, Params.class));
 
     @Test
     public void test() {
-        RestAssured.given().formParam("param1", "foo").post("/bean?param2=bar")
-                .then().statusCode(200).body(Matchers.equalTo("foo/bar"));
+        RestAssured.given().formParam("param1", "foo").post("/bean?param2=bar").then().statusCode(200)
+                .body(Matchers.equalTo("foo/bar"));
     }
 
     @Path("bean")

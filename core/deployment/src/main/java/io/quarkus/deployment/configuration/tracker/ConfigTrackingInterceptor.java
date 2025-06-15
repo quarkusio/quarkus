@@ -19,8 +19,8 @@ import io.smallrye.config.ConfigValue;
 import io.smallrye.config.Priorities;
 
 /**
- * Build configuration interceptor that records all the configuration options
- * and their values that are read during the build.
+ * Build configuration interceptor that records all the configuration options and their values that are read during the
+ * build.
  */
 @Priority(Priorities.APPLICATION)
 public class ConfigTrackingInterceptor implements ConfigSourceInterceptor {
@@ -59,7 +59,8 @@ public class ConfigTrackingInterceptor implements ConfigSourceInterceptor {
     /**
      * Initializes the configuration tracker
      *
-     * @param config configuration instance
+     * @param config
+     *        configuration instance
      */
     public void configure(Config config) {
         enabled = config.getOptionalValue("quarkus.config-tracking.enabled", boolean.class).orElse(false);

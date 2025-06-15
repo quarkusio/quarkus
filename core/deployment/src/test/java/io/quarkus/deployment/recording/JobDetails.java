@@ -48,15 +48,11 @@ public class JobDetails {
     }
 
     public Class[] getJobParameterTypes() {
-        return jobParameters.stream()
-                .map(JobParameter::getClassName)
-                .toArray(Class[]::new);
+        return jobParameters.stream().map(JobParameter::getClassName).toArray(Class[]::new);
     }
 
     public Object[] getJobParameterValues() {
-        return jobParameters.stream()
-                .map(JobParameter::getObject)
-                .toArray();
+        return jobParameters.stream().map(JobParameter::getObject).toArray();
     }
 
     public Boolean getCacheable() {
@@ -74,10 +70,8 @@ public class JobDetails {
         if (!(o instanceof JobDetails))
             return false;
         JobDetails that = (JobDetails) o;
-        return Objects.equals(className, that.className)
-                && Objects.equals(staticFieldName, that.staticFieldName)
-                && Objects.equals(methodName, that.methodName)
-                && Objects.equals(jobParameters, that.jobParameters)
+        return Objects.equals(className, that.className) && Objects.equals(staticFieldName, that.staticFieldName)
+                && Objects.equals(methodName, that.methodName) && Objects.equals(jobParameters, that.jobParameters)
                 && Objects.equals(cacheable, that.cacheable);
     }
 

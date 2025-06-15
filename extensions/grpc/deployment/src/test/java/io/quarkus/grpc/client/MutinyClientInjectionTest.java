@@ -28,9 +28,8 @@ import io.vertx.mutiny.core.Vertx;
 public class MutinyClientInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage()).addClasses(HelloService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage()).addClasses(HelloService.class))
             .withConfigurationResource("hello-config.properties");
 
     @Inject
@@ -58,20 +57,18 @@ public class MutinyClientInjectionTest {
         Vertx vertx;
 
         public String invoke(String s) {
-            return service.sayHello(HelloRequest.newBuilder().setName(s).build())
-                    .map(HelloReply::getMessage)
-                    .invoke(() -> assertThat(Vertx.currentContext()).isNull())
-                    .await().atMost(Duration.ofSeconds(5));
+            return service.sayHello(HelloRequest.newBuilder().setName(s).build()).map(HelloReply::getMessage)
+                    .invoke(() -> assertThat(Vertx.currentContext()).isNull()).await().atMost(Duration.ofSeconds(5));
         }
 
         public String invokeFromIoThread(String s) {
             Context context = vertx.getOrCreateContext();
             return Uni.createFrom().<String> emitter(e -> {
                 context.runOnContext(() -> {
-                    service.sayHello(HelloRequest.newBuilder().setName(s).build())
-                            .map(HelloReply::getMessage)
+                    service.sayHello(HelloRequest.newBuilder().setName(s).build()).map(HelloReply::getMessage)
                             .invoke(() -> assertThat(Vertx.currentContext()).isNotNull().isEqualTo(context))
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isInstanceOf(ContextInternal.class))
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate())
+                                    .isInstanceOf(ContextInternal.class))
                             .subscribe().with(e::complete, e::fail);
                 });
             }).await().atMost(Duration.ofSeconds(5));
@@ -82,10 +79,8 @@ public class MutinyClientInjectionTest {
             ContextInternal duplicate = (ContextInternal) VertxContext.getOrCreateDuplicatedContext(root.getDelegate());
             return Uni.createFrom().<String> emitter(e -> {
                 duplicate.runOnContext(x -> {
-                    service.sayHello(HelloRequest.newBuilder().setName(s).build())
-                            .map(HelloReply::getMessage)
-                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate())
-                                    .isEqualTo(duplicate))
+                    service.sayHello(HelloRequest.newBuilder().setName(s).build()).map(HelloReply::getMessage)
+                            .invoke(() -> assertThat(Vertx.currentContext().getDelegate()).isEqualTo(duplicate))
                             .subscribe().with(e::complete, e::fail);
                 });
             }).await().atMost(Duration.ofSeconds(5));

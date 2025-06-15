@@ -101,8 +101,8 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
         element.addAnnotation(DELETE.class);
     }
 
-    protected void addLinksAnnotation(AnnotatedElement element, ResourceProperties resourceProperties, String entityClassName,
-            String rel) {
+    protected void addLinksAnnotation(AnnotatedElement element, ResourceProperties resourceProperties,
+            String entityClassName, String rel) {
         if (resourceProperties.isHal()) {
             AnnotationCreator linkResource = element.addAnnotation(RestLink.class);
             Class<?> entityClass;
@@ -173,12 +173,13 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
 
     protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
-            element.addAnnotation(OPENAPI_RESPONSE_ANNOTATION)
-                    .add("responseCode", String.valueOf(status.getStatusCode()));
+            element.addAnnotation(OPENAPI_RESPONSE_ANNOTATION).add("responseCode",
+                    String.valueOf(status.getStatusCode()));
         }
     }
 
-    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, String entityType) {
+    protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status,
+            String entityType) {
         addOpenApiResponseAnnotation(element, status, entityType, false);
     }
 
@@ -192,8 +193,8 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
     protected void addOpenApiResponseAnnotation(AnnotatedElement element, RestResponse.Status status, Class<?> clazz,
             boolean isList) {
         if (capabilities.isPresent(Capability.SMALLRYE_OPENAPI)) {
-            AnnotationCreator schemaAnnotation = AnnotationCreator.of(OPENAPI_SCHEMA_ANNOTATION)
-                    .add("implementation", clazz);
+            AnnotationCreator schemaAnnotation = AnnotationCreator.of(OPENAPI_SCHEMA_ANNOTATION).add("implementation",
+                    clazz);
 
             if (isList) {
                 schemaAnnotation.add("type", schemaTypeArray());
@@ -202,9 +203,7 @@ public abstract class StandardMethodImplementor implements MethodImplementor {
             element.addAnnotation(OPENAPI_RESPONSE_ANNOTATION)
                     .add("responseCode", String.valueOf(status.getStatusCode()))
                     .add("content", new Object[] { AnnotationCreator.of(OPENAPI_CONTENT_ANNOTATION)
-                            .add("mediaType", APPLICATION_JSON)
-                            .add("schema", schemaAnnotation)
-                    });
+                            .add("mediaType", APPLICATION_JSON).add("schema", schemaAnnotation) });
         }
     }
 

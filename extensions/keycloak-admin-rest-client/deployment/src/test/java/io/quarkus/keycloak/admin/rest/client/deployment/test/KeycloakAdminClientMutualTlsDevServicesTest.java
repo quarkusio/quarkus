@@ -32,8 +32,7 @@ public class KeycloakAdminClientMutualTlsDevServicesTest {
 
     @RegisterExtension
     final static QuarkusUnitTest app = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar
-                    .addClasses(MtlsResource.class)
+            .withApplicationRoot(jar -> jar.addClasses(MtlsResource.class)
                     .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
                     .addAsResource(new File("target/certs/mtls-test-server-ca.crt"), "server-ca.crt")
                     .addAsResource(new File("target/certs/mtls-test-client-keystore.p12"), "client-keystore.p12")

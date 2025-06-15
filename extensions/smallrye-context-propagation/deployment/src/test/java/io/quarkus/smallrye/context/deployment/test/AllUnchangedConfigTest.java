@@ -12,8 +12,7 @@ import io.smallrye.context.impl.ThreadContextProviderPlan;
 
 public class AllUnchangedConfigTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("mp.context.ThreadContext.unchanged", "Remaining")
             .overrideConfigKey("mp.context.ThreadContext.propagated", "");
 

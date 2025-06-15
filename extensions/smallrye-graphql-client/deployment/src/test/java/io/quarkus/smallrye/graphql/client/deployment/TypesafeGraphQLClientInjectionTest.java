@@ -19,17 +19,15 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class TypesafeGraphQLClientInjectionTest {
 
-    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":" +
-            System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
+    static String url = "http://" + System.getProperty("quarkus.http.host", "localhost") + ":"
+            + System.getProperty("quarkus.http.test-port", "8081") + "/graphql";
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
-                    .addAsResource(new StringAsset("typesafeclient/mp-graphql/url=" + url + "\n" +
-                            "typesafeclient/mp-graphql/header/My-Header=My-Value"),
-                            "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestingGraphQLApi.class, TestingGraphQLClientApi.class, Person.class, PersonDto.class)
+            .addAsResource(new StringAsset("typesafeclient/mp-graphql/url=" + url + "\n"
+                    + "typesafeclient/mp-graphql/header/My-Header=My-Value"), "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject
     TestingGraphQLClientApi client;
@@ -42,9 +40,8 @@ public class TypesafeGraphQLClientInjectionTest {
     }
 
     /**
-     * Verify that configured HTTP headers are applied by the client.
-     * We do this by asking the server side to read the header received from the client and send
-     * its value back to the client.
+     * Verify that configured HTTP headers are applied by the client. We do this by asking the server side to read the
+     * header received from the client and send its value back to the client.
      */
     @Test
     public void checkHeaders() {

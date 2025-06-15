@@ -32,16 +32,17 @@ class DatabaseRunCommandTest extends MongoTestBase {
         Document info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1)).await().indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
 
-        info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), Document.class)
-                .await().indefinitely();
+        info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), Document.class).await()
+                .indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
 
-        info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), ReadPreference.nearest())
-                .await().indefinitely();
+        info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), ReadPreference.nearest()).await()
+                .indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
 
-        info = client.getDatabase(DATABASE).runCommand(new Document("buildInfo", 1), ReadPreference.nearest(), Document.class)
-                .await().indefinitely();
+        info = client.getDatabase(DATABASE)
+                .runCommand(new Document("buildInfo", 1), ReadPreference.nearest(), Document.class).await()
+                .indefinitely();
         assertThat(info.getDouble("ok")).isEqualTo(1.0);
     }
 }

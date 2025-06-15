@@ -20,19 +20,13 @@ import io.quarkus.test.QuarkusUnitTest;
 public class VarargsMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class)
-                    .addAsResource(new StringAsset("{foo.getStr}:{foo.getStr('foo','bar','baz')}"),
-                            "templates/foo.txt")
-                    .addAsResource(new StringAsset("{fmt.format('a','b','c')}"),
-                            "templates/bar.txt")
-                    .addAsResource(new StringAsset("{foo.getInt}:{foo.getInt(1)}:{foo.getInt(1,2,3)}"),
-                            "templates/baz.txt")
-                    .addAsResource(
-                            new StringAsset(
-                                    "{cdi:qux.getBoolean(1)}:{cdi:qux.getBoolean(1, true, false)}:{cdi:qux.getBoolean(2, false)}"),
-                            "templates/qux.txt"));;
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Foo.class)
+            .addAsResource(new StringAsset("{foo.getStr}:{foo.getStr('foo','bar','baz')}"), "templates/foo.txt")
+            .addAsResource(new StringAsset("{fmt.format('a','b','c')}"), "templates/bar.txt")
+            .addAsResource(new StringAsset("{foo.getInt}:{foo.getInt(1)}:{foo.getInt(1,2,3)}"), "templates/baz.txt")
+            .addAsResource(new StringAsset(
+                    "{cdi:qux.getBoolean(1)}:{cdi:qux.getBoolean(1, true, false)}:{cdi:qux.getBoolean(2, false)}"),
+                    "templates/qux.txt"));;
 
     @Inject
     Template foo;

@@ -27,7 +27,8 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 
-public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReader implements ClientMessageBodyReader<Object> {
+public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReader
+        implements ClientMessageBodyReader<Object> {
 
     private static final Logger log = Logger.getLogger(ClientJacksonMessageBodyReader.class);
 
@@ -41,13 +42,13 @@ public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReade
 
     @Override
     public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+            throws IOException, WebApplicationException {
         return doRead(type, genericType, mediaType, entityStream, null);
     }
 
     private Object doRead(Class<Object> type, Type genericType, MediaType mediaType, InputStream entityStream,
-            RestClientRequestContext context)
-            throws IOException {
+            RestClientRequestContext context) throws IOException {
         try {
             if (entityStream instanceof EmptyInputStream) {
                 return null;
@@ -63,11 +64,9 @@ public class ClientJacksonMessageBodyReader extends AbstractJsonMessageBodyReade
     }
 
     @Override
-    public Object readFrom(Class<Object> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders,
-            InputStream entityStream,
-            RestClientRequestContext context) throws java.io.IOException, jakarta.ws.rs.WebApplicationException {
+    public Object readFrom(Class<Object> type, Type genericType, Annotation[] annotations, MediaType mediaType,
+            MultivaluedMap<String, String> httpHeaders, InputStream entityStream, RestClientRequestContext context)
+            throws java.io.IOException, jakarta.ws.rs.WebApplicationException {
         return doRead(type, genericType, mediaType, entityStream, context);
     }
 

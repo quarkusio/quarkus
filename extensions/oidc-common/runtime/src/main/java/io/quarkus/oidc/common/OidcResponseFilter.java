@@ -13,15 +13,15 @@ public interface OidcResponseFilter {
     /**
      * OIDC response context which provides access to the HTTP response status code, headers and body.
      */
-    record OidcResponseContext(OidcRequestContextProperties requestProperties,
-            int statusCode, MultiMap responseHeaders, Buffer responseBody) {
+    record OidcResponseContext(OidcRequestContextProperties requestProperties, int statusCode, MultiMap responseHeaders,
+            Buffer responseBody) {
     }
 
     /**
      * Filter OIDC responses.
      *
-     * @param responseContext the response context which provides access to the HTTP response status code, headers and body.
-     *
+     * @param responseContext
+     *        the response context which provides access to the HTTP response status code, headers and body.
      */
     void filter(OidcResponseContext responseContext);
 }

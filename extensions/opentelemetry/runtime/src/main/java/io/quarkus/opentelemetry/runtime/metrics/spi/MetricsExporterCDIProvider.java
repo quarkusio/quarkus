@@ -20,10 +20,8 @@ public class MetricsExporterCDIProvider implements ConfigurableMetricExporterPro
     @Override
     public MetricExporter createExporter(ConfigProperties configProperties) {
         Instance<MetricExporter> exporters = CDI.current().select(MetricExporter.class, Any.Literal.INSTANCE);
-        log.fine("available exporters: " + exporters.stream()
-                .map(e -> e.getClass().getName())
-                .reduce((a, b) -> a + ", " + b)
-                .orElse("none"));
+        log.fine("available exporters: "
+                + exporters.stream().map(e -> e.getClass().getName()).reduce((a, b) -> a + ", " + b).orElse("none"));
         if (exporters.isUnsatisfied()) {
             return NoopMetricExporter.INSTANCE;
         } else {

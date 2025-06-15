@@ -19,17 +19,16 @@ public class LiveReloadManagementEndpoint {
     void managementRoutes(@Observes ManagementInterface mi) {
         Router router = mi.router();
         // Case 1: testing name change:
-        router.route("/manage-1")
-                .produces("text/plain")
+        router.route("/manage-1").produces("text/plain")
                 .handler(rc -> rc.response().end(WebClient.class.hashCode() + "-" + HttpRequest.class.hashCode()));
 
         // Test that a new handler using some CDI bean can be loaded:
         // Case 2: router.route("/manage-cdi")
-        // Case 2:         .produces("text/plain")
-        // Case 2:         .handler(new LiveReloadManagementHandler());
+        // Case 2: .produces("text/plain")
+        // Case 2: .handler(new LiveReloadManagementHandler());
 
         // Case 3: router.route("/manage-bean-handler")
-        // Case 3:         .produces("text/plain")
-        // Case 3:         .handler(handler);
+        // Case 3: .produces("text/plain")
+        // Case 3: .handler(handler);
     }
 }

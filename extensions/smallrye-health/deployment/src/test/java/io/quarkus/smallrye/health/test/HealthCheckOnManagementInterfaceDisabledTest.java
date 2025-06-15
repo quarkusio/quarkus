@@ -21,22 +21,17 @@ class HealthCheckOnManagementInterfaceDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyCheck.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyCheck.class))
             .overrideConfigKey("quarkus.management.enabled", "false");
 
     @Test
     void testHealth() {
         try {
             RestAssured.defaultParser = Parser.JSON;
-            when().get("/q/health/live").then()
-                    .body("status", is("UP"),
-                            "checks.status", contains("UP"),
-                            "checks.name", hasItems("my-check"));
-            when().get("/q/health/live").then()
-                    .body("status", is("DOWN"),
-                            "checks.status", contains("DOWN"),
-                            "checks.name", hasItems("my-check"));
+            when().get("/q/health/live").then().body("status", is("UP"), "checks.status", contains("UP"), "checks.name",
+                    hasItems("my-check"));
+            when().get("/q/health/live").then().body("status", is("DOWN"), "checks.status", contains("DOWN"),
+                    "checks.name", hasItems("my-check"));
         } finally {
             RestAssured.reset();
         }

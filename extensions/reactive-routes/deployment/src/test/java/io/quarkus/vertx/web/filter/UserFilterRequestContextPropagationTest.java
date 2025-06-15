@@ -20,13 +20,11 @@ public class UserFilterRequestContextPropagationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FilterAndRoute.class, RequestFoo.class));
+            .withApplicationRoot((jar) -> jar.addClasses(FilterAndRoute.class, RequestFoo.class));
 
     @Test
     public void test() {
-        RestAssured.post("/hello").then().statusCode(200)
-                .body(is("11"));
+        RestAssured.post("/hello").then().statusCode(200).body(is("11"));
     }
 
     public static class FilterAndRoute {

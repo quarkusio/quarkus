@@ -26,8 +26,7 @@ public class TlsConfigFromPropertiesCdiTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class)
                     .addAsResource(new File("target/certs/tls-test-keystore.jks"), "keystore.jks")
                     .addAsResource(new File("target/certs/tls-test-truststore.jks"), "truststore.jks"))
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "keystore.jks")

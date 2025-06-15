@@ -34,19 +34,16 @@ public class NameTest {
                 Name.from(ParameterizedType.create(DotName.createSimple("org.acme.Foo"),
                         new Type[] { Type.create(DotName.createSimple("java.lang.String"), Kind.CLASS) }, null)),
                 "org.acme.Foo<java.lang.String>", "Foo<String>");
-        assertName(
-                Name.from(ParameterizedType.create(DotName.createSimple("org.acme.Foo"),
-                        new Type[] { ParameterizedType.create(DotName.createSimple("java.util.List"),
-                                new Type[] { Type.create(DotName.createSimple("java.lang.String"), Kind.CLASS) }, null) },
-                        null)),
-                "org.acme.Foo<java.util.List<java.lang.String>>", "Foo<List<String>>");
+        assertName(Name.from(ParameterizedType.create(DotName.createSimple("org.acme.Foo"),
+                new Type[] { ParameterizedType.create(DotName.createSimple("java.util.List"),
+                        new Type[] { Type.create(DotName.createSimple("java.lang.String"), Kind.CLASS) }, null) },
+                null)), "org.acme.Foo<java.util.List<java.lang.String>>", "Foo<List<String>>");
     }
 
     @Test
     public void testFromAnnotation() {
-        assertName(
-                Name.from(AnnotationInstance.create(DotName.createSimple("org.acme.Bar"), null,
-                        new AnnotationValue[] {})),
+        assertName(Name
+                .from(AnnotationInstance.create(DotName.createSimple("org.acme.Bar"), null, new AnnotationValue[] {})),
                 "@org.acme.Bar", "@Bar");
         assertName(
                 Name.from(AnnotationInstance.create(DotName.createSimple("org.acme.Bar"), null,

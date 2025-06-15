@@ -10,11 +10,8 @@ import io.undertow.util.AttachmentKey;
 /**
  * Handler that works around issues with rewrites() and undertow-handlers.conf.
  * <p>
- * Because the rewrite happens after the initial dispatch this handler detects if
- * the path has been rewritten and updates the servlet target.
- *
- * This is a bit of a hack, it needs a lot more thinking about a clean way to handle
- * this
+ * Because the rewrite happens after the initial dispatch this handler detects if the path has been rewritten and
+ * updates the servlet target. This is a bit of a hack, it needs a lot more thinking about a clean way to handle this
  */
 public class RewriteCorrectingHandlerWrappers {
 

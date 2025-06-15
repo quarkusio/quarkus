@@ -29,10 +29,8 @@ public final class ReactiveDataSourceBuildUtil {
         if (DataSourceUtil.isDefault(dataSourceName)) {
             return new AnnotationInstance[] { AnnotationInstance.builder(Default.class).build() };
         } else {
-            return new AnnotationInstance[] {
-                    AnnotationInstance.builder(DotNames.NAMED).value(dataSourceName).build(),
-                    AnnotationInstance.builder(ReactiveDataSource.class).value(dataSourceName).build(),
-            };
+            return new AnnotationInstance[] { AnnotationInstance.builder(DotNames.NAMED).value(dataSourceName).build(),
+                    AnnotationInstance.builder(ReactiveDataSource.class).value(dataSourceName).build(), };
         }
     }
 }

@@ -67,8 +67,8 @@ public class StockMethodsAdder {
         operationsField = of(operationsName, "INSTANCE", operationsName);
     }
 
-    public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, ClassInfo repositoryToImplement, DotName entityDotName, String idTypeStr) {
+    public void add(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, String generatedClassName,
+            ClassInfo repositoryToImplement, DotName entityDotName, String idTypeStr) {
 
         Set<MethodInfo> methodsOfExtendedSpringDataRepositories = methodsOfExtendedSpringDataRepositories(
                 repositoryToImplement);
@@ -78,16 +78,18 @@ public class StockMethodsAdder {
 
         Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult = new HashMap<>();
         for (MethodInfo methodInfo : allMethodsToBeImplemented) {
-            allMethodsToBeImplementedToResult.put(GenerationUtil.toMethodDescriptor(generatedClassName, methodInfo), false);
+            allMethodsToBeImplementedToResult.put(GenerationUtil.toMethodDescriptor(generatedClassName, methodInfo),
+                    false);
         }
 
         String entityTypeStr = entityDotName.toString();
 
-        // for all Spring Data repository methods we know how to implement, check if the generated class actually needs the method
+        // for all Spring Data repository methods we know how to implement, check if the generated class actually needs
+        // the method
         // and if so generate the implementation while also keeping the proper records
 
-        generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr,
-                allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
+        generateSave(classCreator, generatedClassName, entityDotName, entityTypeStr, allMethodsToBeImplementedToResult,
+                entityClassFieldDescriptor);
         generateSaveAndFlush(classCreator, generatedClassName, entityDotName, entityTypeStr,
                 allMethodsToBeImplementedToResult, entityClassFieldDescriptor);
         generateSaveAll(classCreator, entityClassFieldDescriptor, generatedClassName, entityDotName, entityTypeStr,
@@ -115,8 +117,10 @@ public class StockMethodsAdder {
         generateDeleteById(classCreator, entityClassFieldDescriptor, generatedClassName, entityTypeStr, idTypeStr,
                 allMethodsToBeImplementedToResult);
         generateDelete(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult);
-        generateDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, allMethodsToBeImplementedToResult);
-        generateDeleteAll(classCreator, entityClassFieldDescriptor, generatedClassName, allMethodsToBeImplementedToResult);
+        generateDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr,
+                allMethodsToBeImplementedToResult);
+        generateDeleteAll(classCreator, entityClassFieldDescriptor, generatedClassName,
+                allMethodsToBeImplementedToResult);
         generateDeleteAllInBatch(classCreator, entityClassFieldDescriptor, generatedClassName,
                 allMethodsToBeImplementedToResult);
         generateDeleteAllInBatchWithIterable(classCreator, generatedClassName, entityTypeStr,
@@ -129,9 +133,8 @@ public class StockMethodsAdder {
         handleUnimplementedMethods(classCreator, allMethodsToBeImplementedToResult);
     }
 
-    private void generateSave(ClassCreator classCreator, String generatedClassName,
-            DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult,
+    private void generateSave(ClassCreator classCreator, String generatedClassName, DotName entityDotName,
+            String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult,
             FieldDescriptor entityClassFieldDescriptor) {
 
         MethodDescriptor saveDescriptor = MethodDescriptor.ofMethod(generatedClassName, "save", entityTypeStr,
@@ -151,8 +154,7 @@ public class StockMethodsAdder {
                     // if an entity is Persistable, then all we need to do is call isNew to determine if it's new or not
                     if (isPersistable(entityDotName)) {
                         ResultHandle isNew = save.invokeVirtualMethod(
-                                ofMethod(entityDotName.toString(), "isNew", boolean.class.toString()),
-                                entity);
+                                ofMethod(entityDotName.toString(), "isNew", boolean.class.toString()), entity);
                         BranchResult isNewBranch = save.ifTrue(isNew);
                         generatePersistAndReturn(entity, isNewBranch.trueBranch());
                         generateMergeAndReturn(entity, isNewBranch.falseBranch(), entityClassFieldDescriptor);
@@ -160,11 +162,14 @@ public class StockMethodsAdder {
                         AnnotationTarget idAnnotationTarget = getIdAnnotationTarget(entityDotName, index);
                         ResultHandle idValue = generateObtainValue(save, entityDotName, entity, idAnnotationTarget);
                         Type idType = getTypeOfTarget(idAnnotationTarget);
-                        Optional<AnnotationTarget> versionValueTarget = getVersionAnnotationTarget(entityDotName, index);
+                        Optional<AnnotationTarget> versionValueTarget = getVersionAnnotationTarget(entityDotName,
+                                index);
 
                         // the following code generated bytecode that:
-                        // if there is a field annotated with @Version, calls 'persist' if the field is null, 'merge' otherwise
-                        // if there is no field annotated with @Version, then if the value of the field annotated with '@Id'
+                        // if there is a field annotated with @Version, calls 'persist' if the field is null, 'merge'
+                        // otherwise
+                        // if there is no field annotated with @Version, then if the value of the field annotated with
+                        // '@Id'
                         // is "falsy", 'persist' is called, otherwise 'merge' is called
 
                         if (versionValueTarget.isPresent()) {
@@ -178,7 +183,8 @@ public class StockMethodsAdder {
                                     versionValueTarget.get());
                             BranchResult versionValueIsNullBranch = save.ifNull(versionValue);
                             generatePersistAndReturn(entity, versionValueIsNullBranch.trueBranch());
-                            generateMergeAndReturn(entity, versionValueIsNullBranch.falseBranch(), entityClassFieldDescriptor);
+                            generateMergeAndReturn(entity, versionValueIsNullBranch.falseBranch(),
+                                    entityClassFieldDescriptor);
                         }
 
                         BytecodeCreator idValueUnset;
@@ -190,9 +196,10 @@ public class StockMethodsAdder {
                             }
                             if (idType.name().equals(DotNames.PRIMITIVE_LONG)) {
                                 ResultHandle longObject = save.invokeStaticMethod(
-                                        MethodDescriptor.ofMethod(Long.class, "valueOf", Long.class, long.class), idValue);
-                                idValue = save.invokeVirtualMethod(MethodDescriptor.ofMethod(Long.class, "intValue", int.class),
-                                        longObject);
+                                        MethodDescriptor.ofMethod(Long.class, "valueOf", Long.class, long.class),
+                                        idValue);
+                                idValue = save.invokeVirtualMethod(
+                                        MethodDescriptor.ofMethod(Long.class, "intValue", int.class), longObject);
                             }
                             BranchResult idValueNonZeroBranch = save.ifNonZero(idValue);
                             idValueSet = idValueNonZeroBranch.trueBranch();
@@ -242,28 +249,25 @@ public class StockMethodsAdder {
     private void generatePersistAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator) {
         bytecodeCreator.invokeVirtualMethod(
                 MethodDescriptor.ofMethod(AbstractJpaOperations.class, "persist", void.class, Object.class),
-                bytecodeCreator.readStaticField(operationsField),
-                entity);
+                bytecodeCreator.readStaticField(operationsField), entity);
         bytecodeCreator.returnValue(entity);
     }
 
     private void generateMergeAndReturn(ResultHandle entity, BytecodeCreator bytecodeCreator,
             FieldDescriptor entityClassFieldDescriptor) {
-        ResultHandle entityClass = bytecodeCreator.readInstanceField(entityClassFieldDescriptor, bytecodeCreator.getThis());
+        ResultHandle entityClass = bytecodeCreator.readInstanceField(entityClassFieldDescriptor,
+                bytecodeCreator.getThis());
         ResultHandle session = bytecodeCreator.invokeVirtualMethod(
                 ofMethod(AbstractJpaOperations.class, "getSession", Session.class, Class.class),
-                bytecodeCreator.readStaticField(operationsField),
-                entityClass);
+                bytecodeCreator.readStaticField(operationsField), entityClass);
         entity = bytecodeCreator.invokeInterfaceMethod(
-                MethodDescriptor.ofMethod(Session.class, "merge", Object.class, Object.class),
-                session, entity);
+                MethodDescriptor.ofMethod(Session.class, "merge", Object.class, Object.class), session, entity);
         bytecodeCreator.returnValue(entity);
     }
 
     /**
-     * Given an annotation target, generate the bytecode that is needed to obtain its value
-     * either by reading the field or by calling the method.
-     * Meant to be called for annotations alike {@code @Id} or {@code @Version}
+     * Given an annotation target, generate the bytecode that is needed to obtain its value either by reading the field
+     * or by calling the method. Meant to be called for annotations alike {@code @Id} or {@code @Version}
      */
     private ResultHandle generateObtainValue(MethodCreator methodCreator, DotName entityDotName, ResultHandle entity,
             AnnotationTarget annotationTarget) {
@@ -274,15 +278,12 @@ public class StockMethodsAdder {
             }
 
             String getterMethodName = JavaBeanUtil.getGetterName(fieldInfo.name(), fieldInfo.type().name());
-            return methodCreator.invokeVirtualMethod(
-                    MethodDescriptor.ofMethod(entityDotName.toString(), getterMethodName, fieldInfo.type().name().toString()),
-                    entity);
+            return methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(entityDotName.toString(),
+                    getterMethodName, fieldInfo.type().name().toString()), entity);
         }
         MethodInfo methodInfo = annotationTarget.asMethod();
-        return methodCreator.invokeVirtualMethod(
-                MethodDescriptor.ofMethod(entityDotName.toString(), methodInfo.name(),
-                        methodInfo.returnType().name().toString()),
-                entity);
+        return methodCreator.invokeVirtualMethod(MethodDescriptor.ofMethod(entityDotName.toString(), methodInfo.name(),
+                methodInfo.returnType().name().toString()), entity);
     }
 
     private Type getTypeOfTarget(AnnotationTarget idAnnotationTarget) {
@@ -292,15 +293,14 @@ public class StockMethodsAdder {
         return idAnnotationTarget.asMethod().returnType();
     }
 
-    private void generateSaveAndFlush(ClassCreator classCreator,
-            String generatedClassName, DotName entityDotName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult, FieldDescriptor entityClassFieldDescriptor) {
+    private void generateSaveAndFlush(ClassCreator classCreator, String generatedClassName, DotName entityDotName,
+            String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult,
+            FieldDescriptor entityClassFieldDescriptor) {
 
-        MethodDescriptor saveAndFlushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush", entityTypeStr,
-                entityTypeStr);
+        MethodDescriptor saveAndFlushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush",
+                entityTypeStr, entityTypeStr);
         MethodDescriptor bridgeSaveAndFlushDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush",
-                Object.class,
-                Object.class);
+                Object.class, Object.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(saveAndFlushDescriptor)
                 || allMethodsToBeImplementedToResult.containsKey(bridgeSaveAndFlushDescriptor)) {
@@ -325,11 +325,12 @@ public class StockMethodsAdder {
                     saveAndFlush.returnValue(entity);
                 }
                 try (MethodCreator bridgeSave = classCreator.getMethodCreator(bridgeSaveAndFlushDescriptor)) {
-                    MethodDescriptor saveAndFlush = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush", entityTypeStr,
-                            entityTypeStr);
+                    MethodDescriptor saveAndFlush = MethodDescriptor.ofMethod(generatedClassName, "saveAndFlush",
+                            entityTypeStr, entityTypeStr);
                     ResultHandle methodParam = bridgeSave.getMethodParam(0);
                     ResultHandle castedMethodParam = bridgeSave.checkCast(methodParam, entityTypeStr);
-                    ResultHandle result = bridgeSave.invokeVirtualMethod(saveAndFlush, bridgeSave.getThis(), castedMethodParam);
+                    ResultHandle result = bridgeSave.invokeVirtualMethod(saveAndFlush, bridgeSave.getThis(),
+                            castedMethodParam);
                     bridgeSave.returnValue(result);
                 }
             }
@@ -345,8 +346,8 @@ public class StockMethodsAdder {
 
         MethodDescriptor saveAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAll", List.class,
                 Iterable.class);
-        MethodDescriptor bridgeSaveAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAll", Iterable.class,
-                Iterable.class);
+        MethodDescriptor bridgeSaveAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "saveAll",
+                Iterable.class, Iterable.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(saveAllDescriptor)
                 || allMethodsToBeImplementedToResult.containsKey(bridgeSaveAllDescriptor)) {
@@ -363,24 +364,21 @@ public class StockMethodsAdder {
                     ResultHandle iterable = saveAll.getMethodParam(0);
                     ResultHandle resultList = saveAll.newInstance(MethodDescriptor.ofConstructor(ArrayList.class));
 
-                    ResultHandle iterator = saveAll.invokeInterfaceMethod(
-                            ofMethod(Iterable.class, "iterator", Iterator.class),
-                            iterable);
+                    ResultHandle iterator = saveAll
+                            .invokeInterfaceMethod(ofMethod(Iterable.class, "iterator", Iterator.class), iterable);
                     BytecodeCreator loop = saveAll.createScope();
-                    ResultHandle hasNextValue = loop.invokeInterfaceMethod(
-                            ofMethod(Iterator.class, "hasNext", boolean.class),
-                            iterator);
+                    ResultHandle hasNextValue = loop
+                            .invokeInterfaceMethod(ofMethod(Iterator.class, "hasNext", boolean.class), iterator);
 
                     BranchResult hasNextBranch = loop.ifNonZero(hasNextValue);
                     BytecodeCreator hasNext = hasNextBranch.trueBranch();
                     BytecodeCreator doesNotHaveNext = hasNextBranch.falseBranch();
-                    ResultHandle next = hasNext.invokeInterfaceMethod(
-                            ofMethod(Iterator.class, "next", Object.class),
+                    ResultHandle next = hasNext.invokeInterfaceMethod(ofMethod(Iterator.class, "next", Object.class),
                             iterator);
                     ResultHandle saveResult = hasNext.invokeVirtualMethod(save, hasNext.getThis(), next);
                     hasNext.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class),
-                            resultList, saveResult);
+                            MethodDescriptor.ofMethod(List.class, "add", boolean.class, Object.class), resultList,
+                            saveResult);
                     hasNext.continueScope(loop);
 
                     doesNotHaveNext.breakScope(loop);
@@ -436,12 +434,12 @@ public class StockMethodsAdder {
 
             if (!classCreator.getExistingMethods().contains(findByIdDescriptor)) {
                 try (MethodCreator findById = classCreator.getMethodCreator(findByIdDescriptor)) {
-                    findById.setSignature(String.format("(L%s;)Ljava/util/Optional<L%s;>;",
-                            idTypeStr.replace('.', '/'), entityTypeStr.replace('.', '/')));
+                    findById.setSignature(String.format("(L%s;)Ljava/util/Optional<L%s;>;", idTypeStr.replace('.', '/'),
+                            entityTypeStr.replace('.', '/')));
                     ResultHandle id = findById.getMethodParam(0);
                     ResultHandle entity = findById.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "findById", Object.class, Class.class,
-                                    Object.class),
+                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "findById", Object.class,
+                                    Class.class, Object.class),
                             findById.readStaticField(operationsField),
                             findById.readInstanceField(entityClassFieldDescriptor, findById.getThis()), id);
                     ResultHandle optional = findById.invokeStaticMethod(
@@ -451,8 +449,7 @@ public class StockMethodsAdder {
                 }
                 try (MethodCreator bridgeFindById = classCreator.getMethodCreator(bridgeFindByIdDescriptor)) {
                     MethodDescriptor findById = MethodDescriptor.ofMethod(generatedClassName, "findById",
-                            Optional.class.getName(),
-                            idTypeStr);
+                            Optional.class.getName(), idTypeStr);
                     ResultHandle methodParam = bridgeFindById.getMethodParam(0);
                     ResultHandle castedMethodParam = bridgeFindById.checkCast(methodParam, idTypeStr);
                     ResultHandle result = bridgeFindById.invokeVirtualMethod(findById, bridgeFindById.getThis(),
@@ -472,16 +469,15 @@ public class StockMethodsAdder {
 
         MethodDescriptor existsByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "existsById",
                 boolean.class, idTypeStr);
-        MethodDescriptor bridgeExistsByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "existsById", boolean.class,
-                Object.class);
+        MethodDescriptor bridgeExistsByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "existsById",
+                boolean.class, Object.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(existsByIdDescriptor)
                 || allMethodsToBeImplementedToResult.containsKey(bridgeExistsByIdDescriptor)) {
 
             if (!classCreator.getExistingMethods().contains(existsByIdDescriptor)) {
                 MethodDescriptor findById = MethodDescriptor.ofMethod(generatedClassName, "findById",
-                        Optional.class.getName(),
-                        idTypeStr);
+                        Optional.class.getName(), idTypeStr);
 
                 // we need to force the generation of findById since this method depends on it
                 allMethodsToBeImplementedToResult.put(findById, false);
@@ -491,17 +487,14 @@ public class StockMethodsAdder {
                 try (MethodCreator existsById = classCreator.getMethodCreator(existsByIdDescriptor)) {
 
                     ResultHandle methodParam = existsById.getMethodParam(0);
-                    ResultHandle optional = existsById.invokeVirtualMethod(findById, existsById.getThis(),
-                            methodParam);
-                    ResultHandle isPresent = existsById.invokeVirtualMethod(
-                            ofMethod(Optional.class, "isPresent", boolean.class),
-                            optional);
+                    ResultHandle optional = existsById.invokeVirtualMethod(findById, existsById.getThis(), methodParam);
+                    ResultHandle isPresent = existsById
+                            .invokeVirtualMethod(ofMethod(Optional.class, "isPresent", boolean.class), optional);
                     existsById.returnValue(isPresent);
                 }
                 try (MethodCreator bridgeExistsById = classCreator.getMethodCreator(bridgeExistsByIdDescriptor)) {
                     MethodDescriptor existsById = MethodDescriptor.ofMethod(generatedClassName, "existsById",
-                            boolean.class.getName(),
-                            idTypeStr);
+                            boolean.class.getName(), idTypeStr);
                     ResultHandle methodParam = bridgeExistsById.getMethodParam(0);
                     ResultHandle castedMethodParam = bridgeExistsById.checkCast(methodParam, idTypeStr);
                     ResultHandle result = bridgeExistsById.invokeVirtualMethod(existsById, bridgeExistsById.getThis(),
@@ -539,13 +532,14 @@ public class StockMethodsAdder {
                 idTypeStr, "getReferenceById", allMethodsToBeImplementedToResult);
     }
 
-    private void generateSpecificFindEntityReference(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, String entityTypeStr, String idTypeStr, String actualMethodName,
+    private void generateSpecificFindEntityReference(ClassCreator classCreator,
+            FieldDescriptor entityClassFieldDescriptor, String generatedClassName, String entityTypeStr,
+            String idTypeStr, String actualMethodName,
             Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
         MethodDescriptor getReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
                 entityTypeStr, idTypeStr);
-        MethodDescriptor bridgegetReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
-                Object.class, Object.class);
+        MethodDescriptor bridgegetReferenceByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName,
+                actualMethodName, Object.class, Object.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(getReferenceByIdDescriptor)
                 || allMethodsToBeImplementedToResult.containsKey(bridgegetReferenceByIdDescriptor)) {
@@ -553,8 +547,9 @@ public class StockMethodsAdder {
             if (!classCreator.getExistingMethods().contains(getReferenceByIdDescriptor)) {
                 try (MethodCreator findById = classCreator.getMethodCreator(getReferenceByIdDescriptor)) {
 
-                    ResultHandle entity = findById.invokeStaticMethod(ofMethod(RepositorySupport.class, actualMethodName,
-                            Object.class, AbstractJpaOperations.class, Class.class, Object.class),
+                    ResultHandle entity = findById.invokeStaticMethod(
+                            ofMethod(RepositorySupport.class, actualMethodName, Object.class,
+                                    AbstractJpaOperations.class, Class.class, Object.class),
                             findById.readStaticField(operationsField),
                             findById.readInstanceField(entityClassFieldDescriptor, findById.getThis()),
                             findById.getMethodParam(0));
@@ -578,29 +573,30 @@ public class StockMethodsAdder {
     }
 
     private void generateFindAll(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            String generatedClassName, String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
 
         MethodDescriptor findAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class);
-        MethodDescriptor bridgeFindAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", Iterable.class);
+        MethodDescriptor bridgeFindAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll",
+                Iterable.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(findAllDescriptor)
                 || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllDescriptor)) {
 
             if (!classCreator.getExistingMethods().contains(findAllDescriptor)) {
                 try (MethodCreator findAll = classCreator.getMethodCreator(findAllDescriptor)) {
-                    findAll.setSignature(String.format("()Ljava/util/List<L%s;>;",
-                            entityTypeStr.replace('.', '/')));
+                    findAll.setSignature(String.format("()Ljava/util/List<L%s;>;", entityTypeStr.replace('.', '/')));
                     ResultHandle panacheQuery = findAll.invokeVirtualMethod(
                             ofMethod(AbstractJpaOperations.class, "findAll", Object.class, Class.class),
                             findAll.readStaticField(operationsField),
                             findAll.readInstanceField(entityClassFieldDescriptor, findAll.getThis()));
-                    ResultHandle list = findAll.invokeInterfaceMethod(
-                            ofMethod(PanacheQuery.class, "list", List.class),
+                    ResultHandle list = findAll.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class),
                             panacheQuery);
                     findAll.returnValue(list);
                 }
                 try (MethodCreator bridgeFindAll = classCreator.getMethodCreator(bridgeFindAllDescriptor)) {
-                    MethodDescriptor findAll = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class.getName());
+                    MethodDescriptor findAll = MethodDescriptor.ofMethod(generatedClassName, "findAll",
+                            List.class.getName());
                     ResultHandle result = bridgeFindAll.invokeVirtualMethod(findAll, bridgeFindAll.getThis());
                     bridgeFindAll.returnValue(result);
                 }
@@ -612,11 +608,13 @@ public class StockMethodsAdder {
     }
 
     private void generateFindAllWithSort(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            String generatedClassName, String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
 
-        MethodDescriptor findAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class, Sort.class);
-        MethodDescriptor bridgeFindAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", Iterable.class,
+        MethodDescriptor findAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class,
                 Sort.class);
+        MethodDescriptor bridgeFindAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll",
+                Iterable.class, Sort.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(findAllDescriptor)
                 || allMethodsToBeImplementedToResult.containsKey(bridgeFindAllDescriptor)) {
@@ -628,8 +626,7 @@ public class StockMethodsAdder {
 
                     ResultHandle sort = findAll.invokeStaticMethod(
                             MethodDescriptor.ofMethod(TypesConverter.class, "toPanacheSort",
-                                    io.quarkus.panache.common.Sort.class,
-                                    org.springframework.data.domain.Sort.class),
+                                    io.quarkus.panache.common.Sort.class, org.springframework.data.domain.Sort.class),
                             findAll.getMethodParam(0));
 
                     ResultHandle panacheQuery = findAll.invokeVirtualMethod(
@@ -637,14 +634,13 @@ public class StockMethodsAdder {
                                     io.quarkus.panache.common.Sort.class),
                             findAll.readStaticField(operationsField),
                             findAll.readInstanceField(entityClassFieldDescriptor, findAll.getThis()), sort);
-                    ResultHandle list = findAll.invokeInterfaceMethod(
-                            ofMethod(PanacheQuery.class, "list", List.class),
+                    ResultHandle list = findAll.invokeInterfaceMethod(ofMethod(PanacheQuery.class, "list", List.class),
                             panacheQuery);
                     findAll.returnValue(list);
                 }
                 try (MethodCreator bridgeFindAll = classCreator.getMethodCreator(bridgeFindAllDescriptor)) {
-                    MethodDescriptor findAll = MethodDescriptor.ofMethod(generatedClassName, "findAll", List.class.getName(),
-                            Sort.class);
+                    MethodDescriptor findAll = MethodDescriptor.ofMethod(generatedClassName, "findAll",
+                            List.class.getName(), Sort.class);
                     ResultHandle result = bridgeFindAll.invokeVirtualMethod(findAll, bridgeFindAll.getThis(),
                             bridgeFindAll.getMethodParam(0));
                     bridgeFindAll.returnValue(result);
@@ -657,7 +653,8 @@ public class StockMethodsAdder {
     }
 
     private void generateFindAllWithPageable(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
-            String generatedClassName, String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            String generatedClassName, String entityTypeStr,
+            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
 
         MethodDescriptor findAllDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAll", Page.class,
                 Pageable.class);
@@ -672,20 +669,18 @@ public class StockMethodsAdder {
 
                     ResultHandle pageable = findAll.getMethodParam(0);
                     ResultHandle pageableSort = findAll.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(Pageable.class, "getSort", Sort.class),
-                            pageable);
+                            MethodDescriptor.ofMethod(Pageable.class, "getSort", Sort.class), pageable);
 
-                    ResultHandle panachePage = findAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(TypesConverter.class, "toPanachePage",
-                                    io.quarkus.panache.common.Page.class, Pageable.class),
-                            pageable);
+                    ResultHandle panachePage = findAll
+                            .invokeStaticMethod(MethodDescriptor.ofMethod(TypesConverter.class, "toPanachePage",
+                                    io.quarkus.panache.common.Page.class, Pageable.class), pageable);
                     ResultHandle panacheSort = findAll.invokeStaticMethod(
                             MethodDescriptor.ofMethod(TypesConverter.class, "toPanacheSort",
-                                    io.quarkus.panache.common.Sort.class,
-                                    org.springframework.data.domain.Sort.class),
+                                    io.quarkus.panache.common.Sort.class, org.springframework.data.domain.Sort.class),
                             pageableSort);
 
-                    // depending on whether there was a io.quarkus.panache.common.Sort returned, we need to execute a different findAll method
+                    // depending on whether there was a io.quarkus.panache.common.Sort returned, we need to execute a
+                    // different findAll method
                     BranchResult sortNullBranch = findAll.ifNull(panacheSort);
                     BytecodeCreator sortNullTrue = sortNullBranch.trueBranch();
                     BytecodeCreator sortNullFalse = sortNullBranch.falseBranch();
@@ -702,7 +697,8 @@ public class StockMethodsAdder {
                             ofMethod(AbstractJpaOperations.class, "findAll", Object.class, Class.class,
                                     io.quarkus.panache.common.Sort.class),
                             sortNullFalse.readStaticField(operationsField),
-                            sortNullFalse.readInstanceField(entityClassFieldDescriptor, sortNullFalse.getThis()), panacheSort);
+                            sortNullFalse.readInstanceField(entityClassFieldDescriptor, sortNullFalse.getThis()),
+                            panacheSort);
                     sortNullFalse.assign(panacheQueryVar, panacheQueryWithSort);
                     sortNullFalse.breakScope();
 
@@ -711,11 +707,9 @@ public class StockMethodsAdder {
                                     io.quarkus.panache.common.Page.class),
                             panacheQueryVar, panachePage);
                     ResultHandle list = findAll.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class),
-                            panacheQuery);
+                            MethodDescriptor.ofMethod(PanacheQuery.class, "list", List.class), panacheQuery);
                     ResultHandle count = findAll.invokeInterfaceMethod(
-                            MethodDescriptor.ofMethod(PanacheQuery.class, "count", long.class),
-                            panacheQuery);
+                            MethodDescriptor.ofMethod(PanacheQuery.class, "count", long.class), panacheQuery);
                     ResultHandle pageResult = findAll.newInstance(
                             MethodDescriptor.ofConstructor(PageImpl.class, List.class, Pageable.class, long.class),
                             list, findAll.getMethodParam(0), count);
@@ -732,8 +726,8 @@ public class StockMethodsAdder {
             String generatedClassName, DotName entityDotName, String entityTypeStr, String idTypeStr,
             Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
 
-        MethodDescriptor findAllByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAllById", List.class,
-                Iterable.class);
+        MethodDescriptor findAllByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAllById",
+                List.class, Iterable.class);
         MethodDescriptor bridgeFindAllByIdDescriptor = MethodDescriptor.ofMethod(generatedClassName, "findAllById",
                 Iterable.class, Iterable.class);
 
@@ -751,22 +745,18 @@ public class StockMethodsAdder {
                     ResultHandle list;
                     AnnotationTarget idAnnotationTarget = getIdAnnotationTarget(entityDotName, index);
                     FieldInfo idField = getIdField(idAnnotationTarget);
-                    if ((idField != null) &&
-                            (DotNames.LONG.equals(idField.type().name()) || DotNames.INTEGER.equals(idField.type().name())
-                                    || DotNames.STRING.equals(idField.type().name()))) {
-                        MethodDescriptor method = ofMethod(RepositorySupport.class, "findByIds",
-                                List.class, AbstractJpaOperations.class, Class.class, String.class,
-                                Iterable.class);
-                        list = findAllById.invokeStaticMethod(method,
-                                findAllById.readStaticField(operationsField),
-                                entityClass,
-                                findAllById.load(idField.name()), findAllById.getMethodParam(0));
+                    if ((idField != null) && (DotNames.LONG.equals(idField.type().name())
+                            || DotNames.INTEGER.equals(idField.type().name())
+                            || DotNames.STRING.equals(idField.type().name()))) {
+                        MethodDescriptor method = ofMethod(RepositorySupport.class, "findByIds", List.class,
+                                AbstractJpaOperations.class, Class.class, String.class, Iterable.class);
+                        list = findAllById.invokeStaticMethod(method, findAllById.readStaticField(operationsField),
+                                entityClass, findAllById.load(idField.name()), findAllById.getMethodParam(0));
                     } else {
                         list = findAllById.invokeStaticMethod(
-                                MethodDescriptor.ofMethod(RepositorySupport.class, "findByIds",
-                                        List.class, AbstractJpaOperations.class, Class.class, Iterable.class),
-                                findAllById.readStaticField(operationsField),
-                                entityClass,
+                                MethodDescriptor.ofMethod(RepositorySupport.class, "findByIds", List.class,
+                                        AbstractJpaOperations.class, Class.class, Iterable.class),
+                                findAllById.readStaticField(operationsField), entityClass,
                                 findAllById.getMethodParam(0));
                     }
 
@@ -775,8 +765,8 @@ public class StockMethodsAdder {
                 try (MethodCreator bridgeFindAllById = classCreator.getMethodCreator(bridgeFindAllByIdDescriptor)) {
                     MethodDescriptor findAllById = MethodDescriptor.ofMethod(generatedClassName, "findAllById",
                             List.class.getName(), Iterable.class);
-                    ResultHandle result = bridgeFindAllById.invokeVirtualMethod(findAllById, bridgeFindAllById.getThis(),
-                            bridgeFindAllById.getMethodParam(0));
+                    ResultHandle result = bridgeFindAllById.invokeVirtualMethod(findAllById,
+                            bridgeFindAllById.getThis(), bridgeFindAllById.getMethodParam(0));
                     bridgeFindAllById.returnValue(result);
                 }
             }
@@ -796,14 +786,15 @@ public class StockMethodsAdder {
         ClassInfo entityClass = methodInfo.declaringClass();
         FieldInfo field = entityClass.field(propertyName);
         if (field == null) {
-            throw new IllegalArgumentException("Entity " + entityClass + " does not appear to have a field backing method"
-                    + methodInfo.name() + " which is annotated with @Id");
+            throw new IllegalArgumentException(
+                    "Entity " + entityClass + " does not appear to have a field backing method" + methodInfo.name()
+                            + " which is annotated with @Id");
         }
         return field;
     }
 
-    private void generateCount(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor, String generatedClassName,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateCount(ClassCreator classCreator, FieldDescriptor entityClassFieldDescriptor,
+            String generatedClassName, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
 
         MethodDescriptor countDescriptor = MethodDescriptor.ofMethod(generatedClassName, "count", long.class);
 
@@ -848,20 +839,17 @@ public class StockMethodsAdder {
                     BranchResult deletedBranch = deleteById.ifNonZero(deleted);
                     BytecodeCreator deletedFalse = deletedBranch.falseBranch();
 
-                    ResultHandle idToString = deletedFalse.invokeVirtualMethod(
-                            ofMethod(Object.class, "toString", String.class),
-                            id);
+                    ResultHandle idToString = deletedFalse
+                            .invokeVirtualMethod(ofMethod(Object.class, "toString", String.class), id);
                     ResultHandle formatArgsArray = deletedFalse.newArray(Object.class, 1);
                     deletedFalse.writeArrayValue(formatArgsArray, deletedFalse.load(0), idToString);
 
                     ResultHandle messageFormat = deletedFalse.load("No entity " + entityTypeStr + " with id %s exists");
-                    ResultHandle message = deletedFalse.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(String.class, "format", String.class, String.class, Object[].class),
-                            messageFormat, formatArgsArray);
+                    ResultHandle message = deletedFalse.invokeStaticMethod(MethodDescriptor.ofMethod(String.class,
+                            "format", String.class, String.class, Object[].class), messageFormat, formatArgsArray);
 
                     ResultHandle exception = deletedFalse.newInstance(
-                            MethodDescriptor.ofConstructor(IllegalArgumentException.class, String.class),
-                            message);
+                            MethodDescriptor.ofConstructor(IllegalArgumentException.class, String.class), message);
                     deletedFalse.throwException(exception);
                     deletedFalse.breakScope();
 
@@ -904,8 +892,8 @@ public class StockMethodsAdder {
                     delete.returnValue(null);
                 }
                 try (MethodCreator bridgeDelete = classCreator.getMethodCreator(bridgeDeleteDescriptor)) {
-                    MethodDescriptor delete = MethodDescriptor.ofMethod(generatedClassName, "delete", void.class.toString(),
-                            entityTypeStr);
+                    MethodDescriptor delete = MethodDescriptor.ofMethod(generatedClassName, "delete",
+                            void.class.toString(), entityTypeStr);
                     ResultHandle methodParam = bridgeDelete.getMethodParam(0);
                     ResultHandle castedMethodParam = bridgeDelete.checkCast(methodParam, entityTypeStr);
                     ResultHandle result = bridgeDelete.invokeVirtualMethod(delete, bridgeDelete.getThis(),
@@ -919,31 +907,29 @@ public class StockMethodsAdder {
         allMethodsToBeImplementedToResult.put(bridgeDeleteDescriptor, true);
     }
 
-    private void generateDeleteInBatchWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateDeleteInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteInBatch",
                 allMethodsToBeImplementedToResult);
 
     }
 
     private void generateDeleteAllInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
-            String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllInBatch",
                 allMethodsToBeImplementedToResult);
 
     }
 
     private void generateDeleteAllByIdInBatchWithIterable(ClassCreator classCreator, String generatedClassName,
-            String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+            String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAllByIdInBatch",
                 allMethodsToBeImplementedToResult);
 
     }
 
-    private void generateDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName, String entityTypeStr,
-            Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
+    private void generateDeleteAllWithIterable(ClassCreator classCreator, String generatedClassName,
+            String entityTypeStr, Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
         generateSpecificDeleteAllWithIterable(classCreator, generatedClassName, entityTypeStr, "deleteAll",
                 allMethodsToBeImplementedToResult);
 
@@ -953,21 +939,20 @@ public class StockMethodsAdder {
             String entityTypeStr, String actualMethodName,
             Map<MethodDescriptor, Boolean> allMethodsToBeImplementedToResult) {
 
-        MethodDescriptor deleteAllWithIterableDescriptor = MethodDescriptor.ofMethod(generatedClassName, actualMethodName,
-                void.class, Iterable.class);
+        MethodDescriptor deleteAllWithIterableDescriptor = MethodDescriptor.ofMethod(generatedClassName,
+                actualMethodName, void.class, Iterable.class);
 
         if (allMethodsToBeImplementedToResult.containsKey(deleteAllWithIterableDescriptor)) {
             if (!classCreator.getExistingMethods().contains(deleteAllWithIterableDescriptor)) {
                 try (MethodCreator deleteAll = classCreator.getMethodCreator(deleteAllWithIterableDescriptor)) {
-                    deleteAll.setSignature(String.format("(Ljava/lang/Iterable<+L%s;>;)V",
-                            entityTypeStr.replace('.', '/')));
+                    deleteAll.setSignature(
+                            String.format("(Ljava/lang/Iterable<+L%s;>;)V", entityTypeStr.replace('.', '/')));
                     deleteAll.addAnnotation(Transactional.class);
                     ResultHandle entities = deleteAll.getMethodParam(0);
                     deleteAll.invokeStaticMethod(
-                            MethodDescriptor.ofMethod(RepositorySupport.class, "deleteAll",
-                                    void.class, AbstractJpaOperations.class, Iterable.class),
-                            deleteAll.readStaticField(operationsField),
-                            entities);
+                            MethodDescriptor.ofMethod(RepositorySupport.class, "deleteAll", void.class,
+                                    AbstractJpaOperations.class, Iterable.class),
+                            deleteAll.readStaticField(operationsField), entities);
                     deleteAll.returnValue(null);
                 }
             }
@@ -1007,7 +992,8 @@ public class StockMethodsAdder {
                 try (MethodCreator deleteAll = classCreator.getMethodCreator(deleteAllInBatchDescriptor)) {
                     deleteAll.addAnnotation(Transactional.class);
                     ResultHandle result = deleteAll.invokeVirtualMethod(
-                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "deleteAll", long.class, Class.class),
+                            MethodDescriptor.ofMethod(AbstractJpaOperations.class, "deleteAll", long.class,
+                                    Class.class),
                             deleteAll.readStaticField(operationsField),
                             deleteAll.readInstanceField(entityClassFieldDescriptor, deleteAll.getThis()));
                     deleteAll.returnValue(result);
@@ -1035,7 +1021,8 @@ public class StockMethodsAdder {
     }
 
     private Set<MethodInfo> methodsOfExtendedSpringDataRepositories(ClassInfo repositoryToImplement) {
-        return GenerationUtil.interfaceMethods(GenerationUtil.extendedSpringDataRepos(repositoryToImplement, index), index);
+        return GenerationUtil.interfaceMethods(GenerationUtil.extendedSpringDataRepos(repositoryToImplement, index),
+                index);
     }
 
     // Spring Data allows users to add any of the methods of CrudRepository, PagingAndSortingRepository, JpaRepository
@@ -1061,8 +1048,8 @@ public class StockMethodsAdder {
             return ALL_SPRING_DATA_REPOSITORY_METHODS;
         }
 
-        ALL_SPRING_DATA_REPOSITORY_METHODS = GenerationUtil.interfaceMethods(new HashSet<>(DotNames.SUPPORTED_REPOSITORIES),
-                index);
+        ALL_SPRING_DATA_REPOSITORY_METHODS = GenerationUtil
+                .interfaceMethods(new HashSet<>(DotNames.SUPPORTED_REPOSITORIES), index);
 
         return ALL_SPRING_DATA_REPOSITORY_METHODS;
     }
@@ -1107,16 +1094,15 @@ public class StockMethodsAdder {
         return getIdAnnotationTargetRec(entityDotName, index, entityDotName);
     }
 
-    private AnnotationTarget getIdAnnotationTargetRec(DotName currentDotName, IndexView index, DotName originalEntityDotName) {
+    private AnnotationTarget getIdAnnotationTargetRec(DotName currentDotName, IndexView index,
+            DotName originalEntityDotName) {
         ClassInfo classInfo = index.getClassByName(currentDotName);
         if (classInfo == null) {
             throw new IllegalStateException("Entity " + originalEntityDotName + " was not part of the Quarkus index");
         }
 
         List<AnnotationInstance> annotationInstances = Stream.of(DotNames.JPA_ID, DotNames.JPA_EMBEDDED_ID)
-                .map(classInfo.annotationsMap()::get)
-                .filter(Objects::nonNull)
-                .flatMap(List::stream)
+                .map(classInfo.annotationsMap()::get).filter(Objects::nonNull).flatMap(List::stream)
                 .collect(Collectors.toList());
         if (annotationInstances.isEmpty()) {
             if (DotNames.OBJECT.equals(classInfo.superName())) {
@@ -1129,8 +1115,8 @@ public class StockMethodsAdder {
 
         if (annotationInstances.size() > 1) {
             throw new IllegalArgumentException(
-                    "Currently the @Id or @EmbeddedId annotation can only be placed on a single field or method. " +
-                            "Offending class is " + originalEntityDotName);
+                    "Currently the @Id or @EmbeddedId annotation can only be placed on a single field or method. "
+                            + "Offending class is " + originalEntityDotName);
         }
 
         return annotationInstances.get(0).target();
@@ -1157,8 +1143,8 @@ public class StockMethodsAdder {
         List<AnnotationInstance> annotationInstances = classInfo.annotationsMap().get(DotNames.VERSION);
         if (annotationInstances.size() > 1) {
             throw new IllegalArgumentException(
-                    "Currently the @Version annotation can only be placed on a single field or method. " +
-                            "Offending class is " + originalEntityDotName);
+                    "Currently the @Version annotation can only be placed on a single field or method. "
+                            + "Offending class is " + originalEntityDotName);
         }
 
         return Optional.of(annotationInstances.get(0).target());

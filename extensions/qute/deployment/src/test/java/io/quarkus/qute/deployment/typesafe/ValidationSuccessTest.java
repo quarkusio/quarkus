@@ -17,21 +17,16 @@ public class ValidationSuccessTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Movie.class, MovieExtensions.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Movie.class, MovieExtensions.class)
                     .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.typesafe.Movie movie}"
-                            + "{@java.lang.Long age}"
-                            + "{@java.lang.String surname}"
-                            + "{@java.util.Map<String,String> map}"
-                            + "{@int cislo}"
+                            + "{@java.lang.Long age}" + "{@java.lang.String surname}"
+                            + "{@java.util.Map<String,String> map}" + "{@int cislo}"
                             // Property found
                             + "{movie.name} "
                             // Built-in value resolvers
-                            + "{movie.name ?: 'Mono'} "
-                            + "{movie.alwaysTrue ? 'Mono' : 'Stereo'} "
+                            + "{movie.name ?: 'Mono'} " + "{movie.alwaysTrue ? 'Mono' : 'Stereo'} "
                             + "{movie.alwaysFalsePrimitive ? 'Mono' : 'Stereo'} "
-                            + "{movie.alwaysFalsePrimitive.negate} "
-                            + "{movie.mainCharacters.size} "
+                            + "{movie.alwaysFalsePrimitive.negate} " + "{movie.mainCharacters.size} "
                             // Name and number of params ok and param type ignored
                             + "{movie.findService('foo')} "
                             // Name and number of params ok; name type ignored, age ok
@@ -47,8 +42,7 @@ public class ValidationSuccessTest {
                             // Field access
                             + "{#each movie.mainCharacters}{it.substring(1)}{/} "
                             // Method param assignability
-                            + "{map.get('foo')}"),
-                            "templates/movie.html"));
+                            + "{map.get('foo')}"), "templates/movie.html"));
 
     @Inject
     Template movie;

@@ -23,20 +23,20 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     final BiFunction<String, ClassVisitor, ClassVisitor> visitorFunction;
 
     /**
-     * Function that can be applied to the input bytes before it is passed into ASM. This should only be used
-     * in very specific circumstances. At the moment the only known valid use case is JaCoCo, which needs
-     * access to the unmodified class file bytes.
+     * Function that can be applied to the input bytes before it is passed into ASM. This should only be used in very
+     * specific circumstances. At the moment the only known valid use case is JaCoCo, which needs access to the
+     * unmodified class file bytes.
      */
     final BiFunction<String, byte[], byte[]> inputTransformer;
 
     /**
-     * A set of class names that need to be present in the const pool for the transformation to happen. These
-     * need to be in JVM internal format.
+     * A set of class names that need to be present in the const pool for the transformation to happen. These need to be
+     * in JVM internal format.
      * <p>
      * The transformation is only applied if at least one of the entries in the const pool is present.
      * <p>
-     * Note that this is an optimisation, and if another transformer is transforming the class anyway then
-     * this transformer will always be applied.
+     * Note that this is an optimisation, and if another transformer is transforming the class anyway then this
+     * transformer will always be applied.
      */
     final Set<String> requireConstPoolEntry;
 
@@ -135,20 +135,16 @@ public final class BytecodeTransformerBuildItem extends MultiBuildItem {
     }
 
     /**
-     * Bytecode transformers are applied in ascending priority order. That is, lower priority
-     * value means the transformer is applied sooner, and higher priority value means
-     * the transformer is applied later.
+     * Bytecode transformers are applied in ascending priority order. That is, lower priority value means the
+     * transformer is applied sooner, and higher priority value means the transformer is applied later.
      * <p>
-     * This applies directly to {@link #inputTransformer} functions: an input transformer
-     * function with lower priority is applied first and its result is passed to the transformer
-     * function with higher priority.
+     * This applies directly to {@link #inputTransformer} functions: an input transformer function with lower priority
+     * is applied first and its result is passed to the transformer function with higher priority.
      * <p>
-     * It is a bit counter-intuitive when it comes to the {@link #visitorFunction}. The visitor
-     * function doesn't directly transform bytecode; instead, it constructs an ASM
-     * {@link ClassVisitor} from an earlier class visitor. This means that the priority order
-     * is effectively turned around: the later a bytecode transformer is called,
-     * the <em>higher</em> in the class visitor chain it ends up, and the <em>sooner</em>
-     * is the visitor eventually called.
+     * It is a bit counter-intuitive when it comes to the {@link #visitorFunction}. The visitor function doesn't
+     * directly transform bytecode; instead, it constructs an ASM {@link ClassVisitor} from an earlier class visitor.
+     * This means that the priority order is effectively turned around: the later a bytecode transformer is called, the
+     * <em>higher</em> in the class visitor chain it ends up, and the <em>sooner</em> is the visitor eventually called.
      * <p>
      * The priority value defaults to {@code 0}.
      */

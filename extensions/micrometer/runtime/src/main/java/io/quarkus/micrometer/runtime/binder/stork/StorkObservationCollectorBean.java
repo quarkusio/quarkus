@@ -31,38 +31,26 @@ public class StorkObservationCollectorBean implements ObservationCollector, Stor
 
     public StorkObservationCollectorBean(final MeterRegistry registry) {
 
-        this.instanceCounter = Counter
-                .builder("stork.service-discovery.instances.count")
-                .description("The number of service instances discovered")
-                .withRegistry(registry);
+        this.instanceCounter = Counter.builder("stork.service-discovery.instances.count")
+                .description("The number of service instances discovered").withRegistry(registry);
 
-        this.serviceDiscoveryTimer = Timer
-                .builder("stork.service-discovery.duration")
-                .description("The duration of the discovery operation")
-                .withRegistry(registry);
+        this.serviceDiscoveryTimer = Timer.builder("stork.service-discovery.duration")
+                .description("The duration of the discovery operation").withRegistry(registry);
 
-        this.serviceSelectionTimer = Timer
-                .builder("stork.service-selection.duration")
-                .description("The duration of the selection operation")
-                .withRegistry(registry);
+        this.serviceSelectionTimer = Timer.builder("stork.service-selection.duration")
+                .description("The duration of the selection operation").withRegistry(registry);
 
-        this.serviceDiscoveryFailures = Counter
-                .builder("stork.service-discovery.failures")
-                .description("The number of failures during service discovery")
-                .withRegistry(registry);
+        this.serviceDiscoveryFailures = Counter.builder("stork.service-discovery.failures")
+                .description("The number of failures during service discovery").withRegistry(registry);
 
-        this.serviceSelectionFailures = Counter
-                .builder("stork.service-selection.failures")
-                .description("The number of failures during service selection")
-                .withRegistry(registry);
+        this.serviceSelectionFailures = Counter.builder("stork.service-selection.failures")
+                .description("The number of failures during service selection").withRegistry(registry);
     }
 
     @Override
-    public StorkObservation create(String serviceName, String serviceDiscoveryType,
-            String serviceSelectionType) {
+    public StorkObservation create(String serviceName, String serviceDiscoveryType, String serviceSelectionType) {
         return STORK_METRICS.computeIfAbsent(serviceName + METRICS_SUFFIX,
-                key -> new StorkObservation(serviceName, serviceDiscoveryType, serviceSelectionType,
-                        this));
+                key -> new StorkObservation(serviceName, serviceDiscoveryType, serviceSelectionType, this));
     }
 
     @Override

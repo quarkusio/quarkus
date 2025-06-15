@@ -53,10 +53,8 @@ import org.springframework.data.repository.query.Param;
 
 public final class DotNames {
 
-    public static final DotName SPRING_DATA_REPOSITORY = DotName
-            .createSimple(Repository.class.getName());
-    public static final DotName SPRING_DATA_CRUD_REPOSITORY = DotName
-            .createSimple(CrudRepository.class.getName());
+    public static final DotName SPRING_DATA_REPOSITORY = DotName.createSimple(Repository.class.getName());
+    public static final DotName SPRING_DATA_CRUD_REPOSITORY = DotName.createSimple(CrudRepository.class.getName());
 
     public static final DotName SPRING_DATA_LIST_CRUD_REPOSITORY = DotName
             .createSimple(ListCrudRepository.class.getName());
@@ -65,35 +63,24 @@ public final class DotNames {
 
     public static final DotName SPRING_DATA_LIST_PAGING_REPOSITORY = DotName
             .createSimple(ListPagingAndSortingRepository.class.getName());
-    public static final DotName SPRING_DATA_JPA_REPOSITORY = DotName
-            .createSimple(JpaRepository.class.getName());
+    public static final DotName SPRING_DATA_JPA_REPOSITORY = DotName.createSimple(JpaRepository.class.getName());
     public static final DotName SPRING_DATA_REPOSITORY_DEFINITION = DotName
             .createSimple(RepositoryDefinition.class.getName());
 
-    public static final Set<DotName> SUPPORTED_REPOSITORIES = new HashSet<>(Arrays.asList(
-            SPRING_DATA_JPA_REPOSITORY, SPRING_DATA_PAGING_REPOSITORY, SPRING_DATA_LIST_PAGING_REPOSITORY,
-            SPRING_DATA_CRUD_REPOSITORY, SPRING_DATA_LIST_CRUD_REPOSITORY, SPRING_DATA_REPOSITORY));
+    public static final Set<DotName> SUPPORTED_REPOSITORIES = new HashSet<>(
+            Arrays.asList(SPRING_DATA_JPA_REPOSITORY, SPRING_DATA_PAGING_REPOSITORY, SPRING_DATA_LIST_PAGING_REPOSITORY,
+                    SPRING_DATA_CRUD_REPOSITORY, SPRING_DATA_LIST_CRUD_REPOSITORY, SPRING_DATA_REPOSITORY));
 
-    public static final DotName SPRING_DATA_NO_REPOSITORY_BEAN = DotName
-            .createSimple(NoRepositoryBean.class.getName());
-    public static final DotName SPRING_DATA_PAGEABLE = DotName
-            .createSimple(Pageable.class.getName());
-    public static final DotName SPRING_DATA_PAGE_REQUEST = DotName
-            .createSimple(PageRequest.class.getName());
-    public static final DotName SPRING_DATA_SORT = DotName
-            .createSimple(Sort.class.getName());
-    public static final DotName SPRING_DATA_PAGE = DotName
-            .createSimple(Page.class.getName());
-    public static final DotName SPRING_DATA_SLICE = DotName
-            .createSimple(Slice.class.getName());
-    public static final DotName SPRING_DATA_QUERY = DotName
-            .createSimple(Query.class.getName());
-    public static final DotName SPRING_DATA_PARAM = DotName
-            .createSimple(Param.class.getName());
-    public static final DotName SPRING_DATA_MODIFYING = DotName
-            .createSimple(Modifying.class.getName());
-    public static final DotName SPRING_DATA_PERSISTABLE = DotName
-            .createSimple(Persistable.class.getName());
+    public static final DotName SPRING_DATA_NO_REPOSITORY_BEAN = DotName.createSimple(NoRepositoryBean.class.getName());
+    public static final DotName SPRING_DATA_PAGEABLE = DotName.createSimple(Pageable.class.getName());
+    public static final DotName SPRING_DATA_PAGE_REQUEST = DotName.createSimple(PageRequest.class.getName());
+    public static final DotName SPRING_DATA_SORT = DotName.createSimple(Sort.class.getName());
+    public static final DotName SPRING_DATA_PAGE = DotName.createSimple(Page.class.getName());
+    public static final DotName SPRING_DATA_SLICE = DotName.createSimple(Slice.class.getName());
+    public static final DotName SPRING_DATA_QUERY = DotName.createSimple(Query.class.getName());
+    public static final DotName SPRING_DATA_PARAM = DotName.createSimple(Param.class.getName());
+    public static final DotName SPRING_DATA_MODIFYING = DotName.createSimple(Modifying.class.getName());
+    public static final DotName SPRING_DATA_PERSISTABLE = DotName.createSimple(Persistable.class.getName());
 
     public static final DotName JPA_ID = DotName.createSimple(Id.class.getName());
     public static final DotName JPA_EMBEDDED_ID = DotName.createSimple(EmbeddedId.class.getName());
@@ -159,25 +146,12 @@ public final class DotNames {
 
     // https://docs.jboss.org/hibernate/stable/orm/userguide/html_single/Hibernate_User_Guide.html#basic
     // Should be in sync with org.hibernate.type.BasicTypeRegistry
-    public static final Set<DotName> HIBERNATE_PROVIDED_BASIC_TYPES = new HashSet<>(Arrays.asList(
-            STRING, CLASS,
-            BOOLEAN, PRIMITIVE_BOOLEAN,
-            INTEGER, PRIMITIVE_INTEGER,
-            LONG, PRIMITIVE_LONG,
-            SHORT, PRIMITIVE_SHORT,
-            BYTE, PRIMITIVE_BYTE,
-            CHARACTER, PRIMITIVE_CHAR,
-            DOUBLE, PRIMITIVE_DOUBLE,
-            FLOAT, PRIMITIVE_FLOAT,
-            BIG_INTEGER, BIG_DECIMAL,
-            UTIL_DATE, CALENDAR,
-            SQL_DATE, SQL_TIME, SQL_TIMESTAMP,
-            LOCAL_DATE, LOCAL_TIME, LOCAL_DATETIME,
-            OFFSET_TIME, OFFSET_DATETIME,
-            DURATION, INSTANT,
-            ZONED_DATETIME, TIMEZONE,
-            LOCALE, URL, UUID,
-            BLOB, CLOB, NCLOB));
+    public static final Set<DotName> HIBERNATE_PROVIDED_BASIC_TYPES = new HashSet<>(
+            Arrays.asList(STRING, CLASS, BOOLEAN, PRIMITIVE_BOOLEAN, INTEGER, PRIMITIVE_INTEGER, LONG, PRIMITIVE_LONG,
+                    SHORT, PRIMITIVE_SHORT, BYTE, PRIMITIVE_BYTE, CHARACTER, PRIMITIVE_CHAR, DOUBLE, PRIMITIVE_DOUBLE,
+                    FLOAT, PRIMITIVE_FLOAT, BIG_INTEGER, BIG_DECIMAL, UTIL_DATE, CALENDAR, SQL_DATE, SQL_TIME,
+                    SQL_TIMESTAMP, LOCAL_DATE, LOCAL_TIME, LOCAL_DATETIME, OFFSET_TIME, OFFSET_DATETIME, DURATION,
+                    INSTANT, ZONED_DATETIME, TIMEZONE, LOCALE, URL, UUID, BLOB, CLOB, NCLOB));
 
     private DotNames() {
     }

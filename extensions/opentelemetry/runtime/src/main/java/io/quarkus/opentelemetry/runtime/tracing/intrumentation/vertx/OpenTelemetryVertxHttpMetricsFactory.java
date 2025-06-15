@@ -26,8 +26,7 @@ public class OpenTelemetryVertxHttpMetricsFactory implements VertxMetricsFactory
     }
 
     public static class OpenTelemetryVertxHttpServerMetrics
-            implements HttpServerMetrics<MetricRequest, Object, Object>,
-            VertxMetrics, ExtendedQuarkusVertxHttpMetrics {
+            implements HttpServerMetrics<MetricRequest, Object, Object>, VertxMetrics, ExtendedQuarkusVertxHttpMetrics {
 
         @Override
         public HttpServerMetrics<?, ?, ?> createHttpServerMetrics(final HttpServerOptions options,
@@ -49,7 +48,8 @@ public class OpenTelemetryVertxHttpMetricsFactory implements VertxMetricsFactory
 
         @Override
         public ConnectionTracker getHttpConnectionTracker() {
-            // To be implemented if we decide to instrument with OpenTelemetry. See VertxMeterBinderAdapter for an example.
+            // To be implemented if we decide to instrument with OpenTelemetry. See VertxMeterBinderAdapter for an
+            // example.
             return ExtendedQuarkusVertxHttpMetrics.NOOP_CONNECTION_TRACKER;
         }
     }

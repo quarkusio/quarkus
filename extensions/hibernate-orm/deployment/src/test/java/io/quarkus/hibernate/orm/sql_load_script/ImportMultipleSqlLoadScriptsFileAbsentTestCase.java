@@ -10,10 +10,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ImportMultipleSqlLoadScriptsFileAbsentTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, SqlLoadScriptTestResource.class)
                     .addAsResource("application-import-multiple-load-scripts-test.properties", "application.properties")
                     .addAsResource("import-multiple-load-scripts-1.sql", "import-1.sql"));
 

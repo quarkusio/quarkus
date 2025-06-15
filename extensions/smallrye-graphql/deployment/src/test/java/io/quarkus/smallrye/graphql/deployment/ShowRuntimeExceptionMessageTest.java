@@ -19,40 +19,20 @@ public class ShowRuntimeExceptionMessageTest extends AbstractGraphQLTest {
     private static final String ILLEGAL_STATE_EXCEPTION_MESSAGE = "Something else went wrong";
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestApi.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.smallrye-graphql.show-runtime-exception-message=" +
-                                            "java.lang.IllegalArgumentException," +
-                                            "java.lang.IllegalStateException"),
-                            "application.properties"));
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(TestApi.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
+                            .addAsResource(new StringAsset("quarkus.smallrye-graphql.show-runtime-exception-message="
+                                    + "java.lang.IllegalArgumentException," + "java.lang.IllegalStateException"),
+                                    "application.properties"));
 
     @Test
     void testExcludeNullFieldsInResponse() {
-        given()
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(getPayload("{ something }"))
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(OK)
-                .and()
+        given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(getPayload("{ something }"))
+                .post("/graphql").then().assertThat().statusCode(OK).and()
                 .body(containsString(ILLEGAL_ARGUMENT_EXCEPTION_MESSAGE));
 
-        given()
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(getPayload("{ somethingElse }"))
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(OK)
-                .and()
+        given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(getPayload("{ somethingElse }"))
+                .post("/graphql").then().assertThat().statusCode(OK).and()
                 .body(containsString(ILLEGAL_STATE_EXCEPTION_MESSAGE));
     }
 

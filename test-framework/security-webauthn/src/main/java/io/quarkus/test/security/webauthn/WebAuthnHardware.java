@@ -27,10 +27,9 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.impl.Codec;
 
 /**
- * Provides an emulation of a WebAuthn hardware token, suitable for generating registration
- * and login JSON objects that you can send to the Quarkus WebAuthn Security extension.
- *
- * The public/private key and id/credID are randomly generated and different for every instance.
+ * Provides an emulation of a WebAuthn hardware token, suitable for generating registration and login JSON objects that
+ * you can send to the Quarkus WebAuthn Security extension. The public/private key and id/credID are randomly generated
+ * and different for every instance.
  */
 public class WebAuthnHardware {
 
@@ -60,16 +59,16 @@ public class WebAuthnHardware {
     /**
      * Creates a registration JSON object for the given challenge
      *
-     * @param challenge the server-sent challenge
+     * @param challenge
+     *        the server-sent challenge
+     *
      * @return a registration JSON object
      */
     public JsonObject makeRegistrationJson(String challenge) {
-        JsonObject clientData = new JsonObject()
-                .put("type", "webauthn.create")
-                .put("challenge", challenge)
-                .put("origin", origin.toString())
-                .put("crossOrigin", false);
-        String clientDataEncoded = Base64.getUrlEncoder().encodeToString(clientData.encode().getBytes(StandardCharsets.UTF_8));
+        JsonObject clientData = new JsonObject().put("type", "webauthn.create").put("challenge", challenge)
+                .put("origin", origin.toString()).put("crossOrigin", false);
+        String clientDataEncoded = Base64.getUrlEncoder()
+                .encodeToString(clientData.encode().getBytes(StandardCharsets.UTF_8));
 
         byte[] authBytes = makeAuthBytes(true);
         /*
@@ -92,26 +91,22 @@ public class WebAuthnHardware {
         String attestationObjectEncoded = Base64.getUrlEncoder().encodeToString(byteWriter.toByteArray());
 
         return new JsonObject()
-                .put("id", id)
-                .put("rawId", id)
-                .put("response", new JsonObject()
-                        .put("attestationObject", attestationObjectEncoded)
-                        .put("clientDataJSON", clientDataEncoded))
+                .put("id", id).put("rawId", id).put("response", new JsonObject()
+                        .put("attestationObject", attestationObjectEncoded).put("clientDataJSON", clientDataEncoded))
                 .put("type", "public-key");
     }
 
     /**
      * Creates a login JSON object for the given challenge
      *
-     * @param challenge the server-sent challenge
+     * @param challenge
+     *        the server-sent challenge
+     *
      * @return a login JSON object
      */
     public JsonObject makeLoginJson(String challenge) {
-        JsonObject clientData = new JsonObject()
-                .put("type", "webauthn.get")
-                .put("challenge", challenge)
-                .put("origin", origin.toString())
-                .put("crossOrigin", false);
+        JsonObject clientData = new JsonObject().put("type", "webauthn.get").put("challenge", challenge)
+                .put("origin", origin.toString()).put("crossOrigin", false);
         byte[] clientDataBytes = clientData.encode().getBytes(StandardCharsets.UTF_8);
         String clientDataEncoded = Base64.getUrlEncoder().encodeToString(clientDataBytes);
 
@@ -140,13 +135,10 @@ public class WebAuthnHardware {
         }
         String signatureEncoded = Base64.getUrlEncoder().encodeToString(signatureBytes);
 
-        return new JsonObject()
-                .put("id", id)
-                .put("rawId", id)
-                .put("response", new JsonObject()
-                        .put("authenticatorData", authenticatorData)
-                        .put("clientDataJSON", clientDataEncoded)
-                        .put("signature", signatureEncoded))
+        return new JsonObject().put("id", id).put("rawId", id)
+                .put("response",
+                        new JsonObject().put("authenticatorData", authenticatorData)
+                                .put("clientDataJSON", clientDataEncoded).put("signature", signatureEncoded))
                 .put("type", "public-key");
     }
 
@@ -180,7 +172,8 @@ public class WebAuthnHardware {
             buffer.appendBytes(credID);
 
             ECPublicKey publicKey = (ECPublicKey) keyPair.getPublic();
-            // NOTE: this used to be Base64 URL, but webauthn4j refuses it and wants Base64. I can't find in the spec where it's specified.
+            // NOTE: this used to be Base64 URL, but webauthn4j refuses it and wants Base64. I can't find in the spec
+            // where it's specified.
             Encoder urlEncoder = Base64.getEncoder();
             String x = urlEncoder.encodeToString(publicKey.getW().getAffineX().toByteArray());
             String y = urlEncoder.encodeToString(publicKey.getW().getAffineY().toByteArray());

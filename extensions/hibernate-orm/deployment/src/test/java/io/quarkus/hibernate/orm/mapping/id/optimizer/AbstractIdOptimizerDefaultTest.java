@@ -31,20 +31,15 @@ public abstract class AbstractIdOptimizerDefaultTest {
 
     @Test
     public void defaults() {
-        assertThat(List.of(
-                EntityWithDefaultGenerator.class,
-                EntityWithGenericGenerator.class,
-                EntityWithSequenceGenerator.class,
-                EntityWithTableGenerator.class))
+        assertThat(List.of(EntityWithDefaultGenerator.class, EntityWithGenericGenerator.class,
+                EntityWithSequenceGenerator.class, EntityWithTableGenerator.class))
                 .allSatisfy(c -> assertOptimizer(c).isInstanceOf(defaultOptimizerType()));
     }
 
     @Test
     public void explicitOverrides() {
-        assertOptimizer(EntityWithGenericGeneratorAndPooledOptimizer.class)
-                .isInstanceOf(PooledOptimizer.class);
-        assertOptimizer(EntityWithGenericGeneratorAndPooledLoOptimizer.class)
-                .isInstanceOf(PooledLoOptimizer.class);
+        assertOptimizer(EntityWithGenericGeneratorAndPooledOptimizer.class).isInstanceOf(PooledOptimizer.class);
+        assertOptimizer(EntityWithGenericGeneratorAndPooledLoOptimizer.class).isInstanceOf(PooledLoOptimizer.class);
     }
 
     @Test
@@ -54,8 +49,7 @@ public abstract class AbstractIdOptimizerDefaultTest {
                 var entity = new EntityWithSequenceGenerator();
                 session.persist(entity);
                 return entity.id;
-            }))
-                    .isEqualTo(i);
+            })).isEqualTo(i);
         }
     }
 

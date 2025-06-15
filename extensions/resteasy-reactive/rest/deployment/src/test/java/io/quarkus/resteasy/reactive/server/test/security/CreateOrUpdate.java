@@ -9,8 +9,8 @@ import io.quarkus.security.PermissionsAllowed;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ ElementType.METHOD, ElementType.TYPE })
-@PermissionsAllowed(value = "farewell", permission = CustomPermissionWithExtraArgs.class, params = { "goodbye", "toWhom", "day",
-        "place" })
+@PermissionsAllowed(value = "farewell", permission = CustomPermissionWithExtraArgs.class, params = { "goodbye",
+        "toWhom", "day", "place" })
 public @interface CreateOrUpdate {
 
 }

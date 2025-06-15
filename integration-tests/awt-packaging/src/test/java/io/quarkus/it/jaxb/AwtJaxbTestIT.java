@@ -21,12 +21,9 @@ import io.quarkus.test.junit.QuarkusIntegrationTest;
 public class AwtJaxbTestIT extends AwtJaxbTest {
 
     /**
-     * Test is native image only, we need all artifacts to be packaged
-     * already, e.g. function.zip
-     * </br>
-     * Tests that the same set of .so files that was copied over
-     * from the remote build container is also packaged into the
-     * zip file that will be deployed to AWS Lambda.
+     * Test is native image only, we need all artifacts to be packaged already, e.g. function.zip </br>
+     * Tests that the same set of .so files that was copied over from the remote build container is also packaged into
+     * the zip file that will be deployed to AWS Lambda.
      *
      * @throws java.io.IOException
      */

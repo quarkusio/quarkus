@@ -5,7 +5,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The remote Host address (if resolved)
- *
  */
 public class RemoteHostAttribute implements ExchangeAttribute {
 

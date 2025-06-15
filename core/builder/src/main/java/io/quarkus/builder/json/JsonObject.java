@@ -19,8 +19,7 @@ public final class JsonObject implements JsonMultiValue {
     }
 
     public List<JsonMember> members() {
-        return value.entrySet().stream()
-                .map(e -> new JsonMember(e.getKey(), e.getValue()))
+        return value.entrySet().stream().map(e -> new JsonMember(e.getKey(), e.getValue()))
                 .collect(Collectors.toList());
     }
 

@@ -54,8 +54,7 @@ public class ReactiveGeoCommandsImpl<K, V> extends AbstractGeoCommands<K, V> imp
 
     @Override
     public Uni<Integer> geoadd(K key, GeoItem<V>... items) {
-        return super._geoadd(key, items)
-                .map(Response::toInteger);
+        return super._geoadd(key, items).map(Response::toInteger);
     }
 
     @Override
@@ -66,53 +65,46 @@ public class ReactiveGeoCommandsImpl<K, V> extends AbstractGeoCommands<K, V> imp
 
     @Override
     public Uni<Boolean> geoadd(K key, double longitude, double latitude, V member, GeoAddArgs args) {
-        return super._geoadd(key, longitude, latitude, member, args)
-                .map(r -> r.toLong() == 1L);
+        return super._geoadd(key, longitude, latitude, member, args).map(r -> r.toLong() == 1L);
     }
 
     @Override
     public Uni<Integer> geoadd(K key, GeoAddArgs args, GeoItem<V>... items) {
-        return super._geoadd(key, args, items)
-                .map(Response::toInteger);
+        return super._geoadd(key, args, items).map(Response::toInteger);
     }
 
     @Override
     public Uni<Double> geodist(K key, V from, V to, GeoUnit unit) {
-        return _geodist(key, from, to, unit)
-                .map(this::decodeDistance);
+        return _geodist(key, from, to, unit).map(this::decodeDistance);
 
     }
 
     @Override
     public Uni<List<String>> geohash(K key, V... members) {
-        return super._geohash(key, members)
-                .map(this::decodeHashList);
+        return super._geohash(key, members).map(this::decodeHashList);
     }
 
     @Override
     public Uni<List<GeoPosition>> geopos(K key, V... members) {
-        return super._geopos(key, members)
-                .map(this::decodeGeoPositions);
+        return super._geopos(key, members).map(this::decodeGeoPositions);
     }
 
     @Override
     public Uni<Set<V>> georadius(K key, double longitude, double latitude, double radius, GeoUnit unit) {
-        return super._georadius(key, longitude, latitude, radius, unit)
-                .map(this::decodeRadiusSet);
+        return super._georadius(key, longitude, latitude, radius, unit).map(this::decodeRadiusSet);
     }
 
     @Override
     public Uni<List<GeoValue<V>>> georadius(K key, double longitude, double latitude, double radius, GeoUnit unit,
             GeoRadiusArgs geoArgs) {
-        return super._georadius(key, longitude, latitude, radius, unit, geoArgs)
-                .map(r -> decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
+        return super._georadius(key, longitude, latitude, radius, unit, geoArgs).map(
+                r -> decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
     }
 
     @Override
     public Uni<Long> georadius(K key, double longitude, double latitude, double radius, GeoUnit unit,
             GeoRadiusStoreArgs<K> geoArgs) {
-        return super._georadius(key, longitude, latitude, radius, unit, geoArgs)
-                .map(Response::toLong);
+        return super._georadius(key, longitude, latitude, radius, unit, geoArgs).map(Response::toLong);
     }
 
     @Override
@@ -122,45 +114,45 @@ public class ReactiveGeoCommandsImpl<K, V> extends AbstractGeoCommands<K, V> imp
     }
 
     @Override
-    public Uni<List<GeoValue<V>>> georadius(K key, GeoPosition position, double radius, GeoUnit unit, GeoRadiusArgs geoArgs) {
+    public Uni<List<GeoValue<V>>> georadius(K key, GeoPosition position, double radius, GeoUnit unit,
+            GeoRadiusArgs geoArgs) {
         nonNull(position, "position");
         return georadius(key, position.longitude, position.latitude, radius, unit, geoArgs);
     }
 
     @Override
-    public Uni<Long> georadius(K key, GeoPosition position, double radius, GeoUnit unit, GeoRadiusStoreArgs<K> geoArgs) {
+    public Uni<Long> georadius(K key, GeoPosition position, double radius, GeoUnit unit,
+            GeoRadiusStoreArgs<K> geoArgs) {
         nonNull(position, "position");
         return georadius(key, position.longitude, position.latitude, radius, unit, geoArgs);
     }
 
     @Override
     public Uni<Set<V>> georadiusbymember(K key, V member, double distance, GeoUnit unit) {
-        return super._georadiusbymember(key, member, distance, unit)
-                .map(this::decodeRadiusSet);
+        return super._georadiusbymember(key, member, distance, unit).map(this::decodeRadiusSet);
     }
 
     @Override
-    public Uni<List<GeoValue<V>>> georadiusbymember(K key, V member, double distance, GeoUnit unit, GeoRadiusArgs geoArgs) {
-        return super._georadiusbymember(key, member, distance, unit, geoArgs)
-                .map(r -> decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
+    public Uni<List<GeoValue<V>>> georadiusbymember(K key, V member, double distance, GeoUnit unit,
+            GeoRadiusArgs geoArgs) {
+        return super._georadiusbymember(key, member, distance, unit, geoArgs).map(
+                r -> decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
     }
 
     @Override
     public Uni<Long> georadiusbymember(K key, V member, double distance, GeoUnit unit, GeoRadiusStoreArgs<K> geoArgs) {
-        return super._georadiusbymember(key, member, distance, unit, geoArgs)
-                .map(Response::toLong);
+        return super._georadiusbymember(key, member, distance, unit, geoArgs).map(Response::toLong);
     }
 
     @Override
     public Uni<List<GeoValue<V>>> geosearch(K key, GeoSearchArgs<V> geoArgs) {
-        return super._geosearch(key, geoArgs)
-                .map(r -> decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
+        return super._geosearch(key, geoArgs).map(
+                r -> decodeAsListOfGeoValues(r, geoArgs.hasDistance(), geoArgs.hasCoordinates(), geoArgs.hasHash()));
     }
 
     @Override
     public Uni<Long> geosearchstore(K destination, K key, GeoSearchStoreArgs<V> args, boolean storeDist) {
-        return super._geosearchstore(destination, key, args, storeDist)
-                .map(Response::toLong);
+        return super._geosearchstore(destination, key, args, storeDist).map(Response::toLong);
     }
 
 }

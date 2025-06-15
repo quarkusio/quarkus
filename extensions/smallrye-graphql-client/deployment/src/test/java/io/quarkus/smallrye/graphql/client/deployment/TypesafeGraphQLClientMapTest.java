@@ -18,15 +18,14 @@ import io.quarkus.test.QuarkusUnitTest;
 import io.smallrye.graphql.client.typesafe.api.GraphQLClientApi;
 
 /**
- * Verify the support of Map usage. The server-side endpoint contains queries that return maps,
- * the client consumes them.
+ * Verify the support of Map usage. The server-side endpoint contains queries that return maps, the client consumes
+ * them.
  */
 public class TypesafeGraphQLClientMapTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MapClientApi.class, MapApi.class, Foo.class, ComplexToComplexMapWrapper.class)
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(MapClientApi.class, MapApi.class, Foo.class, ComplexToComplexMapWrapper.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Inject

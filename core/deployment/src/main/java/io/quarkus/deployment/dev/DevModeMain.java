@@ -72,17 +72,14 @@ public class DevModeMain implements Closeable {
     }
 
     public void start() throws Exception {
-        //propagate system props
+        // propagate system props
         propagateSystemProperties();
 
         try {
             QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
-                    .setApplicationRoot(getApplicationBuildDirs())
-                    .setExistingModel(appModel)
-                    .setIsolateDeployment(true)
+                    .setApplicationRoot(getApplicationBuildDirs()).setExistingModel(appModel).setIsolateDeployment(true)
                     .setLocalProjectDiscovery(context.isLocalProjectDiscovery())
-                    .addAdditionalDeploymentArchive(getThisClassOrigin())
-                    .setBaseName(context.getBaseName())
+                    .addAdditionalDeploymentArchive(getThisClassOrigin()).setBaseName(context.getBaseName())
                     .setMode(context.getMode());
             if (context.getDevModeRunnerJarFile() != null) {
                 bootstrapBuilder.setTargetDirectory(context.getDevModeRunnerJarFile().getParentFile().toPath());
@@ -111,7 +108,7 @@ public class DevModeMain implements Closeable {
         } catch (Throwable t) {
             log.error("Quarkus dev mode failed to start", t);
             throw (t instanceof RuntimeException ? (RuntimeException) t : new RuntimeException(t));
-            //System.exit(1);
+            // System.exit(1);
         }
     }
 
@@ -132,7 +129,9 @@ public class DevModeMain implements Closeable {
     /**
      * Returns a {@link PathList} containing the path if it exists, otherwise returns an empty {@link PathList}.
      *
-     * @param path path
+     * @param path
+     *        path
+     *
      * @return {@link PathList} containing the path if it exists, otherwise returns an empty {@link PathList}
      */
     private static PathList toListOfExistingOrEmpty(Path path) {
@@ -143,7 +142,9 @@ public class DevModeMain implements Closeable {
      * Returns the classpath element containing this class
      *
      * @return classpath element containing this class
-     * @throws URISyntaxException in case of a failure
+     *
+     * @throws URISyntaxException
+     *         in case of a failure
      */
     private Path getThisClassOrigin() throws URISyntaxException {
         URL thisArchive = getClass().getResource(DevModeMain.class.getSimpleName() + ".class");
@@ -190,7 +191,8 @@ public class DevModeMain implements Closeable {
         }
         Path currentDir = Paths.get("").toAbsolutePath().normalize();
         if (projectDir.toPath().equals(currentDir)) {
-            // the current directory is the same as the project directory so there is no need to copy the file as it's already in the proper location
+            // the current directory is the same as the project directory so there is no need to copy the file as it's
+            // already in the proper location
             // see https://github.com/quarkusio/quarkus/issues/8812
             return;
         }
@@ -204,7 +206,8 @@ public class DevModeMain implements Closeable {
                 try {
                     Files.createSymbolicLink(link, dotEnvPath);
                 } catch (FileSystemException e) {
-                    // on Windows fall back to mklink if symlink cannot be created via Files API (due to insufficient permissions)
+                    // on Windows fall back to mklink if symlink cannot be created via Files API (due to insufficient
+                    // permissions)
                     // see https://github.com/quarkusio/quarkus/issues/8297
                     if (SystemUtils.IS_OS_WINDOWS) {
                         log.debug("Falling back to mklink on Windows after FileSystemException", e);
@@ -230,16 +233,14 @@ public class DevModeMain implements Closeable {
 
     private void makeHardLinkWindowsFallback(Path link, Path dotEnvPath) throws IOException, InterruptedException {
         Process process = new ProcessBuilder("cmd.exe", "/C", "mklink", "/H", link.toString(), dotEnvPath.toString())
-                .redirectOutput(new File("NUL"))
-                .redirectError(ProcessBuilder.Redirect.PIPE)
-                .start();
+                .redirectOutput(new File("NUL")).redirectError(ProcessBuilder.Redirect.PIPE).start();
         try {
             ByteArrayOutputStream errStream = new ByteArrayOutputStream();
             ProcessUtil.streamErrorTo(new PrintStream(errStream), process);
             int exitValue = process.waitFor();
             if (exitValue > 0) {
-                throw new IOException(
-                        "mklink /H execution failed with exit code " + exitValue + ": " + new String(errStream.toByteArray()));
+                throw new IOException("mklink /H execution failed with exit code " + exitValue + ": "
+                        + new String(errStream.toByteArray()));
             }
         } finally {
             process.destroy();

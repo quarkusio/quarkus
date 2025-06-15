@@ -25,31 +25,22 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class RolesAllowedExpressionTest {
 
-    private static final String APP_PROPS = "" +
-            "sudo=admin\n" +
-            "sec-group.user-part-one=user\n" +
-            "sec-group.user-part-two=e\n" +
-            "su=ad\n" +
-            "do=min\n" +
-            "spaces.s=s\n" +
-            "spaces.p=p\n" +
-            "spaces.a=a\n" +
-            "spaces.c=c\n" +
-            "multiple-roles-grp.1st=multiple-roles.1st\n" +
-            "multiple-roles-grp.3rd=multiple-roles.3rd\n" +
-            "test-profile-admin=batman\n" +
-            "%test.test-profile-admin=admin\n" +
-            "missing-profile-profile-admin=superman\n" +
-            "%missing-profile.missing-profile-profile-admin=admin\n" +
-            "all-roles=Administrator,Software,Tester,User\n" +
-            "ldap-roles=cn=Administrator\\\\,ou=Software\\\\,dc=Tester\\\\,dc=User\n";
+    private static final String APP_PROPS = "" + "sudo=admin\n" + "sec-group.user-part-one=user\n"
+            + "sec-group.user-part-two=e\n" + "su=ad\n" + "do=min\n" + "spaces.s=s\n" + "spaces.p=p\n" + "spaces.a=a\n"
+            + "spaces.c=c\n" + "multiple-roles-grp.1st=multiple-roles.1st\n"
+            + "multiple-roles-grp.3rd=multiple-roles.3rd\n" + "test-profile-admin=batman\n"
+            + "%test.test-profile-admin=admin\n" + "missing-profile-profile-admin=superman\n"
+            + "%missing-profile.missing-profile-profile-admin=admin\n"
+            + "all-roles=Administrator,Software,Tester,User\n"
+            + "ldap-roles=cn=Administrator\\\\,ou=Software\\\\,dc=Tester\\\\,dc=User\n";
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RolesAllowedBean.class, IdentityMock.class,
-                            AuthData.class, SecurityTestUtils.class, SecuredUtils.class)
-                    .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
+            .withApplicationRoot(
+                    (jar) -> jar
+                            .addClasses(RolesAllowedBean.class, IdentityMock.class, AuthData.class,
+                                    SecurityTestUtils.class, SecuredUtils.class)
+                            .addAsResource(new StringAsset(APP_PROPS), "application.properties"));
 
     @Inject
     RolesAllowedBean bean;
@@ -81,14 +72,10 @@ public class RolesAllowedExpressionTest {
         assertFailureFor(() -> bean.missingTestProfile(), ForbiddenException.class, ADMIN);
 
         // property expression with collection separator should be treated as list
-        assertSuccess(() -> bean.list(), "list",
-                new AuthData(Set.of("Administrator"), false, "list"));
-        assertSuccess(() -> bean.list(), "list",
-                new AuthData(Set.of("Software"), false, "list"));
-        assertSuccess(() -> bean.list(), "list",
-                new AuthData(Set.of("Tester"), false, "list"));
-        assertSuccess(() -> bean.list(), "list",
-                new AuthData(Set.of("User"), false, "list"));
+        assertSuccess(() -> bean.list(), "list", new AuthData(Set.of("Administrator"), false, "list"));
+        assertSuccess(() -> bean.list(), "list", new AuthData(Set.of("Software"), false, "list"));
+        assertSuccess(() -> bean.list(), "list", new AuthData(Set.of("Tester"), false, "list"));
+        assertSuccess(() -> bean.list(), "list", new AuthData(Set.of("User"), false, "list"));
         assertSuccess(() -> bean.list(), "list",
                 new AuthData(Set.of("Administrator", "Software", "Tester", "User"), false, "list"));
         assertFailureFor(() -> bean.list(), ForbiddenException.class, ADMIN);

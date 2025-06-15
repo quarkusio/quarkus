@@ -61,7 +61,8 @@ public class HttpSecurityRecorder {
         return new RuntimeValue<>(new AuthenticationHandler(proactiveAuthentication, propagateRoutingContext));
     }
 
-    public Handler<RoutingContext> getHttpAuthenticatorHandler(RuntimeValue<AuthenticationHandler> handlerRuntimeValue) {
+    public Handler<RoutingContext> getHttpAuthenticatorHandler(
+            RuntimeValue<AuthenticationHandler> handlerRuntimeValue) {
         return handlerRuntimeValue.getValue();
     }
 
@@ -86,8 +87,8 @@ public class HttpSecurityRecorder {
     }
 
     /**
-     * This handler resolves the identity, and will be mapped to the post location. Otherwise,
-     * for lazy auth the post will not be evaluated if there is no security rule for the post location.
+     * This handler resolves the identity, and will be mapped to the post location. Otherwise, for lazy auth the post
+     * will not be evaluated if there is no security rule for the post location.
      */
     public Handler<RoutingContext> formAuthPostHandler() {
         return new Handler<RoutingContext>() {
@@ -111,7 +112,8 @@ public class HttpSecurityRecorder {
 
                     @Override
                     public void onFailure(Throwable throwable) {
-                        // with current builtin implementation if only form-based authentication mechanism the event here
+                        // with current builtin implementation if only form-based authentication mechanism the event
+                        // here
                         // won't be ended or failed, but we check in case there is custom implementation that differs
                         if (!event.response().ended() && !event.failed()) {
                             event.fail(throwable);
@@ -145,8 +147,10 @@ public class HttpSecurityRecorder {
             public Map<String, Object> get() {
                 if (Arc.container().requestContext().isActive()) {
 
-                    // if present, add RoutingContext from CDI request to the SecurityEvents produced in Security extension
-                    // it's done this way as Security extension is not Vert.x based, but users find RoutingContext useful
+                    // if present, add RoutingContext from CDI request to the SecurityEvents produced in Security
+                    // extension
+                    // it's done this way as Security extension is not Vert.x based, but users find RoutingContext
+                    // useful
                     var event = Arc.container().instance(CurrentVertxRequest.class).get().getCurrent();
                     if (event != null) {
 
@@ -166,8 +170,8 @@ public class HttpSecurityRecorder {
     public static abstract class DefaultAuthFailureHandler implements BiConsumer<RoutingContext, Throwable> {
 
         /**
-         * A {@link RoutingContext#get(String)} key added for exceptions raised during authentication that are not
-         * the {@link io.quarkus.security.AuthenticationException}.
+         * A {@link RoutingContext#get(String)} key added for exceptions raised during authentication that are not the
+         * {@link io.quarkus.security.AuthenticationException}.
          */
         private static final String OTHER_AUTHENTICATION_FAILURE = "io.quarkus.vertx.http.runtime.security.other-auth-failure";
         static final String DEV_MODE_AUTHENTICATION_FAILURE_BODY = "io.quarkus.vertx.http.runtime.security.dev-mode.auth-failure-body";
@@ -181,11 +185,10 @@ public class HttpSecurityRecorder {
                 return;
             }
             throwable = extractRootCause(throwable);
-            if (LaunchMode.isDev() && throwable instanceof AuthenticationException
-                    && throwable.getMessage() != null) {
+            if (LaunchMode.isDev() && throwable instanceof AuthenticationException && throwable.getMessage() != null) {
                 event.put(DEV_MODE_AUTHENTICATION_FAILURE_BODY, throwable.getMessage());
             }
-            //auth failed
+            // auth failed
             if (throwable instanceof AuthenticationFailedException authenticationFailedException) {
                 addAuthenticationFailureToEvent(authenticationFailedException, event);
                 getAuthenticator(event).sendChallenge(event).subscribe().with(new Consumer<Boolean>() {
@@ -224,8 +227,8 @@ public class HttpSecurityRecorder {
         }
 
         public static Throwable extractRootCause(Throwable throwable) {
-            while ((throwable instanceof CompletionException && throwable.getCause() != null) ||
-                    (throwable instanceof CompositeException)) {
+            while ((throwable instanceof CompletionException && throwable.getCause() != null)
+                    || (throwable instanceof CompositeException)) {
                 if (throwable instanceof CompositeException) {
                     throwable = ((CompositeException) throwable).getCauses().get(0);
                 } else {
@@ -280,7 +283,7 @@ public class HttpSecurityRecorder {
                     context.putLocal(HttpSecurityUtils.ROUTING_CONTEXT_ATTRIBUTE, event);
                 }
             }
-            //we put the authenticator into the routing context so it can be used by other systems
+            // we put the authenticator into the routing context so it can be used by other systems
             event.put(HttpAuthenticator.class.getName(), authenticator);
             if (pathMatchingPolicy != null) {
                 event.put(AbstractPathMatchingHttpSecurityPolicy.class.getName(), pathMatchingPolicy);
@@ -289,29 +292,28 @@ public class HttpSecurityRecorder {
                 event.put(ROLES_MAPPING_KEY, rolesMapping);
             }
 
-            //register the default auth failure handler
+            // register the default auth failure handler
             if (proactiveAuthentication) {
-                //if proactive auth is used this is the only one
+                // if proactive auth is used this is the only one
                 event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new DefaultAuthFailureHandler() {
                     @Override
                     protected void proceed(Throwable throwable) {
 
                         if (!event.failed()) {
-                            //failing event makes it possible to customize response via failure handlers
-                            //QuarkusErrorHandler will send response if no other failure handler did
+                            // failing event makes it possible to customize response via failure handlers
+                            // QuarkusErrorHandler will send response if no other failure handler did
                             event.fail(throwable);
                         }
                     }
                 });
             } else {
-                //if using lazy auth this can be modified downstream, to control authentication behaviour
+                // if using lazy auth this can be modified downstream, to control authentication behaviour
                 event.put(QuarkusHttpUser.AUTH_FAILURE_HANDLER, new DefaultAuthFailureHandler() {
                     @Override
                     protected void proceed(Throwable throwable) {
-                        //we can't fail event here as request processing has already begun (e.g. in RESTEasy Reactive)
-                        //and extensions may have their ways to handle failures
-                        if (throwable instanceof AuthenticationCompletionException
-                                && throwable.getMessage() != null
+                        // we can't fail event here as request processing has already begun (e.g. in RESTEasy Reactive)
+                        // and extensions may have their ways to handle failures
+                        if (throwable instanceof AuthenticationCompletionException && throwable.getMessage() != null
                                 && LaunchMode.current() == LaunchMode.DEVELOPMENT) {
                             event.end(throwable.getMessage());
                         } else {
@@ -322,80 +324,73 @@ public class HttpSecurityRecorder {
             }
 
             if (proactiveAuthentication) {
-                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize().indefinitely();
-                potentialUser
-                        .subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
-                            @Override
-                            public void onSubscribe(UniSubscription subscription) {
+                Uni<SecurityIdentity> potentialUser = authenticator.attemptAuthentication(event).memoize()
+                        .indefinitely();
+                potentialUser.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                    @Override
+                    public void onSubscribe(UniSubscription subscription) {
 
-                            }
+                    }
 
-                            @Override
-                            public void onItem(SecurityIdentity identity) {
-                                if (event.response().ended()) {
-                                    return;
+                    @Override
+                    public void onItem(SecurityIdentity identity) {
+                        if (event.response().ended()) {
+                            return;
+                        }
+                        if (identity == null) {
+                            Uni<SecurityIdentity> anon = authenticator.getIdentityProviderManager().authenticate(
+                                    setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
+                            anon.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
+                                @Override
+                                public void onSubscribe(UniSubscription subscription) {
+
                                 }
-                                if (identity == null) {
-                                    Uni<SecurityIdentity> anon = authenticator.getIdentityProviderManager()
-                                            .authenticate(
-                                                    setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
-                                    anon.subscribe().withSubscriber(new UniSubscriber<SecurityIdentity>() {
-                                        @Override
-                                        public void onSubscribe(UniSubscription subscription) {
 
-                                        }
-
-                                        @Override
-                                        public void onItem(SecurityIdentity item) {
-                                            event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, anon);
-                                            event.setUser(new QuarkusHttpUser(item));
-                                            event.next();
-                                        }
-
-                                        @Override
-                                        public void onFailure(Throwable failure) {
-                                            BiConsumer<RoutingContext, Throwable> handler = event
-                                                    .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-                                            if (handler != null) {
-                                                handler.accept(event, failure);
-                                            }
-                                        }
-                                    });
-                                } else {//when the result is evaluated we set the user, even if it is evaluated lazily
-                                    event.setUser(new QuarkusHttpUser(identity));
-                                    event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, potentialUser);
+                                @Override
+                                public void onItem(SecurityIdentity item) {
+                                    event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, anon);
+                                    event.setUser(new QuarkusHttpUser(item));
                                     event.next();
                                 }
-                            }
 
-                            @Override
-                            public void onFailure(Throwable failure) {
-                                //this can be customised
-                                BiConsumer<RoutingContext, Throwable> handler = event
-                                        .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
-                                if (handler != null) {
-                                    handler.accept(event, failure);
+                                @Override
+                                public void onFailure(Throwable failure) {
+                                    BiConsumer<RoutingContext, Throwable> handler = event
+                                            .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+                                    if (handler != null) {
+                                        handler.accept(event, failure);
+                                    }
                                 }
+                            });
+                        } else {// when the result is evaluated we set the user, even if it is evaluated lazily
+                            event.setUser(new QuarkusHttpUser(identity));
+                            event.put(QuarkusHttpUser.DEFERRED_IDENTITY_KEY, potentialUser);
+                            event.next();
+                        }
+                    }
 
-                            }
-                        });
+                    @Override
+                    public void onFailure(Throwable failure) {
+                        // this can be customised
+                        BiConsumer<RoutingContext, Throwable> handler = event.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
+                        if (handler != null) {
+                            handler.accept(event, failure);
+                        }
+
+                    }
+                });
             } else {
 
-                Uni<SecurityIdentity> lazyUser = Uni
-                        .createFrom()
-                        .nullItem()
+                Uni<SecurityIdentity> lazyUser = Uni.createFrom().nullItem()
                         // Only attempt to authenticate if required
-                        .flatMap(n -> authenticator.attemptAuthentication(event))
-                        .memoize()
-                        .indefinitely()
+                        .flatMap(n -> authenticator.attemptAuthentication(event)).memoize().indefinitely()
                         .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                             @Override
                             public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                                //if it is null we use the anonymous identity
+                                // if it is null we use the anonymous identity
                                 if (securityIdentity == null) {
-                                    return authenticator.getIdentityProviderManager()
-                                            .authenticate(
-                                                    setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
+                                    return authenticator.getIdentityProviderManager().authenticate(
+                                            setRoutingContextAttribute(new AnonymousAuthenticationRequest(), event));
                                 }
                                 return Uni.createFrom().item(securityIdentity);
                             }
@@ -403,11 +398,11 @@ public class HttpSecurityRecorder {
                             @Override
                             public void accept(SecurityIdentity identity, Throwable throwable, Boolean aBoolean) {
                                 if (identity != null) {
-                                    //when the result is evaluated we set the user, even if it is evaluated lazily
+                                    // when the result is evaluated we set the user, even if it is evaluated lazily
                                     event.setUser(new QuarkusHttpUser(identity));
                                 } else if (throwable != null) {
-                                    //handle the auth failure
-                                    //this can be customised
+                                    // handle the auth failure
+                                    // this can be customised
                                     BiConsumer<RoutingContext, Throwable> handler = event
                                             .get(QuarkusHttpUser.AUTH_FAILURE_HANDLER);
                                     if (handler != null) {
@@ -422,8 +417,7 @@ public class HttpSecurityRecorder {
         }
 
         // this must happen before the router is finalized, so that class members are set before any concurrency happens
-        public void init(AbstractPathMatchingHttpSecurityPolicy pathMatchingPolicy,
-                RolesMapping rolesMapping) {
+        public void init(AbstractPathMatchingHttpSecurityPolicy pathMatchingPolicy, RolesMapping rolesMapping) {
             // null checks in this method are here because this is a public method
             // but class members should be initialized once, before the router is finalized
             if (this.pathMatchingPolicy == null) {
@@ -445,7 +439,8 @@ public class HttpSecurityRecorder {
                 try {
                     rolesResource = rolesPath.toUri().toURL();
                 } catch (MalformedURLException e) {
-                    // The Files.exists(rolesPath) check has succeeded therefore this exception can't happen in this case
+                    // The Files.exists(rolesPath) check has succeeded therefore this exception can't happen in this
+                    // case
                 }
             } else {
                 rolesResource = Thread.currentThread().getContextClassLoader().getResource(rolesPath.toString());
@@ -468,7 +463,8 @@ public class HttpSecurityRecorder {
                 }
 
                 if (!roles.isEmpty()) {
-                    var certRolesAttribute = new CertificateRoleAttribute(httpConfig.auth().certificateRoleAttribute(), roles);
+                    var certRolesAttribute = new CertificateRoleAttribute(httpConfig.auth().certificateRoleAttribute(),
+                            roles);
                     mtls.get().setCertificateToRolesMapper(certRolesAttribute.rolesMapper());
                 }
             } catch (Exception e) {
@@ -477,7 +473,8 @@ public class HttpSecurityRecorder {
         }
     }
 
-    public RuntimeValue<MethodDescription> createMethodDescription(String className, String methodName, String[] paramTypes) {
+    public RuntimeValue<MethodDescription> createMethodDescription(String className, String methodName,
+            String[] paramTypes) {
         return new RuntimeValue<>(new MethodDescription(className, methodName, paramTypes));
     }
 

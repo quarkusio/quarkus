@@ -128,47 +128,43 @@ import io.smallrye.config.SmallRyeConfigBuilder;
 import io.smallrye.config.SmallRyeConfigProviderResolver;
 
 /**
- * Makes it easy to test Quarkus components. This extension can be registered declaratively with {@link QuarkusComponentTest} or
- * programmatically with a static field of type {@link QuarkusComponentTestExtension}, annotated with {@link RegisterExtension}
- * and initialized with {@link #QuarkusComponentTestExtension(Class...) simplified constructor} or using the {@link #builder()
- * builder}.
- *
+ * Makes it easy to test Quarkus components. This extension can be registered declaratively with
+ * {@link QuarkusComponentTest} or programmatically with a static field of type {@link QuarkusComponentTestExtension},
+ * annotated with {@link RegisterExtension} and initialized with {@link #QuarkusComponentTestExtension(Class...)
+ * simplified constructor} or using the {@link #builder() builder}.
  * <h2>Container lifecycle</h2>
  * <p>
- * This extension starts the CDI container and registers a dedicated SmallRyeConfig. If {@link Lifecycle#PER_METHOD} is used
- * (default) then the container is started during the {@code before each} test phase and stopped during the {@code after each}
- * test phase. However, if {@link Lifecycle#PER_CLASS} is used then the container is started during the {@code before all} test
- * phase and stopped during the {@code after all} test phase. The CDI request context is activated and terminated per each test
- * method.
- *
+ * This extension starts the CDI container and registers a dedicated SmallRyeConfig. If {@link Lifecycle#PER_METHOD} is
+ * used (default) then the container is started during the {@code before each} test phase and stopped during the
+ * {@code after each} test phase. However, if {@link Lifecycle#PER_CLASS} is used then the container is started during
+ * the {@code before all} test phase and stopped during the {@code after all} test phase. The CDI request context is
+ * activated and terminated per each test method.
  * <h2>Injection</h2>
  * <p>
- * Test class fields annotated with {@link jakarta.inject.Inject} and {@link io.quarkus.test.InjectMock} are injected after a
- * test instance is created and unset before a test instance is destroyed. Dependent beans injected into these
+ * Test class fields annotated with {@link jakarta.inject.Inject} and {@link io.quarkus.test.InjectMock} are injected
+ * after a test instance is created and unset before a test instance is destroyed. Dependent beans injected into these
  * fields are correctly destroyed before a test instance is destroyed.
  * <p>
- * Parameters of a test method for which a matching bean exists are resolved unless annotated with {@link SkipInject}. Dependent
- * beans injected into the test method arguments are correctly destroyed after the test method completes.
- *
+ * Parameters of a test method for which a matching bean exists are resolved unless annotated with {@link SkipInject}.
+ * Dependent beans injected into the test method arguments are correctly destroyed after the test method completes.
  * <h2>Auto Mocking Unsatisfied Dependencies</h2>
  * <p>
- * Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency. Instead, a
- * synthetic bean is registered automatically for each combination of required type and qualifiers of an injection point that
- * resolves to an unsatisfied dependency. The bean has the {@link Singleton} scope so it's shared across all injection points
- * with the same required type and qualifiers. The injected reference is an unconfigured Mockito mock. You can inject the mock
- * in your test using the {@link io.quarkus.test.InjectMock} annotation and leverage the Mockito API to configure the behavior.
- *
+ * Unlike in regular CDI environments the test does not fail if a component injects an unsatisfied dependency. Instead,
+ * a synthetic bean is registered automatically for each combination of required type and qualifiers of an injection
+ * point that resolves to an unsatisfied dependency. The bean has the {@link Singleton} scope so it's shared across all
+ * injection points with the same required type and qualifiers. The injected reference is an unconfigured Mockito mock.
+ * You can inject the mock in your test using the {@link io.quarkus.test.InjectMock} annotation and leverage the Mockito
+ * API to configure the behavior.
  * <h2>Custom Mocks For Unsatisfied Dependencies</h2>
  * <p>
- * Sometimes you need the full control over the bean attributes and maybe even configure the default mock behavior. You can use
- * the mock configurator API via the {@link QuarkusComponentTestExtensionBuilder#mock(Class)} method.
+ * Sometimes you need the full control over the bean attributes and maybe even configure the default mock behavior. You
+ * can use the mock configurator API via the {@link QuarkusComponentTestExtensionBuilder#mock(Class)} method.
  *
  * @see InjectMock
  * @see TestConfigProperty
  */
-public class QuarkusComponentTestExtension
-        implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback, AfterEachCallback, TestInstancePostProcessor,
-        ParameterResolver {
+public class QuarkusComponentTestExtension implements BeforeAllCallback, AfterAllCallback, BeforeEachCallback,
+        AfterEachCallback, TestInstancePostProcessor, ParameterResolver {
 
     public static QuarkusComponentTestExtensionBuilder builder() {
         return new QuarkusComponentTestExtensionBuilder();
@@ -210,9 +206,8 @@ public class QuarkusComponentTestExtension
      * @param additionalComponentClasses
      */
     public QuarkusComponentTestExtension(Class<?>... additionalComponentClasses) {
-        this(new QuarkusComponentTestConfiguration(Map.of(), Set.of(additionalComponentClasses),
-                List.of(), false, true, QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL,
-                List.of(), List.of(), null), false);
+        this(new QuarkusComponentTestConfiguration(Map.of(), Set.of(additionalComponentClasses), List.of(), false, true,
+                QuarkusComponentTestExtensionBuilder.DEFAULT_CONFIG_SOURCE_ORDINAL, List.of(), List.of(), null), false);
     }
 
     QuarkusComponentTestExtension(QuarkusComponentTestConfiguration baseConfiguration, boolean startShouldFail) {
@@ -429,8 +424,8 @@ public class QuarkusComponentTestExtension
     private void stopContainer(ExtensionContext context, Lifecycle testInstanceLifecycle) throws Exception {
         if (testInstanceLifecycle.equals(context.getTestInstanceLifecycle().orElse(Lifecycle.PER_METHOD))
                 && getContainerState(context) == ContainerState.STARTED) {
-            for (FieldInjector fieldInjector : (List<FieldInjector>) store(context)
-                    .get(KEY_INJECTED_FIELDS, List.class)) {
+            for (FieldInjector fieldInjector : (List<FieldInjector>) store(context).get(KEY_INJECTED_FIELDS,
+                    List.class)) {
                 fieldInjector.unset();
             }
             try {
@@ -503,13 +498,10 @@ public class QuarkusComponentTestExtension
 
         // TCCL is now the QuarkusComponentTestClassLoader set during initialization
         ClassLoader tccl = Thread.currentThread().getContextClassLoader();
-        SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl)
-                .addDefaultInterceptors()
-                .withConverters(configuration.configConverters.toArray(new Converter<?>[] {}))
-                .addDefaultSources()
-                .withSources(
-                        new QuarkusComponentTestConfigSource(configuration.configProperties,
-                                configuration.configSourceOrdinal));
+        SmallRyeConfigBuilder configBuilder = new SmallRyeConfigBuilder().forClassLoader(tccl).addDefaultInterceptors()
+                .withConverters(configuration.configConverters.toArray(new Converter<?>[] {})).addDefaultSources()
+                .withSources(new QuarkusComponentTestConfigSource(configuration.configProperties,
+                        configuration.configSourceOrdinal));
         @SuppressWarnings("unchecked")
         Set<ConfigClass> configMappings = store(context).get(KEY_CONFIG_MAPPINGS, Set.class);
         if (configMappings != null) {
@@ -589,7 +581,8 @@ public class QuarkusComponentTestExtension
         return ret;
     }
 
-    private ClassLoader initArcContainer(ExtensionContext extensionContext, QuarkusComponentTestConfiguration configuration) {
+    private ClassLoader initArcContainer(ExtensionContext extensionContext,
+            QuarkusComponentTestConfiguration configuration) {
         if (configuration.componentClasses.isEmpty()) {
             throw new IllegalStateException("No component classes to test");
         }
@@ -625,8 +618,8 @@ public class QuarkusComponentTestExtension
         boolean isContinuousTesting = testClassClassLoader instanceof QuarkusClassLoader;
         ClassLoader oldTccl = Thread.currentThread().getContextClassLoader();
 
-        IndexView computingIndex = BeanArchives.buildComputingBeanArchiveIndex(oldTccl,
-                new ConcurrentHashMap<>(), index);
+        IndexView computingIndex = BeanArchives.buildComputingBeanArchiveIndex(oldTccl, new ConcurrentHashMap<>(),
+                index);
 
         try {
 
@@ -639,14 +632,12 @@ public class QuarkusComponentTestExtension
             List<Field> injectFields = findInjectFields(testClass, true);
             List<Parameter> injectParams = findInjectParams(testClass);
 
-            BeanProcessor.Builder builder = BeanProcessor.builder()
-                    .setName(testClass.getName().replace('.', '_'))
+            BeanProcessor.Builder builder = BeanProcessor.builder().setName(testClass.getName().replace('.', '_'))
                     .addRemovalExclusion(b -> {
                         // Do not remove beans:
                         // 1. Annotated with @Unremovable
                         // 2. Injected in the test class or in a test method parameter
-                        if (b.getTarget().isPresent()
-                                && b.getTarget().get().hasDeclaredAnnotation(Unremovable.class)) {
+                        if (b.getTarget().isPresent() && b.getTarget().get().hasDeclaredAnnotation(Unremovable.class)) {
                             return true;
                         }
                         for (Field injectionPoint : injectFields) {
@@ -656,19 +647,18 @@ public class QuarkusComponentTestExtension
                             }
                         }
                         for (Parameter param : injectParams) {
-                            if (injectionPointMatchesBean(param.getParameterizedType(), param, qualifiers, beanResolver.get(),
-                                    b)) {
+                            if (injectionPointMatchesBean(param.getParameterizedType(), param, qualifiers,
+                                    beanResolver.get(), b)) {
                                 return true;
                             }
                         }
                         return false;
-                    })
-                    .setImmutableBeanArchiveIndex(index)
-                    .setComputingBeanArchiveIndex(computingIndex)
+                    }).setImmutableBeanArchiveIndex(index).setComputingBeanArchiveIndex(computingIndex)
                     .setRemoveUnusedBeans(true);
 
             // We need collect all generated resources so that we can remove them after the test
-            // NOTE: previously we kept the generated framework classes (to speedup subsequent test runs) but that breaks the existing @QuarkusTests
+            // NOTE: previously we kept the generated framework classes (to speedup subsequent test runs) but that
+            // breaks the existing @QuarkusTests
             Set<Path> generatedResources;
 
             // E.g. target/generated-arc-sources/org/acme/ComponentsProvider
@@ -686,10 +676,8 @@ public class QuarkusComponentTestExtension
                                 ((QuarkusClassLoader) testClass.getClassLoader()).reset(classes, Map.of());
                                 break;
                             case SERVICE_PROVIDER:
-                                if (resource.getName()
-                                        .endsWith(ComponentsProvider.class.getName())) {
-                                    componentsProviderFile.getParentFile()
-                                            .mkdirs();
+                                if (resource.getName().endsWith(ComponentsProvider.class.getName())) {
+                                    componentsProviderFile.getParentFile().mkdirs();
                                     try (FileOutputStream out = new FileOutputStream(componentsProviderFile)) {
                                         out.write(resource.getData());
                                     }
@@ -711,10 +699,8 @@ public class QuarkusComponentTestExtension
                                 generatedResources.add(resource.writeTo(testOutputDirectory).toPath());
                                 break;
                             case SERVICE_PROVIDER:
-                                if (resource.getName()
-                                        .endsWith(ComponentsProvider.class.getName())) {
-                                    componentsProviderFile.getParentFile()
-                                            .mkdirs();
+                                if (resource.getName().endsWith(ComponentsProvider.class.getName())) {
+                                    componentsProviderFile.getParentFile().mkdirs();
                                     try (FileOutputStream out = new FileOutputStream(componentsProviderFile)) {
                                         out.write(resource.getData());
                                     }
@@ -803,8 +789,8 @@ public class QuarkusComponentTestExtension
                             continue;
                         }
                         if (requiredType.kind() == Kind.PRIMITIVE || requiredType.kind() == Kind.ARRAY) {
-                            throw new IllegalStateException(
-                                    "Found an unmockable unsatisfied injection point: " + injectionPoint.getTargetInfo());
+                            throw new IllegalStateException("Found an unmockable unsatisfied injection point: "
+                                    + injectionPoint.getTargetInfo());
                         }
                         unsatisfiedInjectionPoints.add(new TypeAndQualifiers(requiredType, requiredQualifiers));
                         LOG.debugf("Unsatisfied injection point found: %s", injectionPoint.getTargetInfo());
@@ -817,42 +803,35 @@ public class QuarkusComponentTestExtension
                         if (requiredQualifiers.isEmpty()) {
                             requiredQualifiers = Set.of(AnnotationInstance.builder(DotNames.DEFAULT).build());
                         }
-                        unsatisfiedInjectionPoints
-                                .add(new TypeAndQualifiers(Types.jandexType(field.getGenericType()), requiredQualifiers));
+                        unsatisfiedInjectionPoints.add(
+                                new TypeAndQualifiers(Types.jandexType(field.getGenericType()), requiredQualifiers));
                     }
                     for (Parameter param : findInjectMockParams(testClass)) {
                         Set<AnnotationInstance> requiredQualifiers = getQualifiers(param, qualifiers);
                         if (requiredQualifiers.isEmpty()) {
                             requiredQualifiers = Set.of(AnnotationInstance.builder(DotNames.DEFAULT).build());
                         }
-                        unsatisfiedInjectionPoints
-                                .add(new TypeAndQualifiers(Types.jandexType(param.getParameterizedType()), requiredQualifiers));
+                        unsatisfiedInjectionPoints.add(new TypeAndQualifiers(
+                                Types.jandexType(param.getParameterizedType()), requiredQualifiers));
                     }
 
                     for (TypeAndQualifiers unsatisfied : unsatisfiedInjectionPoints) {
                         ClassInfo implementationClass = computingIndex.getClassByName(unsatisfied.type.name());
-                        BeanConfigurator<Object> configurator = registrationContext.configure(implementationClass.name())
-                                .scope(Singleton.class)
-                                .addType(unsatisfied.type);
+                        BeanConfigurator<Object> configurator = registrationContext
+                                .configure(implementationClass.name()).scope(Singleton.class).addType(unsatisfied.type);
                         unsatisfied.qualifiers.forEach(configurator::addQualifier);
-                        configurator.param("implementationClass", implementationClass)
-                                .creator(MockBeanCreator.class)
-                                .defaultBean()
-                                .identifier("dummy")
-                                .done();
+                        configurator.param("implementationClass", implementationClass).creator(MockBeanCreator.class)
+                                .defaultBean().identifier("dummy").done();
                     }
 
                     if (configInjectionPoint) {
-                        registrationContext.configure(Config.class)
-                                .addType(Config.class)
-                                .creator(ConfigBeanCreator.class)
-                                .done();
+                        registrationContext.configure(Config.class).addType(Config.class)
+                                .creator(ConfigBeanCreator.class).done();
                     }
 
                     if (!configPropertyInjectionPoints.isEmpty()) {
-                        BeanConfigurator<Object> configPropertyConfigurator = registrationContext.configure(Object.class)
-                                .identifier("configProperty")
-                                .addQualifier(ConfigProperty.class)
+                        BeanConfigurator<Object> configPropertyConfigurator = registrationContext
+                                .configure(Object.class).identifier("configProperty").addQualifier(ConfigProperty.class)
                                 .param("useDefaultConfigProperties", configuration.useDefaultConfigProperties)
                                 .addInjectionPoint(ClassType.create(InjectionPoint.class))
                                 .creator(ConfigPropertyBeanCreator.class);
@@ -867,12 +846,9 @@ public class QuarkusComponentTestExtension
                         for (Entry<String, Set<String>> e : prefixToConfigMappings.entrySet()) {
                             for (String mapping : e.getValue()) {
                                 DotName mappingName = DotName.createSimple(mapping);
-                                registrationContext.configure(mappingName)
-                                        .addType(mappingName)
-                                        .creator(ConfigMappingBeanCreator.class)
-                                        .param("mappingClass", mapping)
-                                        .param("prefix", e.getKey())
-                                        .done();
+                                registrationContext.configure(mappingName).addType(mappingName)
+                                        .creator(ConfigMappingBeanCreator.class).param("mappingClass", mapping)
+                                        .param("prefix", e.getKey()).done();
                                 configMappings.add(configClass(ConfigMappingBeanCreator.tryLoad(mapping), e.getKey()));
                             }
                         }
@@ -881,11 +857,12 @@ public class QuarkusComponentTestExtension
 
                     LOG.debugf("Test injection points analyzed in %s ms [found: %s, mocked: %s]",
                             TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start),
-                            registrationContext.getInjectionPoints().size(),
-                            unsatisfiedInjectionPoints.size());
+                            registrationContext.getInjectionPoints().size(), unsatisfiedInjectionPoints.size());
 
-                    // Find all methods annotated with interceptor annotations and register them as synthetic interceptors
-                    processTestInterceptorMethods(testClass, extensionContext, registrationContext, interceptorBindings);
+                    // Find all methods annotated with interceptor annotations and register them as synthetic
+                    // interceptors
+                    processTestInterceptorMethods(testClass, extensionContext, registrationContext,
+                            interceptorBindings);
                 }
             });
 
@@ -928,9 +905,7 @@ public class QuarkusComponentTestExtension
             // Use a custom ClassLoader to load the generated ComponentsProvider file
             // In continuous testing the CL that loaded the test class must be used as the parent CL
             QuarkusComponentTestClassLoader testClassLoader = new QuarkusComponentTestClassLoader(
-                    isContinuousTesting ? testClassClassLoader : oldTccl,
-                    componentsProviderFile,
-                    null);
+                    isContinuousTesting ? testClassClassLoader : oldTccl, componentsProviderFile, null);
             Thread.currentThread().setContextClassLoader(testClassLoader);
 
         } catch (Throwable e) {
@@ -953,8 +928,8 @@ public class QuarkusComponentTestExtension
 
     private void processTestInterceptorMethods(Class<?> testClass, ExtensionContext context,
             BeanRegistrar.RegistrationContext registrationContext, Set<String> interceptorBindings) {
-        List<Class<? extends Annotation>> annotations = List.of(AroundInvoke.class, PostConstruct.class, PreDestroy.class,
-                AroundConstruct.class);
+        List<Class<? extends Annotation>> annotations = List.of(AroundInvoke.class, PostConstruct.class,
+                PreDestroy.class, AroundConstruct.class);
         Predicate<Method> predicate = m -> {
             for (Class<? extends Annotation> annotation : annotations) {
                 if (m.isAnnotationPresent(annotation)) {
@@ -1004,21 +979,18 @@ public class QuarkusComponentTestExtension
             if (priorityAnnotation != null) {
                 priority = priorityAnnotation.value();
             }
-            registrationContext.configureInterceptor(interceptionType)
-                    .identifier(key)
-                    .priority(priority)
-                    .bindings(bindings.stream().map(Annotations::jandexAnnotation)
-                            .toArray(AnnotationInstance[]::new))
-                    .param(InterceptorMethodCreator.CREATE_KEY, key)
-                    .creator(InterceptorMethodCreator.class);
+            registrationContext.configureInterceptor(interceptionType).identifier(key).priority(priority)
+                    .bindings(bindings.stream().map(Annotations::jandexAnnotation).toArray(AnnotationInstance[]::new))
+                    .param(InterceptorMethodCreator.CREATE_KEY, key).creator(InterceptorMethodCreator.class);
         }
     }
 
     private void validateTestInterceptorMethod(Method method) {
         Parameter[] params = method.getParameters();
         if (params.length != 1 || !InvocationContext.class.isAssignableFrom(params[0].getType())) {
-            throw new IllegalStateException("A test interceptor method must declare exactly one InvocationContext parameter:"
-                    + Arrays.toString(params));
+            throw new IllegalStateException(
+                    "A test interceptor method must declare exactly one InvocationContext parameter:"
+                            + Arrays.toString(params));
         }
 
     }
@@ -1060,19 +1032,18 @@ public class QuarkusComponentTestExtension
         }
     }
 
-    private boolean isSatisfied(Type requiredType, Set<AnnotationInstance> qualifiers, InjectionPointInfo injectionPoint,
-            Iterable<BeanInfo> beans, BeanDeployment beanDeployment, QuarkusComponentTestConfiguration configuration) {
+    private boolean isSatisfied(Type requiredType, Set<AnnotationInstance> qualifiers,
+            InjectionPointInfo injectionPoint, Iterable<BeanInfo> beans, BeanDeployment beanDeployment,
+            QuarkusComponentTestConfiguration configuration) {
         for (BeanInfo bean : beans) {
             if (Beans.matches(bean, requiredType, qualifiers)) {
-                LOG.debugf("Injection point %s satisfied by %s", injectionPoint.getTargetInfo(),
-                        bean.toString());
+                LOG.debugf("Injection point %s satisfied by %s", injectionPoint.getTargetInfo(), bean.toString());
                 return true;
             }
         }
         for (MockBeanConfiguratorImpl<?> mock : configuration.mockConfigurators) {
             if (mock.matches(beanDeployment.getBeanResolver(), requiredType, qualifiers)) {
-                LOG.debugf("Injection point %s satisfied by %s", injectionPoint.getTargetInfo(),
-                        mock);
+                LOG.debugf("Injection point %s satisfied by %s", injectionPoint.getTargetInfo(), mock);
                 return true;
             }
         }
@@ -1140,8 +1111,7 @@ public class QuarkusComponentTestExtension
         List<Parameter> ret = new ArrayList<>();
         for (Method method : testMethods) {
             for (Parameter param : method.getParameters()) {
-                if (BUILTIN_PARAMETER.test(param)
-                        || param.isAnnotationPresent(SkipInject.class)) {
+                if (BUILTIN_PARAMETER.test(param) || param.isAnnotationPresent(SkipInject.class)) {
                     continue;
                 }
                 ret.add(param);
@@ -1155,8 +1125,7 @@ public class QuarkusComponentTestExtension
         List<Parameter> ret = new ArrayList<>();
         for (Method method : testMethods) {
             for (Parameter param : method.getParameters()) {
-                if (param.isAnnotationPresent(InjectMock.class)
-                        && !BUILTIN_PARAMETER.test(param)) {
+                if (param.isAnnotationPresent(InjectMock.class) && !BUILTIN_PARAMETER.test(param)) {
                     ret.add(param);
                 }
             }
@@ -1165,8 +1134,7 @@ public class QuarkusComponentTestExtension
     }
 
     static boolean isTestMethod(Executable method) {
-        return method.isAnnotationPresent(Test.class)
-                || method.isAnnotationPresent(ParameterizedTest.class)
+        return method.isAnnotationPresent(Test.class) || method.isAnnotationPresent(ParameterizedTest.class)
                 || method.isAnnotationPresent(RepeatedTest.class);
     }
 
@@ -1232,15 +1200,14 @@ public class QuarkusComponentTestExtension
                 InstanceHandle<?> handle = container.instance(requiredType, qualifiers);
                 if (field.isAnnotationPresent(Inject.class)) {
                     if (!handle.isAvailable()) {
-                        throw new IllegalStateException(String
-                                .format("The injected field [%s] expects a real component; but no matching component was registered",
-                                        field,
-                                        handle.getBean()));
+                        throw new IllegalStateException(String.format(
+                                "The injected field [%s] expects a real component; but no matching component was registered",
+                                field, handle.getBean()));
                     }
                     if (handle.getBean().getKind() == io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
-                        throw new IllegalStateException(String
-                                .format("The injected field [%s] expects a real component; but obtained: %s", field,
-                                        handle.getBean()));
+                        throw new IllegalStateException(
+                                String.format("The injected field [%s] expects a real component; but obtained: %s",
+                                        field, handle.getBean()));
                     }
                 } else {
                     if (!handle.isAvailable()) {
@@ -1248,8 +1215,8 @@ public class QuarkusComponentTestExtension
                                 .format("The injected field [%s] expects a mocked bean; but obtained null", field));
                     }
                     if (handle.getBean().getKind() != io.quarkus.arc.InjectableBean.Kind.SYNTHETIC) {
-                        throw new IllegalStateException(String
-                                .format("The injected field [%s] expects a mocked bean; but obtained: %s", field,
+                        throw new IllegalStateException(
+                                String.format("The injected field [%s] expects a mocked bean; but obtained: %s", field,
                                         handle.getBean()));
                     }
                 }
@@ -1285,8 +1252,8 @@ public class QuarkusComponentTestExtension
 
     }
 
-    private static Object handleListAll(java.lang.reflect.Type requiredType, Annotation[] qualifiers, ArcContainer container,
-            Collection<InstanceHandle<?>> unsetHandles) {
+    private static Object handleListAll(java.lang.reflect.Type requiredType, Annotation[] qualifiers,
+            ArcContainer container, Collection<InstanceHandle<?>> unsetHandles) {
         // Remove @All and add @Default if empty
         Set<Annotation> qualifiersSet = new HashSet<>();
         Collections.addAll(qualifiersSet, qualifiers);
@@ -1349,8 +1316,8 @@ public class QuarkusComponentTestExtension
         return false;
     }
 
-    private boolean injectionPointMatchesBean(java.lang.reflect.Type injectionPointType, AnnotatedElement annotatedElement,
-            List<DotName> allQualifiers, BeanResolver beanResolver, BeanInfo bean) {
+    private boolean injectionPointMatchesBean(java.lang.reflect.Type injectionPointType,
+            AnnotatedElement annotatedElement, List<DotName> allQualifiers, BeanResolver beanResolver, BeanInfo bean) {
         Type requiredType;
         Set<AnnotationInstance> requiredQualifiers = getQualifiers(annotatedElement, allQualifiers);
         if (isListAllInjectionPoint(injectionPointType,
@@ -1384,7 +1351,8 @@ public class QuarkusComponentTestExtension
             String testClassResourceName = fromClassNameToResourceName(testClass.getName());
             // org/acme/Foo.class -> file:/some/path/to/project/target/test-classes/org/acme/Foo.class
             String testPath = testClass.getClassLoader().getResource(testClassResourceName).toString();
-            // file:/some/path/to/project/target/test-classes/org/acme/Foo.class -> file:/some/path/to/project/target/test-classes
+            // file:/some/path/to/project/target/test-classes/org/acme/Foo.class ->
+            // file:/some/path/to/project/target/test-classes
             String testClassesRootPath = testPath.substring(0, testPath.length() - testClassResourceName.length() - 1);
             // resolve back to File instance
             testOutputDirectory = new File(URI.create(testClassesRootPath));

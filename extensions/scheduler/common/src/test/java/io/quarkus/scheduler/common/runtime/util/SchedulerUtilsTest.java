@@ -64,13 +64,14 @@ public class SchedulerUtilsTest {
 
     @Test
     void testDefaultValueNestedJBossStyle() {
-        Assertions.assertEquals("MY_DEFAULT_VALUE",
-                SchedulerUtils.lookUpPropertyValue("${non.existing.property1:${non.existing.property2:MY_DEFAULT_VALUE}}"));
+        Assertions.assertEquals("MY_DEFAULT_VALUE", SchedulerUtils
+                .lookUpPropertyValue("${non.existing.property1:${non.existing.property2:MY_DEFAULT_VALUE}}"));
     }
 
     @Test
     void testParseDurationPeriodString() {
-        Assertions.assertEquals(24 * 60 * 60 * 1000, SchedulerUtils.parseDelayedAsMillis(createScheduledDelayed("P1D")));
+        Assertions.assertEquals(24 * 60 * 60 * 1000,
+                SchedulerUtils.parseDelayedAsMillis(createScheduledDelayed("P1D")));
     }
 
     @Test
@@ -80,7 +81,8 @@ public class SchedulerUtilsTest {
 
     @Test
     void testParseDurationPeriodOfTimeString() {
-        Assertions.assertEquals(2 * 60 * 60 * 1000, SchedulerUtils.parseDelayedAsMillis(createScheduledDelayed("PT2H")));
+        Assertions.assertEquals(2 * 60 * 60 * 1000,
+                SchedulerUtils.parseDelayedAsMillis(createScheduledDelayed("PT2H")));
     }
 
     @Test

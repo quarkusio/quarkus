@@ -38,12 +38,10 @@ import io.vertx.mutiny.ext.web.handler.BodyHandler;
 public class VertxHttpClientMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(App.class, HttpClient.class, WsClient.class, Util.class,
-                            ClientDummyTag.class, ClientHeaderTag.class));
+            .withApplicationRoot((jar) -> jar.addClasses(App.class, HttpClient.class, WsClient.class, Util.class,
+                    ClientDummyTag.class, ClientHeaderTag.class));
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
@@ -78,9 +76,8 @@ public class VertxHttpClientMetricsTest {
         // If the WS test runs before, some data was already written
         double sizeBefore = 0;
         if (getMeter("http.client.bytes.written").summary() != null) {
-            sizeBefore = registry.find("http.client.bytes.written")
-                    .tag("clientName", "my-client")
-                    .summary().totalAmount();
+            sizeBefore = registry.find("http.client.bytes.written").tag("clientName", "my-client").summary()
+                    .totalAmount();
         }
 
         try {
@@ -93,13 +90,10 @@ public class VertxHttpClientMetricsTest {
 
             // Body sizes
             double expectedBytesWritten = sizeBefore + 5;
-            await().untilAsserted(
-                    () -> Assertions.assertEquals(expectedBytesWritten,
-                            registry.find("http.client.bytes.written")
-                                    .tag("clientName", "my-client").summary().totalAmount()));
+            await().untilAsserted(() -> Assertions.assertEquals(expectedBytesWritten,
+                    registry.find("http.client.bytes.written").tag("clientName", "my-client").summary().totalAmount()));
             await().untilAsserted(() -> Assertions.assertEquals(9,
-                    registry.find("http.client.bytes.read")
-                            .tag("clientName", "my-client").summary().totalAmount()));
+                    registry.find("http.client.bytes.read").tag("clientName", "my-client").summary().totalAmount()));
 
             await().until(() -> getMeter("http.client.requests").timer().totalTime(TimeUnit.NANOSECONDS) > 0);
             await().until(() -> {
@@ -108,25 +102,21 @@ public class VertxHttpClientMetricsTest {
             });
             await().until(() -> getMeter("http.client.active.connections").gauge().value() == 1);
 
-            Assertions.assertEquals(1, registry.find("http.client.requests")
-                    .tag("uri", "root")
-                    .tag("dummy", "value")
-                    .tag("foo", "UNSET")
-                    .tag("outcome", "SUCCESS").timers().size(),
+            Assertions.assertEquals(1,
+                    registry.find("http.client.requests").tag("uri", "root").tag("dummy", "value").tag("foo", "UNSET")
+                            .tag("outcome", "SUCCESS").timers().size(),
                     Util.foundClientRequests(registry, "/ with tag outcome=SUCCESS."));
 
-            Assertions.assertEquals(1, registry.find("http.client.requests")
-                    .tag("uri", "root")
-                    .tag("dummy", "value")
-                    .tag("foo", "bar")
-                    .tag("outcome", "SUCCESS").timers().size(),
+            Assertions.assertEquals(1,
+                    registry.find("http.client.requests").tag("uri", "root").tag("dummy", "value").tag("foo", "bar")
+                            .tag("outcome", "SUCCESS").timers().size(),
                     Util.foundClientRequests(registry, "/ with tag outcome=SUCCESS."));
 
             // Queue
-            Assertions.assertEquals(3, registry.find("http.client.queue.delay")
-                    .tag("clientName", "my-client").timer().count());
-            Assertions.assertTrue(registry.find("http.client.queue.delay")
-                    .tag("clientName", "my-client").timer().totalTime(TimeUnit.NANOSECONDS) > 0);
+            Assertions.assertEquals(3,
+                    registry.find("http.client.queue.delay").tag("clientName", "my-client").timer().count());
+            Assertions.assertTrue(registry.find("http.client.queue.delay").tag("clientName", "my-client").timer()
+                    .totalTime(TimeUnit.NANOSECONDS) > 0);
 
             await().until(() -> getMeter("http.client.queue.size").gauge().value() == 0.0);
         } finally {
@@ -157,22 +147,18 @@ public class VertxHttpClientMetricsTest {
             Router router = Router.router(vertx);
             router.route().handler(BodyHandler.create());
             router.get().handler(rc -> rc.endAndForget("ok"));
-            router.post("/post")
-                    .handler(rc -> rc.response().endAndForget(rc.body().asString().toUpperCase()));
-            server = vertx.createHttpServer()
-                    .requestHandler(req -> {
-                        if (!req.path().endsWith("/ws")) {
-                            router.handle(req);
-                        } else {
-                            req.toWebSocket()
-                                    .subscribe().with(socket -> {
-                                        socket.handler(buffer -> {
-                                            socket.writeAndForget(Buffer.buffer(buffer.toString().toUpperCase()));
-                                        });
-                                    });
-                        }
-                    })
-                    .listenAndAwait(8888);
+            router.post("/post").handler(rc -> rc.response().endAndForget(rc.body().asString().toUpperCase()));
+            server = vertx.createHttpServer().requestHandler(req -> {
+                if (!req.path().endsWith("/ws")) {
+                    router.handle(req);
+                } else {
+                    req.toWebSocket().subscribe().with(socket -> {
+                        socket.handler(buffer -> {
+                            socket.writeAndForget(Buffer.buffer(buffer.toString().toUpperCase()));
+                        });
+                    });
+                }
+            }).listenAndAwait(8888);
         }
 
         public void stop() {
@@ -189,9 +175,8 @@ public class VertxHttpClientMetricsTest {
 
         @PostConstruct
         public void init() {
-            client = vertx.createHttpClient(new HttpClientOptions().setShared(false)
-                    .setMetricsName("ws")).webSocket(8888, "localhost", "/ws")
-                    .await().indefinitely();
+            client = vertx.createHttpClient(new HttpClientOptions().setShared(false).setMetricsName("ws"))
+                    .webSocket(8888, "localhost", "/ws").await().indefinitely();
             client.handler(b -> {
                 // Do nothing
             });
@@ -214,8 +199,7 @@ public class VertxHttpClientMetricsTest {
         private WebClient client;
 
         public void init() {
-            client = WebClient.create(vertx, new WebClientOptions()
-                    .setMetricsName("http-client|my-client"));
+            client = WebClient.create(vertx, new WebClientOptions().setMetricsName("http-client|my-client"));
         }
 
         public String get(String fooHeaderValue) {
@@ -223,17 +207,12 @@ public class VertxHttpClientMetricsTest {
             if (fooHeaderValue != null) {
                 request.putHeader("Foo", fooHeaderValue);
             }
-            return request
-                    .send()
-                    .map(HttpResponse::bodyAsString)
-                    .await().atMost(Duration.ofSeconds(10));
+            return request.send().map(HttpResponse::bodyAsString).await().atMost(Duration.ofSeconds(10));
         }
 
         public String post(String payload) {
-            return client.postAbs("http://localhost:8888/post")
-                    .sendBuffer(Buffer.buffer(payload))
-                    .map(HttpResponse::bodyAsString)
-                    .await().atMost(Duration.ofSeconds(10));
+            return client.postAbs("http://localhost:8888/post").sendBuffer(Buffer.buffer(payload))
+                    .map(HttpResponse::bodyAsString).await().atMost(Duration.ofSeconds(10));
         }
 
         @PreDestroy

@@ -18,8 +18,8 @@ public class LazyFormAuthTestCase extends AbstractFormAuthTestCase {
         @Override
         public JavaArchive get() {
             return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class, TestIdentityController.class,
-                            PathHandler.class)
+                    .addClasses(TestIdentityProvider.class, TestTrustedIdentityProvider.class,
+                            TestIdentityController.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS + "\nquarkus.http.auth.proactive=false\n"),
                             "application.properties");
         }

@@ -17,9 +17,9 @@ import io.quarkus.builder.item.MultiBuildItem;
 import io.quarkus.runtime.configuration.ConfigUtils;
 
 /**
- * A marker build item signifying that integrating extensions (like OIDC and OIDC client)
- * are enabled. The Keycloak Dev Service will be started in DEV mode if at least one item is produced
- * and the Dev Service is not disabled in other fashion.
+ * A marker build item signifying that integrating extensions (like OIDC and OIDC client) are enabled. The Keycloak Dev
+ * Service will be started in DEV mode if at least one item is produced and the Dev Service is not disabled in other
+ * fashion.
  */
 public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
 
@@ -57,24 +57,19 @@ public final class KeycloakDevServicesRequiredBuildItem extends MultiBuildItem {
         return null;
     }
 
-    static KeycloakDevServicesConfigurator getDevServicesConfigurator(List<KeycloakDevServicesRequiredBuildItem> items) {
+    static KeycloakDevServicesConfigurator getDevServicesConfigurator(
+            List<KeycloakDevServicesRequiredBuildItem> items) {
         return new KeycloakDevServicesConfigurator() {
             @Override
             public Map<String, String> createProperties(ConfigPropertiesContext context) {
-                return items
-                        .stream()
-                        .map(i -> i.devServicesConfigurator)
-                        .map(producer -> producer.createProperties(context))
-                        .map(Map::entrySet)
-                        .flatMap(Collection::stream)
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                return items.stream().map(i -> i.devServicesConfigurator)
+                        .map(producer -> producer.createProperties(context)).map(Map::entrySet)
+                        .flatMap(Collection::stream).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
             }
 
             @Override
             public void customizeDefaultRealm(RealmRepresentation realmRepresentation) {
-                items
-                        .stream()
-                        .map(i -> i.devServicesConfigurator)
+                items.stream().map(i -> i.devServicesConfigurator)
                         .forEach(i -> i.customizeDefaultRealm(realmRepresentation));
             }
         };

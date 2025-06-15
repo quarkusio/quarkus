@@ -1,10 +1,10 @@
 package io.quarkus.redis.datasource;
 
+import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.OverflowType.WRAP;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.offset;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.signed;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.typeWidthBasedOffset;
 import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.unsigned;
-import static io.quarkus.redis.datasource.bitmap.BitFieldArgs.OverflowType.WRAP;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -133,7 +133,8 @@ public class BitMapCommandsTest extends DatasourceTestBase {
 
     @Test
     void bitfieldOverflow() {
-        BitFieldArgs bitFieldArgs = new BitFieldArgs().overflow(WRAP).set(signed(8), 9, Integer.MAX_VALUE).get(signed(8));
+        BitFieldArgs bitFieldArgs = new BitFieldArgs().overflow(WRAP).set(signed(8), 9, Integer.MAX_VALUE)
+                .get(signed(8));
         List<Long> values = bitmap.bitfield(key, bitFieldArgs);
         assertThat(values).containsExactly(0L, 0L);
     }

@@ -16,8 +16,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class NoDefaultPrometheusTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setFlatClassPath(true)
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setFlatClassPath(true)
             .withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.jvm", "true")
@@ -25,10 +24,8 @@ public class NoDefaultPrometheusTest {
             .overrideConfigKey("quarkus.micrometer.export.prometheus.default-registry", "false")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Util.class,
-                            PrometheusRegistryProcessor.REGISTRY_CLASS,
-                            SecondPrometheusProvider.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Util.class, PrometheusRegistryProcessor.REGISTRY_CLASS,
+                    SecondPrometheusProvider.class));
 
     @Inject
     MeterRegistry registry;

@@ -21,8 +21,7 @@ public class KafkaStreamsStateHealthCheck implements HealthCheck {
         HealthCheckResponseBuilder responseBuilder = HealthCheckResponse.named("Kafka Streams state health check");
         try {
             KafkaStreams.State state = kafkaStreams.state();
-            responseBuilder.status(state.isRunningOrRebalancing())
-                    .withData("state", state.name());
+            responseBuilder.status(state.isRunningOrRebalancing()).withData("state", state.name());
         } catch (Exception e) {
             responseBuilder.down().withData("technical_error", e.getMessage());
         }

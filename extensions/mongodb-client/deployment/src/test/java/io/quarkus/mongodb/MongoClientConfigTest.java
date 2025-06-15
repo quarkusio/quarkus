@@ -64,7 +64,8 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
                 .isEqualTo(5);
         assertThat(clientImpl.getSettings().getSocketSettings().getConnectTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(clientImpl.getSettings().getSocketSettings().getReadTimeout(TimeUnit.SECONDS)).isEqualTo(5);
-        assertThat(clientImpl.getSettings().getClusterSettings().getServerSelectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
+        assertThat(clientImpl.getSettings().getClusterSettings().getServerSelectionTimeout(TimeUnit.SECONDS))
+                .isEqualTo(5);
         assertThat(clientImpl.getSettings().getClusterSettings().getLocalThreshold(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(clientImpl.getSettings().getServerSettings().getHeartbeatFrequency(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(clientImpl.getSettings().getServerSettings().getHeartbeatFrequency(TimeUnit.SECONDS)).isEqualTo(5);
@@ -91,7 +92,8 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
                 .isEqualTo(5);
         assertThat(clientImpl.getSettings().getSocketSettings().getConnectTimeout(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(clientImpl.getSettings().getSocketSettings().getReadTimeout(TimeUnit.SECONDS)).isEqualTo(5);
-        assertThat(clientImpl.getSettings().getClusterSettings().getServerSelectionTimeout(TimeUnit.SECONDS)).isEqualTo(5);
+        assertThat(clientImpl.getSettings().getClusterSettings().getServerSelectionTimeout(TimeUnit.SECONDS))
+                .isEqualTo(5);
         assertThat(clientImpl.getSettings().getClusterSettings().getLocalThreshold(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(clientImpl.getSettings().getServerSettings().getHeartbeatFrequency(TimeUnit.SECONDS)).isEqualTo(5);
         assertThat(clientImpl.getSettings().getWriteConcern().getW()).isEqualTo(1);
@@ -102,8 +104,6 @@ public class MongoClientConfigTest extends MongoWithReplicasTestBase {
 
     @Test
     public void healthCheck() {
-        when().get("/q/health/ready")
-                .then()
-                .body("status", CoreMatchers.equalTo("UP"));
+        when().get("/q/health/ready").then().body("status", CoreMatchers.equalTo("UP"));
     }
 }

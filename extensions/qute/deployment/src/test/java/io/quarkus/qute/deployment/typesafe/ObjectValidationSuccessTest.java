@@ -14,13 +14,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ObjectValidationSuccessTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Movie.class, MovieExtensions.class)
-                    .addAsResource(new StringAsset("{@java.lang.Object obj}"
-                            + "{@java.lang.Object anotherObj}"
-                            + "{obj.toString}:{anotherObj.raw}"),
-                            "templates/object.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Movie.class, MovieExtensions.class)
+            .addAsResource(new StringAsset(
+                    "{@java.lang.Object obj}" + "{@java.lang.Object anotherObj}" + "{obj.toString}:{anotherObj.raw}"),
+                    "templates/object.html"));
 
     @Inject
     Template object;

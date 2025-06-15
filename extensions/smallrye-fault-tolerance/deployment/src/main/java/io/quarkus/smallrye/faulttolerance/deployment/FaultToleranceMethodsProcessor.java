@@ -19,12 +19,10 @@ public class FaultToleranceMethodsProcessor {
             @Override
             public boolean test(MethodInfo method) {
                 Set<DotName> classAnnotations = method.declaringClass().annotationsMap().keySet();
-                return classAnnotations.contains(DotNames.ASYNCHRONOUS)
-                        || classAnnotations.contains(DotNames.BULKHEAD)
+                return classAnnotations.contains(DotNames.ASYNCHRONOUS) || classAnnotations.contains(DotNames.BULKHEAD)
                         || classAnnotations.contains(DotNames.CIRCUIT_BREAKER)
                         || classAnnotations.contains(DotNames.FALLBACK)
-                        || classAnnotations.contains(DotNames.RATE_LIMIT)
-                        || classAnnotations.contains(DotNames.RETRY)
+                        || classAnnotations.contains(DotNames.RATE_LIMIT) || classAnnotations.contains(DotNames.RETRY)
                         || classAnnotations.contains(DotNames.TIMEOUT);
             }
         });

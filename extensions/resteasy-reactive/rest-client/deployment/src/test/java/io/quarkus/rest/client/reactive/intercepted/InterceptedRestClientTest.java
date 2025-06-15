@@ -30,11 +30,10 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class InterceptedRestClientTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestEndpoint.class, Client.class, MyAnnotation.class, MyInterceptorBinding.class,
-                            MyInterceptor.class)
-                    .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(TestEndpoint.class, Client.class, MyAnnotation.class, MyInterceptorBinding.class,
+                    MyInterceptor.class)
+            .addAsResource(new StringAsset(setUrlForClass(Client.class)), "application.properties"));
 
     @Inject
     @RestClient

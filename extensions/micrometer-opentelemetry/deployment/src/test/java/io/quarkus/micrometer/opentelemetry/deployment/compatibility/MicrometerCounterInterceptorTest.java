@@ -30,21 +30,18 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MicrometerCounterInterceptorTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Util.class, CountedBean.class, TestValueResolver.class)
-                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                            .add(new StringAsset("""
-                                    quarkus.otel.metrics.exporter=in-memory\n
-                                    quarkus.otel.metric.export.interval=300ms\n
-                                    quarkus.micrometer.binder.http-client.enabled=true\n
-                                    quarkus.micrometer.binder.http-server.enabled=true\n
-                                    quarkus.redis.devservices.enabled=false\n
-                                    """),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(Util.class, CountedBean.class, TestValueResolver.class)
+            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .add(new StringAsset("""
+                    quarkus.otel.metrics.exporter=in-memory\n
+                    quarkus.otel.metric.export.interval=300ms\n
+                    quarkus.micrometer.binder.http-client.enabled=true\n
+                    quarkus.micrometer.binder.http-server.enabled=true\n
+                    quarkus.redis.devservices.enabled=false\n
+                    """), "application.properties"));
 
     @Inject
     CountedBean countedBean;
@@ -65,32 +62,20 @@ public class MicrometerCounterInterceptorTest {
         exporter.assertCountDataPointsAtLeastOrEqual("metric.all", null, 2);
 
         MetricData metricAll = exporter.getFinishedMetricItem("metric.all");
-        assertThat(metricAll)
-                .isNotNull()
-                .hasName("metric.all")
-                .hasDescription("")// currently empty
+        assertThat(metricAll).isNotNull().hasName("metric.all").hasDescription("")// currently empty
                 .hasUnit("")// currently empty
                 .hasDoubleSumSatisfying(sum -> sum.hasPointsSatisfying(
-                        point -> point
-                                .hasValue(1d)
-                                .hasAttributes(attributeEntry(
-                                        "class",
-                                        "io.quarkus.micrometer.opentelemetry.deployment.compatibility.MicrometerCounterInterceptorTest$CountedBean"),
-                                        attributeEntry("method", "countAllInvocations"),
-                                        attributeEntry("extra", "tag"),
-                                        attributeEntry("do_fail", "prefix_false"),
-                                        attributeEntry("exception", "none"),
-                                        attributeEntry("result", "success")),
-                        point -> point
-                                .hasValue(1d)
-                                .hasAttributes(attributeEntry(
-                                        "class",
-                                        "io.quarkus.micrometer.opentelemetry.deployment.compatibility.MicrometerCounterInterceptorTest$CountedBean"),
-                                        attributeEntry("method", "countAllInvocations"),
-                                        attributeEntry("extra", "tag"),
-                                        attributeEntry("do_fail", "prefix_true"),
-                                        attributeEntry("exception", "NullPointerException"),
-                                        attributeEntry("result", "failure"))));
+                        point -> point.hasValue(1d).hasAttributes(attributeEntry("class",
+                                "io.quarkus.micrometer.opentelemetry.deployment.compatibility.MicrometerCounterInterceptorTest$CountedBean"),
+                                attributeEntry("method", "countAllInvocations"), attributeEntry("extra", "tag"),
+                                attributeEntry("do_fail", "prefix_false"), attributeEntry("exception", "none"),
+                                attributeEntry("result", "success")),
+                        point -> point.hasValue(1d).hasAttributes(attributeEntry("class",
+                                "io.quarkus.micrometer.opentelemetry.deployment.compatibility.MicrometerCounterInterceptorTest$CountedBean"),
+                                attributeEntry("method", "countAllInvocations"), attributeEntry("extra", "tag"),
+                                attributeEntry("do_fail", "prefix_true"),
+                                attributeEntry("exception", "NullPointerException"),
+                                attributeEntry("result", "failure"))));
     }
 
     @ApplicationScoped

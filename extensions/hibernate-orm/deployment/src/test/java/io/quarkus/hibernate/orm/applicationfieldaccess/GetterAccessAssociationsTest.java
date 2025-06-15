@@ -41,9 +41,7 @@ public class GetterAccessAssociationsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(ContainingEntity.class)
-                    .addClass(AccessDelegate.class))
+            .withApplicationRoot((jar) -> jar.addClass(ContainingEntity.class).addClass(AccessDelegate.class))
             .withConfigurationResource("application-fetch-max-depth-zero.properties");
 
     @Inject
@@ -53,9 +51,8 @@ public class GetterAccessAssociationsTest {
     UserTransaction transaction;
 
     @Test
-    public void testGetterAccess()
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    public void testGetterAccess() throws SystemException, NotSupportedException, HeuristicRollbackException,
+            HeuristicMixedException, RollbackException {
         // Ideally we'd write a @ParameterizedTest and pass the delegates as parameters,
         // but we cannot do that due to JUnit using a different classloader than the test.
         for (AccessDelegate delegate : AccessDelegate.values()) {
@@ -63,9 +60,8 @@ public class GetterAccessAssociationsTest {
         }
     }
 
-    private void doTestGetterAccess(AccessDelegate delegate)
-            throws SystemException, NotSupportedException, HeuristicRollbackException, HeuristicMixedException,
-            RollbackException {
+    private void doTestGetterAccess(AccessDelegate delegate) throws SystemException, NotSupportedException,
+            HeuristicRollbackException, HeuristicMixedException, RollbackException {
         ContainingEntity entity = new ContainingEntity();
         ContainedEntity containedEntity = new ContainedEntity();
         containedEntity.setValue(CONTAINED_VALUE);

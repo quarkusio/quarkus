@@ -28,15 +28,15 @@ public class CORSFilterTest {
 
         Assertions.assertFalse(isConfiguredWithWildcard(Optional.of(Arrays.asList("PUT", "GET", "POST"))));
         Assertions.assertFalse(isConfiguredWithWildcard(Optional.of(Arrays.asList("http://localhost:8080/", "*"))));
-        Assertions.assertFalse(isConfiguredWithWildcard(Optional.of(Collections.singletonList("http://localhost:8080/"))));
+        Assertions.assertFalse(
+                isConfiguredWithWildcard(Optional.of(Collections.singletonList("http://localhost:8080/"))));
     }
 
     @Test
     public void isOriginAllowedByRegexTest() {
         Assertions.assertFalse(isOriginAllowedByRegex(Collections.emptyList(), "http://locahost:8080"));
         Assertions.assertEquals(
-                parseAllowedOriginsRegex(Optional.of(Collections.singletonList("http://localhost:8080"))).size(),
-                0);
+                parseAllowedOriginsRegex(Optional.of(Collections.singletonList("http://localhost:8080"))).size(), 0);
         List<Pattern> regexList = parseAllowedOriginsRegex(
                 Optional.of(Collections.singletonList("/https://([a-z0-9\\-_]+)\\.app\\.mydomain\\.com/")));
         Assertions.assertEquals(regexList.size(), 1);

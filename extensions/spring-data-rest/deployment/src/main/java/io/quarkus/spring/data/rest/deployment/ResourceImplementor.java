@@ -26,11 +26,8 @@ public class ResourceImplementor {
     public String implement(ClassOutput classOutput, String resourceType, String entityType) {
         String className = resourceType + "ResourceImpl_" + HashUtil.sha1(resourceType);
         LOGGER.tracef("Starting generation of '%s'", className);
-        ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(classOutput)
-                .className(className)
-                .interfaces(RestDataResource.class)
-                .build();
+        ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput).className(className)
+                .interfaces(RestDataResource.class).build();
 
         classCreator.addAnnotation(ApplicationScoped.class);
         methodsImplementor.implementIterable(classCreator, resourceType);

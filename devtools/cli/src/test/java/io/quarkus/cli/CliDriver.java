@@ -27,8 +27,10 @@ public class CliDriver {
     static final PrintStream stdout = System.out;
     static final PrintStream stderr = System.err;
     private static final BinaryOperator<String> ARG_FORMATTER = (key, value) -> "-D" + key + "=" + value;
-    private static final UnaryOperator<String> REPO_ARG_FORMATTER = value -> ARG_FORMATTER.apply(LOCAL_REPO_PROPERTY, value);
-    private static final UnaryOperator<String> SETTINGS_ARG_FORMATTER = value -> ARG_FORMATTER.apply(MAVEN_SETTINGS, value);
+    private static final UnaryOperator<String> REPO_ARG_FORMATTER = value -> ARG_FORMATTER.apply(LOCAL_REPO_PROPERTY,
+            value);
+    private static final UnaryOperator<String> SETTINGS_ARG_FORMATTER = value -> ARG_FORMATTER.apply(MAVEN_SETTINGS,
+            value);
 
     public static class CliDriverBuilder {
 
@@ -231,9 +233,8 @@ public class CliDriver {
 
         @Override
         public String toString() {
-            return "result: {\n  exitCode: {" + exitCode
-                    + "},\n  system_err: {" + stderr
-                    + "},\n  system_out: {" + stdout + "}\n}";
+            return "result: {\n  exitCode: {" + exitCode + "},\n  system_err: {" + stderr + "},\n  system_out: {"
+                    + stdout + "}\n}";
         }
     }
 
@@ -242,10 +243,7 @@ public class CliDriver {
             return;
         }
 
-        Files.walk(path)
-                .sorted(Comparator.reverseOrder())
-                .map(Path::toFile)
-                .forEach(f -> retryDelete(f));
+        Files.walk(path).sorted(Comparator.reverseOrder()).map(Path::toFile).forEach(f -> retryDelete(f));
 
         Assertions.assertFalse(path.toFile().exists());
     }
@@ -320,7 +318,8 @@ public class CliDriver {
 
     public static Result invokeExtensionAddMultiple(Path projectRoot, Path file) throws Exception {
         // add amazon-lambda-http and jackson extensions
-        Result result = execute(projectRoot, "extension", "add", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "add", "amazon-lambda-http", "jackson", "-e", "-B",
+                "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
@@ -346,7 +345,8 @@ public class CliDriver {
 
     public static Result invokeExtensionRemoveMultiple(Path projectRoot, Path file) throws Exception {
         // remove amazon-lambda-http and jackson extensions
-        Result result = execute(projectRoot, "extension", "remove", "amazon-lambda-http", "jackson", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "remove", "amazon-lambda-http", "jackson", "-e", "-B",
+                "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
@@ -371,8 +371,8 @@ public class CliDriver {
     }
 
     public static Result invokeExtensionAddMultipleCommas(Path projectRoot, Path file) throws Exception {
-        Result result = execute(projectRoot, "extension", "add",
-                "quarkus-rest-jsonb,quarkus-rest-jackson", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "add", "quarkus-rest-jsonb,quarkus-rest-jackson", "-e", "-B",
+                "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
@@ -396,8 +396,8 @@ public class CliDriver {
     }
 
     public static Result invokeExtensionRemoveMultipleCommas(Path projectRoot, Path file) throws Exception {
-        Result result = execute(projectRoot, "extension", "remove",
-                "quarkus-rest-jsonb,quarkus-rest-jackson", "-e", "-B", "--verbose");
+        Result result = execute(projectRoot, "extension", "remove", "quarkus-rest-jsonb,quarkus-rest-jackson", "-e",
+                "-B", "--verbose");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
@@ -428,7 +428,8 @@ public class CliDriver {
     }
 
     public static Result invokeExtensionListInstallableSearch(Path projectRoot) throws Exception {
-        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--search=vertx-*");
+        Result result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i",
+                "--search=vertx-*");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
 
@@ -460,7 +461,8 @@ public class CliDriver {
         // TODO
 
         // Two different output options can not be specified together
-        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins", "--name");
+        result = CliDriver.execute(projectRoot, "extension", "list", "-e", "-B", "--verbose", "-i", "--origins",
+                "--name");
         Assertions.assertEquals(CommandLine.ExitCode.USAGE, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         // TODO
@@ -480,18 +482,16 @@ public class CliDriver {
     }
 
     public static Result invokeValidateDryRunBuild(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "build", "-e", "-B", "--dryrun",
-                "-Dproperty=value1", "-Dproperty2=value2");
+        Result result = execute(projectRoot, "build", "-e", "-B", "--dryrun", "-Dproperty=value1",
+                "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
-        Assertions.assertTrue(result.stdout.contains("Command line"),
-                "--dry-run should echo command line");
+        Assertions.assertTrue(result.stdout.contains("Command line"), "--dry-run should echo command line");
         return result;
     }
 
     public static Result invokeValidateBuild(Path projectRoot) throws Exception {
-        Result result = execute(projectRoot, "build", "-e", "-B", "--clean",
-                "-Dproperty=value1", "-Dproperty2=value2");
+        Result result = execute(projectRoot, "build", "-e", "-B", "--clean", "-Dproperty=value1", "-Dproperty2=value2");
         Assertions.assertEquals(CommandLine.ExitCode.OK, result.exitCode,
                 "Expected OK return code. Result:\n" + result);
         return result;

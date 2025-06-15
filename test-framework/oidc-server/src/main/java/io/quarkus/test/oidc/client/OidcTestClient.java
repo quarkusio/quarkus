@@ -31,39 +31,37 @@ public class OidcTestClient {
     private String tokenUrl;
 
     /**
-     * Get an access token a client_credentials grant.
-     * Client id must be configured with the `quarkus.oidc.client-id` property.
-     * Client secret must be configured with the `quarkus.oidc.credentials.secret` property.
+     * Get an access token a client_credentials grant. Client id must be configured with the `quarkus.oidc.client-id`
+     * property. Client secret must be configured with the `quarkus.oidc.credentials.secret` property.
      */
     public String getClientAccessToken() {
         return getClientAccessToken(null);
     }
 
     /**
-     * Get an access token a client_credentials grant with additional properties.
-     * Client id must be configured with the `quarkus.oidc.client-id` property.
-     * Client secret must be configured with the `quarkus.oidc.credentials.secret` property.
+     * Get an access token a client_credentials grant with additional properties. Client id must be configured with the
+     * `quarkus.oidc.client-id` property. Client secret must be configured with the `quarkus.oidc.credentials.secret`
+     * property.
      */
     public String getClientAccessToken(Map<String, String> extraProps) {
         return getClientAccessToken(getClientId(), getClientSecret(), extraProps);
     }
 
     /**
-     * Get an access token from the default tenant realm using a client_credentials grant with a
-     * the provided client id and secret.
+     * Get an access token from the default tenant realm using a client_credentials grant with a the provided client id
+     * and secret.
      */
     public String getClientAccessToken(String clientId, String clientSecret) {
         return getClientAccessToken(clientId, clientSecret, null);
     }
 
     /**
-     * Get an access token using a client_credentials grant with the provided client id and secret,
-     * and additional properties.
+     * Get an access token using a client_credentials grant with the provided client id and secret, and additional
+     * properties.
      */
     public String getClientAccessToken(String clientId, String clientSecret, Map<String, String> extraProps) {
         MultiMap requestMap = MultiMap.caseInsensitiveMultiMap();
-        requestMap.add("grant_type", "client_credentials")
-                .add("client_id", clientId);
+        requestMap.add("grant_type", "client_credentials").add("client_id", clientId);
         if (clientSecret != null && !clientSecret.isBlank()) {
             requestMap.add("client_secret", clientSecret);
         }
@@ -71,18 +69,17 @@ public class OidcTestClient {
     }
 
     /**
-     * Get an access token from the default tenant realm using a password grant with the provided user name, user secret.
-     * Client id must be configured with the `quarkus.oidc.client-id` property.
-     * Client secret must be configured with the `quarkus.oidc.credentials.secret` property.
+     * Get an access token from the default tenant realm using a password grant with the provided user name, user
+     * secret. Client id must be configured with the `quarkus.oidc.client-id` property. Client secret must be configured
+     * with the `quarkus.oidc.credentials.secret` property.
      */
     public String getAccessToken(String userName, String userSecret) {
         return getAccessToken(userName, userSecret, null);
     }
 
     /**
-     * Get an access token from the default tenant realm using a password grant with the provided user name, user secret,
-     * and additional properties.
-     * Client id must be configured with the `quarkus.oidc.client-id` property.
+     * Get an access token from the default tenant realm using a password grant with the provided user name, user
+     * secret, and additional properties. Client id must be configured with the `quarkus.oidc.client-id` property.
      * Client secret must be configured with the `quarkus.oidc.credentials.secret` property.
      */
     public String getAccessToken(String userName, String userSecret, Map<String, String> extraProps) {
@@ -90,25 +87,22 @@ public class OidcTestClient {
     }
 
     /**
-     * Get an access token from the default tenant realm using a password grant with the provided client id, client secret, user
-     * name, user secret, client
-     * id and user secret.
+     * Get an access token from the default tenant realm using a password grant with the provided client id, client
+     * secret, user name, user secret, client id and user secret.
      */
     public String getAccessToken(String clientId, String clientSecret, String userName, String userSecret) {
         return getAccessToken(userName, userSecret, clientId, clientSecret, null);
     }
 
     /**
-     * Get an access token using a password grant with the provided user name, user secret, client
-     * id and secret, and scopes.
+     * Get an access token using a password grant with the provided user name, user secret, client id and secret, and
+     * scopes.
      */
     public String getAccessToken(String clientId, String clientSecret, String userName, String userSecret,
             Map<String, String> extraProps) {
 
         MultiMap requestMap = MultiMap.caseInsensitiveMultiMap();
-        requestMap.add("grant_type", "password")
-                .add("username", userName)
-                .add("password", userSecret);
+        requestMap.add("grant_type", "password").add("username", userName).add("password", userSecret);
 
         requestMap.add("client_id", clientId);
         if (clientSecret != null && !clientSecret.isBlank()) {
@@ -123,8 +117,7 @@ public class OidcTestClient {
             requestMap = requestMap.addAll(extraProps);
         }
 
-        var result = getClient().postAbs(getTokenUrl())
-                .putHeader("Content-Type", "application/x-www-form-urlencoded")
+        var result = getClient().postAbs(getTokenUrl()).putHeader("Content-Type", "application/x-www-form-urlencoded")
                 .sendBuffer(encodeForm(requestMap));
         await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
 
@@ -155,8 +148,7 @@ public class OidcTestClient {
     public String getTokenUrl() {
         if (tokenUrl == null) {
             getAuthServerUrl();
-            var result = getClient().getAbs(authServerUrl + "/.well-known/openid-configuration")
-                    .send();
+            var result = getClient().getAbs(authServerUrl + "/.well-known/openid-configuration").send();
             await().atMost(REQUEST_TIMEOUT).until(result::isComplete);
             tokenUrl = result.result().bodyAsJsonObject().getString("token_endpoint");
         }

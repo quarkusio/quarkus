@@ -38,8 +38,8 @@ public class AutoInjectFieldProcessor {
     }
 
     /**
-     * Uses {@link AnnotationsTransformer} to automatically add {@code @Inject} to all non-static fields that are annotated with
-     * one of the specified annotations.
+     * Uses {@link AnnotationsTransformer} to automatically add {@code @Inject} to all non-static fields that are
+     * annotated with one of the specified annotations.
      */
     @BuildStep
     void annotationTransformer(ArcConfig config, List<AutoInjectAnnotationBuildItem> autoInjectAnnotations,
@@ -71,8 +71,7 @@ public class AutoInjectFieldProcessor {
             public void transform(TransformationContext ctx) {
                 Collection<AnnotationInstance> fieldAnnotations = ctx.getAnnotations();
                 FieldInfo field = ctx.getTarget().asField();
-                if (Modifier.isStatic(field.flags())
-                        || Modifier.isFinal(field.flags())
+                if (Modifier.isStatic(field.flags()) || Modifier.isFinal(field.flags())
                         || contains(fieldAnnotations, DotNames.INJECT)
                         || contains(fieldAnnotations, DotNames.PRODUCES)) {
                     return;

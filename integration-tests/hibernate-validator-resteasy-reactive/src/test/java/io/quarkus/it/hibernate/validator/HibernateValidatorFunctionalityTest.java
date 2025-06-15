@@ -53,15 +53,12 @@ public class HibernateValidatorFunctionalityTest {
         StringBuilder expected = new StringBuilder();
         expected.append("failed: additionalEmails[0].<list element> (must be a well-formed email address)").append(", ")
                 .append("categorizedEmails<K>[a].<map key> (length must be between 3 and 2147483647)").append(", ")
-                .append("categorizedEmails[a].<map value>[0].<list element> (must be a well-formed email address)").append(", ")
-                .append("email (must be a well-formed email address)").append(", ")
+                .append("categorizedEmails[a].<map value>[0].<list element> (must be a well-formed email address)")
+                .append(", ").append("email (must be a well-formed email address)").append(", ")
                 .append("score (must be greater than or equal to 0)").append("\n");
         expected.append("passed");
 
-        RestAssured.when()
-                .get("/hibernate-validator/test/basic-features")
-                .then()
-                .body(is(expected.toString()));
+        RestAssured.when().get("/hibernate-validator/test/basic-features").then().body(is(expected.toString()));
     }
 
     @Test
@@ -73,14 +70,11 @@ public class HibernateValidatorFunctionalityTest {
         // The returned body should be the standard one produced by QuarkusErrorHandler,
         // with all the necessary information (stack trace, ...).
         ValidatableResponse response = RestAssured.when()
-                .get("/hibernate-validator/test/cdi-bean-method-validation-uncaught")
-                .then()
-                .body(containsString("Error id"))
-                .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+                .get("/hibernate-validator/test/cdi-bean-method-validation-uncaught").then()
+                .body(containsString("Error id")).statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
         if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
-            response
-                    .body(containsString(ConstraintViolationException.class.getName())) // Exception type
+            response.body(containsString(ConstraintViolationException.class.getName())) // Exception type
                     .body(containsString("message: must not be null")) // Exception message
                     .body(containsString("property path: greeting.name"))
                     .body(containsString(EnhancedGreetingService.class.getName()))
@@ -89,16 +83,12 @@ public class HibernateValidatorFunctionalityTest {
 
         if (isLogChecksPossible()) {
             // There should also be some logs to raise the internal error to the developer's attention.
-            assertThat(inMemoryLogHandler.getRecords())
-                    .extracting(LOG_FORMATTER::formatMessage)
-                    .hasSize(1);
-            assertThat(inMemoryLogHandler.getRecords())
-                    .element(0).satisfies(record -> {
-                        assertThat(record.getLevel()).isEqualTo(Level.SEVERE);
-                        assertThat(LOG_FORMATTER.formatMessage(record))
-                                .contains(
-                                        "HTTP Request to /hibernate-validator/test/cdi-bean-method-validation-uncaught failed, error id:");
-                    });
+            assertThat(inMemoryLogHandler.getRecords()).extracting(LOG_FORMATTER::formatMessage).hasSize(1);
+            assertThat(inMemoryLogHandler.getRecords()).element(0).satisfies(record -> {
+                assertThat(record.getLevel()).isEqualTo(Level.SEVERE);
+                assertThat(LOG_FORMATTER.formatMessage(record)).contains(
+                        "HTTP Request to /hibernate-validator/test/cdi-bean-method-validation-uncaught failed, error id:");
+            });
         }
     }
 
@@ -109,71 +99,49 @@ public class HibernateValidatorFunctionalityTest {
         // are user errors and should be reported as such.
 
         // Bad request
-        RestAssured.get("/hibernate-validator/test/rest-end-point-validation/plop/")
-                .then()
+        RestAssured.get("/hibernate-validator/test/rest-end-point-validation/plop/").then()
                 .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
                 .body(containsString("numeric value out of bounds"));
 
         if (isLogChecksPossible()) {
             // There should not be any warning/error logs since user errors do not require the developer's attention.
-            assertThat(inMemoryLogHandler.getRecords())
-                    .extracting(LOG_FORMATTER::formatMessage)
-                    .isEmpty();
+            assertThat(inMemoryLogHandler.getRecords()).extracting(LOG_FORMATTER::formatMessage).isEmpty();
 
-            RestAssured.when()
-                    .get("/hibernate-validator/test/rest-end-point-validation/42/")
-                    .then()
-                    .body(is("42"));
+            RestAssured.when().get("/hibernate-validator/test/rest-end-point-validation/42/").then().body(is("42"));
         }
     }
 
     @Test
     public void testRestEndPointValidationUsingTextMediaType() {
-        RestAssured.given()
-                .accept(ContentType.TEXT)
-                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
-                .then()
-                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
-                .contentType(ContentType.TEXT)
+        RestAssured.given().accept(ContentType.TEXT).get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then().statusCode(Response.Status.BAD_REQUEST.getStatusCode()).contentType(ContentType.TEXT)
                 .body(containsString("numeric value out of bounds"));
     }
 
     @Test
     public void testRestEndPointValidationUsingXmlMediaType() {
-        RestAssured.given()
-                .accept(ContentType.XML)
-                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
-                .then()
-                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
-                .contentType(ContentType.XML)
+        RestAssured.given().accept(ContentType.XML).get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then().statusCode(Response.Status.BAD_REQUEST.getStatusCode()).contentType(ContentType.XML)
                 .body("validationReport.violations.message", containsString("numeric value out of bounds"));
     }
 
     @Test
     public void testRestEndPointValidationUsingJsonMediaType() {
-        RestAssured.given()
-                .accept(ContentType.JSON)
-                .get("/hibernate-validator/test/rest-end-point-validation/plop/")
-                .then()
-                .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
-                .contentType(ContentType.JSON)
+        RestAssured.given().accept(ContentType.JSON).get("/hibernate-validator/test/rest-end-point-validation/plop/")
+                .then().statusCode(Response.Status.BAD_REQUEST.getStatusCode()).contentType(ContentType.JSON)
                 .body("violations[0].message", containsString("numeric value out of bounds"));
     }
 
     @Test
     public void testNoProduces() {
-        RestAssured.given()
-                .get("/hibernate-validator/test/no-produces/plop/")
-                .then()
+        RestAssured.given().get("/hibernate-validator/test/no-produces/plop/").then()
                 .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
                 .body(containsString("numeric value out of bounds"));
     }
 
     @Test
     public void testNoProducesWithResponse() {
-        RestAssured.given()
-                .get("/hibernate-validator/test/no-produces-with-response/plop/")
-                .then()
+        RestAssured.given().get("/hibernate-validator/test/no-produces-with-response/plop/").then()
                 .statusCode(Response.Status.BAD_REQUEST.getStatusCode())
                 .body(containsString("numeric value out of bounds"));
     }
@@ -187,14 +155,11 @@ public class HibernateValidatorFunctionalityTest {
         // The returned body should be the standard one produced by QuarkusErrorHandler,
         // with all the necessary information (stack trace, ...).
         ValidatableResponse response = RestAssured.when()
-                .get("/hibernate-validator/test/rest-end-point-return-value-validation/plop/")
-                .then()
-                .body(containsString("Error id"))
-                .statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+                .get("/hibernate-validator/test/rest-end-point-return-value-validation/plop/").then()
+                .body(containsString("Error id")).statusCode(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
 
         if (isInternalErrorExceptionLeakedInQuarkusErrorHandlerResponse()) {
-            response
-                    .body(containsString(ResteasyReactiveViolationException.class.getName())) // Exception type
+            response.body(containsString(ResteasyReactiveViolationException.class.getName())) // Exception type
                     .body(containsString("numeric value out of bounds")) // Exception message
                     .body(containsString("testRestEndPointReturnValueValidation.<return value>"))
                     .body(containsString(HibernateValidatorTestResource.class.getName())); // Stack trace
@@ -202,22 +167,15 @@ public class HibernateValidatorFunctionalityTest {
 
         if (isLogChecksPossible()) {
             // There should also be some logs to raise the internal error to the developer's attention.
-            assertThat(inMemoryLogHandler.getRecords())
-                    .extracting(LOG_FORMATTER::formatMessage)
-                    .hasSize(1);
-            assertThat(inMemoryLogHandler.getRecords())
-                    .element(0).satisfies(record -> {
-                        assertThat(record.getLevel()).isEqualTo(Level.SEVERE);
-                        assertThat(LOG_FORMATTER.formatMessage(record))
-                                .contains(
-                                        "HTTP Request to /hibernate-validator/test/rest-end-point-return-value-validation/plop/ failed, error id:");
-                    });
+            assertThat(inMemoryLogHandler.getRecords()).extracting(LOG_FORMATTER::formatMessage).hasSize(1);
+            assertThat(inMemoryLogHandler.getRecords()).element(0).satisfies(record -> {
+                assertThat(record.getLevel()).isEqualTo(Level.SEVERE);
+                assertThat(LOG_FORMATTER.formatMessage(record)).contains(
+                        "HTTP Request to /hibernate-validator/test/rest-end-point-return-value-validation/plop/ failed, error id:");
+            });
         }
 
-        RestAssured.when()
-                .get("/hibernate-validator/test/rest-end-point-validation/42/")
-                .then()
-                .body(is("42"));
+        RestAssured.when().get("/hibernate-validator/test/rest-end-point-validation/42/").then().body(is("42"));
     }
 
     protected boolean isTestsInJVM() {

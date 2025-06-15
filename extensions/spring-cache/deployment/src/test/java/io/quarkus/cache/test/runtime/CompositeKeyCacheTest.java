@@ -23,8 +23,8 @@ public class CompositeKeyCacheTest {
     private static final int KEY_2_ELEMENT_2 = 456;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;

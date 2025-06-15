@@ -53,9 +53,8 @@ public class GenerateCACommand implements Callable<Integer> {
 
         String username = System.getProperty("user.name", "");
         CaGenerator generator = new CaGenerator(CA_FILE, PK_FILE, KEYSTORE_FILE, "quarkus");
-        generator
-                .generate("quarkus-dev-root-ca", "Quarkus Development (" + username + ")", "Quarkus Development",
-                        "home", "world", "universe");
+        generator.generate("quarkus-dev-root-ca", "Quarkus Development (" + username + ")", "Quarkus Development",
+                "home", "world", "universe");
         if (install) {
             LOGGER.log(INFO, "🔥 Installing the CA certificate in the system truststore...");
             generator.installToSystem();

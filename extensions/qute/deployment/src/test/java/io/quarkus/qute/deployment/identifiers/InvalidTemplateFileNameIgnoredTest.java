@@ -18,12 +18,8 @@ public class InvalidTemplateFileNameIgnoredTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset(
-                            "ignored"),
-                            "templates/foo o.txt"))
-            .setLogRecordPredicate(log -> log.getLoggerName().contains("QuteProcessor"))
-            .assertLogRecords(records -> {
+            .withApplicationRoot(root -> root.addAsResource(new StringAsset("ignored"), "templates/foo o.txt"))
+            .setLogRecordPredicate(log -> log.getLoggerName().contains("QuteProcessor")).assertLogRecords(records -> {
                 for (LogRecord r : records) {
                     if (r.getMessage().startsWith("Invalid file name detected")) {
                         return;

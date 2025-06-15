@@ -10,7 +10,8 @@ import io.quarkus.arc.InjectableBean;
 public class InvocationTree {
 
     // The current invocation builder
-    // It is volatile because a request scoped bean should not be invoked concurrently, however it can be invoked on a different thread
+    // It is volatile because a request scoped bean should not be invoked concurrently, however it can be invoked on a
+    // different thread
     private volatile Invocation.Builder current;
 
     Invocation.Builder invocationStarted(InjectableBean<?> bean, Method method, Invocation.Kind kind) {
@@ -22,8 +23,7 @@ public class InvocationTree {
             // Nested invocation
             builder = builder.newChild();
         }
-        builder.setStart(System.currentTimeMillis()).setInterceptedBean(bean)
-                .setMethod(method).setKind(kind);
+        builder.setStart(System.currentTimeMillis()).setInterceptedBean(bean).setMethod(method).setKind(kind);
         this.current = builder;
         return builder;
     }

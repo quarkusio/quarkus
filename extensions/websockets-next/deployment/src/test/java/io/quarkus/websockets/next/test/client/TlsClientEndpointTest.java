@@ -44,8 +44,7 @@ public class TlsClientEndpointTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ServerEndpoint.class, ClientEndpoint.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ServerEndpoint.class, ClientEndpoint.class)
                     .addAsResource(new File("target/certs/ssl-test-keystore.jks"), "keystore.jks")
                     .addAsResource(new File("target/certs/ssl-test-truststore.jks"), "truststore.jks"))
             .overrideConfigKey("quarkus.tls.key-store.jks.path", "keystore.jks")
@@ -69,11 +68,9 @@ public class TlsClientEndpointTest {
     }
 
     void assertClient(URI uri) throws InterruptedException, SSLPeerUnverifiedException {
-        WebSocketClientConnection connection = connector
-                .baseUri(uri)
+        WebSocketClientConnection connection = connector.baseUri(uri)
                 // The value will be encoded automatically
-                .pathParam("name", "Lu=")
-                .connectAndAwait();
+                .pathParam("name", "Lu=").connectAndAwait();
         assertTrue(connection.isSecure());
         assertNotNull(connection.sslSession());
         assertNull(connection.sslSession().getLocalPrincipal());

@@ -29,26 +29,18 @@ public class NameBindingWithInterfaceTest {
 
     @RegisterExtension
     static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(BlockingHelloResource.class, ReactiveHelloResource.class, BlockingHelloApi.class,
-                            ReactiveHelloApi.class, AddTestHeaderContainerRequestFilter.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(BlockingHelloResource.class,
+                    ReactiveHelloResource.class, BlockingHelloApi.class, ReactiveHelloApi.class,
+                    AddTestHeaderContainerRequestFilter.class));
 
     @Test
     public void blockingHello() {
-        get("/blocking-hello")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("hello"))
-                .header("test", "some-value");
+        get("/blocking-hello").then().statusCode(200).body(Matchers.equalTo("hello")).header("test", "some-value");
     }
 
     @Test
     public void reactiveHello() {
-        get("/reactive-hello")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("hello"))
-                .header("test", "some-value");
+        get("/reactive-hello").then().statusCode(200).body(Matchers.equalTo("hello")).header("test", "some-value");
     }
 
     @SomeFilter

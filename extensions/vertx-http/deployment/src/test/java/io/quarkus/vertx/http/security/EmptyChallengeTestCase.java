@@ -15,16 +15,14 @@ import io.restassured.RestAssured;
 
 public class EmptyChallengeTestCase {
 
-    private static final String APP_PROPS = "" +
-            "quarkus.http.auth.permission.roles1.paths=/*\n" +
-            "quarkus.http.auth.permission.roles1.policy=authenticated\n";
+    private static final String APP_PROPS = "" + "quarkus.http.auth.permission.roles1.paths=/*\n"
+            + "quarkus.http.auth.permission.roles1.policy=authenticated\n";
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
         @Override
         public JavaArchive get() {
-            return ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HeaderAuthenticator.class, PathHandler.class)
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HeaderAuthenticator.class, PathHandler.class)
                     .addAsResource(new StringAsset(APP_PROPS), "application.properties");
         }
     });
@@ -32,22 +30,9 @@ public class EmptyChallengeTestCase {
     @Test
     public void testNoChallenge() {
 
-        RestAssured
-                .given()
-                .header("user", "test")
-                .when()
-                .get("/path")
-                .then()
-                .assertThat()
-                .statusCode(200)
+        RestAssured.given().header("user", "test").when().get("/path").then().assertThat().statusCode(200)
                 .body(equalTo("test:/path"));
-        RestAssured
-                .given()
-                .when()
-                .get("/path")
-                .then()
-                .assertThat()
-                .statusCode(401);
+        RestAssured.given().when().get("/path").then().assertThat().statusCode(401);
 
     }
 }

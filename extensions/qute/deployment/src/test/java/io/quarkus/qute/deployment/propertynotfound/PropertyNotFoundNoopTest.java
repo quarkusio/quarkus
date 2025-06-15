@@ -15,10 +15,9 @@ public class PropertyNotFoundNoopTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("foos:{foos}"), "templates/test.html")
-                    .addAsResource(new StringAsset("quarkus.qute.property-not-found-strategy=noop"
-                            + "\nquarkus.qute.strict-rendering=false"),
+            .withApplicationRoot((jar) -> jar.addAsResource(new StringAsset("foos:{foos}"), "templates/test.html")
+                    .addAsResource(new StringAsset(
+                            "quarkus.qute.property-not-found-strategy=noop" + "\nquarkus.qute.strict-rendering=false"),
                             "application.properties"));
 
     @Inject

@@ -23,8 +23,8 @@ public class RedirectingResource {
             }
             return builder.build();
         } else {
-            return Response.status(Response.Status.FOUND).location(URI.create("/redirect/302?redirects=" + (number - 1)))
-                    .build();
+            return Response.status(Response.Status.FOUND)
+                    .location(URI.create("/redirect/302?redirects=" + (number - 1))).build();
         }
     }
 
@@ -42,6 +42,7 @@ public class RedirectingResource {
             return Response.ok().build();
         }
         // will redirect back to this method since the HTTP method should not change when returning 307
-        return Response.status(Response.Status.TEMPORARY_REDIRECT).location(URI.create("/redirect/307?redirects=0")).build();
+        return Response.status(Response.Status.TEMPORARY_REDIRECT).location(URI.create("/redirect/307?redirects=0"))
+                .build();
     }
 }

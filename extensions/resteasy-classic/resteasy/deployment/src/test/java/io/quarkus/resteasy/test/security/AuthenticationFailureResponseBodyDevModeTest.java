@@ -48,9 +48,8 @@ public class AuthenticationFailureResponseBodyDevModeTest {
     }
 
     @RegisterExtension
-    static QuarkusDevModeTest runner = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SecuredResource.class, FailingAuthenticator.class, AuthFailure.class)
+    static QuarkusDevModeTest runner = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SecuredResource.class, FailingAuthenticator.class, AuthFailure.class)
                     .addAsResource(new StringAsset("""
                             quarkus.http.auth.proactive=false
                             """), "application.properties"));
@@ -72,15 +71,10 @@ public class AuthenticationFailureResponseBodyDevModeTest {
     private static void assertExceptionBody(AuthFailure failure, boolean challenge) {
         int statusCode = challenge ? 302 : 401;
         boolean expectBody = failure.expectBody && statusCode == 401;
-        RestAssured
-                .given()
-                .redirects().follow(false)
-                .header("auth-failure", failure.toString())
-                .header("challenge-data", challenge)
-                .get("/secured")
-                .then()
-                .statusCode(statusCode)
-                .body(expectBody ? Matchers.equalTo(RESPONSE_BODY) : Matchers.not(Matchers.containsString(RESPONSE_BODY)));
+        RestAssured.given().redirects().follow(false).header("auth-failure", failure.toString())
+                .header("challenge-data", challenge).get("/secured").then().statusCode(statusCode)
+                .body(expectBody ? Matchers.equalTo(RESPONSE_BODY)
+                        : Matchers.not(Matchers.containsString(RESPONSE_BODY)));
     }
 
     @Authenticated
@@ -98,7 +92,8 @@ public class AuthenticationFailureResponseBodyDevModeTest {
     public static class FailingAuthenticator implements HttpAuthenticationMechanism {
 
         @Override
-        public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
+        public Uni<SecurityIdentity> authenticate(RoutingContext context,
+                IdentityProviderManager identityProviderManager) {
             return Uni.createFrom().failure(getFailureProducer(context));
         }
 

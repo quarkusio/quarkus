@@ -18,9 +18,7 @@ public class MultiplePersistenceUnitsResourceInjectionSessionTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(User.class)
-                    .addClass(Plane.class)
+            .withApplicationRoot((jar) -> jar.addClass(User.class).addClass(Plane.class)
                     .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @PersistenceContext(unitName = "users")

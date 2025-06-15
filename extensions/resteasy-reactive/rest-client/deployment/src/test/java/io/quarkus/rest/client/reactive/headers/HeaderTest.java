@@ -44,7 +44,8 @@ public class HeaderTest {
     @Test
     void testNullHeaders() {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
-        assertThat(client.cookieSub("bar", null).send(null, "bar4", "dummy")).isEqualTo("bar:null:null:bar4:X-My-Header/dummy");
+        assertThat(client.cookieSub("bar", null).send(null, "bar4", "dummy"))
+                .isEqualTo("bar:null:null:bar4:X-My-Header/dummy");
     }
 
     @Test
@@ -53,7 +54,8 @@ public class HeaderTest {
         Client client = RestClientBuilder.newBuilder().baseUri(baseUri).build(Client.class);
         assertThat(client.headersList(List.of("a", "b"), List.of("c", "d"))).isEqualTo(expected);
         assertThat(client.headersSet(Set.of("a", "b"), Set.of("c", "d"))).isEqualTo(expected);
-        assertThat(client.headersSet(new TreeSet(List.of("a", "b")), new TreeSet(List.of("c", "d")))).isEqualTo(expected);
+        assertThat(client.headersSet(new TreeSet(List.of("a", "b")), new TreeSet(List.of("c", "d"))))
+                .isEqualTo(expected);
     }
 
     @Path("/")
@@ -61,9 +63,10 @@ public class HeaderTest {
     public static class Resource {
         @GET
         public String returnHeaders(@HeaderParam("foo") String header, @HeaderParam("foo2") String header2,
-                @HeaderParam("foo3") String header3, @HeaderParam("foo4") String header4, @Context HttpHeaders headers) {
-            String myHeaderName = headers.getRequestHeaders().keySet().stream().filter(s -> s.equalsIgnoreCase("X-My-Header"))
-                    .findFirst().orElse("");
+                @HeaderParam("foo3") String header3, @HeaderParam("foo4") String header4,
+                @Context HttpHeaders headers) {
+            String myHeaderName = headers.getRequestHeaders().keySet().stream()
+                    .filter(s -> s.equalsIgnoreCase("X-My-Header")).findFirst().orElse("");
             return header + ":" + header2 + ":" + header3 + ":" + header4 + ":" + myHeaderName + "/"
                     + headers.getHeaderString("X-My-Header");
         }
@@ -116,7 +119,8 @@ public class HeaderTest {
     public interface SubClient {
 
         @GET
-        String send(@HeaderParam("foo3") String cookie3, @HeaderParam("foo4") String cookie4, @RestHeader String xMyHeader);
+        String send(@HeaderParam("foo3") String cookie3, @HeaderParam("foo4") String cookie4,
+                @RestHeader String xMyHeader);
     }
 
 }

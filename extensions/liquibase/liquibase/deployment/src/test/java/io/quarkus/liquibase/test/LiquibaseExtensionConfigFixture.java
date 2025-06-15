@@ -18,8 +18,8 @@ import io.quarkus.liquibase.runtime.LiquibaseDataSourceBuildTimeConfig;
 import liquibase.GlobalConfiguration;
 
 /**
- * This fixture provides access to read the expected and the actual configuration of liquibase.
- * It also provides a method combining all assertions to be reused for multiple tests.
+ * This fixture provides access to read the expected and the actual configuration of liquibase. It also provides a
+ * method combining all assertions to be reused for multiple tests.
  */
 @ApplicationScoped
 public class LiquibaseExtensionConfigFixture {
@@ -74,7 +74,8 @@ public class LiquibaseExtensionConfigFixture {
         String propertyName = fillin("quarkus.liquibase.%s.change-log-parameters", datasourceName);
         Map<String, String> map = new HashMap<>();
         StreamSupport.stream(config.getPropertyNames().spliterator(), false).filter(p -> p.startsWith(propertyName))
-                .forEach(p -> map.put(unquote(p.substring(propertyName.length() + 1)), config.getValue(p, String.class)));
+                .forEach(p -> map.put(unquote(p.substring(propertyName.length() + 1)),
+                        config.getValue(p, String.class)));
 
         return map;
     }
@@ -181,7 +182,7 @@ public class LiquibaseExtensionConfigFixture {
     }
 
     private void log(String content) {
-        //activate for debugging
+        // activate for debugging
         // System.out.println(content);
     }
 

@@ -41,14 +41,11 @@ public class KeycloakAdminRestClientProcessor {
             BuildProducer<ReflectiveHierarchyIgnoreWarningBuildItem> reflectiveHierarchyProducer) {
         serviceProviderProducer.produce(new ServiceProviderBuildItem(ResteasyClientProvider.class.getName(),
                 KeycloakAdminRestClientProvider.class.getName()));
-        reflectiveClassProducer.produce(ReflectiveClassBuildItem.builder(
-                StringListMapDeserializer.class,
-                StringOrArrayDeserializer.class,
-                StringOrArraySerializer.class)
-                .reason(getClass().getName())
-                .methods().build());
-        reflectiveHierarchyProducer.produce(
-                new ReflectiveHierarchyIgnoreWarningBuildItem(new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
+        reflectiveClassProducer.produce(
+                ReflectiveClassBuildItem.builder(StringListMapDeserializer.class, StringOrArrayDeserializer.class,
+                        StringOrArraySerializer.class).reason(getClass().getName()).methods().build());
+        reflectiveHierarchyProducer.produce(new ReflectiveHierarchyIgnoreWarningBuildItem(
+                new ReflectiveHierarchyIgnoreWarningBuildItem.DotNameExclusion(
                         DotName.createSimple(MultivaluedHashMap.class.getName()))));
     }
 
@@ -69,15 +66,9 @@ public class KeycloakAdminRestClientProcessor {
     @BuildStep(onlyIf = KeycloakAdminClientInjectionEnabled.class)
     public void registerKeycloakAdminClientBeans(KeycloakAdminRestClientRecorder recorder,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
-                .configure(Keycloak.class)
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(Keycloak.class)
                 // use @RequestScoped as we don't want to keep client connection open too long
-                .scope(RequestScoped.class)
-                .setRuntimeInit()
-                .defaultBean()
-                .unremovable()
-                .supplier(recorder.createAdminClient())
-                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
-                .done());
+                .scope(RequestScoped.class).setRuntimeInit().defaultBean().unremovable()
+                .supplier(recorder.createAdminClient()).destroyer(BeanDestroyer.AutoCloseableDestroyer.class).done());
     }
 }

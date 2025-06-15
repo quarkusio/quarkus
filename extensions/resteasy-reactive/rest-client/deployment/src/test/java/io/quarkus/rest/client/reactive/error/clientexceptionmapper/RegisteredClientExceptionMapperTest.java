@@ -30,9 +30,9 @@ public class RegisteredClientExceptionMapperTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(ClientWithRegisteredLowPriorityMapper.class, ClientNoProviders.class,
-                            Resource.class, Dto.class,
-                            LowPriorityExceptionMapper.class, HighPriorityExceptionMapper.class,
+                    .addClasses(
+                            ClientWithRegisteredLowPriorityMapper.class, ClientNoProviders.class, Resource.class,
+                            Dto.class, LowPriorityExceptionMapper.class, HighPriorityExceptionMapper.class,
                             DummyException.class, DummyException2.class, DummyException3.class)
                     .addAsResource(
                             new StringAsset(setUrlForClass(ClientNoProviders.class)
@@ -123,12 +123,10 @@ public class RegisteredClientExceptionMapperTest {
         Dto get400();
 
         @ClientExceptionMapper
-        static DummyException map(Method method, Response response, URI uri,
-                Map<String, Object> properties, MultivaluedMap<String, String> requestHeaders) {
+        static DummyException map(Method method, Response response, URI uri, Map<String, Object> properties,
+                MultivaluedMap<String, String> requestHeaders) {
             // the conditions here make sure that the mapper is passed all the data we expect it to be passed
-            if ((response.getStatus() == 404)
-                    && method.getName().equals("get404")
-                    && uri.getPath().equals("/error/404")
+            if ((response.getStatus() == 404) && method.getName().equals("get404") && uri.getPath().equals("/error/404")
                     && properties.containsKey("org.eclipse.microprofile.rest.client.invokedMethod")
                     && requestHeaders.containsKey("User-Agent")) {
                 return new DummyException();

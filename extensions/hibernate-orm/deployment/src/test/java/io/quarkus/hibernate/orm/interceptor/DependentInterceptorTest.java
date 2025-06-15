@@ -32,9 +32,7 @@ public class DependentInterceptorTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
-                    .addClass(DependentInterceptor.class))
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class).addClass(DependentInterceptor.class))
             .withConfigurationResource("application.properties");
 
     @Inject

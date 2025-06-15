@@ -6,8 +6,8 @@ import java.util.Optional;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * A build item that wraps around Decorator objects.
- * The purpose of those build items is to perform modification on the generated resources.
+ * A build item that wraps around Decorator objects. The purpose of those build items is to perform modification on the
+ * generated resources.
  */
 public final class DecoratorBuildItem extends MultiBuildItem {
 

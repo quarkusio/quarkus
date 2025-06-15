@@ -20,10 +20,8 @@ public class MongoTracingNotEnabledTest extends MongoTestBase {
     MongoClient client;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(MongoTestBase.class,
-                            MockReactiveContextProvider.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(MongoTestBase.class, MockReactiveContextProvider.class))
             .withConfigurationResource("default-mongoclient.properties");
 
     @AfterEach

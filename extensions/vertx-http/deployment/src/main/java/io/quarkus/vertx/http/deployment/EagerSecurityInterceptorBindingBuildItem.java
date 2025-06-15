@@ -14,12 +14,11 @@ import io.quarkus.vertx.http.runtime.security.annotation.HttpAuthenticationMecha
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Provides a way for extensions to register eager security interceptor.
- * For example, the Vert.x HTTP extension registers {@link HttpAuthenticationMechanism}
- * and an interceptor that sets annotation value ('@HttpAuthenticationMechanism("basic") => 'basic') as routing context
- * attribute.
- * With disabled proactive authentication, these interceptors are guaranteed to run before any other security code
- * of supported extensions (currently RESTEasy Classic and RESTEasy Reactive).
+ * Provides a way for extensions to register eager security interceptor. For example, the Vert.x HTTP extension
+ * registers {@link HttpAuthenticationMechanism} and an interceptor that sets annotation value
+ * ('@HttpAuthenticationMechanism("basic") => 'basic') as routing context attribute. With disabled proactive
+ * authentication, these interceptors are guaranteed to run before any other security code of supported extensions
+ * (currently RESTEasy Classic and RESTEasy Reactive).
  */
 public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildItem {
 
@@ -27,16 +26,17 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
     private final Function<String, Consumer<RoutingContext>> interceptorCreator;
     private final Map<String, String> bindingToValue;
     /**
-     * If this interceptor is always accompanied by {@link io.quarkus.security.spi.runtime.SecurityCheck}.
-     * For example, we know that endpoint annotated with {@link HttpAuthenticationMechanism} is always secured.
+     * If this interceptor is always accompanied by {@link io.quarkus.security.spi.runtime.SecurityCheck}. For example,
+     * we know that endpoint annotated with {@link HttpAuthenticationMechanism} is always secured.
      */
     private final boolean requiresSecurityCheck;
     private final Function<AnnotationInstance, String> bindingValueExtractor;
 
     /**
-     *
-     * @param interceptorBindings annotation names, 'value' attribute of annotation instances will be passed to the creator
-     * @param interceptorCreator accepts 'value' attribute of {@code interceptorBinding} instances and creates interceptor
+     * @param interceptorBindings
+     *        annotation names, 'value' attribute of annotation instances will be passed to the creator
+     * @param interceptorCreator
+     *        accepts 'value' attribute of {@code interceptorBinding} instances and creates interceptor
      */
     public EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
             DotName... interceptorBindings) {
@@ -44,8 +44,8 @@ public final class EagerSecurityInterceptorBindingBuildItem extends MultiBuildIt
     }
 
     public EagerSecurityInterceptorBindingBuildItem(Function<String, Consumer<RoutingContext>> interceptorCreator,
-            Function<AnnotationInstance, String> bindingValueExtractor,
-            boolean requiresSecurityCheck, DotName... interceptorBindings) {
+            Function<AnnotationInstance, String> bindingValueExtractor, boolean requiresSecurityCheck,
+            DotName... interceptorBindings) {
         this.annotationBindings = interceptorBindings;
         this.interceptorCreator = interceptorCreator;
         this.bindingToValue = Map.of();

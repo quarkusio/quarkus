@@ -26,29 +26,21 @@ import io.quarkus.test.QuarkusUnitTest;
 public class JsonViewOnMethodParameterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(User.class, Views.class, Resource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(User.class, Views.class, Resource.class);
+        }
+    });
 
     @Test
     public void test() {
-        given().accept("application/json")
-                .contentType("application/json")
-                .body("""
-                        {
-                         "id": 1,
-                         "name": "Foo"
-                        }
-                        """)
-                .post("test")
-                .then()
-                .statusCode(201)
-                .body(not(containsString("1")), containsString("Foo"));
+        given().accept("application/json").contentType("application/json").body("""
+                {
+                 "id": 1,
+                 "name": "Foo"
+                }
+                """).post("test").then().statusCode(201).body(not(containsString("1")), containsString("Foo"));
     }
 
     @Path("test")

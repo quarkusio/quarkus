@@ -30,7 +30,7 @@ public class ProcessUtil {
                     System.out.print(new String(b, 0, i, StandardCharsets.UTF_8));
                 }
             } catch (IOException e) {
-                //ignore
+                // ignore
             }
         }
     }
@@ -46,12 +46,8 @@ public class ProcessUtil {
         // this poor gradle behavior is a long known issue with gradle
 
         try {
-            ProcessBuilder builder = new ProcessBuilder()
-                    .command(args)
-                    .redirectInput(ProcessBuilder.Redirect.INHERIT)
-                    .redirectError(PIPE)
-                    .redirectOutput(PIPE)
-                    .directory(wdir);
+            ProcessBuilder builder = new ProcessBuilder().command(args).redirectInput(ProcessBuilder.Redirect.INHERIT)
+                    .redirectError(PIPE).redirectOutput(PIPE).directory(wdir);
             Process process = builder.start();
 
             ProcessReader error = new ProcessReader(process.getErrorStream());

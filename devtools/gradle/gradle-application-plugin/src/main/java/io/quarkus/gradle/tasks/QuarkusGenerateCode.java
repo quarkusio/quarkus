@@ -118,13 +118,13 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
     @TaskAction
     public void generateCode() throws IOException {
         ApplicationModel appModel = ToolingUtils.deserializeAppModel(getApplicationModel().get().getAsFile().toPath());
-        Map<String, String> configMap = getExtensionView()
-                .buildEffectiveConfiguration(appModel, new HashMap<>()).getValues();
+        Map<String, String> configMap = getExtensionView().buildEffectiveConfiguration(appModel, new HashMap<>())
+                .getValues();
 
         File outputPath = getGeneratedOutputDirectory().get().getAsFile();
 
-        getLogger().debug("Will trigger preparing sources for source directories: {} buildDir: {}",
-                sourcesDirectories, buildDir.getAbsolutePath());
+        getLogger().debug("Will trigger preparing sources for source directories: {} buildDir: {}", sourcesDirectories,
+                buildDir.getAbsolutePath());
 
         WorkQueue workQueue = workQueue(configMap, getExtensionView().getCodeGenForkOptions().get());
 
@@ -133,8 +133,7 @@ public abstract class QuarkusGenerateCode extends QuarkusTask {
             params.getBaseName().set(getExtensionView().getFinalName());
             params.getTargetDirectory().set(buildDir);
             params.getAppModel().set(appModel);
-            params
-                    .getSourceDirectories()
+            params.getSourceDirectories()
                     .setFrom(sourcesDirectories.stream().map(Path::toFile).collect(Collectors.toList()));
             params.getOutputPath().set(outputPath);
             params.getLaunchMode().set(launchMode);

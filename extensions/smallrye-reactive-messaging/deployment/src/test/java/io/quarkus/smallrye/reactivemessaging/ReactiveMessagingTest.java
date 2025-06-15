@@ -17,9 +17,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ReactiveMessagingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class, ChannelConsumer.class, EmitterExample.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SimpleBean.class, ChannelConsumer.class, EmitterExample.class));
 
     @Inject
     ChannelConsumer channelConsumer;

@@ -73,8 +73,7 @@ public class MongoDnsClient implements DnsClient {
             }
             return null;
         });
-        DnsClientOptions dnsClientOptions = new DnsClientOptions()
-                .setLogActivity(activity);
+        DnsClientOptions dnsClientOptions = new DnsClientOptions().setLogActivity(activity);
         if (server != null) {
             dnsClientOptions.setHost(server);
             if (config.getOptionalValue(DNS_SERVER_PORT, Integer.class).isPresent()) {
@@ -94,9 +93,7 @@ public class MongoDnsClient implements DnsClient {
         List<String> nameServers = Collections.emptyList();
         if (Files.exists(conf)) {
             try (Stream<String> lines = Files.lines(conf)) {
-                nameServers = lines
-                        .filter(line -> line.startsWith("nameserver"))
-                        .map(line -> line.split(" ")[1])
+                nameServers = lines.filter(line -> line.startsWith("nameserver")).map(line -> line.split(" ")[1])
                         .collect(Collectors.toList());
             } catch (IOException | ArrayIndexOutOfBoundsException e) {
                 log.info("Unable to read the /etc/resolv.conf file", e);
@@ -116,41 +113,31 @@ public class MongoDnsClient implements DnsClient {
     }
 
     /*
-     * The format of SRV record is
-     * priority weight port target.
-     * e.g.
-     * 0 5 5060 example.com.
-     * The priority and weight are ignored, and we just concatenate the host (after removing the ending '.') and port with a
-     * ':' in between, as expected by ServerAddress.
-     * It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that all of the resolved hosts have a
-     * parent
-     * domain equal to the domain of the srvHost.
+     * The format of SRV record is priority weight port target. e.g. 0 5 5060 example.com. The priority and weight are
+     * ignored, and we just concatenate the host (after removing the ending '.') and port with a ':' in between, as
+     * expected by ServerAddress. It's required that the srvHost has at least three parts (e.g. foo.bar.baz) and that
+     * all of the resolved hosts have a parent domain equal to the domain of the srvHost.
      */
     private List<String> resolveSrvRequest(final String srvHost) {
         List<String> hosts = new ArrayList<>();
-        Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class)
-                .orElse(Duration.ofSeconds(5));
+        Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class).orElse(Duration.ofSeconds(5));
 
         try {
             List<SrvRecord> srvRecords;
             if (SRV_CACHE.containsKey(srvHost)) {
                 srvRecords = SRV_CACHE.get(srvHost);
             } else {
-                srvRecords = Uni.createFrom().<List<SrvRecord>> deferred(
-                        new Supplier<>() {
-                            @Override
-                            public Uni<? extends List<SrvRecord>> get() {
-                                return dnsClient.resolveSRV(srvHost);
-                            }
-                        })
-                        .onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3)
-                        .invoke(new Consumer<>() {
-                            @Override
-                            public void accept(List<SrvRecord> srvRecords) {
-                                SRV_CACHE.put(srvHost, srvRecords);
-                            }
-                        })
-                        .await().atMost(timeout);
+                srvRecords = Uni.createFrom().<List<SrvRecord>> deferred(new Supplier<>() {
+                    @Override
+                    public Uni<? extends List<SrvRecord>> get() {
+                        return dnsClient.resolveSRV(srvHost);
+                    }
+                }).onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3).invoke(new Consumer<>() {
+                    @Override
+                    public void accept(List<SrvRecord> srvRecords) {
+                        SRV_CACHE.put(srvHost, srvRecords);
+                    }
+                }).await().atMost(timeout);
             }
 
             if (srvRecords.isEmpty()) {
@@ -175,8 +162,7 @@ public class MongoDnsClient implements DnsClient {
     }
 
     /*
-     * A TXT record is just a string
-     * We require each to be one or more query parameters for a MongoDB connection string.
+     * A TXT record is just a string We require each to be one or more query parameters for a MongoDB connection string.
      * Here we concatenate TXT records together with a '&' separator as required by connection strings
      */
     public List<String> resolveTxtRequest(final String host) {
@@ -187,22 +173,18 @@ public class MongoDnsClient implements DnsClient {
             Duration timeout = config.getOptionalValue(DNS_LOOKUP_TIMEOUT, Duration.class)
                     .orElse(Duration.ofSeconds(5));
 
-            return Uni.createFrom().<List<String>> deferred(
-                    new Supplier<>() {
-                        @Override
-                        public Uni<? extends List<String>> get() {
-                            return dnsClient.resolveTXT(host);
-                        }
-                    })
-                    .onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3)
-                    .invoke(new Consumer<>() {
-                        @Override
-                        public void accept(List<String> strings) {
-                            log.debugf("Resolved TXT records for %s: %s", host, strings);
-                            TXT_CACHE.put(host, strings);
-                        }
-                    })
-                    .await().atMost(timeout);
+            return Uni.createFrom().<List<String>> deferred(new Supplier<>() {
+                @Override
+                public Uni<? extends List<String>> get() {
+                    return dnsClient.resolveTXT(host);
+                }
+            }).onFailure().retry().withBackOff(Duration.ofSeconds(1)).atMost(3).invoke(new Consumer<>() {
+                @Override
+                public void accept(List<String> strings) {
+                    log.debugf("Resolved TXT records for %s: %s", host, strings);
+                    TXT_CACHE.put(host, strings);
+                }
+            }).await().atMost(timeout);
         } catch (Throwable e) {
             throw new MongoConfigurationException("Unable to look up TXT record for host " + host, e);
         }

@@ -38,17 +38,18 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     /**
      * Validate the certificate configuration.
      * <p>
-     * Verify that each certificate file exists and that the key store and trust store are correctly configured.
-     * When aliases are set, aliases are validated.
+     * Verify that each certificate file exists and that the key store and trust store are correctly configured. When
+     * aliases are set, aliases are validated.
      *
-     * @param providerBucketNames the bucket names from {@link Identifier @Identifer} annotations on any
-     *        {@link KeyStoreProvider} or {@link TrustStoreProvider} beans
-     * @param config the configuration
-     * @param vertx the Vert.x instance
+     * @param providerBucketNames
+     *        the bucket names from {@link Identifier @Identifer} annotations on any {@link KeyStoreProvider} or
+     *        {@link TrustStoreProvider} beans
+     * @param config
+     *        the configuration
+     * @param vertx
+     *        the Vert.x instance
      */
-    public void validateCertificates(Set<String> providerBucketNames,
-            TlsConfig config,
-            RuntimeValue<Vertx> vertx,
+    public void validateCertificates(Set<String> providerBucketNames, TlsConfig config, RuntimeValue<Vertx> vertx,
             ShutdownContext shutdownContext) {
         this.vertx = vertx.getValue();
         this.config = config;
@@ -63,14 +64,13 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
         // Verify the named configs
         for (String name : bucketNames) {
             if (name.equals(TlsConfig.DEFAULT_NAME)) {
-                throw new IllegalArgumentException(
-                        "The TLS configuration name " + TlsConfig.DEFAULT_NAME
-                                + " cannot be used explicitly in configuration or qualifiers");
+                throw new IllegalArgumentException("The TLS configuration name " + TlsConfig.DEFAULT_NAME
+                        + " cannot be used explicitly in configuration or qualifiers");
             }
             if (name.equals(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME)) {
-                throw new IllegalArgumentException(
-                        "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
-                                + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust or override it");
+                throw new IllegalArgumentException("The TLS configuration name "
+                        + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
+                        + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust or override it");
             }
             verifyCertificateConfig(config.namedCertificateConfig().get(name), vertx.getValue(), name);
         }
@@ -176,10 +176,11 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
     @Override
     public Optional<TlsConfiguration> get(String name) {
         if (TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME.equals(name)) {
-            final TlsConfiguration result = certificates.computeIfAbsent(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME, k -> {
-                final TrustStoreAndTrustOptions ts = JavaxNetSslTrustStoreProvider.getTrustStore(vertx);
-                return new VertxCertificateHolder(vertx, k, config.namedCertificateConfig().get(k), null, ts);
-            });
+            final TlsConfiguration result = certificates.computeIfAbsent(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME,
+                    k -> {
+                        final TrustStoreAndTrustOptions ts = JavaxNetSslTrustStoreProvider.getTrustStore(vertx);
+                        return new VertxCertificateHolder(vertx, k, config.namedCertificateConfig().get(k), null, ts);
+                    });
             return Optional.ofNullable(result);
         }
         return Optional.ofNullable(certificates.get(name));
@@ -199,9 +200,9 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
             throw new IllegalArgumentException("The name of the TLS configuration to register cannot be <default>");
         }
         if (name.equals(TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME)) {
-            throw new IllegalArgumentException(
-                    "The TLS configuration name " + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
-                            + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust of override it");
+            throw new IllegalArgumentException("The TLS configuration name "
+                    + TlsConfig.JAVA_NET_SSL_TLS_CONFIGURATION_NAME
+                    + " is reserved for providing access to default SunJSSE keystore; neither Quarkus extensions nor end users can adjust of override it");
         }
         if (configuration == null) {
             throw new IllegalArgumentException("The TLS configuration to register cannot be null");
@@ -224,8 +225,7 @@ public class CertificateRecorder implements TlsConfigurationRegistry {
 
     static <T> InstanceHandle<T> lookupProvider(Class<T> type, String bucketName) {
         var container = Arc.container();
-        var qualifier = TlsConfig.DEFAULT_NAME.equals(bucketName)
-                ? Default.Literal.INSTANCE
+        var qualifier = TlsConfig.DEFAULT_NAME.equals(bucketName) ? Default.Literal.INSTANCE
                 : Identifier.Literal.of(bucketName);
         var instances = container.listAll(type, qualifier);
         if (instances.size() > 1) {

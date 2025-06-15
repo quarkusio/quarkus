@@ -13,10 +13,8 @@ import jakarta.ws.rs.core.MediaType;
 import org.jboss.resteasy.reactive.common.headers.MediaTypeHeaderDelegate;
 
 /**
- * A representation of a server side media type.
- *
- * TODO: This belongs in the server module but needs to be untangled from ResourceWriter (in a way that doesn't hurt
- * performance) to make that happen
+ * A representation of a server side media type. TODO: This belongs in the server module but needs to be untangled from
+ * ResourceWriter (in a way that doesn't hurt performance) to make that happen
  */
 public class ServerMediaType {
 
@@ -33,9 +31,12 @@ public class ServerMediaType {
     }
 
     /**
-     * @param mediaTypes The original media types
-     * @param charset charset to use
-     * @param deprioritizeWildcards whether or not wildcard types should be carry less weight when sorting is performed
+     * @param mediaTypes
+     *        The original media types
+     * @param charset
+     *        charset to use
+     * @param deprioritizeWildcards
+     *        whether or not wildcard types should be carry less weight when sorting is performed
      */
     public ServerMediaType(List<MediaType> mediaTypes, String charset, boolean deprioritizeWildcards) {
         if (mediaTypes.isEmpty()) {
@@ -97,30 +98,28 @@ public class ServerMediaType {
     }
 
     /**
-     *
-     * @return An entry containing the negotiated desired media type as a key and the negotiated
-     *         provided media type as a value
+     * @return An entry containing the negotiated desired media type as a key and the negotiated provided media type as
+     *         a value
      */
     public Map.Entry<MediaType, MediaType> negotiateProduces(String acceptHeader) {
         return negotiateProduces(acceptHeader, this.hardCoded);
     }
 
     /**
-     *
-     * @return An entry containing the negotiated desired media type as a key and the negotiated
-     *         provided media type as a value
+     * @return An entry containing the negotiated desired media type as a key and the negotiated provided media type as
+     *         a value
      */
     public Map.Entry<MediaType, MediaType> negotiateProduces(String acceptHeader, MediaType hardCoded) {
         if (hardCoded != null) {
-            //technically we should negotiate here, and check if we need to return a 416
-            //but for performance reasons we ignore this
+            // technically we should negotiate here, and check if we need to return a 416
+            // but for performance reasons we ignore this
             return new AbstractMap.SimpleEntry<>(hardCoded, null);
         }
         MediaType selectedDesired = null;
         MediaType selectedProvided = null;
         List<MediaType> parsedAccepted;
         if (acceptHeader != null) {
-            //TODO: this can be optimised
+            // TODO: this can be optimised
             parsedAccepted = MediaTypeHelper.parseHeader(acceptHeader);
             MediaTypeHelper.sortByWeight(parsedAccepted);
             String currentClientQ = null;
@@ -128,12 +127,13 @@ public class ServerMediaType {
             if (!parsedAccepted.isEmpty()) {
                 for (MediaType desired : parsedAccepted) {
                     if (selectedDesired != null) {
-                        //this is to enable server side q values to take effect
-                        //the client side is sorted by q, if we have already picked one and the q is
-                        //different then we can return the current one
+                        // this is to enable server side q values to take effect
+                        // the client side is sorted by q, if we have already picked one and the q is
+                        // different then we can return the current one
                         if (!Objects.equals(desired.getParameters().get("q"), currentClientQ)) {
                             if (selectedDesired.equals(MediaType.WILDCARD_TYPE)) {
-                                return new AbstractMap.SimpleEntry<>(MediaType.APPLICATION_OCTET_STREAM_TYPE, selectedProvided);
+                                return new AbstractMap.SimpleEntry<>(MediaType.APPLICATION_OCTET_STREAM_TYPE,
+                                        selectedProvided);
                             }
                             return new AbstractMap.SimpleEntry<>(selectedDesired, selectedProvided);
                         }
@@ -148,7 +148,8 @@ public class ServerMediaType {
                                     if (selectedDesired != null) {
                                         continue;
                                     }
-                                    selectedDesired = provide; // if a wildcard was desired, the return type is the type of the provider
+                                    selectedDesired = provide; // if a wildcard was desired, the return type is the type
+                                                               // of the provider
                                 } else if (desired.isWildcardSubtype()) {
                                     // this is only preferable if we don't already have a better
                                     // one

@@ -14,12 +14,10 @@ import io.restassured.RestAssured;
 public class DefaultPersistenceUnitConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FirstEntity.class, SecondEntity.class,
-                            FirstEntityRepository.class, SecondEntityRepository.class,
-                            PanacheTestResource.class)
-                    .addAsResource("application-test.properties", "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(FirstEntity.class, SecondEntity.class, FirstEntityRepository.class,
+                    SecondEntityRepository.class, PanacheTestResource.class)
+            .addAsResource("application-test.properties", "application.properties"));
 
     @Test
     public void panacheOperations() {

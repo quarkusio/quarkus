@@ -27,7 +27,8 @@ public class PanacheMongoResourceProcessor extends BasePanacheMongoResourceProce
     @Override
     public PanacheMongoEntityEnhancer createEntityEnhancer(CombinedIndexBuildItem index,
             List<PanacheMethodCustomizer> methodCustomizers, MetamodelInfo modelInfo) {
-        return new PanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers, getImperativeTypeBundle(), modelInfo);
+        return new PanacheMongoEntityEnhancer(index.getIndex(), methodCustomizers, getImperativeTypeBundle(),
+                modelInfo);
     }
 
     @Override

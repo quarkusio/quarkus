@@ -16,19 +16,14 @@ import io.restassured.RestAssured;
 public class StaticFileWithoutResourcesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new File("src/test/resources/lorem.txt"), "META-INF/resources/lorem.txt")
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new File("src/test/resources/lorem.txt"), "META-INF/resources/lorem.txt")
                     .addAsResource(new File("src/test/resources/index.html"), "META-INF/resources/index.html"));
 
     @Test
     public void test() {
-        RestAssured.get("/").then()
-                .statusCode(200)
-                .body(containsString("<h1>Hello</h1>"));
+        RestAssured.get("/").then().statusCode(200).body(containsString("<h1>Hello</h1>"));
 
-        RestAssured.get("/lorem.txt").then()
-                .statusCode(200)
-                .body(containsString("Lorem"));
+        RestAssured.get("/lorem.txt").then().statusCode(200).body(containsString("Lorem"));
     }
 }

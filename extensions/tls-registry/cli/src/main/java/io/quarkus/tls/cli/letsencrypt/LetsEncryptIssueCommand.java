@@ -14,8 +14,7 @@ import java.util.concurrent.Callable;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "issue-certificate", mixinStandardHelpOptions = true, description = "Issue a certificate from let's encrypt. This command runs the HTTP 01 challenge of let's encrypt. "
-        +
-        "Make sure the application is running before running this command.")
+        + "Make sure the application is running before running this command.")
 public class LetsEncryptIssueCommand implements Callable<Integer> {
 
     static System.Logger LOGGER = System.getLogger("lets-encrypt-issue");
@@ -81,7 +80,8 @@ public class LetsEncryptIssueCommand implements Callable<Integer> {
         createAccount(client, LETS_ENCRYPT_DIR.getAbsolutePath(), staging, email);
 
         // Step 2 - run the challenge to obtain first certificate
-        LOGGER.log(INFO, "\uD83D\uDD35 Requesting initial certificate from {0} Let's Encrypt", (staging ? "staging" : ""));
+        LOGGER.log(INFO, "\uD83D\uDD35 Requesting initial certificate from {0} Let's Encrypt",
+                (staging ? "staging" : ""));
         issueCertificate(client, LETS_ENCRYPT_DIR, staging, domain, CERT_FILE, KEY_FILE);
         adjustPermissions(CERT_FILE, KEY_FILE);
 

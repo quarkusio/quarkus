@@ -53,9 +53,7 @@ public final class MessageBundles {
         }
         throw new IllegalStateException(Qute.fmt(
                 "Unable to obtain a message bundle for interface [{iface.name}]{#if loc} and locale [{loc.value}]{/if}")
-                .data("iface", bundleInterface)
-                .data("loc", localized)
-                .render());
+                .data("iface", bundleInterface).data("loc", localized).render());
     }
 
     static void setupNamespaceResolvers(@Observes EngineBuilder builder, Instance<BundleContext> context) {

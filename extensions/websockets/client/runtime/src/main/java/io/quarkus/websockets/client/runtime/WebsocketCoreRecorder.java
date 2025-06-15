@@ -43,8 +43,9 @@ public class WebsocketCoreRecorder {
     }
 
     @SuppressWarnings("unchecked")
-    public RuntimeValue<WebSocketDeploymentInfo> createDeploymentInfo(Set<String> annotatedEndpoints, Set<String> endpoints,
-            Set<String> serverApplicationConfigClasses, int maxFrameSize, boolean dispatchToWorker) {
+    public RuntimeValue<WebSocketDeploymentInfo> createDeploymentInfo(Set<String> annotatedEndpoints,
+            Set<String> endpoints, Set<String> serverApplicationConfigClasses, int maxFrameSize,
+            boolean dispatchToWorker) {
         WebSocketDeploymentInfo container = new WebSocketDeploymentInfo();
         container.setMaxFrameSize(maxFrameSize);
         container.setDispatchToWorkerThread(dispatchToWorker);
@@ -52,8 +53,8 @@ public class WebsocketCoreRecorder {
         Set<Class<? extends Endpoint>> allScannedEndpointImplementations = new HashSet<>();
         for (String i : endpoints) {
             try {
-                allScannedEndpointImplementations.add(
-                        (Class<? extends Endpoint>) Class.forName(i, true, Thread.currentThread().getContextClassLoader()));
+                allScannedEndpointImplementations.add((Class<? extends Endpoint>) Class.forName(i, true,
+                        Thread.currentThread().getContextClassLoader()));
             } catch (Exception e) {
                 log.error("Could not initialize websocket class " + i, e);
             }
@@ -61,7 +62,8 @@ public class WebsocketCoreRecorder {
         Set<Class<?>> allScannedAnnotatedEndpoints = new HashSet<>();
         for (String i : annotatedEndpoints) {
             try {
-                allScannedAnnotatedEndpoints.add(Class.forName(i, true, Thread.currentThread().getContextClassLoader()));
+                allScannedAnnotatedEndpoints
+                        .add(Class.forName(i, true, Thread.currentThread().getContextClassLoader()));
             } catch (Exception e) {
                 log.error("Could not initialize websocket class " + i, e);
             }
@@ -73,8 +75,8 @@ public class WebsocketCoreRecorder {
         for (String clazzName : serverApplicationConfigClasses) {
             try {
                 configInstances.add((ServerApplicationConfig) Class
-                        .forName(clazzName, true, Thread.currentThread().getContextClassLoader()).getDeclaredConstructor()
-                        .newInstance());
+                        .forName(clazzName, true, Thread.currentThread().getContextClassLoader())
+                        .getDeclaredConstructor().newInstance());
             } catch (Exception e) {
                 log.error("Could not initialize websocket config class " + clazzName, e);
             }
@@ -86,7 +88,8 @@ public class WebsocketCoreRecorder {
                 if (returnedEndpoints != null) {
                     newAnnotatedEndpoints.addAll(returnedEndpoints);
                 }
-                Set<ServerEndpointConfig> endpointConfigs = config.getEndpointConfigs(allScannedEndpointImplementations);
+                Set<ServerEndpointConfig> endpointConfigs = config
+                        .getEndpointConfigs(allScannedEndpointImplementations);
                 if (endpointConfigs != null) {
                     serverEndpointConfigurations.addAll(endpointConfigs);
                 }
@@ -95,7 +98,7 @@ public class WebsocketCoreRecorder {
             newAnnotatedEndpoints.addAll(allScannedAnnotatedEndpoints);
         }
 
-        //annotated endpoints first
+        // annotated endpoints first
         for (Class<?> endpoint : newAnnotatedEndpoints) {
             if (endpoint != null) {
                 container.addEndpoint(endpoint);
@@ -149,54 +152,48 @@ public class WebsocketCoreRecorder {
             public EventLoopGroup get() {
                 return ((VertxInternal) VertxCoreRecorder.getVertx().get()).getEventLoopGroup();
             }
-        },
-                Collections.singletonList(new ContextSetupHandler() {
-                    @Override
-                    public <T, C> Action<T, C> create(Action<T, C> action) {
-                        return new Action<T, C>() {
+        }, Collections.singletonList(new ContextSetupHandler() {
+            @Override
+            public <T, C> Action<T, C> create(Action<T, C> action) {
+                return new Action<T, C>() {
 
-                            CurrentIdentityAssociation getCurrentIdentityAssociation() {
-                                if (currentIdentityAssociation.isResolvable()) {
-                                    return currentIdentityAssociation.get();
-                                }
-                                return null;
-                            }
-
-                            @Override
-                            public T call(C context, UndertowSession session) throws Exception {
-                                ClassLoader old = Thread.currentThread().getContextClassLoader();
-                                Thread.currentThread().setContextClassLoader(cl);
-                                boolean required = !requestContext.isActive();
-                                if (required) {
-                                    requestContext.activate();
-                                }
-                                Principal p = session.getUserPrincipal();
-                                if (p instanceof WebSocketPrincipal) {
-                                    var current = getCurrentIdentityAssociation();
-                                    if (current != null) {
-                                        current.setIdentity(((WebSocketPrincipal) p).getSecurityIdentity());
-                                    }
-                                }
-                                try {
-                                    return action.call(context, session);
-                                } finally {
-                                    try {
-                                        if (required) {
-                                            requestContext.terminate();
-                                        }
-                                    } finally {
-                                        Thread.currentThread().setContextClassLoader(old);
-                                    }
-                                }
-                            }
-                        };
+                    CurrentIdentityAssociation getCurrentIdentityAssociation() {
+                        if (currentIdentityAssociation.isResolvable()) {
+                            return currentIdentityAssociation.get();
+                        }
+                        return null;
                     }
-                }),
-                info.isDispatchToWorkerThread(),
-                null,
-                null,
-                info.getExecutor(),
-                Collections.emptyList(),
+
+                    @Override
+                    public T call(C context, UndertowSession session) throws Exception {
+                        ClassLoader old = Thread.currentThread().getContextClassLoader();
+                        Thread.currentThread().setContextClassLoader(cl);
+                        boolean required = !requestContext.isActive();
+                        if (required) {
+                            requestContext.activate();
+                        }
+                        Principal p = session.getUserPrincipal();
+                        if (p instanceof WebSocketPrincipal) {
+                            var current = getCurrentIdentityAssociation();
+                            if (current != null) {
+                                current.setIdentity(((WebSocketPrincipal) p).getSecurityIdentity());
+                            }
+                        }
+                        try {
+                            return action.call(context, session);
+                        } finally {
+                            try {
+                                if (required) {
+                                    requestContext.terminate();
+                                }
+                            } finally {
+                                Thread.currentThread().setContextClassLoader(old);
+                            }
+                        }
+                    }
+                };
+            }
+        }), info.isDispatchToWorkerThread(), null, null, info.getExecutor(), Collections.emptyList(),
                 info.getMaxFrameSize(), new Supplier<Principal>() {
                     @Override
                     public Principal get() {

@@ -16,9 +16,7 @@ public class SimpleClassProxyTest {
     public void testProxyCreation() throws InstantiationException, IllegalAccessException {
         SimpleInvocationHandler invocationHandler = new SimpleInvocationHandler();
         ProxyConfiguration<SimpleClass> proxyConfiguration = new ProxyConfiguration<SimpleClass>()
-                .setSuperClass(SimpleClass.class)
-                .setAnchorClass(SimpleClass.class)
-                .setProxyNameSuffix("$$Proxy1")
+                .setSuperClass(SimpleClass.class).setAnchorClass(SimpleClass.class).setProxyNameSuffix("$$Proxy1")
                 .setClassLoader(new TestClassLoader(SimpleClass.class.getClassLoader()));
         SimpleClass instance = new ProxyFactory<>(proxyConfiguration).newInstance(invocationHandler);
 

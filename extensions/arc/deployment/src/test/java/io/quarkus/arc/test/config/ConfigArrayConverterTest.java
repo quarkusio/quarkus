@@ -16,8 +16,7 @@ public class ConfigArrayConverterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Configured.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Configured.class)
                     .addAsResource(new StringAsset("foos=1,2,bar\nbools=true,false"), "application.properties"));
 
     @Inject

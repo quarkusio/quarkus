@@ -82,22 +82,21 @@ public class ApplicationDeploymentClasspathBuilder {
         });
 
         // Base runtime configurations for every launch mode
-        configContainer
-                .register(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.TEST), config -> {
+        configContainer.register(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.TEST),
+                config -> {
                     config.extendsFrom(configContainer.getByName(JavaPlugin.TEST_RUNTIME_CLASSPATH_CONFIGURATION_NAME));
                     config.setCanBeConsumed(false);
                 });
 
-        configContainer
-                .register(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.NORMAL), config -> {
+        configContainer.register(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.NORMAL),
+                config -> {
                     config.extendsFrom(configContainer.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
                     config.setCanBeConsumed(false);
                 });
 
-        configContainer
-                .register(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT), config -> {
-                    config.extendsFrom(
-                            configContainer.getByName(ToolingUtils.DEV_MODE_CONFIGURATION_NAME),
+        configContainer.register(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(LaunchMode.DEVELOPMENT),
+                config -> {
+                    config.extendsFrom(configContainer.getByName(ToolingUtils.DEV_MODE_CONFIGURATION_NAME),
                             configContainer.getByName(JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME),
                             configContainer.getByName(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME));
                     config.setCanBeConsumed(false);
@@ -114,8 +113,7 @@ public class ApplicationDeploymentClasspathBuilder {
                 configurationNames = List.of(JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
                 break;
             case DEVELOPMENT:
-                configurationNames = List.of(
-                        ToolingUtils.DEV_MODE_CONFIGURATION_NAME,
+                configurationNames = List.of(ToolingUtils.DEV_MODE_CONFIGURATION_NAME,
                         JavaPlugin.COMPILE_CLASSPATH_CONFIGURATION_NAME,
                         JavaPlugin.RUNTIME_CLASSPATH_CONFIGURATION_NAME);
                 break;
@@ -123,9 +121,7 @@ public class ApplicationDeploymentClasspathBuilder {
                 throw new IllegalArgumentException("Unexpected mode: " + mode);
         }
         ConfigurationContainer configContainer = project.getConfigurations();
-        return configurationNames.stream()
-                .map(configContainer::getByName)
-                .toArray(Configuration[]::new);
+        return configurationNames.stream().map(configContainer::getByName).toArray(Configuration[]::new);
     }
 
     private final Project project;
@@ -137,9 +133,9 @@ public class ApplicationDeploymentClasspathBuilder {
     private final String compileOnlyConfigurationName;
 
     /**
-     * The platform configuration updates the PlatformImports, but since the PlatformImports don't
-     * have a place to be stored in the project, they're stored here. The way that extensions are
-     * tracked and conditional dependencies needs some attention, which will likely resolve this.
+     * The platform configuration updates the PlatformImports, but since the PlatformImports don't have a place to be
+     * stored in the project, they're stored here. The way that extensions are tracked and conditional dependencies
+     * needs some attention, which will likely resolve this.
      */
     private static final HashMap<String, PlatformImportsImpl> platformImports = new HashMap<>();
     /**
@@ -173,11 +169,9 @@ public class ApplicationDeploymentClasspathBuilder {
                 ListProperty<Dependency> dependencyListProperty = project.getObjects().listProperty(Dependency.class);
                 configuration.getDependencies()
                         .addAllLater(dependencyListProperty.value(project.provider(() -> project.getConfigurations()
-                                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME)
-                                .getAllDependencies()
-                                .stream()
-                                .filter(dependency -> dependency instanceof ModuleDependency &&
-                                        ToolingUtils.isEnforcedPlatform((ModuleDependency) dependency))
+                                .getByName(JavaPlugin.IMPLEMENTATION_CONFIGURATION_NAME).getAllDependencies().stream()
+                                .filter(dependency -> dependency instanceof ModuleDependency
+                                        && ToolingUtils.isEnforcedPlatform((ModuleDependency) dependency))
                                 .collect(Collectors.toList()))));
                 final PlatformImportsImpl platformImports = ApplicationDeploymentClasspathBuilder.platformImports
                         .computeIfAbsent(this.platformImportName, (ignored) -> new PlatformImportsImpl());
@@ -187,8 +181,8 @@ public class ApplicationDeploymentClasspathBuilder {
                     final String name = identifier.getName();
                     if (name.endsWith(BootstrapConstants.PLATFORM_DESCRIPTOR_ARTIFACT_ID_SUFFIX)) {
                         platformDataDeps.add(toDependency(d.getTarget(), d.getTarget().getVersion(), "json"));
-                        platformImports.addPlatformDescriptor(identifier.getGroup(), name, d.getTarget().getVersion(), "json",
-                                d.getTarget().getVersion());
+                        platformImports.addPlatformDescriptor(identifier.getGroup(), name, d.getTarget().getVersion(),
+                                "json", d.getTarget().getVersion());
                     } else if (name.endsWith(BootstrapConstants.PLATFORM_PROPERTIES_ARTIFACT_ID_SUFFIX)) {
                         final Dependency gradleDep = toDependency(d.getTarget(), ArtifactCoords.DEFAULT_CLASSIFIER,
                                 "properties");
@@ -198,9 +192,8 @@ public class ApplicationDeploymentClasspathBuilder {
                                 .getResolvedConfiguration().getResolvedArtifacts()) {
                             if (a.getName().equals(name)) {
                                 try {
-                                    platformImports.addPlatformProperties(identifier.getGroup(), name, null, "properties",
-                                            d.getTarget().getVersion(),
-                                            a.getFile().toPath());
+                                    platformImports.addPlatformProperties(identifier.getGroup(), name, null,
+                                            "properties", d.getTarget().getVersion(), a.getFile().toPath());
                                 } catch (AppModelResolverException e) {
                                     throw new GradleException("Failed to import platform properties " + a.getFile(), e);
                                 }
@@ -248,9 +241,8 @@ public class ApplicationDeploymentClasspathBuilder {
         if (!project.getConfigurations().getNames().contains(this.runtimeConfigurationName)) {
             project.getConfigurations().register(this.runtimeConfigurationName, configuration -> {
                 configuration.setCanBeConsumed(false);
-                configuration.extendsFrom(
-                        project.getConfigurations()
-                                .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode)));
+                configuration.extendsFrom(project.getConfigurations()
+                        .getByName(ApplicationDeploymentClasspathBuilder.getBaseRuntimeConfigName(mode)));
             });
         }
     }
@@ -269,8 +261,8 @@ public class ApplicationDeploymentClasspathBuilder {
                         ConditionalDependenciesEnabler cdEnabler = new ConditionalDependenciesEnabler(project, mode,
                                 enforcedPlatforms);
                         final Collection<ExtensionDependency<?>> allExtensions = cdEnabler.getAllExtensions();
-                        Set<ExtensionDependency<?>> extensions = collectFirstMetQuarkusExtensions(getRawRuntimeConfiguration(),
-                                allExtensions);
+                        Set<ExtensionDependency<?>> extensions = collectFirstMetQuarkusExtensions(
+                                getRawRuntimeConfiguration(), allExtensions);
                         // Add conditional extensions
                         for (ExtensionDependency<?> knownExtension : allExtensions) {
                             if (knownExtension.isConditional()) {
@@ -286,8 +278,8 @@ public class ApplicationDeploymentClasspathBuilder {
                                 continue;
                             }
 
-                            deploymentDependencies.add(
-                                    DependencyUtils.createDeploymentDependency(dependencies, extension));
+                            deploymentDependencies
+                                    .add(DependencyUtils.createDeploymentDependency(dependencies, extension));
                         }
                         calculatedDependenciesByModeAndConfiguration.put(key, deploymentDependencies);
                         return deploymentDependencies;
@@ -373,8 +365,8 @@ public class ApplicationDeploymentClasspathBuilder {
         return firstLevelExtensions;
     }
 
-    private Set<ExtensionDependency<?>> collectQuarkusExtensions(ResolvedDependency dependency, Set<String> visitedArtifacts,
-            Collection<ExtensionDependency<?>> knownExtensions) {
+    private Set<ExtensionDependency<?>> collectQuarkusExtensions(ResolvedDependency dependency,
+            Set<String> visitedArtifacts, Collection<ExtensionDependency<?>> knownExtensions) {
         String artifactKey = String.format("%s:%s", dependency.getModuleGroup(), dependency.getModuleName());
         if (!visitedArtifacts.add(artifactKey)) {
             return Collections.emptySet();

@@ -11,9 +11,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class RetryWhenResultAndExceptionTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RetryWhenResultAndExceptionService.class, IsNull.class, IsIllegalArgumentException.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(RetryWhenResultAndExceptionService.class, IsNull.class, IsIllegalArgumentException.class));
 
     @Inject
     RetryWhenResultAndExceptionService service;

@@ -5,8 +5,8 @@ import java.util.Objects;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Build item that defines dependencies that should be indexed. This can be used when a dependency does not contain
- * a marker file (e.g. META-INF/beans.xml).
+ * Build item that defines dependencies that should be indexed. This can be used when a dependency does not contain a
+ * marker file (e.g. META-INF/beans.xml).
  */
 public final class IndexDependencyBuildItem extends MultiBuildItem {
     private final String groupId;
@@ -24,7 +24,6 @@ public final class IndexDependencyBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the groupId, never {@code null}
      */
     public String getGroupId() {
@@ -32,7 +31,6 @@ public final class IndexDependencyBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the artifactId, or {@code null}
      */
     public String getArtifactId() {
@@ -40,7 +38,6 @@ public final class IndexDependencyBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the classifier, or {@code null}
      */
     public String getClassifier() {

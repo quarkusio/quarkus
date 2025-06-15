@@ -19,8 +19,8 @@ public class TransactionJdbcObjectStoreValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("jdbc-object-store-validation.properties", "application.properties"))
+            .withApplicationRoot(
+                    (jar) -> jar.addAsResource("jdbc-object-store-validation.properties", "application.properties"))
             .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-jdbc-h2", Version.getVersion())))
             .assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);

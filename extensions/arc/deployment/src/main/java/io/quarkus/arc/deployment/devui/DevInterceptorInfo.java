@@ -12,7 +12,8 @@ import io.quarkus.arc.processor.InterceptorInfo;
 
 public class DevInterceptorInfo implements Comparable<DevInterceptorInfo> {
 
-    public static DevInterceptorInfo from(InterceptorInfo interceptor, CompletedApplicationClassPredicateBuildItem predicate) {
+    public static DevInterceptorInfo from(InterceptorInfo interceptor,
+            CompletedApplicationClassPredicateBuildItem predicate) {
         boolean isApplicationBean = predicate.test(interceptor.getBeanClass());
         Set<Name> bindings = new HashSet<>();
         for (AnnotationInstance binding : interceptor.getBindings()) {
@@ -32,8 +33,7 @@ public class DevInterceptorInfo implements Comparable<DevInterceptorInfo> {
             intercepts.add(InterceptionType.PRE_DESTROY);
         }
         return new DevInterceptorInfo(interceptor.getIdentifier(), Name.from(interceptor.getBeanClass()), bindings,
-                interceptor.getPriority(), intercepts,
-                isApplicationBean);
+                interceptor.getPriority(), intercepts, isApplicationBean);
     }
 
     private final String id;

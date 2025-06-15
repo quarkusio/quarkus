@@ -27,7 +27,8 @@ class HibernateSearchStandaloneManagementPostRequestProcessor {
         if (config == null) {
             config = new JsonObject();
         }
-        try (InstanceHandle<SearchMapping> searchMappingInstanceHandle = Arc.container().instance(SearchMapping.class)) {
+        try (InstanceHandle<SearchMapping> searchMappingInstanceHandle = Arc.container()
+                .instance(SearchMapping.class)) {
             SearchMapping searchMapping = searchMappingInstanceHandle.get();
 
             JsonObject filter = config.getJsonObject("filter");
@@ -47,20 +48,16 @@ class HibernateSearchStandaloneManagementPostRequestProcessor {
             if (WaitFor.STARTED.equals(getWaitForParameter(ctx.request()))) {
                 ctx.response().end(message(202, "Reindexing started"));
             } else {
-                ctx.response()
-                        .setChunked(true)
-                        .write(message(202, "Reindexing started"),
-                                ignored -> massIndexerFuture.whenComplete((ignored2, throwable) -> {
-                                    if (throwable == null) {
-                                        ctx.response().end(message(200, "Reindexing succeeded"));
-                                    } else {
-                                        ctx.response().end(message(
-                                                500,
-                                                "Reindexing failed:\n" + Arrays.stream(throwable.getStackTrace())
-                                                        .map(Object::toString)
-                                                        .collect(Collectors.joining("\n"))));
-                                    }
-                                }));
+                ctx.response().setChunked(true).write(message(202, "Reindexing started"),
+                        ignored -> massIndexerFuture.whenComplete((ignored2, throwable) -> {
+                            if (throwable == null) {
+                                ctx.response().end(message(200, "Reindexing succeeded"));
+                            } else {
+                                ctx.response().end(
+                                        message(500, "Reindexing failed:\n" + Arrays.stream(throwable.getStackTrace())
+                                                .map(Object::toString).collect(Collectors.joining("\n"))));
+                            }
+                        }));
             }
         }
     }
@@ -81,10 +78,7 @@ class HibernateSearchStandaloneManagementPostRequestProcessor {
         if (array == null) {
             return null;
         }
-        List<String> types = array
-                .stream()
-                .map(Object::toString)
-                .collect(Collectors.toList());
+        List<String> types = array.stream().map(Object::toString).collect(Collectors.toList());
         return types.isEmpty() ? null : types;
     }
 
@@ -96,10 +90,7 @@ class HibernateSearchStandaloneManagementPostRequestProcessor {
         if (array == null) {
             return null;
         }
-        Set<String> types = array
-                .stream()
-                .map(Object::toString)
-                .collect(Collectors.toSet());
+        Set<String> types = array.stream().map(Object::toString).collect(Collectors.toSet());
         return types.isEmpty() ? null : types;
     }
 

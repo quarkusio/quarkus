@@ -21,7 +21,8 @@ public class EnvVarValidator {
             Optional<String> field, String target, Optional<String> prefix, boolean... oldStyle) {
         try {
             final KubernetesEnvBuildItem kebi = KubernetesEnvBuildItem.create(name, value.orElse(null),
-                    secret.orElse(null), configmap.orElse(null), field.orElse(null), target, prefix.orElse(null), oldStyle);
+                    secret.orElse(null), configmap.orElse(null), field.orElse(null), target, prefix.orElse(null),
+                    oldStyle);
             process(kebi);
         } catch (IllegalArgumentException e) {
             errors.add(e.getMessage());
@@ -29,10 +30,11 @@ public class EnvVarValidator {
     }
 
     /**
-     * Processes the specified {@link KubernetesEnvBuildItem} to check whether it's valid with respect to the set of already
-     * known configuration, accumulating errors or outputting warnings if needed.
+     * Processes the specified {@link KubernetesEnvBuildItem} to check whether it's valid with respect to the set of
+     * already known configuration, accumulating errors or outputting warnings if needed.
      *
-     * @param item the {@link KubernetesEnvBuildItem} to validate
+     * @param item
+     *        the {@link KubernetesEnvBuildItem} to validate
      */
     void process(KubernetesEnvBuildItem item) {
         final String name = item.getName();
@@ -45,7 +47,8 @@ public class EnvVarValidator {
             // then go through already added items to check if the item needs to be added, warning logged or error added
             items.values().stream().filter(kebi -> name.equals(kebi.getName())).forEach(existing -> {
                 final KubernetesEnvBuildItem.EnvType existingType = existing.getType();
-                // if the type doesn't allow multiple definitions, we need to check if we're adding a "compatible" env var
+                // if the type doesn't allow multiple definitions, we need to check if we're adding a "compatible" env
+                // var
                 if (!existingType.allowMultipleDefinitions) {
                     // check if we have a conflict and thus an error
                     if (existingType.mightConflictWith(type)) {
@@ -84,7 +87,8 @@ public class EnvVarValidator {
     }
 
     private void addError(KubernetesEnvBuildItem item, KubernetesEnvBuildItem existing) {
-        final Set<KubernetesEnvBuildItem> inError = conflicting.computeIfAbsent(item.getName(), k -> new LinkedHashSet<>());
+        final Set<KubernetesEnvBuildItem> inError = conflicting.computeIfAbsent(item.getName(),
+                k -> new LinkedHashSet<>());
         inError.add(existing);
         inError.add(item);
     }
@@ -93,7 +97,9 @@ public class EnvVarValidator {
      * Retrieves a collection of validated {@link KubernetesEnvBuildItem} once all of them have been processed.
      *
      * @return a collection of validated {@link KubernetesEnvBuildItem}
-     * @throws IllegalArgumentException if the processed items result in an invalid configuration
+     *
+     * @throws IllegalArgumentException
+     *         if the processed items result in an invalid configuration
      */
     Collection<KubernetesEnvBuildItem> getBuildItems() {
         if (conflicting.isEmpty() && errors.isEmpty()) {
@@ -106,14 +112,11 @@ public class EnvVarValidator {
         String error = "\n";
         if (!conflicting.isEmpty()) {
             error += "\t+ Conflicts in environment variable definitions:\n";
-            error += conflicting.entrySet().stream()
-                    .map(e -> {
-                        final String conflicting = e.getValue().stream()
-                                .map(Object::toString)
-                                .collect(Collectors.joining(" redefined as "));
-                        return String.format("\t\t- '%s': first defined as %s", e.getKey(), conflicting);
-                    })
-                    .collect(Collectors.joining("\n"));
+            error += conflicting.entrySet().stream().map(e -> {
+                final String conflicting = e.getValue().stream().map(Object::toString)
+                        .collect(Collectors.joining(" redefined as "));
+                return String.format("\t\t- '%s': first defined as %s", e.getKey(), conflicting);
+            }).collect(Collectors.joining("\n"));
         }
         if (!errors.isEmpty()) {
             error += "\t+ Invalid declarations:\n";

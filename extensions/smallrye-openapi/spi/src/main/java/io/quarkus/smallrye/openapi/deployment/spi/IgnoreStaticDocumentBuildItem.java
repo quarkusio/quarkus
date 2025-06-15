@@ -12,7 +12,8 @@ public final class IgnoreStaticDocumentBuildItem extends MultiBuildItem {
     private Pattern urlIgnorePattern = null;
 
     /**
-     * @param urlIgnorePattern pattern to ignore when scanning static documents
+     * @param urlIgnorePattern
+     *        pattern to ignore when scanning static documents
      */
     public IgnoreStaticDocumentBuildItem(String urlIgnorePattern) {
         this.urlIgnorePattern = Pattern.compile(urlIgnorePattern);

@@ -21,9 +21,7 @@ import io.vertx.ext.web.RoutingContext;
 public class RoutingContextGrpcInterceptor implements ServerInterceptor, Prioritized {
 
     @Override
-    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
-            ServerCall<ReqT, RespT> call,
-            Metadata headers,
+    public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(ServerCall<ReqT, RespT> call, Metadata headers,
             ServerCallHandler<ReqT, RespT> next) {
 
         Context currentContext = Vertx.currentContext();

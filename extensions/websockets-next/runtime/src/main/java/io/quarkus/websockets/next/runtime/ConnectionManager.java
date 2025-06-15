@@ -95,8 +95,8 @@ public class ConnectionManager implements OpenConnections {
     }
 
     /**
-     *
      * @param endpoint
+     *
      * @return the connections for the given endpoint, never {@code null}
      */
     public Set<WebSocketConnection> getConnections(String endpoint) {

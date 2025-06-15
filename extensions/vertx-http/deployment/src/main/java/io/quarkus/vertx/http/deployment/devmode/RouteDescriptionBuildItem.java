@@ -11,14 +11,12 @@ public final class RouteDescriptionBuildItem extends MultiBuildItem {
 
     private RouteDescription description;
 
-    public RouteDescriptionBuildItem(String javaMethod, String path, String httpMethod, String[] produces, String[] consumes) {
+    public RouteDescriptionBuildItem(String javaMethod, String path, String httpMethod, String[] produces,
+            String[] consumes) {
         RouteDescription description = new RouteDescription();
 
         description.setBasePath(path);
-        description.addCall(new RouteMethodDescription(javaMethod,
-                httpMethod,
-                path,
-                getMediaType(produces),
+        description.addCall(new RouteMethodDescription(javaMethod, httpMethod, path, getMediaType(produces),
                 getMediaType(consumes)));
 
         this.description = description;

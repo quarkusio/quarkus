@@ -15,11 +15,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class SimpleDelayedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("jobs.delay=1s"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("jobs.delay=1s"), "application.properties"));
 
     @Test
     public void testDelayedJobs() throws InterruptedException {

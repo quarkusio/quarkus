@@ -45,8 +45,8 @@ public class CompileOnlyDependencyDevModeTest extends QuarkusDevGradleTestBase {
         replace("src/main/java/io/playground/MyEntity.java", ImmutableMap.of("String field;", "String field2;"));
 
         // Edit the "Hello" message for the new field.
-        replace("src/main/java/io/playground/HelloResource.java", ImmutableMap.of("return MyEntity_.FIELD;",
-                "return MyEntity_.FIELD2;"));
+        replace("src/main/java/io/playground/HelloResource.java",
+                ImmutableMap.of("return MyEntity_.FIELD;", "return MyEntity_.FIELD2;"));
 
         assertUpdatedResponseContains("/hello", "hello lombok!", 5, TimeUnit.MINUTES);
         assertUpdatedResponseContains("/hello/jpa", "field2", 5, TimeUnit.MINUTES);

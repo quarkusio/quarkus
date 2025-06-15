@@ -22,8 +22,7 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup
 
     @Override
     public long append(K key, V value) {
-        return reactive.append(key, value)
-                .await().atMost(timeout);
+        return reactive.append(key, value).await().atMost(timeout);
     }
 
     @Override
@@ -48,26 +47,22 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup
 
     @Override
     public V getex(K key, GetExArgs args) {
-        return reactive.getex(key, args)
-                .await().atMost(timeout);
+        return reactive.getex(key, args).await().atMost(timeout);
     }
 
     @Override
     public V getex(K key, io.quarkus.redis.datasource.value.GetExArgs args) {
-        return reactive.getex(key, args)
-                .await().atMost(timeout);
+        return reactive.getex(key, args).await().atMost(timeout);
     }
 
     @Override
     public String getrange(K key, long start, long end) {
-        return reactive.getrange(key, start, end)
-                .await().atMost(timeout);
+        return reactive.getrange(key, start, end).await().atMost(timeout);
     }
 
     @Override
     public V getset(K key, V value) {
-        return reactive.getset(key, value)
-                .await().atMost(timeout);
+        return reactive.getset(key, value).await().atMost(timeout);
     }
 
     @Override
@@ -87,86 +82,72 @@ public class BlockingStringCommandsImpl<K, V> extends AbstractRedisCommandGroup
 
     @Override
     public String lcs(K key1, K key2) {
-        return reactive.lcs(key1, key2)
-                .await().atMost(timeout);
+        return reactive.lcs(key1, key2).await().atMost(timeout);
     }
 
     @Override
     public long lcsLength(K key1, K key2) {
-        return reactive.lcsLength(key1, key2)
-                .await().atMost(timeout);
+        return reactive.lcsLength(key1, key2).await().atMost(timeout);
     }
 
     @Override
     public Map<K, V> mget(K... keys) {
-        return reactive.mget(keys)
-                .await().atMost(timeout);
+        return reactive.mget(keys).await().atMost(timeout);
     }
 
     @Override
     public void mset(Map<K, V> map) {
-        reactive.mset(map)
-                .await().atMost(timeout);
+        reactive.mset(map).await().atMost(timeout);
     }
 
     @Override
     public boolean msetnx(Map<K, V> map) {
-        return reactive.msetnx(map)
-                .await().atMost(timeout);
+        return reactive.msetnx(map).await().atMost(timeout);
     }
 
     @Override
     public void set(K key, V value) {
-        reactive.set(key, value)
-                .await().atMost(timeout);
+        reactive.set(key, value).await().atMost(timeout);
     }
 
     @Override
     public void set(K key, V value, SetArgs setArgs) {
-        reactive.set(key, value, setArgs)
-                .await().atMost(timeout);
+        reactive.set(key, value, setArgs).await().atMost(timeout);
     }
 
     @Override
     public void set(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
-        reactive.set(key, value, setArgs)
-                .await().atMost(timeout);
+        reactive.set(key, value, setArgs).await().atMost(timeout);
     }
 
     @Override
     public V setGet(K key, V value) {
-        return reactive.setGet(key, value)
-                .await().atMost(timeout);
+        return reactive.setGet(key, value).await().atMost(timeout);
     }
 
     @Override
     public V setGet(K key, V value, SetArgs setArgs) {
-        return reactive.setGet(key, value, setArgs)
-                .await().atMost(timeout);
+        return reactive.setGet(key, value, setArgs).await().atMost(timeout);
     }
 
     @Override
     public V setGet(K key, V value, io.quarkus.redis.datasource.value.SetArgs setArgs) {
-        return reactive.setGet(key, value, setArgs)
-                .await().atMost(timeout);
+        return reactive.setGet(key, value, setArgs).await().atMost(timeout);
     }
 
     @Override
     public void setex(K key, long seconds, V value) {
-        reactive.setex(key, seconds, value)
-                .await().atMost(timeout);
+        reactive.setex(key, seconds, value).await().atMost(timeout);
     }
 
     @Override
     public void psetex(K key, long milliseconds, V value) {
-        reactive.psetex(key, milliseconds, value)
-                .await().atMost(timeout);
+        reactive.psetex(key, milliseconds, value).await().atMost(timeout);
     }
 
     @Override
     public boolean setnx(K key, V value) {
-        return reactive.setnx(key, value)
-                .await().atMost(timeout);
+        return reactive.setnx(key, value).await().atMost(timeout);
     }
 
     @Override

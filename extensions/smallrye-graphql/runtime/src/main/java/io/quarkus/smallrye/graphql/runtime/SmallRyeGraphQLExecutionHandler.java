@@ -56,8 +56,7 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private static final Logger log = Logger.getLogger(SmallRyeGraphQLExecutionHandler.class);
 
     public SmallRyeGraphQLExecutionHandler(boolean allowGet, boolean allowPostWithQueryParameters, boolean runBlocking,
-            CurrentIdentityAssociation currentIdentityAssociation,
-            CurrentVertxRequest currentVertxRequest) {
+            CurrentIdentityAssociation currentIdentityAssociation, CurrentVertxRequest currentVertxRequest) {
         super(currentIdentityAssociation, currentVertxRequest, runBlocking);
         this.allowGet = allowGet;
         this.allowPostWithQueryParameters = allowPostWithQueryParameters;
@@ -107,8 +106,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
                 JsonObject jsonObjectFromQueryParameters = getJsonObjectFromQueryParameters(ctx);
                 JsonObject mergedJsonObject;
                 if (jsonObjectFromBody != null) {
-                    mergedJsonObject = jsonProvider().createMergePatch(jsonObjectFromQueryParameters).apply(jsonObjectFromBody)
-                            .asJsonObject();
+                    mergedJsonObject = jsonProvider().createMergePatch(jsonObjectFromQueryParameters)
+                            .apply(jsonObjectFromBody).asJsonObject();
                 } else {
                     mergedJsonObject = jsonObjectFromQueryParameters;
                 }
@@ -296,9 +295,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private boolean isValidAcceptRequest(String mimeType) {
-        return mimeType.startsWith("application/json")
-                || mimeType.startsWith("application/graphql-response+json")
-                // application/graphql+json is incorrect, but we keep it for backwards compatibility
+        return mimeType.startsWith("application/json") || mimeType.startsWith("application/graphql-response+json")
+        // application/graphql+json is incorrect, but we keep it for backwards compatibility
                 || mimeType.startsWith("application/graphql+json");
     }
 
@@ -313,12 +311,10 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     private static final Pattern PATTERN_NEWLINE_OR_TAB = Pattern.compile("\\n|\\t|\\r");
 
     /**
-     * Strip away unescaped tabs and line breaks from the incoming JSON document so that it can be
-     * successfully parsed by a JSON parser.
-     * This does NOT remove properly escaped \n and \t inside the document, just the raw characters (ASCII
-     * values 9 and 10). Technically, this is not compliant with the JSON spec,
-     * but we want to seamlessly support queries from Java text blocks, for example,
-     * which preserve line breaks and tab characters.
+     * Strip away unescaped tabs and line breaks from the incoming JSON document so that it can be successfully parsed
+     * by a JSON parser. This does NOT remove properly escaped \n and \t inside the document, just the raw characters
+     * (ASCII values 9 and 10). Technically, this is not compliant with the JSON spec, but we want to seamlessly support
+     * queries from Java text blocks, for example, which preserve line breaks and tab characters.
      */
     private static String stripNewlinesAndTabs(final String input) {
         if (input == null || input.isEmpty()) {
@@ -329,8 +325,8 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
     }
 
     private boolean hasQueryParameters(RoutingContext ctx) {
-        return hasQueryParameter(ctx, QUERY) || hasQueryParameter(ctx, OPERATION_NAME) || hasQueryParameter(ctx, VARIABLES)
-                || hasQueryParameter(ctx, EXTENSIONS);
+        return hasQueryParameter(ctx, QUERY) || hasQueryParameter(ctx, OPERATION_NAME)
+                || hasQueryParameter(ctx, VARIABLES) || hasQueryParameter(ctx, EXTENSIONS);
     }
 
     private boolean hasQueryParameter(RoutingContext ctx, String parameterName) {
@@ -346,17 +342,11 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         }
     }
 
-    private void sendError(String errorMessage, HttpServerResponse response,
-            RoutingContext ctx, String requestedCharset) {
+    private void sendError(String errorMessage, HttpServerResponse response, RoutingContext ctx,
+            String requestedCharset) {
         VertxExecutionResponseWriter writer = new VertxExecutionResponseWriter(response, ctx, requestedCharset);
-        GraphQLError error = GraphqlErrorBuilder
-                .newError()
-                .message(errorMessage)
-                .build();
-        ExecutionResult executionResult = ExecutionResultImpl
-                .newExecutionResult()
-                .addError(error)
-                .build();
+        GraphQLError error = GraphqlErrorBuilder.newError().message(errorMessage).build();
+        ExecutionResult executionResult = ExecutionResultImpl.newExecutionResult().addError(error).build();
         ExecutionResponse executionResponse = new ExecutionResponse(executionResult);
         writer.write(executionResponse);
     }
@@ -392,18 +382,14 @@ public class SmallRyeGraphQLExecutionHandler extends SmallRyeGraphQLAbstractHand
         @Override
         public void write(ExecutionResponse er) {
             if (shouldFail(er)) {
-                er.getExecutionResult()
-                        .getErrors().stream()
-                        .filter(e -> e.getErrorType().equals(ErrorType.ExecutionAborted))
-                        .forEach(e -> {
+                er.getExecutionResult().getErrors().stream()
+                        .filter(e -> e.getErrorType().equals(ErrorType.ExecutionAborted)).forEach(e -> {
                             log.error("Execution aborted", (AbortExecutionException) e);
                         });
-                response.setStatusCode(500)
-                        .end();
+                response.setStatusCode(500).end();
             } else {
                 try {
-                    response.setStatusCode(200)
-                            .setStatusMessage(OK)
+                    response.setStatusCode(200).setStatusMessage(OK)
                             .end(Buffer.buffer(er.getExecutionResultAsString(), requestedCharset));
                 } catch (IllegalStateException ise) {
                     // The application already finished the request by itself for some reason

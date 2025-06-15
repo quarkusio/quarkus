@@ -90,8 +90,7 @@ public final class PanacheHibernateCommonResourceProcessor {
     @BuildStep
     @Consume(HibernateEnhancersRegisteredBuildItem.class)
     @Consume(InterceptedStaticMethodsTransformersRegisteredBuildItem.class)
-    void replaceFieldAccesses(CombinedIndexBuildItem index,
-            ApplicationArchivesBuildItem applicationArchivesBuildItem,
+    void replaceFieldAccesses(CombinedIndexBuildItem index, ApplicationArchivesBuildItem applicationArchivesBuildItem,
             Optional<HibernateMetamodelForFieldAccessBuildItem> modelInfoBuildItem,
             BuildProducer<BytecodeTransformerBuildItem> transformers) {
         if (modelInfoBuildItem.isEmpty()) {
@@ -108,13 +107,11 @@ public final class PanacheHibernateCommonResourceProcessor {
 
         // Generate accessors for externally accessible fields in entities, mapped superclasses
         // (and embeddables, see where we build modelInfo above).
-        PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(index.getIndex(),
-                modelInfo);
+        PanacheJpaEntityAccessorsEnhancer entityAccessorsEnhancer = new PanacheJpaEntityAccessorsEnhancer(
+                index.getIndex(), modelInfo);
         for (String entityClassName : entitiesWithExternallyAccessibleFields) {
             final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
-                    .setClassToTransform(entityClassName)
-                    .setCacheable(true)
-                    .setVisitorFunction(entityAccessorsEnhancer)
+                    .setClassToTransform(entityClassName).setCacheable(true).setVisitorFunction(entityAccessorsEnhancer)
                     .build();
             transformers.produce(transformation);
         }
@@ -135,16 +132,17 @@ public final class PanacheHibernateCommonResourceProcessor {
                     continue;
                 }
                 produced.add(cn);
-                //The following build item is not marked as CacheAble intentionally: see also https://github.com/quarkusio/quarkus/pull/40192#discussion_r1590605375.
-                //It shouldn't be too hard to improve on this by checking the related entities haven't been changed
-                //via LiveReloadBuildItem (#isLiveReload() && #getChangeInformation()) but I'm not comfortable in making this
-                //change without having solid integration tests.
+                // The following build item is not marked as CacheAble intentionally: see also
+                // https://github.com/quarkusio/quarkus/pull/40192#discussion_r1590605375.
+                // It shouldn't be too hard to improve on this by checking the related entities haven't been changed
+                // via LiveReloadBuildItem (#isLiveReload() && #getChangeInformation()) but I'm not comfortable in
+                // making this
+                // change without having solid integration tests.
                 final BytecodeTransformerBuildItem transformation = new BytecodeTransformerBuildItem.Builder()
-                        .setClassToTransform(cn)
-                        .setCacheable(false)//TODO this would be nice to improve on: see note above.
+                        .setClassToTransform(cn).setCacheable(false)// TODO this would be nice to improve on: see note
+                        // above.
                         .setVisitorFunction(panacheFieldAccessEnhancer)
-                        .setRequireConstPoolEntry(entityClassNamesInternal)
-                        .build();
+                        .setRequireConstPoolEntry(entityClassNamesInternal).build();
                 transformers.produce(transformation);
             }
         }
@@ -157,15 +155,13 @@ public final class PanacheHibernateCommonResourceProcessor {
         // because the corresponding `$_hibernate_{read/write}_*()` methods
         // will only be generated for classes mapped through *annotations*.
         boolean isManaged = classInfo.hasAnnotation(DOTNAME_ENTITY)
-                || classInfo.hasAnnotation(DOTNAME_MAPPED_SUPERCLASS)
-                || classInfo.hasAnnotation(DOTNAME_EMBEDDABLE);
+                || classInfo.hasAnnotation(DOTNAME_MAPPED_SUPERCLASS) || classInfo.hasAnnotation(DOTNAME_EMBEDDABLE);
         boolean willBeEnhancedByHibernateOrm = isManaged
                 // Records are immutable, thus never enhanced
                 && !classInfo.isRecord();
         for (FieldInfo fieldInfo : classInfo.fields()) {
             String name = fieldInfo.name();
-            if (!Modifier.isStatic(fieldInfo.flags())
-                    && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
+            if (!Modifier.isStatic(fieldInfo.flags()) && !fieldInfo.hasAnnotation(DOTNAME_TRANSIENT)) {
                 String librarySpecificGetterName;
                 String librarySpecificSetterName;
                 if (willBeEnhancedByHibernateOrm) {
@@ -176,8 +172,8 @@ public final class PanacheHibernateCommonResourceProcessor {
                     librarySpecificSetterName = null;
                 }
                 entityModel.addField(new EntityField(name, DescriptorUtils.typeToString(fieldInfo.type()),
-                        EntityField.Visibility.get(fieldInfo.flags()),
-                        librarySpecificGetterName, librarySpecificSetterName));
+                        EntityField.Visibility.get(fieldInfo.flags()), librarySpecificGetterName,
+                        librarySpecificSetterName));
             }
         }
         return entityModel;

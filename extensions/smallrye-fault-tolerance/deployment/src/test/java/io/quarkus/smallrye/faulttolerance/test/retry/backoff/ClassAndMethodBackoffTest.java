@@ -14,9 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ClassAndMethodBackoffTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ClassAndMethodBackoffService.class))
-            .assertException(e -> {
+            .withApplicationRoot((jar) -> jar.addClasses(ClassAndMethodBackoffService.class)).assertException(e -> {
                 assertEquals(DefinitionException.class, e.getClass());
                 assertTrue(e.getMessage().contains("Backoff annotation"));
                 assertTrue(e.getMessage().contains("@Retry is missing"));

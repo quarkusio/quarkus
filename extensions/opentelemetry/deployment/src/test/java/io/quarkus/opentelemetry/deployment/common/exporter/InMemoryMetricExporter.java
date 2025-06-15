@@ -36,8 +36,7 @@ import io.quarkus.arc.Unremovable;
 @ApplicationScoped
 public class InMemoryMetricExporter implements MetricExporter {
 
-    private static final List<String> KEY_COMPONENTS = List.of(HTTP_REQUEST_METHOD.getKey(),
-            HTTP_ROUTE.getKey(),
+    private static final List<String> KEY_COMPONENTS = List.of(HTTP_REQUEST_METHOD.getKey(), HTTP_ROUTE.getKey(),
             HTTP_RESPONSE_STATUS_CODE.getKey());
 
     private final Queue<MetricData> finishedMetricItems = new ConcurrentLinkedQueue<>();
@@ -46,42 +45,34 @@ public class InMemoryMetricExporter implements MetricExporter {
 
     public static Map<String, String> getPointAttributes(final MetricData metricData, final String path) {
         try {
-            return metricData.getData().getPoints().stream()
-                    .filter(point -> isPathFound(path, point.getAttributes()))
-                    .map(point -> point.getAttributes())
-                    .map(attributes1 -> attributes1.asMap())
+            return metricData.getData().getPoints().stream().filter(point -> isPathFound(path, point.getAttributes()))
+                    .map(point -> point.getAttributes()).map(attributes1 -> attributes1.asMap())
                     .flatMap(map -> map.entrySet().stream())
                     .collect(toMap(map -> map.getKey().toString(), map -> map.getValue().toString()));
         } catch (Exception e) {
             System.out.println("Error getting point attributes for " + metricData.getName());
-            metricData.getData().getPoints().stream()
-                    .filter(point -> isPathFound(path, point.getAttributes()))
-                    .map(point -> point.getAttributes())
-                    .map(attributes1 -> attributes1.asMap())
-                    .flatMap(map -> map.entrySet().stream())
-                    .forEach(attributeKeyObjectEntry -> System.out
+            metricData.getData().getPoints().stream().filter(point -> isPathFound(path, point.getAttributes()))
+                    .map(point -> point.getAttributes()).map(attributes1 -> attributes1.asMap())
+                    .flatMap(map -> map.entrySet().stream()).forEach(attributeKeyObjectEntry -> System.out
                             .println(attributeKeyObjectEntry.getKey() + " " + attributeKeyObjectEntry.getValue()));
             throw e;
         }
     }
 
     public static Map<String, PointData> getMostRecentPointsMap(List<MetricData> finishedMetricItems) {
-        return finishedMetricItems.stream()
-                .flatMap(metricData -> metricData.getData().getPoints().stream())
+        return finishedMetricItems.stream().flatMap(metricData -> metricData.getData().getPoints().stream())
                 // exclude data from /export endpoint
                 .filter(InMemoryMetricExporter::notExporterPointData)
                 // newer first
                 .sorted(Comparator.comparingLong(PointData::getEpochNanos).reversed())
-                .collect(toMap(
-                        pointData -> pointData.getAttributes().asMap().entrySet().stream()
-                                //valid attributes for the resulting map key
-                                .filter(entry -> KEY_COMPONENTS.contains(entry.getKey().getKey()))
-                                // ensure order
-                                .sorted(Comparator.comparing(o -> o.getKey().getKey()))
-                                // build key
-                                .map(entry -> entry.getKey().getKey() + ":" + entry.getValue().toString())
-                                .collect(joining(",")),
-                        pointData -> pointData,
+                .collect(toMap(pointData -> pointData.getAttributes().asMap().entrySet().stream()
+                        // valid attributes for the resulting map key
+                        .filter(entry -> KEY_COMPONENTS.contains(entry.getKey().getKey()))
+                        // ensure order
+                        .sorted(Comparator.comparing(o -> o.getKey().getKey()))
+                        // build key
+                        .map(entry -> entry.getKey().getKey() + ":" + entry.getValue().toString())
+                        .collect(joining(",")), pointData -> pointData,
                         // most recent points will surface
                         (older, newer) -> newer));
     }
@@ -91,8 +82,8 @@ public class InMemoryMetricExporter implements MetricExporter {
      */
     private static boolean notExporterPointData(PointData pointData) {
         return pointData.getAttributes().asMap().entrySet().stream()
-                .noneMatch(entry -> entry.getKey().getKey().equals(HTTP_ROUTE.getKey()) &&
-                        entry.getValue().toString().contains("/export"));
+                .noneMatch(entry -> entry.getKey().getKey().equals(HTTP_ROUTE.getKey())
+                        && entry.getValue().toString().contains("/export"));
     }
 
     private static boolean isPathFound(String path, Attributes attributes) {
@@ -122,17 +113,13 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     public void assertCountPointsAtLeast(final String name, final String target, final int countPoints) {
-        Awaitility.await().atMost(5, SECONDS)
-                .untilAsserted(() -> {
-                    List<MetricData> metricData = getFinishedMetricItems(name, target);
-                    Assertions.assertTrue(1 <= metricData.size());
-                    Assertions.assertTrue(countPoints <= metricData.stream()
-                            .reduce((first, second) -> second) // get the last received
-                            .orElse(null)
-                            .getData()
-                            .getPoints()
-                            .size());
-                });
+        Awaitility.await().atMost(5, SECONDS).untilAsserted(() -> {
+            List<MetricData> metricData = getFinishedMetricItems(name, target);
+            Assertions.assertTrue(1 <= metricData.size());
+            Assertions.assertTrue(countPoints <= metricData.stream().reduce((first, second) -> second) // get the last
+                    // received
+                    .orElse(null).getData().getPoints().size());
+        });
     }
 
     /**
@@ -145,17 +132,14 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     public List<MetricData> getFinishedMetricItems(final String name, final String target) {
-        return Collections.unmodifiableList(new ArrayList<>(
-                finishedMetricItems.stream()
-                        .filter(metricData -> metricData.getName().equals(name))
-                        .filter(metricData -> metricData.getData().getPoints().stream()
-                                .anyMatch(point -> isPathFound(target, point.getAttributes())))
-                        .collect(Collectors.toList())));
+        return Collections.unmodifiableList(new ArrayList<>(finishedMetricItems.stream()
+                .filter(metricData -> metricData.getName().equals(name)).filter(metricData -> metricData.getData()
+                        .getPoints().stream().anyMatch(point -> isPathFound(target, point.getAttributes())))
+                .collect(Collectors.toList())));
     }
 
     /**
      * Clears the internal {@code List} of finished {@code Metric}s.
-     *
      * <p>
      * Does not reset the state of this exporter if already shutdown.
      */
@@ -170,7 +154,6 @@ public class InMemoryMetricExporter implements MetricExporter {
 
     /**
      * Exports the collection of {@code Metric}s into the inmemory queue.
-     *
      * <p>
      * If this is called after {@code shutdown}, this will return {@code ResultCode.FAILURE}.
      */
@@ -184,8 +167,7 @@ public class InMemoryMetricExporter implements MetricExporter {
     }
 
     /**
-     * The InMemory exporter does not batch metrics, so this method will immediately return with
-     * success.
+     * The InMemory exporter does not batch metrics, so this method will immediately return with success.
      *
      * @return always Success
      */
@@ -196,7 +178,6 @@ public class InMemoryMetricExporter implements MetricExporter {
 
     /**
      * Clears the internal {@code List} of finished {@code Metric}s.
-     *
      * <p>
      * Any subsequent call to export() function on this MetricExporter, will return {@code
      * CompletableResultCode.ofFailure()}

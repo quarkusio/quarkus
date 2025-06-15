@@ -20,10 +20,9 @@ public class FilePartBodyHandler implements MessageBodyWriter<FilePart> {
         return FilePart.class.isAssignableFrom(type);
     }
 
-    public void writeTo(FilePart uploadFile, Class<?> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders,
-            OutputStream entityStream) throws IOException {
+    public void writeTo(FilePart uploadFile, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException {
         httpHeaders.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(uploadFile.count));
         doWrite(uploadFile, entityStream);
     }

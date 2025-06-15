@@ -15,20 +15,16 @@ import io.restassured.RestAssured;
 public class SimpleVertxResteasyReactiveTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClass(HelloResource.class);
-                }
-            });
+    static ResteasyReactiveUnitTest test = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(HelloResource.class);
+        }
+    });
 
     @Test
     public void helloWorldTest() {
-        RestAssured.get("/hello?name=Stu")
-                .then()
-                .body(equalTo("hello Stu"));
+        RestAssured.get("/hello?name=Stu").then().body(equalTo("hello Stu"));
     }
 
 }

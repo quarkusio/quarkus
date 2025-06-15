@@ -116,8 +116,7 @@ public class ResteasyReactiveScanningProcessor {
             @Override
             public void accept(ResourceInterceptors interceptors) {
                 ResteasyReactiveInterceptorScanner.scanForContainerRequestFilters(interceptors,
-                        combinedIndexBuildItem.getIndex(),
-                        applicationResultBuildItem.getResult());
+                        combinedIndexBuildItem.getIndex(), applicationResultBuildItem.getResult());
             }
         });
     }
@@ -135,7 +134,8 @@ public class ResteasyReactiveScanningProcessor {
         for (AnnotationInstance instance : index.getAnnotations(UnwrapException.class)) {
             AnnotationValue value = instance.value();
             if (value == null) {
-                // in this case we need to use the class where the annotation was placed as the exception to be unwrapped
+                // in this case we need to use the class where the annotation was placed as the exception to be
+                // unwrapped
 
                 AnnotationTarget target = instance.target();
                 if (target.kind() != AnnotationTarget.Kind.CLASS) {
@@ -180,8 +180,8 @@ public class ResteasyReactiveScanningProcessor {
             List<ExceptionMapperBuildItem> mappers, List<UnwrappedExceptionBuildItem> unwrappedExceptions,
             Capabilities capabilities) {
         AdditionalBeanBuildItem.Builder beanBuilder = AdditionalBeanBuildItem.builder().setUnremovable();
-        ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner
-                .scanForExceptionMappers(combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
+        ExceptionMapping exceptions = ResteasyReactiveExceptionMappingScanner.scanForExceptionMappers(
+                combinedIndexBuildItem.getComputingIndex(), applicationResultBuildItem.getResult());
 
         exceptions.addBlockingProblem(BlockingOperationNotAllowedException.class);
         exceptions.addBlockingProblem(BlockingNotAllowedException.class);
@@ -189,12 +189,11 @@ public class ResteasyReactiveScanningProcessor {
             exceptions.addUnwrappedException(bi.getThrowableClassName());
         }
         if (capabilities.isPresent(Capability.HIBERNATE_REACTIVE)) {
-            exceptions.addNonBlockingProblem(
-                    new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(IllegalStateException.class, "HR000068"));
+            exceptions.addNonBlockingProblem(new ExceptionMapping.ExceptionTypeAndMessageContainsPredicate(
+                    IllegalStateException.class, "HR000068"));
         }
 
-        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers()
-                .entrySet()) {
+        for (Map.Entry<String, ResourceExceptionMapper<? extends Throwable>> i : exceptions.getMappers().entrySet()) {
             beanBuilder.addBeanClass(i.getValue().getClassName());
         }
         for (ExceptionMapperBuildItem additionalExceptionMapper : mappers) {
@@ -202,8 +201,7 @@ public class ResteasyReactiveScanningProcessor {
                 beanBuilder.addBeanClass(additionalExceptionMapper.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(additionalExceptionMapper.getClassName())
-                                .build());
+                        .produce(ReflectiveClassBuildItem.builder(additionalExceptionMapper.getClassName()).build());
             }
             int priority = Priorities.USER;
             if (additionalExceptionMapper.getPriority() != null) {
@@ -251,8 +249,7 @@ public class ResteasyReactiveScanningProcessor {
                 beanBuilder.addBeanClass(additionalParamConverter.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(additionalParamConverter.getClassName())
-                                .build());
+                        .produce(ReflectiveClassBuildItem.builder(additionalParamConverter.getClassName()).build());
             }
             int priority = Priorities.USER;
             if (additionalParamConverter.getPriority() != null) {
@@ -276,8 +273,7 @@ public class ResteasyReactiveScanningProcessor {
         Set<String> features = ResteasyReactiveFeatureScanner.scanForDynamicFeatures(index,
                 applicationResultBuildItem.getResult());
         for (String dynamicFeatureClass : features) {
-            dynamicFeatureBuildItemBuildProducer
-                    .produce(new DynamicFeatureBuildItem(dynamicFeatureClass, true));
+            dynamicFeatureBuildItemBuildProducer.produce(new DynamicFeatureBuildItem(dynamicFeatureClass, true));
         }
     }
 
@@ -286,10 +282,10 @@ public class ResteasyReactiveScanningProcessor {
             ApplicationResultBuildItem applicationResultBuildItem,
             BuildProducer<JaxrsFeatureBuildItem> featureBuildItemBuildProducer) {
         IndexView index = combinedIndexBuildItem.getComputingIndex();
-        Set<String> features = ResteasyReactiveFeatureScanner.scanForFeatures(index, applicationResultBuildItem.getResult());
+        Set<String> features = ResteasyReactiveFeatureScanner.scanForFeatures(index,
+                applicationResultBuildItem.getResult());
         for (String feature : features) {
-            featureBuildItemBuildProducer
-                    .produce(new JaxrsFeatureBuildItem(feature, true));
+            featureBuildItemBuildProducer.produce(new JaxrsFeatureBuildItem(feature, true));
         }
     }
 
@@ -314,8 +310,7 @@ public class ResteasyReactiveScanningProcessor {
                 beanBuilder.addBeanClass(i.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(i.getClassName())
-                                .build());
+                        .produce(ReflectiveClassBuildItem.builder(i.getClassName()).build());
             }
             ResourceContextResolver resolver = new ResourceContextResolver();
             resolver.setClassName(i.getClassName());
@@ -324,8 +319,7 @@ public class ResteasyReactiveScanningProcessor {
                 resolvers.addContextResolver((Class) Class.forName(i.getProvidedType(), false,
                         Thread.currentThread().getContextClassLoader()), resolver);
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException(
-                        "Unable to load handled exception type " + i.getProvidedType(), e);
+                throw new RuntimeException("Unable to load handled exception type " + i.getProvidedType(), e);
             }
         }
         additionalBeanBuildItemBuildProducer.produce(beanBuilder.build());
@@ -344,19 +338,19 @@ public class ResteasyReactiveScanningProcessor {
             ApplicationScanningResult.KeepProviderResult keepProviderResult = applicationResultBuildItem.getResult()
                     .keepProvider(converterClass);
             if (keepProviderResult != ApplicationScanningResult.KeepProviderResult.DISCARD) {
-                AnnotationInstance priorityInstance = converterClass.declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
-                paramConverterBuildItemBuildProducer.produce(new ParamConverterBuildItem(converterClass.name().toString(),
-                        priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER, true));
+                AnnotationInstance priorityInstance = converterClass
+                        .declaredAnnotation(ResteasyReactiveDotNames.PRIORITY);
+                paramConverterBuildItemBuildProducer
+                        .produce(new ParamConverterBuildItem(converterClass.name().toString(),
+                                priorityInstance != null ? priorityInstance.value().asInt() : Priorities.USER, true));
             }
         }
 
     }
 
     @BuildStep
-    public void handleCustomAnnotatedMethods(
-            Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+    public void handleCustomAnnotatedMethods(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem, BuildProducer<GeneratedBeanBuildItem> generatedBean,
             List<CustomContainerRequestFilterBuildItem> customContainerRequestFilters,
             List<CustomContainerResponseFilterBuildItem> customContainerResponseFilters,
             List<CustomExceptionMapperBuildItem> customExceptionMappers,
@@ -372,19 +366,19 @@ public class ResteasyReactiveScanningProcessor {
                 || !customExceptionMappers.isEmpty()) {
             Indexer indexer = new Indexer();
             Set<DotName> additionalIndex = new HashSet<>();
-            //we have to use the non-computing index here
-            //the logic checks if the bean is already indexed, so the computing one breaks this
+            // we have to use the non-computing index here
+            // the logic checks if the bean is already indexed, so the computing one breaks this
             for (CustomContainerRequestFilterBuildItem filter : customContainerRequestFilters) {
-                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
-                        Thread.currentThread().getContextClassLoader());
+                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(),
+                        additionalIndex, Thread.currentThread().getContextClassLoader());
             }
             for (CustomContainerResponseFilterBuildItem filter : customContainerResponseFilters) {
-                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
-                        Thread.currentThread().getContextClassLoader());
+                IndexingUtil.indexClass(filter.getClassName(), indexer, combinedIndexBuildItem.getIndex(),
+                        additionalIndex, Thread.currentThread().getContextClassLoader());
             }
             for (CustomExceptionMapperBuildItem mapper : customExceptionMappers) {
-                IndexingUtil.indexClass(mapper.getClassName(), indexer, combinedIndexBuildItem.getIndex(), additionalIndex,
-                        Thread.currentThread().getContextClassLoader());
+                IndexingUtil.indexClass(mapper.getClassName(), indexer, combinedIndexBuildItem.getIndex(),
+                        additionalIndex, Thread.currentThread().getContextClassLoader());
             }
             index = CompositeIndex.create(index, indexer.complete());
         }
@@ -395,7 +389,8 @@ public class ResteasyReactiveScanningProcessor {
                     List<AnnotationInstance> methodAnnotations = methodInfo.annotations();
                     for (AnnotationInstance methodAnnotation : methodAnnotations) {
                         if (CONDITIONAL_BEAN_ANNOTATIONS.contains(methodAnnotation.name())) {
-                            throw new RuntimeException("The combination of '@" + methodAnnotation.name().withoutPackagePrefix()
+                            throw new RuntimeException("The combination of '@"
+                                    + methodAnnotation.name().withoutPackagePrefix()
                                     + "' and '@ServerRequestFilter' or '@ServerResponseFilter' is not allowed. Offending method is '"
                                     + methodInfo.name() + "' of class '" + methodInfo.declaringClass().name() + "'");
                         }
@@ -417,10 +412,8 @@ public class ResteasyReactiveScanningProcessor {
                 // the user class itself is made to be a bean as we want the user to be able to declare dependencies
                 additionalBeans.addBeanClass(generated.getDeclaringClassName());
                 ContainerRequestFilterBuildItem.Builder builder = new ContainerRequestFilterBuildItem.Builder(
-                        generated.getGeneratedClassName())
-                        .setRegisterAsBean(false) // it has already been made a bean
-                        .setPriority(generated.getPriority())
-                        .setPreMatching(generated.isPreMatching())
+                        generated.getGeneratedClassName()).setRegisterAsBean(false) // it has already been made a bean
+                        .setPriority(generated.getPriority()).setPreMatching(generated.isPreMatching())
                         .setNonBlockingRequired(generated.isNonBlocking())
                         .setWithFormRead(generated.isWithFormRead())
                         .setFilterSourceMethod(generated.getFilterSourceMethod());
@@ -433,8 +426,7 @@ public class ResteasyReactiveScanningProcessor {
                 // the user class itself is made to be a bean as we want the user to be able to declare dependencies
                 additionalBeans.addBeanClass(generated.getDeclaringClassName());
                 ContainerResponseFilterBuildItem.Builder builder = new ContainerResponseFilterBuildItem.Builder(
-                        generated.getGeneratedClassName())
-                        .setRegisterAsBean(false)// it has already been made a bean
+                        generated.getGeneratedClassName()).setRegisterAsBean(false)// it has already been made a bean
                         .setPriority(generated.getPriority())
                         .setFilterSourceMethod(generated.getFilterSourceMethod());
                 if (!generated.getNameBindingNames().isEmpty()) {
@@ -445,21 +437,22 @@ public class ResteasyReactiveScanningProcessor {
         }
         Set<MethodInfo> classLevelExceptionMappers = new HashSet<>(resourceScanningResultBuildItem
                 .map(s -> s.getResult().getClassLevelExceptionMappers()).orElse(Collections.emptyList()));
-        for (AnnotationInstance instance : index
-                .getAnnotations(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER)) {
+        for (AnnotationInstance instance : index.getAnnotations(ResteasyReactiveDotNames.SERVER_EXCEPTION_MAPPER)) {
             if (instance.target().kind() != AnnotationTarget.Kind.METHOD) {
                 continue;
             }
             MethodInfo methodInfo = instance.target().asMethod();
-            if (classLevelExceptionMappers.contains(methodInfo)) { // methods annotated with @ServerExceptionMapper that exist inside a Resource Class are handled differently
+            if (classLevelExceptionMappers.contains(methodInfo)) { // methods annotated with @ServerExceptionMapper that
+                                                                   // exist inside a Resource Class are handled
+                                                                   // differently
                 continue;
             }
             // the user class itself is made to be a bean as we want the user to be able to declare dependencies
             additionalBeans.addBeanClass(methodInfo.declaringClass().name().toString());
             Map<String, String> generatedClassNames = ServerExceptionMapperGenerator.generateGlobalMapper(methodInfo,
                     new GeneratedBeanGizmoAdaptor(generatedBean),
-                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT), Set.of(Unremovable.class.getName()),
-                    (m -> {
+                    Set.of(HTTP_SERVER_REQUEST, HTTP_SERVER_RESPONSE, ROUTING_CONTEXT),
+                    Set.of(Unremovable.class.getName()), (m -> {
                         List<AnnotationInstance> methodAnnotations = m.annotations();
                         for (AnnotationInstance methodAnnotation : methodAnnotations) {
                             if (CONDITIONAL_BEAN_ANNOTATIONS.contains(methodAnnotation.name())) {
@@ -480,8 +473,7 @@ public class ResteasyReactiveScanningProcessor {
                     }));
             for (Map.Entry<String, String> entry : generatedClassNames.entrySet()) {
                 ExceptionMapperBuildItem.Builder builder = new ExceptionMapperBuildItem.Builder(entry.getValue(),
-                        entry.getKey())
-                        .setRegisterAsBean(false) // it has already been made a bean
+                        entry.getKey()).setRegisterAsBean(false) // it has already been made a bean
                         .setDeclaringClass(methodInfo.declaringClass()); // we'll use this later on
                 AnnotationValue priorityValue = instance.value("priority");
                 if (priorityValue != null) {

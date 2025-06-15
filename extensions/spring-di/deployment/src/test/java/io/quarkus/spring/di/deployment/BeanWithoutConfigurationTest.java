@@ -16,8 +16,7 @@ public class BeanWithoutConfigurationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Service.class, SomeConfiguration.class, Consumer.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Service.class, SomeConfiguration.class, Consumer.class))
             .setExpectedException(DeploymentException.class);
 
     @Inject

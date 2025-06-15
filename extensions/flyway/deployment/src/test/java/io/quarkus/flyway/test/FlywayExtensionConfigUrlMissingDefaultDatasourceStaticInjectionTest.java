@@ -18,17 +18,16 @@ public class FlywayExtensionConfigUrlMissingDefaultDatasourceStaticInjectionTest
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             // The URL won't be missing if dev services are enabled
-            .overrideConfigKey("quarkus.devservices.enabled", "false")
-            .assertException(e -> assertThat(e)
+            .overrideConfigKey("quarkus.devservices.enabled", "false").assertException(e -> assertThat(e)
                     // Can't use isInstanceOf due to weird classloading in tests
                     .satisfies(t -> assertThat(t.getClass().getName()).isEqualTo(InactiveBeanException.class.getName()))
                     .hasMessageContainingAll(
                             "Flyway for datasource '<default>' was deactivated automatically because this datasource was deactivated",
                             "Datasource '<default>' was deactivated automatically because its URL is not set.",
-                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                            "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                            // hints
                             "To activate the datasource, set configuration property 'quarkus.datasource.jdbc.url'.",
-                            "Refer to https://quarkus.io/guides/datasource for guidance.",
-                            "This bean is injected into",
+                            "Refer to https://quarkus.io/guides/datasource for guidance.", "This bean is injected into",
                             MyBean.class.getName() + "#flyway"));
 
     @Inject

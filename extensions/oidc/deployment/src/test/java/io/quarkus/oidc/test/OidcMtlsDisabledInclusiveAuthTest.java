@@ -48,8 +48,7 @@ public class OidcMtlsDisabledInclusiveAuthTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MtlsBearerResource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MtlsBearerResource.class)
                     .addAsResource(new StringAsset(CONFIGURATION), "application.properties")
                     .addAsResource(new File("target/certs/mtls-test.key"), "server.key")
                     .addAsResource(new File("target/certs/mtls-test.crt"), "server.crt")
@@ -58,9 +57,11 @@ public class OidcMtlsDisabledInclusiveAuthTest {
     @Test
     public void testOidcHasHighestPriority() {
         givenWithCerts().get(BASE_URL + "only-mtls").then().statusCode(200).body(is("CN=localhost"));
-        givenWithCerts().auth().oauth2(getAccessToken()).get(BASE_URL + "only-bearer").then().statusCode(200).body(is("alice"));
+        givenWithCerts().auth().oauth2(getAccessToken()).get(BASE_URL + "only-bearer").then().statusCode(200)
+                .body(is("alice"));
         // this needs to be OIDC because when inclusive auth is disabled, OIDC has higher priority
-        givenWithCerts().auth().oauth2(getAccessToken()).get(BASE_URL + "both").then().statusCode(200).body(is("alice"));
+        givenWithCerts().auth().oauth2(getAccessToken()).get(BASE_URL + "both").then().statusCode(200)
+                .body(is("alice"));
         // OIDC must run first and thus authentication fails over invalid credentials
         givenWithCerts().auth().oauth2("invalid-token").get(BASE_URL + "both").then().statusCode(401);
         // mTLS authentication mechanism still runs when OIDC doesn't produce the identity
@@ -68,8 +69,7 @@ public class OidcMtlsDisabledInclusiveAuthTest {
     }
 
     private static RequestSpecification givenWithCerts() {
-        return RestAssured.given()
-                .keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
+        return RestAssured.given().keyStore("target/certs/mtls-test-client-keystore.p12", "secret")
                 .trustStore("target/certs/mtls-test-client-truststore.p12", "secret");
     }
 

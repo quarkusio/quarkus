@@ -55,10 +55,8 @@ public class OpenApiResourceSecuredAtMethodLevel {
         return "boo";
     }
 
-    @APIResponses({
-            @APIResponse(responseCode = "401", description = "Who are you?"),
-            @APIResponse(responseCode = "403", description = "You cannot do that.")
-    })
+    @APIResponses({ @APIResponse(responseCode = "401", description = "Who are you?"),
+            @APIResponse(responseCode = "403", description = "You cannot do that.") })
     @GET
     @Path("/test-security/annotated/documented")
     @RolesAllowed("admin")
@@ -67,10 +65,8 @@ public class OpenApiResourceSecuredAtMethodLevel {
         return "secret";
     }
 
-    @APIResponses({
-            @APIResponse(responseCode = "401", description = "Who are you?"),
-            @APIResponse(responseCode = "403", description = "You cannot do that.")
-    })
+    @APIResponses({ @APIResponse(responseCode = "401", description = "Who are you?"),
+            @APIResponse(responseCode = "403", description = "You cannot do that.") })
     @GET
     @Path("/test-security/methodLevel/3")
     @RolesAllowed("admin")

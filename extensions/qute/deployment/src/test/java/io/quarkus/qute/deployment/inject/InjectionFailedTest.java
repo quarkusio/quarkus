@@ -19,10 +19,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class InjectionFailedTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClass(Client.class)
-                    .addAsResource(new StringAsset("{this}"), "templates/bar.txt")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClass(Client.class).addAsResource(new StringAsset("{this}"), "templates/bar.txt")
                     .addAsResource(new StringAsset("<strong>{this}</strong>"), "templates/bar.qute.html")
                     .addAsResource(new StringAsset("{this}"), "templates/bars/baz.html"))
             .assertException(t -> {

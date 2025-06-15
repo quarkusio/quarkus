@@ -37,27 +37,19 @@ import io.smallrye.mutiny.Uni;
 public class ConditionalBeanFiltersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(WontBeEnabledFilter.class, WillBeEnabledFilter.class, AlwaysEnabledFilter.class,
-                                    TestResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(WontBeEnabledFilter.class, WillBeEnabledFilter.class,
+                    AlwaysEnabledFilter.class, TestResource.class);
+        }
+    });
 
     @Test
     public void testExpectedFilters() {
-        List<String> responseFiltersValues = get("/test/filters")
-                .then().statusCode(200)
-                .body(Matchers.is("void-on,response-on,uni-on,void-lookup-on,always"))
-                .extract()
-                .headers()
-                .getList("response-filters")
-                .stream()
-                .map(Header::getValue)
-                .collect(Collectors.toList());
+        List<String> responseFiltersValues = get("/test/filters").then().statusCode(200)
+                .body(Matchers.is("void-on,response-on,uni-on,void-lookup-on,always")).extract().headers()
+                .getList("response-filters").stream().map(Header::getValue).collect(Collectors.toList());
         assertThat(responseFiltersValues).containsOnly("always", "void-lookup-on", "void-on", "uni-on");
     }
 

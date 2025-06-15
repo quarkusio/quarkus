@@ -39,18 +39,18 @@ public class QuarkusConnectionProvider implements ConnectionProvider {
 
     @Override
     public boolean isUnwrappableAs(final Class unwrapType) {
-        return ConnectionProvider.class.equals(unwrapType) ||
-                QuarkusConnectionProvider.class.isAssignableFrom(unwrapType) ||
-                DataSource.class.isAssignableFrom(unwrapType) ||
-                AgroalDataSource.class.isAssignableFrom(unwrapType);
+        return ConnectionProvider.class.equals(unwrapType)
+                || QuarkusConnectionProvider.class.isAssignableFrom(unwrapType)
+                || DataSource.class.isAssignableFrom(unwrapType) || AgroalDataSource.class.isAssignableFrom(unwrapType);
     }
 
     @Override
     public <T> T unwrap(final Class<T> unwrapType) {
-        if (ConnectionProvider.class.equals(unwrapType) ||
-                QuarkusConnectionProvider.class.isAssignableFrom(unwrapType)) {
+        if (ConnectionProvider.class.equals(unwrapType)
+                || QuarkusConnectionProvider.class.isAssignableFrom(unwrapType)) {
             return (T) this;
-        } else if (DataSource.class.isAssignableFrom(unwrapType) || AgroalDataSource.class.isAssignableFrom(unwrapType)) {
+        } else if (DataSource.class.isAssignableFrom(unwrapType)
+                || AgroalDataSource.class.isAssignableFrom(unwrapType)) {
             return (T) dataSource;
         } else {
             throw new UnknownUnwrapTypeException(unwrapType);

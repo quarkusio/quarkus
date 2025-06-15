@@ -104,8 +104,7 @@ public class MetricDescriptor {
     }
 
     /**
-     * Ensure all hashcode/equals comparisons are against MetricDescriptor
-     * data (not ancillary MP Config additions).
+     * Ensure all hashcode/equals comparisons are against MetricDescriptor data (not ancillary MP Config additions).
      */
     static class ExtendedMetricID extends MetricID {
         final MetricDescriptor source;

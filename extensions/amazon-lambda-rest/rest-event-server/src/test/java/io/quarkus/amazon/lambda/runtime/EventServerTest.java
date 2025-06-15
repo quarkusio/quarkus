@@ -51,8 +51,7 @@ public class EventServerTest {
     public void testServer() throws Exception {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget base = client.target("http://localhost:" + MockEventServer.DEFAULT_PORT);
-        Future<Response> lambdaInvoke = base.request().async()
-                .post(Entity.text("Hello World"));
+        Future<Response> lambdaInvoke = base.request().async().post(Entity.text("Hello World"));
 
         Response next = base.path(MockEventServer.NEXT_INVOCATION).request().get();
         Assertions.assertEquals(200, next.getStatus());
@@ -71,8 +70,8 @@ public class EventServerTest {
         res.setHeaders(new HashMap());
         res.getHeaders().put("Content-Type", "text/plain");
         res.setBody("Hi");
-        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response")
-                .request().post(Entity.json(resWriter.writeValueAsString(res)));
+        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response").request()
+                .post(Entity.json(resWriter.writeValueAsString(res)));
         Assertions.assertEquals(204, sendResponse.getStatus());
         sendResponse.close();
 
@@ -86,8 +85,7 @@ public class EventServerTest {
     public void testDateHeaders() throws Exception {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget base = client.target("http://localhost:" + MockEventServer.DEFAULT_PORT);
-        Future<Response> lambdaInvoke = base.request().async()
-                .post(Entity.text("Hello World"));
+        Future<Response> lambdaInvoke = base.request().async().post(Entity.text("Hello World"));
 
         Response next = base.path(MockEventServer.NEXT_INVOCATION).request().get();
         Assertions.assertEquals(200, next.getStatus());
@@ -109,8 +107,8 @@ public class EventServerTest {
         res.getMultiValueHeaders().add("Expires", "Tue, 26 Oct 2021 01:01:01 GMT");
         res.getMultiValueHeaders().add("Date", "Tue, 26 Oct 2021 01:01:01 GMT");
         res.setBody("Hi");
-        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response")
-                .request().post(Entity.json(resWriter.writeValueAsString(res)));
+        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response").request()
+                .post(Entity.json(resWriter.writeValueAsString(res)));
         Assertions.assertEquals(204, sendResponse.getStatus());
         sendResponse.close();
 
@@ -118,7 +116,8 @@ public class EventServerTest {
         Assertions.assertEquals(201, lambdaResponse.getStatus());
         Assertions.assertEquals("Hi", lambdaResponse.readEntity(String.class));
         Assertions.assertTrue(lambdaResponse.getStringHeaders().containsKey("Content-Type"));
-        Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Last-Modified"));
+        Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT",
+                lambdaResponse.getStringHeaders().getFirst("Last-Modified"));
         Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Expires"));
         Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Date"));
         lambdaResponse.close();
@@ -128,9 +127,7 @@ public class EventServerTest {
     public void testQueryParameters() throws Exception {
         Client client = ClientBuilder.newBuilder().build();
         WebTarget base = client.target("http://localhost:" + MockEventServer.DEFAULT_PORT);
-        Future<Response> lambdaInvoke = base.queryParam("foo", "bar")
-                .queryParam("bar", "").request().async()
-                .get();
+        Future<Response> lambdaInvoke = base.queryParam("foo", "bar").queryParam("bar", "").request().async().get();
 
         Response next = base.path(MockEventServer.NEXT_INVOCATION).request().get();
         Assertions.assertEquals(200, next.getStatus());
@@ -152,8 +149,8 @@ public class EventServerTest {
         res.getMultiValueHeaders().add("Expires", "Tue, 26 Oct 2021 01:01:01 GMT");
         res.getMultiValueHeaders().add("Date", "Tue, 26 Oct 2021 01:01:01 GMT");
         res.setBody("Hi");
-        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response")
-                .request().post(Entity.json(resWriter.writeValueAsString(res)));
+        Response sendResponse = base.path(MockEventServer.INVOCATION).path(requestId).path("response").request()
+                .post(Entity.json(resWriter.writeValueAsString(res)));
         Assertions.assertEquals(204, sendResponse.getStatus());
         sendResponse.close();
 
@@ -161,7 +158,8 @@ public class EventServerTest {
         Assertions.assertEquals(201, lambdaResponse.getStatus());
         Assertions.assertEquals("Hi", lambdaResponse.readEntity(String.class));
         Assertions.assertTrue(lambdaResponse.getStringHeaders().containsKey("Content-Type"));
-        Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Last-Modified"));
+        Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT",
+                lambdaResponse.getStringHeaders().getFirst("Last-Modified"));
         Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Expires"));
         Assertions.assertEquals("Tue, 26 Oct 2021 01:01:01 GMT", lambdaResponse.getStringHeaders().getFirst("Date"));
         lambdaResponse.close();

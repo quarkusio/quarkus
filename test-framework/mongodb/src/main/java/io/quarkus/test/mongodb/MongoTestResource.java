@@ -37,17 +37,16 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
     public static IFeatureAwareVersion version(Map<String, String> initArgs) {
         Optional<String> versionArg = Optional.ofNullable(initArgs.get(VERSION));
 
-        return versionArg.<IFeatureAwareVersion> map(Version.Main::valueOf)
-                .orElseGet(() -> versionArg.map(
-                        versionStr -> Versions.withFeatures(de.flapdoodle.embed.process.distribution.Version.of(versionStr)))
-                        .orElse(Version.Main.V7_0));
+        return versionArg.<IFeatureAwareVersion> map(Version.Main::valueOf).orElseGet(() -> versionArg.map(
+                versionStr -> Versions.withFeatures(de.flapdoodle.embed.process.distribution.Version.of(versionStr)))
+                .orElse(Version.Main.V7_0));
     }
 
     public static void forceExtendedSocketOptionsClassInit() {
         try {
-            //JDK bug workaround
-            //https://github.com/quarkusio/quarkus/issues/14424
-            //force class init to prevent possible deadlock when done by mongo threads
+            // JDK bug workaround
+            // https://github.com/quarkusio/quarkus/issues/14424
+            // force class init to prevent possible deadlock when done by mongo threads
             Class.forName("sun.net.ext.ExtendedSocketOptions", true, ClassLoader.getSystemClassLoader());
         } catch (ClassNotFoundException e) {
         }
@@ -65,12 +64,12 @@ public class MongoTestResource implements QuarkusTestResourceLifecycleManager {
 
         LOGGER.infof("Starting Mongo %s on port %s", version, port);
 
-        startedServer = Mongod.instance().withNet(Start.to(Net.class)
-                .initializedWith(Net.builder().from(Net.defaults()).port(port).build()))
+        startedServer = Mongod.instance()
+                .withNet(Start.to(Net.class).initializedWith(Net.builder().from(Net.defaults()).port(port).build()))
                 .withMongodArguments(Start.to(MongodArguments.class)
                         .initializedWith(MongodArguments.defaults().withUseNoJournal(false)))
-                .withProcessConfig(
-                        Start.to(ProcessConfig.class).initializedWith(ProcessConfig.defaults().withStopTimeoutInMillis(15_000)))
+                .withProcessConfig(Start.to(ProcessConfig.class)
+                        .initializedWith(ProcessConfig.defaults().withStopTimeoutInMillis(15_000)))
                 .start(version);
 
         return Collections.singletonMap("quarkus.mongodb.hosts", String.format("127.0.0.1:%d", port));

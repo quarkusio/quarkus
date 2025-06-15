@@ -56,9 +56,7 @@ public class JsonDistributionSummary extends AbstractDistributionSummary {
 
     @Override
     public Iterable<Measurement> measure() {
-        return Arrays.asList(
-                new Measurement(() -> (double) count(), Statistic.COUNT),
-                new Measurement(this::totalAmount, Statistic.TOTAL),
-                new Measurement(this::max, Statistic.MAX));
+        return Arrays.asList(new Measurement(() -> (double) count(), Statistic.COUNT),
+                new Measurement(this::totalAmount, Statistic.TOTAL), new Measurement(this::max, Statistic.MAX));
     }
 }

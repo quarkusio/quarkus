@@ -45,34 +45,24 @@ public class TopologyTopicsExtractTest {
     public Topology topologyWithStateStore() {
         StreamsBuilder builder = new StreamsBuilder();
 
-        KeyValueBytesStoreSupplier storeSupplier = Stores.persistentKeyValueStore(
-                "WEATHER_STATIONS_STORE");
+        KeyValueBytesStoreSupplier storeSupplier = Stores.persistentKeyValueStore("WEATHER_STATIONS_STORE");
 
         GlobalKTable<Integer, String> stations = builder.globalTable( // <1>
-                "WEATHER_STATIONS_TOPIC",
-                Consumed.with(Serdes.Integer(), Serdes.String()));
+                "WEATHER_STATIONS_TOPIC", Consumed.with(Serdes.Integer(), Serdes.String()));
 
         builder.stream( // <2>
-                "TEMPERATURE_VALUES_TOPIC",
-                Consumed.with(Serdes.Integer(), Serdes.String()))
-                .join( // <3>
-                        stations,
-                        (stationId, timestampAndValue) -> stationId,
-                        (timestampAndValue, station) -> {
+                "TEMPERATURE_VALUES_TOPIC", Consumed.with(Serdes.Integer(), Serdes.String())).join( // <3>
+                        stations, (stationId, timestampAndValue) -> stationId, (timestampAndValue, station) -> {
                             String[] parts = timestampAndValue.split(";");
                             return parts[0] + "," + parts[1] + "," + station;
                         })
                 .groupByKey() // <4>
                 .aggregate( // <5>
-                        String::new,
-                        (stationId, value, aggregation) -> aggregation + value,
-                        Materialized.<Integer, String> as(storeSupplier)
-                                .withKeySerde(Serdes.Integer())
+                        String::new, (stationId, value, aggregation) -> aggregation + value,
+                        Materialized.<Integer, String> as(storeSupplier).withKeySerde(Serdes.Integer())
                                 .withValueSerde(Serdes.String()))
-                .toStream()
-                .to( // <6>
-                        "TEMPERATURES_AGGREGATED_TOPIC",
-                        Produced.with(Serdes.Integer(), Serdes.String()));
+                .toStream().to( // <6>
+                        "TEMPERATURES_AGGREGATED_TOPIC", Produced.with(Serdes.Integer(), Serdes.String()));
 
         return builder.build();
     }
@@ -81,23 +71,20 @@ public class TopologyTopicsExtractTest {
     public Topology buildTopology() {
         StreamsBuilder builder = new StreamsBuilder();
 
-        KTable<Integer, String> categories = builder.table(
-                "streams-test-categories",
+        KTable<Integer, String> categories = builder.table("streams-test-categories",
                 Consumed.with(Serdes.Integer(), Serdes.String()));
 
         KStream<Integer, String> customers = builder
                 .stream("streams-test-customers", Consumed.with(Serdes.Integer(), Serdes.String()))
-                .selectKey((id, customer) -> customer.length())
-                .join(categories,
+                .selectKey((id, customer) -> customer.length()).join(categories,
                         (customer, category) -> "" + customer.length() + category.length(),
                         Joined.with(Serdes.Integer(), Serdes.String(), Serdes.String()));
 
         KeyValueBytesStoreSupplier storeSupplier = Stores.inMemoryKeyValueStore("countstore");
-        customers.groupByKey()
-                .count(Materialized.as(storeSupplier));
+        customers.groupByKey().count(Materialized.as(storeSupplier));
 
-        customers.selectKey((categoryId, customer) -> customer)
-                .to("streams-test-customers-processed", Produced.with(Serdes.String(), Serdes.String()));
+        customers.selectKey((categoryId, customer) -> customer).to("streams-test-customers-processed",
+                Produced.with(Serdes.String(), Serdes.String()));
 
         return builder.build();
     }

@@ -26,55 +26,41 @@ import io.restassured.RestAssured;
 @QuarkusTestResource(KeycloakTestResourceLifecycleManager.class)
 public class OidcClientFilterDevModeTest {
 
-    private static final Class<?>[] testClasses = {
-            FrontendResource.class,
-            ProtectedResource.class,
-            ProtectedResourceService.class,
-            ProtectedResourceServiceNamedOidcClient.class,
-            NamedOidcClientResource.class
-    };
+    private static final Class<?>[] testClasses = { FrontendResource.class, ProtectedResource.class,
+            ProtectedResourceService.class, ProtectedResourceServiceNamedOidcClient.class,
+            NamedOidcClientResource.class };
 
     @RegisterExtension
     static final QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
+            .withApplicationRoot((jar) -> jar.addClasses(testClasses)
                     .addAsResource("application-oidc-client-filter.properties", "application.properties"));
 
     @Test
     public void testGetUserName() {
-        RestAssured.when().get("/frontend/user-before-registering-provider")
-                .then()
-                .statusCode(401)
+        RestAssured.when().get("/frontend/user-before-registering-provider").then().statusCode(401)
                 .body(equalTo("ProtectedResourceService requires a token"));
-        test.modifyResourceFile("application.properties", s -> s.replace("#quarkus.resteasy-client-oidc-filter.register-filter",
-                "quarkus.resteasy-client-oidc-filter.register-filter"));
+        test.modifyResourceFile("application.properties",
+                s -> s.replace("#quarkus.resteasy-client-oidc-filter.register-filter",
+                        "quarkus.resteasy-client-oidc-filter.register-filter"));
 
         // OidcClient configuration is not complete - Quarkus should start - but 500 returned
-        RestAssured.when().get("/frontend/user-before-registering-provider")
-                .then()
-                .statusCode(500);
-        test.modifyResourceFile("application.properties", s -> s.replace("#quarkus.oidc-client.auth-server-url",
-                "quarkus.oidc-client.auth-server-url"));
+        RestAssured.when().get("/frontend/user-before-registering-provider").then().statusCode(500);
+        test.modifyResourceFile("application.properties",
+                s -> s.replace("#quarkus.oidc-client.auth-server-url", "quarkus.oidc-client.auth-server-url"));
 
         // token lifespan (3 secs) is less than the auto-refresh interval so the token should be refreshed immediately
-        RestAssured.when().get("/frontend/user-after-registering-provider")
-                .then()
-                .statusCode(200)
+        RestAssured.when().get("/frontend/user-after-registering-provider").then().statusCode(200)
                 .body(equalTo("alice"));
         checkLog();
 
         // here we test that user can optionally select named OidcClient like this @OidcClient("clientName")
         // even though 'quarkus.oidc-client-filter.register-filter' is enabled
-        RestAssured.when().get("/named-oidc-client/user-name")
-                .then()
-                .statusCode(200)
-                .body(equalTo("jdoe"));
+        RestAssured.when().get("/named-oidc-client/user-name").then().statusCode(200).body(equalTo("jdoe"));
     }
 
     private void checkLog() {
         final Path logDirectory = Paths.get(".", "target");
-        given().await().pollInterval(100, TimeUnit.MILLISECONDS)
-                .atMost(10, TimeUnit.SECONDS)
+        given().await().pollInterval(100, TimeUnit.MILLISECONDS).atMost(10, TimeUnit.SECONDS)
                 .untilAsserted(new ThrowingRunnable() {
                     @Override
                     public void run() throws Throwable {

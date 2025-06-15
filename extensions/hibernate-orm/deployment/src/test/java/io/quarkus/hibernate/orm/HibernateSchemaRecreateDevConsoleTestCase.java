@@ -20,10 +20,8 @@ public class HibernateSchemaRecreateDevConsoleTestCase extends DevUIJsonRPCTest 
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, MyEntityTestResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, MyEntityTestResource.class)
+                    .addAsResource("application.properties").addAsResource("import.sql"));
 
     public HibernateSchemaRecreateDevConsoleTestCase() {
         super("io.quarkus.quarkus-datasource");

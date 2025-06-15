@@ -54,7 +54,8 @@ public class RedisCacheProcessor {
 
     @BuildStep
     UnremovableBeanBuildItem redisClientUnremoveable() {
-        return UnremovableBeanBuildItem.beanTypes(io.vertx.redis.client.Redis.class, io.vertx.mutiny.redis.client.Redis.class);
+        return UnremovableBeanBuildItem.beanTypes(io.vertx.redis.client.Redis.class,
+                io.vertx.mutiny.redis.client.Redis.class);
     }
 
     @BuildStep
@@ -64,8 +65,7 @@ public class RedisCacheProcessor {
 
     @BuildStep
     void nativeImage(BuildProducer<ReflectiveClassBuildItem> producer) {
-        producer.produce(ReflectiveClassBuildItem.builder(CompositeCacheKey.class)
-                .reason(getClass().getName())
+        producer.produce(ReflectiveClassBuildItem.builder(CompositeCacheKey.class).reason(getClass().getName())
                 .methods().build());
     }
 
@@ -106,7 +106,8 @@ public class RedisCacheProcessor {
             }
 
             if (valueType == null && resolvedValuesTypesFromAnnotations.containsKey(cacheName)) {
-                // TODO: does it make sense to use the return type of method annotated with @CacheResult as the last resort or should it override the default cache config?
+                // TODO: does it make sense to use the return type of method annotated with @CacheResult as the last
+                // resort or should it override the default cache config?
                 valueType = typeToString(resolvedValuesTypesFromAnnotations.get(cacheName));
             }
 
@@ -125,7 +126,8 @@ public class RedisCacheProcessor {
         Map<String, Set<Type>> valueTypesFromAnnotations = new HashMap<>();
 
         // first go through @CacheResult instances and simply record the return types
-        for (AnnotationInstance instance : combinedIndex.getIndex().getAnnotations(CacheDeploymentConstants.CACHE_RESULT)) {
+        for (AnnotationInstance instance : combinedIndex.getIndex()
+                .getAnnotations(CacheDeploymentConstants.CACHE_RESULT)) {
             if (instance.target().kind() != METHOD) {
                 continue;
             }
@@ -158,7 +160,8 @@ public class RedisCacheProcessor {
             Set<Type> typeSet = entry.getValue();
             if (typeSet.size() != 1) {
                 LOGGER.debugv("Cache named '{0}' is used on methods with different result types", cacheName);
-                // TODO: when there are multiple types for the same @CacheResult, should we fail? Should we try and be smarter in determining the type?
+                // TODO: when there are multiple types for the same @CacheResult, should we fail? Should we try and be
+                // smarter in determining the type?
                 continue;
             }
 

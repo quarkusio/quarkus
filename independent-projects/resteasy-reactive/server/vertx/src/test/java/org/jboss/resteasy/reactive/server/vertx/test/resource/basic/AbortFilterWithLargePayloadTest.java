@@ -25,25 +25,20 @@ import io.restassured.RestAssured;
 public class AbortFilterWithLargePayloadTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(TestResource.class, AbortingFilter.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(TestResource.class, AbortingFilter.class);
+            return war;
+        }
+    });
 
     @Test
     public void test() {
-        RestAssured.get("/test")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("hello"));
+        RestAssured.get("/test").then().statusCode(200).body(Matchers.equalTo("hello"));
 
-        io.restassured.response.Response response = RestAssured.with().header("abort", "true").get("/test")
-                .then()
+        io.restassured.response.Response response = RestAssured.with().header("abort", "true").get("/test").then()
                 .statusCode(999).extract().response();
         Assertions.assertEquals(30464, response.body().asByteArray().length);
     }

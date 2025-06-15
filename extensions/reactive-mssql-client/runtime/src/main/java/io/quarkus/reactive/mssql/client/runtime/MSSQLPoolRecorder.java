@@ -74,8 +74,8 @@ public class MSSQLPoolRecorder {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
                 }
                 if (reactiveRuntimeConfig.getValue().dataSources().get(dataSourceName).reactive().url().isEmpty()) {
-                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
-                            "reactive.url"));
+                    return ActiveResult.inactive(
+                            DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName, "reactive.url"));
                 }
                 return ActiveResult.active();
             }
@@ -83,23 +83,17 @@ public class MSSQLPoolRecorder {
     }
 
     public Function<SyntheticCreationalContext<MSSQLPool>, MSSQLPool> configureMSSQLPool(RuntimeValue<Vertx> vertx,
-            Supplier<Integer> eventLoopCount,
-            String dataSourceName,
-            DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            Supplier<Integer> eventLoopCount, String dataSourceName, DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             DataSourcesReactiveRuntimeConfig dataSourcesReactiveRuntimeConfig,
-            DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig,
-            ShutdownContext shutdown) {
+            DataSourcesReactiveMSSQLConfig dataSourcesReactiveMSSQLConfig, ShutdownContext shutdown) {
 
         return new Function<>() {
             @Override
             public MSSQLPool apply(SyntheticCreationalContext<MSSQLPool> context) {
-                MSSQLPool pool = initialize((VertxInternal) vertx.getValue(),
-                        eventLoopCount.get(),
-                        dataSourceName,
+                MSSQLPool pool = initialize((VertxInternal) vertx.getValue(), eventLoopCount.get(), dataSourceName,
                         dataSourcesRuntimeConfig.dataSources().get(dataSourceName),
                         dataSourcesReactiveRuntimeConfig.dataSources().get(dataSourceName).reactive(),
-                        dataSourcesReactiveMSSQLConfig.dataSources().get(dataSourceName).reactive().mssql(),
-                        context);
+                        dataSourcesReactiveMSSQLConfig.dataSources().get(dataSourceName).reactive().mssql(), context);
 
                 shutdown.addShutdownTask(pool::close);
                 return pool;
@@ -119,23 +113,21 @@ public class MSSQLPoolRecorder {
         };
     }
 
-    private MSSQLPool initialize(VertxInternal vertx,
-            Integer eventLoopCount,
-            String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private MSSQLPool initialize(VertxInternal vertx, Integer eventLoopCount, String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig,
             SyntheticCreationalContext<MSSQLPool> context) {
         PoolOptions poolOptions = toPoolOptions(eventLoopCount, dataSourceReactiveRuntimeConfig);
         MSSQLConnectOptions mssqlConnectOptions = toMSSQLConnectOptions(dataSourceName, dataSourceRuntimeConfig,
                 dataSourceReactiveRuntimeConfig, dataSourceReactiveMSSQLConfig);
-        Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx, List.of(mssqlConnectOptions),
-                dataSourceRuntimeConfig);
+        Supplier<Future<MSSQLConnectOptions>> databasesSupplier = toDatabasesSupplier(vertx,
+                List.of(mssqlConnectOptions), dataSourceRuntimeConfig);
         return createPool(vertx, poolOptions, mssqlConnectOptions, dataSourceName, databasesSupplier, context);
     }
 
     private Supplier<Future<MSSQLConnectOptions>> toDatabasesSupplier(Vertx vertx,
-            List<MSSQLConnectOptions> mssqlConnectOptionsList,
-            DataSourceRuntimeConfig dataSourceRuntimeConfig) {
+            List<MSSQLConnectOptions> mssqlConnectOptionsList, DataSourceRuntimeConfig dataSourceRuntimeConfig) {
         Supplier<Future<MSSQLConnectOptions>> supplier;
         if (dataSourceRuntimeConfig.credentialsProvider().isPresent()) {
             String beanName = dataSourceRuntimeConfig.credentialsProviderName().orElse(null);
@@ -149,7 +141,8 @@ public class MSSQLPoolRecorder {
         return supplier;
     }
 
-    private PoolOptions toPoolOptions(Integer eventLoopCount, DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
+    private PoolOptions toPoolOptions(Integer eventLoopCount,
+            DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig) {
         PoolOptions poolOptions;
         poolOptions = new PoolOptions();
 
@@ -181,15 +174,16 @@ public class MSSQLPoolRecorder {
         return poolOptions;
     }
 
-    private MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName, DataSourceRuntimeConfig dataSourceRuntimeConfig,
+    private MSSQLConnectOptions toMSSQLConnectOptions(String dataSourceName,
+            DataSourceRuntimeConfig dataSourceRuntimeConfig,
             DataSourceReactiveRuntimeConfig dataSourceReactiveRuntimeConfig,
             DataSourceReactiveMSSQLConfig dataSourceReactiveMSSQLConfig) {
         MSSQLConnectOptions mssqlConnectOptions;
         if (dataSourceReactiveRuntimeConfig.url().isPresent()) {
             List<String> urls = dataSourceReactiveRuntimeConfig.url().get();
             if (urls.size() > 1) {
-                log.warn("The Reactive MSSQL client does not support multiple URLs. The first one will be used, and " +
-                        "others will be ignored.");
+                log.warn("The Reactive MSSQL client does not support multiple URLs. The first one will be used, and "
+                        + "others will be ignored.");
             }
             String url = urls.get(0);
             // clean up the URL to make migrations easier

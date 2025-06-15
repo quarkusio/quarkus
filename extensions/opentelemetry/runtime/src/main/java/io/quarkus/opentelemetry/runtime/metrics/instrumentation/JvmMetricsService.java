@@ -33,18 +33,11 @@ public class JvmMetricsService {
         }
 
         // Will only produce mandatory metrics for MP Telemetry 2.0
-        runtimeMetrics = RuntimeMetrics.builder(openTelemetry)
-                .disableFeature(CONTEXT_SWITCH_METRICS)
-                .disableFeature(CPU_COUNT_METRICS)
-                .disableFeature(LOCK_METRICS)
-                .disableFeature(MEMORY_ALLOCATION_METRICS)
-                .disableFeature(NETWORK_IO_METRICS)
-                .enableFeature(MEMORY_POOL_METRICS)
-                .enableFeature(GC_DURATION_METRICS)
-                .enableFeature(THREAD_METRICS)
-                .enableFeature(CLASS_LOAD_METRICS)
-                .enableFeature(CPU_UTILIZATION_METRICS)
-                .build();
+        runtimeMetrics = RuntimeMetrics.builder(openTelemetry).disableFeature(CONTEXT_SWITCH_METRICS)
+                .disableFeature(CPU_COUNT_METRICS).disableFeature(LOCK_METRICS)
+                .disableFeature(MEMORY_ALLOCATION_METRICS).disableFeature(NETWORK_IO_METRICS)
+                .enableFeature(MEMORY_POOL_METRICS).enableFeature(GC_DURATION_METRICS).enableFeature(THREAD_METRICS)
+                .enableFeature(CLASS_LOAD_METRICS).enableFeature(CPU_UTILIZATION_METRICS).build();
     }
 
     @PreDestroy

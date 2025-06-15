@@ -20,8 +20,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
     private static final Logger log = Logger.getLogger(LgtmResource.class.getName());
 
-    protected static final Set<String> SCRAPING_REGISTRIES = Set.of(
-            "io.micrometer.prometheus.PrometheusMeterRegistry");
+    protected static final Set<String> SCRAPING_REGISTRIES = Set.of("io.micrometer.prometheus.PrometheusMeterRegistry");
 
     protected static final Function<String, Boolean> TCCL_FN = s -> {
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -67,7 +66,8 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
         }
 
         if (result && (catalog != null && catalog.hasMicrometerOtlp())) {
-            log.warnf("Multiple Micrometer registries found - OTLP and %s, no Prometheus scrapping required.", foundRegistry);
+            log.warnf("Multiple Micrometer registries found - OTLP and %s, no Prometheus scrapping required.",
+                    foundRegistry);
             return false;
         }
 
@@ -99,8 +99,7 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
                 if (catalog != null && catalog.hasMicrometerOtlp()) {
 
                     containerConfigs.put("quarkus.micrometer.export.otlp.url",
-                            String.format("http://%s:%s/v1/metrics", host,
-                                    publicPort));
+                            String.format("http://%s:%s/v1/metrics", host, publicPort));
                 }
                 // No break, fall through
             case ContainerConstants.OTEL_GRPC_EXPORTER_PORT:
@@ -108,7 +107,8 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
                 break;
         }
 
-        // The OTLP port is probably one of the ports we already compared against, but at compile-time we don't know which one,
+        // The OTLP port is probably one of the ports we already compared against, but at compile-time we don't know
+        // which one,
         // so instead of doing this check as a fallthrough on the switch, do a normal if-check
         if (catalog != null && catalog.hasOpenTelemetry()) {
             final int privateOtlpPort = getPrivateOtlpPort();
@@ -135,7 +135,8 @@ public class LgtmResource extends ContainerResource<LgtmContainer, LgtmConfig> {
 
         containerConfigs.putAll(config(ContainerConstants.GRAFANA_PORT, host));
         containerConfigs.putAll(config(ContainerConstants.OTEL_HTTP_EXPORTER_PORT, host));
-        // Iff GRPC is the OTLP protocol, overwrite the otel-collector.url we just wrote with the correct grpc one, and set up the otlp endpoints
+        // Iff GRPC is the OTLP protocol, overwrite the otel-collector.url we just wrote with the correct grpc one, and
+        // set up the otlp endpoints
         if (ContainerConstants.OTEL_GRPC_PROTOCOL.equals(container.getOtlpProtocol())) {
             containerConfigs.putAll(config(ContainerConstants.OTEL_GRPC_EXPORTER_PORT, host));
         }

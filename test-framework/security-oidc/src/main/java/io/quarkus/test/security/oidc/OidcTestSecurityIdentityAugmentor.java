@@ -32,12 +32,9 @@ import io.vertx.core.json.JsonObject;
 
 public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAugmentor {
 
-    private static Map<String, ClaimType> standardClaimTypes = Map.of(
-            Claims.exp.name(), ClaimType.LONG,
-            Claims.iat.name(), ClaimType.LONG,
-            Claims.nbf.name(), ClaimType.LONG,
-            Claims.auth_time.name(), ClaimType.LONG,
-            Claims.email_verified.name(), ClaimType.BOOLEAN);
+    private static Map<String, ClaimType> standardClaimTypes = Map.of(Claims.exp.name(), ClaimType.LONG,
+            Claims.iat.name(), ClaimType.LONG, Claims.nbf.name(), ClaimType.LONG, Claims.auth_time.name(),
+            ClaimType.LONG, Claims.email_verified.name(), ClaimType.BOOLEAN);
 
     private static final PrivateKey privateKey;
     private Optional<String> issuer;
@@ -66,8 +63,8 @@ public class OidcTestSecurityIdentityAugmentor implements TestSecurityIdentityAu
             // JsonWebToken
             JsonObjectBuilder claims = jsonProvider().createObjectBuilder();
             claims.add(Claims.preferred_username.name(), identity.getPrincipal().getName());
-            claims.add(Claims.groups.name(),
-                    jsonProvider().createArrayBuilder(identity.getRoles().stream().collect(Collectors.toList())).build());
+            claims.add(Claims.groups.name(), jsonProvider()
+                    .createArrayBuilder(identity.getRoles().stream().collect(Collectors.toList())).build());
             if (oidcSecurity != null && oidcSecurity.claims() != null) {
                 for (Claim claim : oidcSecurity.claims()) {
                     Object claimValue = convertClaimValue(claim);

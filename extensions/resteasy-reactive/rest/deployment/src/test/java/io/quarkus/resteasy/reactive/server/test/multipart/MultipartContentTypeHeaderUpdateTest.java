@@ -34,26 +34,18 @@ public class MultipartContentTypeHeaderUpdateTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Resource.class, Input.class, MultipartDataInputTest.Result.class,
-                            SetMultipartContentTypeFilter.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Input.class,
+                    MultipartDataInputTest.Result.class, SetMultipartContentTypeFilter.class));
 
     @Test
     public void test() throws IOException {
-        var uploadedContent = RestAssured
-                .given()
-                .contentType(TO_BE_MULTIPART_MARKER)
-                .body("""
-                        --content_boundary\r
-                        Content-Disposition: form-data; name="text"; filename="my-file.txt"\r
-                        \r
-                        content\r
-                        --content_boundary--\r
-                        """.getBytes())
-                .post("/test")
-                .then()
-                .extract()
-                .asString();
+        var uploadedContent = RestAssured.given().contentType(TO_BE_MULTIPART_MARKER).body("""
+                --content_boundary\r
+                Content-Disposition: form-data; name="text"; filename="my-file.txt"\r
+                \r
+                content\r
+                --content_boundary--\r
+                """.getBytes()).post("/test").then().extract().asString();
 
         MatcherAssert.assertThat(uploadedContent, is("content"));
     }
@@ -84,7 +76,8 @@ public class MultipartContentTypeHeaderUpdateTest {
                 var parameters = new HashMap<>(mediaType.getParameters());
                 parameters.put("boundary", "content_boundary");
                 var multipartContentType = new MediaType("multipart", "form-data", parameters);
-                containerRequestContext.getHeaders().putSingle(HttpHeaders.CONTENT_TYPE, multipartContentType.toString());
+                containerRequestContext.getHeaders().putSingle(HttpHeaders.CONTENT_TYPE,
+                        multipartContentType.toString());
             }
         }
     }

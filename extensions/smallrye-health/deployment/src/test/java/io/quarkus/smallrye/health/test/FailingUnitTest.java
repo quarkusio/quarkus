@@ -21,10 +21,8 @@ import io.restassured.RestAssured;
 class FailingUnitTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FailingHealthCheck.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(FailingHealthCheck.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
     @Inject
     @Any
     Instance<HealthCheck> checks;

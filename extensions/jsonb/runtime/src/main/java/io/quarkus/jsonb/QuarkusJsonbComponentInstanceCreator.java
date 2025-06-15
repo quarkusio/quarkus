@@ -53,7 +53,8 @@ public class QuarkusJsonbComponentInstanceCreator implements JsonbComponentInsta
     private <T> Object fallbackCreate(Class<T> componentClass) {
         try {
             return componentClass.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
+        } catch (InstantiationException | IllegalAccessException | NoSuchMethodException
+                | InvocationTargetException e) {
             throw new IllegalStateException("Cannot instantiate JSON-B component: " + componentClass, e);
         }
     }

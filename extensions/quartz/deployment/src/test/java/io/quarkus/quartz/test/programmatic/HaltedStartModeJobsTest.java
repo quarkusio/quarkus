@@ -18,10 +18,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class HaltedStartModeJobsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addAsResource(new StringAsset("quarkus.scheduler.start-mode=halted"),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addAsResource(new StringAsset("quarkus.scheduler.start-mode=halted"), "application.properties"));
 
     @Inject
     Scheduler scheduler;
@@ -32,9 +30,7 @@ public class HaltedStartModeJobsTest {
     public void testScheduler() throws InterruptedException {
         assertFalse(scheduler.isRunning());
 
-        scheduler.newJob("foo")
-                .setInterval("1s")
-                .setTask(ec -> HaltedStartModeJobsTest.SYNC_LATCH.countDown())
+        scheduler.newJob("foo").setInterval("1s").setTask(ec -> HaltedStartModeJobsTest.SYNC_LATCH.countDown())
                 .schedule();
 
         scheduler.resume();

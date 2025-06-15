@@ -16,8 +16,8 @@ import io.quarkus.scheduler.common.runtime.SchedulerContext;
 @Recorder
 public class SchedulerRecorder {
 
-    public Supplier<Object> createContext(SchedulerConfig config,
-            List<MutableScheduledMethod> scheduledMethods, boolean forceSchedulerStart, String autoImplementation) {
+    public Supplier<Object> createContext(SchedulerConfig config, List<MutableScheduledMethod> scheduledMethods,
+            boolean forceSchedulerStart, String autoImplementation) {
         // Defensive design - make an immutable copy of the scheduled method metadata
         List<ScheduledMethod> metadata = immutableCopy(scheduledMethods);
         return new Supplier<Object>() {
@@ -55,8 +55,9 @@ public class SchedulerRecorder {
 
                     @Override
                     public boolean matchesImplementation(Scheduled scheduled, String implementation) {
-                        return scheduled.executeWith().equals(implementation) || ((autoImplementation.equals(implementation))
-                                && scheduled.executeWith().equals(Scheduled.AUTO));
+                        return scheduled.executeWith().equals(implementation)
+                                || ((autoImplementation.equals(implementation))
+                                        && scheduled.executeWith().equals(Scheduled.AUTO));
                     }
 
                     @Override
@@ -73,7 +74,8 @@ public class SchedulerRecorder {
         List<ScheduledMethod> metadata = new ArrayList<>(scheduledMethods.size());
         for (ScheduledMethod scheduledMethod : scheduledMethods) {
             metadata.add(new ImmutableScheduledMethod(scheduledMethod.getInvokerClassName(),
-                    scheduledMethod.getDeclaringClassName(), scheduledMethod.getMethodName(), scheduledMethod.getSchedules()));
+                    scheduledMethod.getDeclaringClassName(), scheduledMethod.getMethodName(),
+                    scheduledMethod.getSchedules()));
         }
         return List.copyOf(metadata);
     }

@@ -36,8 +36,8 @@ public class PostgreSQLServiceBindingConverter implements ServiceBindingConverte
 
             Map<String, String> sbProps = serviceBinding.getProperties();
 
-            //process ssl params
-            //https://www.postgresql.org/docs/14/libpq-connect.html
+            // process ssl params
+            // https://www.postgresql.org/docs/14/libpq-connect.html
             StringBuilder sslparam = new StringBuilder();
             String sslmode = sbProps.getOrDefault(SSL_MODE, "");
             String sslRootCert = sbProps.getOrDefault(SSL_ROOT_CERT, "");
@@ -48,13 +48,12 @@ public class PostgreSQLServiceBindingConverter implements ServiceBindingConverte
                 if (!"".equals(sslmode)) {
                     sslparam.append("&");
                 }
-                sslparam.append(SSL_ROOT_CERT).append("=")
-                        .append(serviceBinding.getBindingDirectory()).append(FileSystems.getDefault().getSeparator())
-                        .append(sslRootCert);
+                sslparam.append(SSL_ROOT_CERT).append("=").append(serviceBinding.getBindingDirectory())
+                        .append(FileSystems.getDefault().getSeparator()).append(sslRootCert);
             }
 
-            //cockroachdb cloud uses options parameter to pass in the cluster routing-id
-            //https://www.cockroachlabs.com/docs/v21.2/connection-parameters#additional-connection-parameters
+            // cockroachdb cloud uses options parameter to pass in the cluster routing-id
+            // https://www.cockroachlabs.com/docs/v21.2/connection-parameters#additional-connection-parameters
             String options = sbProps.getOrDefault(OPTIONS, "");
             String crdbOption = "";
             List<String> postgreOptions = new ArrayList<>();
@@ -84,7 +83,8 @@ public class PostgreSQLServiceBindingConverter implements ServiceBindingConverte
             }
 
             try {
-                combinedOptions = combinedOptions.length() > 0 ? OPTIONS + "=" + encode(combinedOptions).replace("+", "%20")
+                combinedOptions = combinedOptions.length() > 0
+                        ? OPTIONS + "=" + encode(combinedOptions).replace("+", "%20")
                         : "";
             } catch (UnsupportedEncodingException e) {
                 throw new IllegalArgumentException("failed to encode options params" + options, e);
@@ -97,7 +97,7 @@ public class PostgreSQLServiceBindingConverter implements ServiceBindingConverte
             }
 
             if (!"".equals(combinedOptions)) {
-                //append sslmode and options to the URL
+                // append sslmode and options to the URL
                 result += "?" + combinedOptions;
             }
 

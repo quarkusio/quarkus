@@ -30,11 +30,10 @@ public class ChangingCredentialsTestResource {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     public Uni<Response> connect() {
-        return client.query("SELECT CURRENT_USER").execute()
-                .map(pgRowSet -> {
-                    assertEquals(1, pgRowSet.size());
-                    return Response.ok(pgRowSet.iterator().next().getString(0)).build();
-                }).eventually(credentialsProvider::changeProperties);
+        return client.query("SELECT CURRENT_USER").execute().map(pgRowSet -> {
+            assertEquals(1, pgRowSet.size());
+            return Response.ok(pgRowSet.iterator().next().getString(0)).build();
+        }).eventually(credentialsProvider::changeProperties);
     }
 
 }

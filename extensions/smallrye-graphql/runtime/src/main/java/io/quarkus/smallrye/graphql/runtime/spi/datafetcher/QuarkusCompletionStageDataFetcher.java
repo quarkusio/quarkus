@@ -40,15 +40,12 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
         }
     }
 
-    private Uni<?> handleUserMethodCallNonBlocking(Object[] transformedArguments)
-            throws Exception {
-        return Uni.createFrom()
-                .completionStage((CompletionStage<?>) operationInvoker.invoke(transformedArguments));
+    private Uni<?> handleUserMethodCallNonBlocking(Object[] transformedArguments) throws Exception {
+        return Uni.createFrom().completionStage((CompletionStage<?>) operationInvoker.invoke(transformedArguments));
     }
 
     @SuppressWarnings("unchecked")
-    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments, Context vc)
-            throws Exception {
+    private Uni<?> handleUserMethodCallBlocking(Object[] transformedArguments, Context vc) throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
         final Promise<T> result = Promise.promise();
@@ -71,8 +68,7 @@ public class QuarkusCompletionStageDataFetcher<K, T> extends AbstractAsyncDataFe
     }
 
     @SuppressWarnings("unchecked")
-    private Uni<List<T>> handleUserBatchLoadBlocking(Object[] arguments, Context vc)
-            throws Exception {
+    private Uni<List<T>> handleUserBatchLoadBlocking(Object[] arguments, Context vc) throws Exception {
 
         SmallRyeThreadContext threadContext = Arc.container().select(SmallRyeThreadContext.class).get();
         final Promise<List<T>> result = Promise.promise();

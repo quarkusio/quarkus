@@ -18,9 +18,9 @@ import io.quarkus.maven.dependency.ResolvedDependency;
 import io.quarkus.paths.PathFilter;
 
 /**
- * Represents a Service Provider registration.
- * When processed, it embeds the service interface descriptor (META-INF/services/...) in the native image
- * and registers the classes returned by {@link #providers()} for reflection (instantiation only).
+ * Represents a Service Provider registration. When processed, it embeds the service interface descriptor
+ * (META-INF/services/...) in the native image and registers the classes returned by {@link #providers()} for reflection
+ * (instantiation only).
  */
 public final class ServiceProviderBuildItem extends MultiBuildItem {
 
@@ -31,17 +31,20 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
     private final List<String> providers;
 
     /**
-     * Creates and returns a {@link ServiceProviderBuildItem} for the {@code serviceInterfaceClassName} by including
-     * all the providers that are listed in the service interface descriptor file.
+     * Creates and returns a {@link ServiceProviderBuildItem} for the {@code serviceInterfaceClassName} by including all
+     * the providers that are listed in the service interface descriptor file.
      *
-     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
-     * @param serviceInterfaceDescriptorFile the path to the service interface descriptor file
+     * @param serviceInterfaceClassName
+     *        the interface whose service interface descriptor file we want to embed
+     * @param serviceInterfaceDescriptorFile
+     *        the path to the service interface descriptor file
+     *
      * @return
+     *
      * @throws IOException
      */
     public static ServiceProviderBuildItem allProviders(final String serviceInterfaceClassName,
-            final Path serviceInterfaceDescriptorFile)
-            throws IOException {
+            final Path serviceInterfaceDescriptorFile) throws IOException {
         if (serviceInterfaceClassName == null || serviceInterfaceClassName.trim().isEmpty()) {
             throw new IllegalArgumentException("service interface name cannot be null or blank");
         }
@@ -71,9 +74,13 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
      * {@code "META-INF/services/" + serviceInterfaceClassName} findable in the Context Class Loader of the current
      * thread.
      *
-     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
+     * @param serviceInterfaceClassName
+     *        the interface whose service interface descriptor file we want to embed
+     *
      * @return a new {@link ServiceProviderBuildItem}
-     * @throws RuntimeException wrapping any {@link IOException}s thrown when accessing class path resources
+     *
+     * @throws RuntimeException
+     *         wrapping any {@link IOException}s thrown when accessing class path resources
      */
     public static ServiceProviderBuildItem allProvidersFromClassPath(final String serviceInterfaceClassName) {
         if (serviceInterfaceClassName == null || serviceInterfaceClassName.trim().isEmpty()) {
@@ -81,91 +88,93 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
         }
         final String resourcePath = SPI_ROOT + serviceInterfaceClassName;
         try {
-            Set<String> implementations = ServiceUtil.classNamesNamedIn(
-                    Thread.currentThread().getContextClassLoader(),
+            Set<String> implementations = ServiceUtil.classNamesNamedIn(Thread.currentThread().getContextClassLoader(),
                     resourcePath);
-            return new ServiceProviderBuildItem(
-                    serviceInterfaceClassName,
-                    List.copyOf(implementations),
-                    false);
+            return new ServiceProviderBuildItem(serviceInterfaceClassName, List.copyOf(implementations), false);
         } catch (IOException e) {
             throw new RuntimeException("Could not read class path resources having path '" + resourcePath + "'", e);
         }
     }
 
     /**
-     * Creates a new {@link Collection} of {@code ServiceProviderBuildItem}s for the selected artifact.
-     * It includes all the providers, that are contained in all the service interface descriptor files defined in
+     * Creates a new {@link Collection} of {@code ServiceProviderBuildItem}s for the selected artifact. It includes all
+     * the providers, that are contained in all the service interface descriptor files defined in
      * {@code "META-INF/services/"} in the selected artifact.
      *
-     * @param dependencies the resolved dependencies of the build
-     * @param artifactCoordinates the coordinates of the artifact containing the service definitions
+     * @param dependencies
+     *        the resolved dependencies of the build
+     * @param artifactCoordinates
+     *        the coordinates of the artifact containing the service definitions
+     *
      * @return a {@link Collection} of {@code ServiceProviderBuildItem}s containing all the found service providers
      */
     public static Collection<ServiceProviderBuildItem> allProvidersOfDependency(
-            Collection<ResolvedDependency> dependencies,
-            ArtifactCoords artifactCoordinates) {
+            Collection<ResolvedDependency> dependencies, ArtifactCoords artifactCoordinates) {
 
         return allProvidersOfDependencies(dependencies, List.of(artifactCoordinates));
     }
 
     /**
-     * Creates a new {@link Collection} of {@code ServiceProviderBuildItem}s for the selected artifacts.
-     * It includes all the providers, that are contained in all the service interface descriptor files defined in
+     * Creates a new {@link Collection} of {@code ServiceProviderBuildItem}s for the selected artifacts. It includes all
+     * the providers, that are contained in all the service interface descriptor files defined in
      * {@code "META-INF/services/"} in all the selected artifacts.
      *
-     * @param dependencies the resolved dependencies of the build
-     * @param artifactCoordinatesCollection a {@link Collection} of coordinates of the artifacts containing the service
-     *        definitions
+     * @param dependencies
+     *        the resolved dependencies of the build
+     * @param artifactCoordinatesCollection
+     *        a {@link Collection} of coordinates of the artifacts containing the service definitions
+     *
      * @return a {@link Collection} of {@code ServiceProviderBuildItem}s containing all the found service providers
      */
     public static Collection<ServiceProviderBuildItem> allProvidersOfDependencies(
-            Collection<ResolvedDependency> dependencies,
-            Collection<ArtifactCoords> artifactCoordinatesCollection) {
+            Collection<ResolvedDependency> dependencies, Collection<ArtifactCoords> artifactCoordinatesCollection) {
 
         var resolver = ArtifactResourceResolver.of(dependencies, artifactCoordinatesCollection);
-        return resolver.resourcePathList(SPI_FILTER).stream()
-                .map(ServiceProviderBuildItem::ofSpiPath)
-                .toList();
+        return resolver.resourcePathList(SPI_FILTER).stream().map(ServiceProviderBuildItem::ofSpiPath).toList();
     }
 
     private static ServiceProviderBuildItem ofSpiPath(Path spiPath) {
-        return new ServiceProviderBuildItem(
-                spiPath.getFileName().toString(),
+        return new ServiceProviderBuildItem(spiPath.getFileName().toString(),
                 ServiceUtil.classNamesNamedIn(spiPath.toString()));
     }
 
     /**
-     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only)
-     * of the specified provider classes. Note that the service interface descriptor file has to exist and match the
-     * list of specified provider class names.
+     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only) of
+     * the specified provider classes. Note that the service interface descriptor file has to exist and match the list
+     * of specified provider class names.
      *
-     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
-     * @param providerClassNames the list of provider class names that must already be mentioned in the file
+     * @param serviceInterfaceClassName
+     *        the interface whose service interface descriptor file we want to embed
+     * @param providerClassNames
+     *        the list of provider class names that must already be mentioned in the file
      */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, String... providerClassNames) {
         this(serviceInterfaceClassName, List.of(providerClassNames), false);
     }
 
     /**
-     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only)
-     * of the specified provider classes. Note that the service interface descriptor file has to exist and match the
-     * list of specified provider class names.
+     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only) of
+     * the specified provider classes. Note that the service interface descriptor file has to exist and match the list
+     * of specified provider class names.
      *
-     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
-     * @param providers a collection of provider class names that must already be mentioned in the file
+     * @param serviceInterfaceClassName
+     *        the interface whose service interface descriptor file we want to embed
+     * @param providers
+     *        a collection of provider class names that must already be mentioned in the file
      */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, Collection<String> providers) {
         this(serviceInterfaceClassName, List.copyOf(providers), false);
     }
 
     /**
-     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only)
-     * of the specified provider classes. Note that the service interface descriptor file has to exist and match the
-     * list of specified provider class names.
+     * Registers the specified service interface descriptor to be embedded and allow reflection (instantiation only) of
+     * the specified provider classes. Note that the service interface descriptor file has to exist and match the list
+     * of specified provider class names.
      *
-     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
-     * @param providers the list of provider class names that must already be mentioned in the file
+     * @param serviceInterfaceClassName
+     *        the interface whose service interface descriptor file we want to embed
+     * @param providers
+     *        the list of provider class names that must already be mentioned in the file
      */
     public ServiceProviderBuildItem(String serviceInterfaceClassName, List<String> providers) {
         this(serviceInterfaceClassName, List.copyOf(providers), false);
@@ -174,13 +183,17 @@ public final class ServiceProviderBuildItem extends MultiBuildItem {
     /**
      * An internal overload that must be called with an immutable {@link List} of {@code providers}
      *
-     * @param serviceInterfaceClassName the interface whose service interface descriptor file we want to embed
-     * @param providers the list of provider class names that must already be mentioned in the file
-     * @param marker just a way to differentiate this constructor from {@link #ServiceProviderBuildItem(String, List)};
-     *        the value is ignored
+     * @param serviceInterfaceClassName
+     *        the interface whose service interface descriptor file we want to embed
+     * @param providers
+     *        the list of provider class names that must already be mentioned in the file
+     * @param marker
+     *        just a way to differentiate this constructor from {@link #ServiceProviderBuildItem(String, List)}; the
+     *        value is ignored
      */
     private ServiceProviderBuildItem(String serviceInterfaceClassName, List<String> providers, boolean marker) {
-        this.serviceInterface = Objects.requireNonNull(serviceInterfaceClassName, "The service interface must not be `null`");
+        this.serviceInterface = Objects.requireNonNull(serviceInterfaceClassName,
+                "The service interface must not be `null`");
         this.providers = providers;
 
         // Validation

@@ -26,12 +26,10 @@ class QuarkusComponentTestClassLoader extends ClassLoader {
     public Enumeration<URL> getResources(String name) throws IOException {
         if (("META-INF/services/" + ComponentsProvider.class.getName()).equals(name)) {
             // return URL that points to the correct components provider
-            return Collections.enumeration(Collections.singleton(componentsProviderFile.toURI()
-                    .toURL()));
+            return Collections.enumeration(Collections.singleton(componentsProviderFile.toURI().toURL()));
         } else if (resourceReferenceProviderFile != null
                 && ("META-INF/services/" + ResourceReferenceProvider.class.getName()).equals(name)) {
-            return Collections.enumeration(Collections.singleton(resourceReferenceProviderFile.toURI()
-                    .toURL()));
+            return Collections.enumeration(Collections.singleton(resourceReferenceProviderFile.toURI().toURL()));
         }
         return super.getResources(name);
     }

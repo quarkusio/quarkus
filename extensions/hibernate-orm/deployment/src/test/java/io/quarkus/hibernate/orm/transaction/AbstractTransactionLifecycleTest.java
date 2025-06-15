@@ -30,8 +30,8 @@ import io.quarkus.arc.Arc;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Check transaction lifecycle, including session flushes, the closing of the session,
- * and the release of JDBC resources.
+ * Check transaction lifecycle, including session flushes, the closing of the session, and the release of JDBC
+ * resources.
  */
 public abstract class AbstractTransactionLifecycleTest {
 
@@ -40,18 +40,22 @@ public abstract class AbstractTransactionLifecycleTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(SimpleEntity.class)
-                    .addAsResource("application.properties"))
+            .withApplicationRoot((jar) -> jar.addClass(SimpleEntity.class).addAsResource("application.properties"))
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     // Ignore these particular warnings: they are not relevant to this test.
-                    && !record.getMessage().contains("has been blocked for") //sometimes CI has a super slow moment and this triggers the blocked thread detector
+                    && !record.getMessage().contains("has been blocked for") // sometimes CI has a super slow moment and
+                                                                             // this triggers the blocked thread
+                                                                             // detector
                     && !record.getMessage().contains("Using Java versions older than 11 to build Quarkus applications")
-                    && !record.getMessage().contains("Agroal does not support detecting if a connection is still usable")
+                    && !record.getMessage()
+                            .contains("Agroal does not support detecting if a connection is still usable")
                     && !record.getMessage().contains("Netty DefaultChannelId initialization"))
-            .assertLogRecords(records -> assertThat(records)
-                    .extracting(LogRecord::getMessage) // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
+            .assertLogRecords(records -> assertThat(records).extracting(LogRecord::getMessage) // This is just to get
+                    // meaningful error
+                    // messages, as LogRecord
+                    // doesn't have a
+                    // toString()
                     .isEmpty());
 
     @BeforeAll
@@ -59,8 +63,8 @@ public abstract class AbstractTransactionLifecycleTest {
         AgroalDataSource dataSource = Arc.container().instance(AgroalDataSource.class).get();
         try (Connection conn = dataSource.getConnection()) {
             try (Statement st = conn.createStatement()) {
-                st.execute("CREATE ALIAS " + MyStoredProcedure.NAME
-                        + " FOR \"" + MyStoredProcedure.class.getName() + ".execute\"");
+                st.execute("CREATE ALIAS " + MyStoredProcedure.NAME + " FOR \"" + MyStoredProcedure.class.getName()
+                        + ".execute\"");
             }
         }
     }
@@ -71,31 +75,23 @@ public abstract class AbstractTransactionLifecycleTest {
         TestCRUD crud = crud();
 
         ValueAndExecutionMetadata<Void> created = crud.create(id, INITIAL_NAME);
-        checkPostConditions(created,
-                LifecycleOperation.FLUSH, LifecycleOperation.STATEMENT, // update
-                expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
-                LifecycleOperation.TRANSACTION_COMPLETION);
+        checkPostConditions(created, LifecycleOperation.FLUSH, LifecycleOperation.STATEMENT, // update
+                expectDoubleFlush() ? LifecycleOperation.FLUSH : null, LifecycleOperation.TRANSACTION_COMPLETION);
 
         ValueAndExecutionMetadata<String> retrieved = crud.retrieve(id);
-        checkPostConditions(retrieved,
-                LifecycleOperation.STATEMENT, // select
-                LifecycleOperation.FLUSH,
-                expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
+        checkPostConditions(retrieved, LifecycleOperation.STATEMENT, // select
+                LifecycleOperation.FLUSH, expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
                 LifecycleOperation.TRANSACTION_COMPLETION);
         assertThat(retrieved.value).isEqualTo(INITIAL_NAME);
 
         ValueAndExecutionMetadata<Void> updated = crud.update(id, UPDATED_NAME);
-        checkPostConditions(updated,
-                LifecycleOperation.STATEMENT, // select
+        checkPostConditions(updated, LifecycleOperation.STATEMENT, // select
                 LifecycleOperation.FLUSH, LifecycleOperation.STATEMENT, // update
-                expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
-                LifecycleOperation.TRANSACTION_COMPLETION);
+                expectDoubleFlush() ? LifecycleOperation.FLUSH : null, LifecycleOperation.TRANSACTION_COMPLETION);
 
         retrieved = crud.retrieve(id);
-        checkPostConditions(retrieved,
-                LifecycleOperation.STATEMENT, // select
-                LifecycleOperation.FLUSH,
-                expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
+        checkPostConditions(retrieved, LifecycleOperation.STATEMENT, // select
+                LifecycleOperation.FLUSH, expectDoubleFlush() ? LifecycleOperation.FLUSH : null,
                 LifecycleOperation.TRANSACTION_COMPLETION);
         assertThat(retrieved.value).isEqualTo(UPDATED_NAME);
 
@@ -107,15 +103,13 @@ public abstract class AbstractTransactionLifecycleTest {
         assertThat(calledStoredProcedure.value).isEqualTo(MyStoredProcedure.execute(id));
 
         ValueAndExecutionMetadata<Void> deleted = crud.delete(id);
-        checkPostConditions(deleted,
-                LifecycleOperation.STATEMENT, // select
+        checkPostConditions(deleted, LifecycleOperation.STATEMENT, // select
                 LifecycleOperation.FLUSH, LifecycleOperation.STATEMENT, // delete
                 // No double flush here, since there's nothing in the session after the first flush.
                 LifecycleOperation.TRANSACTION_COMPLETION);
 
         retrieved = crud.retrieve(id);
-        checkPostConditions(retrieved,
-                LifecycleOperation.STATEMENT, // select
+        checkPostConditions(retrieved, LifecycleOperation.STATEMENT, // select
                 LifecycleOperation.TRANSACTION_COMPLETION);
         assertThat(retrieved.value).isNull();
     }
@@ -124,13 +118,13 @@ public abstract class AbstractTransactionLifecycleTest {
 
     protected abstract boolean expectDoubleFlush();
 
-    private void checkPostConditions(ValueAndExecutionMetadata<?> result, LifecycleOperation... expectedOperationsArray) {
+    private void checkPostConditions(ValueAndExecutionMetadata<?> result,
+            LifecycleOperation... expectedOperationsArray) {
         List<LifecycleOperation> expectedOperations = new ArrayList<>();
         Collections.addAll(expectedOperations, expectedOperationsArray);
         expectedOperations.removeIf(Objects::isNull);
         // No extra statements or flushes
-        assertThat(result.listener.operations)
-                .containsExactlyElementsOf(expectedOperations);
+        assertThat(result.listener.operations).containsExactlyElementsOf(expectedOperations);
         // Session was closed automatically
         assertThat(result.sessionImplementor).returns(true, SharedSessionContractImplementor::isClosed);
     }
@@ -183,7 +177,8 @@ public abstract class AbstractTransactionLifecycleTest {
 
     protected static class ValueAndExecutionMetadata<T> {
 
-        public static <T> ValueAndExecutionMetadata<T> run(EntityManager entityManager, Function<EntityManager, T> action) {
+        public static <T> ValueAndExecutionMetadata<T> run(EntityManager entityManager,
+                Function<EntityManager, T> action) {
             LifecycleListener listener = new LifecycleListener();
             entityManager.unwrap(Session.class).addEventListeners(listener);
             T result = action.apply(entityManager);

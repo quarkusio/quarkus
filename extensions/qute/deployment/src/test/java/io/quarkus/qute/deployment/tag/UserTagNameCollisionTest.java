@@ -14,9 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class UserTagNameCollisionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("Hello from tag template!"), "templates/tags/hello.txt")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("Hello from tag template!"), "templates/tags/hello.txt")
                     .addAsResource(new StringAsset("Hello from regular template!"), "templates/hello.txt"));
 
     @Inject

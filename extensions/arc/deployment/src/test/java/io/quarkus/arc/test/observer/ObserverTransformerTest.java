@@ -38,8 +38,7 @@ public class ObserverTransformerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyObserver.class, AlphaQualifier.class, BravoQualifier.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyObserver.class, AlphaQualifier.class, BravoQualifier.class))
             .addBuildChainCustomizer(buildCustomizer());
 
     static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -61,8 +60,7 @@ public class ObserverTransformerTest {
                             @Override
                             public void transform(TransformationContext context) {
                                 if (context.getMethod().name().equals("onMyEventRemoveQualifiers")) {
-                                    context.transform()
-                                            .remove(annotation -> annotation.name().equals(ALPHA_QUALIFIER))
+                                    context.transform().remove(annotation -> annotation.name().equals(ALPHA_QUALIFIER))
                                             .done();
                                 }
                             }

@@ -23,24 +23,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class OptionsRequestTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, Filters.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, Filters.class);
+        }
+    });
 
     @Test
     public void testJsonHeaderAdded() {
-        String allowValue = when()
-                .options("/test")
-                .then()
-                .statusCode(200)
-                .header("Foo", equalTo("Bar"))
-                .body(is(emptyOrNullString()))
-                .extract().header("Allow");
+        String allowValue = when().options("/test").then().statusCode(200).header("Foo", equalTo("Bar"))
+                .body(is(emptyOrNullString())).extract().header("Allow");
 
         Assertions.assertThat(allowValue).contains("GET", "HEAD", "OPTIONS");
     }

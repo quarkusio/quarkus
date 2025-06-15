@@ -53,8 +53,7 @@ public class InjectionPermissionsAllowedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     SecuredBean securedBean;
@@ -70,8 +69,7 @@ public class InjectionPermissionsAllowedTest {
         assertFailureFor(() -> securedBean.injection("what", "ever", "?"), UnauthorizedException.class, anonymous);
         assertSuccess(securedBean.injectionNonBlocking("hello", "world", "!"), SUCCESS, user);
         assertFailureFor(securedBean.injectionNonBlocking("what", "ever", "?"), ForbiddenException.class, user);
-        assertFailureFor(securedBean.injectionNonBlocking("what", "ever", "?"), UnauthorizedException.class,
-                anonymous);
+        assertFailureFor(securedBean.injectionNonBlocking("what", "ever", "?"), UnauthorizedException.class, anonymous);
     }
 
     @PermissionsAllowed(value = IGNORED, permission = AllStrAutodetectedPermission.class)
@@ -91,7 +89,8 @@ public class InjectionPermissionsAllowedTest {
     public static class AllStrAutodetectedPermission extends Permission {
         private final boolean pass;
 
-        public AllStrAutodetectedPermission(String name, String[] actions, String hello, String world, String exclamationMark) {
+        public AllStrAutodetectedPermission(String name, String[] actions, String hello, String world,
+                String exclamationMark) {
             super(name);
             var sourceOfTruth = Arc.container().instance(SourceOfTruth.class).get();
             this.pass = "hello".equals(hello) && "world".equals(world) && "!".equals(exclamationMark)

@@ -127,76 +127,31 @@ public class OidcClientConfigBuilderTest {
     public void testSetEveryProperty() {
         var config = OidcClientConfig.builder()
                 // OidcClientConfig methods
-                .id("set-every-property-test")
-                .clientEnabled(false)
-                .scopes("one", "two")
-                .scopes(List.of("three", "four"))
-                .refreshTokenTimeSkew(Duration.ofSeconds(987))
-                .accessTokenExpiresIn(Duration.ofSeconds(789))
-                .absoluteExpiresIn(true)
-                .grant()
-                .type(Type.CODE)
-                .accessTokenProperty("access_token_test")
-                .refreshTokenProperty("refresh_token_test")
-                .expiresInProperty("expires_in_test")
-                .refreshExpiresInProperty("refresh_expires_in_test")
-                .end()
-                .grantOptions("one", "two", "three")
-                .grantOptions("four", Map.of("five", "six"))
-                .grantOptions(Map.of("seven", Map.of("eight", "nine")))
-                .earlyTokensAcquisition(false)
-                .headers("one", "two")
-                .headers(Map.of("three", "four"))
+                .id("set-every-property-test").clientEnabled(false).scopes("one", "two")
+                .scopes(List.of("three", "four")).refreshTokenTimeSkew(Duration.ofSeconds(987))
+                .accessTokenExpiresIn(Duration.ofSeconds(789)).absoluteExpiresIn(true).grant().type(Type.CODE)
+                .accessTokenProperty("access_token_test").refreshTokenProperty("refresh_token_test")
+                .expiresInProperty("expires_in_test").refreshExpiresInProperty("refresh_expires_in_test").end()
+                .grantOptions("one", "two", "three").grantOptions("four", Map.of("five", "six"))
+                .grantOptions(Map.of("seven", Map.of("eight", "nine"))).earlyTokensAcquisition(false)
+                .headers("one", "two").headers(Map.of("three", "four"))
                 // OidcClientCommonConfig methods
-                .tokenPath("token-path-yep")
-                .revokePath("revoke-path-yep")
-                .clientId("client-id-yep")
-                .clientName("client-name-yep")
-                .credentials()
-                .secret("secret-yep")
-                .clientSecret()
-                .method(Method.QUERY)
-                .value("value-yep")
-                .provider("key-yep", "name-yep", "keyring-name-yep")
-                .end()
-                .jwt()
-                .source(Source.BEARER)
-                .tokenPath(Path.of("janitor"))
-                .secretProvider()
-                .keyringName("jwt-keyring-name-yep")
-                .key("jwt-key-yep")
-                .name("jwt-name-yep")
-                .end()
-                .secret("jwt-secret-yep")
-                .key("jwt-key-yep")
-                .keyFile("jwt-key-file-yep")
-                .keyStoreFile("jwt-key-store-file-yep")
-                .keyStorePassword("jwt-key-store-password-yep")
-                .keyId("jwt-key-id-yep")
-                .keyPassword("jwt-key-pwd-yep")
-                .audience("jwt-audience-yep")
-                .tokenKeyId("jwt-token-key-id-yep")
-                .issuer("jwt-issuer")
-                .subject("jwt-subject")
-                .claim("claim-one-name", "claim-one-value")
-                .claims(Map.of("claim-two-name", "claim-two-value"))
-                .signatureAlgorithm("ES512")
-                .lifespan(852)
-                .assertion(true)
-                .endCredentials()
+                .tokenPath("token-path-yep").revokePath("revoke-path-yep").clientId("client-id-yep")
+                .clientName("client-name-yep").credentials().secret("secret-yep").clientSecret().method(Method.QUERY)
+                .value("value-yep").provider("key-yep", "name-yep", "keyring-name-yep").end().jwt()
+                .source(Source.BEARER).tokenPath(Path.of("janitor")).secretProvider()
+                .keyringName("jwt-keyring-name-yep").key("jwt-key-yep").name("jwt-name-yep").end()
+                .secret("jwt-secret-yep").key("jwt-key-yep").keyFile("jwt-key-file-yep")
+                .keyStoreFile("jwt-key-store-file-yep").keyStorePassword("jwt-key-store-password-yep")
+                .keyId("jwt-key-id-yep").keyPassword("jwt-key-pwd-yep").audience("jwt-audience-yep")
+                .tokenKeyId("jwt-token-key-id-yep").issuer("jwt-issuer").subject("jwt-subject")
+                .claim("claim-one-name", "claim-one-value").claims(Map.of("claim-two-name", "claim-two-value"))
+                .signatureAlgorithm("ES512").lifespan(852).assertion(true).endCredentials()
                 // OidcCommonConfig methods
-                .authServerUrl("we")
-                .discoveryEnabled(false)
-                .registrationPath("don't")
-                .connectionDelay(Duration.ofSeconds(656))
-                .connectionRetryCount(565)
-                .connectionTimeout(Duration.ofSeconds(673))
-                .useBlockingDnsLookup(true)
-                .maxPoolSize(376)
-                .followRedirects(false)
-                .proxy("need", 55, "no", "education")
-                .tlsConfigurationName("Teacher!")
-                .build();
+                .authServerUrl("we").discoveryEnabled(false).registrationPath("don't")
+                .connectionDelay(Duration.ofSeconds(656)).connectionRetryCount(565)
+                .connectionTimeout(Duration.ofSeconds(673)).useBlockingDnsLookup(true).maxPoolSize(376)
+                .followRedirects(false).proxy("need", 55, "no", "education").tlsConfigurationName("Teacher!").build();
 
         // OidcClientConfig methods
         assertEquals("set-every-property-test", config.id().orElse(null));
@@ -317,13 +272,9 @@ public class OidcClientConfigBuilderTest {
 
     @Test
     public void testCopyProxyProperties() {
-        var previousConfig = OidcClientConfig.builder()
-                .id("copy-proxy-properties-test")
-                .proxy("need", 55, "no", "education")
-                .build();
-        var newConfig = OidcClientConfig.builder(previousConfig)
-                .proxy("fast-car", 22)
-                .build();
+        var previousConfig = OidcClientConfig.builder().id("copy-proxy-properties-test")
+                .proxy("need", 55, "no", "education").build();
+        var newConfig = OidcClientConfig.builder(previousConfig).proxy("fast-car", 22).build();
 
         assertNotNull(previousConfig.proxy());
         assertEquals("copy-proxy-properties-test", newConfig.id().orElse(null));
@@ -337,27 +288,13 @@ public class OidcClientConfigBuilderTest {
     public void testCopyOidcClientConfigProperties() {
         var existingConfig = OidcClientConfig.builder()
                 // OidcClientConfig methods
-                .id("test-copy-client-props")
-                .clientEnabled(false)
-                .scopes("one", "two")
-                .scopes(List.of("three", "four"))
-                .refreshTokenTimeSkew(Duration.ofSeconds(987))
-                .accessTokenExpiresIn(Duration.ofSeconds(789))
-                .absoluteExpiresIn(true)
-                .grant()
-                .type(Type.CODE)
-                .accessTokenProperty("access_token_test")
-                .refreshTokenProperty("refresh_token_test")
-                .expiresInProperty("expires_in_test")
-                .refreshExpiresInProperty("refresh_expires_in_test")
-                .end()
-                .grantOptions("one", "two", "three")
-                .grantOptions("four", Map.of("five", "six"))
-                .grantOptions(Map.of("seven", Map.of("eight", "nine")))
-                .earlyTokensAcquisition(false)
-                .headers("one", "two")
-                .headers(Map.of("three", "four"))
-                .build();
+                .id("test-copy-client-props").clientEnabled(false).scopes("one", "two").scopes(List.of("three", "four"))
+                .refreshTokenTimeSkew(Duration.ofSeconds(987)).accessTokenExpiresIn(Duration.ofSeconds(789))
+                .absoluteExpiresIn(true).grant().type(Type.CODE).accessTokenProperty("access_token_test")
+                .refreshTokenProperty("refresh_token_test").expiresInProperty("expires_in_test")
+                .refreshExpiresInProperty("refresh_expires_in_test").end().grantOptions("one", "two", "three")
+                .grantOptions("four", Map.of("five", "six")).grantOptions(Map.of("seven", Map.of("eight", "nine")))
+                .earlyTokensAcquisition(false).headers("one", "two").headers(Map.of("three", "four")).build();
 
         // OidcClientConfig methods
         assertEquals("test-copy-client-props", existingConfig.id().orElse(null));
@@ -399,15 +336,9 @@ public class OidcClientConfigBuilderTest {
 
         var newConfig = OidcClientConfig.builder(existingConfig)
                 // OidcClientConfig methods
-                .clientEnabled(true)
-                .scopes("five", "six")
-                .accessTokenExpiresIn(Duration.ofSeconds(444))
-                .grant()
-                .accessTokenProperty("access_token_test-CHANGED")
-                .expiresInProperty("expires_in_test-CHANGED")
-                .end()
-                .earlyTokensAcquisition(true)
-                .build();
+                .clientEnabled(true).scopes("five", "six").accessTokenExpiresIn(Duration.ofSeconds(444)).grant()
+                .accessTokenProperty("access_token_test-CHANGED").expiresInProperty("expires_in_test-CHANGED").end()
+                .earlyTokensAcquisition(true).build();
 
         // OidcClientConfig methods
         assertEquals("test-copy-client-props", newConfig.id().orElse(null));
@@ -456,43 +387,17 @@ public class OidcClientConfigBuilderTest {
                 // OidcClientConfig methods
                 .id("copy-oidc-client-common-props")
                 // OidcClientCommonConfig methods
-                .tokenPath("token-path-yep")
-                .revokePath("revoke-path-yep")
-                .clientId("client-id-yep")
-                .clientName("client-name-yep")
-                .credentials()
-                .secret("secret-yep")
-                .clientSecret()
-                .method(Method.QUERY)
-                .value("value-yep")
-                .provider("key-yep", "name-yep", "keyring-name-yep")
-                .end()
-                .jwt()
-                .source(Source.BEARER)
-                .tokenPath(Path.of("robot"))
-                .secretProvider()
-                .keyringName("jwt-keyring-name-yep")
-                .key("jwt-key-yep")
-                .name("jwt-name-yep")
-                .end()
-                .secret("jwt-secret-yep")
-                .key("jwt-key-yep")
-                .keyFile("jwt-key-file-yep")
-                .keyStoreFile("jwt-key-store-file-yep")
-                .keyStorePassword("jwt-key-store-password-yep")
-                .keyId("jwt-key-id-yep")
-                .keyPassword("jwt-key-pwd-yep")
-                .audience("jwt-audience-yep")
-                .tokenKeyId("jwt-token-key-id-yep")
-                .issuer("jwt-issuer")
-                .subject("jwt-subject")
-                .claim("claim-one-name", "claim-one-value")
-                .claims(Map.of("claim-two-name", "claim-two-value"))
-                .signatureAlgorithm("ES512")
-                .lifespan(852)
-                .assertion(true)
-                .endCredentials()
-                .build();
+                .tokenPath("token-path-yep").revokePath("revoke-path-yep").clientId("client-id-yep")
+                .clientName("client-name-yep").credentials().secret("secret-yep").clientSecret().method(Method.QUERY)
+                .value("value-yep").provider("key-yep", "name-yep", "keyring-name-yep").end().jwt()
+                .source(Source.BEARER).tokenPath(Path.of("robot")).secretProvider().keyringName("jwt-keyring-name-yep")
+                .key("jwt-key-yep").name("jwt-name-yep").end().secret("jwt-secret-yep").key("jwt-key-yep")
+                .keyFile("jwt-key-file-yep").keyStoreFile("jwt-key-store-file-yep")
+                .keyStorePassword("jwt-key-store-password-yep").keyId("jwt-key-id-yep").keyPassword("jwt-key-pwd-yep")
+                .audience("jwt-audience-yep").tokenKeyId("jwt-token-key-id-yep").issuer("jwt-issuer")
+                .subject("jwt-subject").claim("claim-one-name", "claim-one-value")
+                .claims(Map.of("claim-two-name", "claim-two-value")).signatureAlgorithm("ES512").lifespan(852)
+                .assertion(true).endCredentials().build();
 
         assertEquals("copy-oidc-client-common-props", existingConfig.id().orElse(null));
 
@@ -546,26 +451,12 @@ public class OidcClientConfigBuilderTest {
 
         var newConfig = OidcClientConfig.builder(existingConfig)
                 // OidcClientCommonConfig methods
-                .tokenPath("token-path-yep-CHANGED")
-                .clientId("client-id-yep-CHANGED")
-                .credentials()
-                .secret("secret-yep-CHANGED")
-                .clientSecret("val-1", Method.POST_JWT)
-                .jwt()
-                .secret("different-secret")
-                .secretProvider()
-                .key("jwt-key-yep-CHANGED")
-                .end()
-                .key("jwt-key-yep-CHANGED-2")
-                .keyStoreFile("jwt-key-store-file-yep-CHANGED")
-                .keyPassword("jwt-key-pwd-yep-CHANGED")
-                .issuer("jwt-issuer-CHANGED")
-                .claim("aaa", "bbb")
-                .lifespan(333)
-                .end()
-                .clientSecret("val-1", Method.POST_JWT)
-                .end()
-                .build();
+                .tokenPath("token-path-yep-CHANGED").clientId("client-id-yep-CHANGED").credentials()
+                .secret("secret-yep-CHANGED").clientSecret("val-1", Method.POST_JWT).jwt().secret("different-secret")
+                .secretProvider().key("jwt-key-yep-CHANGED").end().key("jwt-key-yep-CHANGED-2")
+                .keyStoreFile("jwt-key-store-file-yep-CHANGED").keyPassword("jwt-key-pwd-yep-CHANGED")
+                .issuer("jwt-issuer-CHANGED").claim("aaa", "bbb").lifespan(333).end()
+                .clientSecret("val-1", Method.POST_JWT).end().build();
 
         assertEquals("copy-oidc-client-common-props", newConfig.id().orElse(null));
 
@@ -621,27 +512,14 @@ public class OidcClientConfigBuilderTest {
 
     @Test
     public void testCopyOidcCommonConfigProperties() {
-        var previousConfig = OidcClientConfig.builder()
-                .id("common-props-test")
-                .authServerUrl("we")
-                .discoveryEnabled(false)
-                .registrationPath("don't")
-                .connectionDelay(Duration.ofSeconds(656))
-                .connectionRetryCount(565)
-                .connectionTimeout(Duration.ofSeconds(673))
-                .useBlockingDnsLookup(true)
-                .maxPoolSize(376)
-                .followRedirects(false)
-                .proxy("need", 55, "no", "education")
-                .tlsConfigurationName("Teacher!")
-                .build();
-        var newConfig = OidcClientConfig.builder(previousConfig)
-                .discoveryEnabled(true)
-                .connectionDelay(Duration.ofSeconds(753))
-                .connectionTimeout(Duration.ofSeconds(357))
-                .maxPoolSize(1988)
-                .proxy("cross", 44, "the", "boarder")
-                .build();
+        var previousConfig = OidcClientConfig.builder().id("common-props-test").authServerUrl("we")
+                .discoveryEnabled(false).registrationPath("don't").connectionDelay(Duration.ofSeconds(656))
+                .connectionRetryCount(565).connectionTimeout(Duration.ofSeconds(673)).useBlockingDnsLookup(true)
+                .maxPoolSize(376).followRedirects(false).proxy("need", 55, "no", "education")
+                .tlsConfigurationName("Teacher!").build();
+        var newConfig = OidcClientConfig.builder(previousConfig).discoveryEnabled(true)
+                .connectionDelay(Duration.ofSeconds(753)).connectionTimeout(Duration.ofSeconds(357)).maxPoolSize(1988)
+                .proxy("cross", 44, "the", "boarder").build();
 
         assertEquals("common-props-test", newConfig.id().orElse(null));
         assertEquals("we", newConfig.authServerUrl().orElse(null));
@@ -691,17 +569,9 @@ public class OidcClientConfigBuilderTest {
 
     @Test
     public void testCredentialsBuilder() {
-        var jwt = new JwtBuilder<>()
-                .secret("hush-hush")
-                .build();
-        var clientSecret = new SecretBuilder<>()
-                .value("harry")
-                .build();
-        var credentials = new CredentialsBuilder<>()
-                .secret("1234")
-                .jwt(jwt)
-                .clientSecret(clientSecret)
-                .build();
+        var jwt = new JwtBuilder<>().secret("hush-hush").build();
+        var clientSecret = new SecretBuilder<>().value("harry").build();
+        var credentials = new CredentialsBuilder<>().secret("1234").jwt(jwt).clientSecret(clientSecret).build();
         var config = OidcClientConfig.builder().id("1").credentials(credentials).build();
         var buildCredentials = config.credentials();
         assertEquals("1", config.id().orElse(null));
@@ -721,13 +591,8 @@ public class OidcClientConfigBuilderTest {
         assertEquals(OidcConstants.REFRESH_TOKEN_VALUE, grant.refreshTokenProperty());
         assertEquals(OidcConstants.EXPIRES_IN, grant.expiresInProperty());
 
-        grant = new OidcClientConfigBuilder.GrantBuilder()
-                .type(Type.CIBA)
-                .expiresInProperty("exp1")
-                .accessTokenProperty("acc1")
-                .refreshExpiresInProperty("exp2")
-                .refreshTokenProperty("ref1")
-                .build();
+        grant = new OidcClientConfigBuilder.GrantBuilder().type(Type.CIBA).expiresInProperty("exp1")
+                .accessTokenProperty("acc1").refreshExpiresInProperty("exp2").refreshTokenProperty("ref1").build();
         var config = OidcClientConfig.builder().id("2").grant(grant).build();
         var buildGrant = config.grant();
         assertEquals("2", config.id().orElse(null));

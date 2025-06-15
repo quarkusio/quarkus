@@ -22,12 +22,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateGlobalTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Globals.class, NextGlobals.class)
-                    .addAsResource(new StringAsset(
-                            "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old. [{serviceEnabled || true}]"),
-                            "templates/hello.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(root -> root
+            .addClasses(Globals.class, NextGlobals.class)
+            .addAsResource(new StringAsset(
+                    "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old. [{serviceEnabled || true}]"),
+                    "templates/hello.txt"));
 
     @Inject
     Engine engine;
@@ -43,16 +42,14 @@ public class TemplateGlobalTest {
         assertTrue(Globals.AGE_USED.get());
 
         assertEquals("Hello Fu|Fu! Your name is Lu|Lu. You're 40|40 years old. [true]", hello.render());
-        assertEquals("Hello Fu|Fu! Your name is Lu|Lu. You're 40|40 years old.",
-                Qute.fmt(
-                        "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old.")
-                        .render());
+        assertEquals("Hello Fu|Fu! Your name is Lu|Lu. You're 40|40 years old.", Qute.fmt(
+                "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old.")
+                .render());
         Globals.user = "Hu";
         assertEquals("Hello Hu|Hu! Your name is Lu|Lu. You're 20|20 years old. [true]", hello.render());
-        assertEquals("Hello Hu|Hu! Your name is Lu|Lu. You're 20|20 years old.",
-                Qute.fmt(
-                        "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old.")
-                        .render());
+        assertEquals("Hello Hu|Hu! Your name is Lu|Lu. You're 20|20 years old.", Qute.fmt(
+                "Hello {currentUser}|{global:currentUser}! Your name is {_name}|{global:_name}. You're {age}|{global:age} years old.")
+                .render());
 
         assertEquals("First color is: RED|RED", Qute.fmt("First color is: {colors[0]}|{global:colors[0]}").render());
     }

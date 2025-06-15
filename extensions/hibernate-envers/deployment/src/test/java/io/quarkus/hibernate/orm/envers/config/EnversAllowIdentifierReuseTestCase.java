@@ -13,16 +13,13 @@ import io.restassured.RestAssured;
 public class EnversAllowIdentifierReuseTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestAllowIdentifierReuseResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-allow-identifier-reuse.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestAllowIdentifierReuseResource.class,
+                    AbstractEnversResource.class)
+            .addAsResource("application-with-allow-identifier-reuse.properties", "application.properties"));
 
     @Test
     public void testValidityStrategyFieldNameOverrides() {
-        RestAssured.when().get("/envers-allow-identifier-reuse").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-allow-identifier-reuse").then().body(is("OK"));
     }
 }

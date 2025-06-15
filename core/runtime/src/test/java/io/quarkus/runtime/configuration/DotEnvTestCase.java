@@ -58,9 +58,8 @@ public class DotEnvTestCase {
     @SuppressWarnings("unchecked")
     @Test
     public void testProperties() throws IOException {
-        final SmallRyeConfig config = buildConfig(maps(
-                singletonMap("FOO_BAR", "foo.bar"),
-                singletonMap("foo.baz", "nothing")));
+        final SmallRyeConfig config = buildConfig(
+                maps(singletonMap("FOO_BAR", "foo.bar"), singletonMap("foo.baz", "nothing")));
         assertEquals("foo.bar", config.getValue("foo.bar", String.class));
         assertTrue(config.getOptionalValue("foo.baz", String.class).isPresent());
     }

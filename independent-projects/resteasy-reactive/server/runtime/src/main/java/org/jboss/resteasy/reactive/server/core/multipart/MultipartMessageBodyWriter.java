@@ -81,8 +81,7 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
     }
 
     private void write(MultipartFormDataOutput formDataOutput, String boundary, OutputStream outputStream,
-            ResteasyReactiveRequestContext requestContext)
-            throws IOException {
+            ResteasyReactiveRequestContext requestContext) throws IOException {
         Charset charset = requestContext.getDeployment().getRuntimeConfiguration().body().defaultCharset();
         String boundaryLine = "--" + boundary;
         Map<String, List<PartItem>> parts = formDataOutput.getAllFormData();
@@ -112,13 +111,8 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         write(outputStream, boundaryLine + DOUBLE_DASH, charset);
     }
 
-    private void writePart(String partName,
-            Object partValue,
-            PartItem part,
-            String boundaryLine,
-            Charset charset,
-            OutputStream outputStream,
-            ResteasyReactiveRequestContext requestContext) throws IOException {
+    private void writePart(String partName, Object partValue, PartItem part, String boundaryLine, Charset charset,
+            OutputStream outputStream, ResteasyReactiveRequestContext requestContext) throws IOException {
 
         MediaType partType = part.getMediaType();
         if (partValue instanceof FileDownload) {
@@ -126,7 +120,8 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
             partValue = fileDownload.filePath().toFile();
             // overwrite properties if set
             partName = isNotEmpty(fileDownload.name()) ? fileDownload.name() : partName;
-            partType = isNotEmpty(fileDownload.contentType()) ? MediaType.valueOf(fileDownload.contentType()) : partType;
+            partType = isNotEmpty(fileDownload.contentType()) ? MediaType.valueOf(fileDownload.contentType())
+                    : partType;
             charset = isNotEmpty(fileDownload.charSet()) ? Charset.forName(fileDownload.charSet()) : charset;
         }
 
@@ -144,14 +139,16 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         writeLine(outputStream, charset);
     }
 
-    private void writeHeaders(String partName, Object partValue, PartItem part, Charset charset, OutputStream outputStream)
-            throws IOException {
-        part.getHeaders().put(HttpHeaders.CONTENT_DISPOSITION, List.of("form-data; name=\"" + partName + "\""
-                + getFileNameIfFile(partValue, part.getFilename())));
+    private void writeHeaders(String partName, Object partValue, PartItem part, Charset charset,
+            OutputStream outputStream) throws IOException {
+        part.getHeaders().put(HttpHeaders.CONTENT_DISPOSITION,
+                List.of("form-data; name=\"" + partName + "\"" + getFileNameIfFile(partValue, part.getFilename())));
         part.getHeaders().put(CONTENT_TYPE, List.of(part.getMediaType()));
         for (Map.Entry<String, List<Object>> entry : part.getHeaders().entrySet()) {
-            writeLine(outputStream, entry.getKey() + ": " + entry.getValue().stream().map(String::valueOf)
-                    .collect(Collectors.joining("; ")), charset);
+            writeLine(outputStream,
+                    entry.getKey() + ": "
+                            + entry.getValue().stream().map(String::valueOf).collect(Collectors.joining("; ")),
+                    charset);
         }
     }
 
@@ -184,15 +181,14 @@ public class MultipartMessageBodyWriter extends ServerMessageBodyWriter.AllWrite
         os.write(LINE_SEPARATOR.getBytes(defaultCharset));
     }
 
-    private void writeEntity(OutputStream os, Object entity, MediaType mediaType, ResteasyReactiveRequestContext context)
-            throws IOException {
+    private void writeEntity(OutputStream os, Object entity, MediaType mediaType,
+            ResteasyReactiveRequestContext context) throws IOException {
         ServerSerialisers serializers = context.getDeployment().getSerialisers();
         Class<?> entityClass = entity.getClass();
         Type entityType = null;
         @SuppressWarnings("unchecked")
         MessageBodyWriter<Object>[] writers = (MessageBodyWriter<Object>[]) serializers
-                .findWriters(null, entityClass, mediaType, RuntimeType.SERVER)
-                .toArray(ServerSerialisers.NO_WRITER);
+                .findWriters(null, entityClass, mediaType, RuntimeType.SERVER).toArray(ServerSerialisers.NO_WRITER);
         boolean wrote = false;
         for (MessageBodyWriter<Object> writer : writers) {
             if (writer.isWriteable(entityClass, entityType, Serialisers.NO_ANNOTATION, mediaType)) {

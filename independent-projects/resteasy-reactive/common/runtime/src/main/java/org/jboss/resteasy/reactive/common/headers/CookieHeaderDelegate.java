@@ -17,8 +17,8 @@ public class CookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate<Cook
 
     public String toString(Cookie value) {
         StringBuilder buf = new StringBuilder();
-        ServerCookie.appendCookieValue(buf, 0, value.getName(), value.getValue(), value.getPath(), value.getDomain(), null, -1,
-                false);
+        ServerCookie.appendCookieValue(buf, 0, value.getName(), value.getValue(), value.getPath(), value.getDomain(),
+                null, -1, false);
         return buf.toString();
     }
 }

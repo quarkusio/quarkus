@@ -17,11 +17,10 @@ import io.smallrye.config.WithUnnamedKey;
 public interface HibernateSearchElasticsearchBuildTimeConfig {
 
     /**
-     * Whether Hibernate Search is enabled **during the build**.
-     *
-     * If Hibernate Search is disabled during the build, all processing related to Hibernate Search will be skipped,
-     * but it will not be possible to activate Hibernate Search at runtime:
-     * `quarkus.hibernate-search-orm.active` will default to `false` and setting it to `true` will lead to an error.
+     * Whether Hibernate Search is enabled **during the build**. If Hibernate Search is disabled during the build, all
+     * processing related to Hibernate Search will be skipped, but it will not be possible to activate Hibernate Search
+     * at runtime: `quarkus.hibernate-search-orm.active` will default to `false` and setting it to `true` will lead to
+     * an error.
      *
      * @asciidoclet
      */

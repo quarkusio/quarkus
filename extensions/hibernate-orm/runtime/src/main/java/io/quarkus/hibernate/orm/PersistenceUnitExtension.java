@@ -15,8 +15,8 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * CDI qualifier for beans representing an "extension" of a persistence unit,
- * i.e. beans injected into the persistence unit as part of its configuration.
+ * CDI qualifier for beans representing an "extension" of a persistence unit, i.e. beans injected into the persistence
+ * unit as part of its configuration.
  * <p>
  * See the reference documentation for information about extensions that supports this annotation.
  */
@@ -29,9 +29,7 @@ public @interface PersistenceUnitExtension {
 
     String value() default PersistenceUnit.DEFAULT;
 
-    class Literal
-            extends AnnotationLiteral<PersistenceUnitExtension>
-            implements PersistenceUnitExtension {
+    class Literal extends AnnotationLiteral<PersistenceUnitExtension> implements PersistenceUnitExtension {
 
         private final String name;
 

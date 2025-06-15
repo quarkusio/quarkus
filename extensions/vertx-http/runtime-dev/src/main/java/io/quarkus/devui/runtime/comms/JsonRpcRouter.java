@@ -84,8 +84,9 @@ public class JsonRpcRouter {
                     } else {
                         javaMethod = providerInstance.getClass().getMethod(jsonRpcMethod.getMethodName());
                     }
-                    ReflectionInfo reflectionInfo = new ReflectionInfo(jsonRpcMethod.getClazz(), providerInstance, javaMethod,
-                            params, jsonRpcMethod.getExplicitlyBlocking(), jsonRpcMethod.getExplicitlyNonBlocking());
+                    ReflectionInfo reflectionInfo = new ReflectionInfo(jsonRpcMethod.getClazz(), providerInstance,
+                            javaMethod, params, jsonRpcMethod.getExplicitlyBlocking(),
+                            jsonRpcMethod.getExplicitlyNonBlocking());
                     String jsonRpcMethodName = extensionName + DOT + methodName;
                     jsonRpcToRuntimeClassPathJava.put(jsonRpcMethodName, reflectionInfo);
                 } catch (NoSuchMethodException | SecurityException ex) {
@@ -151,7 +152,9 @@ public class JsonRpcRouter {
         } else if (this.jsonRpcToRuntimeClassPathJava.containsKey(jsonRpcMethodName)) { // Route to extension (runtime)
             this.routeToRuntime(jsonRpcRequest, s);
         } else if (this.jsonRpcMethodToDeploymentClassPathJava.contains(jsonRpcMethodName)
-                || this.jsonRpcSubscriptionToDeploymentClassPathJava.contains(jsonRpcMethodName)) { // Route to extension (deployment)
+                || this.jsonRpcSubscriptionToDeploymentClassPathJava.contains(jsonRpcMethodName)) { // Route to
+                                                                                                                                                                                       // extension
+                                                                                                                                                                                       // (deployment)
             this.routeToDeployment(jsonRpcRequest, s);
         } else {
             // Method not found
@@ -204,16 +207,12 @@ public class JsonRpcRouter {
             return;
         }
 
-        Cancellable cancellable = multi.subscribe()
-                .with(
-                        item -> {
-                            codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
-                        },
-                        failure -> {
-                            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
-                            this.subscriptions.remove(jsonRpcRequest.getId());
-                        },
-                        () -> this.subscriptions.remove(jsonRpcRequest.getId()));
+        Cancellable cancellable = multi.subscribe().with(item -> {
+            codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
+        }, failure -> {
+            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
+            this.subscriptions.remove(jsonRpcRequest.getId());
+        }, () -> this.subscriptions.remove(jsonRpcRequest.getId()));
 
         this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
         codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
@@ -235,36 +234,34 @@ public class JsonRpcRouter {
             codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, e);
             return;
         }
-        uni.subscribe()
-                .with(item -> {
-                    if (item != null && JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
-                        JsonRpcMessage<?> jsonRpcMessage = (JsonRpcMessage<?>) item;
-                        Object response = jsonRpcMessage.getResponse();
-                        if (jsonRpcMessage.isAlreadySerialized()) {
-                            // The message response was already serialized, write text directly to socket
-                            s.writeTextMessage("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
-                                    + jsonRpcMessage.getMessageType().name() + "\",\"object\":" + response + "}}");
-                        } else {
-                            codec.writeResponse(s, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
-                        }
-                    } else {
-                        codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.Response);
-                    }
-                }, failure -> {
-                    Throwable actualFailure;
-                    // If the jsonrpc method is actually
-                    // synchronous, the failure is wrapped in an
-                    // InvocationTargetException, so unwrap it here
-                    if (failure instanceof InvocationTargetException f) {
-                        actualFailure = f.getTargetException();
-                    } else if (failure.getCause() != null
-                            && failure.getCause() instanceof InvocationTargetException f) {
-                        actualFailure = f.getTargetException();
-                    } else {
-                        actualFailure = failure;
-                    }
-                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, actualFailure);
-                });
+        uni.subscribe().with(item -> {
+            if (item != null && JsonRpcMessage.class.isAssignableFrom(item.getClass())) {
+                JsonRpcMessage<?> jsonRpcMessage = (JsonRpcMessage<?>) item;
+                Object response = jsonRpcMessage.getResponse();
+                if (jsonRpcMessage.isAlreadySerialized()) {
+                    // The message response was already serialized, write text directly to socket
+                    s.writeTextMessage("{\"id\":" + jsonRpcRequest.getId() + ",\"result\":{\"messageType\":\""
+                            + jsonRpcMessage.getMessageType().name() + "\",\"object\":" + response + "}}");
+                } else {
+                    codec.writeResponse(s, jsonRpcRequest.getId(), response, jsonRpcMessage.getMessageType());
+                }
+            } else {
+                codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.Response);
+            }
+        }, failure -> {
+            Throwable actualFailure;
+            // If the jsonrpc method is actually
+            // synchronous, the failure is wrapped in an
+            // InvocationTargetException, so unwrap it here
+            if (failure instanceof InvocationTargetException f) {
+                actualFailure = f.getTargetException();
+            } else if (failure.getCause() != null && failure.getCause() instanceof InvocationTargetException f) {
+                actualFailure = f.getTargetException();
+            } else {
+                actualFailure = failure;
+            }
+            codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, actualFailure);
+        });
     }
 
     private void routeToDeployment(JsonRpcRequest jsonRpcRequest, ServerWebSocket s) {
@@ -280,8 +277,7 @@ public class JsonRpcRouter {
         if (this.recordedValues.containsKey(jsonRpcMethodName)) {
             returnedObject = this.recordedValues.get(jsonRpcMethodName).getValue();
         } else {
-            returnedObject = DevConsoleManager.invoke(jsonRpcMethodName,
-                    getArgsAsMap(jsonRpcRequest));
+            returnedObject = DevConsoleManager.invoke(jsonRpcMethodName, getArgsAsMap(jsonRpcRequest));
         }
         if (returnedObject != null) {
             // Support for Mutiny is diffcult because we are between the runtime and deployment classpath.
@@ -289,31 +285,25 @@ public class JsonRpcRouter {
             if (returnedObject instanceof Flow.Publisher) {
                 Flow.Publisher<?> publisher = (Flow.Publisher) returnedObject;
 
-                Cancellable cancellable = Multi.createFrom().publisher(publisher).subscribe()
-                        .with(
-                                item -> {
-                                    codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
-                                },
-                                failure -> {
-                                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
-                                    this.subscriptions.remove(jsonRpcRequest.getId());
-                                },
-                                () -> this.subscriptions.remove(jsonRpcRequest.getId()));
+                Cancellable cancellable = Multi.createFrom().publisher(publisher).subscribe().with(item -> {
+                    codec.writeResponse(s, jsonRpcRequest.getId(), item, MessageType.SubscriptionMessage);
+                }, failure -> {
+                    codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, failure);
+                    this.subscriptions.remove(jsonRpcRequest.getId());
+                }, () -> this.subscriptions.remove(jsonRpcRequest.getId()));
 
                 this.subscriptions.put(jsonRpcRequest.getId(), cancellable);
                 codec.writeResponse(s, jsonRpcRequest.getId(), null, MessageType.Void);
             } else if (returnedObject instanceof CompletionStage) {
                 CompletionStage<?> future = (CompletionStage) returnedObject;
                 future.thenAccept(r -> {
-                    codec.writeResponse(s, jsonRpcRequest.getId(), r,
-                            MessageType.Response);
+                    codec.writeResponse(s, jsonRpcRequest.getId(), r, MessageType.Response);
                 }).exceptionally(throwable -> {
                     codec.writeErrorResponse(s, jsonRpcRequest.getId(), jsonRpcMethodName, throwable);
                     return null;
                 });
             } else {
-                codec.writeResponse(s, jsonRpcRequest.getId(), returnedObject,
-                        MessageType.Response);
+                codec.writeResponse(s, jsonRpcRequest.getId(), returnedObject, MessageType.Response);
             }
         }
     }
@@ -332,8 +322,8 @@ public class JsonRpcRouter {
             }
         } else if (info.isReturningCompletionStage()) {
             try {
-                Uni<?> uni = Uni.createFrom()
-                        .completionStage(Unchecked.supplier(() -> (CompletionStage<?>) info.method.invoke(target, args)));
+                Uni<?> uni = Uni.createFrom().completionStage(
+                        Unchecked.supplier(() -> (CompletionStage<?>) info.method.invoke(target, args)));
                 if (info.isExplicitlyBlocking()) {
                     return uni.runSubscriptionOn(Infrastructure.getDefaultExecutor());
                 } else {

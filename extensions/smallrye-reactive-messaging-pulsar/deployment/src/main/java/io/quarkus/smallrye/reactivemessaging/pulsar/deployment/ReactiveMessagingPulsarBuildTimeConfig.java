@@ -17,8 +17,8 @@ public interface ReactiveMessagingPulsarBuildTimeConfig {
     boolean schemaAutodetectionEnabled();
 
     /**
-     * Whether Pulsar Schema generation is enabled.
-     * When no Schema are found and not set, Quarkus generates a JSON Schema.
+     * Whether Pulsar Schema generation is enabled. When no Schema are found and not set, Quarkus generates a JSON
+     * Schema.
      */
     @WithName("schema-generation.enabled")
     @WithDefault("true")

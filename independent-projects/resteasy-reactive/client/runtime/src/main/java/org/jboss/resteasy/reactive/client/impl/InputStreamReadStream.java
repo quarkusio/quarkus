@@ -20,7 +20,8 @@ import io.vertx.core.streams.impl.InboundBuffer;
  * "https://github.com/fabric8io/kubernetes-client/blob/v6.10.0/httpclient-vertx/src/main/java/io/fabric8/kubernetes/client/vertx/InputStreamReadStream.java">Kubernetes
  * Client</a>
  * <p>
- * TODO: There is a chance that something like this will land in Vert.x in the future, so we should check back in the future
+ * TODO: There is a chance that something like this will land in Vert.x in the future, so we should check back in the
+ * future
  */
 public class InputStreamReadStream implements ReadStream<Buffer> {
 
@@ -122,10 +123,8 @@ public class InputStreamReadStream implements ReadStream<Buffer> {
                 if (amount == -1) {
                     p.complete();
                 } else {
-                    p.complete(
-                            Buffer.buffer(
-                                    VertxByteBufAllocator.DEFAULT.heapBuffer(amount, Integer.MAX_VALUE).writeBytes(bytes, 0,
-                                            amount)));
+                    p.complete(Buffer.buffer(VertxByteBufAllocator.DEFAULT.heapBuffer(amount, Integer.MAX_VALUE)
+                            .writeBytes(bytes, 0, amount)));
                 }
             }
         });

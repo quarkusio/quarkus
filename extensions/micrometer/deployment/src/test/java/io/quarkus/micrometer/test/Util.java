@@ -44,19 +44,15 @@ public class Util {
     }
 
     public static String listMeters(MeterRegistry registry, String meterName) {
-        return registry.find(meterName).meters().stream()
-                .map(x -> {
-                    return x.getId().toString();
-                })
-                .collect(Collectors.joining("\n"));
+        return registry.find(meterName).meters().stream().map(x -> {
+            return x.getId().toString();
+        }).collect(Collectors.joining("\n"));
     }
 
     public static String listMeters(MeterRegistry registry, String meterName, final String tag) {
-        return registry.find(meterName).meters().stream()
-                .map(x -> {
-                    return x.getId().getTag(tag);
-                })
-                .collect(Collectors.joining(","));
+        return registry.find(meterName).meters().stream().map(x -> {
+            return x.getId().getTag(tag);
+        }).collect(Collectors.joining(","));
     }
 
     public static <T> void waitForMeters(Collection<T> collection, int count) throws InterruptedException {

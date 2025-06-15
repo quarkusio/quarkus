@@ -34,14 +34,9 @@ public class ExposedCloudEvents {
             throw new RuntimeException("Bad time!");
 
         TestBean inBean = event.data();
-        return CloudEventBuilder.create()
-                .specVersion(event.specVersion())
-                .id("double-it-id")
-                .type("double-it-type")
-                .source("/OfDoubleIt")
-                .extensions(Collections.singletonMap("extserver", "ext-server-val"))
-                .dataSchema("dataschema-server")
-                .build(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()));
+        return CloudEventBuilder.create().specVersion(event.specVersion()).id("double-it-id").type("double-it-type")
+                .source("/OfDoubleIt").extensions(Collections.singletonMap("extserver", "ext-server-val"))
+                .dataSchema("dataschema-server").build(new TestBean(inBean.getI() * 2, inBean.getS() + inBean.getS()));
     }
 
     @Funq
@@ -53,15 +48,9 @@ public class ExposedCloudEvents {
     @Funq
     @CloudEventMapping(trigger = "test-generics")
     public CloudEvent<Integer> sum(CloudEvent<List<TestBean>> event) {
-        Integer data = event.data().stream()
-                .map(TestBean::getI)
-                .reduce((a, b) -> a + b)
-                .orElse(0);
+        Integer data = event.data().stream().map(TestBean::getI).reduce((a, b) -> a + b).orElse(0);
 
-        return CloudEventBuilder.create()
-                .specVersion(event.specVersion())
-                .id("test-sum-id")
-                .type("test-sum-type")
+        return CloudEventBuilder.create().specVersion(event.specVersion()).id("test-sum-id").type("test-sum-type")
                 .build(data);
     }
 
@@ -116,10 +105,7 @@ public class ExposedCloudEvents {
 
         @Override
         public String toString() {
-            return "TestBean{" +
-                    "i=" + i +
-                    ", s='" + s + '\'' +
-                    '}';
+            return "TestBean{" + "i=" + i + ", s='" + s + '\'' + '}';
         }
     }
 }

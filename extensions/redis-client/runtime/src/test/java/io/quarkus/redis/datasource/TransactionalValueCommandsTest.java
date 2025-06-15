@@ -56,10 +56,8 @@ public class TransactionalValueCommandsTest extends DatasourceTestBase {
     public void setReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalValueCommands<String, String> string = tx.value(String.class);
-            return string.set(key, "hello")
-                    .chain(() -> string.setnx("k2", "bonjour"))
-                    .chain(() -> string.append(key, "-1"))
-                    .chain(() -> string.get(key))
+            return string.set(key, "hello").chain(() -> string.setnx("k2", "bonjour"))
+                    .chain(() -> string.append(key, "-1")).chain(() -> string.get(key))
                     .chain(() -> string.strlen("k2"));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(5);

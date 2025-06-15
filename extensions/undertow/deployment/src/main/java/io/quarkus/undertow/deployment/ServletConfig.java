@@ -19,17 +19,16 @@ import io.smallrye.config.WithDefault;
 public interface ServletConfig {
 
     /**
-     * The context path for Servlet content. This will determine the path used to
-     * resolve all Servlet-based resources, including JAX-RS resources - when using the Undertow extension in conjunction with
-     * RESTEasy.
+     * The context path for Servlet content. This will determine the path used to resolve all Servlet-based resources,
+     * including JAX-RS resources - when using the Undertow extension in conjunction with RESTEasy.
      * <p>
-     * This path is specified with a leading {@literal /}, but is resolved relative
-     * to {@literal quarkus.http.root-path}.
+     * This path is specified with a leading {@literal /}, but is resolved relative to
+     * {@literal quarkus.http.root-path}.
      * <ul>
-     * <li>If {@literal quarkus.http.root-path=/} and {@code quarkus.servlet.context-path=/bar}, the servlet path will be
-     * {@literal /bar}</li>
-     * <li>If {@literal quarkus.http.root-path=/foo} and {@code quarkus.servlet.context-path=/bar}, the servlet path will be
-     * {@literal /foo/bar}</li>
+     * <li>If {@literal quarkus.http.root-path=/} and {@code quarkus.servlet.context-path=/bar}, the servlet path will
+     * be {@literal /bar}</li>
+     * <li>If {@literal quarkus.http.root-path=/foo} and {@code quarkus.servlet.context-path=/bar}, the servlet path
+     * will be {@literal /foo/bar}</li>
      * </ul>
      */
     Optional<@WithConverter(ContextPathConverter.class) String> contextPath();
@@ -41,8 +40,8 @@ public interface ServletConfig {
     String defaultCharset();
 
     /**
-     * This converter adds a '/' at the beginning of the context path but does not add one at the end, given we want to support
-     * binding to a context without an ending '/'.
+     * This converter adds a '/' at the beginning of the context path but does not add one at the end, given we want to
+     * support binding to a context without an ending '/'.
      * <p>
      * See ContextPathTestCase for an example.
      */

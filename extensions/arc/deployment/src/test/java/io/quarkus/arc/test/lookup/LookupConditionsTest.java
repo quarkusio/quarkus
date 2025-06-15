@@ -18,8 +18,8 @@ public class LookupConditionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, ServiceAlpha.class, ServiceBravo.class, ServiceCharlie.class))
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(Foo.class, ServiceAlpha.class, ServiceBravo.class, ServiceCharlie.class))
             .overrideConfigKey("service.alpha.enabled", "false");
 
     @Inject

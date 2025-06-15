@@ -19,17 +19,17 @@ public interface JsonMapper {
         return new DeploymentLinker<>() {
             @Override
             public Map<String, ?> createLinkData(JsonMapper object) {
-                return Map.of("delegate", object,
-                        "toString", (BiFunction<Object, Boolean, String>) object::toString,
-                        "fromString", (BiFunction<String, Class<?>, Object>) object::fromString,
-                        "fromValue", (BiFunction<Object, Class<?>, Object>) object::fromValue);
+                return Map.of("delegate", object, "toString", (BiFunction<Object, Boolean, String>) object::toString,
+                        "fromString", (BiFunction<String, Class<?>, Object>) object::fromString, "fromValue",
+                        (BiFunction<Object, Class<?>, Object>) object::fromValue);
             }
 
             @Override
             @SuppressWarnings("unchecked")
             public JsonMapper createLink(Map<String, ?> linkData) {
                 Object delegate = linkData.get("delegate");
-                BiFunction<Object, Boolean, String> toString = (BiFunction<Object, Boolean, String>) linkData.get("toString");
+                BiFunction<Object, Boolean, String> toString = (BiFunction<Object, Boolean, String>) linkData
+                        .get("toString");
                 BiFunction<Object, Class<?>, Object> fromString = (BiFunction<Object, Class<?>, Object>) linkData
                         .get("fromString");
                 BiFunction<Object, Class<?>, Object> fromValue = (BiFunction<Object, Class<?>, Object>) linkData
@@ -73,22 +73,18 @@ public interface JsonMapper {
          * @return A JSON mapper implemented in the deployment module.
          */
         JsonMapper create(JsonTypeAdapter<?, Map<String, Object>> jsonObjectAdapter,
-                JsonTypeAdapter<?, List<?>> jsonArrayAdapter,
-                JsonTypeAdapter<?, String> bufferAdapter);
+                JsonTypeAdapter<?, List<?>> jsonArrayAdapter, JsonTypeAdapter<?, String> bufferAdapter);
 
         static DeploymentLinker<Factory> deploymentLinker() {
             return new DeploymentLinker<>() {
                 @Override
                 public Map<String, ?> createLinkData(Factory object) {
-                    return Map.of(
-                            "delegate", object,
-                            "create",
-                            (Function<Map<String, ?>, Map<String, ?>>) args -> {
-                                var created = object.create(typeAdapterFromLinkData(args.get("jsonObjectAdapter")),
-                                        typeAdapterFromLinkData(args.get("jsonArrayAdapter")),
-                                        typeAdapterFromLinkData(args.get("bufferAdapter")));
-                                return JsonMapper.deploymentLinker().createLinkData(created);
-                            });
+                    return Map.of("delegate", object, "create", (Function<Map<String, ?>, Map<String, ?>>) args -> {
+                        var created = object.create(typeAdapterFromLinkData(args.get("jsonObjectAdapter")),
+                                typeAdapterFromLinkData(args.get("jsonArrayAdapter")),
+                                typeAdapterFromLinkData(args.get("bufferAdapter")));
+                        return JsonMapper.deploymentLinker().createLinkData(created);
+                    });
                 }
 
                 @Override
@@ -107,25 +103,24 @@ public interface JsonMapper {
                         public JsonMapper create(JsonTypeAdapter<?, Map<String, Object>> jsonObjectAdapter,
                                 JsonTypeAdapter<?, List<?>> jsonArrayAdapter,
                                 JsonTypeAdapter<?, String> bufferAdapter) {
-                            var linkData = create.apply(Map.of("jsonObjectAdapter", typeAdapterToLinkData(jsonObjectAdapter),
-                                    "jsonArrayAdapter", typeAdapterToLinkData(jsonArrayAdapter),
-                                    "bufferAdapter", typeAdapterToLinkData(bufferAdapter)));
+                            var linkData = create
+                                    .apply(Map.of("jsonObjectAdapter", typeAdapterToLinkData(jsonObjectAdapter),
+                                            "jsonArrayAdapter", typeAdapterToLinkData(jsonArrayAdapter),
+                                            "bufferAdapter", typeAdapterToLinkData(bufferAdapter)));
                             return JsonMapper.deploymentLinker().createLink(linkData);
                         }
                     };
                 }
 
                 private Map<String, ?> typeAdapterToLinkData(JsonTypeAdapter<?, ?> object) {
-                    return Map.of("type", object.type,
-                            "serializer", object.serializer,
-                            "deserializer", object.deserializer);
+                    return Map.of("type", object.type, "serializer", object.serializer, "deserializer",
+                            object.deserializer);
                 }
 
                 @SuppressWarnings({ "unchecked", "rawtypes" })
                 private <T, S> JsonTypeAdapter<T, S> typeAdapterFromLinkData(Object linkData) {
                     Map<String, ?> map = (Map<String, ?>) linkData;
-                    return new JsonTypeAdapter<>((Class) map.get("type"),
-                            (Function) map.get("serializer"),
+                    return new JsonTypeAdapter<>((Class) map.get("type"), (Function) map.get("serializer"),
                             (Function) map.get("deserializer"));
                 }
             };

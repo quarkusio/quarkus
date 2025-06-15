@@ -14,8 +14,7 @@ public class RemoveFwkBeansTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(UnusedBean.class)
+            .withApplicationRoot((jar) -> jar.addClasses(UnusedBean.class)
                     .addAsResource(new StringAsset("quarkus.arc.remove-unused-beans=fwk"), "application.properties"));
 
     @Test

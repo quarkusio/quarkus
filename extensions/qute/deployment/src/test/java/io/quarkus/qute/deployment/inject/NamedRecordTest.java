@@ -20,12 +20,8 @@ public class NamedRecordTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Beans.class, ListProducer.class)
-                    .addAsResource(
-                            new StringAsset(
-                                    "{#each cdi:beans.names}{it}::{/each}"),
-                            "templates/foo.html"));
+            .withApplicationRoot(root -> root.addClasses(Beans.class, ListProducer.class)
+                    .addAsResource(new StringAsset("{#each cdi:beans.names}{it}::{/each}"), "templates/foo.html"));
 
     @Inject
     Engine engine;

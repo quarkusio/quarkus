@@ -6,17 +6,16 @@ import java.util.function.Predicate;
 /**
  * This interface represents a connection from a client to a specific {@link WebSocket} endpoint on the server.
  * <p>
- * Quarkus provides a CDI bean that implements this interface and can be injected in a {@link WebSocket}
- * endpoint and used to interact with the connected client, or all clients connected to the endpoint respectively
- * (broadcasting).
+ * Quarkus provides a CDI bean that implements this interface and can be injected in a {@link WebSocket} endpoint and
+ * used to interact with the connected client, or all clients connected to the endpoint respectively (broadcasting).
  * <p>
  * Specifically, it is possible to send messages using blocking and non-blocking methods declared on {@link Sender}.
  */
 public interface WebSocketConnection extends Connection {
 
     /**
-     *
      * @return the endpoint id
+     *
      * @see WebSocket#endpointId()
      */
     String endpointId();
@@ -25,6 +24,7 @@ public interface WebSocketConnection extends Connection {
      * Sends messages to all open clients connected to the same WebSocket endpoint.
      *
      * @return the broadcast sender
+     *
      * @see #getOpenConnections()
      */
     BroadcastSender broadcast();
@@ -37,7 +37,6 @@ public interface WebSocketConnection extends Connection {
     Set<WebSocketConnection> getOpenConnections();
 
     /**
-     *
      * @return the subprotocol selected by the handshake
      */
     String subprotocol();
@@ -50,10 +49,10 @@ public interface WebSocketConnection extends Connection {
     interface BroadcastSender extends Sender {
 
         /**
-         *
          * @param predicate
-         * @return a new sender that sends messages to all open clients connected to the same WebSocket endpoint and matching
-         *         the given filter predicate
+         *
+         * @return a new sender that sends messages to all open clients connected to the same WebSocket endpoint and
+         *         matching the given filter predicate
          */
         BroadcastSender filter(Predicate<WebSocketConnection> predicate);
 

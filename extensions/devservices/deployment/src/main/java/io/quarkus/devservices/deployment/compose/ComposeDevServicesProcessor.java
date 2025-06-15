@@ -82,22 +82,16 @@ public class ComposeDevServicesProcessor {
                     producer.produce(new HotDeploymentWatchedFileBuildItem(file.getAbsolutePath()));
                 }
             }, () -> producer.produce(HotDeploymentWatchedFileBuildItem.builder()
-                    .setLocationPredicate(COMPOSE_FILE.asMatchPredicate())
-                    .build()));
+                    .setLocationPredicate(COMPOSE_FILE.asMatchPredicate()).build()));
         }
     }
 
     @BuildStep
-    public DevServicesComposeProjectBuildItem config(
-            Executor buildExecutor,
-            ComposeBuildTimeConfig composeBuildTimeConfig,
-            ApplicationInfoBuildItem appInfo,
-            LaunchModeBuildItem launchMode,
-            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
-            CuratedApplicationShutdownBuildItem closeBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig,
-            DockerStatusBuildItem dockerStatusBuildItem) throws IOException {
+    public DevServicesComposeProjectBuildItem config(Executor buildExecutor,
+            ComposeBuildTimeConfig composeBuildTimeConfig, ApplicationInfoBuildItem appInfo,
+            LaunchModeBuildItem launchMode, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+            CuratedApplicationShutdownBuildItem closeBuildItem, LoggingSetupBuildItem loggingSetupBuildItem,
+            DevServicesConfig devServicesConfig, DockerStatusBuildItem dockerStatusBuildItem) throws IOException {
 
         ComposeDevServiceCfg configuration = new ComposeDevServiceCfg(composeBuildTimeConfig.devservices());
 
@@ -115,12 +109,12 @@ public class ComposeDevServicesProcessor {
         }
 
         StartupLogCompressor compressor = new StartupLogCompressor(
-                (launchMode.isTest() ? "(test) " : "") + "Compose Dev Services Starting:",
-                consoleInstalledBuildItem, loggingSetupBuildItem, s -> s.getName().startsWith("ducttape")
-                        || s.getName().equals("Process stdout") || s.getName().startsWith("build-"));
+                (launchMode.isTest() ? "(test) " : "") + "Compose Dev Services Starting:", consoleInstalledBuildItem,
+                loggingSetupBuildItem, s -> s.getName().startsWith("ducttape") || s.getName().equals("Process stdout")
+                        || s.getName().startsWith("build-"));
         try {
-            runningCompose = startCompose(buildExecutor, configuration, appInfo.getName(),
-                    dockerStatusBuildItem, launchMode, devServicesConfig.timeout());
+            runningCompose = startCompose(buildExecutor, configuration, appInfo.getName(), dockerStatusBuildItem,
+                    launchMode, devServicesConfig.timeout());
             if (runningCompose == null) {
                 compressor.closeAndDumpCaptured();
             } else {
@@ -162,20 +156,16 @@ public class ComposeDevServicesProcessor {
     @BuildStep
     public DevServicesResultBuildItem toDevServicesResult(DevServicesComposeProjectBuildItem composeBuildItem) {
         if (composeBuildItem.getProject() != null) {
-            return new DevServicesResultBuildItem(
-                    "Compose Dev Services",
+            return new DevServicesResultBuildItem("Compose Dev Services",
                     String.format("Project: %s, Services: %s", composeBuildItem.getProject(),
                             String.join(", ", composeBuildItem.getComposeServices().keySet())),
-                    null,
-                    composeBuildItem.getConfig());
+                    null, composeBuildItem.getConfig());
         }
         return null;
     }
 
-    private ComposeRunningService startCompose(Executor buildExecutor, ComposeDevServiceCfg cfg,
-            String appName,
-            ContainerRuntimeStatusBuildItem dockerStatusBuildItem,
-            LaunchModeBuildItem launchMode,
+    private ComposeRunningService startCompose(Executor buildExecutor, ComposeDevServiceCfg cfg, String appName,
+            ContainerRuntimeStatusBuildItem dockerStatusBuildItem, LaunchModeBuildItem launchMode,
             Optional<Duration> timeout) {
         if (!cfg.devServicesEnabled) {
             // explicitly disabled
@@ -206,18 +196,11 @@ public class ComposeDevServicesProcessor {
         }
 
         ComposeProject.Builder builder = new ComposeProject.Builder(composeFiles, getComposeExecutable())
-                .withProject(projectName)
-                .withEnv(cfg.envVariables)
-                .withStopContainers(cfg.stopServices)
-                .withRyukEnabled(cfg.ryukEnabled)
-                .withProfiles(cfg.profiles)
-                .withOptions(cfg.options)
-                .withRemoveImages(cfg.removeImages)
-                .withRemoveVolumes(cfg.removeVolumes)
-                .withFollowContainerLogs(cfg.followContainerLogs)
-                .withScalingPreferences(cfg.scalingPreferences)
-                .withStopTimeout(cfg.stopTimeout)
-                .withBuild(cfg.build);
+                .withProject(projectName).withEnv(cfg.envVariables).withStopContainers(cfg.stopServices)
+                .withRyukEnabled(cfg.ryukEnabled).withProfiles(cfg.profiles).withOptions(cfg.options)
+                .withRemoveImages(cfg.removeImages).withRemoveVolumes(cfg.removeVolumes)
+                .withFollowContainerLogs(cfg.followContainerLogs).withScalingPreferences(cfg.scalingPreferences)
+                .withStopTimeout(cfg.stopTimeout).withBuild(cfg.build);
 
         timeout.ifPresent(builder::withStartupTimeout);
         ComposeProject compose = builder.build();
@@ -290,9 +273,8 @@ public class ComposeDevServicesProcessor {
 
         static Map<String, List<RunningContainer>> composeServices(ComposeProject compose) {
             return compose.getServices().stream()
-                    .collect(Collectors.groupingBy(ComposeServiceWaitStrategyTarget::getServiceName,
-                            Collectors.mapping(s -> ContainerUtil.toRunningContainer(s.getContainerInfo()),
-                                    Collectors.toList())));
+                    .collect(Collectors.groupingBy(ComposeServiceWaitStrategyTarget::getServiceName, Collectors.mapping(
+                            s -> ContainerUtil.toRunningContainer(s.getContainerInfo()), Collectors.toList())));
         }
 
         public DevServicesComposeProjectBuildItem toComposeBuildItem() {
@@ -319,17 +301,13 @@ public class ComposeDevServicesProcessor {
     }
 
     static List<File> filesFromConfigList(List<String> l) {
-        return l.stream()
-                .map(f -> getProjectRoot().resolve(f).toAbsolutePath().normalize())
-                .map(Path::toFile)
+        return l.stream().map(f -> getProjectRoot().resolve(f).toAbsolutePath().normalize()).map(Path::toFile)
                 .collect(Collectors.toList());
     }
 
     static List<File> collectComposeFilesFromProjectRoot() throws RuntimeException {
         try (Stream<Path> list = Files.list(getProjectRoot().toAbsolutePath().normalize())) {
-            return list
-                    .filter(ComposeDevServicesProcessor::isComposeFile)
-                    .map(Path::toFile)
+            return list.filter(ComposeDevServicesProcessor::isComposeFile).map(Path::toFile)
                     .collect(Collectors.toList());
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -357,8 +335,7 @@ public class ComposeDevServicesProcessor {
 
         public ComposeDevServiceCfg(ComposeDevServicesBuildTimeConfig cfg) {
             this.devServicesEnabled = cfg.enabled();
-            this.files = cfg.files()
-                    .map(ComposeDevServicesProcessor::filesFromConfigList)
+            this.files = cfg.files().map(ComposeDevServicesProcessor::filesFromConfigList)
                     .orElseGet(ComposeDevServicesProcessor::collectComposeFilesFromProjectRoot);
             MessageDigest md;
             try {
@@ -367,11 +344,8 @@ public class ComposeDevServicesProcessor {
                 throw new RuntimeException(e);
             }
             Base64.Encoder encoder = Base64.getEncoder();
-            this.filesSha = this.files.stream().sorted()
-                    .map(Unchecked.function(f -> Files.readAllBytes(f.toPath())))
-                    .map(md::digest)
-                    .map(encoder::encodeToString)
-                    .collect(Collectors.joining());
+            this.filesSha = this.files.stream().sorted().map(Unchecked.function(f -> Files.readAllBytes(f.toPath())))
+                    .map(md::digest).map(encoder::encodeToString).collect(Collectors.joining());
             this.project = cfg.projectName().orElse(null);
             this.startServices = cfg.startServices();
             this.stopServices = cfg.stopServices();
@@ -395,20 +369,15 @@ public class ComposeDevServicesProcessor {
             if (o == null || getClass() != o.getClass())
                 return false;
             ComposeDevServiceCfg that = (ComposeDevServiceCfg) o;
-            return devServicesEnabled == that.devServicesEnabled
-                    && Objects.equals(project, that.project)
+            return devServicesEnabled == that.devServicesEnabled && Objects.equals(project, that.project)
                     && Objects.equals(startServices, that.startServices)
-                    && Objects.equals(stopServices, that.stopServices)
-                    && Objects.equals(ryukEnabled, that.ryukEnabled)
-                    && Objects.equals(files, that.files)
-                    && Objects.equals(filesSha, that.filesSha)
-                    && Objects.equals(profiles, that.profiles)
-                    && Objects.equals(options, that.options)
+                    && Objects.equals(stopServices, that.stopServices) && Objects.equals(ryukEnabled, that.ryukEnabled)
+                    && Objects.equals(files, that.files) && Objects.equals(filesSha, that.filesSha)
+                    && Objects.equals(profiles, that.profiles) && Objects.equals(options, that.options)
                     && Objects.equals(removeImages, that.removeImages)
                     && Objects.equals(removeVolumes, that.removeVolumes)
                     && Objects.equals(followContainerLogs, that.followContainerLogs)
-                    && Objects.equals(build, that.build)
-                    && Objects.equals(envVariables, that.envVariables)
+                    && Objects.equals(build, that.build) && Objects.equals(envVariables, that.envVariables)
                     && Objects.equals(scalingPreferences, that.scalingPreferences)
                     && Objects.equals(reuseProjectForTests, that.reuseProjectForTests);
         }
@@ -416,8 +385,8 @@ public class ComposeDevServicesProcessor {
         @Override
         public int hashCode() {
             return Objects.hash(devServicesEnabled, project, startServices, stopServices, ryukEnabled, files, filesSha,
-                    profiles, options, removeImages, removeVolumes,
-                    followContainerLogs, build, envVariables, scalingPreferences, reuseProjectForTests);
+                    profiles, options, removeImages, removeVolumes, followContainerLogs, build, envVariables,
+                    scalingPreferences, reuseProjectForTests);
         }
     }
 }

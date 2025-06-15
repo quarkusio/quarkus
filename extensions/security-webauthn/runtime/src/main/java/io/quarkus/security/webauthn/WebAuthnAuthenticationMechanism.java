@@ -22,9 +22,9 @@ import io.smallrye.mutiny.Uni;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * An AuthenticationMechanism for WebAuthn which mostly delegates to {@link PersistentLoginManager}
- * and {@link TrustedAuthenticationRequest}, since authentication is handled by {@link WebAuthnController}
- * or {@link WebAuthnSecurity}.
+ * An AuthenticationMechanism for WebAuthn which mostly delegates to {@link PersistentLoginManager} and
+ * {@link TrustedAuthenticationRequest}, since authentication is handled by {@link WebAuthnController} or
+ * {@link WebAuthnSecurity}.
  */
 public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechanism {
 
@@ -43,9 +43,8 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
         PersistentLoginManager.RestoreResult result = loginManager.restore(context);
         if (result != null) {
             context.put(HttpAuthenticationMechanism.class.getName(), this);
-            Uni<SecurityIdentity> ret = identityProviderManager
-                    .authenticate(HttpSecurityUtils
-                            .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
+            Uni<SecurityIdentity> ret = identityProviderManager.authenticate(HttpSecurityUtils
+                    .setRoutingContextAttribute(new TrustedAuthenticationRequest(result.getPrincipal()), context));
             return ret.onItem().invoke(new Consumer<SecurityIdentity>() {
                 @Override
                 public void accept(SecurityIdentity securityIdentity) {
@@ -74,7 +73,8 @@ public class WebAuthnAuthenticationMechanism implements HttpAuthenticationMechan
 
     @Override
     public Uni<HttpCredentialTransport> getCredentialTransport(RoutingContext context) {
-        return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, AUTH_MECHANISM_SCHEME));
+        return Uni.createFrom()
+                .item(new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, AUTH_MECHANISM_SCHEME));
     }
 
     public PersistentLoginManager getLoginManager() {

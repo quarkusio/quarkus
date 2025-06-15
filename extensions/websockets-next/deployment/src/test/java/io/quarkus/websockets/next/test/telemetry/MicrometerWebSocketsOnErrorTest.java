@@ -76,7 +76,8 @@ public class MicrometerWebSocketsOnErrorTest {
         asserter.clientConnectionOpenedCount += 1;
         var msg = "What'd I Say";
         // 1 sent: use 'clientConn' to send 'msg'
-        // 1 received, 2 sent: 'ErroneousClientEndpoint_NoOnError' -> 'Multi<String> onMessage(String message)', 2 in Multi
+        // 1 received, 2 sent: 'ErroneousClientEndpoint_NoOnError' -> 'Multi<String> onMessage(String message)', 2 in
+        // Multi
         // 2 received: 'ErroneousClient_NoOnError' -> 'Uni<Void> onMessage(String message)'
         int clientBytesSent = stringToBytes(msg);
         int clientBytesReceived = stringToBytes("echo 0: " + msg, "echo 1: " + msg);
@@ -98,7 +99,8 @@ public class MicrometerWebSocketsOnErrorTest {
     }
 
     @Test
-    public void testClientEndpointError_ExceptionInsideOnTextMessage_WithOverloadedOnError() throws InterruptedException {
+    public void testClientEndpointError_ExceptionInsideOnTextMessage_WithOverloadedOnError()
+            throws InterruptedException {
         // client endpoint defines multiple @OnError
         // @OnTextMessage results in a failure
 
@@ -117,7 +119,8 @@ public class MicrometerWebSocketsOnErrorTest {
         clientConn.sendTextAndAwait(msg);
 
         // assert messages and metrics
-        Awaitility.await().untilAsserted(() -> Assertions.assertEquals(2, ErroneousClient_OverloadedOnError.MESSAGES.size()));
+        Awaitility.await()
+                .untilAsserted(() -> Assertions.assertEquals(2, ErroneousClient_OverloadedOnError.MESSAGES.size()));
         // assert no client exception collected as metric
         asserter.assertTotalMetricsForAllPaths(0, 0, 1, serverBytesReceived, serverBytesSent, 1, clientBytesSent,
                 clientBytesReceived, 2, 2);
@@ -141,11 +144,12 @@ public class MicrometerWebSocketsOnErrorTest {
         int extraClientReceivedBytes = extraServerSentBytes;
 
         // assert messages and metrics
-        Awaitility.await().untilAsserted(() -> Assertions.assertEquals(6, ErroneousClient_OverloadedOnError.MESSAGES.size()));
+        Awaitility.await()
+                .untilAsserted(() -> Assertions.assertEquals(6, ErroneousClient_OverloadedOnError.MESSAGES.size()));
         assertTrue(ErroneousClient_OverloadedOnError.RUNTIME_EXCEPTION_LATCH.await(2, TimeUnit.SECONDS));
         asserter.assertTotalMetricsForAllPaths(0, 1, 2, serverBytesReceived + extraServerReceivedBytes,
-                serverBytesSent + extraServerSentBytes,
-                2, clientBytesSent + extraClientSentBytes, clientBytesReceived + extraClientReceivedBytes, 4, 4);
+                serverBytesSent + extraServerSentBytes, 2, clientBytesSent + extraClientSentBytes,
+                clientBytesReceived + extraClientReceivedBytes, 4, 4);
 
         // 1 sent: use 'clientConn' to send 'msg'
         // 1 received, 2 sent: 'ErroneousClientEndpoint_OverloadedOnError' -> 'Multi<String> onMessage(String message)'
@@ -153,7 +157,8 @@ public class MicrometerWebSocketsOnErrorTest {
         clientConn.sendTextAndAwait(msg);
 
         // assert messages and metrics
-        Awaitility.await().untilAsserted(() -> Assertions.assertEquals(8, ErroneousClient_OverloadedOnError.MESSAGES.size()));
+        Awaitility.await()
+                .untilAsserted(() -> Assertions.assertEquals(8, ErroneousClient_OverloadedOnError.MESSAGES.size()));
         // after 8 messages, an IllegalStateException is thrown
         // @OnError void onError(IllegalStateException e)
         assertTrue(ErroneousClient_OverloadedOnError.ILLEGAL_STATE_EXCEPTION_LATCH.await(2, TimeUnit.SECONDS));
@@ -174,8 +179,8 @@ public class MicrometerWebSocketsOnErrorTest {
         connection.openConnectionThenSend(vertx);
         int serverSentCountBytesDelta = stringToBytes(connection.expectedResponses());
         int serverReceivedCountBytesDelta = stringToBytes(connection.messagesToSend());
-        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta,
-                serverSentCountBytesDelta, 0, 0, 0, 0, 0);
+        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0, 0,
+                0, 0, 0);
     }
 
     @Test
@@ -189,8 +194,8 @@ public class MicrometerWebSocketsOnErrorTest {
         assertTrue(ErroneousServerEndpoint_OverriddenOnError.RUNTIME_EXCEPTION_LATCH.await(5, TimeUnit.SECONDS));
         int serverSentCountBytesDelta = stringToBytes(connection.expectedResponses());
         int serverReceivedCountBytesDelta = stringToBytes(connection.messagesToSend());
-        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta,
-                serverSentCountBytesDelta, 0, 0, 0, 0, 0);
+        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0, 0,
+                0, 0, 0);
     }
 
     @Test
@@ -201,8 +206,8 @@ public class MicrometerWebSocketsOnErrorTest {
         connection.openConnectionThenSend(vertx);
         int serverSentCountBytesDelta = stringToBytes(connection.expectedResponses());
         int serverReceivedCountBytesDelta = stringToBytes(connection.messagesToSend());
-        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta,
-                serverSentCountBytesDelta, 0, 0, 0, 0, 0);
+        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0, 0,
+                0, 0, 0);
     }
 
     @Test
@@ -217,8 +222,8 @@ public class MicrometerWebSocketsOnErrorTest {
         assertTrue(ErroneousServerEndpoint_OnClose.ILLEGAL_STATE_EXCEPTION_LATCH.await(7, TimeUnit.SECONDS));
         int serverSentCountBytesDelta = stringToBytes(connection.expectedResponses());
         int serverReceivedCountBytesDelta = stringToBytes(connection.messagesToSend());
-        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta,
-                serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0, 0,
+                0, 1, 0);
     }
 
     @Test
@@ -235,8 +240,8 @@ public class MicrometerWebSocketsOnErrorTest {
         // on each message, an exception is raised, we send 1 message -> expect 1 error
         int serverSentCountBytesDelta = stringToBytes(connection.expectedResponses());
         int serverReceivedCountBytesDelta = stringToBytes(connection.messagesToSend());
-        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta,
-                serverSentCountBytesDelta, 0, 0, 0, 1, 0);
+        asserter.assertTotalMetricsForAllPaths(1, 0, 1, serverReceivedCountBytesDelta, serverSentCountBytesDelta, 0, 0,
+                0, 1, 0);
     }
 
     @Test
@@ -246,11 +251,9 @@ public class MicrometerWebSocketsOnErrorTest {
         asserter.serverConnectionOpenedCount += 1;
         RestAssured.given()
                 // without this header the client would receive 404
-                .header("Sec-WebSocket-Key", "foo")
-                .get(path).then().statusCode(400);
+                .header("Sec-WebSocket-Key", "foo").get(path).then().statusCode(400);
         Awaitility.await().atMost(Duration.ofSeconds(12)).untilAsserted(() -> {
-            getMetrics()
-                    .body(assertServerConnectionOpenedTotal(asserter.serverConnectionOpenedCount))
+            getMetrics().body(assertServerConnectionOpenedTotal(asserter.serverConnectionOpenedCount))
                     .body(assertServerConnectionOpenedTotal(path, 1))
                     .body(assertServerConnectionOpeningFailedTotal(path, 1));
         });

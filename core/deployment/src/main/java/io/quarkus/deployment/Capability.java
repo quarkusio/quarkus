@@ -102,6 +102,7 @@ public interface Capability {
 
     /**
      * @deprecated Use more precise capability {@link Capability#SMALLRYE_METRICS}
+     *
      * @see io.quarkus.deployment.metrics.MetricsCapabilityBuildItem
      */
     @Deprecated

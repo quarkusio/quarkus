@@ -12,10 +12,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultStorageTest {
 
     @RegisterExtension
-    static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithTimezones.class)
-                    .addClasses(SchemaUtil.class, SmokeTestUtils.class))
+    static QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(EntityWithTimezones.class).addClasses(SchemaUtil.class, SmokeTestUtils.class))
             .withConfigurationResource("application.properties");
 
     @Test
@@ -32,9 +30,9 @@ public class TimezoneDefaultStorageDefaultTest extends AbstractTimezoneDefaultSt
     public void persistAndLoad() {
         long id = persistWithValuesToTest();
         assertLoadedValues(id,
-                // Native storage preserves the offset, but not the zone ID: https://hibernate.atlassian.net/browse/HHH-16289
+                // Native storage preserves the offset, but not the zone ID:
+                // https://hibernate.atlassian.net/browse/HHH-16289
                 PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(PERSISTED_ZONED_DATE_TIME.getOffset()),
-                PERSISTED_OFFSET_DATE_TIME,
-                PERSISTED_OFFSET_TIME);
+                PERSISTED_OFFSET_DATE_TIME, PERSISTED_OFFSET_TIME);
     }
 }

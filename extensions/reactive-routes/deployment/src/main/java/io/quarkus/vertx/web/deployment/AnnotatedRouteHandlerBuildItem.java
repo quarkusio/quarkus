@@ -28,7 +28,8 @@ public final class AnnotatedRouteHandlerBuildItem extends MultiBuildItem {
     }
 
     public AnnotatedRouteHandlerBuildItem(BeanInfo bean, MethodInfo method, List<AnnotationInstance> routes,
-            AnnotationInstance routeBase, boolean blocking, HttpCompression compression, boolean alwaysAuthenticateRoute) {
+            AnnotationInstance routeBase, boolean blocking, HttpCompression compression,
+            boolean alwaysAuthenticateRoute) {
         super();
         this.bean = bean;
         this.routes = routes;

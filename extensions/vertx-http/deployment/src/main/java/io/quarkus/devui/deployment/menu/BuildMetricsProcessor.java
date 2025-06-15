@@ -15,17 +15,11 @@ public class BuildMetricsProcessor {
 
         InternalPageBuildItem buildMetricsPages = new InternalPageBuildItem("Build Metrics", 50);
 
-        buildMetricsPages.addPage(Page.webComponentPageBuilder()
-                .namespace("devui-build-metrics")
-                .title("Build Steps")
-                .icon("font-awesome-solid:hammer")
-                .componentLink("qwc-build-steps.js"));
+        buildMetricsPages.addPage(Page.webComponentPageBuilder().namespace("devui-build-metrics").title("Build Steps")
+                .icon("font-awesome-solid:hammer").componentLink("qwc-build-steps.js"));
 
-        buildMetricsPages.addPage(Page.webComponentPageBuilder()
-                .namespace("devui-build-metrics")
-                .title("Build Items")
-                .icon("font-awesome-solid:trowel")
-                .componentLink("qwc-build-items.js"));
+        buildMetricsPages.addPage(Page.webComponentPageBuilder().namespace("devui-build-metrics").title("Build Items")
+                .icon("font-awesome-solid:trowel").componentLink("qwc-build-items.js"));
 
         return buildMetricsPages;
     }

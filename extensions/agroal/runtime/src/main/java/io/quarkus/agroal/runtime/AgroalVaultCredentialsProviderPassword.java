@@ -10,7 +10,8 @@ public class AgroalVaultCredentialsProviderPassword extends SimplePassword {
 
     private CredentialsProvider credentialsProvider;
 
-    public AgroalVaultCredentialsProviderPassword(String credentialsProviderName, CredentialsProvider credentialsProvider) {
+    public AgroalVaultCredentialsProviderPassword(String credentialsProviderName,
+            CredentialsProvider credentialsProvider) {
         super(credentialsProviderName);
         this.credentialsProvider = credentialsProvider;
     }

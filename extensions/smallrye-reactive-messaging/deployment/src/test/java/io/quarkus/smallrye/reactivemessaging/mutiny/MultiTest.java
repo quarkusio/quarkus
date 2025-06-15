@@ -16,9 +16,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class MultiTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MultiIntBean.class, MultiStringBean.class, StringProducer.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(MultiIntBean.class, MultiStringBean.class, StringProducer.class));
 
     @Inject
     MultiIntBean multiIntBean;
@@ -27,8 +26,7 @@ public class MultiTest {
 
     @Test
     public void shouldGatherEvenFromMultiBean() {
-        await().atMost(5, TimeUnit.SECONDS)
-                .until(() -> multiIntBean.getEvenNumbers().size() > 5);
+        await().atMost(5, TimeUnit.SECONDS).until(() -> multiIntBean.getEvenNumbers().size() > 5);
 
         assertThat(multiIntBean.getEvenNumbers()).contains(2, 4, 6, 8, 10, 12);
     }

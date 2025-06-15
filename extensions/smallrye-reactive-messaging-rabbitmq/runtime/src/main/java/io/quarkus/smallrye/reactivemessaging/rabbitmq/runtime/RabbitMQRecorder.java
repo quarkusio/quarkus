@@ -13,7 +13,8 @@ public class RabbitMQRecorder {
     public RuntimeValue<CredentialsProviderLink> configureOptions(String credentialsProviderName,
             Optional<String> credentialsProviderBeanName) {
 
-        CredentialsProvider credentialsProvider = CredentialsProviderFinder.find(credentialsProviderBeanName.orElse(null));
+        CredentialsProvider credentialsProvider = CredentialsProviderFinder
+                .find(credentialsProviderBeanName.orElse(null));
 
         return new RuntimeValue<>(new CredentialsProviderLink(credentialsProvider, credentialsProviderName));
     }

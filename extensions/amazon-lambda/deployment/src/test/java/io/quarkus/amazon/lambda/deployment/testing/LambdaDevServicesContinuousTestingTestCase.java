@@ -18,25 +18,23 @@ import io.quarkus.test.QuarkusDevModeTest;
 @Disabled("https://github.com/quarkusio/quarkus/issues/33963")
 public class LambdaDevServicesContinuousTestingTestCase {
     @RegisterExtension
-    public static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(GreetingLambda.class, InputPerson.class, OutputPerson.class)
-                            .addAsResource(
-                                    new StringAsset(ContinuousTestingTestUtils.appProperties(
-                                            "quarkus.log.category.\"io.quarkus.amazon.lambda.runtime\".level=DEBUG")),
-                                    "application.properties");
-                }
-            }).setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(GreetingLambdaTest.class);
-                }
-            });
+    public static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(GreetingLambda.class, InputPerson.class, OutputPerson.class).addAsResource(
+                            new StringAsset(ContinuousTestingTestUtils.appProperties(
+                                    "quarkus.log.category.\"io.quarkus.amazon.lambda.runtime\".level=DEBUG")),
+                            "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(GreetingLambdaTest.class);
+        }
+    });
 
-    //run this twice, to make sure everything is cleaned up properly
+    // run this twice, to make sure everything is cleaned up properly
     @RepeatedTest(2)
     public void testLambda() throws Exception {
         ContinuousTestingTestUtils utils = new ContinuousTestingTestUtils();

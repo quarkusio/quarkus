@@ -15,9 +15,8 @@ import io.smallrye.mutiny.Uni;
 
 /**
  * This class is used by the filters that are generated as a result of the use of {@link ServerRequestFilter} or
- * {@link ServerResponseFilter} on methods
- * that don't return {@code void}.
- * See {@code io.quarkus.resteasy.reactive.server.deployment.CustomFilterGenerator}
+ * {@link ServerResponseFilter} on methods that don't return {@code void}. See
+ * {@code io.quarkus.resteasy.reactive.server.deployment.CustomFilterGenerator}
  */
 @SuppressWarnings("unused")
 public final class FilterUtil {
@@ -25,8 +24,7 @@ public final class FilterUtil {
     private FilterUtil() {
     }
 
-    public static void handleOptional(Optional<Response> optional,
-            ResteasyReactiveContainerRequestContext context) {
+    public static void handleOptional(Optional<Response> optional, ResteasyReactiveContainerRequestContext context) {
         if ((optional != null) && optional.isPresent()) {
             context.abortWith(optional.get());
         }
@@ -39,15 +37,13 @@ public final class FilterUtil {
         }
     }
 
-    public static void handleResponse(Response response,
-            ResteasyReactiveContainerRequestContext context) {
+    public static void handleResponse(Response response, ResteasyReactiveContainerRequestContext context) {
         if (response != null) {
             context.abortWith(response);
         }
     }
 
-    public static void handleRestResponse(RestResponse<?> response,
-            ResteasyReactiveContainerRequestContext context) {
+    public static void handleRestResponse(RestResponse<?> response, ResteasyReactiveContainerRequestContext context) {
         if (response != null) {
             context.abortWith(response.toResponse());
         }

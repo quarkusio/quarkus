@@ -11,8 +11,8 @@ import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem
 public class OpenTelemetryMpContextPropagationProcessor {
 
     @BuildStep
-    void registerOpenTelemetryThreadProvider(
-            BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
-        threadContextProvider.produce(new ThreadContextProviderBuildItem(OpenTelemetryMpContextPropagationProvider.class));
+    void registerOpenTelemetryThreadProvider(BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
+        threadContextProvider
+                .produce(new ThreadContextProviderBuildItem(OpenTelemetryMpContextPropagationProvider.class));
     }
 }

@@ -21,11 +21,10 @@ import io.quarkus.narayana.jta.QuarkusTransaction;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Tests a use case where multiple PU/datasources are defined at build time,
- * but only one is used at runtime.
+ * Tests a use case where multiple PU/datasources are defined at build time, but only one is used at runtime.
  * <p>
- * This is mostly useful when each datasource has a distinct db-kind, but in theory that shouldn't matter,
- * so we use the h2 db-kind everywhere here to keep test dependencies simpler.
+ * This is mostly useful when each datasource has a distinct db-kind, but in theory that shouldn't matter, so we use the
+ * h2 db-kind everywhere here to keep test dependencies simpler.
  */
 public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
@@ -49,9 +48,8 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     static QuarkusUnitTest runner(String activePuName, String activeDsName) {
         return new QuarkusUnitTest()
-                .withApplicationRoot((jar) -> jar
-                        .addPackage(MyEntity.class.getPackage().getName())
-                        .addClass(MyProducer.class))
+                .withApplicationRoot(
+                        (jar) -> jar.addPackage(MyEntity.class.getPackage().getName()).addClass(MyProducer.class))
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.packages", MyEntity.class.getPackageName())
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.datasource", "ds-1")
                 .overrideConfigKey("quarkus.hibernate-orm.pu-1.schema-management.strategy", "drop-and-create")
@@ -83,8 +81,8 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
 
     @Test
     public void testExplicitSessionBeanUsable() {
-        doTestPersistRetrieve(Arc.container()
-                .select(Session.class, new PersistenceUnit.PersistenceUnitLiteral(activePuName)).get(),
+        doTestPersistRetrieve(
+                Arc.container().select(Session.class, new PersistenceUnit.PersistenceUnitLiteral(activePuName)).get(),
                 1L);
     }
 
@@ -100,7 +98,8 @@ public abstract class MultiplePUAsAlternativesWithBeanProducerTest {
                     .select(Session.class, new PersistenceUnit.PersistenceUnitLiteral(inactivePuName)).get()
                     .find(MyEntity.class, 3L))
                     .hasMessageContainingAll(
-                            "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit " + inactivePuName,
+                            "Cannot retrieve the EntityManagerFactory/SessionFactory for persistence unit "
+                                    + inactivePuName,
                             "Hibernate ORM was deactivated through configuration properties");
         });
     }

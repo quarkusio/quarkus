@@ -15,8 +15,8 @@ final class CallbackArgumentsBuildItem extends SimpleBuildItem {
     }
 
     /**
-     *
      * @param context
+     *
      * @return all matching providers, never {@code null}
      */
     List<CallbackArgument> findMatching(ParameterContext context) {

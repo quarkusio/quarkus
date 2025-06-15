@@ -20,11 +20,9 @@ public class IgnoreExplicitForJoinedDefaultValueWithMultiplePUsTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(User.class)
-                    .addClass(Plane.class)
-                    .addAsResource("application-multiple-pu-discriminator-ignore-explicit-for-joined-default-value.properties",
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClass(User.class).addClass(Plane.class).addAsResource(
+                    "application-multiple-pu-discriminator-ignore-explicit-for-joined-default-value.properties",
+                    "application.properties"));
     @PersistenceUnit("users")
     @Inject
     EntityManager emUsers;

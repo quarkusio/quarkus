@@ -9,11 +9,10 @@ import java.lang.annotation.Target;
 import jakarta.ws.rs.core.Response;
 
 /**
- * When placed on a resource method, then RESTEasy Reactive will add the specified HTTP response headers,
- * if the method completes without an exception and if it does not return {@link Response} or {@link RestResponse}.
- *
- * Furthermore, users should not depend on this annotation to set the {@code Content-Type} and {@code Content-Length}
- * headers, as those are set automatically by RESTEasy Reactive.
+ * When placed on a resource method, then RESTEasy Reactive will add the specified HTTP response headers, if the method
+ * completes without an exception and if it does not return {@link Response} or {@link RestResponse}. Furthermore, users
+ * should not depend on this annotation to set the {@code Content-Type} and {@code Content-Length} headers, as those are
+ * set automatically by RESTEasy Reactive.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)

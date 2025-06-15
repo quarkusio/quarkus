@@ -18,7 +18,7 @@ public final class MongoPropertyUtil {
     private static volatile Map<String, Map<String, String>> replacementCache = Collections.emptyMap();
 
     private MongoPropertyUtil() {
-        //prevent initialization
+        // prevent initialization
     }
 
     public static Set<String> collectFields(Class<?> type) {
@@ -57,8 +57,8 @@ public final class MongoPropertyUtil {
 
     private static Map<String, String> buildWithReflection(Class<?> clazz) {
         LOGGER.info("No replacement map found for " + clazz.getName()
-                + ", default to using reflection. To avoid that, make sure the class is in the Jandex index or, " +
-                "if using class based projection, annotated it with @ProjectionFor");
+                + ", default to using reflection. To avoid that, make sure the class is in the Jandex index or, "
+                + "if using class based projection, annotated it with @ProjectionFor");
         Map<String, String> replacementMap = new HashMap<>();
         for (Field field : clazz.getDeclaredFields()) {
             BsonProperty bsonProperty = field.getAnnotation(BsonProperty.class);
@@ -80,7 +80,8 @@ public final class MongoPropertyUtil {
     }
 
     // copied from JavaBeanUtil that is inside the core deployment module so not accessible at runtime.
-    // See conventions expressed by https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
+    // See conventions expressed by
+    // https://docs.oracle.com/javase/7/docs/api/java/beans/Introspector.html#decapitalize(java.lang.String)
     private static String decapitalize(String name) {
         if (name != null && name.length() != 0) {
             if (name.length() > 1 && Character.isUpperCase(name.charAt(1))) {

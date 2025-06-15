@@ -23,7 +23,7 @@ public class QuarkusNotFoundServlet extends HttpServlet {
             resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
             resp.getWriter().write(Json.encodePrettily(resourceNotFoundData.getJsonContent()));
         } else {
-            //We default to HTML representation
+            // We default to HTML representation
             resp.setContentType("text/html");
             resp.setCharacterEncoding(StandardCharsets.UTF_8.name());
             resp.getWriter().write(resourceNotFoundData.getHTMLContent());

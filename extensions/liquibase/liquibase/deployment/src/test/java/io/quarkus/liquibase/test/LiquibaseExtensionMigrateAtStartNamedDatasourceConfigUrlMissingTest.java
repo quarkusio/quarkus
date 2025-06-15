@@ -18,8 +18,7 @@ public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml"))
+            .withApplicationRoot((jar) -> jar.addAsResource("db/changeLog.xml", "db/changeLog.xml"))
             .overrideConfigKey("quarkus.liquibase.users.migrate-at-start", "true")
             // The URL won't be missing if dev services are enabled
             .overrideConfigKey("quarkus.devservices.enabled", "false")
@@ -29,8 +28,7 @@ public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest
             // We need this otherwise it's going to be the *default* datasource making everything fail
             .overrideConfigKey("quarkus.datasource.db-kind", "h2")
             .overrideConfigKey("quarkus.datasource.username", "sa")
-            .overrideConfigKey("quarkus.datasource.password", "sa")
-            .overrideConfigKey("quarkus.datasource.jdbc.url",
+            .overrideConfigKey("quarkus.datasource.password", "sa").overrideConfigKey("quarkus.datasource.jdbc.url",
                     "jdbc:h2:tcp://localhost/mem:test-quarkus-migrate-at-start;DB_CLOSE_DELAY=-1");
 
     @Inject
@@ -40,12 +38,12 @@ public class LiquibaseExtensionMigrateAtStartNamedDatasourceConfigUrlMissingTest
     @Test
     @DisplayName("If the URL is missing for the default datasource, even if migrate-at-start is enabled, the application should boot, but Liquibase should be deactivated for that datasource")
     public void testBootSucceedsButLiquibaseDeactivated() {
-        assertThatThrownBy(() -> liquibase.get().getConfiguration())
-                .isInstanceOf(InactiveBeanException.class)
+        assertThatThrownBy(() -> liquibase.get().getConfiguration()).isInstanceOf(InactiveBeanException.class)
                 .hasMessageContainingAll(
                         "Liquibase for datasource 'users' was deactivated automatically because this datasource was deactivated",
                         "Datasource 'users' was deactivated automatically because its URL is not set.",
-                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic hints
+                        "To avoid this exception while keeping the bean inactive", // Message from Arc with generic
+                        // hints
                         "To activate the datasource, set configuration property 'quarkus.datasource.\"users\".jdbc.url'.",
                         "Refer to https://quarkus.io/guides/datasource for guidance.");
     }

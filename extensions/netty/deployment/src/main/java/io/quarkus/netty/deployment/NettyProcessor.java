@@ -49,8 +49,8 @@ class NettyProcessor {
 
     @BuildStep
     public NativeImageSystemPropertyBuildItem limitMem() {
-        //in native mode we limit the size of the epoll array
-        //if the array overflows the selector just moves the overflow to a map
+        // in native mode we limit the size of the epoll array
+        // if the array overflows the selector just moves the overflow to a map
         return new NativeImageSystemPropertyBuildItem("sun.nio.ch.maxUpdateArraySize", "100");
     }
 
@@ -59,8 +59,8 @@ class NettyProcessor {
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, true);
 
-        //in native mode we limit the size of the epoll array
-        //if the array overflows the selector just moves the overflow to a map
+        // in native mode we limit the size of the epoll array
+        // if the array overflows the selector just moves the overflow to a map
         return new SystemPropertyBuildItem("io.netty.allocator.maxOrder", maxOrder);
     }
 
@@ -80,12 +80,12 @@ class NettyProcessor {
 
     @BuildStep
     public SystemPropertyBuildItem disableFinalizers() {
-        return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads", "true");
+        return new SystemPropertyBuildItem("io.netty.allocator.disableCacheFinalizersForFastThreadLocalThreads",
+                "true");
     }
 
     @BuildStep
-    NativeImageConfigBuildItem build(
-            NettyBuildTimeConfig config,
+    NativeImageConfigBuildItem build(NettyBuildTimeConfig config,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems) {
@@ -94,23 +94,21 @@ class NettyProcessor {
                 new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
                         "jdk.internal.misc.Unsafe", "getUnsafe", new String[0]));
         // in JDK >= 21 the constructor has `long, long` signature
-        reflectiveMethods.produce(
-                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
-                        "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), long.class.getName() }));
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem(
+                "Reflectively accessed through PlatformDependent0's static initializer", "java.nio.DirectByteBuffer",
+                "<init>", new String[] { long.class.getName(), long.class.getName() }));
         // in JDK < 21 the constructor has `long, int` signature
-        reflectiveMethods.produce(
-                new ReflectiveMethodBuildItem("Reflectively accessed through PlatformDependent0's static initializer",
-                        "java.nio.DirectByteBuffer", "<init>", new String[] { long.class.getName(), int.class.getName() }));
+        reflectiveMethods.produce(new ReflectiveMethodBuildItem(
+                "Reflectively accessed through PlatformDependent0's static initializer", "java.nio.DirectByteBuffer",
+                "<init>", new String[] { long.class.getName(), int.class.getName() }));
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel")
-                .build());
         reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioServerSocketChannel")
-                        .build());
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioDatagramChannel")
-                .build());
+                .produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioSocketChannel").build());
+        reflectiveClass.produce(
+                ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioServerSocketChannel").build());
         reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("java.util.LinkedHashMap").build());
+                .produce(ReflectiveClassBuildItem.builder("io.netty.channel.socket.nio.NioDatagramChannel").build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder("java.util.LinkedHashMap").build());
         reflectiveClass.produce(ReflectiveClassBuildItem.builder("sun.nio.ch.SelectorImpl").methods().fields().build());
 
         String maxOrder = calculateMaxOrder(config.allocatorMaxOrder(), minMaxOrderBuildItems, false);
@@ -153,7 +151,8 @@ class NettyProcessor {
                     // Runtime initialize due to transitive use of the io.netty.util.internal.PlatformDependent class
                     // when initializing CRLF_BUF and ZERO_CRLF_CRLF_BUF
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.HttpObjectEncoder")
-                    .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
+                    .addRuntimeInitializedClass(
+                            "io.netty.handler.codec.http.websocketx.extensions.compression.DeflateDecoder")
                     .addRuntimeInitializedClass("io.netty.handler.codec.http.websocketx.WebSocket00FrameEncoder");
             // Zstd is an optional dependency, runtime initialize to avoid IllegalStateException when zstd is not
             // available. This will result in a runtime ClassNotFoundException if the user tries to use zstd.
@@ -247,7 +246,8 @@ class NettyProcessor {
                 // - org.jboss.netty.tryUnsafe
                 // - io.netty.tryReflectionSetAccessible
                 .addRuntimeReinitializedClass("io.netty.util.internal.PlatformDependent0")
-                // Runtime initialize classes to allow netty to use the field offset for testing if unsafe is available or not
+                // Runtime initialize classes to allow netty to use the field offset for testing if unsafe is available
+                // or not
                 // See https://github.com/quarkusio/quarkus/issues/47903#issuecomment-2890924970
                 .addRuntimeReinitializedClass("io.netty.util.AbstractReferenceCounted")
                 .addRuntimeReinitializedClass("io.netty.buffer.AbstractReferenceCountedByteBuf");
@@ -286,24 +286,24 @@ class NettyProcessor {
                     // - io.netty.maxThreadLocalCharBufferSize
                     .addRuntimeInitializedClass("io.netty.buffer.ByteBufUtil");
 
-            if (QuarkusClassLoader
-                    .isClassPresentAtRuntime("org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload")) {
+            if (QuarkusClassLoader.isClassPresentAtRuntime(
+                    "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload")) {
                 // Runtime initialize due to dependency on io.netty.buffer.Unpooled
                 builder.addRuntimeReinitializedClass(
                         "org.jboss.resteasy.reactive.client.impl.multipart.QuarkusMultipartFormUpload");
             }
         }
 
-        return builder //TODO: make configurable
+        return builder // TODO: make configurable
                 .build();
     }
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     public void eagerlyInitClass(NettyRecorder recorder) {
-        //see https://github.com/quarkusio/quarkus/issues/3663
-        //this class is slow to initialize, we make sure that we do it eagerly
-        //before it blocks the IO thread and causes a warning
+        // see https://github.com/quarkusio/quarkus/issues/3663
+        // this class is slow to initialize, we make sure that we do it eagerly
+        // before it blocks the IO thread and causes a warning
         recorder.eagerlyInitChannelId();
     }
 
@@ -311,8 +311,7 @@ class NettyProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     void registerEventLoopBeans(BuildProducer<SyntheticBeanBuildItem> syntheticBeans,
-            Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem,
-            NettyRecorder recorder,
+            Optional<EventLoopSupplierBuildItem> loopSupplierBuildItem, NettyRecorder recorder,
             BuildProducer<EventLoopGroupBuildItem> eventLoopGroups) {
         Supplier<EventLoopGroup> boss;
         Supplier<EventLoopGroup> main;
@@ -326,22 +325,13 @@ class NettyProcessor {
 
         // IMPLEMENTATION NOTE:
         // We use Singleton scope for both beans. ApplicationScoped causes problems with EventLoopGroup.next()
-        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the corresponding bridge method
+        // which overrides the EventExecutorGroup.next() method but since Netty 4 is compiled with JDK6 the
+        // corresponding bridge method
         // is not generated and the invocation upon the client proxy results in an AbstractMethodError
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
-                .supplier(boss)
-                .scope(Singleton.class)
-                .addQualifier(BossEventLoopGroup.class)
-                .unremovable()
-                .setRuntimeInit()
-                .done());
-        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class)
-                .supplier(main)
-                .scope(Singleton.class)
-                .addQualifier(MainEventLoopGroup.class)
-                .unremovable()
-                .setRuntimeInit()
-                .done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class).supplier(boss)
+                .scope(Singleton.class).addQualifier(BossEventLoopGroup.class).unremovable().setRuntimeInit().done());
+        syntheticBeans.produce(SyntheticBeanBuildItem.configure(EventLoopGroup.class).supplier(main)
+                .scope(Singleton.class).addQualifier(MainEventLoopGroup.class).unremovable().setRuntimeInit().done());
 
         eventLoopGroups.produce(new EventLoopGroupBuildItem(boss, main));
     }
@@ -350,7 +340,8 @@ class NettyProcessor {
     AdditionalBeanBuildItem registerQualifiers() {
         // We need to register the qualifiers manually because they're not part of the index
         // Previously they were indexed because we indexed the "uber-producer-class" generated for RuntimeBeanBuildItems
-        return AdditionalBeanBuildItem.builder().addBeanClasses(BossEventLoopGroup.class, MainEventLoopGroup.class).build();
+        return AdditionalBeanBuildItem.builder().addBeanClasses(BossEventLoopGroup.class, MainEventLoopGroup.class)
+                .build();
     }
 
     @BuildStep
@@ -361,8 +352,7 @@ class NettyProcessor {
 
     @BuildStep
     public List<UnsafeAccessedFieldBuildItem> unsafeAccessedFields() {
-        return Arrays.asList(
-                new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
+        return Arrays.asList(new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "selectedKeys"),
                 new UnsafeAccessedFieldBuildItem("sun.nio.ch.SelectorImpl", "publicSelectedKeys"),
                 new UnsafeAccessedFieldBuildItem("io.netty.util.internal.shaded.org.jctools.util.UnsafeRefArrayAccess",
                         "REF_ELEMENT_SHIFT"));
@@ -374,12 +364,12 @@ class NettyProcessor {
         return new RuntimeInitializedClassBuildItem(EmptyByteBufStub.class.getName());
     }
 
-    //if debug logging is enabled netty logs lots of exceptions
-    //see https://github.com/quarkusio/quarkus/issues/5213
+    // if debug logging is enabled netty logs lots of exceptions
+    // see https://github.com/quarkusio/quarkus/issues/5213
     @BuildStep
     LogCleanupFilterBuildItem cleanupUnsafeLog() {
-        return new LogCleanupFilterBuildItem(PlatformDependent.class.getName() + "0", Level.TRACE, "direct buffer constructor",
-                "jdk.internal.misc.Unsafe", "sun.misc.Unsafe");
+        return new LogCleanupFilterBuildItem(PlatformDependent.class.getName() + "0", Level.TRACE,
+                "direct buffer constructor", "jdk.internal.misc.Unsafe", "sun.misc.Unsafe");
     }
 
     /**
@@ -402,8 +392,8 @@ class NettyProcessor {
         return new NativeImageResourceBuildItem("META-INF/io.netty.versions.properties");
     }
 
-    private String calculateMaxOrder(OptionalInt userConfig, List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems,
-            boolean shouldWarn) {
+    private String calculateMaxOrder(OptionalInt userConfig,
+            List<MinNettyAllocatorMaxOrderBuildItem> minMaxOrderBuildItems, boolean shouldWarn) {
         int result = DEFAULT_NETTY_ALLOCATOR_MAX_ORDER;
         for (MinNettyAllocatorMaxOrderBuildItem minMaxOrderBuildItem : minMaxOrderBuildItems) {
             if (minMaxOrderBuildItem.getMaxOrder() > result) {

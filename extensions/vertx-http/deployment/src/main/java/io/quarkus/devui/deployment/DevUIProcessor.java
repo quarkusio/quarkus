@@ -91,10 +91,9 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Create the HTTP related Dev UI API Points.
- * This includes the JsonRPC Websocket endpoint and the endpoints that deliver the generated and static content.
- *
- * This also find all jsonrpc methods and make them available in the jsonRPC Router
+ * Create the HTTP related Dev UI API Points. This includes the JsonRPC Websocket endpoint and the endpoints that
+ * deliver the generated and static content. This also find all jsonrpc methods and make them available in the jsonRPC
+ * Router
  */
 public class DevUIProcessor {
     private static final String FOOTER_LOG_NAMESPACE = "devui-footer-log";
@@ -139,17 +138,11 @@ public class DevUIProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.STATIC_INIT)
-    void registerDevUiHandlers(
-            DevUIConfig devUIConfig,
-            MvnpmBuildItem mvnpmBuildItem,
-            List<DevUIRoutesBuildItem> devUIRoutesBuildItems,
-            List<StaticContentBuildItem> staticContentBuildItems,
-            BuildProducer<RouteBuildItem> routeProducer,
-            DevUIRecorder recorder,
-            LaunchModeBuildItem launchModeBuildItem,
-            NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
-            HttpRootPathBuildItem httpRootPathBuildItem,
-            ShutdownContextBuildItem shutdownContext) throws IOException {
+    void registerDevUiHandlers(DevUIConfig devUIConfig, MvnpmBuildItem mvnpmBuildItem,
+            List<DevUIRoutesBuildItem> devUIRoutesBuildItems, List<StaticContentBuildItem> staticContentBuildItems,
+            BuildProducer<RouteBuildItem> routeProducer, DevUIRecorder recorder,
+            LaunchModeBuildItem launchModeBuildItem, NonApplicationRootPathBuildItem nonApplicationRootPathBuildItem,
+            HttpRootPathBuildItem httpRootPathBuildItem, ShutdownContextBuildItem shutdownContext) throws IOException {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;
@@ -157,37 +150,27 @@ public class DevUIProcessor {
 
         routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
                 .orderedRoute(DEVUI + SLASH_ALL, -2 * FilterBuildItem.CORS)
-                .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts().orElse(null)))
-                .build());
+                .handler(recorder.createLocalHostOnlyFilter(devUIConfig.hosts().orElse(null))).build());
 
         if (devUIConfig.cors().enabled()) {
             routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                    .orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS)
-                    .handler(new DevUICORSFilter())
-                    .build());
+                    .orderedRoute(DEVUI + SLASH_ALL, -1 * FilterBuildItem.CORS).handler(new DevUICORSFilter()).build());
         }
 
         // Websocket for JsonRPC comms
-        routeProducer.produce(
-                nonApplicationRootPathBuildItem
-                        .routeBuilder().route(DEVUI + SLASH + JSONRPC)
-                        .handler(recorder.communicationHandler())
-                        .build());
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH + JSONRPC)
+                .handler(recorder.communicationHandler()).build());
 
         // Static handler for components
         for (DevUIRoutesBuildItem devUIRoutesBuildItem : devUIRoutesBuildItems) {
             String route = devUIRoutesBuildItem.getPath();
 
             String path = nonApplicationRootPathBuildItem.resolvePath(route);
-            Handler<RoutingContext> uihandler = recorder.uiHandler(
-                    devUIRoutesBuildItem.getFinalDestination(),
-                    path,
-                    devUIRoutesBuildItem.getWebRootConfigurations(),
-                    shutdownContext);
+            Handler<RoutingContext> uihandler = recorder.uiHandler(devUIRoutesBuildItem.getFinalDestination(), path,
+                    devUIRoutesBuildItem.getWebRootConfigurations(), shutdownContext);
 
             NonApplicationRootPathBuildItem.Builder builder = nonApplicationRootPathBuildItem.routeBuilder()
-                    .route(route)
-                    .handler(uihandler);
+                    .route(route).handler(uihandler);
 
             if (route.endsWith(DEVUI + SLASH)) {
                 builder = builder.displayOnNotFoundPage("Dev UI");
@@ -210,56 +193,44 @@ public class DevUIProcessor {
             List<DevUIContent> content = staticContentBuildItem.getContent();
             for (DevUIContent c : content) {
                 String parsedContent = Qute.fmt(new String(c.getTemplate()), c.getData());
-                Path tempFile = devUiBasePath
-                        .resolve(c.getFileName());
+                Path tempFile = devUiBasePath.resolve(c.getFileName());
                 Files.writeString(tempFile, parsedContent);
 
                 urlAndPath.put(c.getFileName(), tempFile.toString());
             }
             Handler<RoutingContext> buildTimeStaticHandler = recorder.buildTimeStaticHandler(basepath, urlAndPath);
 
-            routeProducer.produce(
-                    nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH_ALL)
-                            .handler(buildTimeStaticHandler)
-                            .build());
+            routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH_ALL)
+                    .handler(buildTimeStaticHandler).build());
         }
 
         Handler<RoutingContext> endpointInfoHandler = recorder.endpointInfoHandler(basepath);
 
-        routeProducer.produce(
-                nonApplicationRootPathBuildItem.routeBuilder().route(DEVUI + SLASH + "endpoints" + SLASH + "*")
-                        .handler(endpointInfoHandler)
-                        .build());
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
+                .route(DEVUI + SLASH + "endpoints" + SLASH + "*").handler(endpointInfoHandler).build());
 
         // For the Vaadin router (So that bookmarks/url refreshes work)
         for (DevUIRoutesBuildItem devUIRoutesBuildItem : devUIRoutesBuildItems) {
             String route = devUIRoutesBuildItem.getPath();
             basepath = nonApplicationRootPathBuildItem.resolvePath(route);
             Handler<RoutingContext> routerhandler = recorder.vaadinRouterHandler(basepath);
-            routeProducer.produce(
-                    nonApplicationRootPathBuildItem.routeBuilder().route(route + SLASH_ALL).handler(routerhandler).build());
+            routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder().route(route + SLASH_ALL)
+                    .handler(routerhandler).build());
         }
 
         // Static mvnpm jars
         String contextRoot = nonApplicationRootPathBuildItem.getNonApplicationRootPath();
-        routeProducer.produce(
-                nonApplicationRootPathBuildItem.routeBuilder()
-                        .route("_static" + SLASH_ALL)
-                        .handler(recorder.mvnpmHandler(contextRoot, mvnpmBuildItem.getMvnpmJars()))
-                        .build());
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder().route("_static" + SLASH_ALL)
+                .handler(recorder.mvnpmHandler(contextRoot, mvnpmBuildItem.getMvnpmJars())).build());
 
         // Redirect /q/dev -> /q/dev-ui
-        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder()
-                .route("dev")
-                .handler(recorder.redirect(contextRoot))
-                .build());
+        routeProducer.produce(nonApplicationRootPathBuildItem.routeBuilder().route("dev")
+                .handler(recorder.redirect(contextRoot)).build());
 
         // Redirect naked to welcome if there is no index.html
         if (!hasOwnIndexHtml()) {
-            routeProducer.produce(httpRootPathBuildItem.routeBuilder()
-                    .orderedRoute("/", Integer.MAX_VALUE)
-                    .handler(recorder.redirect(contextRoot, "welcome"))
-                    .build());
+            routeProducer.produce(httpRootPathBuildItem.routeBuilder().orderedRoute("/", Integer.MAX_VALUE)
+                    .handler(recorder.redirect(contextRoot, "welcome")).build());
         }
     }
 
@@ -274,17 +245,16 @@ public class DevUIProcessor {
     }
 
     /**
-     * This makes sure the JsonRPC Classes for both the internal Dev UI and extensions is available as a bean and on the index.
+     * This makes sure the JsonRPC Classes for both the internal Dev UI and extensions is available as a bean and on the
+     * index.
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void additionalBean(BuildProducer<AdditionalBeanBuildItem> additionalBeanProducer,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexProducer,
             List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems) {
 
-        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JsonRpcRouter.class)
-                .addBeanClass(VertxRouteInfoService.class)
-                .setUnremovable().build());
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder().addBeanClass(JsonRpcRouter.class)
+                .addBeanClass(VertxRouteInfoService.class).setUnremovable().build());
 
         // Make sure all JsonRPC Providers is in the index
         for (JsonRPCProvidersBuildItem jsonRPCProvidersBuildItem : jsonRPCProvidersBuildItems) {
@@ -295,16 +265,12 @@ public class DevUIProcessor {
                     ? BuiltinScope.APPLICATION.getName()
                     : jsonRPCProvidersBuildItem.getDefaultBeanScope();
 
-            additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass(c)
-                    .setDefaultScope(defaultBeanScope)
-                    .setUnremovable().build());
+            additionalBeanProducer.produce(AdditionalBeanBuildItem.builder().addBeanClass(c)
+                    .setDefaultScope(defaultBeanScope).setUnremovable().build());
         }
 
-        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClass(JsonRpcRouter.class)
-                .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                .setUnremovable().build());
+        additionalBeanProducer.produce(AdditionalBeanBuildItem.builder().addBeanClass(JsonRpcRouter.class)
+                .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
 
     }
 
@@ -313,10 +279,8 @@ public class DevUIProcessor {
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void findAllJsonRPCMethods(BuildProducer<JsonRPCRuntimeMethodsBuildItem> jsonRPCMethodsProvider,
-            BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer,
-            LaunchModeBuildItem launchModeBuildItem,
-            CombinedIndexBuildItem combinedIndexBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
+            BuildProducer<BuildTimeConstBuildItem> buildTimeConstProducer, LaunchModeBuildItem launchModeBuildItem,
+            CombinedIndexBuildItem combinedIndexBuildItem, CurateOutcomeBuildItem curateOutcomeBuildItem,
             List<JsonRPCProvidersBuildItem> jsonRPCProvidersBuildItems,
             DeploymentMethodBuildItem deploymentMethodBuildItem) {
 
@@ -326,10 +290,14 @@ public class DevUIProcessor {
 
         IndexView index = combinedIndexBuildItem.getIndex();
 
-        Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap = new HashMap<>(); // All methods so that we can build the reflection
+        Map<String, Map<JsonRpcMethodName, JsonRpcMethod>> extensionMethodsMap = new HashMap<>(); // All methods so that
+                                                                                                  // we can build the
+                                                                                                  // reflection
 
-        List<String> requestResponseMethods = new ArrayList<>(); // All requestResponse methods for validation on the client side
-        List<String> subscriptionMethods = new ArrayList<>(); // All subscription methods for validation on the client side
+        List<String> requestResponseMethods = new ArrayList<>(); // All requestResponse methods for validation on the
+                                                                 // client side
+        List<String> subscriptionMethods = new ArrayList<>(); // All subscription methods for validation on the client
+                                                              // side
 
         // Let's use the Jandex index to find all methods
         for (JsonRPCProvidersBuildItem jsonRPCProvidersBuildItem : jsonRPCProvidersBuildItems) {
@@ -369,14 +337,12 @@ public class DevUIProcessor {
                                 }
                                 JsonRpcMethod jsonRpcMethod = new JsonRpcMethod(clazz, method.name(), params);
                                 jsonRpcMethod.setExplicitlyBlocking(method.hasAnnotation(Blocking.class));
-                                jsonRpcMethod
-                                        .setExplicitlyNonBlocking(method.hasAnnotation(NonBlocking.class));
+                                jsonRpcMethod.setExplicitlyNonBlocking(method.hasAnnotation(NonBlocking.class));
                                 jsonRpcMethods.put(jsonRpcMethodName, jsonRpcMethod);
                             } else {
                                 JsonRpcMethod jsonRpcMethod = new JsonRpcMethod(clazz, method.name(), null);
                                 jsonRpcMethod.setExplicitlyBlocking(method.hasAnnotation(Blocking.class));
-                                jsonRpcMethod
-                                        .setExplicitlyNonBlocking(method.hasAnnotation(NonBlocking.class));
+                                jsonRpcMethod.setExplicitlyNonBlocking(method.hasAnnotation(NonBlocking.class));
                                 jsonRpcMethods.put(jsonRpcMethodName, jsonRpcMethod);
                             }
                         }
@@ -416,8 +382,7 @@ public class DevUIProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void createJsonRpcRouter(DevUIRecorder recorder,
-            BeanContainerBuildItem beanContainer,
+    void createJsonRpcRouter(DevUIRecorder recorder, BeanContainerBuildItem beanContainer,
             JsonRPCRuntimeMethodsBuildItem jsonRPCMethodsBuildItem,
             DeploymentMethodBuildItem deploymentMethodBuildItem) {
 
@@ -427,8 +392,9 @@ public class DevUIProcessor {
 
             DevConsoleManager.setGlobal(DevUIRecorder.DEV_MANAGER_GLOBALS_JSON_MAPPER_FACTORY,
                     JsonMapper.Factory.deploymentLinker().createLinkData(new DevUIDatabindCodec.Factory()));
-            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap, deploymentMethodBuildItem.getMethods(),
-                    deploymentMethodBuildItem.getSubscriptions(), deploymentMethodBuildItem.getRecordedValues());
+            recorder.createJsonRpcRouter(beanContainer.getValue(), extensionMethodsMap,
+                    deploymentMethodBuildItem.getMethods(), deploymentMethodBuildItem.getSubscriptions(),
+                    deploymentMethodBuildItem.getRecordedValues());
         }
     }
 
@@ -437,8 +403,7 @@ public class DevUIProcessor {
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     void processFooterLogs(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
-            BuildProducer<FooterPageBuildItem> footerPageProducer,
-            List<FooterLogBuildItem> footerLogBuildItems) {
+            BuildProducer<FooterPageBuildItem> footerPageProducer, List<FooterLogBuildItem> footerLogBuildItems) {
 
         List<BuildTimeActionBuildItem> devServiceLogs = new ArrayList<>();
         List<FooterPageBuildItem> footers = new ArrayList<>();
@@ -462,10 +427,8 @@ public class DevUIProcessor {
             devServiceLogs.add(devServiceLogActions);
 
             // Create the Footer in the Dev UI
-            WebComponentPageBuilder log = Page.webComponentPageBuilder().internal()
-                    .namespace(FOOTER_LOG_NAMESPACE)
-                    .icon("font-awesome-regular:file-lines")
-                    .title(capitalizeFirstLetter(footerLogBuildItem.getName()))
+            WebComponentPageBuilder log = Page.webComponentPageBuilder().internal().namespace(FOOTER_LOG_NAMESPACE)
+                    .icon("font-awesome-regular:file-lines").title(capitalizeFirstLetter(footerLogBuildItem.getName()))
                     .metadata("jsonRpcMethodName", footerLogBuildItem.getName() + "Log")
                     .componentLink("qwc-footer-log.js");
 
@@ -489,14 +452,10 @@ public class DevUIProcessor {
      */
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @SuppressWarnings("unchecked")
-    void getAllExtensions(List<CardPageBuildItem> cardPageBuildItems,
-            List<MenuPageBuildItem> menuPageBuildItems,
-            List<FooterPageBuildItem> footerPageBuildItems,
-            LaunchModeBuildItem launchModeBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem,
-            BuildProducer<ExtensionsBuildItem> extensionsProducer,
-            BuildProducer<WebJarBuildItem> webJarBuildProducer,
-            BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer,
+    void getAllExtensions(List<CardPageBuildItem> cardPageBuildItems, List<MenuPageBuildItem> menuPageBuildItems,
+            List<FooterPageBuildItem> footerPageBuildItems, LaunchModeBuildItem launchModeBuildItem,
+            CurateOutcomeBuildItem curateOutcomeBuildItem, BuildProducer<ExtensionsBuildItem> extensionsProducer,
+            BuildProducer<WebJarBuildItem> webJarBuildProducer, BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer,
             Capabilities capabilities) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
@@ -507,9 +466,7 @@ public class DevUIProcessor {
         }
 
         // First create the static resources for our own internal components
-        webJarBuildProducer.produce(WebJarBuildItem.builder()
-                .artifactKey(UI_JAR)
-                .root(DEVUI + SLASH).build());
+        webJarBuildProducer.produce(WebJarBuildItem.builder().artifactKey(UI_JAR).root(DEVUI + SLASH).build());
 
         devUIWebJarProducer.produce(new DevUIWebJarBuildItem(UI_JAR, DEVUI));
 
@@ -518,7 +475,8 @@ public class DevUIProcessor {
         // Now go through all extensions and check them for active components
         Map<String, CardPageBuildItem> cardPagesMap = getCardPagesMap(curateOutcomeBuildItem, cardPageBuildItems);
         Map<String, MenuPageBuildItem> menuPagesMap = getMenuPagesMap(curateOutcomeBuildItem, menuPageBuildItems);
-        Map<String, List<FooterPageBuildItem>> footerPagesMap = getFooterPagesMap(curateOutcomeBuildItem, footerPageBuildItems);
+        Map<String, List<FooterPageBuildItem>> footerPagesMap = getFooterPagesMap(curateOutcomeBuildItem,
+                footerPageBuildItems);
         try {
             final Yaml yaml = new Yaml();
             List<Extension> activeExtensions = new ArrayList<>();
@@ -562,7 +520,8 @@ public class DevUIProcessor {
                                     try {
                                         extension.setGuide(new URL(guide));
                                     } catch (MalformedURLException mue) {
-                                        log.warn("Could not set Guide URL [" + guide + "] for exception [" + namespace + "]");
+                                        log.warn("Could not set Guide URL [" + guide + "] for exception [" + namespace
+                                                + "]");
                                     }
                                 }
 
@@ -614,14 +573,12 @@ public class DevUIProcessor {
                                     addLibraryLinks(extension, cardPageBuildItem, curateOutcomeBuildItem, metaData);
 
                                     // Also make sure the static resources for that static resource is available
-                                    produceResources(artifactId, webJarBuildProducer,
-                                            devUIWebJarProducer);
+                                    produceResources(artifactId, webJarBuildProducer, devUIWebJarProducer);
                                     activeExtensions.add(extension);
                                 } else { // Inactive
                                     if (addLogo(extension, cardPagesMap.get(namespace), metaData)) {
                                         // Also make sure the static resources for that static resource is available
-                                        produceResources(artifactId, webJarBuildProducer,
-                                                devUIWebJarProducer);
+                                        produceResources(artifactId, webJarBuildProducer, devUIWebJarProducer);
                                     }
 
                                     addLibraryLinks(extension, cardPagesMap.get(namespace), curateOutcomeBuildItem,
@@ -643,8 +600,7 @@ public class DevUIProcessor {
                                         }
                                     }
                                     // Also make sure the static resources for that static resource is available
-                                    produceResources(artifactId, webJarBuildProducer,
-                                            devUIWebJarProducer);
+                                    produceResources(artifactId, webJarBuildProducer, devUIWebJarProducer);
                                     sectionMenuExtensions.add(extension);
                                 }
 
@@ -663,8 +619,7 @@ public class DevUIProcessor {
                                             }
                                         }
                                         // Also make sure the static resources for that static resource is available
-                                        produceResources(artifactId, webJarBuildProducer,
-                                                devUIWebJarProducer);
+                                        produceResources(artifactId, webJarBuildProducer, devUIWebJarProducer);
                                         footerTabExtensions.add(extension);
                                     }
                                 }
@@ -706,8 +661,8 @@ public class DevUIProcessor {
                 }
             }
 
-            extensionsProducer.produce(
-                    new ExtensionsBuildItem(activeExtensions, inactiveExtensions, sectionMenuExtensions, footerTabExtensions));
+            extensionsProducer.produce(new ExtensionsBuildItem(activeExtensions, inactiveExtensions,
+                    sectionMenuExtensions, footerTabExtensions));
         } catch (IOException ex) {
             throw new RuntimeException(ex);
         }
@@ -721,10 +676,8 @@ public class DevUIProcessor {
 
         // Build a lookup map once
         Map<String, String> versionMap = curateOutcomeBuildItem.getApplicationModel().getDependencies().stream()
-                .collect(Collectors.toMap(
-                        rd -> rd.getGroupId() + ":" + rd.getArtifactId(),
-                        ResolvedDependency::getVersion,
-                        (existing, replacement) -> existing // keep the first one
+                .collect(Collectors.toMap(rd -> rd.getGroupId() + ":" + rd.getArtifactId(),
+                        ResolvedDependency::getVersion, (existing, replacement) -> existing // keep the first one
                 ));
 
         if (cardPageBuildItem != null) {
@@ -786,9 +739,7 @@ public class DevUIProcessor {
             return (String) value;
         } else if (List.class.isAssignableFrom(value.getClass())) {
             List values = (List) value;
-            return (String) values.stream()
-                    .map(n -> String.valueOf(n))
-                    .collect(Collectors.joining(", "));
+            return (String) values.stream().map(n -> String.valueOf(n)).collect(Collectors.joining(", "));
         }
         return String.valueOf(value);
     }
@@ -805,8 +756,7 @@ public class DevUIProcessor {
         return List.of(String.valueOf(value));
     }
 
-    private void produceResources(String artifactId,
-            BuildProducer<WebJarBuildItem> webJarBuildProducer,
+    private void produceResources(String artifactId, BuildProducer<WebJarBuildItem> webJarBuildProducer,
             BuildProducer<DevUIWebJarBuildItem> devUIWebJarProducer) {
 
         GACT gact = getGACT(artifactId);
@@ -816,12 +766,11 @@ public class DevUIProcessor {
         }
         String buildTimeDataImport = namespace + "-data";
 
-        webJarBuildProducer.produce(WebJarBuildItem.builder()
-                .artifactKey(gact)
-                .root(DEVUI + SLASH)
-                .filter(new WebJarResourcesFilter() {
+        webJarBuildProducer.produce(
+                WebJarBuildItem.builder().artifactKey(gact).root(DEVUI + SLASH).filter(new WebJarResourcesFilter() {
                     @Override
-                    public WebJarResourcesFilter.FilterResult apply(String fileName, InputStream file) throws IOException {
+                    public WebJarResourcesFilter.FilterResult apply(String fileName, InputStream file)
+                            throws IOException {
                         if (fileName.endsWith(".js")) {
                             String content = new String(file.readAllBytes(), StandardCharsets.UTF_8);
                             content = content.replaceAll("build-time-data", buildTimeDataImport);
@@ -831,19 +780,14 @@ public class DevUIProcessor {
 
                         return new WebJarResourcesFilter.FilterResult(file, false);
                     }
-                })
-                .build());
+                }).build());
 
-        devUIWebJarProducer.produce(
-                new DevUIWebJarBuildItem(gact,
-                        DEVUI));
+        devUIWebJarProducer.produce(new DevUIWebJarBuildItem(gact, DEVUI));
     }
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    void createAllRoutes(WebJarResultsBuildItem webJarResultsBuildItem,
-            LaunchModeBuildItem launchModeBuildItem,
-            List<DevUIWebJarBuildItem> devUIWebJarBuiltItems,
-            BuildProducer<DevUIRoutesBuildItem> devUIRoutesProducer) {
+    void createAllRoutes(WebJarResultsBuildItem webJarResultsBuildItem, LaunchModeBuildItem launchModeBuildItem,
+            List<DevUIWebJarBuildItem> devUIWebJarBuiltItems, BuildProducer<DevUIRoutesBuildItem> devUIRoutesProducer) {
 
         if (launchModeBuildItem.isNotLocalDevModeType()) {
             return;

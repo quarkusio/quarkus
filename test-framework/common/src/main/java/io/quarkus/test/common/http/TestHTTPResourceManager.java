@@ -150,8 +150,7 @@ public class TestHTTPResourceManager {
             }
         }
         throw new RuntimeException(
-                "Could not determine the endpoint path for " + endpointAnnotation.value()
-                        + " to inject " + field);
+                "Could not determine the endpoint path for " + endpointAnnotation.value() + " to inject " + field);
     }
 
 }

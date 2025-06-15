@@ -25,9 +25,8 @@ import io.quarkus.gizmo.ResultHandle;
 import io.quarkus.micrometer.runtime.binder.mpmetrics.AnnotatedGaugeAdapter;
 
 /**
- * Create beans to handle <code>@Gauge</code> annotations.
- * This is a static utility class, it stores no state. It is ok to import and use
- * classes that reference MP Metrics classes.
+ * Create beans to handle <code>@Gauge</code> annotations. This is a static utility class, it stores no state. It is ok
+ * to import and use classes that reference MP Metrics classes.
  */
 public class GaugeAnnotationHandler {
     private static final Logger log = Logger.getLogger(GaugeAnnotationHandler.class);
@@ -47,8 +46,8 @@ public class GaugeAnnotationHandler {
             verifyGaugeScope(target, classInfo);
 
             // Create a GaugeAdapter bean that uses the instance of the bean and invokes the callback
-            final String generatedClassName = String.format("%s_%s_GaugeAdapter",
-                    classInfo.name().toString(), methodInfo.name().toString());
+            final String generatedClassName = String.format("%s_%s_GaugeAdapter", classInfo.name().toString(),
+                    methodInfo.name().toString());
             if (createdClasses.add(generatedClassName)) {
                 createClass(index, classOutput, generatedClassName, annotation, target, classInfo, methodInfo);
             }
@@ -96,22 +95,18 @@ public class GaugeAnnotationHandler {
      * </pre>
      */
     static void createClass(IndexView index, ClassOutput classOutput, String generatedClassName,
-            AnnotationInstance annotation, AnnotationTarget target,
-            ClassInfo classInfo, MethodInfo methodInfo) {
+            AnnotationInstance annotation, AnnotationTarget target, ClassInfo classInfo, MethodInfo methodInfo) {
         final Class<?> gaugeAdapter = AnnotatedGaugeAdapter.class;
         final Class<?> gaugeAdapterImpl = AnnotatedGaugeAdapter.GaugeAdapterImpl.class;
 
-        final MethodDescriptor superInit = MethodDescriptor.ofConstructor(gaugeAdapterImpl,
+        final MethodDescriptor superInit = MethodDescriptor.ofConstructor(gaugeAdapterImpl, String.class, String.class,
+                String.class, String[].class);
+
+        final MethodDescriptor superInitUnit = MethodDescriptor.ofConstructor(gaugeAdapterImpl, String.class,
                 String.class, String.class, String.class, String[].class);
 
-        final MethodDescriptor superInitUnit = MethodDescriptor.ofConstructor(gaugeAdapterImpl,
-                String.class, String.class, String.class, String.class, String[].class);
-
-        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
-                .className(generatedClassName)
-                .superClass(gaugeAdapterImpl)
-                .interfaces(gaugeAdapter)
-                .build()) {
+        try (ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput).className(generatedClassName)
+                .superClass(gaugeAdapterImpl).interfaces(gaugeAdapter).build()) {
             // TODO this is wrong, the map is keyed by `DotName`s
             if (classInfo.annotationsMap().containsKey("Singleton")) {
                 classCreator.addAnnotation(Singleton.class);
@@ -120,8 +115,7 @@ public class GaugeAnnotationHandler {
             }
             MetricAnnotationInfo gaugeInfo = new MetricAnnotationInfo(annotation, index, classInfo, methodInfo, null);
 
-            FieldCreator fieldCreator = classCreator
-                    .getFieldCreator("target", classInfo.name().toString())
+            FieldCreator fieldCreator = classCreator.getFieldCreator("target", classInfo.name().toString())
                     .setModifiers(0); // package private
             fieldCreator.addAnnotation(Inject.class);
 
@@ -136,18 +130,12 @@ public class GaugeAnnotationHandler {
 
                 if (gaugeInfo.unit == null) {
                     // super(name, description, targetName, tags)
-                    mc.invokeSpecialMethod(superInit, mc.getThis(),
-                            mc.load(gaugeInfo.name),
-                            mc.load(gaugeInfo.description),
-                            mc.load(methodInfo.toString()),
-                            tagsHandle);
+                    mc.invokeSpecialMethod(superInit, mc.getThis(), mc.load(gaugeInfo.name),
+                            mc.load(gaugeInfo.description), mc.load(methodInfo.toString()), tagsHandle);
                 } else {
                     // super(name, description, targetName. unit, tags)
-                    mc.invokeSpecialMethod(superInitUnit, mc.getThis(),
-                            mc.load(gaugeInfo.name),
-                            mc.load(gaugeInfo.description),
-                            mc.load(methodInfo.toString()),
-                            mc.load(gaugeInfo.unit),
+                    mc.invokeSpecialMethod(superInitUnit, mc.getThis(), mc.load(gaugeInfo.name),
+                            mc.load(gaugeInfo.description), mc.load(methodInfo.toString()), mc.load(gaugeInfo.unit),
                             tagsHandle);
                 }
                 mc.returnValue(null);
@@ -173,14 +161,13 @@ public class GaugeAnnotationHandler {
 
     static private void verifyGaugeScope(AnnotationTarget target, ClassInfo classInfo) {
         if (!MetricDotNames.isSingleInstance(classInfo)) {
-            log.errorf("Bean %s declares a org.eclipse.microprofile.metrics.annotation.Gauge " +
-                    "but is of a scope that may create multiple instances of a bean. " +
-                    "@Gauge annotations establish a callback to a single instance. Only use " +
-                    "the @Gauge annotation on @ApplicationScoped or @Singleton beans, " +
-                    "or in JAX-RS endpoints.",
+            log.errorf("Bean %s declares a org.eclipse.microprofile.metrics.annotation.Gauge "
+                    + "but is of a scope that may create multiple instances of a bean. "
+                    + "@Gauge annotations establish a callback to a single instance. Only use "
+                    + "the @Gauge annotation on @ApplicationScoped or @Singleton beans, " + "or in JAX-RS endpoints.",
                     classInfo.name().toString());
-            throw new DeploymentException(classInfo.name().toString() +
-                    " uses a @Gauge annotation, but is not @ApplicationScoped, a @Singleton, or a REST endpoint");
+            throw new DeploymentException(classInfo.name().toString()
+                    + " uses a @Gauge annotation, but is not @ApplicationScoped, a @Singleton, or a REST endpoint");
         }
     }
 }

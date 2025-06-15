@@ -10,19 +10,13 @@ import io.restassured.RestAssured;
 class AutoTagTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResourceWithNoTag.class, AutoTagResource.class, AutoTagFetchableResource.class,
-                            AbstractAutoTagResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResourceWithNoTag.class, AutoTagResource.class,
+                    AutoTagFetchableResource.class, AbstractAutoTagResource.class));
 
     @Test
     void testTagInOpenApi() {
-        RestAssured.given().header("Accept", "application/json")
-                .when()
-                .get("/q/openapi")
-                .then()
-                .log().ifValidationFails()
-                .assertThat()
-                .statusCode(200)
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then().log()
+                .ifValidationFails().assertThat().statusCode(200)
                 .body("paths.'/tagged'.get.tags", Matchers.hasItem("Auto Tag Resource"))
                 .body("paths.'/tagged/{id}'.get.tags", Matchers.hasItem("Auto Tag Resource"))
                 .body("paths.'/resource/annotated'.get.tags", Matchers.hasItem("From Annotation"))

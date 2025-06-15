@@ -21,8 +21,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
 
-        RedisCommand command = RedisCommand.of(Command.BF_ADD)
-                .put(marshaller.encode(key))
+        RedisCommand command = RedisCommand.of(Command.BF_ADD).put(marshaller.encode(key))
                 .put(marshaller.encode(value));
 
         return execute(command);
@@ -32,8 +31,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(value, "value");
 
-        RedisCommand command = RedisCommand.of(Command.BF_EXISTS)
-                .put(marshaller.encode(key))
+        RedisCommand command = RedisCommand.of(Command.BF_EXISTS).put(marshaller.encode(key))
                 .put(marshaller.encode(value));
 
         return execute(command);
@@ -46,8 +44,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
-        RedisCommand command = RedisCommand.of(Command.BF_MADD)
-                .put(marshaller.encode(key));
+        RedisCommand command = RedisCommand.of(Command.BF_MADD).put(marshaller.encode(key));
 
         for (V value : values) {
             command.put(marshaller.encode(value));
@@ -63,8 +60,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
-        RedisCommand command = RedisCommand.of(Command.BF_MEXISTS)
-                .put(marshaller.encode(key));
+        RedisCommand command = RedisCommand.of(Command.BF_MEXISTS).put(marshaller.encode(key));
 
         for (V value : values) {
             command.put(marshaller.encode(value));
@@ -77,11 +73,8 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
         nonNull(key, "key");
         nonNull(args, "args");
 
-        RedisCommand command = RedisCommand.of(Command.BF_RESERVE)
-                .put(marshaller.encode(key))
-                .put(errorRate)
-                .put(capacity)
-                .putArgs(args);
+        RedisCommand command = RedisCommand.of(Command.BF_RESERVE).put(marshaller.encode(key)).put(errorRate)
+                .put(capacity).putArgs(args);
 
         return execute(command);
     }
@@ -94,9 +87,7 @@ class AbstractBloomCommands<K, V> extends AbstractRedisCommands {
             return Uni.createFrom().failure(new IllegalArgumentException("`values` must contain at least one item"));
         }
 
-        RedisCommand command = RedisCommand.of(Command.BF_INSERT)
-                .put(marshaller.encode(key))
-                .putArgs(args);
+        RedisCommand command = RedisCommand.of(Command.BF_INSERT).put(marshaller.encode(key)).putArgs(args);
 
         command.put("ITEMS");
         for (V value : values) {

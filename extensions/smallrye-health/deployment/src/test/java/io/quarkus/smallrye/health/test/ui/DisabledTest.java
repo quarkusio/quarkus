@@ -10,9 +10,8 @@ import io.restassured.RestAssured;
 class DisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.smallrye-health.ui.enable=false"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("quarkus.smallrye-health.ui.enable=false"), "application.properties"));
 
     @Test
     void shouldUseDefaultConfig() {

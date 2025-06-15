@@ -37,17 +37,15 @@ public class AllowOverridingParameterConstraintsTest {
     public void allowParameterConstraintsAddedInSubType() {
         Set<? extends ConstraintViolation<?>> violations = validator.forExecutables().validateParameters(
                 new RealizationWithMethodParameterConstraint(),
-                RealizationWithMethodParameterConstraint.class.getDeclaredMethods()[0],
-                new Object[] { "foo" });
+                RealizationWithMethodParameterConstraint.class.getDeclaredMethods()[0], new Object[] { "foo" });
 
         assertThat(violations).isEmpty();
     }
 
     @Test
     public void allowStrengtheningInSubType() {
-        Set<ConstraintViolation<RealizationWithAdditionalMethodParameterConstraint>> violations = validator.forExecutables()
-                .validateParameters(
-                        new RealizationWithAdditionalMethodParameterConstraint(),
+        Set<ConstraintViolation<RealizationWithAdditionalMethodParameterConstraint>> violations = validator
+                .forExecutables().validateParameters(new RealizationWithAdditionalMethodParameterConstraint(),
                         RealizationWithAdditionalMethodParameterConstraint.class.getDeclaredMethods()[0],
                         new Object[] { "foo" });
 

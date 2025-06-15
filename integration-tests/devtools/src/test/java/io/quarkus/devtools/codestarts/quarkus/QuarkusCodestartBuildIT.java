@@ -36,12 +36,8 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
 
     private static final Path testDirPath = Paths.get("target/quarkus-codestart-build-test");
 
-    private static final Set<String> EXCLUDED = Sets.newHashSet(
-            "spring-web-codestart",
-            "picocli-codestart",
-            "hibernate-orm-codestart",
-            "hibernate-orm-rest-data-codestart",
-            "messaging-codestart");
+    private static final Set<String> EXCLUDED = Sets.newHashSet("spring-web-codestart", "picocli-codestart",
+            "hibernate-orm-codestart", "hibernate-orm-rest-data-codestart", "messaging-codestart");
 
     @BeforeAll
     static void setUp() throws IOException {
@@ -111,8 +107,7 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
         generateProjectRunTests("maven", "scala", singletonList(codestart));
     }
 
-    private void generateProjectRunTests(String buildTool, String language, List<String> codestarts)
-            throws Exception {
+    private void generateProjectRunTests(String buildTool, String language, List<String> codestarts) throws Exception {
         generateProjectRunTests(buildTool, language, codestarts, genName(buildTool, language, codestarts));
     }
 
@@ -121,19 +116,14 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
         final BuildTool buildTool = BuildTool.findTool(buildToolName);
 
         final Map<String, Object> data = getTestInputData(Collections.singletonMap("artifact-id", name));
-        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder()
-                .addData(data)
-                .buildTool(buildTool)
-                .addCodestarts(codestarts)
-                .addCodestart(language)
-                .addBoms(QuarkusCodestartTesting.getBoms(data))
-                .build();
+        final QuarkusCodestartProjectInput input = QuarkusCodestartProjectInput.builder().addData(data)
+                .buildTool(buildTool).addCodestarts(codestarts).addCodestart(language)
+                .addBoms(QuarkusCodestartTesting.getBoms(data)).build();
         final CodestartProjectDefinition projectDefinition = getCatalog().createProject(input);
         Path projectDir = testDirPath.resolve(name);
         projectDefinition.generate(projectDir);
 
-        final int result = WrapperRunner.run(projectDir,
-                WrapperRunner.Wrapper.fromBuildtool(buildToolName));
+        final int result = WrapperRunner.run(projectDir, WrapperRunner.Wrapper.fromBuildtool(buildToolName));
         assertThat(result).isZero();
     }
 
@@ -154,22 +144,16 @@ class QuarkusCodestartBuildIT extends PlatformAwareTestBase {
     }
 
     private Stream<Arguments> getExamplesCodestarts() throws IOException {
-        return getCatalog().getCodestarts().stream()
-                .filter(QuarkusCodestartCatalog::isExample)
-                .map(Codestart::getName)
+        return getCatalog().getCodestarts().stream().filter(QuarkusCodestartCatalog::isExample).map(Codestart::getName)
                 .map(Arguments::of);
     }
 
     private Stream<Arguments> getLanguages() {
-        return Stream.of("java", "kotlin", "scala")
-                .map(Arguments::of);
+        return Stream.of("java", "kotlin", "scala").map(Arguments::of);
     }
 
     private List<String> getExtensionCodestarts() throws IOException {
-        return getCatalog().getCodestarts().stream()
-                .filter(QuarkusCodestartCatalog::isExtensionCodestart)
-                .map(Codestart::getName)
-                .filter(name -> !isExcluded(name))
-                .collect(Collectors.toList());
+        return getCatalog().getCodestarts().stream().filter(QuarkusCodestartCatalog::isExtensionCodestart)
+                .map(Codestart::getName).filter(name -> !isExcluded(name)).collect(Collectors.toList());
     }
 }

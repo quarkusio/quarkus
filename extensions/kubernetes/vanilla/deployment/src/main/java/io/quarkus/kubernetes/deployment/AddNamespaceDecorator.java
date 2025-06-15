@@ -21,17 +21,15 @@ public class AddNamespaceDecorator extends Decorator<KubernetesListBuilder> {
 
     @Override
     public void visit(KubernetesListBuilder list) {
-        List<HasMetadata> buildItems = list.buildItems()
-                .stream()
-                .peek(obj -> {
-                    if (obj instanceof Namespaced) {
-                        final ObjectMeta metadata = obj.getMetadata();
-                        if (metadata.getNamespace() == null) {
-                            metadata.setNamespace(namespace);
-                            obj.setMetadata(metadata);
-                        }
-                    }
-                }).collect(Collectors.toList());
+        List<HasMetadata> buildItems = list.buildItems().stream().peek(obj -> {
+            if (obj instanceof Namespaced) {
+                final ObjectMeta metadata = obj.getMetadata();
+                if (metadata.getNamespace() == null) {
+                    metadata.setNamespace(namespace);
+                    obj.setMetadata(metadata);
+                }
+            }
+        }).collect(Collectors.toList());
         list.withItems(buildItems);
     }
 

@@ -26,9 +26,8 @@ import io.smallrye.mutiny.Multi;
 public class ConnectorAttachmentOutgoingTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyDummyConnector.class, MySource.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(MyDummyConnector.class, MySource.class));
 
     @Inject
     @Connector("dummy")

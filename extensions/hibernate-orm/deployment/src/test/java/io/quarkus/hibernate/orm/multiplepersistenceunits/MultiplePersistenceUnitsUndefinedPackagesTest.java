@@ -11,12 +11,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MultiplePersistenceUnitsUndefinedPackagesTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClass(User.class)
-                    .addAsResource("application-multiple-persistence-units-undefined-packages.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addClass(User.class).addAsResource(
+                    "application-multiple-persistence-units-undefined-packages.properties", "application.properties"));
 
     @Test
     public void testInvalidConfiguration() {

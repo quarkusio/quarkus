@@ -13,7 +13,7 @@ public class TargetQuarkusVersionGroup {
                     + "  3.15.2%n")
     public String platformVersion;
 
-    //@CommandLine.Option(names = { "-L",
-    //        "--latest" }, description = "Use the latest Quarkus platform version")
-    //public boolean latest;
+    // @CommandLine.Option(names = { "-L",
+    // "--latest" }, description = "Use the latest Quarkus platform version")
+    // public boolean latest;
 }

@@ -29,15 +29,12 @@ public class MultipartConfigTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MultipartServlet.class))
-            .addBuildChainCustomizer(b -> {
+            .withApplicationRoot((jar) -> jar.addClasses(MultipartServlet.class)).addBuildChainCustomizer(b -> {
                 b.addBuildStep(new BuildStep() {
                     @Override
                     public void execute(BuildContext context) {
                         context.produce(ServletBuildItem.builder("Test Servlet", MultipartServlet.class.getName())
-                                .addMapping("/servlet-item")
-                                .setMultipartConfig(new MultipartConfigElement(""))
+                                .addMapping("/servlet-item").setMultipartConfig(new MultipartConfigElement(""))
                                 .build());
                     }
                 }).produces(ServletBuildItem.class).build();
@@ -46,10 +43,8 @@ public class MultipartConfigTestCase {
     @ParameterizedTest
     @ValueSource(strings = { "/foo", "/servlet-item" })
     public void testMultipartConfig(String path) {
-        given().multiPart("file", "random.txt", "Some random file".getBytes(StandardCharsets.UTF_8))
-                .when().post(path).then()
-                .statusCode(201)
-                .body(is("OK"));
+        given().multiPart("file", "random.txt", "Some random file".getBytes(StandardCharsets.UTF_8)).when().post(path)
+                .then().statusCode(201).body(is("OK"));
     }
 
     @WebServlet("/foo")

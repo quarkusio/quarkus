@@ -35,9 +35,7 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
     }
 
     @Override
-    void compileSingleFile(Path filePath,
-            Path outputDirectory,
-            AvroOptions options) throws CodeGenException {
+    void compileSingleFile(Path filePath, Path outputDirectory, AvroOptions options) throws CodeGenException {
         final Schema schema;
 
         File file = filePath.toFile();
@@ -82,8 +80,8 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         try {
             compiler.compileToDestination(file, outputDirectory.toFile());
         } catch (IOException e) {
-            throw new CodeGenException("Failed to copy compiled files to output directory " +
-                    outputDirectory.toAbsolutePath(), e);
+            throw new CodeGenException(
+                    "Failed to copy compiled files to output directory " + outputDirectory.toAbsolutePath(), e);
         }
     }
 }

@@ -52,16 +52,10 @@ public class KeycloakAdminResteasyClientRecorder {
                 }
             };
         }
-        final KeycloakBuilder keycloakBuilder = KeycloakBuilder
-                .builder()
-                .clientId(config.clientId())
-                .clientSecret(config.clientSecret().orElse(null))
-                .grantType(config.grantType().asString())
-                .username(config.username().orElse(null))
-                .password(config.password().orElse(null))
-                .realm(config.realm())
-                .serverUrl(config.serverUrl().get())
-                .scope(config.scope().orElse(null));
+        final KeycloakBuilder keycloakBuilder = KeycloakBuilder.builder().clientId(config.clientId())
+                .clientSecret(config.clientSecret().orElse(null)).grantType(config.grantType().asString())
+                .username(config.username().orElse(null)).password(config.password().orElse(null)).realm(config.realm())
+                .serverUrl(config.serverUrl().get()).scope(config.scope().orElse(null));
         return new Supplier<Keycloak>() {
             @Override
             public Keycloak get() {
@@ -72,8 +66,8 @@ public class KeycloakAdminResteasyClientRecorder {
 
     public void setClientProvider(Supplier<TlsConfigurationRegistry> registrySupplier) {
         var registry = registrySupplier.get();
-        var namedTlsConfig = TlsConfiguration.from(registry,
-                keycloakAdminClientConfigRuntimeValue.getValue().tlsConfigurationName()).orElse(null);
+        var namedTlsConfig = TlsConfiguration
+                .from(registry, keycloakAdminClientConfigRuntimeValue.getValue().tlsConfigurationName()).orElse(null);
         final boolean globalTrustAll;
         if (registry.getDefault().isPresent()) {
             globalTrustAll = registry.getDefault().get().isTrustAll();
@@ -83,7 +77,8 @@ public class KeycloakAdminResteasyClientRecorder {
 
         Keycloak.setClientProvider(new ResteasyClientProvider() {
             @Override
-            public Client newRestEasyClient(Object customJacksonProvider, SSLContext sslContext, boolean disableTrustManager) {
+            public Client newRestEasyClient(Object customJacksonProvider, SSLContext sslContext,
+                    boolean disableTrustManager) {
                 // this is what 'org.keycloak.admin.client.ClientBuilderWrapper.create' does
                 var builder = new ResteasyClientBuilderImpl();
                 builder.connectionPoolSize(10);

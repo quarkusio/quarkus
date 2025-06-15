@@ -6,7 +6,8 @@ import java.util.List;
 /**
  * Background function event for Firestore
  *
- * @see <a href="https://cloud.google.com/functions/docs/calling/cloud-firestore#event_structure">Firestore event structure</a>
+ * @see <a href="https://cloud.google.com/functions/docs/calling/cloud-firestore#event_structure">Firestore event
+ *      structure</a>
  */
 public class FirestoreEvent {
     public Document oldValue;

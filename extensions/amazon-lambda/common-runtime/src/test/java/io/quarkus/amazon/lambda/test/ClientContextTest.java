@@ -13,31 +13,24 @@ import io.quarkus.amazon.lambda.runtime.ClientContextImpl;
 
 public class ClientContextTest {
 
-    static final String ctx = "{\n" +
-            "                        \"client\": {\n" +
-            "                                    \"client_id\":\"<client_id>\",\n" +
-            "                                    \"app_title\":\"<app_title>\",\n" +
-            "                                    \"app_version_name\":\"<app_version_name>\",\n" +
-            "                                    \"app_version_code\":\"<app_version_code>\",\n" +
-            "                                    \"app_package_name\":\"<app_package_name>\"\n" +
-            "                                  },\n" +
-            "                        \n" +
-            "                        \"custom\": { \"hello\": \"world\"},\n" +
-            "                        \n" +
-            "                        \"env\":{\n" +
-            "                                \"platform\":\"<platform>\",\n" +
-            "                                \"model\":\"<model>\",\n" +
-            "                                \"make\":\"<make>\",\n" +
-            "                                \"platform_version\":\"<platform_version>\",\n" +
-            "                                \"locale\":\"<locale>\"\n" +
-            "                              },\n" +
-            "\n" +
-            "                        \"services\": {                        \n" +
-            "                                      \"mobile_analytics\": {\n" +
-            "                                                            \"app_id\":\"<mobile_analytics_app_id>\"\n" +
-            "                                                          }\n" +
-            "                                    }\n" +
-            "                       }";
+    static final String ctx = "{\n" + "                        \"client\": {\n"
+            + "                                    \"client_id\":\"<client_id>\",\n"
+            + "                                    \"app_title\":\"<app_title>\",\n"
+            + "                                    \"app_version_name\":\"<app_version_name>\",\n"
+            + "                                    \"app_version_code\":\"<app_version_code>\",\n"
+            + "                                    \"app_package_name\":\"<app_package_name>\"\n"
+            + "                                  },\n" + "                        \n"
+            + "                        \"custom\": { \"hello\": \"world\"},\n" + "                        \n"
+            + "                        \"env\":{\n" + "                                \"platform\":\"<platform>\",\n"
+            + "                                \"model\":\"<model>\",\n"
+            + "                                \"make\":\"<make>\",\n"
+            + "                                \"platform_version\":\"<platform_version>\",\n"
+            + "                                \"locale\":\"<locale>\"\n" + "                              },\n" + "\n"
+            + "                        \"services\": {                        \n"
+            + "                                      \"mobile_analytics\": {\n"
+            + "                                                            \"app_id\":\"<mobile_analytics_app_id>\"\n"
+            + "                                                          }\n"
+            + "                                    }\n" + "                       }";
 
     @Test
     public void testContextMarshalling() throws Exception {

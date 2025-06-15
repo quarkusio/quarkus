@@ -16,8 +16,7 @@ public class KnativeDeployer {
 
     @BuildStep
     public void checkEnvironment(Optional<SelectedKubernetesDeploymentTargetBuildItem> selectedDeploymentTarget,
-            List<GeneratedKubernetesResourceBuildItem> resources,
-            KubernetesClientBuildItem kubernetesClientBuilder,
+            List<GeneratedKubernetesResourceBuildItem> resources, KubernetesClientBuildItem kubernetesClientBuilder,
             BuildProducer<KubernetesDeploymentClusterBuildItem> deploymentCluster) {
         selectedDeploymentTarget.ifPresent(target -> {
             if (!KubernetesDeploy.INSTANCE.checkSilently(kubernetesClientBuilder)) {

@@ -20,8 +20,11 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 /**
  * @tpSubChapter Resteasy-client
+ *
  * @tpChapter Integration tests
+ *
  * @tpTestCaseDetails Test that empty QueryParam list is empty
+ *
  * @tpSince RESTEasy 3.0.16
  */
 @DisplayName("Collection Default Value Test")
@@ -29,15 +32,14 @@ public class CollectionDefaultValueTest {
 
     static Client client;
     @RegisterExtension
-    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(CollectionDefaultValueResource.class, PortProviderUtil.class);
-                    return war;
-                }
-            });
+    static ResteasyReactiveUnitTest testExtension = new ResteasyReactiveUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(CollectionDefaultValueResource.class, PortProviderUtil.class);
+            return war;
+        }
+    });
 
     @BeforeEach
     public void init() {
@@ -55,6 +57,7 @@ public class CollectionDefaultValueTest {
 
     /**
      * @tpTestDetails Test that empty QueryParam list is empty
+     *
      * @tpSince RESTEasy 3.0.16
      */
     @Test

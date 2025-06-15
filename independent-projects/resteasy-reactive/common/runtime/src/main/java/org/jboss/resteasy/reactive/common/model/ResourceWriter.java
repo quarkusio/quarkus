@@ -76,7 +76,7 @@ public class ResourceWriter {
         if (instance == null) {
             synchronized (this) {
                 if (instance == null) {
-                    //todo: manage lifecycle of bean
+                    // todo: manage lifecycle of bean
                     instance = factory.createInstance().getInstance();
                 }
             }
@@ -86,7 +86,7 @@ public class ResourceWriter {
 
     public List<MediaType> mediaTypes() {
         if (mediaTypes == null) {
-            //todo: does this actually need to be threadsafe?
+            // todo: does this actually need to be threadsafe?
             synchronized (this) {
                 List<MediaType> mts = new ArrayList<>(mediaTypeStrings.size());
                 for (int i = 0; i < mediaTypeStrings.size(); i++) {
@@ -101,7 +101,8 @@ public class ResourceWriter {
     public ServerMediaType serverMediaType() {
         if (serverMediaType == null) {
             synchronized (this) {
-                // a MessageBodyWriter should always return its configured media type when negotiating, hence the 'false' for 'useSuffix'
+                // a MessageBodyWriter should always return its configured media type when negotiating, hence the
+                // 'false' for 'useSuffix'
                 serverMediaType = new ServerMediaType(mediaTypes(), StandardCharsets.UTF_8.name(), false);
             }
         }
@@ -120,15 +121,14 @@ public class ResourceWriter {
 
     @Override
     public String toString() {
-        return "ResourceWriter[constraint: " + constraint + ", mediaTypes: " + mediaTypes + ", factory: " + factory + "]";
+        return "ResourceWriter[constraint: " + constraint + ", mediaTypes: " + mediaTypes + ", factory: " + factory
+                + "]";
     }
 
     /**
-     * The comparison for now is simple:
-     * 1) Application provided writers come first
-     * 2) Writers higher priority come first (same as writer interceptors)
-     * 3) Then the more specific the media type, the higher the priority
-     * 4) Finally we compare the number of media types
+     * The comparison for now is simple: 1) Application provided writers come first 2) Writers higher priority come
+     * first (same as writer interceptors) 3) Then the more specific the media type, the higher the priority 4) Finally
+     * we compare the number of media types
      */
     public static class ResourceWriterComparator implements Comparator<ResourceWriter> {
 

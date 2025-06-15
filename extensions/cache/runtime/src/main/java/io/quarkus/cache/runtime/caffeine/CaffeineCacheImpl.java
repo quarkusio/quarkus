@@ -32,8 +32,7 @@ import io.vertx.core.impl.ContextInternal;
 
 /**
  * This class is an internal Quarkus cache implementation using Caffeine. Do not use it explicitly from your Quarkus
- * application.
- * The public methods signatures may change without prior notice.
+ * application. The public methods signatures may change without prior notice.
  */
 public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
 
@@ -87,8 +86,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         return Uni.createFrom().completionStage(
                 /*
-                 * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation will be
-                 * delayed until subscription time. In other words, the cache value computation is done lazily.
+                 * Even if CompletionStage is eager, the Supplier used below guarantees that the cache value computation
+                 * will be delayed until subscription time. In other words, the cache value computation is done lazily.
                  */
                 new Supplier<CompletionStage<V>>() {
                     @Override
@@ -103,71 +102,66 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
     public <K, V> Uni<V> getAsync(K key, Function<K, Uni<V>> valueLoader) {
         Objects.requireNonNull(key, NULL_KEYS_NOT_SUPPORTED_MSG);
         Context context = Vertx.currentContext();
-        return Uni.createFrom()
-                .completionStage(new Supplier<CompletionStage<V>>() {
-                    @Override
-                    public CompletionStage<V> get() {
-                        // When stats are enabled we need to call statsCounter.recordHits(1)/statsCounter.recordMisses(1) accordingly
-                        StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
-                        @SuppressWarnings("unchecked")
-                        CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
-                                new Function<Object, CompletableFuture<Object>>() {
-                                    @Override
-                                    public CompletableFuture<Object> apply(Object key) {
-                                        recorder.onValueAbsent();
-                                        return valueLoader.apply((K) key)
-                                                .map(TO_CACHE_VALUE)
-                                                .subscribeAsCompletionStage();
-                                    }
-                                });
-                        recorder.doRecord(key);
-                        return result;
-                    }
-                })
-                .map(fromCacheValue())
-                .emitOn(new Executor() {
-                    // We need make sure we go back to the original context when the cache value is computed.
-                    // Otherwise, we would always emit on the context having computed the value, which could
-                    // break the duplicated context isolation.
-                    @Override
-                    public void execute(Runnable command) {
-                        Context ctx = Vertx.currentContext();
-                        if (context == null) {
-                            // We didn't capture a context
-                            if (ctx == null) {
-                                // We are not on a context => we can execute immediately.
-                                command.run();
-                            } else {
-                                // We are on a context.
-                                // We cannot continue on the current context as we may share a duplicated context.
-                                // We need a new one. Note that duplicate() does not duplicate the duplicated context,
-                                // but the root context.
-                                ((ContextInternal) ctx).duplicate()
-                                        .runOnContext(new Handler<Void>() {
-                                            @Override
-                                            public void handle(Void ignored) {
-                                                command.run();
-                                            }
-                                        });
+        return Uni.createFrom().completionStage(new Supplier<CompletionStage<V>>() {
+            @Override
+            public CompletionStage<V> get() {
+                // When stats are enabled we need to call statsCounter.recordHits(1)/statsCounter.recordMisses(1)
+                // accordingly
+                StatsRecorder recorder = recordStats ? new OperationalStatsRecorder() : NoopStatsRecorder.INSTANCE;
+                @SuppressWarnings("unchecked")
+                CompletionStage<V> result = (CompletionStage<V>) cache.asMap().computeIfAbsent(key,
+                        new Function<Object, CompletableFuture<Object>>() {
+                            @Override
+                            public CompletableFuture<Object> apply(Object key) {
+                                recorder.onValueAbsent();
+                                return valueLoader.apply((K) key).map(TO_CACHE_VALUE).subscribeAsCompletionStage();
                             }
-                        } else {
-                            // We captured a context.
-                            if (ctx == context) {
-                                // We are on the same context => we can execute immediately
+                        });
+                recorder.doRecord(key);
+                return result;
+            }
+        }).map(fromCacheValue()).emitOn(new Executor() {
+            // We need make sure we go back to the original context when the cache value is computed.
+            // Otherwise, we would always emit on the context having computed the value, which could
+            // break the duplicated context isolation.
+            @Override
+            public void execute(Runnable command) {
+                Context ctx = Vertx.currentContext();
+                if (context == null) {
+                    // We didn't capture a context
+                    if (ctx == null) {
+                        // We are not on a context => we can execute immediately.
+                        command.run();
+                    } else {
+                        // We are on a context.
+                        // We cannot continue on the current context as we may share a duplicated context.
+                        // We need a new one. Note that duplicate() does not duplicate the duplicated context,
+                        // but the root context.
+                        ((ContextInternal) ctx).duplicate().runOnContext(new Handler<Void>() {
+                            @Override
+                            public void handle(Void ignored) {
                                 command.run();
-                            } else {
-                                // 1) We are not on a context (ctx == null) => we need to switch to the captured context.
-                                // 2) We are on a different context (ctx != null) => we need to switch to the captured context.
-                                context.runOnContext(new Handler<Void>() {
-                                    @Override
-                                    public void handle(Void ignored) {
-                                        command.run();
-                                    }
-                                });
                             }
-                        }
+                        });
                     }
-                });
+                } else {
+                    // We captured a context.
+                    if (ctx == context) {
+                        // We are on the same context => we can execute immediately
+                        command.run();
+                    } else {
+                        // 1) We are not on a context (ctx == null) => we need to switch to the captured context.
+                        // 2) We are on a different context (ctx != null) => we need to switch to the captured context.
+                        context.runOnContext(new Handler<Void>() {
+                            @Override
+                            public void handle(Void ignored) {
+                                command.run();
+                            }
+                        });
+                    }
+                }
+            }
+        });
     }
 
     @Override
@@ -181,18 +175,17 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             LOGGER.tracef("Key [%s] found in cache [%s]", key, cacheInfo.name);
 
             // cast, but still throw the CacheException in case it fails
-            return unwrapCacheValueOrThrowable(existingCacheValue)
-                    .thenApply(new Function<>() {
-                        @SuppressWarnings("unchecked")
-                        @Override
-                        public V apply(Object value) {
-                            try {
-                                return (V) value;
-                            } catch (ClassCastException e) {
-                                throw new CacheException("An existing cached value type does not match the requested type", e);
-                            }
-                        }
-                    });
+            return unwrapCacheValueOrThrowable(existingCacheValue).thenApply(new Function<>() {
+                @SuppressWarnings("unchecked")
+                @Override
+                public V apply(Object value) {
+                    try {
+                        return (V) value;
+                    } catch (ClassCastException e) {
+                        throw new CacheException("An existing cached value type does not match the requested type", e);
+                    }
+                }
+            });
 
         }
     }
@@ -202,10 +195,15 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
      * {@code valueLoader} if necessary. The value computation is done synchronously on the calling thread and the
      * {@link CompletableFuture} is immediately completed before being returned.
      *
-     * @param key cache key
-     * @param valueLoader function used to compute the cache value if {@code key} is not already associated with a value
+     * @param key
+     *        cache key
+     * @param valueLoader
+     *        function used to compute the cache value if {@code key} is not already associated with a value
+     *
      * @return a {@link CompletableFuture} holding the cache value
-     * @throws CacheException if an exception is thrown during the cache value computation
+     *
+     * @throws CacheException
+     *         if an exception is thrown during the cache value computation
      */
     private <K, V> CompletableFuture<Object> getFromCaffeine(K key, Function<K, V> valueLoader) {
         CompletableFuture<Object> newCacheValue = new CompletableFuture<>();
@@ -298,8 +296,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             fixedExpiration.get().setExpiresAfter(duration);
             cacheInfo.expireAfterWrite = duration;
         } else {
-            throw new IllegalStateException("The write-based expiration policy can only be changed if the cache was " +
-                    "constructed with an expire-after-write configuration value");
+            throw new IllegalStateException("The write-based expiration policy can only be changed if the cache was "
+                    + "constructed with an expire-after-write configuration value");
         }
     }
 
@@ -310,8 +308,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             fixedExpiration.get().setExpiresAfter(duration);
             cacheInfo.expireAfterAccess = duration;
         } else {
-            throw new IllegalStateException("The access-based expiration policy can only be changed if the cache was " +
-                    "constructed with an expire-after-access configuration value");
+            throw new IllegalStateException("The access-based expiration policy can only be changed if the cache was "
+                    + "constructed with an expire-after-access configuration value");
         }
     }
 
@@ -322,8 +320,8 @@ public class CaffeineCacheImpl extends AbstractCache implements CaffeineCache {
             eviction.get().setMaximum(maximumSize);
             cacheInfo.maximumSize = maximumSize;
         } else {
-            throw new IllegalStateException("The maximum size can only be changed if the cache was constructed with a " +
-                    "maximum-size configuration value");
+            throw new IllegalStateException("The maximum size can only be changed if the cache was constructed with a "
+                    + "maximum-size configuration value");
         }
     }
 

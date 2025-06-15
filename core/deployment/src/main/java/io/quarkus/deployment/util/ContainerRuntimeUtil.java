@@ -27,8 +27,8 @@ public final class ContainerRuntimeUtil {
     private static final Pattern PODMAN_PATTERN = Pattern.compile("^podman(?:\\.exe)? version.*", Pattern.DOTALL);
 
     /**
-     * Static variable is not used because the class gets loaded by different classloaders at
-     * runtime and the container runtime would be detected again and again unnecessarily.
+     * Static variable is not used because the class gets loaded by different classloaders at runtime and the container
+     * runtime would be detected again and again unnecessarily.
      */
     private static final String CONTAINER_RUNTIME_SYS_PROP = "quarkus-local-container-runtime";
     /**
@@ -40,8 +40,11 @@ public final class ContainerRuntimeUtil {
     }
 
     /**
-     * @return a fully resolved {@link ContainerRuntime} indicating if Docker or Podman is available and in rootless mode or not
-     * @throws IllegalStateException if no container runtime was found to build the image
+     * @return a fully resolved {@link ContainerRuntime} indicating if Docker or Podman is available and in rootless
+     *         mode or not
+     *
+     * @throws IllegalStateException
+     *         if no container runtime was found to build the image
      */
     public static ContainerRuntime detectContainerRuntime() {
         return detectContainerRuntime(true);
@@ -53,11 +56,13 @@ public final class ContainerRuntimeUtil {
 
     public static ContainerRuntime detectContainerRuntime(boolean required, ContainerRuntime... orderToCheckRuntimes) {
         return detectContainerRuntime(required,
-                ((orderToCheckRuntimes != null) && (orderToCheckRuntimes.length > 0)) ? Arrays.asList(orderToCheckRuntimes)
+                ((orderToCheckRuntimes != null) && (orderToCheckRuntimes.length > 0))
+                        ? Arrays.asList(orderToCheckRuntimes)
                         : List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
     }
 
-    public static ContainerRuntime detectContainerRuntime(boolean required, List<ContainerRuntime> orderToCheckRuntimes) {
+    public static ContainerRuntime detectContainerRuntime(boolean required,
+            List<ContainerRuntime> orderToCheckRuntimes) {
         ContainerRuntime containerRuntime = loadContainerRuntimeFromSystemProperty();
         if ((containerRuntime != null) && orderToCheckRuntimes.contains(containerRuntime)) {
             return containerRuntime;
@@ -92,9 +97,8 @@ public final class ContainerRuntimeUtil {
         runtimesToCheck.retainAll(List.of(ContainerRuntime.DOCKER, ContainerRuntime.PODMAN));
 
         if (CONTAINER_EXECUTABLE != null) {
-            var runtime = runtimesToCheck.stream().filter(
-                    containerRuntime -> CONTAINER_EXECUTABLE.trim().equalsIgnoreCase(containerRuntime.getExecutableName()))
-                    .findFirst().filter(r -> {
+            var runtime = runtimesToCheck.stream().filter(containerRuntime -> CONTAINER_EXECUTABLE.trim()
+                    .equalsIgnoreCase(containerRuntime.getExecutableName())).findFirst().filter(r -> {
                         var versionOutput = getVersionOutputFor(r);
 
                         return switch (r) {
@@ -162,7 +166,8 @@ public final class ContainerRuntimeUtil {
                     return ContainerRuntime.UNAVAILABLE;
                 } else {
                     Predicate<String> stringPredicate;
-                    // Docker includes just "rootless" under SecurityOptions, while podman includes "rootless: <boolean>"
+                    // Docker includes just "rootless" under SecurityOptions, while podman includes "rootless:
+                    // <boolean>"
                     if (containerRuntimeEnvironment.isDocker()) {
                         // We also treat Docker Desktop as "rootless" since the way it binds mounts does not
                         // transparently map the host user ID and GID
@@ -218,7 +223,8 @@ public final class ContainerRuntimeUtil {
         final ContainerRuntime containerRuntime = ContainerRuntime.of(runtime);
 
         if (containerRuntime == null) {
-            log.warnf("System property %s contains an unknown value %s. Ignoring it.", CONTAINER_RUNTIME_SYS_PROP, runtime);
+            log.warnf("System property %s contains an unknown value %s. Ignoring it.", CONTAINER_RUNTIME_SYS_PROP,
+                    runtime);
         }
 
         return containerRuntime;

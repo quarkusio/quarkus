@@ -29,14 +29,10 @@ public class CompletionStageRouteTest {
         when().get("/hello-buffer").then().statusCode(200).body(is("Buffer"));
         when().get("/hello-mutiny-buffer").then().statusCode(200).body(is("Mutiny Buffer"));
 
-        when().get("/person").then().statusCode(200)
-                .body("name", is("neo"))
-                .body("id", is(12345))
+        when().get("/person").then().statusCode(200).body("name", is("neo")).body("id", is(12345))
                 .header("content-type", "application/json");
 
-        when().get("/person-content-type-set").then().statusCode(200)
-                .body("name", is("neo"))
-                .body("id", is(12345))
+        when().get("/person-content-type-set").then().statusCode(200).body("name", is("neo")).body("id", is(12345))
                 .header("content-type", "application/json;charset=utf-8");
 
         when().get("/failure").then().statusCode(500).body(containsString("boom"));

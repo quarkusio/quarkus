@@ -105,12 +105,8 @@ public class ConditionalDependencyScenarioTwoTest extends BootstrapFromOriginalJ
         install(extT);
         install(extU);
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extF)
-                .addDependency(extL)
-                .addDependency(extM);
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extF).addDependency(extL).addDependency(extM);
     }
 
     @Override
@@ -120,64 +116,49 @@ public class ConditionalDependencyScenarioTwoTest extends BootstrapFromOriginalJ
         final Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-f-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-g-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-h-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-k-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-l-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-j-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-m-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-n-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-i-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-o-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-p-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-r-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-s-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-t-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         expected.add(new ArtifactDependency(
                 ArtifactCoords.jar(TsArtifact.DEFAULT_GROUP_ID, "ext-u-deployment", TsArtifact.DEFAULT_VERSION),
-                JavaScopes.COMPILE,
-                DependencyFlags.DEPLOYMENT_CP));
+                JavaScopes.COMPILE, DependencyFlags.DEPLOYMENT_CP));
         assertEquals(expected, new HashSet<>(deploymentDeps));
     }
 }

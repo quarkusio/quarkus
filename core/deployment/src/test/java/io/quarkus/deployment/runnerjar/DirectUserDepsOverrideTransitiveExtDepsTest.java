@@ -23,11 +23,8 @@ public class DirectUserDepsOverrideTransitiveExtDepsTest extends BootstrapFromOr
         final TsArtifact common3 = TsArtifact.jar("common", "3");
         addToExpectedLib(common3);
 
-        final TsArtifact appJar = TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(ext1)
-                .addDependency(common3)
+        final TsArtifact appJar = TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(ext1).addDependency(common3)
                 .addDependency(ext2);
         return appJar;
     }

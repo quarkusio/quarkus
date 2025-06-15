@@ -74,7 +74,6 @@ public abstract class JpaIdentityProvider implements IdentityProvider<UsernamePa
         return false;
     }
 
-    public abstract SecurityIdentity authenticate(EntityManager em,
-            UsernamePasswordAuthenticationRequest request);
+    public abstract SecurityIdentity authenticate(EntityManager em, UsernamePasswordAuthenticationRequest request);
 
 }

@@ -15,14 +15,14 @@ public class ServerCharacterMessageBodyHandler extends CharacterMessageBodyHandl
         implements ServerMessageBodyReader<Character> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return type == Character.class;
     }
 
     @Override
     public Character readFrom(Class<Character> type, Type genericType, MediaType mediaType,
-            ServerRequestContext context)
-            throws WebApplicationException, IOException {
+            ServerRequestContext context) throws WebApplicationException, IOException {
         return doReadFrom(context.getInputStream());
     }
 

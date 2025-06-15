@@ -23,7 +23,8 @@ public final class JacksonMessageBodyWriterUtil {
     }
 
     public static ObjectWriter createDefaultWriter(ObjectMapper mapper) {
-        // we don't want the ObjectWriter to close the stream automatically, as we want to handle closing manually at the proper points
+        // we don't want the ObjectWriter to close the stream automatically, as we want to handle closing manually at
+        // the proper points
         JsonFactory jsonFactory = mapper.getFactory();
         if (JacksonMessageBodyWriterUtil.needsNewFactory(jsonFactory)) {
             jsonFactory = jsonFactory.copy();

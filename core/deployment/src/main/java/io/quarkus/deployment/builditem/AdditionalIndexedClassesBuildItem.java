@@ -6,8 +6,8 @@ import java.util.Set;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Allows extensions to add classes to the index available via {@link CombinedIndexBuildItem}.
- * The classes are loaded by the Deployment ClassLoader.
+ * Allows extensions to add classes to the index available via {@link CombinedIndexBuildItem}. The classes are loaded by
+ * the Deployment ClassLoader.
  */
 public final class AdditionalIndexedClassesBuildItem extends MultiBuildItem {
 

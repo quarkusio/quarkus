@@ -20,16 +20,12 @@ import io.vertx.ext.web.RoutingContext;
 class HealthRouteDispatchThreadTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Routes.class, OffloadingHandler.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Routes.class, OffloadingHandler.class).addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     void testHealthInvokedOnBlockingThread() {
-        RestAssured.given()
-                .when().get("/my-health")
-                .then().statusCode(200);
+        RestAssured.given().when().get("/my-health").then().statusCode(200);
 
     }
 

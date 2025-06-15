@@ -6,7 +6,8 @@ import io.dekorate.openshift.decorator.ApplyDeploymentTriggerDecorator;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.openshift.api.model.DeploymentConfigSpecFluent;
 
-public class ChangeContainerNameInDeploymentTriggerDecorator extends NamedResourceDecorator<DeploymentConfigSpecFluent<?>> {
+public class ChangeContainerNameInDeploymentTriggerDecorator
+        extends NamedResourceDecorator<DeploymentConfigSpecFluent<?>> {
 
     private final String containerName;
 
@@ -17,13 +18,8 @@ public class ChangeContainerNameInDeploymentTriggerDecorator extends NamedResour
     @Override
     public void andThenVisit(DeploymentConfigSpecFluent<?> deploymentConfigSpecFluent, ObjectMeta objectMeta) {
         if (deploymentConfigSpecFluent.hasTriggers()) {
-            deploymentConfigSpecFluent
-                    .editFirstTrigger()
-                    .editImageChangeParams()
-                    .withContainerNames(containerName)
-                    .endImageChangeParams()
-                    .endTrigger()
-                    .buildTriggers();
+            deploymentConfigSpecFluent.editFirstTrigger().editImageChangeParams().withContainerNames(containerName)
+                    .endImageChangeParams().endTrigger().buildTriggers();
         }
     }
 
@@ -31,11 +27,11 @@ public class ChangeContainerNameInDeploymentTriggerDecorator extends NamedResour
     public Class<? extends Decorator>[] after() {
         return new Class[] { ApplyDeploymentTriggerDecorator.class, AddEnvVarDecorator.class, AddPortDecorator.class,
                 AddMountDecorator.class, AddPvcVolumeDecorator.class, AddAwsElasticBlockStoreVolumeDecorator.class,
-                AddAzureDiskVolumeDecorator.class, AddAwsElasticBlockStoreVolumeDecorator.class, ApplyImageDecorator.class,
-                ApplyImagePullPolicyDecorator.class, ApplyWorkingDirDecorator.class, ApplyCommandDecorator.class,
-                ApplyArgsDecorator.class, ApplyServiceAccountNamedDecorator.class, AddReadinessProbeDecorator.class,
-                AddLivenessProbeDecorator.class, ApplyApplicationContainerDecorator.class, AddSidecarDecorator.class,
-                AddInitContainerDecorator.class };
+                AddAzureDiskVolumeDecorator.class, AddAwsElasticBlockStoreVolumeDecorator.class,
+                ApplyImageDecorator.class, ApplyImagePullPolicyDecorator.class, ApplyWorkingDirDecorator.class,
+                ApplyCommandDecorator.class, ApplyArgsDecorator.class, ApplyServiceAccountNamedDecorator.class,
+                AddReadinessProbeDecorator.class, AddLivenessProbeDecorator.class,
+                ApplyApplicationContainerDecorator.class, AddSidecarDecorator.class, AddInitContainerDecorator.class };
     }
 
 }

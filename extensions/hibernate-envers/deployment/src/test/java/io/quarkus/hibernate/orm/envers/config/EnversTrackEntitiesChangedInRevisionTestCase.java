@@ -13,16 +13,13 @@ import io.restassured.RestAssured;
 public class EnversTrackEntitiesChangedInRevisionTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class, EnversTestTrackEntitiesChangedInRevisionResource.class,
-                            AbstractEnversResource.class)
-                    .addAsResource("application-with-track-entities-changed-in-revision.properties",
-                            "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyAuditedEntity.class, EnversTestTrackEntitiesChangedInRevisionResource.class,
+                    AbstractEnversResource.class)
+            .addAsResource("application-with-track-entities-changed-in-revision.properties", "application.properties"));
 
     @Test
     public void testTrackEntitiesChangedInRevision() {
-        RestAssured.when().get("/envers-track-entities-changed-in-revision").then()
-                .body(is("OK"));
+        RestAssured.when().get("/envers-track-entities-changed-in-revision").then().body(is("OK"));
     }
 }

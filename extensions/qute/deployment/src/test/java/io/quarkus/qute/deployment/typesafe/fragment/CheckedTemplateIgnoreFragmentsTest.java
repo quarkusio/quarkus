@@ -16,10 +16,8 @@ public class CheckedTemplateIgnoreFragmentsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(Templates.class, Item.class)
-                    .addAsResource(new StringAsset(
-                            "{#each items}{it.name}{/each}"),
+            .withApplicationRoot(root -> root.addClasses(Templates.class, Item.class)
+                    .addAsResource(new StringAsset("{#each items}{it.name}{/each}"),
                             "templates/CheckedTemplateIgnoreFragmentsTest/items.html")
                     .addAsResource(new StringAsset("{it.name}"),
                             "templates/CheckedTemplateIgnoreFragmentsTest/items$item.html"));

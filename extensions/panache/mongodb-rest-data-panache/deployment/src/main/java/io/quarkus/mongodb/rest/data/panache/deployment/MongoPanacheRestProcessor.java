@@ -85,12 +85,11 @@ class MongoPanacheRestProcessor {
             String idType = generics.get(1).toString();
 
             DataAccessImplementor dataAccessImplementor = new EntityDataAccessImplementor(entityType);
-            String resourceClass = resourceImplementor.implement(
-                    classOutput, dataAccessImplementor, resourceInterface, entityType);
+            String resourceClass = resourceImplementor.implement(classOutput, dataAccessImplementor, resourceInterface,
+                    entityType);
 
-            restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index.getIndex(), entityType))));
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(new ResourceMetadata(resourceClass,
+                    resourceInterface, entityType, idType, getEntityFields(index.getIndex(), entityType))));
             if (capabilities.isPresent(Capability.RESTEASY)) {
                 bytecodeTransformersProducer.produce(
                         getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
@@ -118,14 +117,13 @@ class MongoPanacheRestProcessor {
             String idType = generics.get(2).toString();
 
             DataAccessImplementor dataAccessImplementor = new RepositoryDataAccessImplementor(repositoryClassName);
-            String resourceClass = resourceImplementor.implement(
-                    classOutput, dataAccessImplementor, resourceInterface, entityType);
+            String resourceClass = resourceImplementor.implement(classOutput, dataAccessImplementor, resourceInterface,
+                    entityType);
             unremovableBeansProducer.produce(new UnremovableBeanBuildItem(
                     new UnremovableBeanBuildItem.BeanClassNameExclusion(repositoryClassName)));
 
-            restDataResourceProducer.produce(new RestDataResourceBuildItem(
-                    new ResourceMetadata(resourceClass, resourceInterface, entityType, idType,
-                            getEntityFields(index.getIndex(), entityType))));
+            restDataResourceProducer.produce(new RestDataResourceBuildItem(new ResourceMetadata(resourceClass,
+                    resourceInterface, entityType, idType, getEntityFields(index.getIndex(), entityType))));
             if (capabilities.isPresent(Capability.RESTEASY)) {
                 bytecodeTransformersProducer.produce(
                         getEntityIdAnnotationTransformer(entityType, entityClassHelper.getIdField(entityType).name()));
@@ -148,17 +146,14 @@ class MongoPanacheRestProcessor {
     }
 
     private List<Type> getGenericTypes(ClassInfo classInfo) {
-        return classInfo.interfaceTypes()
-                .stream()
-                .findFirst()
+        return classInfo.interfaceTypes().stream().findFirst()
                 .orElseThrow(() -> new RuntimeException(classInfo.toString() + " does not have generic types"))
-                .asParameterizedType()
-                .arguments();
+                .asParameterizedType().arguments();
     }
 
     /**
-     * Annotate Mongo entity ID fields with a RESTEasy links annotation.
-     * Otherwise, RESTEasy will not be able to generate links that use ID as path parameter.
+     * Annotate Mongo entity ID fields with a RESTEasy links annotation. Otherwise, RESTEasy will not be able to
+     * generate links that use ID as path parameter.
      */
     private BytecodeTransformerBuildItem getEntityIdAnnotationTransformer(String entityClassName, String idFieldName) {
         return new BytecodeTransformerBuildItem(entityClassName,

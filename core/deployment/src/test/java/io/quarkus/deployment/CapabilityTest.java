@@ -15,12 +15,9 @@ import org.junit.jupiter.params.provider.MethodSource;
 public class CapabilityTest {
     private static Stream<Arguments> capabilityFields() {
         Field[] declaredFields = Capability.class.getDeclaredFields();
-        return Stream.of(declaredFields)
-                .filter(field -> Modifier.isStatic(field.getModifiers()))
-                .filter(field -> field.getType().equals(String.class))
-                .map(CapabilityTest::getString)
-                .filter(not(Capability.QUARKUS_PREFIX::equals))
-                .map(value -> Arguments.of(value));
+        return Stream.of(declaredFields).filter(field -> Modifier.isStatic(field.getModifiers()))
+                .filter(field -> field.getType().equals(String.class)).map(CapabilityTest::getString)
+                .filter(not(Capability.QUARKUS_PREFIX::equals)).map(value -> Arguments.of(value));
     }
 
     @ParameterizedTest

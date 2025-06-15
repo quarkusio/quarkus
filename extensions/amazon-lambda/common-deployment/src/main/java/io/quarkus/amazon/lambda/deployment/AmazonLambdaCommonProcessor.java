@@ -44,8 +44,7 @@ public final class AmazonLambdaCommonProcessor {
     }
 
     @BuildStep
-    void tmpdirs(BuildProducer<SystemPropertyBuildItem> systemProperty,
-            LaunchModeBuildItem launchModeBuildItem) {
+    void tmpdirs(BuildProducer<SystemPropertyBuildItem> systemProperty, LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
             return; // just in case we're on Windows.
@@ -64,7 +63,10 @@ public final class AmazonLambdaCommonProcessor {
 
     @BuildStep()
     @Record(STATIC_INIT)
-    public LambdaObjectMapperInitializedBuildItem initObjectMapper(BeanContainerBuildItem beanContainer, // make sure beanContainer is initialized
+    public LambdaObjectMapperInitializedBuildItem initObjectMapper(BeanContainerBuildItem beanContainer, // make sure
+            // beanContainer
+            // is
+            // initialized
             AmazonLambdaMapperRecorder recorder) {
         recorder.initObjectMapper();
         return new LambdaObjectMapperInitializedBuildItem();
@@ -80,8 +82,7 @@ public final class AmazonLambdaCommonProcessor {
 
     @BuildStep
     @Record(value = ExecutionTime.STATIC_INIT)
-    void initContextReaders(AmazonLambdaMapperRecorder recorder,
-            LambdaObjectMapperInitializedBuildItem dependency,
+    void initContextReaders(AmazonLambdaMapperRecorder recorder, LambdaObjectMapperInitializedBuildItem dependency,
             LaunchModeBuildItem launchModeBuildItem) {
         LaunchMode mode = launchModeBuildItem.getLaunchMode();
         if (mode.isDevOrTest()) {
@@ -92,8 +93,7 @@ public final class AmazonLambdaCommonProcessor {
 
     @BuildStep(onlyIf = NativeBuild.class)
     public void registerForSerialization(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(
-                FunctionError.class.getName()).build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(FunctionError.class.getName()).build());
     }
 
 }

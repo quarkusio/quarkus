@@ -7,7 +7,8 @@ public class ListFormatOptions {
     @CommandLine.Option(names = { "--id" }, order = 4, description = "Display extension artifactId only. (default)")
     boolean id = false;
 
-    @CommandLine.Option(names = { "--name" }, hidden = true, description = "Display extension artifactId only. (deprecated)")
+    @CommandLine.Option(names = {
+            "--name" }, hidden = true, description = "Display extension artifactId only. (deprecated)")
     boolean name = false;
 
     @CommandLine.Option(names = { "--concise" }, order = 5, description = "Display extension artifactId and name.")

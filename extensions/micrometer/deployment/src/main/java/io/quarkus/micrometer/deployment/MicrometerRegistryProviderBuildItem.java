@@ -23,8 +23,6 @@ public final class MicrometerRegistryProviderBuildItem extends MultiBuildItem {
 
     @Override
     public String toString() {
-        return "MicrometerRegistryProviderBuildItem{"
-                + clazz
-                + '}';
+        return "MicrometerRegistryProviderBuildItem{" + clazz + '}';
     }
 }

@@ -57,8 +57,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * A unique tenant identifier. It can be set by {@code TenantConfigResolver} providers, which
-     * resolve the tenant configuration dynamically.
+     * A unique tenant identifier. It can be set by {@code TenantConfigResolver} providers, which resolve the tenant
+     * configuration dynamically.
      *
      * @deprecated use {@link #tenantId()} method instead
      */
@@ -66,11 +66,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Optional<String> tenantId = Optional.empty();
 
     /**
-     * If this tenant configuration is enabled.
-     *
-     * The default tenant is disabled if it is not configured but
-     * a {@link TenantConfigResolver} that resolves tenant configurations is registered,
-     * or named tenants are configured.
+     * If this tenant configuration is enabled. The default tenant is disabled if it is not configured but a
+     * {@link TenantConfigResolver} that resolves tenant configurations is registered, or named tenants are configured.
      * In this case, you do not need to disable the default tenant.
      *
      * @deprecated use {@link #tenantEnabled()} method instead
@@ -87,10 +84,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Optional<ApplicationType> applicationType = Optional.empty();
 
     /**
-     * The relative path or absolute URL of the OpenID Connect (OIDC) authorization endpoint, which authenticates
-     * users.
-     * You must set this property for `web-app` applications if OIDC discovery is disabled.
-     * This property is ignored if OIDC discovery is enabled.
+     * The relative path or absolute URL of the OpenID Connect (OIDC) authorization endpoint, which authenticates users.
+     * You must set this property for `web-app` applications if OIDC discovery is disabled. This property is ignored if
+     * OIDC discovery is enabled.
      *
      * @deprecated use {@link #authorizationPath()} method instead
      */
@@ -98,10 +94,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Optional<String> authorizationPath = Optional.empty();
 
     /**
-     * The relative path or absolute URL of the OIDC UserInfo endpoint.
-     * You must set this property for `web-app` applications if OIDC discovery is disabled
-     * and the `authentication.user-info-required` property is enabled.
-     * This property is ignored if OIDC discovery is enabled.
+     * The relative path or absolute URL of the OIDC UserInfo endpoint. You must set this property for `web-app`
+     * applications if OIDC discovery is disabled and the `authentication.user-info-required` property is enabled. This
+     * property is ignored if OIDC discovery is enabled.
      *
      * @deprecated use {@link #userInfoPath()} method instead
      */
@@ -110,10 +105,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
     /**
      * Relative path or absolute URL of the OIDC RFC7662 introspection endpoint which can introspect both opaque and
-     * JSON Web Token (JWT) tokens.
-     * This property must be set if OIDC discovery is disabled and 1) the opaque bearer access tokens must be verified
-     * or 2) JWT tokens must be verified while the cached JWK verification set with no matching JWK is being refreshed.
-     * This property is ignored if the discovery is enabled.
+     * JSON Web Token (JWT) tokens. This property must be set if OIDC discovery is disabled and 1) the opaque bearer
+     * access tokens must be verified or 2) JWT tokens must be verified while the cached JWK verification set with no
+     * matching JWK is being refreshed. This property is ignored if the discovery is enabled.
      *
      * @deprecated use {@link #introspectionPath()} method instead
      */
@@ -122,9 +116,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
     /**
      * Relative path or absolute URL of the OIDC JSON Web Key Set (JWKS) endpoint which returns a JSON Web Key
-     * Verification Set.
-     * This property should be set if OIDC discovery is disabled and the local JWT verification is required.
-     * This property is ignored if the discovery is enabled.
+     * Verification Set. This property should be set if OIDC discovery is disabled and the local JWT verification is
+     * required. This property is ignored if the discovery is enabled.
      *
      * @deprecated use {@link #jwksPath()} method instead
      */
@@ -132,10 +125,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Optional<String> jwksPath = Optional.empty();
 
     /**
-     * Relative path or absolute URL of the OIDC end_session_endpoint.
-     * This property must be set if OIDC discovery is disabled and RP Initiated Logout support for the `web-app` applications is
-     * required.
-     * This property is ignored if the discovery is enabled.
+     * Relative path or absolute URL of the OIDC end_session_endpoint. This property must be set if OIDC discovery is
+     * disabled and RP Initiated Logout support for the `web-app` applications is required. This property is ignored if
+     * the discovery is enabled.
      *
      * @deprecated use {@link #endSessionPath()} method instead
      */
@@ -143,9 +135,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Optional<String> endSessionPath = Optional.empty();
 
     /**
-     * The paths which must be secured by this tenant. Tenant with the most specific path wins.
-     * Please see the xref:security-openid-connect-multitenancy.adoc#configure-tenant-paths[Configure tenant paths]
-     * section of the OIDC multitenancy guide for explanation of allowed path patterns.
+     * The paths which must be secured by this tenant. Tenant with the most specific path wins. Please see the
+     * xref:security-openid-connect-multitenancy.adoc#configure-tenant-paths[Configure tenant paths] section of the OIDC
+     * multitenancy guide for explanation of allowed path patterns.
      *
      * @deprecated use {@link #tenantPaths()} method instead
      */
@@ -153,8 +145,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Optional<List<String>> tenantPaths = Optional.empty();
 
     /**
-     * The public key for the local JWT token verification.
-     * OIDC server connection is not created when this property is set.
+     * The public key for the local JWT token verification. OIDC server connection is not created when this property is
+     * set.
      *
      * @deprecated use {@link #publicKey()} method instead
      */
@@ -162,8 +154,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Optional<String> publicKey = Optional.empty();
 
     /**
-     * Introspection Basic Authentication which must be configured only if the introspection is required
-     * and OpenId Connect Provider does not support the OIDC client authentication configured with
+     * Introspection Basic Authentication which must be configured only if the introspection is required and OpenId
+     * Connect Provider does not support the OIDC client authentication configured with
      * {@link OidcCommonConfig#credentials} for its introspection endpoint.
      *
      * @deprecated use {@link #introspectionCredentials()} method instead
@@ -177,7 +169,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      * @deprecated use the {@link OidcTenantConfigBuilder.IntrospectionCredentialsBuilder}
      */
     @Deprecated(since = "3.18", forRemoval = true)
-    public static class IntrospectionCredentials implements io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials {
+    public static class IntrospectionCredentials
+            implements io.quarkus.oidc.runtime.OidcTenantConfig.IntrospectionCredentials {
         /**
          * Name
          */
@@ -264,19 +257,18 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public Logout logout = new Logout();
 
     /**
-     * Configuration of the certificate chain which can be used to verify tokens.
-     * If the certificate chain truststore is configured, the tokens can be verified using the certificate
-     * chain inlined in the Base64-encoded format as an `x5c` header in the token itself.
+     * Configuration of the certificate chain which can be used to verify tokens. If the certificate chain truststore is
+     * configured, the tokens can be verified using the certificate chain inlined in the Base64-encoded format as an
+     * `x5c` header in the token itself.
      * <p/>
-     * The certificate chain inlined in the token is verified.
-     * Signature of every certificate in the chain but the root certificate is verified by the next certificate in the chain.
-     * Thumbprint of the root certificate in the chain must match a thumbprint of one of the certificates in the truststore.
+     * The certificate chain inlined in the token is verified. Signature of every certificate in the chain but the root
+     * certificate is verified by the next certificate in the chain. Thumbprint of the root certificate in the chain
+     * must match a thumbprint of one of the certificates in the truststore.
      * <p/>
      * Additionally, a direct trust in the leaf chain certificate which will be used to verify the token signature must
-     * be established.
-     * By default, the leaf certificate's thumbprint must match a thumbprint of one of the certificates in the truststore.
-     * If the truststore does not have the leaf certificate imported, then the leaf certificate must be identified by its Common
-     * Name.
+     * be established. By default, the leaf certificate's thumbprint must match a thumbprint of one of the certificates
+     * in the truststore. If the truststore does not have the leaf certificate imported, then the leaf certificate must
+     * be identified by its Common Name.
      *
      * @deprecated use {@link #certificateChain()} method instead
      */
@@ -289,9 +281,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.18", forRemoval = true)
     public static class CertificateChain implements io.quarkus.oidc.runtime.OidcTenantConfig.CertificateChain {
         /**
-         * Common name of the leaf certificate. It must be set if the {@link #trustStoreFile} does not have
-         * this certificate imported.
-         *
+         * Common name of the leaf certificate. It must be set if the {@link #trustStoreFile} does not have this
+         * certificate imported.
          */
         public Optional<String> leafCertificateName = Optional.empty();
 
@@ -312,8 +303,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
         /**
          * An optional parameter to specify type of the truststore file. If not given, the type is automatically
-         * detected
-         * based on the file name.
+         * detected based on the file name.
          */
         public Optional<String> trustStoreFileType = Optional.empty();
 
@@ -416,10 +406,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public TokenStateManager tokenStateManager = new TokenStateManager();
 
     /**
-     * Allow caching the token introspection data.
-     * Note enabling this property does not enable the cache itself but only permits to cache the token introspection
-     * for a given tenant. If the default token cache can be used, see {@link OidcConfig.TokenCache} to enable
-     * it.
+     * Allow caching the token introspection data. Note enabling this property does not enable the cache itself but only
+     * permits to cache the token introspection for a given tenant. If the default token cache can be used, see
+     * {@link OidcConfig.TokenCache} to enable it.
      *
      * @deprecated use the {@link #allowTokenIntrospectionCache()} method
      */
@@ -427,10 +416,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public boolean allowTokenIntrospectionCache = true;
 
     /**
-     * Allow caching the user info data.
-     * Note enabling this property does not enable the cache itself but only permits to cache the user info data
-     * for a given tenant. If the default token cache can be used, see {@link OidcConfig.TokenCache} to enable
-     * it.
+     * Allow caching the user info data. Note enabling this property does not enable the cache itself but only permits
+     * to cache the user info data for a given tenant. If the default token cache can be used, see
+     * {@link OidcConfig.TokenCache} to enable it.
      *
      * @deprecated use the {@link #allowUserInfoCache()} method
      */
@@ -438,14 +426,13 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public boolean allowUserInfoCache = true;
 
     /**
-     * Allow inlining UserInfo in IdToken instead of caching it in the token cache.
-     * This property is only checked when an internal IdToken is generated when OAuth2 providers do not return IdToken.
-     * Inlining UserInfo in the generated IdToken allows to store it in the session cookie and avoids introducing a cached
-     * state.
+     * Allow inlining UserInfo in IdToken instead of caching it in the token cache. This property is only checked when
+     * an internal IdToken is generated when OAuth2 providers do not return IdToken. Inlining UserInfo in the generated
+     * IdToken allows to store it in the session cookie and avoids introducing a cached state.
      * <p>
-     * Inlining UserInfo in the generated IdToken is enabled if the session cookie is encrypted
-     * and the UserInfo cache is not enabled or caching UserInfo is disabled for the current tenant
-     * with the {@link #allowUserInfoCache} property set to `false`.
+     * Inlining UserInfo in the generated IdToken is enabled if the session cookie is encrypted and the UserInfo cache
+     * is not enabled or caching UserInfo is disabled for the current tenant with the {@link #allowUserInfoCache}
+     * property set to `false`.
      *
      * @deprecated use the {@link #cacheUserInfoInIdtoken()} method
      */
@@ -459,17 +446,15 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public static class Logout implements io.quarkus.oidc.runtime.OidcTenantConfig.Logout {
 
         /**
-         * The relative path of the logout endpoint at the application. If provided, the application is able to
-         * initiate the
-         * logout through this endpoint in conformance with the OpenID Connect RP-Initiated Logout specification.
+         * The relative path of the logout endpoint at the application. If provided, the application is able to initiate
+         * the logout through this endpoint in conformance with the OpenID Connect RP-Initiated Logout specification.
          */
         public Optional<String> path = Optional.empty();
 
         /**
          * Relative path of the application endpoint where the user should be redirected to after logging out from the
-         * OpenID
-         * Connect Provider.
-         * This endpoint URI must be properly registered at the OpenID Connect Provider as a valid redirect URI.
+         * OpenID Connect Provider. This endpoint URI must be properly registered at the OpenID Connect Provider as a
+         * valid redirect URI.
          */
         public Optional<String> postLogoutPath = Optional.empty();
 
@@ -598,15 +583,15 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Backchannel implements io.quarkus.oidc.runtime.OidcTenantConfig.Backchannel {
         /**
-         * The relative path of the Back-Channel Logout endpoint at the application.
-         * It must start with the forward slash '/', for example, '/back-channel-logout'.
-         * This value is always resolved relative to 'quarkus.http.root-path'.
+         * The relative path of the Back-Channel Logout endpoint at the application. It must start with the forward
+         * slash '/', for example, '/back-channel-logout'. This value is always resolved relative to
+         * 'quarkus.http.root-path'.
          */
         public Optional<String> path = Optional.empty();
 
         /**
-         * Maximum number of logout tokens that can be cached before they are matched against ID tokens stored in session
-         * cookies.
+         * Maximum number of logout tokens that can be cached before they are matched against ID tokens stored in
+         * session cookies.
          */
         public int tokenCacheSize = 10;
 
@@ -616,15 +601,15 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Duration tokenCacheTimeToLive = Duration.ofMinutes(10);
 
         /**
-         * Token cache timer interval.
-         * If this property is set, a timer checks and removes the stale entries periodically.
+         * Token cache timer interval. If this property is set, a timer checks and removes the stale entries
+         * periodically.
          */
         public Optional<Duration> cleanUpTimerInterval = Optional.empty();
 
         /**
-         * Logout token claim whose value is used as a key for caching the tokens.
-         * Only `sub` (subject) and `sid` (session id) claims can be used as keys.
-         * Set it to `sid` only if ID tokens issued by the OIDC provider have no `sub` but have `sid` claim.
+         * Logout token claim whose value is used as a key for caching the tokens. Only `sub` (subject) and `sid`
+         * (session id) claims can be used as keys. Set it to `sid` only if ID tokens issued by the OIDC provider have
+         * no `sub` but have `sid` claim.
          */
         public String logoutTokenKey = "sub";
 
@@ -716,37 +701,36 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     @Deprecated(since = "3.18", forRemoval = true)
     public static class Jwks implements io.quarkus.oidc.runtime.OidcTenantConfig.Jwks {
         /**
-         * If JWK verification keys should be fetched at the moment a connection to the OIDC provider
-         * is initialized.
+         * If JWK verification keys should be fetched at the moment a connection to the OIDC provider is initialized.
          * <p/>
-         * Disabling this property delays the key acquisition until the moment the current token
-         * has to be verified. Typically it can only be necessary if the token or other telated request properties
-         * provide an additional context which is required to resolve the keys correctly.
+         * Disabling this property delays the key acquisition until the moment the current token has to be verified.
+         * Typically it can only be necessary if the token or other telated request properties provide an additional
+         * context which is required to resolve the keys correctly.
          */
         public boolean resolveEarly = true;
 
         /**
-         * Maximum number of JWK keys that can be cached.
-         * This property is ignored if the {@link #resolveEarly} property is set to true.
+         * Maximum number of JWK keys that can be cached. This property is ignored if the {@link #resolveEarly} property
+         * is set to true.
          */
         public int cacheSize = 10;
 
         /**
-         * Number of minutes a JWK key can be cached for.
-         * This property is ignored if the {@link #resolveEarly} property is set to true.
+         * Number of minutes a JWK key can be cached for. This property is ignored if the {@link #resolveEarly} property
+         * is set to true.
          */
         public Duration cacheTimeToLive = Duration.ofMinutes(10);
 
         /**
-         * Cache timer interval.
-         * If this property is set, a timer checks and removes the stale entries periodically.
+         * Cache timer interval. If this property is set, a timer checks and removes the stale entries periodically.
          * This property is ignored if the {@link #resolveEarly} property is set to true.
          */
         public Optional<Duration> cleanUpTimerInterval = Optional.empty();
 
         /**
-         * In case there is no key identifier ('kid') or certificate thumbprints ('x5t', 'x5t#S256') specified in the JOSE
-         * header and no key could be determined, check all available keys matching the token algorithm ('alg') header value.
+         * In case there is no key identifier ('kid') or certificate thumbprints ('x5t', 'x5t#S256') specified in the
+         * JOSE header and no key could be determined, check all available keys matching the token algorithm ('alg')
+         * header value.
          */
         public boolean tryAll = false;
 
@@ -911,10 +895,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Strategy strategy = Strategy.KEEP_ALL_TOKENS;
 
         /**
-         * Default TokenStateManager keeps all tokens (ID, access and refresh)
-         * returned in the authorization code grant response in a single session cookie by default.
-         *
-         * Enable this property to minimize a session cookie size
+         * Default TokenStateManager keeps all tokens (ID, access and refresh) returned in the authorization code grant
+         * response in a single session cookie by default. Enable this property to minimize a session cookie size
          */
         public boolean splitTokens;
 
@@ -924,20 +906,18 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public boolean encryptionRequired = true;
 
         /**
-         * The secret used by the Default TokenStateManager to encrypt the session cookie
-         * storing the tokens when {@link #encryptionRequired} property is enabled.
+         * The secret used by the Default TokenStateManager to encrypt the session cookie storing the tokens when
+         * {@link #encryptionRequired} property is enabled.
          * <p>
-         * If this secret is not set, the client secret configured with
-         * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` is checked.
-         * Finally, `quarkus.oidc.credentials.jwt.secret` which can be used for `client_jwt_secret` authentication is
-         * checked.
-         * The secret is auto-generated every time an application starts if it remains uninitialized after checking all of these
-         * properties.
-         * Generated secret can not decrypt the session cookie encrypted before the restart, therefore a user re-authentication
-         * will be required.
+         * If this secret is not set, the client secret configured with either `quarkus.oidc.credentials.secret` or
+         * `quarkus.oidc.credentials.client-secret.value` is checked. Finally, `quarkus.oidc.credentials.jwt.secret`
+         * which can be used for `client_jwt_secret` authentication is checked. The secret is auto-generated every time
+         * an application starts if it remains uninitialized after checking all of these properties. Generated secret
+         * can not decrypt the session cookie encrypted before the restart, therefore a user re-authentication will be
+         * required.
          * <p>
-         * The length of the secret used to encrypt the tokens should be at least 32 characters long.
-         * A warning is logged if the secret length is less than 16 characters.
+         * The length of the secret used to encrypt the tokens should be at least 32 characters long. A warning is
+         * logged if the secret length is less than 16 characters.
          */
         public Optional<String> encryptionSecret = Optional.empty();
 
@@ -947,15 +927,14 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public static enum EncryptionAlgorithm {
             /**
              * Content encryption key will be generated and encrypted using the A256GCMKW algorithm and the configured
-             * encryption secret.
-             * The generated content encryption key will be used to encrypt the session cookie content.
+             * encryption secret. The generated content encryption key will be used to encrypt the session cookie
+             * content.
              */
             A256GCMKW,
             /**
-             * The configured key encryption secret will be used as the content encryption key to encrypt the session cookie
-             * content.
-             * Using the direct encryption avoids a content encryption key generation step and
-             * will make the encrypted session cookie sequence slightly shorter.
+             * The configured key encryption secret will be used as the content encryption key to encrypt the session
+             * cookie content. Using the direct encryption avoids a content encryption key generation step and will make
+             * the encrypted session cookie sequence slightly shorter.
              * <p/>
              * Avoid using the direct encryption if the encryption secret is less than 32 characters long.
              */
@@ -1226,18 +1205,16 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         /**
-         * A list of paths to claims containing an array of groups.
-         * Each path starts from the top level JWT JSON object
-         * and can contain multiple segments.
-         * Each segment represents a JSON object name only; for example: "realm/groups".
-         * Use double quotes with the namespace-qualified claim names.
-         * This property can be used if a token has no `groups` claim but has the groups set in one or more different claims.
+         * A list of paths to claims containing an array of groups. Each path starts from the top level JWT JSON object
+         * and can contain multiple segments. Each segment represents a JSON object name only; for example:
+         * "realm/groups". Use double quotes with the namespace-qualified claim names. This property can be used if a
+         * token has no `groups` claim but has the groups set in one or more different claims.
          */
         public Optional<List<String>> roleClaimPath = Optional.empty();
         /**
-         * The separator for splitting strings that contain multiple group values.
-         * It is only used if the "role-claim-path" property points to one or more custom claims whose values are strings.
-         * A single space is used by default because the standard `scope` claim can contain a space-separated sequence.
+         * The separator for splitting strings that contain multiple group values. It is only used if the
+         * "role-claim-path" property points to one or more custom claims whose values are strings. A single space is
+         * used by default because the standard `scope` claim can contain a space-separated sequence.
          */
         public Optional<String> roleClaimSeparator = Optional.empty();
 
@@ -1299,8 +1276,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
             idtoken,
 
             /**
-             * Access Token - the default value for the `service` applications;
-             * can also be used as the source of roles for the `web-app` applications.
+             * Access Token - the default value for the `service` applications; can also be used as the source of roles
+             * for the `web-app` applications.
              */
             accesstoken,
 
@@ -1312,8 +1289,7 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Defines the authorization request properties when authenticating
-     * users using the Authorization Code Grant Type.
+     * Defines the authorization request properties when authenticating users using the Authorization Code Grant Type.
      *
      * @deprecated use the {@link AuthenticationConfigBuilder} builder
      */
@@ -1419,7 +1395,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         @Override
         public io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite cookieSameSite() {
             return cookieSameSite == null ? null
-                    : io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite.valueOf(cookieSameSite.toString());
+                    : io.quarkus.oidc.runtime.OidcTenantConfig.Authentication.CookieSameSite
+                            .valueOf(cookieSameSite.toString());
         }
 
         @Override
@@ -1513,71 +1490,63 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<ResponseMode> responseMode = Optional.empty();
 
         /**
-         * The relative path for calculating a `redirect_uri` query parameter.
-         * It has to start from a forward slash and is appended to the request URI's host and port.
-         * For example, if the current request URI is `https://localhost:8080/service`, a `redirect_uri` parameter
-         * is set to `https://localhost:8080/` if this property is set to `/` and be the same as the request URI
-         * if this property has not been configured.
-         * Note the original request URI is restored after the user has authenticated if `restorePathAfterRedirect` is set
-         * to `true`.
+         * The relative path for calculating a `redirect_uri` query parameter. It has to start from a forward slash and
+         * is appended to the request URI's host and port. For example, if the current request URI is
+         * `https://localhost:8080/service`, a `redirect_uri` parameter is set to `https://localhost:8080/` if this
+         * property is set to `/` and be the same as the request URI if this property has not been configured. Note the
+         * original request URI is restored after the user has authenticated if `restorePathAfterRedirect` is set to
+         * `true`.
          */
         public Optional<String> redirectPath = Optional.empty();
 
         /**
-         * If this property is set to `true`, the original request URI which was used before
-         * the authentication is restored after the user has been redirected back to the application.
-         *
-         * Note if `redirectPath` property is not set, the original request URI is restored even if this property is
-         * disabled.
+         * If this property is set to `true`, the original request URI which was used before the authentication is
+         * restored after the user has been redirected back to the application. Note if `redirectPath` property is not
+         * set, the original request URI is restored even if this property is disabled.
          */
         public boolean restorePathAfterRedirect;
 
         /**
-         * Remove the query parameters such as `code` and `state` set by the OIDC server on the redirect URI
-         * after the user has authenticated by redirecting a user to the same URI but without the query parameters.
+         * Remove the query parameters such as `code` and `state` set by the OIDC server on the redirect URI after the
+         * user has authenticated by redirecting a user to the same URI but without the query parameters.
          */
         public boolean removeRedirectParameters = true;
 
         /**
-         * Relative path to the public endpoint which processes the error response from the OIDC authorization
-         * endpoint.
+         * Relative path to the public endpoint which processes the error response from the OIDC authorization endpoint.
          * If the user authentication has failed, the OIDC provider returns an `error` and an optional
-         * `error_description`
-         * parameters, instead of the expected authorization `code`.
-         *
-         * If this property is set, the user is redirected to the endpoint which can return a user-friendly
-         * error description page. It has to start from a forward slash and is appended to the request URI's host and port.
-         * For example, if it is set as `/error` and the current request URI is
-         * `https://localhost:8080/callback?error=invalid_scope`,
-         * a redirect is made to `https://localhost:8080/error?error=invalid_scope`.
-         *
-         * If this property is not set, HTTP 401 status is returned in case of the user authentication failure.
+         * `error_description` parameters, instead of the expected authorization `code`. If this property is set, the
+         * user is redirected to the endpoint which can return a user-friendly error description page. It has to start
+         * from a forward slash and is appended to the request URI's host and port. For example, if it is set as
+         * `/error` and the current request URI is `https://localhost:8080/callback?error=invalid_scope`, a redirect is
+         * made to `https://localhost:8080/error?error=invalid_scope`. If this property is not set, HTTP 401 status is
+         * returned in case of the user authentication failure.
          */
         public Optional<String> errorPath = Optional.empty();
 
         /**
-         * Relative path to the public endpoint which an authenticated user is redirected to when the session has expired.
+         * Relative path to the public endpoint which an authenticated user is redirected to when the session has
+         * expired.
          * <p>
-         * When the OIDC session has expired and the session can not be refreshed, a user is redirected
-         * to the OIDC provider to re-authenticate. The user experience may not be ideal in this case
-         * as it may not be obvious to the authenticated user why an authentication challenge is returned.
+         * When the OIDC session has expired and the session can not be refreshed, a user is redirected to the OIDC
+         * provider to re-authenticate. The user experience may not be ideal in this case as it may not be obvious to
+         * the authenticated user why an authentication challenge is returned.
          * <p>
-         * Set this property if you would like the user whose session has expired be redirected to a public application specific
-         * page
-         * instead, which can inform that the session has expired and advise the user to re-authenticated by following
-         * a link to the secured initial entry page.
+         * Set this property if you would like the user whose session has expired be redirected to a public application
+         * specific page instead, which can inform that the session has expired and advise the user to re-authenticated
+         * by following a link to the secured initial entry page.
          */
         public Optional<String> sessionExpiredPath = Optional.empty();
 
         /**
          * Both ID and access tokens are fetched from the OIDC provider as part of the authorization code flow.
          * <p>
-         * ID token is always verified on every user request as the primary token which is used
-         * to represent the principal and extract the roles.
+         * ID token is always verified on every user request as the primary token which is used to represent the
+         * principal and extract the roles.
          * <p>
-         * Authorization code flow access token is meant to be propagated to downstream services
-         * and is not verified by default unless `quarkus.oidc.roles.source` property is set to `accesstoken`
-         * which means the authorization decision is based on the roles extracted from the access token.
+         * Authorization code flow access token is meant to be propagated to downstream services and is not verified by
+         * default unless `quarkus.oidc.roles.source` property is set to `accesstoken` which means the authorization
+         * decision is based on the roles extracted from the access token.
          * <p>
          * Authorization code flow access token verification is also enabled if this token is injected as JsonWebToken.
          * Set this property to `false` if it is not required.
@@ -1588,8 +1557,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
         /**
          * Force `https` as the `redirect_uri` parameter scheme when running behind an SSL/TLS terminating reverse
-         * proxy.
-         * This property, if enabled, also affects the logout `post_logout_redirect_uri` and the local redirect requests.
+         * proxy. This property, if enabled, also affects the logout `post_logout_redirect_uri` and the local redirect
+         * requests.
          */
         public Optional<Boolean> forceRedirectHttpsScheme = Optional.empty();
 
@@ -1599,22 +1568,22 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<List<String>> scopes = Optional.empty();
 
         /**
-         * The separator which is used when more than one scope is configured.
-         * A single space is used by default.
+         * The separator which is used when more than one scope is configured. A single space is used by default.
          */
         public Optional<String> scopeSeparator = Optional.empty();
 
         /**
-         * Require that ID token includes a `nonce` claim which must match `nonce` authentication request query parameter.
-         * Enabling this property can help mitigate replay attacks.
-         * Do not enable this property if your OpenId Connect provider does not support setting `nonce` in ID token
-         * or if you work with OAuth2 provider such as `GitHub` which does not issue ID tokens.
+         * Require that ID token includes a `nonce` claim which must match `nonce` authentication request query
+         * parameter. Enabling this property can help mitigate replay attacks. Do not enable this property if your
+         * OpenId Connect provider does not support setting `nonce` in ID token or if you work with OAuth2 provider such
+         * as `GitHub` which does not issue ID tokens.
          */
         public boolean nonceRequired = false;
 
         /**
          * Add the `openid` scope automatically to the list of scopes. This is required for OpenId Connect providers,
-         * but does not work for OAuth2 providers such as Twitter OAuth2, which do not accept this scope and throw errors.
+         * but does not work for OAuth2 providers such as Twitter OAuth2, which do not accept this scope and throw
+         * errors.
          */
         public Optional<Boolean> addOpenidScope = Optional.empty();
 
@@ -1629,30 +1598,28 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<List<String>> forwardParams = Optional.empty();
 
         /**
-         * If enabled the state, session, and post logout cookies have their `secure` parameter set to `true`
-         * when HTTP is used. It might be necessary when running behind an SSL/TLS terminating reverse proxy.
-         * The cookies are always secure if HTTPS is used, even if this property is set to false.
+         * If enabled the state, session, and post logout cookies have their `secure` parameter set to `true` when HTTP
+         * is used. It might be necessary when running behind an SSL/TLS terminating reverse proxy. The cookies are
+         * always secure if HTTPS is used, even if this property is set to false.
          */
         public boolean cookieForceSecure;
 
         /**
-         * Cookie name suffix.
-         * For example, a session cookie name for the default OIDC tenant is `q_session` but can be changed to `q_session_test`
-         * if this property is set to `test`.
+         * Cookie name suffix. For example, a session cookie name for the default OIDC tenant is `q_session` but can be
+         * changed to `q_session_test` if this property is set to `test`.
          */
         public Optional<String> cookieSuffix = Optional.empty();
 
         /**
          * Cookie path parameter value which, if set, is used to set a path parameter for the session, state and post
-         * logout cookies.
-         * The `cookie-path-header` property, if set, is checked first.
+         * logout cookies. The `cookie-path-header` property, if set, is checked first.
          */
         public String cookiePath = "/";
 
         /**
-         * Cookie path header parameter value which, if set, identifies the incoming HTTP header
-         * whose value is used to set a path parameter for the session, state and post logout cookies.
-         * If the header is missing, the `cookie-path` property is checked.
+         * Cookie path header parameter value which, if set, identifies the incoming HTTP header whose value is used to
+         * set a path parameter for the session, state and post logout cookies. If the header is missing, the
+         * `cookie-path` property is checked.
          */
         public Optional<String> cookiePathHeader = Optional.empty();
 
@@ -1667,115 +1634,103 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public CookieSameSite cookieSameSite = CookieSameSite.LAX;
 
         /**
-         * If a state cookie is present, a `state` query parameter must also be present and both the state
-         * cookie name suffix and state cookie value must match the value of the `state` query parameter when
-         * the redirect path matches the current path.
-         * However, if multiple authentications are attempted from the same browser, for example, from the different
-         * browser tabs, then the currently available state cookie might represent the authentication flow
-         * initiated from another tab and not related to the current request.
-         * Disable this property to permit only a single authorization code flow in the same browser.
-         *
+         * If a state cookie is present, a `state` query parameter must also be present and both the state cookie name
+         * suffix and state cookie value must match the value of the `state` query parameter when the redirect path
+         * matches the current path. However, if multiple authentications are attempted from the same browser, for
+         * example, from the different browser tabs, then the currently available state cookie might represent the
+         * authentication flow initiated from another tab and not related to the current request. Disable this property
+         * to permit only a single authorization code flow in the same browser.
          */
         public boolean allowMultipleCodeFlows = true;
 
         /**
          * Fail with the HTTP 401 error if the state cookie is present but no state query parameter is present.
          * <p/>
-         * When either multiple authentications are disabled or the redirect URL
-         * matches the original request URL, the stale state cookie might remain in the browser cache from
-         * the earlier failed redirect to an OpenId Connect provider and be visible during the current request.
-         * For example, if Single-page application (SPA) uses XHR to handle redirects to the provider
-         * which does not support CORS for its authorization endpoint, the browser blocks it
-         * and the state cookie created by Quarkus remains in the browser cache.
-         * Quarkus reports an authentication failure when it detects such an old state cookie but find no matching state
-         * query parameter.
+         * When either multiple authentications are disabled or the redirect URL matches the original request URL, the
+         * stale state cookie might remain in the browser cache from the earlier failed redirect to an OpenId Connect
+         * provider and be visible during the current request. For example, if Single-page application (SPA) uses XHR to
+         * handle redirects to the provider which does not support CORS for its authorization endpoint, the browser
+         * blocks it and the state cookie created by Quarkus remains in the browser cache. Quarkus reports an
+         * authentication failure when it detects such an old state cookie but find no matching state query parameter.
          * <p/>
-         * Reporting HTTP 401 error is usually the right thing to do in such cases, it minimizes a risk of the
-         * browser redirect loop but also can identify problems in the way SPA or Quarkus application manage redirects.
-         * For example, enabling {@link #javaScriptAutoRedirect} or having the provider redirect to URL configured
-         * with {@link #redirectPath} might be needed to avoid such errors.
+         * Reporting HTTP 401 error is usually the right thing to do in such cases, it minimizes a risk of the browser
+         * redirect loop but also can identify problems in the way SPA or Quarkus application manage redirects. For
+         * example, enabling {@link #javaScriptAutoRedirect} or having the provider redirect to URL configured with
+         * {@link #redirectPath} might be needed to avoid such errors.
          * <p/>
-         * However, setting this property to `false` might help if the above options are not suitable.
-         * It causes a new authentication redirect to OpenId Connect provider. Doing so might increase the
-         * risk of browser redirect loops.
+         * However, setting this property to `false` might help if the above options are not suitable. It causes a new
+         * authentication redirect to OpenId Connect provider. Doing so might increase the risk of browser redirect
+         * loops.
          */
         public boolean failOnMissingStateParam = false;
 
         /**
-         * Fail with the HTTP 401 error if the ID token signature can not be verified during the re-authentication only due to
-         * an unresolved token key identifier (`kid`).
+         * Fail with the HTTP 401 error if the ID token signature can not be verified during the re-authentication only
+         * due to an unresolved token key identifier (`kid`).
          * <p>
-         * This property might need to be disabled when multiple tab authentications are allowed, with one of the tabs keeping
-         * an expired ID token with its `kid`
-         * unresolved due to the verification key set refreshed due to another tab initiating an authorization code flow. In
-         * such cases, instead of failing with the HTTP 401 error,
+         * This property might need to be disabled when multiple tab authentications are allowed, with one of the tabs
+         * keeping an expired ID token with its `kid` unresolved due to the verification key set refreshed due to
+         * another tab initiating an authorization code flow. In such cases, instead of failing with the HTTP 401 error,
          * redirecting the user to re-authenticate with the HTTP 302 status may provide better user experience.
          * <p>
-         * Note that the HTTP 401 error is always returned if the ID token signature can not be verified due to an unresolved
-         * kid during an initial ID token verification
-         * following the authorization code flow completion, before a session cookie is created.
+         * Note that the HTTP 401 error is always returned if the ID token signature can not be verified due to an
+         * unresolved kid during an initial ID token verification following the authorization code flow completion,
+         * before a session cookie is created.
          */
         public boolean failOnUnresolvedKid = true;
 
         /**
          * If this property is set to `true`, an OIDC UserInfo endpoint is called.
          * <p>
-         * This property is enabled automatically if `quarkus.oidc.roles.source` is set to `userinfo`
-         * or `quarkus.oidc.token.verify-access-token-with-user-info` is set to `true`
-         * or `quarkus.oidc.authentication.id-token-required` is set to `false`,
-         * the current OIDC tenant must support a UserInfo endpoint in these cases.
+         * This property is enabled automatically if `quarkus.oidc.roles.source` is set to `userinfo` or
+         * `quarkus.oidc.token.verify-access-token-with-user-info` is set to `true` or
+         * `quarkus.oidc.authentication.id-token-required` is set to `false`, the current OIDC tenant must support a
+         * UserInfo endpoint in these cases.
          * <p>
-         * It is also enabled automatically if `io.quarkus.oidc.UserInfo` injection point is detected but only
-         * if the current OIDC tenant supports a UserInfo endpoint.
+         * It is also enabled automatically if `io.quarkus.oidc.UserInfo` injection point is detected but only if the
+         * current OIDC tenant supports a UserInfo endpoint.
          */
         public Optional<Boolean> userInfoRequired = Optional.empty();
 
         /**
-         * Session age extension in minutes.
-         * The user session age property is set to the value of the ID token life-span by default and
-         * the user is redirected to the OIDC provider to re-authenticate once the session has expired.
-         * If this property is set to a nonzero value, then the expired ID token can be refreshed before
-         * the session has expired.
-         * This property is ignored if the `token.refresh-expired` property has not been enabled.
+         * Session age extension in minutes. The user session age property is set to the value of the ID token life-span
+         * by default and the user is redirected to the OIDC provider to re-authenticate once the session has expired.
+         * If this property is set to a nonzero value, then the expired ID token can be refreshed before the session has
+         * expired. This property is ignored if the `token.refresh-expired` property has not been enabled.
          */
         public Duration sessionAgeExtension = Duration.ofMinutes(5);
 
         /**
-         * State cookie age in minutes.
-         * State cookie is created every time a new authorization code flow redirect starts
-         * and removed when this flow is completed.
-         * State cookie name is unique by default, see {@link #allowMultipleCodeFlows}.
-         * Keep its age to the reasonable minimum value such as 5 minutes or less.
+         * State cookie age in minutes. State cookie is created every time a new authorization code flow redirect starts
+         * and removed when this flow is completed. State cookie name is unique by default, see
+         * {@link #allowMultipleCodeFlows}. Keep its age to the reasonable minimum value such as 5 minutes or less.
          */
         public Duration stateCookieAge = Duration.ofMinutes(5);
 
         /**
-         * If this property is set to `true`, a normal 302 redirect response is returned
-         * if the request was initiated by a JavaScript API such as XMLHttpRequest or Fetch and the current user needs to be
-         * (re)authenticated, which might not be desirable for Single-page applications (SPA) since
-         * it automatically following the redirect might not work given that OIDC authorization endpoints typically do not
-         * support
-         * CORS.
+         * If this property is set to `true`, a normal 302 redirect response is returned if the request was initiated by
+         * a JavaScript API such as XMLHttpRequest or Fetch and the current user needs to be (re)authenticated, which
+         * might not be desirable for Single-page applications (SPA) since it automatically following the redirect might
+         * not work given that OIDC authorization endpoints typically do not support CORS.
          * <p/>
-         * If this property is set to `false`, a status code of `499` is returned to allow
-         * SPA to handle the redirect manually if a request header identifying current request as a JavaScript request is found.
-         * `X-Requested-With` request header with its value set to either `JavaScript` or `XMLHttpRequest` is expected by
-         * default if
-         * this property is enabled. You can register a custom {@linkplain JavaScriptRequestChecker} to do a custom JavaScript
-         * request check instead.
+         * If this property is set to `false`, a status code of `499` is returned to allow SPA to handle the redirect
+         * manually if a request header identifying current request as a JavaScript request is found. `X-Requested-With`
+         * request header with its value set to either `JavaScript` or `XMLHttpRequest` is expected by default if this
+         * property is enabled. You can register a custom {@linkplain JavaScriptRequestChecker} to do a custom
+         * JavaScript request check instead.
          */
         public boolean javaScriptAutoRedirect = true;
 
         /**
-         * Requires that ID token is available when the authorization code flow completes.
-         * Disable this property only when you need to use the authorization code flow with OAuth2 providers which do not return
-         * ID token - an internal IdToken is generated in such cases.
+         * Requires that ID token is available when the authorization code flow completes. Disable this property only
+         * when you need to use the authorization code flow with OAuth2 providers which do not return ID token - an
+         * internal IdToken is generated in such cases.
          */
         public Optional<Boolean> idTokenRequired = Optional.empty();
 
         /**
-         * Internal ID token lifespan.
-         * This property is only checked when an internal IdToken is generated when Oauth2 providers do not return IdToken.
+         * Internal ID token lifespan. This property is only checked when an internal IdToken is generated when Oauth2
+         * providers do not return IdToken.
          */
         public Optional<Duration> internalIdTokenLifespan = Optional.empty();
 
@@ -1785,24 +1740,21 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<Boolean> pkceRequired = Optional.empty();
 
         /**
-         * Secret used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state.
-         * This secret should be at least 32 characters long.
+         * Secret used to encrypt a Proof Key for Code Exchange (PKCE) code verifier in the code flow state. This secret
+         * should be at least 32 characters long.
          *
          * @deprecated This field is deprecated. Use {@link #stateSecret} instead.
-         *
          */
         public Optional<String> pkceSecret = Optional.empty();
 
         /**
-         * Secret used to encrypt Proof Key for Code Exchange (PKCE) code verifier and/or nonce in the code flow
-         * state.
+         * Secret used to encrypt Proof Key for Code Exchange (PKCE) code verifier and/or nonce in the code flow state.
          * This secret should be at least 32 characters long.
          * <p/>
-         * If this secret is not set, the client secret configured with
-         * either `quarkus.oidc.credentials.secret` or `quarkus.oidc.credentials.client-secret.value` is checked.
-         * Finally, `quarkus.oidc.credentials.jwt.secret` which can be used for `client_jwt_secret` authentication is
-         * checked. A client secret is not be used as a state encryption secret if it is less than 32 characters
-         * long.
+         * If this secret is not set, the client secret configured with either `quarkus.oidc.credentials.secret` or
+         * `quarkus.oidc.credentials.client-secret.value` is checked. Finally, `quarkus.oidc.credentials.jwt.secret`
+         * which can be used for `client_jwt_secret` authentication is checked. A client secret is not be used as a
+         * state encryption secret if it is less than 32 characters long.
          * </p>
          * The secret is auto-generated if it remains uninitialized after checking all of these properties.
          * <p/>
@@ -2097,8 +2049,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public static class CodeGrant implements io.quarkus.oidc.runtime.OidcTenantConfig.CodeGrant {
 
         /**
-         * Additional parameters, in addition to the required `code` and `redirect-uri` parameters,
-         * which must be included to complete the authorization code grant request.
+         * Additional parameters, in addition to the required `code` and `redirect-uri` parameters, which must be
+         * included to complete the authorization code grant request.
          */
         public Map<String, String> extraParams = new HashMap<>();
 
@@ -2184,43 +2136,35 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         }
 
         /**
-         * The expected issuer `iss` claim value.
-         * This property overrides the `issuer` property, which might be set in OpenId Connect provider's well-known
-         * configuration.
-         * If the `iss` claim value varies depending on the host, IP address, or tenant id of the provider, you can skip the
-         * issuer verification by setting this property to `any`, but it should be done only when other options (such as
-         * configuring
-         * the provider to use the fixed `iss` claim value) are not possible.
+         * The expected issuer `iss` claim value. This property overrides the `issuer` property, which might be set in
+         * OpenId Connect provider's well-known configuration. If the `iss` claim value varies depending on the host, IP
+         * address, or tenant id of the provider, you can skip the issuer verification by setting this property to
+         * `any`, but it should be done only when other options (such as configuring the provider to use the fixed `iss`
+         * claim value) are not possible.
          */
         public Optional<String> issuer = Optional.empty();
 
         /**
-         * The expected audience `aud` claim value, which can be a string or an array of strings.
-         *
-         * Note the audience claim is verified for ID tokens by default.
-         * ID token audience must be equal to the value of `quarkus.oidc.client-id` property.
-         * Use this property to override the expected value if your OpenID Connect provider
-         * sets a different audience claim value in ID tokens. Set it to `any` if your provider
-         * does not set ID token audience` claim.
-         *
-         * Audience verification for access tokens is only done if this property is configured.
+         * The expected audience `aud` claim value, which can be a string or an array of strings. Note the audience
+         * claim is verified for ID tokens by default. ID token audience must be equal to the value of
+         * `quarkus.oidc.client-id` property. Use this property to override the expected value if your OpenID Connect
+         * provider sets a different audience claim value in ID tokens. Set it to `any` if your provider does not set ID
+         * token audience` claim. Audience verification for access tokens is only done if this property is configured.
          */
         public Optional<List<String>> audience = Optional.empty();
 
         /**
-         * Require that the token includes a `sub` (subject) claim which is a unique
-         * and never reassigned identifier for the current user.
-         * Note that if you enable this property and if UserInfo is also required,
-         * both the token and UserInfo `sub` claims must be present and match each other.
+         * Require that the token includes a `sub` (subject) claim which is a unique and never reassigned identifier for
+         * the current user. Note that if you enable this property and if UserInfo is also required, both the token and
+         * UserInfo `sub` claims must be present and match each other.
          */
         public boolean subjectRequired = false;
 
         /**
-         * A map of required claims and their expected values.
-         * For example, `quarkus.oidc.token.required-claims.org_id = org_xyz` would require tokens to have the `org_id` claim to
-         * be present and set to `org_xyz`.
-         * Strings are the only supported types. Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or
-         * complex claims.
+         * A map of required claims and their expected values. For example, `quarkus.oidc.token.required-claims.org_id =
+         * org_xyz` would require tokens to have the `org_id` claim to be present and set to `org_xyz`. Strings are the
+         * only supported types. Use {@linkplain SecurityIdentityAugmentor} to verify claims of other types or complex
+         * claims.
          */
         public Map<String, Set<String>> requiredClaims = new HashMap<>();
 
@@ -2230,69 +2174,55 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Optional<String> tokenType = Optional.empty();
 
         /**
-         * Life span grace period in seconds.
-         * When checking token expiry, current time is allowed to be later than token expiration time by at most the configured
-         * number of seconds.
-         * When checking token issuance, current time is allowed to be sooner than token issue time by at most the configured
-         * number of seconds.
+         * Life span grace period in seconds. When checking token expiry, current time is allowed to be later than token
+         * expiration time by at most the configured number of seconds. When checking token issuance, current time is
+         * allowed to be sooner than token issue time by at most the configured number of seconds.
          */
         public OptionalInt lifespanGrace = OptionalInt.empty();
 
         /**
-         * Token age.
-         *
-         * It allows for the number of seconds to be specified that must not elapse since the `iat` (issued at) time.
-         * A small leeway to account for clock skew which can be configured with `quarkus.oidc.token.lifespan-grace` to verify
-         * the token expiry time
-         * can also be used to verify the token age property.
-         *
-         * Note that setting this property does not relax the requirement that Bearer and Code Flow JWT tokens
-         * must have a valid (`exp`) expiry claim value. The only exception where setting this property relaxes the requirement
-         * is when a logout token is sent with a back-channel logout request since the current
-         * OpenId Connect Back-Channel specification does not explicitly require the logout tokens to contain an `exp` claim.
-         * However, even if the current logout token is allowed to have no `exp` claim, the `exp` claim is still verified
-         * if the logout token contains it.
+         * Token age. It allows for the number of seconds to be specified that must not elapse since the `iat` (issued
+         * at) time. A small leeway to account for clock skew which can be configured with
+         * `quarkus.oidc.token.lifespan-grace` to verify the token expiry time can also be used to verify the token age
+         * property. Note that setting this property does not relax the requirement that Bearer and Code Flow JWT tokens
+         * must have a valid (`exp`) expiry claim value. The only exception where setting this property relaxes the
+         * requirement is when a logout token is sent with a back-channel logout request since the current OpenId
+         * Connect Back-Channel specification does not explicitly require the logout tokens to contain an `exp` claim.
+         * However, even if the current logout token is allowed to have no `exp` claim, the `exp` claim is still
+         * verified if the logout token contains it.
          */
         public Optional<Duration> age = Optional.empty();
 
         /**
-         * Require that the token includes a `iat` (issued at) claim
-         *
-         * Set this property to `false` if your JWT token does not contain an `iat` (issued at) claim.
-         * Note that ID token is always required to have an `iat` claim and therefore this property has no impact on the ID
-         * token verification process.
+         * Require that the token includes a `iat` (issued at) claim Set this property to `false` if your JWT token does
+         * not contain an `iat` (issued at) claim. Note that ID token is always required to have an `iat` claim and
+         * therefore this property has no impact on the ID token verification process.
          */
         public boolean issuedAtRequired = true;
 
         /**
          * Name of the claim which contains a principal name. By default, the `upn`, `preferred_username` and `sub`
-         * claims are
-         * checked.
+         * claims are checked.
          */
         public Optional<String> principalClaim = Optional.empty();
 
         /**
-         * Refresh expired authorization code flow ID or access tokens.
-         * If this property is enabled, a refresh token request is performed if the authorization code
-         * ID or access token has expired and, if successful, the local session is updated with the new set of tokens.
-         * Otherwise, the local session is invalidated and the user redirected to the OpenID Provider to re-authenticate.
-         * In this case, the user might not be challenged again if the OIDC provider session is still active.
-         *
-         * For this option be effective the `authentication.session-age-extension` property should also be set to a nonzero
-         * value since the refresh token is currently kept in the user session.
-         *
-         * This option is valid only when the application is of type {@link ApplicationType#WEB_APP}.
-         *
-         * This property is enabled if `quarkus.oidc.token.refresh-token-time-skew` is configured,
-         * you do not need to enable this property manually in this case.
+         * Refresh expired authorization code flow ID or access tokens. If this property is enabled, a refresh token
+         * request is performed if the authorization code ID or access token has expired and, if successful, the local
+         * session is updated with the new set of tokens. Otherwise, the local session is invalidated and the user
+         * redirected to the OpenID Provider to re-authenticate. In this case, the user might not be challenged again if
+         * the OIDC provider session is still active. For this option be effective the
+         * `authentication.session-age-extension` property should also be set to a nonzero value since the refresh token
+         * is currently kept in the user session. This option is valid only when the application is of type
+         * {@link ApplicationType#WEB_APP}. This property is enabled if `quarkus.oidc.token.refresh-token-time-skew` is
+         * configured, you do not need to enable this property manually in this case.
          */
         public boolean refreshExpired;
 
         /**
-         * The refresh token time skew, in seconds.
-         * If this property is enabled, the configured number of seconds is added to the current time
-         * when checking if the authorization code ID or access token should be refreshed.
-         * If the sum is greater than the authorization code ID or access token's expiration time, a refresh is going to
+         * The refresh token time skew, in seconds. If this property is enabled, the configured number of seconds is
+         * added to the current time when checking if the authorization code ID or access token should be refreshed. If
+         * the sum is greater than the authorization code ID or access token's expiration time, a refresh is going to
          * happen.
          */
         public Optional<Duration> refreshTokenTimeSkew = Optional.empty();
@@ -2303,8 +2233,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public Duration forcedJwkRefreshInterval = Duration.ofMinutes(10);
 
         /**
-         * Custom HTTP header that contains a bearer token.
-         * This option is valid only when the application is of type {@link ApplicationType#SERVICE}.
+         * Custom HTTP header that contains a bearer token. This option is valid only when the application is of type
+         * {@link ApplicationType#SERVICE}.
          */
         public Optional<String> header = Optional.empty();
 
@@ -2314,21 +2244,18 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         public String authorizationScheme = OidcConstants.BEARER_SCHEME;
 
         /**
-         * Required signature algorithm.
-         * OIDC providers support many signature algorithms but if necessary you can restrict
-         * Quarkus application to accept tokens signed only using an algorithm configured with this property.
+         * Required signature algorithm. OIDC providers support many signature algorithms but if necessary you can
+         * restrict Quarkus application to accept tokens signed only using an algorithm configured with this property.
          */
         public Optional<SignatureAlgorithm> signatureAlgorithm = Optional.empty();
 
         /**
-         * Decryption key location.
-         * JWT tokens can be inner-signed and encrypted by OpenId Connect providers.
-         * However, it is not always possible to remotely introspect such tokens because
-         * the providers might not control the private decryption keys.
-         * In such cases set this property to point to the file containing the decryption private key in
-         * PEM or JSON Web Key (JWK) format.
-         * If this property is not set and the `private_key_jwt` client authentication method is used, the private key
-         * used to sign the client authentication JWT tokens are also used to decrypt the encrypted ID tokens.
+         * Decryption key location. JWT tokens can be inner-signed and encrypted by OpenId Connect providers. However,
+         * it is not always possible to remotely introspect such tokens because the providers might not control the
+         * private decryption keys. In such cases set this property to point to the file containing the decryption
+         * private key in PEM or JSON Web Key (JWK) format. If this property is not set and the `private_key_jwt` client
+         * authentication method is used, the private key used to sign the client authentication JWT tokens are also
+         * used to decrypt the encrypted ID tokens.
          */
         public Optional<String> decryptionKeyLocation = Optional.empty();
 
@@ -2343,44 +2270,36 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         boolean decryptAccessToken;
 
         /**
-         * Allow the remote introspection of JWT tokens when no matching JWK key is available.
-         *
-         * This property is set to `true` by default for backward-compatibility reasons. It is planned that this default value
-         * will be changed to `false` in an upcoming release.
-         *
-         * Also note this property is ignored if JWK endpoint URI is not available and introspecting the tokens is
-         * the only verification option.
+         * Allow the remote introspection of JWT tokens when no matching JWK key is available. This property is set to
+         * `true` by default for backward-compatibility reasons. It is planned that this default value will be changed
+         * to `false` in an upcoming release. Also note this property is ignored if JWK endpoint URI is not available
+         * and introspecting the tokens is the only verification option.
          */
         public boolean allowJwtIntrospection = true;
 
         /**
          * Require that JWT tokens are only introspected remotely.
-         *
          */
         public boolean requireJwtIntrospectionOnly = false;
 
         /**
-         * Allow the remote introspection of the opaque tokens.
-         *
-         * Set this property to `false` if only JWT tokens are expected.
+         * Allow the remote introspection of the opaque tokens. Set this property to `false` if only JWT tokens are
+         * expected.
          */
         public boolean allowOpaqueTokenIntrospection = true;
 
         /**
-         * Token customizer name.
-         *
-         * Allows to select a tenant specific token customizer as a named bean.
-         * Prefer using {@link TenantFeature} qualifier when registering custom {@link TokenCustomizer}.
-         * Use this property only to refer to `TokenCustomizer` implementations provided by this extension.
+         * Token customizer name. Allows to select a tenant specific token customizer as a named bean. Prefer using
+         * {@link TenantFeature} qualifier when registering custom {@link TokenCustomizer}. Use this property only to
+         * refer to `TokenCustomizer` implementations provided by this extension.
          */
         public Optional<String> customizerName = Optional.empty();
 
         /**
-         * Indirectly verify that the opaque (binary) access token is valid by using it to request UserInfo.
-         * Opaque access token is considered valid if the provider accepted this token and returned a valid UserInfo.
-         * You should only enable this option if the opaque access tokens must be accepted but OpenId Connect
-         * provider does not have a token introspection endpoint.
-         * This property has no effect when JWT tokens must be verified.
+         * Indirectly verify that the opaque (binary) access token is valid by using it to request UserInfo. Opaque
+         * access token is considered valid if the provider accepted this token and returned a valid UserInfo. You
+         * should only enable this option if the opaque access tokens must be accepted but OpenId Connect provider does
+         * not have a token introspection endpoint. This property has no effect when JWT tokens must be verified.
          */
         public Optional<Boolean> verifyAccessTokenWithUserInfo = Optional.empty();
 
@@ -2716,9 +2635,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     public static class Binding implements io.quarkus.oidc.runtime.OidcTenantConfig.Binding {
 
         /**
-         * If a bearer access token must be bound to the client mTLS certificate.
-         * It requires that JWT tokens must contain a confirmation `cnf` claim with a SHA256 certificate thumbprint
-         * matching the client mTLS certificate's SHA256 certificate thumbprint.
+         * If a bearer access token must be bound to the client mTLS certificate. It requires that JWT tokens must
+         * contain a confirmation `cnf` claim with a SHA256 certificate thumbprint matching the client mTLS
+         * certificate's SHA256 certificate thumbprint.
          * <p>
          * For opaque tokens, SHA256 certificate thumbprint must be returned in their introspection response.
          */
@@ -2742,16 +2661,15 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
         WEB_APP,
 
         /**
-         * A {@code SERVICE} is a client that has a set of protected HTTP resources, usually a backend application following the
-         * RESTful Architectural Design. For this type of client, the Bearer Authorization method is defined as the preferred
-         * method for authenticating and authorizing users.
+         * A {@code SERVICE} is a client that has a set of protected HTTP resources, usually a backend application
+         * following the RESTful Architectural Design. For this type of client, the Bearer Authorization method is
+         * defined as the preferred method for authenticating and authorizing users.
          */
         SERVICE,
 
         /**
-         * A combined {@code SERVICE} and {@code WEB_APP} client.
-         * For this type of client, the Bearer Authorization method is used if the Authorization header is set
-         * and Authorization Code Flow - if not.
+         * A combined {@code SERVICE} and {@code WEB_APP} client. For this type of client, the Bearer Authorization
+         * method is used if the Authorization header is set and Authorization Code Flow - if not.
          */
         HYBRID
     }
@@ -2922,7 +2840,8 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
 
     @Override
     public Optional<io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType> applicationType() {
-        return applicationType.map(Enum::toString).map(io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType::valueOf);
+        return applicationType.map(Enum::toString)
+                .map(io.quarkus.oidc.runtime.OidcTenantConfig.ApplicationType::valueOf);
     }
 
     @Override
@@ -3035,19 +2954,23 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder from the existing {@link io.quarkus.oidc.runtime.OidcTenantConfig}
+     * Creates {@link OidcTenantConfigBuilder} builder from the existing
+     * {@link io.quarkus.oidc.runtime.OidcTenantConfig}
      *
-     * @param mapping existing io.quarkus.oidc.runtime.OidcTenantConfig
+     * @param mapping
+     *        existing io.quarkus.oidc.runtime.OidcTenantConfig
      */
     public static OidcTenantConfigBuilder builder(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
         return new OidcTenantConfigBuilder(mapping);
     }
 
     /**
-     * Creates {@link OidcTenantConfig} from the {@code mapping}. This method is more efficient than
-     * the {@link #builder()} method if you don't need to modify the {@code mapping}.
+     * Creates {@link OidcTenantConfig} from the {@code mapping}. This method is more efficient than the
+     * {@link #builder()} method if you don't need to modify the {@code mapping}.
      *
-     * @param mapping existing io.quarkus.oidc.runtime.OidcTenantConfig
+     * @param mapping
+     *        existing io.quarkus.oidc.runtime.OidcTenantConfig
+     *
      * @return OidcTenantConfig
      */
     public static OidcTenantConfig of(io.quarkus.oidc.runtime.OidcTenantConfig mapping) {
@@ -3055,9 +2978,12 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided base URL.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided base
+     * URL.
      *
-     * @param authServerUrl {@link #authServerUrl()}
+     * @param authServerUrl
+     *        {@link #authServerUrl()}
+     *
      * @return OidcTenantConfigBuilder builder
      */
     public static OidcTenantConfigBuilder authServerUrl(String authServerUrl) {
@@ -3068,7 +2994,9 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
      * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided client
      * registration path.
      *
-     * @param registrationPath {@link #registrationPath()}
+     * @param registrationPath
+     *        {@link #registrationPath()}
+     *
      * @return OidcTenantConfigBuilder builder
      */
     public static OidcTenantConfigBuilder registrationPath(String registrationPath) {
@@ -3076,9 +3004,12 @@ public class OidcTenantConfig extends OidcClientCommonConfig implements io.quark
     }
 
     /**
-     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided token path.
+     * Creates {@link OidcTenantConfigBuilder} builder populated with documented default values and the provided token
+     * path.
      *
-     * @param tokenPath {@link #tokenPath()}
+     * @param tokenPath
+     *        {@link #tokenPath()}
+     *
      * @return OidcTenantConfigBuilder builder
      */
     public static OidcTenantConfigBuilder tokenPath(String tokenPath) {

@@ -1,9 +1,8 @@
 package io.quarkus.redis.datasource.geo;
 
 /**
- * Represents a geospatial position.
- *
- * The exact limits, as specified by EPSG:900913 / EPSG:3785 / OSGEO:41001 are the following:
+ * Represents a geospatial position. The exact limits, as specified by EPSG:900913 / EPSG:3785 / OSGEO:41001 are the
+ * following:
  * <ul>
  * <li>Valid longitudes are from -180 to 180 degrees.</li>
  * <li>Valid latitudes are from -85.05112878 to 85.05112878 degrees.</li>

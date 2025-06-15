@@ -18,29 +18,27 @@ import io.restassured.http.Headers;
 public class CustomFiltersTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(CustomContainerRequestFilter.class, CustomFiltersResource.class,
-                                    CustomContainerResponseFilter.class, AssertContainerFilter.class, SomeBean.class,
-                                    Metal.class, MetalFilter.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(CustomContainerRequestFilter.class,
+                    CustomFiltersResource.class, CustomContainerResponseFilter.class, AssertContainerFilter.class,
+                    SomeBean.class, Metal.class, MetalFilter.class);
+        }
+    });
 
     @Test
     public void testFilters() {
         Headers responseHeaders = RestAssured.given().header("some-input", "bar").header("some-other-input", "bar2")
-                .get("/custom/req")
-                .then().statusCode(200).body(Matchers.containsString("/custom/req-bar-bar2-null")).extract().headers();
+                .get("/custom/req").then().statusCode(200).body(Matchers.containsString("/custom/req-bar-bar2-null"))
+                .extract().headers();
         assertThat(responseHeaders.getValues("java-method")).containsOnly("filters");
         Assertions.assertEquals(3, AssertContainerFilter.COUNT.get());
         assertThat(responseHeaders.getValues("very")).isEmpty();
 
         responseHeaders = RestAssured.given().header("some-input", "bar").header("some-other-input", "bar2")
-                .get("/custom/metal")
-                .then().statusCode(200).body(Matchers.containsString("/custom/metal-bar-bar2-metal")).extract().headers();
+                .get("/custom/metal").then().statusCode(200)
+                .body(Matchers.containsString("/custom/metal-bar-bar2-metal")).extract().headers();
         assertThat(responseHeaders.getValues("very")).containsOnly("heavy");
     }
 }

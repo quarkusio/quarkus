@@ -21,20 +21,18 @@ import io.restassured.RestAssured;
 public class DetailedExceptionInReaderTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Person.class, TestEndpoint.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Person.class, TestEndpoint.class);
+        }
+    });
 
     @Test
     public void test() {
         RestAssured.with().accept("application/json").contentType("application/json")
-                .body("{\"name\": \"foo\", \"age\": \"wrong\"}").put("/test")
-                .then().statusCode(400).body(equalTo("{\"objectName\":\"Person\",\"attributeName\":\"age\","
+                .body("{\"name\": \"foo\", \"age\": \"wrong\"}").put("/test").then().statusCode(400)
+                .body(equalTo("{\"objectName\":\"Person\",\"attributeName\":\"age\","
                         + "\"line\":1,\"column\":24,\"value\":\"wrong\"}"));
     }
 

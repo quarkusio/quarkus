@@ -22,13 +22,12 @@ public class HttpUpgradePermissionCheckerArgsValidationFailureTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class, TestIdentityController.class,
-                            Checker.class))
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class, WSClient.class, TestIdentityProvider.class,
+                    TestIdentityController.class, Checker.class))
             .assertException(t -> {
                 assertInstanceOf(IllegalArgumentException.class, t);
-                assertTrue(t.getMessage()
-                        .contains("@PermissionAllowed instance that accepts method arguments must be placed on a method"));
+                assertTrue(t.getMessage().contains(
+                        "@PermissionAllowed instance that accepts method arguments must be placed on a method"));
             });
 
     @Test

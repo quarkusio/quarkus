@@ -28,18 +28,15 @@ public class RedisConfigClientNamesTest {
     }
 
     private void createConfig(Map<String, String> configMap) {
-        config = new SmallRyeConfigBuilder()
-                .withSources(new MapBackedConfigSource("test", configMap) {
-                })
-                .build();
+        config = new SmallRyeConfigBuilder().withSources(new MapBackedConfigSource("test", configMap) {
+        }).build();
     }
 
     @Test
     void testWithEmptyConfig() {
         createConfig(Map.of());
 
-        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
-                createDevServiceConfiguration(false),
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(createDevServiceConfiguration(false),
                 Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
@@ -50,8 +47,7 @@ public class RedisConfigClientNamesTest {
     void testWithDefaultConfig() {
         createConfig(Map.of());
 
-        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
-                createDevServiceConfiguration(true),
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(createDevServiceConfiguration(true),
                 Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
@@ -62,8 +58,7 @@ public class RedisConfigClientNamesTest {
     void testWithAdditionalDevServices() {
         createConfig(Map.of());
 
-        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
-                createDevServiceConfiguration(true),
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(createDevServiceConfiguration(true),
                 Map.of("additional", createDevServiceConfiguration(true)));
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
@@ -74,8 +69,7 @@ public class RedisConfigClientNamesTest {
     void testWithDisabledDefaultDevServiceConfig() {
         createConfig(Map.of());
 
-        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
-                createDevServiceConfiguration(false),
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(createDevServiceConfiguration(false),
                 Map.of("additional", createDevServiceConfiguration(true)));
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
@@ -86,8 +80,7 @@ public class RedisConfigClientNamesTest {
     void testWithDisabledDefaultDevServiceWithHostsConfig() {
         createConfig(Map.of("quarkus.redis.hosts", "redis://localhost:1234"));
 
-        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
-                createDevServiceConfiguration(false),
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(createDevServiceConfiguration(false),
                 Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);
@@ -99,8 +92,7 @@ public class RedisConfigClientNamesTest {
         createConfig(Map.of("quarkus.redis.my-redis.hosts", "redis://localhost:5678",
                 "quarkus.redis.my-redis-2.hosts-provider-name", "my-redis-2-provider"));
 
-        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(
-                createDevServiceConfiguration(false),
+        RedisBuildTimeConfig redisBuildTimeConfig = createRedisBuildTimeConfig(createDevServiceConfiguration(false),
                 Map.of());
 
         Set<String> names = RedisClientProcessor.configuredClientNames(redisBuildTimeConfig, config);

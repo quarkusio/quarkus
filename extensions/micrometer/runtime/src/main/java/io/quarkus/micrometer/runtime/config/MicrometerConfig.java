@@ -26,8 +26,7 @@ public interface MicrometerConfig {
     /**
      * Micrometer MeterRegistry discovery.
      * <p>
-     * Micrometer MeterRegistry implementations discovered on the classpath
-     * will be enabled automatically by default.
+     * Micrometer MeterRegistry implementations discovered on the classpath will be enabled automatically by default.
      */
     @WithDefault("true")
     boolean registryEnabledDefault();
@@ -35,8 +34,7 @@ public interface MicrometerConfig {
     /**
      * Micrometer MeterBinder discovery.
      * <p>
-     * Micrometer MeterBinder implementations discovered on the classpath
-     * will be enabled automatically by default.
+     * Micrometer MeterBinder implementations discovered on the classpath will be enabled automatically by default.
      */
     @WithDefault("true")
     boolean binderEnabledDefault();
@@ -48,9 +46,8 @@ public interface MicrometerConfig {
     ExportConfig export();
 
     /**
-     * For MeterRegistry configurations with optional 'enabled' attributes,
-     * determine whether the registry is enabled using {@link #registryEnabledDefault}
-     * as the default value.
+     * For MeterRegistry configurations with optional 'enabled' attributes, determine whether the registry is enabled
+     * using {@link #registryEnabledDefault} as the default value.
      */
     default boolean checkRegistryEnabledWithDefault(CapabilityEnabled config) {
         if (enabled()) {
@@ -61,9 +58,8 @@ public interface MicrometerConfig {
     }
 
     /**
-     * For MeterBinder configurations with optional 'enabled' attributes,
-     * determine whether the binder is enabled using {@link #binderEnabledDefault}
-     * as the default value.
+     * For MeterBinder configurations with optional 'enabled' attributes, determine whether the binder is enabled using
+     * {@link #binderEnabledDefault} as the default value.
      */
     default boolean checkBinderEnabledWithDefault(CapabilityEnabled config) {
         if (enabled()) {
@@ -83,9 +79,8 @@ public interface MicrometerConfig {
         /**
          * Micrometer JVM metrics support.
          * <p>
-         * Support for JVM metrics will be enabled if Micrometer
-         * support is enabled, and either this value is true, or this
-         * value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
+         * Support for JVM metrics will be enabled if Micrometer support is enabled, and either this value is true, or
+         * this value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
          */
         Optional<Boolean> jvm();
 
@@ -108,9 +103,8 @@ public interface MicrometerConfig {
         /**
          * Micrometer System metrics support.
          * <p>
-         * Support for System metrics will be enabled if Micrometer
-         * support is enabled, and either this value is true, or this
-         * value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
+         * Support for System metrics will be enabled if Micrometer support is enabled, and either this value is true,
+         * or this value is unset and {@code quarkus.micrometer.binder-enabled-default} is true.
          */
         Optional<Boolean> system();
 

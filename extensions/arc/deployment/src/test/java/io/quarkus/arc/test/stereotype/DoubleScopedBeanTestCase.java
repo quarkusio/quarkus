@@ -16,9 +16,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DoubleScopedBeanTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SessionStereotype.class, RequestStereotype.class, DoubleScopedStereotypeBean.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(SessionStereotype.class, RequestStereotype.class, DoubleScopedStereotypeBean.class))
             .setExpectedException(DeploymentException.class);
 
     @Inject

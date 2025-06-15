@@ -76,29 +76,20 @@ public class AnnotationTransformationTest {
                         }
                     });
                 }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, MyGet.class, MyQuery.class));
+            }).withApplicationRoot((jar) -> jar.addClasses(TestResource.class, MyGet.class, MyQuery.class));
 
     @Test
     public void testNoPath() {
-        get("/test")
-                .then().statusCode(200)
-                .and().body(Matchers.equalTo("no path"))
-                .and().contentType("text/plain");
+        get("/test").then().statusCode(200).and().body(Matchers.equalTo("no path")).and().contentType("text/plain");
     }
 
     @Test
     public void testHello() {
-        get("/test/hello")
-                .then().statusCode(200)
-                .and().body(Matchers.equalTo("hello world"))
-                .and().contentType("text/plain");
+        get("/test/hello").then().statusCode(200).and().body(Matchers.equalTo("hello world")).and()
+                .contentType("text/plain");
 
-        get("/test/hello?nm=foo")
-                .then().statusCode(200)
-                .and().body(Matchers.equalTo("hello foo"))
-                .and().contentType("text/plain");
+        get("/test/hello?nm=foo").then().statusCode(200).and().body(Matchers.equalTo("hello foo")).and()
+                .contentType("text/plain");
     }
 
     @Path("test")

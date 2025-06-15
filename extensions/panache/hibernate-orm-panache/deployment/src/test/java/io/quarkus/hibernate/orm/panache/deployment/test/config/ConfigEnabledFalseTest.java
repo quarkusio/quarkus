@@ -14,8 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigEnabledFalseTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClass(MyEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(MyEntity.class))
             .withConfigurationResource("application-test.properties")
             // We shouldn't get any build error caused by Panache consuming build items that are not produced
             // See https://github.com/quarkusio/quarkus/issues/28842
@@ -25,7 +24,6 @@ public class ConfigEnabledFalseTest {
     public void startsWithoutError() {
         // Quarkus started without problem, even though the Panache extension is present.
         // Just check that Hibernate ORM is disabled.
-        assertThat(Arc.container().instance(EntityManagerFactory.class).get())
-                .isNull();
+        assertThat(Arc.container().instance(EntityManagerFactory.class).get()).isNull();
     }
 }

@@ -21,7 +21,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Set the specified expire time, in seconds.
      *
-     * @param timeout expire time in seconds.
+     * @param timeout
+     *        expire time in seconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs ex(long timeout) {
@@ -32,7 +34,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Sets the expiration.
      *
-     * @param timeout expire time in seconds.
+     * @param timeout
+     *        expire time in seconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs ex(Duration timeout) {
@@ -45,7 +49,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Sets the expiration time
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs exAt(long timestamp) {
@@ -56,7 +62,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Sets the expiration time
      *
-     * @param timestamp the timestamp type: posix time in seconds.
+     * @param timestamp
+     *        the timestamp type: posix time in seconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs exAt(Instant timestamp) {
@@ -70,7 +78,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Set the specified expire time, in milliseconds.
      *
-     * @param timeout expire time in milliseconds.
+     * @param timeout
+     *        expire time in milliseconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs px(long timeout) {
@@ -81,7 +91,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Set the specified expire time, in milliseconds.
      *
-     * @param timeout expire time in milliseconds.
+     * @param timeout
+     *        expire time in milliseconds.
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs px(Duration timeout) {
@@ -94,7 +106,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Set the specified Unix time at which the key will expire, in milliseconds.
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs pxAt(long timestamp) {
@@ -105,7 +119,9 @@ public class GetExArgs implements RedisCommandExtraArguments {
     /**
      * Set the specified Unix time at which the key will expire, in milliseconds.
      *
-     * @param timestamp the timestamp
+     * @param timestamp
+     *        the timestamp
+     *
      * @return the current {@code GetExArgs}
      */
     public GetExArgs pxAt(Instant timestamp) {

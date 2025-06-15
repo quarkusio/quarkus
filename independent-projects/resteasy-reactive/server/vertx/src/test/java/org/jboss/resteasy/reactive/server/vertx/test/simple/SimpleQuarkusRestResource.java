@@ -81,11 +81,10 @@ public class SimpleQuarkusRestResource {
 
     @GET
     @Path("arrayHeaders")
-    public String arrayHeaders(@HeaderParam("h1") String[] h1, @HeaderParam("h2") String[] h2, @HeaderParam("h3") Integer[] h3,
-            @HeaderParam("h4") int[] h4) {
+    public String arrayHeaders(@HeaderParam("h1") String[] h1, @HeaderParam("h2") String[] h2,
+            @HeaderParam("h3") Integer[] h3, @HeaderParam("h4") int[] h4) {
         return "h1: " + Arrays.toString(h1) + ", h2: " + Arrays.toString(h2) + ", h3: " + Arrays.toString(h3) + ", h4: "
-                + Arrays.toString(
-                        h4);
+                + Arrays.toString(h4);
     }
 
     @POST
@@ -93,18 +92,13 @@ public class SimpleQuarkusRestResource {
     public String arrayForms(@FormParam("f1") String[] f1, @FormParam("f2") String[] f2, @FormParam("f3") Integer[] f3,
             @FormParam("f4") int[] f4) {
         return "f1: " + Arrays.toString(f1) + ", f2: " + Arrays.toString(f2) + ", f3: " + Arrays.toString(f3) + ", f4: "
-                + Arrays.toString(
-                        f4);
+                + Arrays.toString(f4);
     }
 
     @POST
     @Path("params/{p}")
-    public String params(@PathParam("p") String p,
-            @QueryParam("q") String q,
-            @HeaderParam("h") int h,
-            @HeaderParam("h2") char h2,
-            @HeaderParam("h3") Character h3,
-            @FormParam("f") String f) {
+    public String params(@PathParam("p") String p, @QueryParam("q") String q, @HeaderParam("h") int h,
+            @HeaderParam("h2") char h2, @HeaderParam("h3") Character h3, @FormParam("f") String f) {
         return "params: p: " + p + ", q: " + q + ", h: " + h + ", h2: " + h2 + ", h3: " + h3 + ", f: " + f;
     }
 
@@ -172,13 +166,15 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("feature-filters")
     public Response featureFilters(@Context HttpHeaders headers) {
-        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request")).build();
+        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request"))
+                .build();
     }
 
     @GET
     @Path("dynamic-feature-filters")
     public Response dynamicFeatureFilters(@Context HttpHeaders headers) {
-        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request")).build();
+        return Response.ok().header("feature-filter-request", headers.getHeaderString("feature-filter-request"))
+                .build();
     }
 
     @GET
@@ -348,10 +344,8 @@ public class SimpleQuarkusRestResource {
     @GET
     @Path("resource-info")
     public Response resourceInfo(@Context ResourceInfo resourceInfo, @Context HttpHeaders headers) {
-        return Response.ok()
-                .header("class-name", resourceInfo.getResourceClass().getSimpleName())
-                .header("method-name", headers.getHeaderString("method-name"))
-                .build();
+        return Response.ok().header("class-name", resourceInfo.getResourceClass().getSimpleName())
+                .header("method-name", headers.getHeaderString("method-name")).build();
     }
 
     @Path("form-map")

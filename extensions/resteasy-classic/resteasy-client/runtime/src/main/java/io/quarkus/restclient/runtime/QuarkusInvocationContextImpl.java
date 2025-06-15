@@ -86,7 +86,8 @@ public class QuarkusInvocationContextImpl implements ArcInvocationContext {
             if (cause instanceof ResponseProcessingException) {
                 ResponseProcessingException rpe = (ResponseProcessingException) cause;
                 // Note that the default client engine leverages a single connection
-                // MP FT: we need to close the response otherwise we would not be able to retry if the method returns jakarta.ws.rs.core.Response
+                // MP FT: we need to close the response otherwise we would not be able to retry if the method returns
+                // jakarta.ws.rs.core.Response
                 rpe.getResponse().close();
                 cause = rpe.getCause();
                 if (cause instanceof RuntimeException) {

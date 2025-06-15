@@ -101,9 +101,9 @@ public class StringUtilTestCase {
 
     @Test
     public void testChangePrefix() {
-        assertEquals("quarkus.new-prefix.configuration-property", StringUtil
-                .changePrefix("quarkus.old-prefix.configuration-property", "quarkus.old-prefix.", "quarkus.new-prefix."));
-        assertEquals("quarkus.other-prefix.configuration-property", StringUtil
-                .changePrefix("quarkus.other-prefix.configuration-property", "quarkus.old-prefix.", "quarkus.new-prefix."));
+        assertEquals("quarkus.new-prefix.configuration-property", StringUtil.changePrefix(
+                "quarkus.old-prefix.configuration-property", "quarkus.old-prefix.", "quarkus.new-prefix."));
+        assertEquals("quarkus.other-prefix.configuration-property", StringUtil.changePrefix(
+                "quarkus.other-prefix.configuration-property", "quarkus.old-prefix.", "quarkus.new-prefix."));
     }
 }

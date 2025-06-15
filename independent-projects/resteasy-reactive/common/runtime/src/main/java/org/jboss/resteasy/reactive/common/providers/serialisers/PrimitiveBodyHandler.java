@@ -17,7 +17,7 @@ public abstract class PrimitiveBodyHandler {
             entityStream.read(bytes);
         } else {
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            byte[] buf = new byte[1024]; //TODO: fix, needs a pure vert.x async read model
+            byte[] buf = new byte[1024]; // TODO: fix, needs a pure vert.x async read model
             int r;
             while ((r = entityStream.read(buf)) > 0) {
                 out.write(buf, 0, r);

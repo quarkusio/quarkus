@@ -20,15 +20,14 @@ public interface SnapStartConfig {
     /**
      * Enable/Disable SnapStart integration
      * <p>
-     * Default value is dependent on extensions deployed
-     * (i.e. when using AWS Lambda extensions, this will be set to true by default)
+     * Default value is dependent on extensions deployed (i.e. when using AWS Lambda extensions, this will be set to
+     * true by default)
      */
     Optional<Boolean> enable();
 
     /**
-     * Will do a classpath search for all {@code META-INF/quarkus-preload-classes.txt} files
-     * These files contain fully qualified classnames that should be loaded in the SnapStart/CRaC
-     * {@code beforeCheckpoint()} phase.
+     * Will do a classpath search for all {@code META-INF/quarkus-preload-classes.txt} files These files contain fully
+     * qualified classnames that should be loaded in the SnapStart/CRaC {@code beforeCheckpoint()} phase.
      */
     @WithDefault("true")
     boolean preloadClasses();
@@ -40,16 +39,15 @@ public interface SnapStartConfig {
     boolean initializeClasses();
 
     /**
-     * Start the full application during the snapshotting process.
-     * In other words, when enabled, it performs {@code Application.start()} within SnapStart/CRaC
-     * {@code beforeCheckpoint()} phase.
+     * Start the full application during the snapshotting process. In other words, when enabled, it performs
+     * {@code Application.start()} within SnapStart/CRaC {@code beforeCheckpoint()} phase.
      */
     @WithDefault("true")
     boolean fullWarmup();
 
     /**
-     * When SnapStart is enabled, it generates the application class list, so it can be preloaded.
-     * Only used if {@link #preloadClasses} is set to {@code true}.
+     * When SnapStart is enabled, it generates the application class list, so it can be preloaded. Only used if
+     * {@link #preloadClasses} is set to {@code true}.
      */
     @WithDefault("true")
     boolean generateApplicationClassList();

@@ -7,10 +7,8 @@ import java.lang.annotation.Target;
 
 /**
  * Annotation for {@link QuarkusMainTest} and {@link QuarkusMainIntegrationTest} that is used to launch command line
- * applications.
- * The annotation is meant to be used on test methods only.
- *
- * See also {@link LaunchResult} and {@link QuarkusMainLauncher}
+ * applications. The annotation is meant to be used on test methods only. See also {@link LaunchResult} and
+ * {@link QuarkusMainLauncher}
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

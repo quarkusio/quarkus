@@ -1,8 +1,8 @@
 package io.quarkus.load.shedding;
 
 /**
- * A priority that can be assigned to a request by implementing the {@link RequestPrioritizer}.
- * There is 5 statically defined priority levels:
+ * A priority that can be assigned to a request by implementing the {@link RequestPrioritizer}. There is 5 statically
+ * defined priority levels:
  * <ul>
  * <li><em>critical</em>: this request should almost never be rejected</li>
  * <li><em>important</em>: this request should only be rejected under high load</li>
@@ -18,8 +18,7 @@ public enum RequestPriority {
     IMPORTANT(1),
     NORMAL(2),
     BACKGROUND(3),
-    DEGRADED(4),
-    ;
+    DEGRADED(4),;
 
     private final int cohortBaseline;
 

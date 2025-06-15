@@ -1,8 +1,8 @@
 package io.quarkus.devui.spi.page;
 
 /**
- * Define a card in Dev UI.
- * This is only used when an extension wants to supply a custom card (i.e. the default with links is not sufficient)
+ * Define a card in Dev UI. This is only used when an extension wants to supply a custom card (i.e. the default with
+ * links is not sufficient)
  */
 public class Card {
 
@@ -46,8 +46,7 @@ public class Card {
 
     @Override
     public String toString() {
-        return "Card {\n\tnamespace=" + namespace
-                + ", \n\tcomponentLink=" + componentLink + "\n}";
+        return "Card {\n\tnamespace=" + namespace + ", \n\tcomponentLink=" + componentLink + "\n}";
     }
 
     private static final String SLASH = "/";

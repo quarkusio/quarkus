@@ -26,8 +26,7 @@ public class MtlsConfigFromRegistryCdiTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class)
                     .addAsResource(new File("target/certs/mtls-test-keystore.p12"), "server-keystore.p12")
                     .addAsResource(new File("target/certs/mtls-test-server-truststore.p12"), "server-truststore.p12")
                     .addAsResource(new File("target/certs/mtls-test-client-keystore.p12"), "client-keystore.p12")

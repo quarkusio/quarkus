@@ -16,11 +16,9 @@ public class OrEmptyTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Templates.class)
-                    .addAsResource(new StringAsset(
-                            "START{#for pet in pets.orEmpty}...{/for}END::{pets.orEmpty.size}"),
-                            "templates/OrEmptyTest/pets.html"));
+            .withApplicationRoot((jar) -> jar.addClass(Templates.class).addAsResource(
+                    new StringAsset("START{#for pet in pets.orEmpty}...{/for}END::{pets.orEmpty.size}"),
+                    "templates/OrEmptyTest/pets.html"));
 
     @CheckedTemplate
     static class Templates {

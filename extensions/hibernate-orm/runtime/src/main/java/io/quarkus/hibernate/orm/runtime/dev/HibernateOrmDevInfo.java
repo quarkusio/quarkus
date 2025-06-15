@@ -33,13 +33,13 @@ public class HibernateOrmDevInfo {
     }
 
     public int getNumberOfNamedQueries() {
-        return persistenceUnits.values().stream().map(PersistenceUnit::getAllNamedQueries)
-                .mapToInt(List::size).reduce(Integer::sum).orElse(0);
+        return persistenceUnits.values().stream().map(PersistenceUnit::getAllNamedQueries).mapToInt(List::size)
+                .reduce(Integer::sum).orElse(0);
     }
 
     public int getNumberOfEntities() {
-        return persistenceUnits.values().stream().map(PersistenceUnit::getManagedEntities)
-                .mapToInt(List::size).reduce(Integer::sum).orElse(0);
+        return persistenceUnits.values().stream().map(PersistenceUnit::getManagedEntities).mapToInt(List::size)
+                .reduce(Integer::sum).orElse(0);
     }
 
     public static class PersistenceUnit {
@@ -57,9 +57,8 @@ public class HibernateOrmDevInfo {
         private final Supplier<String> updateDDLSupplier;
 
         public PersistenceUnit(SessionFactoryImplementor sessionFactory, String name, List<Entity> managedEntities,
-                List<Query> namedQueries,
-                List<Query> namedNativeQueries, Supplier<String> createDDL, Supplier<String> dropDDL,
-                Supplier<String> updateDDLSupplier) {
+                List<Query> namedQueries, List<Query> namedNativeQueries, Supplier<String> createDDL,
+                Supplier<String> dropDDL, Supplier<String> updateDDLSupplier) {
             this.sessionFactory = sessionFactory;
             this.name = name;
             this.managedEntities = managedEntities;
@@ -190,7 +189,7 @@ public class HibernateOrmDevInfo {
         }
 
         private static boolean extractIsCacheable(NamedQueryDefinition definition) {
-            //TODO cleanup and expose this properly in an SPI/API?
+            // TODO cleanup and expose this properly in an SPI/API?
             if (definition instanceof AbstractNamedQueryDefinition) {
                 AbstractNamedQueryDefinition def = (AbstractNamedQueryDefinition) definition;
                 if (def.getCacheable() == Boolean.TRUE) {
@@ -201,7 +200,7 @@ public class HibernateOrmDevInfo {
         }
 
         private static String extractLockOptions(NamedQueryDefinition definition) {
-            //TODO cleanup and expose this properly in an SPI/API?
+            // TODO cleanup and expose this properly in an SPI/API?
             if (definition instanceof AbstractNamedQueryDefinition) {
                 final AbstractNamedQueryDefinition def = (AbstractNamedQueryDefinition) definition;
                 final LockOptions lockOptions = def.getLockOptions();

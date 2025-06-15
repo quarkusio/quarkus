@@ -29,8 +29,8 @@ import io.vertx.ext.web.RoutingContext;
 public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMechanism {
     private static final Logger LOG = Logger.getLogger(BearerAuthenticationMechanism.class);
 
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager, OidcTenantConfig oidcTenantConfig) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager,
+            OidcTenantConfig oidcTenantConfig) {
         LOG.debug("Starting a bearer access token authentication");
         String token = extractBearerToken(context, oidcTenantConfig);
         // if a bearer token is provided try to authenticate
@@ -47,7 +47,8 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
         return Uni.createFrom().nullItem();
     }
 
-    private static void setCertificateThumbprint(RoutingContext context, OidcTenantConfig oidcTenantConfig, String token) {
+    private static void setCertificateThumbprint(RoutingContext context, OidcTenantConfig oidcTenantConfig,
+            String token) {
         if (oidcTenantConfig.token().binding().certificate()) {
             Certificate cert = getCertificate(context, token);
             if (!(cert instanceof X509Certificate)) {
@@ -109,8 +110,8 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
                 httpRequestUri = httpRequestUri.substring(0, queryIndex);
             }
             if (!httpRequestUri.equals(proofHttpRequestUri)) {
-                LOG.warnf("DPOP proof HTTP request uri claim %s does not match the request HTTP uri %s", proofHttpRequestUri,
-                        httpRequestUri);
+                LOG.warnf("DPOP proof HTTP request uri claim %s does not match the request HTTP uri %s",
+                        proofHttpRequestUri, httpRequestUri);
                 throw new AuthenticationFailedException(tokenMap(token));
             }
 
@@ -140,8 +141,8 @@ public class BearerAuthenticationMechanism extends AbstractOidcAuthenticationMec
             public Uni<ChallengeData> apply(TenantConfigContext tenantContext) {
                 final String wwwAuthHeaderValue;
                 if (StepUpAuthenticationPolicy.isInsufficientUserAuthException(context)) {
-                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme() +
-                            StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
+                    wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme()
+                            + StepUpAuthenticationPolicy.getAuthRequirementChallenge(context);
                 } else {
                     wwwAuthHeaderValue = tenantContext.oidcConfig().token().authorizationScheme();
                 }

@@ -24,11 +24,14 @@ public class Panache {
     private static final UUID SESSION_KEY = UUID.randomUUID();
 
     /**
-     * Performs the given work within the scope of a MongoDB transaction.
-     * The transaction will be rolled back if the work completes with an uncaught exception.
+     * Performs the given work within the scope of a MongoDB transaction. The transaction will be rolled back if the
+     * work completes with an uncaught exception.
      *
-     * @param <T> The function's return type
-     * @param work The function to execute in the new transaction
+     * @param <T>
+     *        The function's return type
+     * @param work
+     *        The function to execute in the new transaction
+     *
      * @return the result of executing the function
      */
     public static <T> Uni<T> withTransaction(Supplier<Uni<T>> work) {
@@ -39,22 +42,19 @@ public class Panache {
             return work.get();
         } else {
             // reactive session does not exist - open a new one and close it when the returned Uni completes
-            return Panache.startSession()
-                    .invoke(s -> s.startTransaction())
-                    .invoke(s -> context.putLocal(SESSION_KEY, s))
-                    .chain(s -> work.get())
-                    .call(() -> commitTransaction())
-                    .onFailure().call(() -> abortTransaction())
+            return Panache.startSession().invoke(s -> s.startTransaction())
+                    .invoke(s -> context.putLocal(SESSION_KEY, s)).chain(s -> work.get())
+                    .call(() -> commitTransaction()).onFailure().call(() -> abortTransaction())
                     .eventually(() -> Panache.closeSession());
         }
     }
 
     /**
-     * Allow to access the current MongoDB session.
-     * The session will only exist in the context of a reactive MongoDB with Panache transaction started with
-     * <code>Panache.withTransaction()</code>.
+     * Allow to access the current MongoDB session. The session will only exist in the context of a reactive MongoDB
+     * with Panache transaction started with <code>Panache.withTransaction()</code>.
      *
      * @see #withTransaction(Supplier)
+     *
      * @return the current ClientSession or null if none.
      */
     public static ClientSession getCurrentSession() {
@@ -99,9 +99,10 @@ public class Panache {
     }
 
     /**
-     *
      * @return the current vertx duplicated context
-     * @throws IllegalStateException If no vertx context is found or is not a safe context as mandated by the
+     *
+     * @throws IllegalStateException
+     *         If no vertx context is found or is not a safe context as mandated by the
      *         {@link VertxContextSafetyToggle}
      */
     private static Context vertxContext() {

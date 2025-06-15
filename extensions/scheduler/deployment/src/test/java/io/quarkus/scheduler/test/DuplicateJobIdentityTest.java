@@ -13,10 +13,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DuplicateJobIdentityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .setExpectedException(DeploymentException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setExpectedException(DeploymentException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(Jobs.class));
 
     @Test
     public void test() {

@@ -17,15 +17,14 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class ExcludePersistenceXmlConfigUsingSystemPropertyTest {
 
-    //The system property used by the Hibernate ORM extension to disable parsing of persistence.xml resources:
+    // The system property used by the Hibernate ORM extension to disable parsing of persistence.xml resources:
     private static final String SKIP_PARSE_PERSISTENCE_XML = "SKIP_PARSE_PERSISTENCE_XML";
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .setBeforeAllCustomizer(() -> System.setProperty(SKIP_PARSE_PERSISTENCE_XML, "true"))
             .setAfterAllCustomizer(() -> System.getProperties().remove(SKIP_PARSE_PERSISTENCE_XML))
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyEntity.class)
+            .withApplicationRoot((jar) -> jar.addClass(MyEntity.class)
                     .addAsManifestResource("META-INF/some-persistence.xml", "persistence.xml")
                     .addAsResource("application.properties", "application.properties"));
 

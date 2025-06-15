@@ -13,10 +13,9 @@ public class PropertyNotFoundTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(Foo.class)
-                    .addAsResource(new StringAsset("{@io.quarkus.qute.deployment.PropertyNotFoundTest$Foo foo}"
-                            + "{foo.surname}"), "templates/foo.html"))
+            .withApplicationRoot((jar) -> jar.addClass(Foo.class).addAsResource(
+                    new StringAsset("{@io.quarkus.qute.deployment.PropertyNotFoundTest$Foo foo}" + "{foo.surname}"),
+                    "templates/foo.html"))
             .setExpectedException(TemplateException.class);
 
     @Test

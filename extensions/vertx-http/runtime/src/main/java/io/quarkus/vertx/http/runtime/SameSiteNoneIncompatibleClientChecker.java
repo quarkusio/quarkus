@@ -7,26 +7,24 @@ import java.util.regex.Pattern;
  * A utility class that can check known user agents which are known to be incompatible with SameSite=None attribute.
  * <p>
  * <ul>
- * <li>Versions of Chrome from Chrome 51 to Chrome 66 (inclusive on both ends).
- * These Chrome versions will reject a cookie with `SameSite=None`. This also
- * affects older versions of Chromium-derived browsers, as well as Android WebView.
- * This behavior was correct according to the version of the cookie specification
- * at that time, but with the addition of the new "None" value to the specification,
- * this behavior has been updated in Chrome 67 and newer. (Prior to Chrome 51,
- * the SameSite attribute was ignored entirely and all cookies were treated as if
- * they were `SameSite=None`.)</li>
- * <li>Versions of UC Browser on Android prior to version 12.13.2. Older versions
- * will reject a cookie with `SameSite=None`. This behavior was correct according
- * to the version of the cookie specification at that time, but with the addition of
- * the new "None" value to the specification, this behavior has been updated in newer
- * versions of UC Browser.
- * <li>Versions of Safari and embedded browsers on MacOS 10.14 and all browsers on iOS 12.
- * These versions will erroneously treat cookies marked with `SameSite=None` as if they
- * were marked `SameSite=Strict`. This bug has been fixed on newer versions of iOS and MacOS.
+ * <li>Versions of Chrome from Chrome 51 to Chrome 66 (inclusive on both ends). These Chrome versions will reject a
+ * cookie with `SameSite=None`. This also affects older versions of Chromium-derived browsers, as well as Android
+ * WebView. This behavior was correct according to the version of the cookie specification at that time, but with the
+ * addition of the new "None" value to the specification, this behavior has been updated in Chrome 67 and newer. (Prior
+ * to Chrome 51, the SameSite attribute was ignored entirely and all cookies were treated as if they were
+ * `SameSite=None`.)</li>
+ * <li>Versions of UC Browser on Android prior to version 12.13.2. Older versions will reject a cookie with
+ * `SameSite=None`. This behavior was correct according to the version of the cookie specification at that time, but
+ * with the addition of the new "None" value to the specification, this behavior has been updated in newer versions of
+ * UC Browser.
+ * <li>Versions of Safari and embedded browsers on MacOS 10.14 and all browsers on iOS 12. These versions will
+ * erroneously treat cookies marked with `SameSite=None` as if they were marked `SameSite=Strict`. This bug has been
+ * fixed on newer versions of iOS and MacOS.
  * </ul>
  * <p>
  *
- * @see <a href="https://www.chromium.org/updates/same-site/incompatible-clients">SameSite=None: Known Incompatible Clients</a>.
+ * @see <a href="https://www.chromium.org/updates/same-site/incompatible-clients">SameSite=None: Known Incompatible
+ *      Clients</a>.
  */
 final class SameSiteNoneIncompatibleClientChecker {
 
@@ -42,7 +40,8 @@ final class SameSiteNoneIncompatibleClientChecker {
     private static final Pattern CHROMIUM_PATTERN = Pattern.compile("Chrom(e|ium)");
     private static final Pattern CHROMIUM_VERSION_PATTERN = Pattern.compile("Chrom[^ \\/]+\\/(\\d+)[\\.\\d]* ");
     // private static final Pattern UC_BROWSER_PATTERN = Pattern.compile("UCBrowser\\/");
-    private static final Pattern UC_BROWSER_VERSION_PATTERN = Pattern.compile("UCBrowser\\/(\\d+)\\.(\\d+)\\.(\\d+)[\\.\\d]* ");
+    private static final Pattern UC_BROWSER_VERSION_PATTERN = Pattern
+            .compile("UCBrowser\\/(\\d+)\\.(\\d+)\\.(\\d+)[\\.\\d]* ");
 
     public static boolean shouldSendSameSiteNone(String useragent) {
         return !isSameSiteNoneIncompatible(useragent);
@@ -50,23 +49,20 @@ final class SameSiteNoneIncompatibleClientChecker {
 
     // browsers known to be incompatible.
     public static boolean isSameSiteNoneIncompatible(String useragent) {
-        return hasWebKitSameSiteBug(useragent) ||
-                dropsUnrecognizedSameSiteCookies(useragent);
+        return hasWebKitSameSiteBug(useragent) || dropsUnrecognizedSameSiteCookies(useragent);
     }
 
     static boolean hasWebKitSameSiteBug(String useragent) {
-        return isIosVersion(12, useragent) ||
-                (isMacosxVersion(10, 14, useragent) &&
-                        (isSafari(useragent) || isMacEmbeddedBrowser(useragent)));
+        return isIosVersion(12, useragent)
+                || (isMacosxVersion(10, 14, useragent) && (isSafari(useragent) || isMacEmbeddedBrowser(useragent)));
     }
 
     static boolean dropsUnrecognizedSameSiteCookies(String useragent) {
         if (isUcBrowser(useragent)) {
             return !isUcBrowserVersionAtLeast(12, 13, 2, useragent);
         }
-        return isChromiumBased(useragent) &&
-                isChromiumVersionAtLeast(51, useragent) &&
-                !isChromiumVersionAtLeast(67, useragent);
+        return isChromiumBased(useragent) && isChromiumVersionAtLeast(51, useragent)
+                && !isChromiumVersionAtLeast(67, useragent);
     }
 
     // Regex parsing of User-Agent String. (See note above!)
@@ -84,15 +80,13 @@ final class SameSiteNoneIncompatibleClientChecker {
         Matcher m = MACOSX_PATTERN.matcher(useragent);
         if (m.find()) {
             // Extract digits from first and second capturing groups.
-            return String.valueOf(major).equals(m.group(1)) &&
-                    String.valueOf(minor).equals(m.group(2));
+            return String.valueOf(major).equals(m.group(1)) && String.valueOf(minor).equals(m.group(2));
         }
         return false;
     }
 
     static boolean isSafari(String useragent) {
-        return SAFARI_PATTERN.matcher(useragent).find() &&
-                !isChromiumBased(useragent);
+        return SAFARI_PATTERN.matcher(useragent).find() && !isChromiumBased(useragent);
     }
 
     static boolean isMacEmbeddedBrowser(String useragent) {

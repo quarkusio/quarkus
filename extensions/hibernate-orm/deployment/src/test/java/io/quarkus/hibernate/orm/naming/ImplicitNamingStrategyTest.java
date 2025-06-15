@@ -18,8 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ImplicitNamingStrategyTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, CustomImplicitNamingStrategy.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, CustomImplicitNamingStrategy.class)
                     .addAsResource(EmptyAsset.INSTANCE, "import.sql")
                     .addAsResource("application-implicit-naming-strategy.properties", "application.properties"));
 
@@ -34,8 +33,8 @@ public class ImplicitNamingStrategyTest {
     @Test
     public void testImplicitNamingStrategy() throws Exception {
         // Check if "TBL_MyEntity" was created
-        Number result = (Number) entityManager.createNativeQuery("SELECT COUNT(*) FROM TBL_IO_QUARKUS_HIBERNATE_ORM_MYENTITY")
-                .getSingleResult();
+        Number result = (Number) entityManager
+                .createNativeQuery("SELECT COUNT(*) FROM TBL_IO_QUARKUS_HIBERNATE_ORM_MYENTITY").getSingleResult();
         assertEquals(0, result.intValue());
     }
 

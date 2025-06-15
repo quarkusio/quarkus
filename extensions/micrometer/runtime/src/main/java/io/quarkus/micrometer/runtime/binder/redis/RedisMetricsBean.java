@@ -25,8 +25,7 @@ public class RedisMetricsBean implements ObservableRedisMetrics {
 
     @Override
     public void report(String name, long durationInNs, boolean succeeded) {
-        reportedMetrics.computeIfAbsent(name, n -> new RedisMetrics(registry, n))
-                .report(name, durationInNs, succeeded);
+        reportedMetrics.computeIfAbsent(name, n -> new RedisMetrics(registry, n)).report(name, durationInNs, succeeded);
     }
 
     private class RedisMetrics implements ObservableRedisMetrics {
@@ -42,21 +41,16 @@ public class RedisMetricsBean implements ObservableRedisMetrics {
             this.name = name;
             this.tags = Tags.of(Tag.of("client-name", name));
             this.operationCounter = Counter.builder("redis.commands.count")
-                    .description("The number of operations (commands or batches) executed")
-                    .tags(tags)
+                    .description("The number of operations (commands or batches) executed").tags(tags)
                     .register(registry);
             this.successCounter = Counter.builder("redis.commands.success")
                     .description("The number of operations (commands or batches) that have been executed successfully")
-                    .tags(tags)
-                    .register(registry);
+                    .tags(tags).register(registry);
             this.failureCounter = Counter.builder("redis.commands.failure")
-                    .description("The number of operations (commands or batches) that have been failed")
-                    .tags(tags)
+                    .description("The number of operations (commands or batches) that have been failed").tags(tags)
                     .register(registry);
             this.timer = Timer.builder("redis.commands.duration")
-                    .description("The duration of the operations (commands of batches")
-                    .tags(tags)
-                    .register(registry);
+                    .description("The duration of the operations (commands of batches").tags(tags).register(registry);
         }
 
         @Override

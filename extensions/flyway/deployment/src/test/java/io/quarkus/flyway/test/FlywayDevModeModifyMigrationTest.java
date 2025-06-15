@@ -22,10 +22,8 @@ import io.restassured.RestAssured;
 public class FlywayDevModeModifyMigrationTest {
 
     @RegisterExtension
-    static final QuarkusDevModeTest config = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RowCountEndpoint.class)
-                    .addAsResource("db/migration/V1.0.0__Quarkus.sql")
+    static final QuarkusDevModeTest config = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(RowCountEndpoint.class).addAsResource("db/migration/V1.0.0__Quarkus.sql")
                     .addAsResource("clean-and-migrate-at-start-config.properties", "application.properties"));
 
     @Test
@@ -48,7 +46,8 @@ public class FlywayDevModeModifyMigrationTest {
 
         @GET
         public int rowCount() throws SQLException {
-            try (Connection connection = dataSource.getConnection(); Statement stat = connection.createStatement()) {
+            try (Connection connection = dataSource.getConnection();
+                    Statement stat = connection.createStatement()) {
                 try (ResultSet countQuery = stat.executeQuery("select count(1) from quarked_flyway")) {
                     return countQuery.first() ? countQuery.getInt(1) : 0;
                 }

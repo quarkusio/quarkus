@@ -7,7 +7,6 @@ import io.quarkus.runtime.annotations.Recorder;
 @Recorder
 public class NarayanaSTMRecorder {
     public void disableTransactionStatusManager() {
-        arjPropertyManager.getCoordinatorEnvironmentBean()
-                .setTransactionStatusManagerEnable(false);
+        arjPropertyManager.getCoordinatorEnvironmentBean().setTransactionStatusManagerEnable(false);
     }
 }

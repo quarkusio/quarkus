@@ -21,8 +21,7 @@ public class SecurityAnnotationsRegistrar implements InterceptorBindingRegistrar
             // keep the contents the same as in io.quarkus.resteasy.deployment.SecurityTransformerUtils
             InterceptorBinding.of(RolesAllowed.class, Collections.singleton("value")),
             InterceptorBinding.of(PermissionsAllowed.class, Set.of("value", "params", "permission", "inclusive")),
-            InterceptorBinding.of(Authenticated.class),
-            InterceptorBinding.of(DenyAll.class),
+            InterceptorBinding.of(Authenticated.class), InterceptorBinding.of(DenyAll.class),
             InterceptorBinding.of(PermitAll.class));
 
     @Override

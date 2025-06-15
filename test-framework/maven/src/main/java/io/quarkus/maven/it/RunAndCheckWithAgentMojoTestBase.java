@@ -53,16 +53,16 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
         try {
             RunningInvoker running = new RunningInvoker(testDir, false);
 
-            MavenProcessInvocationResult result = running
-                    .execute(Arrays.asList("package", "-DskipTests", "-Dquarkus.analytics.disabled=true"),
-                            Collections.emptyMap());
+            MavenProcessInvocationResult result = running.execute(
+                    Arrays.asList("package", "-DskipTests", "-Dquarkus.analytics.disabled=true"),
+                    Collections.emptyMap());
 
-            await().atMost(1, TimeUnit.MINUTES).until(() -> result.getProcess() != null && !result.getProcess().isAlive());
+            await().atMost(1, TimeUnit.MINUTES)
+                    .until(() -> result.getProcess() != null && !result.getProcess().isAlive());
             assertThat(running.log()).containsIgnoringCase("BUILD SUCCESS");
             running.stop();
 
-            Path jar = testDir.toPath().toAbsolutePath()
-                    .resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
+            Path jar = testDir.toPath().toAbsolutePath().resolve(Paths.get("target/quarkus-app/quarkus-run.jar"));
             Assertions.assertTrue(Files.exists(jar));
             File output = new File(testDir, "target/output.log");
             output.createNewFile();
@@ -70,19 +70,16 @@ public class RunAndCheckWithAgentMojoTestBase extends MojoTestBase {
             runningRemote = doLaunch(jar, output);
 
             // Wait until server up
-            await()
-                    .pollDelay(1, TimeUnit.SECONDS)
-                    .atMost(1, TimeUnit.MINUTES).until(() -> devModeClient.getHttpResponse("/", 200));
+            await().pollDelay(1, TimeUnit.SECONDS).atMost(1, TimeUnit.MINUTES)
+                    .until(() -> devModeClient.getHttpResponse("/", 200));
 
             runningAgent = new RunningInvoker(agentDir, false);
             runningAgent.execute(Arrays.asList("compile", "quarkus:remote-dev", "-Dquarkus.analytics.disabled=true"),
                     Collections.emptyMap());
 
             Thread.sleep(1000);
-            await().pollDelay(100, TimeUnit.MILLISECONDS)
-                    .pollInterval(100, TimeUnit.MILLISECONDS)
-                    .atMost(1, TimeUnit.MINUTES)
-                    .until(() -> runningAgent.log().contains("Connected to remote server"));
+            await().pollDelay(100, TimeUnit.MILLISECONDS).pollInterval(100, TimeUnit.MILLISECONDS)
+                    .atMost(1, TimeUnit.MINUTES).until(() -> runningAgent.log().contains("Connected to remote server"));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

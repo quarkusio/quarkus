@@ -14,12 +14,8 @@ public class TestClassResult implements TestClassResultInterface {
     final long latestRunId;
     final long time;
 
-    public TestClassResult(
-            String className,
-            List<TestResult> passing,
-            List<TestResult> failing,
-            List<TestResult> skipped,
-            long time) {
+    public TestClassResult(String className, List<TestResult> passing, List<TestResult> failing,
+            List<TestResult> skipped, long time) {
         this.className = className;
         this.passing = passing;
         this.failing = failing;

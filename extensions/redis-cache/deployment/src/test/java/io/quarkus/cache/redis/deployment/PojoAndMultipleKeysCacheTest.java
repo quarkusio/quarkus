@@ -65,7 +65,8 @@ public class PojoAndMultipleKeysCacheTest {
 
         @CacheResult(cacheName = "message")
         public Uni<Message> getMessage(@CacheKey String key, String notPartOfTheKey, @CacheKey String otherKey) {
-            return Uni.createFrom().item(new Message(UUID.randomUUID().toString(), ThreadLocalRandom.current().nextInt()));
+            return Uni.createFrom()
+                    .item(new Message(UUID.randomUUID().toString(), ThreadLocalRandom.current().nextInt()));
         }
     }
 

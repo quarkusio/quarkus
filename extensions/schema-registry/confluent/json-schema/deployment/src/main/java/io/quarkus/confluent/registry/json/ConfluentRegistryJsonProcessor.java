@@ -28,9 +28,10 @@ public class ConfluentRegistryJsonProcessor {
     @BuildStep
     FeatureBuildItem featureAndCheckDependency(CurateOutcomeBuildItem cp) {
         if (findConfluentSerde(cp.getApplicationModel().getDependencies()).isEmpty()) {
-            LOGGER.warnf("The application uses the `quarkus-confluent-registry-json-schema` extension, but does not " +
-                    "depend on `%s:%s`. Note that this dependency is only available from the `%s` Maven " +
-                    "repository. Check %s for more details.",
+            LOGGER.warnf(
+                    "The application uses the `quarkus-confluent-registry-json-schema` extension, but does not "
+                            + "depend on `%s:%s`. Note that this dependency is only available from the `%s` Maven "
+                            + "repository. Check %s for more details.",
                     CONFLUENT_GROUP_ID, CONFLUENT_ARTIFACT_ID, CONFLUENT_REPO, GUIDE_URL);
         }
 
@@ -41,8 +42,11 @@ public class ConfluentRegistryJsonProcessor {
     public void confluentRegistryJson(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport) {
         reflectiveClass
-                .produce(ReflectiveClassBuildItem.builder("io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer",
-                        "io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer").methods().build());
+                .produce(
+                        ReflectiveClassBuildItem
+                                .builder("io.confluent.kafka.serializers.json.KafkaJsonSchemaDeserializer",
+                                        "io.confluent.kafka.serializers.json.KafkaJsonSchemaSerializer")
+                                .methods().build());
     }
 
     @BuildStep

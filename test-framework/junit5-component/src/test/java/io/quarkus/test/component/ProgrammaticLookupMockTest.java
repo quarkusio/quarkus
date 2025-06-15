@@ -16,7 +16,8 @@ import io.quarkus.test.component.beans.Delta;
 public class ProgrammaticLookupMockTest {
 
     @RegisterExtension
-    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(ProgrammaticLookComponent.class);
+    static final QuarkusComponentTestExtension extension = new QuarkusComponentTestExtension(
+            ProgrammaticLookComponent.class);
 
     @Inject
     ProgrammaticLookComponent component;

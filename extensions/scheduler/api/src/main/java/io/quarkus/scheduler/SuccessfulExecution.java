@@ -17,9 +17,7 @@ public class SuccessfulExecution {
 
     @Override
     public String toString() {
-        return "Success execution of [" +
-                execution.getTrigger().getId() +
-                "]";
+        return "Success execution of [" + execution.getTrigger().getId() + "]";
     }
 
 }

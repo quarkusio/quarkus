@@ -121,8 +121,7 @@ public class OidcClientImpl implements OidcClient {
             MultiMap tokenRevokeParams = new MultiMap(io.vertx.core.MultiMap.caseInsensitiveMultiMap());
             tokenRevokeParams.set(OidcConstants.REVOCATION_TOKEN, accessToken);
             return postRequest(requestProps, OidcEndpoint.Type.TOKEN_REVOCATION, client.postAbs(tokenRevokeUri),
-                    tokenRevokeParams,
-                    additionalParameters, false)
+                    tokenRevokeParams, additionalParameters, false)
                     .transform(resp -> toRevokeResponse(requestProps, resp));
         } else {
             LOG.debugf("%s OidcClient can not revoke the access token because the revocation endpoint URL is not set");
@@ -146,20 +145,20 @@ public class OidcClientImpl implements OidcClient {
     private Boolean toRevokeResponse(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp) {
         // Per RFC7009, 200 is returned if a token has been revoked successfully or if the client submitted an
         // invalid token, https://datatracker.ietf.org/doc/html/rfc7009#section-2.2.
-        // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of time.
+        // 503 is at least theoretically possible if the OIDC server declines and suggests to Retry-After some period of
+        // time.
         // However this period of time can be set to unpredictable value.
         Buffer buffer = resp.body();
-        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN_REVOCATION);
+        OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters,
+                OidcEndpoint.Type.TOKEN_REVOCATION);
         return resp.statusCode() == 503 ? false : true;
     }
 
-    private Uni<Tokens> getJsonResponse(
-            OidcEndpoint.Type endpointType, MultiMap formBody,
-            Map<String, String> additionalGrantParameters,
-            boolean refresh) {
-        //Uni needs to be lazy by default, we don't send the request unless
-        //something has subscribed to it. This is important for the CAS state
-        //management in TokensHelper
+    private Uni<Tokens> getJsonResponse(OidcEndpoint.Type endpointType, MultiMap formBody,
+            Map<String, String> additionalGrantParameters, boolean refresh) {
+        // Uni needs to be lazy by default, we don't send the request unless
+        // something has subscribed to it. This is important for the CAS state
+        // management in TokensHelper
         String currentGrantType = refresh ? OidcConstants.REFRESH_TOKEN_GRANT : grantType;
         final OidcRequestContextProperties requestProps = getRequestProps(currentGrantType);
         return Uni.createFrom().deferred(new Supplier<Uni<? extends Tokens>>() {
@@ -172,12 +171,9 @@ public class OidcClientImpl implements OidcClient {
         });
     }
 
-    private UniOnItem<HttpResponse<Buffer>> postRequest(
-            OidcRequestContextProperties requestProps,
-            OidcEndpoint.Type endpointType, HttpRequest<Buffer> request,
-            MultiMap formBody,
-            Map<String, String> additionalGrantParameters,
-            boolean refresh) {
+    private UniOnItem<HttpResponse<Buffer>> postRequest(OidcRequestContextProperties requestProps,
+            OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, MultiMap formBody,
+            Map<String, String> additionalGrantParameters, boolean refresh) {
         MultiMap body = formBody;
         request.putHeader(HttpHeaders.CONTENT_TYPE.toString(),
                 HttpHeaders.APPLICATION_X_WWW_FORM_URLENCODED.toString());
@@ -243,10 +239,8 @@ public class OidcClientImpl implements OidcClient {
         }
         // Retry up to three times with a one-second delay between the retries if the connection is closed
         Buffer buffer = OidcCommonUtils.encodeForm(body);
-        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpointType, request, buffer).sendBuffer(buffer)
-                .onFailure(SocketException.class)
-                .retry()
-                .atMost(oidcConfig.connectionRetryCount())
+        Uni<HttpResponse<Buffer>> response = filterHttpRequest(requestProps, endpointType, request, buffer)
+                .sendBuffer(buffer).onFailure(SocketException.class).retry().atMost(oidcConfig.connectionRetryCount())
                 .onFailure().transform(t -> {
                     LOG.warn("OIDC Server is not available:", t.getCause() != null ? t.getCause() : t);
                     // don't wrap it to avoid information leak
@@ -255,7 +249,8 @@ public class OidcClientImpl implements OidcClient {
         return response.onItem();
     }
 
-    private Tokens emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp, boolean refresh) {
+    private Tokens emitGrantTokens(OidcRequestContextProperties requestProps, HttpResponse<Buffer> resp,
+            boolean refresh) {
         Buffer buffer = resp.body();
         OidcCommonUtils.filterHttpResponse(requestProps, resp, buffer, responseFilters, OidcEndpoint.Type.TOKEN);
         if (resp.statusCode() == 200) {
@@ -270,8 +265,8 @@ public class OidcClientImpl implements OidcClient {
             final Long refreshTokenExpiresAt = getExpiresAtValue(refreshToken,
                     json.getValue(oidcConfig.grant().refreshExpiresInProperty()));
 
-            return new Tokens(accessToken, accessTokenExpiresAt, oidcConfig.refreshTokenTimeSkew().orElse(null), refreshToken,
-                    refreshTokenExpiresAt, json, oidcConfig.clientId().orElse(DEFAULT_OIDC_CLIENT_ID));
+            return new Tokens(accessToken, accessTokenExpiresAt, oidcConfig.refreshTokenTimeSkew().orElse(null),
+                    refreshToken, refreshTokenExpiresAt, json, oidcConfig.clientId().orElse(DEFAULT_OIDC_CLIENT_ID));
         } else {
             String errorMessage = buffer.toString();
             LOG.debugf("%s OidcClient has failed to complete the %s grant request:  status: %d, error message: %s",
@@ -297,8 +292,7 @@ public class OidcClientImpl implements OidcClient {
         if (expiresInValue != null) {
             long tokenExpiresIn = expiresInValue instanceof Number ? ((Number) expiresInValue).longValue()
                     : Long.parseLong(expiresInValue.toString());
-            return oidcConfig.absoluteExpiresIn() ? tokenExpiresIn
-                    : Instant.now().getEpochSecond() + tokenExpiresIn;
+            return oidcConfig.absoluteExpiresIn() ? tokenExpiresIn : Instant.now().getEpochSecond() + tokenExpiresIn;
         } else {
             return token != null ? getExpiresJwtClaim(token) : null;
         }
@@ -355,12 +349,12 @@ public class OidcClientImpl implements OidcClient {
         }
     }
 
-    private HttpRequest<Buffer> filterHttpRequest(
-            OidcRequestContextProperties requestProps,
+    private HttpRequest<Buffer> filterHttpRequest(OidcRequestContextProperties requestProps,
             OidcEndpoint.Type endpointType, HttpRequest<Buffer> request, Buffer body) {
         if (!requestFilters.isEmpty()) {
             OidcRequestContext context = new OidcRequestContext(request, body, requestProps);
-            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(requestFilters, endpointType)) {
+            for (OidcRequestFilter filter : OidcCommonUtils.getMatchingOidcRequestFilters(requestFilters,
+                    endpointType)) {
                 filter.filter(context);
             }
         }

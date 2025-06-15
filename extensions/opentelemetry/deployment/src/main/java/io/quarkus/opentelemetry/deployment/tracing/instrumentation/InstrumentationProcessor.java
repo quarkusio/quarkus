@@ -50,7 +50,8 @@ public class InstrumentationProcessor {
                     if (httpServerEnabled.isPresent()) {
                         return httpServerEnabled.get();
                     } else {
-                        return config.getOptionalValue("quarkus.micrometer.binder-enabled-default", Boolean.class).orElse(true);
+                        return config.getOptionalValue("quarkus.micrometer.binder-enabled-default", Boolean.class)
+                                .orElse(true);
                     }
                 }
             }
@@ -87,11 +88,9 @@ public class InstrumentationProcessor {
     }
 
     @BuildStep
-    void registerRestClientClassicProvider(
-            Capabilities capabilities,
+    void registerRestClientClassicProvider(Capabilities capabilities,
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexed,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            OTelBuildConfig config) {
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, OTelBuildConfig config) {
         if (capabilities.isPresent(Capability.REST_CLIENT) && capabilities.isMissing(Capability.REST_CLIENT_REACTIVE)
                 && config.instrument().resteasyClient()) {
             additionalIndexed.produce(new AdditionalIndexedClassesBuildItem(OpenTelemetryClientFilter.class.getName()));
@@ -100,10 +99,8 @@ public class InstrumentationProcessor {
     }
 
     @BuildStep
-    void registerReactiveMessagingMessageDecorator(
-            Capabilities capabilities,
-            BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            OTelBuildConfig config) {
+    void registerReactiveMessagingMessageDecorator(Capabilities capabilities,
+            BuildProducer<AdditionalBeanBuildItem> additionalBeans, OTelBuildConfig config) {
         if (capabilities.isPresent(Capability.MESSAGING) && config.instrument().messaging()) {
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingOutgoingDecorator.class));
             additionalBeans.produce(new AdditionalBeanBuildItem(ReactiveMessagingTracingIncomingDecorator.class));
@@ -124,15 +121,13 @@ public class InstrumentationProcessor {
 
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
-    VertxOptionsConsumerBuildItem vertxTracingOptions(
-            InstrumentationRecorder recorder) {
+    VertxOptionsConsumerBuildItem vertxTracingOptions(InstrumentationRecorder recorder) {
         return new VertxOptionsConsumerBuildItem(recorder.getVertxTracingOptions(), LIBRARY_AFTER);
     }
 
     // RESTEasy and Vert.x web
     @BuildStep
-    void registerResteasyClassicAndOrResteasyReactiveProvider(OTelBuildConfig config,
-            Capabilities capabilities,
+    void registerResteasyClassicAndOrResteasyReactiveProvider(OTelBuildConfig config, Capabilities capabilities,
             BuildProducer<ResteasyJaxrsProviderBuildItem> resteasyJaxrsProviderBuildItemBuildProducer) {
         if (capabilities.isPresent(Capability.RESTEASY) && config.instrument().resteasy()) {
             resteasyJaxrsProviderBuildItemBuildProducer
@@ -141,14 +136,13 @@ public class InstrumentationProcessor {
     }
 
     @BuildStep
-    void resteasyReactiveIntegration(
-            Capabilities capabilities,
+    void resteasyReactiveIntegration(Capabilities capabilities,
             BuildProducer<CustomContainerRequestFilterBuildItem> containerRequestFilterBuildItemBuildProducer,
             BuildProducer<PreExceptionMapperHandlerBuildItem> preExceptionMapperHandlerBuildItemBuildProducer,
             OTelBuildConfig config) {
         if (capabilities.isPresent(Capability.RESTEASY_REACTIVE) && config.instrument().rest()) {
-            containerRequestFilterBuildItemBuildProducer
-                    .produce(new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
+            containerRequestFilterBuildItemBuildProducer.produce(
+                    new CustomContainerRequestFilterBuildItem(OpenTelemetryReactiveServerFilter.class.getName()));
             preExceptionMapperHandlerBuildItemBuildProducer
                     .produce(new PreExceptionMapperHandlerBuildItem(new AttachExceptionHandler()));
         }

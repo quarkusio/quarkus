@@ -14,9 +14,8 @@ import java.util.Map;
  * A utility class that can convert a String value as a typed object.
  *
  * @author <a href="ryan@damnhandy.com">Ryan J. McDonough</a>
- * @version $Revision: $
  *
- *          TODO: Do we really need this?
+ * @version $Revision: $ TODO: Do we really need this?
  */
 public final class TypeConverter {
     private static final String VALUE_OF_METHOD = "valueOf";
@@ -43,9 +42,13 @@ public final class TypeConverter {
     /**
      * A generic method that returns the {@link String} as the specified Java type.
      *
-     * @param <T> the type to return
-     * @param source the string value to convert
-     * @param targetType target type
+     * @param <T>
+     *        the type to return
+     * @param source
+     *        the string value to convert
+     * @param targetType
+     *        target type
+     *
      * @return the object instance
      */
     @SuppressWarnings(value = "unchecked")
@@ -109,12 +112,12 @@ public final class TypeConverter {
     }
 
     /**
-     * Tests if the class can safely be converted from a String to the
-     * specified type.
+     * Tests if the class can safely be converted from a String to the specified type.
      *
-     * @param targetType the type to convert to
-     * @return true if the class possesses either a "valueOf()" method or a constructor with a String
-     *         parameter.
+     * @param targetType
+     *        the type to convert to
+     *
+     * @return true if the class possesses either a "valueOf()" method or a constructor with a String parameter.
      */
     public static boolean isConvertable(final Class<?> targetType) {
         if (Boolean.class.equals(targetType)) {
@@ -144,8 +147,8 @@ public final class TypeConverter {
 
     /**
      * <p>
-     * Returns a Boolean value from a String. Unlike {@link Boolean#valueOf(String)}, this
-     * method takes more String options. The following String values will return true:
+     * Returns a Boolean value from a String. Unlike {@link Boolean#valueOf(String)}, this method takes more String
+     * options. The following String values will return true:
      * </p>
      * <ul>
      * <li>Yes</li>
@@ -163,34 +166,40 @@ public final class TypeConverter {
      * <li>0</li>
      * </ul>
      *
-     * @param source source string
+     * @param source
+     *        source string
+     *
      * @return boolean value from string
      */
     public static Boolean getBooleanValue(final String source) {
-        if ("Y".equalsIgnoreCase(source) || "T".equalsIgnoreCase(source)
-                || "Yes".equalsIgnoreCase(source) || "1".equalsIgnoreCase(source)) {
+        if ("Y".equalsIgnoreCase(source) || "T".equalsIgnoreCase(source) || "Yes".equalsIgnoreCase(source)
+                || "1".equalsIgnoreCase(source)) {
             return Boolean.TRUE;
-        } else if ("N".equals(source) || "F".equals(source) || "No".equals(source)
-                || "0".equalsIgnoreCase(source)) {
+        } else if ("N".equals(source) || "F".equals(source) || "No".equals(source) || "0".equalsIgnoreCase(source)) {
             return Boolean.FALSE;
         }
         return Boolean.valueOf(source);
     }
 
     /**
-     * @param <T> type
-     * @param source source string
-     * @param targetType target type
+     * @param <T>
+     *        type
+     * @param source
+     *        source string
+     * @param targetType
+     *        target type
+     *
      * @return object instance of type T
-     * @throws NoSuchMethodException if method was not found
+     *
+     * @throws NoSuchMethodException
+     *         if method was not found
      */
     @SuppressWarnings("unchecked")
     public static <T> T getTypeViaValueOfMethod(final String source, final Class<T> targetType)
             throws NoSuchMethodException {
         Class<?> actualTarget = targetType;
         /*
-         * if this is a primitive type, use the Object class's "valueOf()"
-         * method.
+         * if this is a primitive type, use the Object class's "valueOf()" method.
          */
         if (targetType.isPrimitive()) {
             actualTarget = PRIMITIVES.get(targetType);
@@ -217,14 +226,23 @@ public final class TypeConverter {
     }
 
     /**
-     * @param <T> type
-     * @param source source string
-     * @param targetType target type
+     * @param <T>
+     *        type
+     * @param source
+     *        source string
+     * @param targetType
+     *        target type
+     *
      * @return object instance of type T
-     * @throws IllegalArgumentException if not suitable constructor was found
-     * @throws InstantiationException if the underlying constructor represents an abstract class
-     * @throws IllegalAccessException if the underlying constructor is not accessible
-     * @throws InvocationTargetException if the underlying constructor throws exception
+     *
+     * @throws IllegalArgumentException
+     *         if not suitable constructor was found
+     * @throws InstantiationException
+     *         if the underlying constructor represents an abstract class
+     * @throws IllegalAccessException
+     *         if the underlying constructor is not accessible
+     * @throws InvocationTargetException
+     *         if the underlying constructor throws exception
      */
     private static <T> T getTypeViaStringConstructor(String source, Class<T> targetType) {
         T result = null;

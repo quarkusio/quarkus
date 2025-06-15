@@ -35,7 +35,8 @@ public class ContainerConverter {
         }
 
         if (c.resources().limits().memory().isPresent() || c.resources().limits().cpu().isPresent()) {
-            b.withNewLimitResources(c.resources().limits().memory().orElse(null), c.resources().limits().cpu().orElse(null));
+            b.withNewLimitResources(c.resources().limits().memory().orElse(null),
+                    c.resources().limits().cpu().orElse(null));
         }
         return b;
     }

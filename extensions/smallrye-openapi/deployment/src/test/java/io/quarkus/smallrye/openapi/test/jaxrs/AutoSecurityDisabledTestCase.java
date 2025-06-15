@@ -15,22 +15,13 @@ public class AutoSecurityDisabledTestCase {
 
     @RegisterExtension
     final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiWithSecurity.class)
-                    .addAsResource(
-                            new StringAsset("quarkus.security.auth.enabled-in-dev-mode=false"),
-                            "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiWithSecurity.class).addAsResource(
+                    new StringAsset("quarkus.security.auth.enabled-in-dev-mode=false"), "application.properties"));
 
     @Test
     void testAutoSecurityRequirement() {
 
-        RestAssured.given()
-                .header("Accept", "application/json")
-                .when()
-                .get("/q/openapi")
-                .then()
-                .log().body()
-                .and()
+        RestAssured.given().header("Accept", "application/json").when().get("/q/openapi").then().log().body().and()
                 // Make sure `security` is NOT present
                 .body("paths.'/openApiWithSecurity/test-security/annotated'.get.security", nullValue())
                 .body("paths.'/openApiWithSecurity/test-security/annotated2'.get.security", nullValue())

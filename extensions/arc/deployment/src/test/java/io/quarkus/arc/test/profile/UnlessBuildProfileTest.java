@@ -28,10 +28,9 @@ public class UnlessBuildProfileTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Producer.class, AnotherProducer.class,
-                            GreetingBean.class, Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class,
-                            TestInterceptor.class, ProdInterceptor.class, Logging.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Producer.class, AnotherProducer.class, GreetingBean.class,
+                    Hello.class, PingBean.class, PongBean.class, FooBean.class, BarBean.class, TestInterceptor.class,
+                    ProdInterceptor.class, Logging.class));
     @Inject
     Hello hello;
 
@@ -53,7 +52,8 @@ public class UnlessBuildProfileTest {
 
     @Test
     public void testSelect() {
-        assertEquals("hello from not prod. Foo is: foo from not prod", CDI.current().select(GreetingBean.class).get().greet());
+        assertEquals("hello from not prod. Foo is: foo from not prod",
+                CDI.current().select(GreetingBean.class).get().greet());
     }
 
     @Logging

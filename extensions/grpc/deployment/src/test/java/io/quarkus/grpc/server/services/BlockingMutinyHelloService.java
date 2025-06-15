@@ -18,8 +18,7 @@ public class BlockingMutinyHelloService implements Greeter {
         // Force failure if awaiting
         Uni.createFrom().nullItem().await().indefinitely();
 
-        return Uni.createFrom().item(request.getName())
-                .map(s -> Thread.currentThread().getName() + " " + s)
+        return Uni.createFrom().item(request.getName()).map(s -> Thread.currentThread().getName() + " " + s)
                 .map(s -> HelloReply.newBuilder().setMessage(s).build());
     }
 

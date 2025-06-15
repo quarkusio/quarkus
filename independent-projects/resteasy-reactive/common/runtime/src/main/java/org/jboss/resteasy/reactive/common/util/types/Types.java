@@ -19,15 +19,20 @@ import io.smallrye.mutiny.Uni;
  * Type conversions and generic type manipulations
  *
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
+ *
  * @version $Revision: 1 $
  */
 public final class Types {
 
     /**
-     * Given a class and an interfaces, go through the class hierarchy to find the interface and return its type arguments.
+     * Given a class and an interfaces, go through the class hierarchy to find the interface and return its type
+     * arguments.
      *
-     * @param classToSearch class
-     * @param interfaceToFind interface to find
+     * @param classToSearch
+     *        class
+     * @param interfaceToFind
+     *        interface to find
+     *
      * @return type arguments of the interface
      */
     public static Type[] getActualTypeArgumentsOfAnInterface(Class<?> classToSearch, Class<?> interfaceToFind) {
@@ -40,11 +45,14 @@ public final class Types {
     private static final Type[] EMPTY_TYPE_ARRAY = {};
 
     /**
-     * Search for the given interface or class within the root's class/interface hierarchy.
-     * If the searched for class/interface is a generic return an array of real types that fill it out.
+     * Search for the given interface or class within the root's class/interface hierarchy. If the searched for
+     * class/interface is a generic return an array of real types that fill it out.
      *
-     * @param root root class
-     * @param searchedFor searched class
+     * @param root
+     *        root class
+     * @param searchedFor
+     *        searched class
+     *
      * @return for generic class/interface returns array of real types
      */
     public static Type[] findParameterizedTypes(Class<?> root, Class<?> searchedFor) {
@@ -143,8 +151,11 @@ public final class Types {
     /**
      * Resolve generic types to actual types.
      *
-     * @param typeVarMap The mapping for generic types to actual types.
-     * @param types The types to resolve.
+     * @param typeVarMap
+     *        The mapping for generic types to actual types.
+     * @param types
+     *        The types to resolve.
+     *
      * @return An array of resolved method parameter types in declaration order.
      */
     private static Type[] extractTypeVariables(final Map<TypeVariable<?>, Type> typeVarMap, final Type[] types) {
@@ -185,7 +196,8 @@ public final class Types {
             if (rawType == CompletionStage.class) {
                 return getEffectiveReturnType(firstTypeArgument);
             }
-            // do another check, using isAssignableFrom() instead of "==" to catch derived types such as "CompletableFuture" as well
+            // do another check, using isAssignableFrom() instead of "==" to catch derived types such as
+            // "CompletableFuture" as well
             if (rawType instanceof Class<?> rawClass && CompletionStage.class.isAssignableFrom(rawClass)) {
                 return getEffectiveReturnType(firstTypeArgument);
             }
@@ -198,7 +210,9 @@ public final class Types {
             if (rawType == RestResponse.class) {
                 return getEffectiveReturnType(firstTypeArgument);
             }
-            if ("kotlinx.coroutines.flow.Flow".equals(rawType.getTypeName())) { // TODO: this is very ugly and we should probably use some an SPI in order to decouple
+            if ("kotlinx.coroutines.flow.Flow".equals(rawType.getTypeName())) { // TODO: this is very ugly and we should
+                                                                                // probably use some an SPI in order to
+                                                                                // decouple
                 return getEffectiveReturnType(firstTypeArgument);
             }
             return returnType;

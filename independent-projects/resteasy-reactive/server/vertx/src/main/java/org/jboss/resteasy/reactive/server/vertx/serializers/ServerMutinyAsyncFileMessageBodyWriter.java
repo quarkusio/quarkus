@@ -23,7 +23,8 @@ import io.vertx.mutiny.core.file.AsyncFile;
 public class ServerMutinyAsyncFileMessageBodyWriter implements ServerMessageBodyWriter<AsyncFile> {
 
     @Override
-    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target, MediaType mediaType) {
+    public boolean isWriteable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo target,
+            MediaType mediaType) {
         return isWritable(type);
     }
 
@@ -38,7 +39,8 @@ public class ServerMutinyAsyncFileMessageBodyWriter implements ServerMessageBody
     }
 
     @Override
-    public void writeResponse(AsyncFile file, Type genericType, ServerRequestContext context) throws WebApplicationException {
+    public void writeResponse(AsyncFile file, Type genericType, ServerRequestContext context)
+            throws WebApplicationException {
         ResteasyReactiveRequestContext ctx = ((ResteasyReactiveRequestContext) context);
         ctx.suspend();
         ServerHttpResponse response = context.serverResponse();
@@ -66,7 +68,7 @@ public class ServerMutinyAsyncFileMessageBodyWriter implements ServerMessageBody
             @Override
             public void run() {
                 // we don't need to wait for the file to be closed, we just need to make sure it does get closed
-                //noinspection ResultOfMethodCallIgnored
+                // noinspection ResultOfMethodCallIgnored
                 file.close().subscribeAsCompletionStage();
                 response.end();
                 // Not sure if I need to resume, actually
@@ -76,8 +78,9 @@ public class ServerMutinyAsyncFileMessageBodyWriter implements ServerMessageBody
     }
 
     @Override
-    public void writeTo(AsyncFile asyncFile, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+    public void writeTo(AsyncFile asyncFile, Class<?> type, Type genericType, Annotation[] annotations,
+            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+            throws IOException, WebApplicationException {
         throw new UnsupportedOperationException("Returning an AsyncFile is not supported with WriterInterceptors");
     }
 }

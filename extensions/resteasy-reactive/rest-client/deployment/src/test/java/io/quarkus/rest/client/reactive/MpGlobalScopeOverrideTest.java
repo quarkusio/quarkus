@@ -18,8 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MpGlobalScopeOverrideTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, HelloClient2.class))
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, HelloClient2.class))
             .withConfigurationResource("mp-global-scope-test-application.properties");
 
     @RestClient

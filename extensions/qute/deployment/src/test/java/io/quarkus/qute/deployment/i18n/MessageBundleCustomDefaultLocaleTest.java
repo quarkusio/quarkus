@@ -21,11 +21,8 @@ public class MessageBundleCustomDefaultLocaleTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class, EnMessages.class)
-                    .addAsResource(new StringAsset(
-                            "{msg:helloWorld}"),
-                            "templates/foo.html"))
+            .withApplicationRoot((jar) -> jar.addClasses(Messages.class, EnMessages.class)
+                    .addAsResource(new StringAsset("{msg:helloWorld}"), "templates/foo.html"))
             .overrideConfigKey("quarkus.default-locale", "cs_CZ");
 
     @Inject

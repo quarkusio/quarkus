@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Indicates that this entity class should be used as a source of identity information. At most one
- * entity can have that annotation in an application. The entity must contain fields or properties annotated
- * with the {@link Username}, {@link Password} and {@link Roles} annotations.
+ * Indicates that this entity class should be used as a source of identity information. At most one entity can have that
+ * annotation in an application. The entity must contain fields or properties annotated with the {@link Username},
+ * {@link Password} and {@link Roles} annotations.
  */
 @Target({ ElementType.TYPE })
 @Retention(RetentionPolicy.RUNTIME)

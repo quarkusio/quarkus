@@ -33,9 +33,7 @@ public class ScalaCompilationProvider implements CompilationProvider {
                 context.getOutputDirectory().getAbsolutePath());
         try (Global g = new Global(settings)) {
             Global.Run run = g.new Run();
-            Set<String> fileSet = files.stream()
-                    .map(File::getAbsolutePath)
-                    .collect(Collectors.toSet());
+            Set<String> fileSet = files.stream().map(File::getAbsolutePath).collect(Collectors.toSet());
             run.compile(JavaConverters.asScalaSet(fileSet).toList());
         }
     }

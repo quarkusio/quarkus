@@ -35,8 +35,8 @@ import io.quarkus.maven.components.QuarkusWorkspaceProvider;
 import io.quarkus.maven.dependency.ArtifactCoords;
 
 /**
- * This goal downloads all the Maven artifact dependencies required to build, run, test and
- * launch the application dev mode.
+ * This goal downloads all the Maven artifact dependencies required to build, run, test and launch the application dev
+ * mode.
  */
 @Mojo(name = "go-offline", threadSafe = true)
 public class GoOfflineMojo extends AbstractMojo {
@@ -63,9 +63,9 @@ public class GoOfflineMojo extends AbstractMojo {
     QuarkusWorkspaceProvider workspaceProvider;
 
     /**
-     * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependencies should be resolved.
-     * {@code io.quarkus.runtime.LaunchMode.TEST} is the default, since it includes both {@code provided} and {@code test}
-     * dependency scopes.
+     * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependencies should be
+     * resolved. {@code io.quarkus.runtime.LaunchMode.TEST} is the default, since it includes both {@code provided} and
+     * {@code test} dependency scopes.
      */
     @Parameter(property = "mode", required = false, defaultValue = "test")
     String mode;
@@ -73,10 +73,8 @@ public class GoOfflineMojo extends AbstractMojo {
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        final Artifact pom = new DefaultArtifact(project.getArtifact().getGroupId(),
-                project.getArtifactId(),
-                ArtifactCoords.TYPE_POM,
-                project.getVersion());
+        final Artifact pom = new DefaultArtifact(project.getArtifact().getGroupId(), project.getArtifactId(),
+                ArtifactCoords.TYPE_POM, project.getVersion());
 
         final MavenArtifactResolver resolver = getResolver();
         final BootstrapAppModelResolver appModelResolver = new BootstrapAppModelResolver(resolver);
@@ -97,8 +95,7 @@ public class GoOfflineMojo extends AbstractMojo {
 
         final DependencyNode root;
         try {
-            root = resolver.getSystem().collectDependencies(
-                    resolver.getSession(),
+            root = resolver.getSystem().collectDependencies(resolver.getSession(),
                     resolver.newCollectManagedRequest(pom, List.of(), List.of(), List.of(), List.of(), excludedScopes))
                     .getRoot();
         } catch (Exception e) {
@@ -112,7 +109,8 @@ public class GoOfflineMojo extends AbstractMojo {
             appModelResolver.resolveModel(ArtifactCoords.of(pom.getGroupId(), pom.getArtifactId(), pom.getClassifier(),
                     pom.getExtension(), pom.getVersion()));
         } catch (AppModelResolverException e) {
-            throw new MojoExecutionException("Failed to resolve Quarkus application model for " + project.getArtifact(), e);
+            throw new MojoExecutionException("Failed to resolve Quarkus application model for " + project.getArtifact(),
+                    e);
         } finally {
             for (Path d : createdDirs) {
                 IoUtils.recursiveDelete(d);
@@ -123,10 +121,8 @@ public class GoOfflineMojo extends AbstractMojo {
     private MavenArtifactResolver getResolver() throws MojoExecutionException {
         return workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
                 .setUserSettings(session.getRequest().getUserSettingsFile())
-                .setCurrentProject(project.getBasedir().toString())
-                .setRemoteRepositoryManager(remoteRepositoryManager)
-                .setRemoteRepositories(repos)
-                .setPreferPomsFromWorkspace(true));
+                .setCurrentProject(project.getBasedir().toString()).setRemoteRepositoryManager(remoteRepositoryManager)
+                .setRemoteRepositories(repos).setPreferPomsFromWorkspace(true));
     }
 
     private static void ensureResolvableModule(DependencyNode node, LocalWorkspace workspace, List<Path> createdDirs)

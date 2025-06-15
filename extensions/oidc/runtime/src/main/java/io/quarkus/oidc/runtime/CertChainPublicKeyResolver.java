@@ -40,8 +40,7 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
     }
 
     @Override
-    public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext)
-            throws UnresolvableKeyException {
+    public Key resolveKey(JsonWebSignature jws, List<JsonWebStructure> nestingContext) throws UnresolvableKeyException {
 
         try {
             List<X509Certificate> chain = jws.getCertificateChainHeaderValue();
@@ -55,7 +54,7 @@ public class CertChainPublicKeyResolver implements RefreshableVerificationKeyRes
             }
 
             // General certificate chain validation
-            //TODO: support revocation lists
+            // TODO: support revocation lists
             CertificateHelper.checkValidity(chain, null);
             if (chain.size() == 1) {
                 // CertificateHelper.checkValidity does not currently

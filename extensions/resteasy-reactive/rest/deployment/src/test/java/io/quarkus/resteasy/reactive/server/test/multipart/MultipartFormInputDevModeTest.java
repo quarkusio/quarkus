@@ -18,17 +18,15 @@ import io.restassured.RestAssured;
 public class MultipartFormInputDevModeTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(FormDataBase.class, OtherPackageFormDataBase.class, FormData.class, Status.class,
-                                    FormDataSameFileName.class, OtherFormData.class, OtherFormDataBase.class,
-                                    MultipartResource.class);
-                }
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(FormDataBase.class, OtherPackageFormDataBase.class,
+                    FormData.class, Status.class, FormDataSameFileName.class, OtherFormData.class,
+                    OtherFormDataBase.class, MultipartResource.class);
+        }
 
-            });
+    });
 
     private final File HTML_FILE = new File("./src/test/resources/test.html");
     private final File XML_FILE = new File("./src/test/resources/test.html");
@@ -61,19 +59,10 @@ public class MultipartFormInputDevModeTest {
     }
 
     private void doTest(String path) {
-        RestAssured.given()
-                .multiPart("name", "Alice")
-                .multiPart("active", "true")
-                .multiPart("num", "25")
-                .multiPart("status", "WORKING")
-                .multiPart("htmlFile", HTML_FILE, "text/html")
-                .multiPart("xmlFile", XML_FILE, "text/xml")
-                .multiPart("txtFile", TXT_FILE, "text/plain")
-                .accept("text/plain")
-                .when()
-                .post("/multipart/" + path + "/2")
-                .then()
-                .statusCode(200)
+        RestAssured.given().multiPart("name", "Alice").multiPart("active", "true").multiPart("num", "25")
+                .multiPart("status", "WORKING").multiPart("htmlFile", HTML_FILE, "text/html")
+                .multiPart("xmlFile", XML_FILE, "text/xml").multiPart("txtFile", TXT_FILE, "text/plain")
+                .accept("text/plain").when().post("/multipart/" + path + "/2").then().statusCode(200)
                 .body(equalTo("Alice - true - 50 - WORKING - true - true - true"));
     }
 

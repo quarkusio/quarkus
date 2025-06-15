@@ -21,7 +21,8 @@ public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
 
     public QuarkusHttpClientFactory() {
         // The client might get initialized outside a Quarkus context that can provide the Vert.x instance
-        // This is the case for the MockServer / @KubernetesTestServer where the server provides the KubernetesClient instance
+        // This is the case for the MockServer / @KubernetesTestServer where the server provides the KubernetesClient
+        // instance
         try {
             this.vertx = CDI.current().select(Vertx.class).get();
             this.closeVertxOnExit = false;
@@ -36,8 +37,7 @@ public class QuarkusHttpClientFactory implements HttpClient.Factory, Closeable {
         // This is done using the DISABLE_DNS_RESOLVER_PROP_NAME system property.
         // The DNS resolver used by vert.x is configured during the (synchronous) initialization.
         // So, we just need to disable the async resolver around the Vert.x instance creation.
-        try (var resettableSystemProperties = ResettableSystemProperties.of(
-                DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
+        try (var resettableSystemProperties = ResettableSystemProperties.of(DISABLE_DNS_RESOLVER_PROP_NAME, "true")) {
             return Vertx.vertx(new VertxOptions().setFileSystemOptions(
                     new FileSystemOptions().setFileCachingEnabled(false).setClassPathResolvingEnabled(false)));
 

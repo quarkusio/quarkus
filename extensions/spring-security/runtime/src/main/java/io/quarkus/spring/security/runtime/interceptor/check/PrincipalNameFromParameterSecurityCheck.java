@@ -9,10 +9,8 @@ import io.quarkus.security.spi.runtime.MethodDescription;
 import io.quarkus.security.spi.runtime.SecurityCheck;
 
 /**
- * Instances of these classes are created in order to check if a method parameter
- * inside a Spring Security expression matches the principal name
- *
- * Access to the property of the object is performed by delegating to a purpose generated
+ * Instances of these classes are created in order to check if a method parameter inside a Spring Security expression
+ * matches the principal name Access to the property of the object is performed by delegating to a purpose generated
  * accessor
  */
 public class PrincipalNameFromParameterSecurityCheck implements SecurityCheck {
@@ -66,9 +64,8 @@ public class PrincipalNameFromParameterSecurityCheck implements SecurityCheck {
     }
 
     private IllegalStateException genericNotApplicableException(String className, String methodName) {
-        return new IllegalStateException(
-                "PrincipalNameFromParameterSecurityCheck with index " + index + " cannot be applied to '" + className + "#"
-                        + methodName + "'");
+        return new IllegalStateException("PrincipalNameFromParameterSecurityCheck with index " + index
+                + " cannot be applied to '" + className + "#" + methodName + "'");
     }
 
     public enum CheckType {

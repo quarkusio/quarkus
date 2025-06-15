@@ -28,15 +28,15 @@ public class MongoNamedClientClientBuildItemConsumerTest {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar.addClasses(MongoTestBase.class))
-            .withConfigurationResource("named-mongoclient.properties")
-            .addBuildChainCustomizer(buildCustomizer());
+            .withConfigurationResource("named-mongoclient.properties").addBuildChainCustomizer(buildCustomizer());
 
     @Test
     public void testContainerHasBeans() {
         assertThat(Arc.container().instance(MongoClient.class, Default.Literal.INSTANCE).get()).isNotNull();
         assertThat(Arc.container().instance(MongoClient.class, NamedLiteral.of("second")).get()).isNotNull();
         assertThat(Arc.container().instance(ReactiveMongoClient.class, Default.Literal.INSTANCE).get()).isNotNull();
-        assertThat(Arc.container().instance(ReactiveMongoClient.class, NamedLiteral.of("secondreactive")).get()).isNotNull();
+        assertThat(Arc.container().instance(ReactiveMongoClient.class, NamedLiteral.of("secondreactive")).get())
+                .isNotNull();
     }
 
     protected static Consumer<BuildChainBuilder> buildCustomizer() {
@@ -47,16 +47,12 @@ public class MongoNamedClientClientBuildItemConsumerTest {
                 builder.addBuildStep(context -> {
                     ApplicationArchivesBuildItem archive = context.consume(ApplicationArchivesBuildItem.class);
                     context.produce(Collections.singletonList(new MongoClientNameBuildItem("second")));
-                }).consumes(ApplicationArchivesBuildItem.class)
-                        .produces(MongoClientNameBuildItem.class)
-                        .build();
+                }).consumes(ApplicationArchivesBuildItem.class).produces(MongoClientNameBuildItem.class).build();
 
                 builder.addBuildStep(context -> {
                     List<MongoClientBuildItem> mongoClientBuildItems = context.consumeMulti(MongoClientBuildItem.class);
                     context.produce(new FeatureBuildItem("dummy"));
-                }).consumes(MongoClientBuildItem.class)
-                        .produces(FeatureBuildItem.class)
-                        .build();
+                }).consumes(MongoClientBuildItem.class).produces(FeatureBuildItem.class).build();
             }
         };
     }

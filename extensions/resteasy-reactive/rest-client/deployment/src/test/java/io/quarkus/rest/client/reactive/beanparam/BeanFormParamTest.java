@@ -31,12 +31,12 @@ public class BeanFormParamTest {
     @Test
     void shouldPassFormParamsFromBeanParam() {
         assertThat(formTestClient().postFormParams(new BeanWithFormParams("value1", "value2", Param.SECOND)))
-                .isEqualTo(
-                        "received value1-value2-2");
+                .isEqualTo("received value1-value2-2");
     }
 
     private FormTestClient formTestClient() {
-        return RestClientBuilder.newBuilder().baseUri(baseUri).register(ParamConverter.class).build(FormTestClient.class);
+        return RestClientBuilder.newBuilder().baseUri(baseUri).register(ParamConverter.class)
+                .build(FormTestClient.class);
     }
 
     @Path("/form")

@@ -6,8 +6,8 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Utility that allows for setting system properties when it's created and resetting them when it's closed.
- * This is meant to be used in try-with-resources statements
+ * Utility that allows for setting system properties when it's created and resetting them when it's closed. This is
+ * meant to be used in try-with-resources statements
  */
 public class ResettableSystemProperties implements AutoCloseable {
 

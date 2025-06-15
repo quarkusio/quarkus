@@ -6,8 +6,8 @@ import java.util.Objects;
 import io.quarkus.builder.item.MultiBuildItem;
 
 /**
- * Registers default SecurityCheck with the SecurityCheckStorage.
- * Please make sure this build item is produced exactly once or validation will fail and exception will be thrown.
+ * Registers default SecurityCheck with the SecurityCheckStorage. Please make sure this build item is produced exactly
+ * once or validation will fail and exception will be thrown.
  */
 public final class DefaultSecurityCheckBuildItem
         // we make this Multi to run CapabilityAggregationStep#aggregateCapabilities first

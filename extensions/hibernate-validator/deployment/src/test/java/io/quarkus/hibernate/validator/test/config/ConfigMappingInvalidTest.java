@@ -42,8 +42,8 @@ import io.smallrye.config.WithParentName;
 
 public class ConfigMappingInvalidTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
                     .addAsResource("application-mappings-validation.properties", "application.properties"))
             .assertException(new Consumer<Throwable>() {
                 @Override

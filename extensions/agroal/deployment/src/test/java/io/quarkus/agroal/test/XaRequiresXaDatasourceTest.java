@@ -12,17 +12,15 @@ import io.quarkus.test.QuarkusUnitTest;
 public class XaRequiresXaDatasourceTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("base.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("base.properties")
             .overrideConfigKey("quarkus.datasource.jdbc.driver", "org.h2.Driver")
-            .overrideConfigKey("quarkus.datasource.jdbc.transactions", "XA")
-            .assertException(t -> {
+            .overrideConfigKey("quarkus.datasource.jdbc.transactions", "XA").assertException(t -> {
                 assertEquals(ConfigurationException.class, t.getClass());
             });
 
     @Test
     public void xaRequiresJta() {
-        //Should not be reached: verify
+        // Should not be reached: verify
         assertTrue(false);
     }
 

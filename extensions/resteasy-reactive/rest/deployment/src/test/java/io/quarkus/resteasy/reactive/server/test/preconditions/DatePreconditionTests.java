@@ -22,8 +22,7 @@ public class DatePreconditionTests {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Resource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Resource.class));
 
     // Make sure we test a subtype of Date, since that is what Hibernate ORM gives us most of the time (hah)
     // Also make sure we have non-zero milliseconds, since that will be the case for most date values representing
@@ -36,16 +35,9 @@ public class DatePreconditionTests {
 
     @Test
     public void test() {
-        get("/preconditions")
-                .then()
-                .statusCode(200)
-                .header("Last-Modified", "Mon, 03 Dec 2007 10:15:30 GMT")
+        get("/preconditions").then().statusCode(200).header("Last-Modified", "Mon, 03 Dec 2007 10:15:30 GMT")
                 .body(Matchers.equalTo("foo"));
-        RestAssured
-                .with()
-                .header("If-Modified-Since", "Mon, 03 Dec 2007 10:15:30 GMT")
-                .get("/preconditions")
-                .then()
+        RestAssured.with().header("If-Modified-Since", "Mon, 03 Dec 2007 10:15:30 GMT").get("/preconditions").then()
                 .statusCode(304);
     }
 

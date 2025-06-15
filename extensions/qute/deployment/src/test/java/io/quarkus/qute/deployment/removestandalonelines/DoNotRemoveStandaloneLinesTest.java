@@ -14,12 +14,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DoNotRemoveStandaloneLinesTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("{#for i in total}\n"
-                            + "{i}:\n"
-                            + "{/for}"), "templates/loop.html")
-                    .addAsResource(new StringAsset("quarkus.qute.remove-standalone-lines=false"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addAsResource(new StringAsset("{#for i in total}\n" + "{i}:\n" + "{/for}"), "templates/loop.html")
+            .addAsResource(new StringAsset("quarkus.qute.remove-standalone-lines=false"), "application.properties"));
 
     @Inject
     Template loop;

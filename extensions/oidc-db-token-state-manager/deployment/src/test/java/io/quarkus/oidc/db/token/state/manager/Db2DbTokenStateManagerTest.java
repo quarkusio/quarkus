@@ -14,7 +14,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class Db2DbTokenStateManagerTest extends AbstractDbTokenStateManagerTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = createQuarkusUnitTest("quarkus-reactive-db2-client",
-            jar -> jar.addAsResource(new StringAsset(System.getProperty("db2.image")), "container-license-acceptance.txt"));
+    static final QuarkusUnitTest test = createQuarkusUnitTest("quarkus-reactive-db2-client", jar -> jar
+            .addAsResource(new StringAsset(System.getProperty("db2.image")), "container-license-acceptance.txt"));
 
 }

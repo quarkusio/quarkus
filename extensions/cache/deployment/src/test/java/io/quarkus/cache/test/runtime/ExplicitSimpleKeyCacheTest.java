@@ -16,7 +16,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 /**
  * Tests a cache with <b>explicit simple</b> cache keys.<br>
- * All methods with a {@link CacheKey @CacheKey}-annotated argument also have another argument which is not part of the key.
+ * All methods with a {@link CacheKey @CacheKey}-annotated argument also have another argument which is not part of the
+ * key.
  */
 public class ExplicitSimpleKeyCacheTest {
 
@@ -24,7 +25,8 @@ public class ExplicitSimpleKeyCacheTest {
     private static final long KEY_2 = 456L;
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClass(CachedService.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .withApplicationRoot(jar -> jar.addClass(CachedService.class));
 
     @Inject
     CachedService cachedService;
@@ -33,7 +35,8 @@ public class ExplicitSimpleKeyCacheTest {
     public void testAllCacheAnnotations() {
 
         // In most of the cached service methods calls below, a changing second argument will be passed to the methods.
-        // The fact that it changes each time should not have any effect on the cache because it is not part of the cache key.
+        // The fact that it changes each time should not have any effect on the cache because it is not part of the
+        // cache key.
 
         // STEP 1
         // Action: @CacheResult-annotated method call.

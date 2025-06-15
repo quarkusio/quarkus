@@ -56,10 +56,8 @@ public class ResteasyReactiveCDIProcessor {
     AutoInjectAnnotationBuildItem contextInjection(
             BuildProducer<AdditionalBeanBuildItem> additionalBeanBuildItemBuildProducer,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeanBuildItemBuildProducer) {
-        additionalBeanBuildItemBuildProducer
-                .produce(AdditionalBeanBuildItem.builder()
-                        .addBeanClasses(ContextProducers.class, QuarkusContextProducers.class)
-                        .build());
+        additionalBeanBuildItemBuildProducer.produce(AdditionalBeanBuildItem.builder()
+                .addBeanClasses(ContextProducers.class, QuarkusContextProducers.class).build());
         unremovableBeanBuildItemBuildProducer.produce(UnremovableBeanBuildItem.beanTypes(HttpHeaders.class));
         return new AutoInjectAnnotationBuildItem(ResteasyReactiveServerDotNames.CONTEXT,
                 DotName.createSimple(BeanParam.class.getName()));
@@ -67,20 +65,16 @@ public class ResteasyReactiveCDIProcessor {
 
     @BuildStep
     void beanDefiningAnnotations(BuildProducer<BeanDefiningAnnotationBuildItem> beanDefiningAnnotations) {
+        beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(PATH, BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(PATH, BuiltinScope.SINGLETON.getName()));
+                .produce(new BeanDefiningAnnotationBuildItem(APPLICATION_PATH, BuiltinScope.SINGLETON.getName()));
         beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(APPLICATION_PATH,
-                        BuiltinScope.SINGLETON.getName()));
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(PROVIDER,
-                        BuiltinScope.SINGLETON.getName()));
+                .produce(new BeanDefiningAnnotationBuildItem(PROVIDER, BuiltinScope.SINGLETON.getName()));
     }
 
     /**
-     * The idea here is to make a best effort to find resources that need to be {@link RequestScoped}
-     * and make them such if no scope has been defined.
-     * If any other scope has been explicitly defined, the build will fail
+     * The idea here is to make a best effort to find resources that need to be {@link RequestScoped} and make them such
+     * if no scope has been defined. If any other scope has been explicitly defined, the build will fail
      */
     @BuildStep
     void requestScopedResources(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -92,37 +86,36 @@ public class ResteasyReactiveCDIProcessor {
                 .getRequestScopedResources();
 
         additionalBeanBuildItemBuildProducer.produce(new io.quarkus.arc.deployment.AnnotationsTransformerBuildItem(
-                AnnotationTransformation.builder().whenDeclaration(
-                        new Predicate<>() {
-                            @Override
-                            public boolean test(Declaration declaration) {
-                                return declaration.kind() == AnnotationTarget.Kind.CLASS;
-                            }
-                        }).transform(new Consumer<>() {
-                            @Override
-                            public void accept(AnnotationTransformation.TransformationContext context) {
-                                if (context.declaration().kind() == AnnotationTarget.Kind.CLASS) {
-                                    ClassInfo clazz = context.declaration().asClass();
-                                    if (requestScopedResources.contains(clazz.name())) {
-                                        BuiltinScope builtinScope = BuiltinScope.from(clazz);
-                                        if (builtinScope != null) {
-                                            if (builtinScope.getName() != BuiltinScope.REQUEST.getName()) {
-                                                throw new DeploymentException(
-                                                        "Resource classes that use field injection for REST parameters can only be @RequestScoped. Offending class is "
-                                                                + clazz.name());
-                                            } else {
-                                                // nothing to do as @RequestScoped was already present
-                                            }
-                                        } else if (!resourceScanningResultBuildItem.get().getResult().getPossibleSubResources()
-                                                .containsKey(clazz.name())) {
-                                            // no @RequestScoped for Sub Resources, since they might have a constructor
-                                            // not compatible with CDI. User must explicitly mark as RequestScoped
-                                            context.add(RequestScoped.class);
-                                        }
+                AnnotationTransformation.builder().whenDeclaration(new Predicate<>() {
+                    @Override
+                    public boolean test(Declaration declaration) {
+                        return declaration.kind() == AnnotationTarget.Kind.CLASS;
+                    }
+                }).transform(new Consumer<>() {
+                    @Override
+                    public void accept(AnnotationTransformation.TransformationContext context) {
+                        if (context.declaration().kind() == AnnotationTarget.Kind.CLASS) {
+                            ClassInfo clazz = context.declaration().asClass();
+                            if (requestScopedResources.contains(clazz.name())) {
+                                BuiltinScope builtinScope = BuiltinScope.from(clazz);
+                                if (builtinScope != null) {
+                                    if (builtinScope.getName() != BuiltinScope.REQUEST.getName()) {
+                                        throw new DeploymentException(
+                                                "Resource classes that use field injection for REST parameters can only be @RequestScoped. Offending class is "
+                                                        + clazz.name());
+                                    } else {
+                                        // nothing to do as @RequestScoped was already present
                                     }
+                                } else if (!resourceScanningResultBuildItem.get().getResult().getPossibleSubResources()
+                                        .containsKey(clazz.name())) {
+                                    // no @RequestScoped for Sub Resources, since they might have a constructor
+                                    // not compatible with CDI. User must explicitly mark as RequestScoped
+                                    context.add(RequestScoped.class);
                                 }
                             }
-                        })));
+                        }
+                    }
+                })));
     }
 
     @BuildStep
@@ -141,8 +134,8 @@ public class ResteasyReactiveCDIProcessor {
                     if (instance.target().kind() != AnnotationTarget.Kind.METHOD_PARAMETER) {
                         continue;
                     }
-                    producer.produce(UnremovableBeanBuildItem
-                            .beanTypes(instance.target().asMethodParameter().type().name()));
+                    producer.produce(
+                            UnremovableBeanBuildItem.beanTypes(instance.target().asMethodParameter().type().name()));
                 }
             }
         }
@@ -206,7 +199,8 @@ public class ResteasyReactiveCDIProcessor {
         additionalProducer.produce(builder.build());
     }
 
-    // when an interface is annotated with @Path and there is only one implementation of it that is not annotated with @Path,
+    // when an interface is annotated with @Path and there is only one implementation of it that is not annotated with
+    // @Path,
     // we need to make this class a bean. See https://github.com/quarkusio/quarkus/issues/15028
     @BuildStep
     void pathInterfaceImpls(Optional<ResourceScanningResultBuildItem> resourceScanningResultBuildItem,
@@ -221,8 +215,8 @@ public class ResteasyReactiveCDIProcessor {
             List<ClassInfo> candidateBeans = new ArrayList<>(1);
             for (ClassInfo clazz : resourceScanningResult.getIndex().getAllKnownImplementors(i.getKey())) {
                 if (!Modifier.isAbstract(clazz.flags())) {
-                    if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags())) &&
-                            clazz.enclosingMethod() == null) {
+                    if ((clazz.enclosingClass() == null || Modifier.isStatic(clazz.flags()))
+                            && clazz.enclosingMethod() == null) {
                         candidateBeans.add(clazz);
                     }
                 }
@@ -232,17 +226,15 @@ public class ResteasyReactiveCDIProcessor {
             }
         }
         if (!impls.isEmpty()) {
-            additionalBeanBuildItemBuildProducer
-                    .produce(AdditionalBeanBuildItem.builder().setUnremovable().addBeanClasses(impls.toArray(new String[0]))
-                            .build());
+            additionalBeanBuildItemBuildProducer.produce(AdditionalBeanBuildItem.builder().setUnremovable()
+                    .addBeanClasses(impls.toArray(new String[0])).build());
         }
     }
 
     @BuildStep
     void additionalBeans(List<DynamicFeatureBuildItem> additionalDynamicFeatures,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClassBuildItemBuildProducer,
-            List<JaxrsFeatureBuildItem> featureBuildItems,
-            BuildProducer<AdditionalBeanBuildItem> additionalBean) {
+            List<JaxrsFeatureBuildItem> featureBuildItems, BuildProducer<AdditionalBeanBuildItem> additionalBean) {
 
         AdditionalBeanBuildItem.Builder additionalProviders = AdditionalBeanBuildItem.builder();
         for (DynamicFeatureBuildItem dynamicFeature : additionalDynamicFeatures) {
@@ -250,8 +242,7 @@ public class ResteasyReactiveCDIProcessor {
                 additionalProviders.addBeanClass(dynamicFeature.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(dynamicFeature.getClassName())
-                                .build());
+                        .produce(ReflectiveClassBuildItem.builder(dynamicFeature.getClassName()).build());
             }
         }
         for (JaxrsFeatureBuildItem feature : featureBuildItems) {
@@ -259,8 +250,7 @@ public class ResteasyReactiveCDIProcessor {
                 additionalProviders.addBeanClass(feature.getClassName());
             } else {
                 reflectiveClassBuildItemBuildProducer
-                        .produce(ReflectiveClassBuildItem.builder(feature.getClassName())
-                                .build());
+                        .produce(ReflectiveClassBuildItem.builder(feature.getClassName()).build());
             }
         }
         additionalBean.produce(additionalProviders.setUnremovable().setDefaultScope(DotNames.SINGLETON).build());

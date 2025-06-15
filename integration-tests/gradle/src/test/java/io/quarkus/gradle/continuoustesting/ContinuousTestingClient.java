@@ -41,13 +41,13 @@ public class ContinuousTestingClient {
             Awaitility.waitAtMost(2, TimeUnit.MINUTES).pollInterval(200, TimeUnit.MILLISECONDS).until(() -> {
                 TestStatus ts = getTestStatus();
                 if (ts.getLastRun() > runtToWaitFor) {
-                    throw new RuntimeException(
-                            "Waiting for run " + runtToWaitFor + " but run " + ts.getLastRun() + " has already occurred");
+                    throw new RuntimeException("Waiting for run " + runtToWaitFor + " but run " + ts.getLastRun()
+                            + " has already occurred");
                 }
                 boolean runComplete = ts.getLastRun() == runtToWaitFor;
                 if (runComplete && ts.getRunning() > 0) {
-                    //there is a small chance of a race, where changes are picked up twice, due to how filesystems work
-                    //this works around it by waiting for the next run
+                    // there is a small chance of a race, where changes are picked up twice, due to how filesystems work
+                    // this works around it by waiting for the next run
                     runtToWaitFor = ts.getRunning();
                     return false;
                 } else if (runComplete) {
@@ -108,8 +108,8 @@ public class ContinuousTestingClient {
             super();
         }
 
-        public TestStatus(long lastRun, long running, long testsRun, long testsPassed, long testsFailed, long testsSkipped,
-                long totalTestsPassed, long totalTestsFailed, long totalTestsSkipped) {
+        public TestStatus(long lastRun, long running, long testsRun, long testsPassed, long testsFailed,
+                long testsSkipped, long totalTestsPassed, long totalTestsFailed, long totalTestsSkipped) {
             this.lastRun = lastRun;
             this.running = running;
             this.testsRun = testsRun;
@@ -195,10 +195,10 @@ public class ContinuousTestingClient {
 
         @Override
         public String toString() {
-            return "TestStatus{" + "lastRun=" + lastRun + ", running=" + running + ", testsRun=" + testsRun + ", testsPassed="
-                    + testsPassed + ", testsFailed=" + testsFailed + ", testsSkipped=" + testsSkipped + ", totalTestsPassed="
-                    + totalTestsPassed + ", totalTestsFailed=" + totalTestsFailed + ", totalTestsSkipped=" + totalTestsSkipped
-                    + '}';
+            return "TestStatus{" + "lastRun=" + lastRun + ", running=" + running + ", testsRun=" + testsRun
+                    + ", testsPassed=" + testsPassed + ", testsFailed=" + testsFailed + ", testsSkipped=" + testsSkipped
+                    + ", totalTestsPassed=" + totalTestsPassed + ", totalTestsFailed=" + totalTestsFailed
+                    + ", totalTestsSkipped=" + totalTestsSkipped + '}';
         }
     }
 }

@@ -11,9 +11,7 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 public class GrpcCodestartTest {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("grpc")
-            .languages(JAVA)
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("grpc").languages(JAVA)
             .build();
 
     @Test

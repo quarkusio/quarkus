@@ -31,8 +31,7 @@ import io.vertx.ext.web.client.WebClient;
 public class CancelableCompletionStageTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot(jar -> jar.addClasses(Resource.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(jar -> jar.addClasses(Resource.class));
 
     @BeforeEach
     void setUp() {
@@ -47,10 +46,7 @@ public class CancelableCompletionStageTest {
 
     @Test
     public void testNormal() {
-        when().get("test")
-                .then()
-                .statusCode(200)
-                .body(equalTo("Hello, world"));
+        when().get("test").then().statusCode(200).body(equalTo("Hello, world"));
     }
 
     @Test
@@ -92,15 +88,13 @@ public class CancelableCompletionStageTest {
         @Produces(MediaType.TEXT_PLAIN)
         public CompletionStage<String> hello() {
             COUNT.incrementAndGet();
-            return CompletableFuture.supplyAsync(
-                    new Supplier<>() {
-                        @Override
-                        public String get() {
-                            COUNT.incrementAndGet();
-                            return "Hello, world";
-                        }
-                    },
-                    CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS));
+            return CompletableFuture.supplyAsync(new Supplier<>() {
+                @Override
+                public String get() {
+                    COUNT.incrementAndGet();
+                    return "Hello, world";
+                }
+            }, CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS));
         }
     }
 }

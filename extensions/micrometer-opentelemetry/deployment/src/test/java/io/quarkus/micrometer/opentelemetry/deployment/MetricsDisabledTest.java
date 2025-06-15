@@ -27,34 +27,29 @@ import io.restassured.RestAssured;
 
 public class MetricsDisabledTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .setArchiveProducer(
-                    () -> ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Util.class,
-                                    PingPongResource.class)
-                            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
-                            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                            .add(new StringAsset("""
-                                    quarkus.otel.sdk.disabled=true\n
-                                    quarkus.otel.metrics.enabled=true\n
-                                    quarkus.otel.traces.exporter=none\n
-                                    quarkus.otel.logs.exporter=none\n
-                                    quarkus.otel.metrics.exporter=in-memory\n
-                                    quarkus.otel.metric.export.interval=300ms\n
-                                    quarkus.micrometer.binder.http-client.enabled=true\n
-                                    quarkus.micrometer.binder.http-server.enabled=true\n
-                                    pingpong/mp-rest/url=${test.url}\n
-                                    quarkus.redis.devservices.enabled=false\n
-                                    """),
-                                    "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addClasses(Util.class, PingPongResource.class)
+            .addClasses(InMemoryMetricExporter.class, InMemoryMetricExporterProvider.class)
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .add(new StringAsset("""
+                    quarkus.otel.sdk.disabled=true\n
+                    quarkus.otel.metrics.enabled=true\n
+                    quarkus.otel.traces.exporter=none\n
+                    quarkus.otel.logs.exporter=none\n
+                    quarkus.otel.metrics.exporter=in-memory\n
+                    quarkus.otel.metric.export.interval=300ms\n
+                    quarkus.micrometer.binder.http-client.enabled=true\n
+                    quarkus.micrometer.binder.http-server.enabled=true\n
+                    pingpong/mp-rest/url=${test.url}\n
+                    quarkus.redis.devservices.enabled=false\n
+                    """), "application.properties"));
 
     @Inject
     protected InMemoryMetricExporter metricExporter;
 
     protected static String mapToString(Map<AttributeKey<?>, ?> map) {
-        return (String) map.keySet().stream()
-                .map(key -> "" + key.getKey() + "=" + map.get(key))
+        return (String) map.keySet().stream().map(key -> "" + key.getKey() + "=" + map.get(key))
                 .collect(Collectors.joining(", ", "{", "}"));
     }
 

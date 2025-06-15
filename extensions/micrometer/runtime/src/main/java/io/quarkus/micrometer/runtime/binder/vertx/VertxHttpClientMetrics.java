@@ -49,23 +49,19 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
     private final List<HttpClientMetricsTagsContributor> httpClientMetricsTagsContributors;
 
-    VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags, HttpBinderConfiguration httpBinderConfiguration) {
+    VertxHttpClientMetrics(MeterRegistry registry, String prefix, Tags tags,
+            HttpBinderConfiguration httpBinderConfiguration) {
         super(registry, prefix, tags);
         this.config = httpBinderConfiguration;
         queueDelay = Timer.builder("http.client.queue.delay")
-                .description("Time spent in the waiting queue before being processed")
-                .tags(tags)
-                .register(registry);
+                .description("Time spent in the waiting queue before being processed").tags(tags).register(registry);
 
         Gauge.builder("http.client.queue.size", new Supplier<Number>() {
             @Override
             public Number get() {
                 return queue.doubleValue();
             }
-        })
-                .description("Number of pending elements in the waiting queue")
-                .tags(tags)
-                .strongReference(true)
+        }).description("Number of pending elements in the waiting queue").tags(tags).strongReference(true)
                 .register(registry);
 
         Gauge.builder("http.client.pending", new Supplier<Number>() {
@@ -77,8 +73,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
         httpClientMetricsTagsContributors = resolveHttpClientMetricsTagsContributors();
 
-        responseTimes = Timer.builder(config.getHttpClientRequestsName())
-                .description("Response times")
+        responseTimes = Timer.builder(config.getHttpClientRequestsName()).description("Response times")
                 .withRegistry(registry);
     }
 
@@ -121,8 +116,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             @Override
             public RequestTracker requestBegin(String uri, HttpRequest request) {
                 RequestTracker handler = new RequestTracker(tags, remote, request);
-                String path = handler.getNormalizedUriPath(
-                        config.getServerMatchPatterns(),
+                String path = handler.getNormalizedUriPath(config.getServerMatchPatterns(),
                         config.getServerIgnorePatterns());
                 if (path != null) {
                     pending.increment();
@@ -168,11 +162,11 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                     pending.decrement();
                 }
                 long duration = tracker.timer.end();
-                Tags list = tracker.tags
-                        .and(HttpCommonTags.status(tracker.response.statusCode()))
+                Tags list = tracker.tags.and(HttpCommonTags.status(tracker.response.statusCode()))
                         .and(HttpCommonTags.outcome(tracker.response.statusCode()));
                 if (!httpClientMetricsTagsContributors.isEmpty()) {
-                    HttpClientMetricsTagsContributor.Context context = new DefaultContext(tracker.request, tracker.response);
+                    HttpClientMetricsTagsContributor.Context context = new DefaultContext(tracker.request,
+                            tracker.response);
                     for (int i = 0; i < httpClientMetricsTagsContributors.size(); i++) {
                         try {
                             Tags additionalTags = httpClientMetricsTagsContributors.get(i).contribute(context);
@@ -183,9 +177,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
                     }
                 }
 
-                responseTimes
-                        .withTags(list)
-                        .record(duration, TimeUnit.NANOSECONDS);
+                responseTimes.withTags(list).record(duration, TimeUnit.NANOSECONDS);
             }
         };
     }
@@ -198,8 +190,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             public LongAdder apply(String s) {
                 LongAdder count = new LongAdder();
                 Gauge.builder(config.getHttpClientWebSocketConnectionsName(), count::longValue)
-                        .description("The number of active web socket connections")
-                        .tags(tags.and("address", remote))
+                        .description("The number of active web socket connections").tags(tags.and("address", remote))
                         .register(registry);
                 return count;
             }
@@ -229,9 +220,7 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
 
         RequestTracker(Tags origin, String address, HttpRequest request) {
             this.request = request;
-            this.tags = origin.and(
-                    Tag.of("address", address),
-                    HttpCommonTags.method(request.method().name()),
+            this.tags = origin.and(Tag.of("address", address), HttpCommonTags.method(request.method().name()),
                     HttpCommonTags.uri(request.uri(), null, -1, false));
         }
 
@@ -249,12 +238,14 @@ class VertxHttpClientMetrics extends VertxTcpClientMetrics
             return !reset && requestEnded;
         }
 
-        public String getNormalizedUriPath(Map<Pattern, String> serverMatchPatterns, List<Pattern> serverIgnorePatterns) {
+        public String getNormalizedUriPath(Map<Pattern, String> serverMatchPatterns,
+                List<Pattern> serverIgnorePatterns) {
             return super.getNormalizedUriPath(serverMatchPatterns, serverIgnorePatterns, request.uri());
         }
     }
 
-    private record DefaultContext(HttpRequest request,
-            HttpResponse response) implements HttpClientMetricsTagsContributor.Context {
+    private record DefaultContext(HttpRequest request, HttpResponse response)
+            implements
+                HttpClientMetricsTagsContributor.Context {
     }
 }

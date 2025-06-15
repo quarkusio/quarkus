@@ -3,13 +3,13 @@ package io.quarkus.redis.datasource.stream;
 import java.time.Duration;
 
 /**
- * Represents the result of an expended xpending command.
- * In the extended form we no longer see the summary information, instead there is detailed information for each message
- * in the pending entries list. For each message four attributes are returned:
+ * Represents the result of an expended xpending command. In the extended form we no longer see the summary information,
+ * instead there is detailed information for each message in the pending entries list. For each message four attributes
+ * are returned:
  * <ul>
  * <li>The ID of the message.</li>
- * <li>The name of the consumer that fetched the message and has still to acknowledge it. We call it the current owner of the
- * message.</li>
+ * <li>The name of the consumer that fetched the message and has still to acknowledge it. We call it the current owner
+ * of the message.</li>
  * <li>The number of milliseconds that elapsed since the last time this message was delivered to this consumer.</li>
  * <li>The number of times this message was delivered.</li>
  * </ul>

@@ -35,8 +35,8 @@ public class QuartzSupport {
     }
 
     /**
-     *
      * @param method
+     *
      * @return {@code true} if the scheduled method is annotated with {@link Nonconcurrent}
      */
     public boolean isNonconcurrent(ScheduledMethod method) {

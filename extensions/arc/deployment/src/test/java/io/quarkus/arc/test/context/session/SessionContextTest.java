@@ -18,8 +18,7 @@ public class SessionContextTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleBean.class, Client.class));
+            .withApplicationRoot(root -> root.addClasses(SimpleBean.class, Client.class));
 
     @Inject
     Client client;

@@ -14,20 +14,17 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AnnotatedServletTestCase {
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AnnotatedServlet.class));
+            .withApplicationRoot((jar) -> jar.addClasses(AnnotatedServlet.class));
 
     /**
-     * Tests the issue noted in https://github.com/quarkusio/quarkus/issues/5293
-     * where {@code UndertowBuildStep} would throw an NPE when the annotated servlet
-     * had additional annotation(s) but not the {@code @ServletSecurity} annotation
+     * Tests the issue noted in https://github.com/quarkusio/quarkus/issues/5293 where {@code UndertowBuildStep} would
+     * throw an NPE when the annotated servlet had additional annotation(s) but not the {@code @ServletSecurity}
+     * annotation
      *
      * @throws Exception
      */
     @Test
     public void testNPE() throws Exception {
-        when().get(AnnotatedServlet.SERVLET_ENDPOINT).then()
-                .statusCode(200)
-                .body(is(AnnotatedServlet.OK_RESPONSE));
+        when().get(AnnotatedServlet.SERVLET_ENDPOINT).then().statusCode(200).body(is(AnnotatedServlet.OK_RESPONSE));
     }
 }

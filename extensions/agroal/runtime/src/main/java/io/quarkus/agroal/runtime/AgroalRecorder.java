@@ -27,7 +27,8 @@ public class AgroalRecorder {
         this.jdbcRuntimeConfig = jdbcRuntimeConfig;
     }
 
-    public Supplier<AgroalDataSourceSupport> dataSourceSupportSupplier(AgroalDataSourceSupport agroalDataSourceSupport) {
+    public Supplier<AgroalDataSourceSupport> dataSourceSupportSupplier(
+            AgroalDataSourceSupport agroalDataSourceSupport) {
         return new Supplier<AgroalDataSourceSupport>() {
             @Override
             public AgroalDataSourceSupport get() {
@@ -45,8 +46,8 @@ public class AgroalRecorder {
                     return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonDeactivated(dataSourceName));
                 }
                 if (jdbcRuntimeConfig.getValue().dataSources().get(dataSourceName).jdbc().url().isEmpty()) {
-                    return ActiveResult.inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName,
-                            "jdbc.url"));
+                    return ActiveResult
+                            .inactive(DataSourceUtil.dataSourceInactiveReasonUrlMissing(dataSourceName, "jdbc.url"));
                 }
                 return ActiveResult.active();
             }
@@ -54,8 +55,7 @@ public class AgroalRecorder {
     }
 
     public Function<SyntheticCreationalContext<AgroalDataSource>, AgroalDataSource> agroalDataSourceSupplier(
-            String dataSourceName,
-            @SuppressWarnings("unused") DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
+            String dataSourceName, @SuppressWarnings("unused") DataSourcesRuntimeConfig dataSourcesRuntimeConfig,
             Optional<RuntimeValue<Boolean>> otelEnabled) {
         return new Function<>() {
             @SuppressWarnings("deprecation")

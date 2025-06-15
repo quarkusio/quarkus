@@ -48,9 +48,8 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
     public void dumpEffectiveConfiguration() {
         try {
             ApplicationModel appModel = resolveAppModelForBuild();
-            EffectiveConfig effectiveConfig = getExtensionView()
-                    .buildEffectiveConfiguration(appModel,
-                            getAdditionalForcedProperties().get().getProperties());
+            EffectiveConfig effectiveConfig = getExtensionView().buildEffectiveConfiguration(appModel,
+                    getAdditionalForcedProperties().get().getProperties());
             SmallRyeConfig config = effectiveConfig.getConfig();
             List<String> sourceNames = new ArrayList<>();
             config.getConfigSources().forEach(configSource -> sourceNames.add(configSource.getName()));
@@ -60,11 +59,8 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
                 values.put(key, config.getConfigValue(key).getValue());
             }
 
-            String quarkusConfig = values
-                    .entrySet()
-                    .stream()
-                    .map(e -> format("%s=%s", e.getKey(), e.getValue())).sorted()
-                    .collect(Collectors.joining("\n    ", "\n    ", "\n"));
+            String quarkusConfig = values.entrySet().stream().map(e -> format("%s=%s", e.getKey(), e.getValue()))
+                    .sorted().collect(Collectors.joining("\n    ", "\n    ", "\n"));
             getLogger().lifecycle("Effective Quarkus configuration options: {}", quarkusConfig);
 
             String finalName = getExtensionView().getFinalName().get();
@@ -77,13 +73,8 @@ public abstract class QuarkusShowEffectiveConfig extends QuarkusBuildTask {
                     Fast jar directory (if built): {}
                     Runner jar (if built):         {}
                     Native runner (if built):      {}
-                    application.(properties|yaml|yml) sources: {}""",
-                    jarType,
-                    finalName,
-                    outputDirectory(),
-                    fastJar,
-                    runnerJar(),
-                    nativeRunner(),
+                    application.(properties|yaml|yml) sources: {}""", jarType, finalName, outputDirectory(), fastJar,
+                    runnerJar(), nativeRunner(),
                     sourceNames.stream().collect(Collectors.joining("\n        ", "\n        ", "\n")));
 
             if (getSaveConfigProperties().get()) {

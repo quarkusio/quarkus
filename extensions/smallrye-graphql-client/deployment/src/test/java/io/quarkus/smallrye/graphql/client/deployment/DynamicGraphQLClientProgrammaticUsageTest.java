@@ -26,8 +26,7 @@ public class DynamicGraphQLClientProgrammaticUsageTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestingGraphQLApi.class, Person.class, PersonDto.class)
+            .withApplicationRoot((jar) -> jar.addClasses(TestingGraphQLApi.class, Person.class, PersonDto.class)
                     .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @TestHTTPResource
@@ -35,7 +34,8 @@ public class DynamicGraphQLClientProgrammaticUsageTest {
 
     @Test
     public void performCallSync() throws Exception {
-        try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder().url(url.toString() + "/graphql").build()) {
+        try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder().url(url.toString() + "/graphql")
+                .build()) {
             Document query = document(
                     Operation.operation("PeopleQuery", field("people", field("firstName"), field("lastName"))));
             List<Person> people = client.executeSync(query).getList(Person.class, "people");
@@ -46,11 +46,12 @@ public class DynamicGraphQLClientProgrammaticUsageTest {
 
     @Test
     public void performCallAsync() throws Exception {
-        try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder().url(url.toString() + "/graphql").build()) {
+        try (DynamicGraphQLClient client = DynamicGraphQLClientBuilder.newBuilder().url(url.toString() + "/graphql")
+                .build()) {
             Document query = document(
                     Operation.operation("PeopleQuery", field("people", field("firstName"), field("lastName"))));
-            List<Person> people = client.executeAsync(query)
-                    .await().atMost(Duration.ofSeconds(30)).getList(Person.class, "people");
+            List<Person> people = client.executeAsync(query).await().atMost(Duration.ofSeconds(30))
+                    .getList(Person.class, "people");
             assertEquals("John", people.get(0).getFirstName());
             assertEquals("Arthur", people.get(1).getFirstName());
         }

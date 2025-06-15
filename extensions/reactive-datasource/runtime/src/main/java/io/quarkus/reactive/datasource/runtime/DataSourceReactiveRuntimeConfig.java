@@ -30,8 +30,8 @@ public interface DataSourceReactiveRuntimeConfig {
      * The datasource URLs.
      * <p>
      * If multiple values are set, this datasource will create a pool with a list of servers instead of a single server.
-     * The pool uses round-robin load balancing for server selection during connection establishment.
-     * Note that certain drivers might not accommodate multiple values in this context.
+     * The pool uses round-robin load balancing for server selection during connection establishment. Note that certain
+     * drivers might not accommodate multiple values in this context.
      */
     Optional<List<@WithConverter(TrimmedStringConverter.class) String>> url();
 
@@ -44,11 +44,10 @@ public interface DataSourceReactiveRuntimeConfig {
     /**
      * When a new connection object is created, the pool assigns it an event loop.
      * <p>
-     * When {@code #event-loop-size} is set to a strictly positive value, the pool assigns as many event loops as specified, in
-     * a round-robin fashion.
-     * By default, the number of event loops configured or calculated by Quarkus is used.
-     * If {@code #event-loop-size} is set to zero or a negative value, the pool assigns the current event loop to the new
-     * connection.
+     * When {@code #event-loop-size} is set to a strictly positive value, the pool assigns as many event loops as
+     * specified, in a round-robin fashion. By default, the number of event loops configured or calculated by Quarkus is
+     * used. If {@code #event-loop-size} is set to zero or a negative value, the pool assigns the current event loop to
+     * the new connection.
      */
     OptionalInt eventLoopSize();
 
@@ -113,9 +112,8 @@ public interface DataSourceReactiveRuntimeConfig {
     Duration reconnectInterval();
 
     /**
-     * The hostname verification algorithm to use in case the server's identity should be checked.
-     * Should be {@code HTTPS}, {@code LDAPS} or {@code NONE}.
-     * {@code NONE} is the default value and disables the verification.
+     * The hostname verification algorithm to use in case the server's identity should be checked. Should be
+     * {@code HTTPS}, {@code LDAPS} or {@code NONE}. {@code NONE} is the default value and disables the verification.
      */
     @WithDefault("NONE")
     String hostnameVerificationAlgorithm();
@@ -127,16 +125,15 @@ public interface DataSourceReactiveRuntimeConfig {
     Optional<Duration> idleTimeout();
 
     /**
-     * The maximum time a connection remains in the pool, after which it will be closed
-     * upon return and replaced as necessary.
+     * The maximum time a connection remains in the pool, after which it will be closed upon return and replaced as
+     * necessary.
      */
     @ConfigDocDefault("no timeout")
     Optional<Duration> maxLifetime();
 
     /**
-     * Set to true to share the pool among datasources.
-     * There can be multiple shared pools distinguished by <name>name</name>, when no specific name is set,
-     * the <code>__vertx.DEFAULT</code> name is used.
+     * Set to true to share the pool among datasources. There can be multiple shared pools distinguished by
+     * <name>name</name>, when no specific name is set, the <code>__vertx.DEFAULT</code> name is used.
      */
     @WithDefault("false")
     boolean shared();
@@ -147,8 +144,8 @@ public interface DataSourceReactiveRuntimeConfig {
     Optional<String> name();
 
     /**
-     * Other unspecified properties to be passed through the Reactive SQL Client directly to the database when new connections
-     * are initiated.
+     * Other unspecified properties to be passed through the Reactive SQL Client directly to the database when new
+     * connections are initiated.
      */
     @ConfigDocMapKey("property-key")
     Map<String, String> additionalProperties();

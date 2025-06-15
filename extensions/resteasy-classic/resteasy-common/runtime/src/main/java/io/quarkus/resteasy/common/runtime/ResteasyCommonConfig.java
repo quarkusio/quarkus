@@ -26,8 +26,7 @@ public interface ResteasyCommonConfig {
         /**
          * Maximum deflated file bytes size, up to {@code Long.MAX_VALUE} bytes.
          * <p>
-         * If the limit is exceeded, Resteasy will return Response
-         * with status 413("Request Entity Too Large")
+         * If the limit is exceeded, Resteasy will return Response with status 413("Request Entity Too Large")
          */
         @WithDefault("10M")
         MemorySize maxInput();

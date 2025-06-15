@@ -11,8 +11,8 @@ import io.vertx.core.Handler;
 import io.vertx.ext.web.RoutingContext;
 
 /**
- * Filter used to propagate WebSocket subprotocols as the WebSocket opening handshake headers.
- * This class is not part of public API and can change at any time.
+ * Filter used to propagate WebSocket subprotocols as the WebSocket opening handshake headers. This class is not part of
+ * public API and can change at any time.
  */
 public final class WebSocketHeaderPropagationHandler implements Handler<RoutingContext> {
 

@@ -71,41 +71,39 @@ public class StartupActionImpl implements StartupAction {
         QuarkusClassLoader baseClassLoader = curatedApplication.getOrCreateBaseRuntimeClassLoader();
         QuarkusClassLoader runtimeClassLoader;
 
-        //so we have some differences between dev and test mode here.
-        //test mode only has a single class loader, while dev uses a disposable runtime class loader
-        //that is discarded between restarts
+        // so we have some differences between dev and test mode here.
+        // test mode only has a single class loader, while dev uses a disposable runtime class loader
+        // that is discarded between restarts
         Map<String, byte[]> resources = new HashMap<>(extractGeneratedResources(buildResult, true));
         if (curatedApplication.isFlatClassPath()) {
             resources.putAll(extractGeneratedResources(buildResult, false));
             baseClassLoader.reset(resources, transformedClasses);
             runtimeClassLoader = baseClassLoader;
         } else {
-            baseClassLoader.reset(extractGeneratedResources(buildResult, false),
-                    transformedClasses);
+            baseClassLoader.reset(extractGeneratedResources(buildResult, false), transformedClasses);
             // TODO Need to do recreations in JUnitTestRunner for dev mode case
-            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(
-                    resources, transformedClasses);
+            runtimeClassLoader = curatedApplication.createRuntimeClassLoader(resources, transformedClasses);
         }
         this.runtimeClassLoader = runtimeClassLoader;
         runtimeClassLoader.setStartupAction(this);
     }
 
     /**
-     * Runs the application by running the main method of the main class. As this is a blocking method a new
-     * thread is created to run this task.
+     * Runs the application by running the main method of the main class. As this is a blocking method a new thread is
+     * created to run this task.
      * <p>
-     * Before this method is called an appropriate exit handler will likely need to
-     * be set in {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)}
-     * of the JVM will exit when the app stops.
+     * Before this method is called an appropriate exit handler will likely need to be set in
+     * {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)} of the JVM will exit
+     * when the app stops.
      */
     public RunningQuarkusApplication runMainClass(String... args) throws Exception {
 
-        //first we hack around class loading in the fork join pool
+        // first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
-        //this clears any old state, and gets ready to start again
+        // this clears any old state, and gets ready to start again
         ApplicationStateNotification.reset();
-        //we have our class loaders
+        // we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
         final String className = mainClassName;
@@ -121,7 +119,7 @@ public class StartupActionImpl implements StartupAction {
                         start.invoke(null, (Object) (args == null ? new String[0] : args));
                     } catch (Throwable e) {
                         log.error("Error running Quarkus", e);
-                        //this can happen if we did not make it to application init
+                        // this can happen if we did not make it to application init
                         if (ApplicationStateNotification.getState() == ApplicationStateNotification.State.INITIAL) {
                             ApplicationStateNotification.notifyStartupFailed(e);
                         }
@@ -197,8 +195,8 @@ public class StartupActionImpl implements StartupAction {
         } finally {
             ForkJoinClassLoading.setForkJoinClassLoader(ClassLoader.getSystemClassLoader());
             if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST) {
-                //for tests, we just always shut down the curated application, as it is only used once
-                //dev mode might be about to restart, so we leave it
+                // for tests, we just always shut down the curated application, as it is only used once
+                // dev mode might be about to restart, so we leave it
                 curatedApplication.close();
             }
         }
@@ -206,19 +204,22 @@ public class StartupActionImpl implements StartupAction {
 
     @Override
     public int runMainClassBlocking(String... args) throws Exception {
-        //first we hack around class loading in the fork join pool
+        // first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
-        //we have our class loaders
+        // we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         Thread.currentThread().setContextClassLoader(runtimeClassLoader);
         final String className = mainClassName;
         try {
             AtomicInteger result = new AtomicInteger();
-            Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true, runtimeClassLoader);
+            Class<?> lifecycleManager = Class.forName(ApplicationLifecycleManager.class.getName(), true,
+                    runtimeClassLoader);
             AtomicBoolean alreadyStarted = new AtomicBoolean();
-            Method setDefaultExitCodeHandler = lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler", Consumer.class);
-            Method setAlreadyStartedCallback = lifecycleManager.getDeclaredMethod("setAlreadyStartedCallback", Consumer.class);
+            Method setDefaultExitCodeHandler = lifecycleManager.getDeclaredMethod("setDefaultExitCodeHandler",
+                    Consumer.class);
+            Method setAlreadyStartedCallback = lifecycleManager.getDeclaredMethod("setAlreadyStartedCallback",
+                    Consumer.class);
 
             try {
                 setDefaultExitCodeHandler.invoke(null, (Consumer<Integer>) result::set);
@@ -242,8 +243,8 @@ public class StartupActionImpl implements StartupAction {
                 latch.await();
 
                 if (alreadyStarted.get()) {
-                    //quarkus was not actually started by the main method
-                    //just return
+                    // quarkus was not actually started by the main method
+                    // just return
                     return 0;
                 }
                 return result.get();
@@ -280,10 +281,10 @@ public class StartupActionImpl implements StartupAction {
      * Runs the application, and returns a handle that can be used to shut it down.
      */
     public RunningQuarkusApplication run(String... args) throws Exception {
-        //first we hack around class loading in the fork join pool
+        // first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);
 
-        //we have our class loaders
+        // we have our class loaders
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         try {
             Thread.currentThread().setContextClassLoader(runtimeClassLoader);
@@ -293,7 +294,8 @@ public class StartupActionImpl implements StartupAction {
                 // force init here
                 appClass = Class.forName(className, true, runtimeClassLoader);
             } catch (Throwable t) {
-                // todo: dev mode expects run time config to be available immediately even if static init didn't complete.
+                // todo: dev mode expects run time config to be available immediately even if static init didn't
+                // complete.
                 try {
                     final Class<?> configClass = Class.forName(RunTimeConfigurationGenerator.CONFIG_CLASS_NAME, true,
                             runtimeClassLoader);
@@ -341,12 +343,13 @@ public class StartupActionImpl implements StartupAction {
                             }
                         }
                         // This will read the state of the curated application at the time of closing;
-                        // If the caller of close knows that the 'next' application shares a curated application, it can set eligible for reuse to true
+                        // If the caller of close knows that the 'next' application shares a curated application, it can
+                        // set eligible for reuse to true
                         if (!curatedApplication.isEligibleForReuse()) {
                             if (curatedApplication.getQuarkusBootstrap().getMode() == QuarkusBootstrap.Mode.TEST
                                     && !curatedApplication.getQuarkusBootstrap().isAuxiliaryApplication()) {
-                                //for tests, we just always shut down the curated application, as it is only used once
-                                //dev mode might be about to restart, so we leave it
+                                // for tests, we just always shut down the curated application, as it is only used once
+                                // dev mode might be about to restart, so we leave it
                                 curatedApplication.close();
                             }
                         }

@@ -322,12 +322,14 @@ public class HeaderUtil {
     /**
      * Extracts a quoted value from a header that has a given key. For instance if the header is
      * <p>
-     * content-disposition=form-data; name="my field"
-     * and the key is name then "my field" will be returned without the quotes.
+     * content-disposition=form-data; name="my field" and the key is name then "my field" will be returned without the
+     * quotes.
      *
+     * @param header
+     *        The header
+     * @param key
+     *        The key that identifies the token to extract
      *
-     * @param header The header
-     * @param key The key that identifies the token to extract
      * @return The token, or null if it was not found
      */
     public static String extractQuotedValueFromHeader(final String header, final String key) {
@@ -336,8 +338,8 @@ public class HeaderUtil {
         int pos = -1;
         boolean whiteSpace = true;
         boolean inQuotes = false;
-        for (int i = 0; i < header.length() - 1; ++i) { //-1 because we need room for the = at the end
-            //TODO: a more efficient matching algorithm
+        for (int i = 0; i < header.length() - 1; ++i) { // -1 because we need room for the = at the end
+            // TODO: a more efficient matching algorithm
             char c = header.charAt(i);
             if (inQuotes) {
                 if (c == '"') {
@@ -383,7 +385,7 @@ public class HeaderUtil {
             return header.substring(start, end);
 
         } else {
-            //no quotes
+            // no quotes
             for (end = start; end < header.length(); ++end) {
                 char c = header.charAt(end);
                 if (c == ' ' || c == '\t' || c == ';') {
@@ -397,12 +399,15 @@ public class HeaderUtil {
     /**
      * Extracts a quoted value from a header that has a given key. For instance if the header is
      * <p>
-     * content-disposition=form-data; filename*="utf-8''test.txt"
-     * and the key is filename* then "test.txt" will be returned after extracting character set and language
-     * (following RFC 2231) and performing URL decoding to the value using the specified encoding
+     * content-disposition=form-data; filename*="utf-8''test.txt" and the key is filename* then "test.txt" will be
+     * returned after extracting character set and language (following RFC 2231) and performing URL decoding to the
+     * value using the specified encoding
      *
-     * @param header The header
-     * @param key The key that identifies the token to extract
+     * @param header
+     *        The header
+     * @param key
+     *        The key that identifies the token to extract
+     *
      * @return The token, or null if it was not found
      */
     public static String extractQuotedValueFromHeaderWithEncoding(final String header, final String key) {

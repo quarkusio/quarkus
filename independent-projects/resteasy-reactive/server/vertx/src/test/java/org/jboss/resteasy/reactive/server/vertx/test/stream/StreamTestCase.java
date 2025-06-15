@@ -41,20 +41,18 @@ public class StreamTestCase {
 
     @RegisterExtension
     static final ResteasyReactiveUnitTest config = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(StreamResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(StreamResource.class));
 
     @Test
     public void testStreamingDoesNotCloseConnection() throws Exception {
         Vertx v = Vertx.vertx();
         try {
             final CompletableFuture<Object> latch = new CompletableFuture<>();
-            HttpClient client = v
-                    .createHttpClient(
-                            new HttpClientOptions().setKeepAlive(true).setIdleTimeout(10).setIdleTimeoutUnit(TimeUnit.SECONDS));
+            HttpClient client = v.createHttpClient(
+                    new HttpClientOptions().setKeepAlive(true).setIdleTimeout(10).setIdleTimeoutUnit(TimeUnit.SECONDS));
             sendRequest(latch, client, () -> sendRequest(latch, client, () -> latch.complete(null)));
 
-            //should not have been closed
+            // should not have been closed
             latch.get();
 
         } finally {
@@ -64,31 +62,27 @@ public class StreamTestCase {
 
     private void sendRequest(CompletableFuture<Object> latch, HttpClient client, Runnable runnable) {
         Handler<Throwable> failure = latch::completeExceptionally;
-        client.request(HttpMethod.GET, RestAssured.port, "localhost", "/stream/text/stream")
-                .onFailure(failure)
+        client.request(HttpMethod.GET, RestAssured.port, "localhost", "/stream/text/stream").onFailure(failure)
                 .onSuccess(new Handler<HttpClientRequest>() {
                     @Override
                     public void handle(HttpClientRequest event) {
                         event.end();
-                        event.connect().onFailure(failure)
-                                .onSuccess(response -> {
-                                    response.request().connection().closeHandler(new Handler<Void>() {
-                                        @Override
-                                        public void handle(Void event) {
-                                            latch.completeExceptionally(new Throwable("Connection was closed"));
-                                        }
-                                    });
-                                    response.body().onFailure(failure)
-                                            .onSuccess(buffer -> {
-                                                try {
-                                                    Assertions.assertEquals("foobar",
-                                                            buffer.toString(StandardCharsets.US_ASCII));
-                                                } catch (Throwable t) {
-                                                    latch.completeExceptionally(t);
-                                                }
-                                                runnable.run();
-                                            });
-                                });
+                        event.connect().onFailure(failure).onSuccess(response -> {
+                            response.request().connection().closeHandler(new Handler<Void>() {
+                                @Override
+                                public void handle(Void event) {
+                                    latch.completeExceptionally(new Throwable("Connection was closed"));
+                                }
+                            });
+                            response.body().onFailure(failure).onSuccess(buffer -> {
+                                try {
+                                    Assertions.assertEquals("foobar", buffer.toString(StandardCharsets.US_ASCII));
+                                } catch (Throwable t) {
+                                    latch.completeExceptionally(t);
+                                }
+                                runnable.run();
+                            });
+                        });
 
                     }
                 });
@@ -96,53 +90,20 @@ public class StreamTestCase {
 
     @Test
     public void testStreaming() throws Exception {
-        RestAssured.get("/stream/text/stream")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/text/stream/publisher")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/text/stream/legacy-publisher")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/text/collect")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/text/stream").then().statusCode(200).body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/text/stream/publisher").then().statusCode(200).body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/text/stream/legacy-publisher").then().statusCode(200).body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/text/collect").then().statusCode(200).body(Matchers.equalTo("foobar"));
 
-        RestAssured.get("/stream/byte-arrays/stream")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/byte-arrays/collect")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/byte-arrays/stream").then().statusCode(200).body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/byte-arrays/collect").then().statusCode(200).body(Matchers.equalTo("foobar"));
 
-        RestAssured.get("/stream/char-arrays/stream")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/char-arrays/stream/publisher")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/char-arrays/collect")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/char-arrays/stream").then().statusCode(200).body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/char-arrays/stream/publisher").then().statusCode(200).body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/char-arrays/collect").then().statusCode(200).body(Matchers.equalTo("foobar"));
 
-        RestAssured.get("/stream/buffer/stream")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
-        RestAssured.get("/stream/buffer/collect")
-                .then()
-                .statusCode(200)
-                .body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/buffer/stream").then().statusCode(200).body(Matchers.equalTo("foobar"));
+        RestAssured.get("/stream/buffer/collect").then().statusCode(200).body(Matchers.equalTo("foobar"));
     }
 
     @Test

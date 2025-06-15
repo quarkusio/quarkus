@@ -18,14 +18,14 @@ public interface ComposeDevServicesBuildTimeConfig {
     boolean enabled();
 
     /**
-     * List of file paths relative to the project root for Compose dev service configuration,
-     * if not provided will look for compose files in the project root
+     * List of file paths relative to the project root for Compose dev service configuration, if not provided will look
+     * for compose files in the project root
      */
     Optional<List<String>> files();
 
     /**
-     * Name of the compose project, used to discover running containers,
-     * if not provided a project name will be generated
+     * Name of the compose project, used to discover running containers, if not provided a project name will be
+     * generated
      */
     Optional<String> projectName();
 
@@ -97,9 +97,8 @@ public interface ComposeDevServicesBuildTimeConfig {
     /**
      * Whether to build images before starting containers.
      * <p>
-     * When not provided, Compose images are built per-service `pull-policy`.
-     * When `true`, forces build of all images before starting containers.
-     * When `false`, skips re-building images before starting containers.
+     * When not provided, Compose images are built per-service `pull-policy`. When `true`, forces build of all images
+     * before starting containers. When `false`, skips re-building images before starting containers.
      */
     Optional<Boolean> build();
 
@@ -111,7 +110,6 @@ public interface ComposeDevServicesBuildTimeConfig {
 
     /**
      * Timeout for stopping services, after the timeout the services are forcefully stopped,
-     *
      */
     @WithDefault("1s")
     Duration stopTimeout();

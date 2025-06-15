@@ -51,8 +51,8 @@ public class DevModeSupportConnectorFactoryInterceptor {
         }
         if (ctx.getMethod().getName().equals("getPublisher")) {
             Flow.Publisher<Message<?>> result = (Flow.Publisher<Message<?>>) ctx.proceed();
-            return Multi.createFrom().publisher(result)
-                    .onItem().transformToUniAndConcatenate(msg -> Uni.createFrom().emitter(e -> {
+            return Multi.createFrom().publisher(result).onItem()
+                    .transformToUniAndConcatenate(msg -> Uni.createFrom().emitter(e -> {
                         onMessage.get().whenComplete((restarted, error) -> {
                             if (!restarted) {
                                 // if restarted, a new stream is already running,

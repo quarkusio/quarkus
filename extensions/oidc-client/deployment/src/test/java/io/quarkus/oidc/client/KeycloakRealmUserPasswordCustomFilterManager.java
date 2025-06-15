@@ -32,14 +32,9 @@ public class KeycloakRealmUserPasswordCustomFilterManager implements QuarkusTest
             realm.getClients().add(createClient("quarkus-app"));
             realm.getUsers().add(createUser("bob", "user"));
 
-            RestAssured
-                    .given()
-                    .auth().oauth2(getAdminAccessToken())
-                    .contentType("application/json")
-                    .body(JsonSerialization.writeValueAsBytes(realm))
-                    .when()
-                    .post(KEYCLOAK_SERVER_URL + "/admin/realms").then()
-                    .statusCode(201);
+            RestAssured.given().auth().oauth2(getAdminAccessToken()).contentType("application/json")
+                    .body(JsonSerialization.writeValueAsBytes(realm)).when().post(KEYCLOAK_SERVER_URL + "/admin/realms")
+                    .then().statusCode(201);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -47,13 +42,8 @@ public class KeycloakRealmUserPasswordCustomFilterManager implements QuarkusTest
     }
 
     private static String getAdminAccessToken() {
-        return RestAssured
-                .given()
-                .param("grant_type", "password")
-                .param("username", "admin")
-                .param("password", "admin")
-                .param("client_id", "admin-cli")
-                .when()
+        return RestAssured.given().param("grant_type", "password").param("username", "admin").param("password", "admin")
+                .param("client_id", "admin-cli").when()
                 .post(KEYCLOAK_SERVER_URL + "/realms/master/protocol/openid-connect/token")
                 .as(AccessTokenResponse.class).getToken();
     }
@@ -115,10 +105,7 @@ public class KeycloakRealmUserPasswordCustomFilterManager implements QuarkusTest
 
     @Override
     public void stop() {
-        RestAssured
-                .given()
-                .auth().oauth2(getAdminAccessToken())
-                .when()
+        RestAssured.given().auth().oauth2(getAdminAccessToken()).when()
                 .delete(KEYCLOAK_SERVER_URL + "/admin/realms/" + KEYCLOAK_REALM).thenReturn().prettyPrint();
     }
 }

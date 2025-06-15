@@ -31,10 +31,9 @@ import io.vertx.core.buffer.Buffer;
 public class ClientEndpointTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(ServerEndpoint.class, ClientEndpoint.class);
+    });
 
     @Inject
     WebSocketConnector<ClientEndpoint> connector;
@@ -45,11 +44,9 @@ public class ClientEndpointTest {
     @Test
     void testClient() throws InterruptedException {
         Buffer ping = Buffer.buffer("ping");
-        WebSocketClientConnection connection = connector
-                .baseUri(uri)
+        WebSocketClientConnection connection = connector.baseUri(uri)
                 // The value will be encoded automatically
-                .pathParam("name", "Lu=")
-                .connectAndAwait();
+                .pathParam("name", "Lu=").connectAndAwait();
         assertEquals("Lu=", connection.pathParam("name"));
         connection.sendPingAndAwait(ping);
         connection.sendTextAndAwait("Hi!");

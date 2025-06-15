@@ -18,9 +18,9 @@ public class UserCountryNotSetValidatorLocaleTest {
     ValidatorFactory validatorFactory;
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class).addClasses(Bean.class)
-            .addAsResource(new StringAsset("foo=bar"), "application.properties"))
+    static final QuarkusUnitTest test = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(Bean.class)
+                    .addAsResource(new StringAsset("foo=bar"), "application.properties"))
             .setBeforeAllCustomizer(new Runnable() {
                 @Override
                 public void run() {

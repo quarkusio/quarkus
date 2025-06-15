@@ -48,8 +48,7 @@ import io.quarkus.test.common.http.TestHTTPResource;
 public class RestClientOpenTelemetryTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
-            .addPackage(TestSpanExporter.class.getPackage())
-            .addClasses(SemconvResolver.class)
+            .addPackage(TestSpanExporter.class.getPackage()).addClasses(SemconvResolver.class)
             .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
                     "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
             .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
@@ -116,11 +115,8 @@ public class RestClientOpenTelemetryTest {
     @Test
     void urlWithoutAuthentication() {
         try (Client client = ClientBuilder.newClient()) {
-            WebTarget target = client
-                    .target(UriBuilder.fromUri(uri)
-                            .userInfo("username:password")
-                            .path("hello")
-                            .queryParam("query", "1"));
+            WebTarget target = client.target(
+                    UriBuilder.fromUri(uri).userInfo("username:password").path("hello").queryParam("query", "1"));
             Response response = target.request().get();
             assertEquals(response.getStatus(), HTTP_OK);
         }

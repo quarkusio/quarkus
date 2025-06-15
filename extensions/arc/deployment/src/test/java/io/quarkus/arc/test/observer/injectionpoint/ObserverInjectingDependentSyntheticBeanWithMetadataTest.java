@@ -36,7 +36,8 @@ public class ObserverInjectingDependentSyntheticBeanWithMetadataTest {
     public static class MyBean {
 
         void onStart(@Observes StartupEvent event, MyConfig config) {
-            // A @Dependent synthetic bean is registered for MyConfig, and it attempts to obtain InjectionPoint in its create() method
+            // A @Dependent synthetic bean is registered for MyConfig, and it attempts to obtain InjectionPoint in its
+            // create() method
             assertEquals(42, config.value1());
             assertEquals("baz", config.value2());
         }

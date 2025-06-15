@@ -37,76 +37,66 @@ public class AnnotationTransformationTest {
     private static final DotName MY_QUERY = DotName.createSimple(MyQuery.class.getName());
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .addBuildChainCustomizer(new Consumer<>() {
+    static QuarkusUnitTest test = new QuarkusUnitTest().addBuildChainCustomizer(new Consumer<>() {
+        @Override
+        public void accept(BuildChainBuilder buildChainBuilder) {
+            buildChainBuilder.addBuildStep(new BuildStep() {
                 @Override
-                public void accept(BuildChainBuilder buildChainBuilder) {
-                    buildChainBuilder.addBuildStep(new BuildStep() {
+                public void execute(BuildContext context) {
+                    context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
                         @Override
-                        public void execute(BuildContext context) {
-                            context.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
-                                @Override
-                                public boolean appliesTo(AnnotationTarget.Kind kind) {
-                                    return kind == AnnotationTarget.Kind.METHOD;
-                                }
-
-                                @Override
-                                public void transform(TransformationContext transformationContext) {
-                                    AnnotationTarget target = transformationContext.getTarget();
-                                    if (target.kind() != AnnotationTarget.Kind.METHOD) {
-                                        return;
-                                    }
-                                    MethodInfo methodInfo = target.asMethod();
-                                    Transformation transform = transformationContext.transform();
-                                    boolean complete = false;
-
-                                    if (methodInfo.hasAnnotation(MY_GET)) {
-                                        complete = true;
-                                        transform.add(GET);
-                                    }
-
-                                    for (AnnotationInstance annotation : methodInfo.annotations()) {
-                                        if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
-                                            if (annotation.name().equals(MY_QUERY)) {
-                                                complete = true;
-                                                AnnotationValue annotationValue = annotation.value();
-                                                transform.add(create(QUERY_PARAM, annotation.target(),
-                                                        Collections.singletonList(annotationValue)));
-                                            }
-                                        }
-                                    }
-
-                                    if (complete) {
-                                        transform.done();
-                                    }
-                                }
-                            }));
+                        public boolean appliesTo(AnnotationTarget.Kind kind) {
+                            return kind == AnnotationTarget.Kind.METHOD;
                         }
-                    }).produces(AnnotationsTransformerBuildItem.class).build();
+
+                        @Override
+                        public void transform(TransformationContext transformationContext) {
+                            AnnotationTarget target = transformationContext.getTarget();
+                            if (target.kind() != AnnotationTarget.Kind.METHOD) {
+                                return;
+                            }
+                            MethodInfo methodInfo = target.asMethod();
+                            Transformation transform = transformationContext.transform();
+                            boolean complete = false;
+
+                            if (methodInfo.hasAnnotation(MY_GET)) {
+                                complete = true;
+                                transform.add(GET);
+                            }
+
+                            for (AnnotationInstance annotation : methodInfo.annotations()) {
+                                if (annotation.target().kind() == AnnotationTarget.Kind.METHOD_PARAMETER) {
+                                    if (annotation.name().equals(MY_QUERY)) {
+                                        complete = true;
+                                        AnnotationValue annotationValue = annotation.value();
+                                        transform.add(create(QUERY_PARAM, annotation.target(),
+                                                Collections.singletonList(annotationValue)));
+                                    }
+                                }
+                            }
+
+                            if (complete) {
+                                transform.done();
+                            }
+                        }
+                    }));
                 }
-            })
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, MyGet.class, MyQuery.class));
+            }).produces(AnnotationsTransformerBuildItem.class).build();
+        }
+    }).withApplicationRoot((jar) -> jar.addClasses(TestResource.class, MyGet.class, MyQuery.class));
 
     @Test
     public void testNoPath() {
-        get("/test")
-                .then().statusCode(200)
-                .and().body(Matchers.equalTo("no path"))
-                .and().contentType("text/plain");
+        get("/test").then().statusCode(200).and().body(Matchers.equalTo("no path")).and().contentType("text/plain");
     }
 
     @Test
     public void testHello() {
-        get("/test/hello")
-                .then().statusCode(200)
-                .and().body(Matchers.equalTo("hello world"))
-                .and().contentType("text/plain");
+        get("/test/hello").then().statusCode(200).and().body(Matchers.equalTo("hello world")).and()
+                .contentType("text/plain");
 
-        get("/test/hello?nm=foo")
-                .then().statusCode(200)
-                .and().body(Matchers.equalTo("hello foo"))
-                .and().contentType("text/plain");
+        get("/test/hello?nm=foo").then().statusCode(200).and().body(Matchers.equalTo("hello foo")).and()
+                .contentType("text/plain");
     }
 
     @Path("test")

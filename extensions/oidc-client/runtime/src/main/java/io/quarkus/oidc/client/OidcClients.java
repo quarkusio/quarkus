@@ -20,7 +20,9 @@ public interface OidcClients extends Closeable {
     /**
      * Returns an {@link OidcClient} with a specific id.
      *
-     * @param id {@link OidcClient} id
+     * @param id
+     *        {@link OidcClient} id
+     *
      * @return {@link OidcClient}
      */
     OidcClient getClient(String id);
@@ -28,7 +30,9 @@ public interface OidcClients extends Closeable {
     /**
      * Returns a new {@link OidcClient}.
      *
-     * @param clientConfig {@link OidcClientConfig} new client configuration
+     * @param clientConfig
+     *        {@link OidcClientConfig} new client configuration
+     *
      * @return Uni<OidcClient>
      */
     Uni<OidcClient> newClient(OidcClientConfig clientConfig);

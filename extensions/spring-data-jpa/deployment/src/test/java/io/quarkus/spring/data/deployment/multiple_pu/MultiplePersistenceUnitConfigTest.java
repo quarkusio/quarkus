@@ -25,12 +25,10 @@ import io.restassured.RestAssured;
 public class MultiplePersistenceUnitConfigTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FirstEntity.class, SecondEntity.class,
-                            FirstEntityRepository.class, SecondEntityRepository.class,
-                            PanacheTestResource.class)
-                    .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(FirstEntity.class, SecondEntity.class, FirstEntityRepository.class,
+                    SecondEntityRepository.class, PanacheTestResource.class)
+            .addAsResource("application-multiple-persistence-units.properties", "application.properties"));
 
     @Inject
     private FirstEntityRepository repository1;

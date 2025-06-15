@@ -23,9 +23,7 @@ public class ReactiveTransactionalSearchCommandsImpl<K> extends AbstractTransact
     @Override
     public Uni<Void> ft_list() {
         tx.enqueue(res -> reactive.marshaller.decodeAsList(res, reactive.keyType));
-        return this.reactive._ft_list()
-                .invoke(this::queuedOrDiscard)
-                .replaceWithVoid();
+        return this.reactive._ft_list().invoke(this::queuedOrDiscard).replaceWithVoid();
     }
 
     @Override

@@ -47,8 +47,8 @@ public class DependencyTreeMojo extends AbstractMojo {
     private List<RemoteRepository> repos;
 
     /**
-     * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependency tree should be built.
-     * {@code io.quarkus.runtime.LaunchMode.NORMAL} is the default.
+     * Target launch mode corresponding to {@link io.quarkus.runtime.LaunchMode} for which the dependency tree should be
+     * built. {@code io.quarkus.runtime.LaunchMode.NORMAL} is the default.
      */
     @Parameter(property = "mode", defaultValue = "prod")
     String mode;
@@ -56,8 +56,8 @@ public class DependencyTreeMojo extends AbstractMojo {
     /**
      * INCUBATING option, enabled with {@code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
      * <p>
-     * Whether to log dependency properties, such as on which classpath they belong, whether they are hot-reloadable in dev
-     * mode, etc.
+     * Whether to log dependency properties, such as on which classpath they belong, whether they are hot-reloadable in
+     * dev mode, etc.
      */
     @Parameter(property = "verbose")
     boolean verbose;
@@ -65,15 +65,15 @@ public class DependencyTreeMojo extends AbstractMojo {
     /**
      * INCUBATING option, enabled with {@code -Dquarkus.bootstrap.incubating-model-resolver} system or project property.
      * <p>
-     * Whether to log all dependencies of each dependency node in a tree, adding {@code [+]} suffix
-     * to those whose dependencies are not expanded.
+     * Whether to log all dependencies of each dependency node in a tree, adding {@code [+]} suffix to those whose
+     * dependencies are not expanded.
      */
     @Parameter(property = "graph")
     boolean graph;
 
     /**
-     * If specified, this parameter will cause the dependency tree to be written to the path specified, instead of writing to
-     * the console.
+     * If specified, this parameter will cause the dependency tree to be written to the path specified, instead of
+     * writing to the console.
      */
     @Parameter(property = "outputFile", required = false)
     File outputFile;
@@ -139,8 +139,7 @@ public class DependencyTreeMojo extends AbstractMojo {
                 project.getVersion());
         final BootstrapAppModelResolver modelResolver;
         try {
-            modelResolver = new BootstrapAppModelResolver(resolver())
-                    .setRuntimeModelOnly(runtimeOnly);
+            modelResolver = new BootstrapAppModelResolver(resolver()).setRuntimeModelOnly(runtimeOnly);
             if (mode != null) {
                 if (mode.equalsIgnoreCase("test")) {
                     modelResolver.setTest(true);
@@ -153,12 +152,10 @@ public class DependencyTreeMojo extends AbstractMojo {
                             "Parameter 'mode' was set to '" + mode + "' while expected one of 'dev', 'test' or 'prod'");
                 }
             }
-            modelResolver.setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(project.getProperties()));
-            modelResolver.setDepLogConfig(DependencyLoggingConfig.builder()
-                    .setMessageConsumer(log)
-                    .setVerbose(verbose)
-                    .setGraph(graph)
-                    .build());
+            modelResolver
+                    .setLegacyModelResolver(BootstrapAppModelResolver.isLegacyModelResolver(project.getProperties()));
+            modelResolver.setDepLogConfig(DependencyLoggingConfig.builder().setMessageConsumer(log).setVerbose(verbose)
+                    .setGraph(graph).build());
             modelResolver.resolveModel(appArtifact);
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to resolve application model " + appArtifact + " dependencies", e);
@@ -166,14 +163,14 @@ public class DependencyTreeMojo extends AbstractMojo {
     }
 
     protected MavenArtifactResolver resolver() {
-        return resolver == null
-                ? resolver = workspaceProvider.createArtifactResolver(BootstrapMavenContext.config()
-                        .setUserSettings(session.getRequest().getUserSettingsFile())
-                        // The system needs to be initialized with the bootstrap model builder to properly interpolate system properties set on the command line
+        return resolver == null ? resolver = workspaceProvider.createArtifactResolver(
+                BootstrapMavenContext.config().setUserSettings(session.getRequest().getUserSettingsFile())
+                        // The system needs to be initialized with the bootstrap model builder to properly interpolate
+                        // system properties set on the command line
                         // e.g. -Dquarkus.platform.version=xxx
-                        //.setRepositorySystem(repoSystem)
+                        // .setRepositorySystem(repoSystem)
                         // The session should be initialized with the loaded workspace
-                        //.setRepositorySystemSession(repoSession)
+                        // .setRepositorySystemSession(repoSession)
                         .setRemoteRepositories(repos)
                         // To support multi-module projects that haven't been installed
                         .setPreferPomsFromWorkspace(true))

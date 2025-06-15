@@ -27,8 +27,7 @@ public class RouteConverter {
 
         builder = builder.handler(item.getHandler()).handlerType(HandlerType.valueOf(item.getHandlerType().name()));
         if (item.isDisplayOnNotFoundPage()) {
-            builder = builder
-                    .displayOnNotFoundPage(item.getNotFoundPageTitle());
+            builder = builder.displayOnNotFoundPage(item.getNotFoundPageTitle());
         }
 
         if (item.hasOrder()) {

@@ -70,8 +70,9 @@ public class FirstResource {
     }
 
     @ServerExceptionMapper(UniException.class)
-    public Uni<Response> handleUniException(UniException e, UriInfo uriInfo, SimpleResourceInfo simplifiedResourceInfo) {
-        return Uni.createFrom().item(
-                () -> Response.status(412).entity(uriInfo.getPath() + "->" + simplifiedResourceInfo.getMethodName()).build());
+    public Uni<Response> handleUniException(UniException e, UriInfo uriInfo,
+            SimpleResourceInfo simplifiedResourceInfo) {
+        return Uni.createFrom().item(() -> Response.status(412)
+                .entity(uriInfo.getPath() + "->" + simplifiedResourceInfo.getMethodName()).build());
     }
 }

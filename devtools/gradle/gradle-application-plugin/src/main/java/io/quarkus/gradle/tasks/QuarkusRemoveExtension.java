@@ -33,15 +33,10 @@ public abstract class QuarkusRemoveExtension extends QuarkusPlatformTask {
 
     @TaskAction
     public void removeExtension() {
-        Set<String> extensionsSet = getExtensionsToRemove()
-                .stream()
-                .flatMap(ext -> stream(ext.split(",")))
-                .map(String::trim)
-                .collect(toSet());
+        Set<String> extensionsSet = getExtensionsToRemove().stream().flatMap(ext -> stream(ext.split(",")))
+                .map(String::trim).collect(toSet());
         try {
-            new RemoveExtensions(getQuarkusProject(true))
-                    .extensions(extensionsSet)
-                    .execute();
+            new RemoveExtensions(getQuarkusProject(true)).extensions(extensionsSet).execute();
         } catch (Exception e) {
             throw new GradleException("Failed to remove extensions " + getExtensionsToRemove(), e);
         }

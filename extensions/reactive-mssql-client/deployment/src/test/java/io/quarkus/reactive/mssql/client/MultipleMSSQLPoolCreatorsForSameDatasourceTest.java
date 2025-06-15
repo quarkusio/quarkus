@@ -15,10 +15,8 @@ public class MultipleMSSQLPoolCreatorsForSameDatasourceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(CustomCredentialsProvider.class)
-                    .addClass(CredentialsTestResource.class)
-                    .addClass(LocalhostMSSQLPoolCreator.class)
+            .withApplicationRoot((jar) -> jar.addClass(CustomCredentialsProvider.class)
+                    .addClass(CredentialsTestResource.class).addClass(LocalhostMSSQLPoolCreator.class)
                     .addClass(AnotherMSSQLPoolCreator.class)
                     .addAsResource("application-credentials-with-erroneous-url.properties", "application.properties"))
             .setExpectedException(DeploymentException.class);

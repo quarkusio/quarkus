@@ -5,8 +5,7 @@ import io.opentelemetry.context.ContextStorage;
 import io.opentelemetry.context.Scope;
 
 /**
- * A Context Storage that wraps the default OpenTelemetry ContextStorage and
- * adds MDC functionality.
+ * A Context Storage that wraps the default OpenTelemetry ContextStorage and adds MDC functionality.
  */
 enum MDCEnabledContextStorage implements ContextStorage {
     INSTANCE;

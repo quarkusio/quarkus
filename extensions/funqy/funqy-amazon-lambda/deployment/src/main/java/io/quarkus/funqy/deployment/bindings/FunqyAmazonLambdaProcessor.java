@@ -24,30 +24,20 @@ public class FunqyAmazonLambdaProcessor {
     public void process(BuildProducer<ReflectiveClassBuildItem> reflectiveClass) {
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(
                 // io CloudEvents
-                CloudEventV1.class.getName(),
-                CloudEventDataV1.class.getName(),
+                CloudEventV1.class.getName(), CloudEventDataV1.class.getName(),
                 // SQS
-                SQSEvent.class.getName(),
-                SQSEvent.SQSMessage.class.getName(),
-                SQSEvent.MessageAttribute.class.getName(),
-                SQSBatchResponse.class.getName(),
+                SQSEvent.class.getName(), SQSEvent.SQSMessage.class.getName(),
+                SQSEvent.MessageAttribute.class.getName(), SQSBatchResponse.class.getName(),
                 SQSBatchResponse.BatchItemFailure.class.getName(),
                 // SNS
-                SNSEvent.class.getName(),
-                SNSEvent.SNSRecord.class.getName(),
-                SNSEvent.SNS.class.getName(),
+                SNSEvent.class.getName(), SNSEvent.SNSRecord.class.getName(), SNSEvent.SNS.class.getName(),
                 // Kinesis
-                KinesisEvent.class.getName(),
-                KinesisEvent.KinesisEventRecord.class.getName(),
-                Record.class.getName(),
-                StreamsEventResponse.class.getName(),
-                StreamsEventResponse.BatchItemFailure.class.getName(),
+                KinesisEvent.class.getName(), KinesisEvent.KinesisEventRecord.class.getName(), Record.class.getName(),
+                StreamsEventResponse.class.getName(), StreamsEventResponse.BatchItemFailure.class.getName(),
                 PipesKinesisEvent.class.getName(),
                 // DynamoDB
-                DynamodbEvent.class.getName(),
-                DynamodbEvent.DynamodbStreamRecord.class.getName(),
+                DynamodbEvent.class.getName(), DynamodbEvent.DynamodbStreamRecord.class.getName(),
                 // Pipes
-                Response.class.getName(),
-                BatchItemFailures.class.getName()).constructors().methods().fields().build());
+                Response.class.getName(), BatchItemFailures.class.getName()).constructors().methods().fields().build());
     }
 }

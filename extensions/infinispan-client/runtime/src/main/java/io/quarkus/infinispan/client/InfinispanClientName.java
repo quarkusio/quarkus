@@ -14,16 +14,15 @@ import jakarta.enterprise.util.AnnotationLiteral;
 import jakarta.inject.Qualifier;
 
 /**
- * Marker annotation to select the Infinispan client.
- *
- * For example, if the Infinispan connection is configured like so in {@code application.properties}:
+ * Marker annotation to select the Infinispan client. For example, if the Infinispan connection is configured like so in
+ * {@code application.properties}:
  *
  * <pre>
  * quarkus.infinispan-client.site-lon.hosts=localhost:11222
  * </pre>
  *
- * Then to inject the proper {@code RemoteCacheManager}, you would need to use {@code InfinispanClientName} like indicated
- * below:
+ * Then to inject the proper {@code RemoteCacheManager}, you would need to use {@code InfinispanClientName} like
+ * indicated below:
  *
  * <pre>
  *     &#64Inject

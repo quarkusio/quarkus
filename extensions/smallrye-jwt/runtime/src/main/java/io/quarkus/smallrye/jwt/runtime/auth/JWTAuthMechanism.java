@@ -44,8 +44,8 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
     public static final String BEARER = "Bearer";
 
     /**
-     * Propagate {@link TokenCredential} via Vert.X duplicated context if explicitly enabled and request context
-     * can not be activated.
+     * Propagate {@link TokenCredential} via Vert.X duplicated context if explicitly enabled and request context can not
+     * be activated.
      */
     private final boolean propagateTokenCredentialWithDuplicatedCtx;
     @Inject
@@ -56,13 +56,12 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
         this.silent = config == null ? false : config.silent();
         // we use system property in order to keep this option internal and avoid introducing SPI
         this.propagateTokenCredentialWithDuplicatedCtx = Boolean
-                .getBoolean("io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism." +
-                        "PROPAGATE_TOKEN_CREDENTIAL_WITH_DUPLICATED_CTX");
+                .getBoolean("io.quarkus.smallrye.jwt.runtime.auth.JWTAuthMechanism."
+                        + "PROPAGATE_TOKEN_CREDENTIAL_WITH_DUPLICATED_CTX");
     }
 
     @Override
-    public Uni<SecurityIdentity> authenticate(RoutingContext context,
-            IdentityProviderManager identityProviderManager) {
+    public Uni<SecurityIdentity> authenticate(RoutingContext context, IdentityProviderManager identityProviderManager) {
         String jwtToken = new VertxBearerTokenExtractor(authContextInfo, context).getBearerToken();
         if (jwtToken != null) {
             context.put(HttpAuthenticationMechanism.class.getName(), this);
@@ -75,8 +74,8 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
                 final var token = new JsonWebTokenCredential(jwtToken);
                 ctx.putLocal(TokenCredential.class.getName(), token);
                 return identityProviderManager
-                        .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
-                                new TokenAuthenticationRequest(token), context))
+                        .authenticate(HttpSecurityUtils
+                                .setRoutingContextAttribute(new TokenAuthenticationRequest(token), context))
                         .invoke(new Runnable() {
                             @Override
                             public void run() {
@@ -86,9 +85,8 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
                         });
             }
 
-            return identityProviderManager
-                    .authenticate(HttpSecurityUtils.setRoutingContextAttribute(
-                            new TokenAuthenticationRequest(new JsonWebTokenCredential(jwtToken)), context));
+            return identityProviderManager.authenticate(HttpSecurityUtils.setRoutingContextAttribute(
+                    new TokenAuthenticationRequest(new JsonWebTokenCredential(jwtToken)), context));
         } else {
             LOG.debug("Bearer access token is not available");
         }
@@ -98,17 +96,15 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
     @Override
     public Uni<ChallengeData> getChallenge(RoutingContext context) {
         if (silent) {
-            //if this is silent we only send a challenge if the request contained auth headers
-            //otherwise we assume another method will send the challenge
+            // if this is silent we only send a challenge if the request contained auth headers
+            // otherwise we assume another method will send the challenge
             String authHeader = context.request().headers().get(HttpHeaderNames.AUTHORIZATION);
             if (authHeader == null) {
                 return Uni.createFrom().optional(Optional.empty());
             }
         }
-        ChallengeData result = new ChallengeData(
-                HttpResponseStatus.UNAUTHORIZED.code(),
-                HttpHeaderNames.WWW_AUTHENTICATE,
-                BEARER);
+        ChallengeData result = new ChallengeData(HttpResponseStatus.UNAUTHORIZED.code(),
+                HttpHeaderNames.WWW_AUTHENTICATE, BEARER);
         return Uni.createFrom().item(result);
     }
 
@@ -130,7 +126,8 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
             String cookieHeader = httpExchange.request().headers().get(COOKIE);
 
             if (cookieHeader != null && httpExchange.cookieCount() == 0) {
-                Set<io.netty.handler.codec.http.cookie.Cookie> nettyCookies = ServerCookieDecoder.STRICT.decode(cookieHeader);
+                Set<io.netty.handler.codec.http.cookie.Cookie> nettyCookies = ServerCookieDecoder.STRICT
+                        .decode(cookieHeader);
                 for (io.netty.handler.codec.http.cookie.Cookie cookie : nettyCookies) {
                     if (cookie.name().equals(cookieName)) {
                         return cookie.value();
@@ -156,9 +153,11 @@ public class JWTAuthMechanism implements HttpAuthenticationMechanism {
             if (tokenCookieName == null) {
                 tokenCookieName = BEARER;
             }
-            return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, tokenCookieName));
+            return Uni.createFrom()
+                    .item(new HttpCredentialTransport(HttpCredentialTransport.Type.COOKIE, tokenCookieName));
         } else if (AUTHORIZATION_HEADER.equals(tokenHeaderName)) {
-            return Uni.createFrom().item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BEARER));
+            return Uni.createFrom()
+                    .item(new HttpCredentialTransport(HttpCredentialTransport.Type.AUTHORIZATION, BEARER));
         } else {
             return Uni.createFrom()
                     .item(new HttpCredentialTransport(HttpCredentialTransport.Type.OTHER_HEADER, tokenHeaderName));

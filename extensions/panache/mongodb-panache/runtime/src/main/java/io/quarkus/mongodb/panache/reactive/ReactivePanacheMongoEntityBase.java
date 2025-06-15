@@ -18,18 +18,16 @@ import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Represents an entity. If your Mongo entities extend this class they gain auto-generated accessors
- * to all their public fields, as well as a lot of useful
- * methods. Unless you have a custom ID strategy, you should not extend this class directly but extend
- * {@link ReactivePanacheMongoEntity} instead.
+ * Represents an entity. If your Mongo entities extend this class they gain auto-generated accessors to all their public
+ * fields, as well as a lot of useful methods. Unless you have a custom ID strategy, you should not extend this class
+ * directly but extend {@link ReactivePanacheMongoEntity} instead.
  *
  * @see ReactivePanacheMongoEntity
  */
 @SuppressWarnings({ "rawtypes", "unchecked" })
 public abstract class ReactivePanacheMongoEntityBase {
     /**
-     * Persist this entity in the database.
-     * This will set its ID field if not already set.
+     * Persist this entity in the database. This will set its ID field if not already set.
      *
      * @see #persist(Iterable)
      * @see #persist(Stream)
@@ -78,7 +76,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find an entity of this type by ID.
      *
-     * @param id the ID of the entity to find.
+     * @param id
+     *        the ID of the entity to find.
+     *
      * @return the entity found, or <code>null</code> if not found.
      */
     @GenerateBridge
@@ -89,7 +89,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find an entity of this type by ID.
      *
-     * @param id the ID of the entity to find.
+     * @param id
+     *        the ID of the entity to find.
+     *
      * @return if found, an optional containing the entity, else <code>Optional.empty()</code>.
      */
     @GenerateBridge
@@ -100,9 +102,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find entities using a query, with optional indexed parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(String, Sort, Object...)
      * @see #find(String, Map)
      * @see #find(String, Parameters)
@@ -110,17 +116,23 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #stream(String, Object...)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query, Object... params) {
+    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query,
+            Object... params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Find entities using a query and the given sort options, with optional indexed parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(String, Object...)
      * @see #find(String, Sort, Map)
      * @see #find(String, Sort, Parameters)
@@ -136,9 +148,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find entities using a query, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(String, Sort, Map)
      * @see #find(String, Object...)
      * @see #find(String, Parameters)
@@ -154,10 +170,15 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find entities using a query and the given sort options, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Map} of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        {@link Map} of indexed parameters
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(String, Map)
      * @see #find(String, Sort, Object...)
      * @see #find(String, Sort, Parameters)
@@ -173,9 +194,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find entities using a query, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(String, Sort, Parameters)
      * @see #find(String, Map)
      * @see #find(String, Parameters)
@@ -183,17 +208,23 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #stream(String, Parameters)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query, Parameters params) {
+    public static <T extends ReactivePanacheMongoEntityBase> ReactivePanacheQuery<T> find(String query,
+            Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
      * Find entities using a query and the given sort options, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Parameters} of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        {@link Parameters} of indexed parameters
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(String, Parameters)
      * @see #find(String, Sort, Map)
      * @see #find(String, Sort, Parameters)
@@ -209,8 +240,11 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find entities using a BSON query.
      *
-     * @param query a {@link Bson} query
+     * @param query
+     *        a {@link Bson} query
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(Bson, Bson)
      * @see #list(Bson)
      * @see #list(Bson, Bson)
@@ -225,9 +259,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find entities using a BSON query and a BSON sort.
      *
-     * @param query a {@link Bson} query
-     * @param sort the {@link Bson} sort
+     * @param query
+     *        a {@link Bson} query
+     * @param sort
+     *        the {@link Bson} sort
+     *
      * @return a new {@link ReactivePanacheQuery} instance for the given query
+     *
      * @see #find(Bson)
      * @see #list(Bson)
      * @see #list(Bson, Bson)
@@ -243,6 +281,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * Find all entities of this type.
      *
      * @return a new {@link ReactivePanacheQuery} instance to find all entities of this type.
+     *
      * @see #findAll(Sort)
      * @see #listAll()
      * @see #streamAll()
@@ -255,8 +294,11 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Find all entities of this type, in the given order.
      *
-     * @param sort the sort order to use
+     * @param sort
+     *        the sort order to use
+     *
      * @return a new {@link ReactivePanacheQuery} instance to find all entities of this type.
+     *
      * @see #findAll()
      * @see #listAll(Sort)
      * @see #streamAll(Sort)
@@ -267,12 +309,16 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query, with optional indexed parameters.
-     * This method is a shortcut for <code>find(query, params).list()</code>.
+     * Find entities matching a query, with optional indexed parameters. This method is a shortcut for
+     * <code>find(query, params).list()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #list(String, Sort, Object...)
      * @see #list(String, Map)
      * @see #list(String, Parameters)
@@ -285,13 +331,18 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query and the given sort options, with optional indexed parameters.
-     * This method is a shortcut for <code>find(query, sort, params).list()</code>.
+     * Find entities matching a query and the given sort options, with optional indexed parameters. This method is a
+     * shortcut for <code>find(query, sort, params).list()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #list(String, Object...)
      * @see #list(String, Sort, Map)
      * @see #list(String, Sort, Parameters)
@@ -305,12 +356,16 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for <code>find(query, params).list()</code>.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * <code>find(query, params).list()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #list(String, Sort, Map)
      * @see #list(String, Object...)
      * @see #list(String, Parameters)
@@ -324,13 +379,18 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for <code>find(query, sort, params).list()</code>.
+     * Find entities matching a query and the given sort options, with named parameters. This method is a shortcut for
+     * <code>find(query, sort, params).list()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Map} of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        {@link Map} of indexed parameters
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #list(String, Map)
      * @see #list(String, Sort, Object...)
      * @see #list(String, Sort, Parameters)
@@ -344,12 +404,16 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for <code>find(query, params).list()</code>.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * <code>find(query, params).list()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #list(String, Sort, Parameters)
      * @see #list(String, Object...)
      * @see #list(String, Map)
@@ -362,13 +426,18 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for <code>find(query, sort, params).list()</code>.
+     * Find entities matching a query and the given sort options, with named parameters. This method is a shortcut for
+     * <code>find(query, sort, params).list()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Parameters} of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        {@link Parameters} of indexed parameters
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #list(String, Parameters)
      * @see #list(String, Sort, Object...)
      * @see #list(String, Sort, Map)
@@ -382,11 +451,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a BSON query.
-     * This method is a shortcut for <code>find(query).list()</code>.
+     * Find entities using a BSON query. This method is a shortcut for <code>find(query).list()</code>.
      *
-     * @param query a {@link Bson} query
+     * @param query
+     *        a {@link Bson} query
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #find(Bson)
      * @see #find(Bson, Bson)
      * @see #list(Bson, Bson)
@@ -399,12 +470,16 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a BSON query and a BSON sort.
-     * This method is a shortcut for <code>find(query, sort).list()</code>.
+     * Find entities using a BSON query and a BSON sort. This method is a shortcut for
+     * <code>find(query, sort).list()</code>.
      *
-     * @param query a {@link Bson} query
-     * @param sort the {@link Bson} sort
+     * @param query
+     *        a {@link Bson} query
+     * @param sort
+     *        the {@link Bson} sort
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #find(Bson)
      * @see #find(Bson, Bson)
      * @see #list(Bson, Bson)
@@ -417,10 +492,10 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find all entities of this type.
-     * This method is a shortcut for <code>findAll().list()</code>.
+     * Find all entities of this type. This method is a shortcut for <code>findAll().list()</code>.
      *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #listAll(Sort)
      * @see #findAll()
      * @see #streamAll()
@@ -431,11 +506,14 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find all entities of this type, in the given order.
-     * This method is a shortcut for <code>findAll(sort).list()</code>.
+     * Find all entities of this type, in the given order. This method is a shortcut for
+     * <code>findAll(sort).list()</code>.
      *
-     * @param sort the sort order to use
+     * @param sort
+     *        the sort order to use
+     *
      * @return a {@link List} containing all results, without paging
+     *
      * @see #listAll()
      * @see #findAll(Sort)
      * @see #streamAll(Sort)
@@ -446,12 +524,16 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query, with optional indexed parameters.
-     * This method is a shortcut for <code>find(query, params).stream()</code>.
+     * Find entities matching a query, with optional indexed parameters. This method is a shortcut for
+     * <code>find(query, params).stream()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Map)
      * @see #stream(String, Parameters)
@@ -464,13 +546,18 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query and the given sort options, with optional indexed parameters.
-     * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
+     * Find entities matching a query and the given sort options, with optional indexed parameters. This method is a
+     * shortcut for <code>find(query, sort, params).stream()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #stream(String, Object...)
      * @see #stream(String, Sort, Map)
      * @see #stream(String, Sort, Parameters)
@@ -478,17 +565,22 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #list(String, Sort, Object...)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Sort sort, Object... params) {
+    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Sort sort,
+            Object... params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for <code>find(query, params).stream()</code>.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * <code>find(query, params).stream()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #stream(String, Sort, Map)
      * @see #stream(String, Object...)
      * @see #stream(String, Parameters)
@@ -501,13 +593,18 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
+     * Find entities matching a query and the given sort options, with named parameters. This method is a shortcut for
+     * <code>find(query, sort, params).stream()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Map} of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        {@link Map} of indexed parameters
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #stream(String, Map)
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Sort, Parameters)
@@ -521,12 +618,16 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query, with named parameters.
-     * This method is a shortcut for <code>find(query, params).stream()</code>.
+     * Find entities matching a query, with named parameters. This method is a shortcut for
+     * <code>find(query, params).stream()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #stream(String, Sort, Parameters)
      * @see #stream(String, Object...)
      * @see #stream(String, Map)
@@ -539,13 +640,18 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities matching a query and the given sort options, with named parameters.
-     * This method is a shortcut for <code>find(query, sort, params).stream()</code>.
+     * Find entities matching a query and the given sort options, with named parameters. This method is a shortcut for
+     * <code>find(query, sort, params).stream()</code>.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param sort the sort strategy to use
-     * @param params {@link Parameters} of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param sort
+     *        the sort strategy to use
+     * @param params
+     *        {@link Parameters} of indexed parameters
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #stream(String, Parameters)
      * @see #stream(String, Sort, Object...)
      * @see #stream(String, Sort, Map)
@@ -553,16 +659,19 @@ public abstract class ReactivePanacheMongoEntityBase {
      * @see #list(String, Sort, Parameters)
      */
     @GenerateBridge
-    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Sort sort, Parameters params) {
+    public static <T extends ReactivePanacheMongoEntityBase> Multi<T> stream(String query, Sort sort,
+            Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
-     * Find entities using a BSON query.
-     * This method is a shortcut for <code>find(query).stream()</code>.
+     * Find entities using a BSON query. This method is a shortcut for <code>find(query).stream()</code>.
      *
-     * @param query a {@link Bson} query
+     * @param query
+     *        a {@link Bson} query
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #find(String, Parameters)
      * @see #find(String, Sort, Map)
      * @see #find(String, Sort, Parameters)
@@ -575,12 +684,16 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find entities using a BSON query and a BSON sort.
-     * This method is a shortcut for <code>find(query, sort).stream()</code>.
+     * Find entities using a BSON query and a BSON sort. This method is a shortcut for
+     * <code>find(query, sort).stream()</code>.
      *
-     * @param query a {@link Bson} query
-     * @param sort the {@link Bson} sort
+     * @param query
+     *        a {@link Bson} query
+     * @param sort
+     *        the {@link Bson} sort
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #find(String, Parameters)
      * @see #find(String, Sort, Map)
      * @see #find(String, Sort, Parameters)
@@ -593,10 +706,10 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find all entities of this type.
-     * This method is a shortcut for <code>findAll().stream()</code>.
+     * Find all entities of this type. This method is a shortcut for <code>findAll().stream()</code>.
      *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #streamAll(Sort)
      * @see #findAll()
      * @see #listAll()
@@ -607,11 +720,14 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Find all entities of this type, in the given order.
-     * This method is a shortcut for <code>findAll(sort).stream()</code>.
+     * Find all entities of this type, in the given order. This method is a shortcut for
+     * <code>findAll(sort).stream()</code>.
      *
-     * @param sort the sort order to use
+     * @param sort
+     *        the sort order to use
+     *
      * @return a {@link Multi} containing all results, without paging
+     *
      * @see #streamAll()
      * @see #findAll(Sort)
      * @see #listAll(Sort)
@@ -625,6 +741,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * Counts the number of this type of entity in the database.
      *
      * @return the number of this type of entity in the database.
+     *
      * @see #count(String, Object...)
      * @see #count(String, Map)
      * @see #count(String, Parameters)
@@ -637,9 +754,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Counts the number of this type of entity matching the given query, with optional indexed parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return the number of entities counted.
+     *
      * @see #count()
      * @see #count(String, Map)
      * @see #count(String, Parameters)
@@ -652,9 +773,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return the number of entities counted.
+     *
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Parameters)
@@ -667,9 +792,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Counts the number of this type of entity matching the given query, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return the number of entities counted.
+     *
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
@@ -682,8 +811,11 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Counts the number of this type of entity matching the given query
      *
-     * @param query a {@link Bson} query
+     * @param query
+     *        a {@link Bson} query
+     *
      * @return he number of entities counted.
+     *
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
@@ -697,6 +829,7 @@ public abstract class ReactivePanacheMongoEntityBase {
      * Delete all entities of this type from the database.
      *
      * @return the number of entities deleted.
+     *
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
      * @see #delete(String, Parameters)
@@ -709,7 +842,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Delete an entity of this type by ID.
      *
-     * @param id the ID of the entity to delete.
+     * @param id
+     *        the ID of the entity to delete.
+     *
      * @return false if the entity was not deleted (not found).
      */
     @GenerateBridge
@@ -720,9 +855,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Delete all entities of this type matching the given query, with optional indexed parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params optional sequence of indexed parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        optional sequence of indexed parameters
+     *
      * @return the number of entities deleted.
+     *
      * @see #deleteAll()
      * @see #delete(String, Map)
      * @see #delete(String, Parameters)
@@ -735,9 +874,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Delete all entities of this type matching the given query, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Map} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Map} of named parameters
+     *
      * @return the number of entities deleted.
+     *
      * @see #deleteAll()
      * @see #delete(String, Object...)
      * @see #delete(String, Parameters)
@@ -750,9 +893,13 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Delete all entities of this type matching the given query, with named parameters.
      *
-     * @param query a {@link io.quarkus.mongodb.panache query string}
-     * @param params {@link Parameters} of named parameters
+     * @param query
+     *        a {@link io.quarkus.mongodb.panache query string}
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
      * @return the number of entities deleted.
+     *
      * @see #deleteAll()
      * @see #delete(String, Object...)
      * @see #delete(String, Map)
@@ -765,8 +912,11 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Delete all entities of this type matching the given query
      *
-     * @param query a {@link Bson} query
+     * @param query
+     *        a {@link Bson} query
+     *
      * @return he number of entities counted.
+     *
      * @see #count()
      * @see #count(String, Object...)
      * @see #count(String, Map)
@@ -779,7 +929,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Insert all given entities.
      *
-     * @param entities the entities to insert
+     * @param entities
+     *        the entities to insert
+     *
      * @see #persist()
      * @see #persist(Stream)
      * @see #persist(Object,Object...)
@@ -792,7 +944,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Insert all given entities.
      *
-     * @param entities the entities to insert
+     * @param entities
+     *        the entities to insert
+     *
      * @see #persist()
      * @see #persist(Iterable)
      * @see #persist(Object,Object...)
@@ -805,7 +959,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Insert all given entities.
      *
-     * @param entities the entities to update
+     * @param entities
+     *        the entities to update
+     *
      * @see #persist()
      * @see #persist(Stream)
      * @see #persist(Iterable)
@@ -818,7 +974,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Update all given entities.
      *
-     * @param entities the entities to update
+     * @param entities
+     *        the entities to update
+     *
      * @see #update()
      * @see #update(Stream)
      * @see #update(Object,Object...)
@@ -831,7 +989,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Update all given entities.
      *
-     * @param entities the entities to insert
+     * @param entities
+     *        the entities to insert
+     *
      * @see #update()
      * @see #update(Iterable)
      * @see #update(Object,Object...)
@@ -844,7 +1004,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Update all given entities.
      *
-     * @param entities the entities to update
+     * @param entities
+     *        the entities to update
+     *
      * @see #update()
      * @see #update(Stream)
      * @see #update(Iterable)
@@ -857,7 +1019,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Persist all given entities or update them if they already exist.
      *
-     * @param entities the entities to update
+     * @param entities
+     *        the entities to update
+     *
      * @see #persistOrUpdate()
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Object,Object...)
@@ -870,7 +1034,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Persist all given entities.
      *
-     * @param entities the entities to insert
+     * @param entities
+     *        the entities to insert
+     *
      * @see #persistOrUpdate()
      * @see #persistOrUpdate(Iterable)
      * @see #persistOrUpdate(Object,Object...)
@@ -883,7 +1049,9 @@ public abstract class ReactivePanacheMongoEntityBase {
     /**
      * Persist all given entities.
      *
-     * @param entities the entities to update
+     * @param entities
+     *        the entities to update
+     *
      * @see #persistOrUpdate()
      * @see #persistOrUpdate(Stream)
      * @see #persistOrUpdate(Iterable)
@@ -894,34 +1062,43 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Update all entities of this type by the given update document, with optional indexed parameters.
-     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on
-     * which document the update should be applied.
+     * Update all entities of this type by the given update document, with optional indexed parameters. The returned
+     * {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on which
+     * document the update should be applied.
      *
-     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
-     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
-     * @param params optional sequence of indexed parameters
-     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
-     *         document
+     * @param update
+     *        the update document, if it didn't contain any update operator, we add <code>$set</code>. It can also
+     *        be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params
+     *        optional sequence of indexed parameters
+     *
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given
+     *         update document
+     *
      * @see #update(String, Map)
      * @see #update(String, Parameters)
      * @see #update(Bson)
      */
     @GenerateBridge
-    public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Object... params) {
+    public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update,
+            Object... params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
-     * Update all entities of this type by the given update document, with named parameters.
-     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on
-     * which document the update should be applied.
+     * Update all entities of this type by the given update document, with named parameters. The returned
+     * {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on which
+     * document the update should be applied.
      *
-     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
-     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
-     * @param params {@link Map} of named parameters
-     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
-     *         document
+     * @param update
+     *        the update document, if it didn't contain any update operator, we add <code>$set</code>. It can also
+     *        be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params
+     *        {@link Map} of named parameters
+     *
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given
+     *         update document
+     *
      * @see #update(String, Object...)
      * @see #update(String, Parameters)
      * @see #update(Bson)
@@ -933,32 +1110,40 @@ public abstract class ReactivePanacheMongoEntityBase {
     }
 
     /**
-     * Update all entities of this type by the given update document, with named parameters.
-     * The returned {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on
-     * which document the update should be applied.
+     * Update all entities of this type by the given update document, with named parameters. The returned
+     * {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } object will allow to restrict on which
+     * document the update should be applied.
      *
-     * @param update the update document, if it didn't contain any update operator, we add <code>$set</code>.
-     *        It can also be expressed as a {@link io.quarkus.mongodb.panache query string}.
-     * @param params {@link Parameters} of named parameters
-     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given update
-     *         document
+     * @param update
+     *        the update document, if it didn't contain any update operator, we add <code>$set</code>. It can also
+     *        be expressed as a {@link io.quarkus.mongodb.panache query string}.
+     * @param params
+     *        {@link Parameters} of named parameters
+     *
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate } instance for the given
+     *         update document
+     *
      * @see #update(String, Object...)
      * @see #update(String, Map)
      * @see #update(Bson)
      */
     @GenerateBridge
-    public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update, Parameters params) {
+    public static io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate update(String update,
+            Parameters params) {
         throw INSTANCE.implementationInjectionMissing();
     }
 
     /**
-     * Update all entities of this type by the given update BSON document.
-     * The returned {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
+     * Update all entities of this type by the given update BSON document. The returned
+     * {@link io.quarkus.mongodb.panache.common.PanacheUpdate} object will allow to restrict on which document the
      * update should be applied.
      *
-     * @param update the update document, as a {@link org.bson.conversions.Bson}.
-     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} instance for the given update
-     *         document
+     * @param update
+     *        the update document, as a {@link org.bson.conversions.Bson}.
+     *
+     * @return a new {@link io.quarkus.mongodb.panache.common.reactive.ReactivePanacheUpdate} instance for the given
+     *         update document
+     *
      * @see #update(String, Object...)
      * @see #update(String, Map)
      * @see #update(String, Parameters)

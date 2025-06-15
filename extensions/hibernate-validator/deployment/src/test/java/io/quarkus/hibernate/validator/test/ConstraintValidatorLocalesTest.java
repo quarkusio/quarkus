@@ -20,10 +20,8 @@ public class ConstraintValidatorLocalesTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class).addClasses(MyBean.class)
-            .addAsResource("application.properties")
-            .addAsResource("ValidationMessages.properties")
-            .addAsResource("ValidationMessages_fr_FR.properties"));
+            .create(JavaArchive.class).addClasses(MyBean.class).addAsResource("application.properties")
+            .addAsResource("ValidationMessages.properties").addAsResource("ValidationMessages_fr_FR.properties"));
 
     @Test
     public void testConstraintLocale() {

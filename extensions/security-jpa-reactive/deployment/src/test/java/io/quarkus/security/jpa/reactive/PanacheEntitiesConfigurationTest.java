@@ -26,15 +26,10 @@ public class PanacheEntitiesConfigurationTest extends JpaSecurityRealmTest {
     private static final String DUPLICATE_USERNAME = "merlin";
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addClass(PanacheUserEntity.class)
-                    .addClass(PanacheRoleEntity.class)
-                    .addClass(UserResource.class)
-                    .addClass(AuthenticationFailureObserver.class)
-                    .addAsResource("multiple-entities/import.sql", "import.sql")
-                    .addAsResource("multiple-entities/application.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addClass(PanacheUserEntity.class).addClass(PanacheRoleEntity.class).addClass(UserResource.class)
+            .addClass(AuthenticationFailureObserver.class).addAsResource("multiple-entities/import.sql", "import.sql")
+            .addAsResource("multiple-entities/application.properties", "application.properties"));
 
     @Inject
     AuthenticationFailureObserver authenticationFailureObserver;
@@ -64,22 +59,13 @@ public class PanacheEntitiesConfigurationTest extends JpaSecurityRealmTest {
     }
 
     private static void createUser() {
-        RestAssured
-                .given()
-                .auth().preemptive().basic("user", "user")
-                .body(DUPLICATE_USERNAME)
-                .post("/jaxrs-secured/user")
-                .then()
-                .statusCode(201);
+        RestAssured.given().auth().preemptive().basic("user", "user").body(DUPLICATE_USERNAME)
+                .post("/jaxrs-secured/user").then().statusCode(201);
     }
 
     private static ValidatableResponse getUsername() {
-        return RestAssured
-                .given()
-                .auth().preemptive().basic(DUPLICATE_USERNAME, DUPLICATE_USERNAME)
-                .body(DUPLICATE_USERNAME)
-                .get("/jaxrs-secured/user")
-                .then();
+        return RestAssured.given().auth().preemptive().basic(DUPLICATE_USERNAME, DUPLICATE_USERNAME)
+                .body(DUPLICATE_USERNAME).get("/jaxrs-secured/user").then();
     }
 
     @Singleton

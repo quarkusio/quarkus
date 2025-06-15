@@ -30,10 +30,8 @@ public class ContainerImageDevUiProcessor {
 
         CardPageBuildItem card = new CardPageBuildItem();
         card.addBuildTimeData("builderTypes", array);
-        card.addPage(Page.webComponentPageBuilder()
-                .title("Build Container")
-                .componentLink("qwc-container-image-build.js")
-                .icon("font-awesome-solid:box"));
+        card.addPage(Page.webComponentPageBuilder().title("Build Container")
+                .componentLink("qwc-container-image-build.js").icon("font-awesome-solid:box"));
         return card;
     }
 
@@ -52,17 +50,15 @@ public class ContainerImageDevUiProcessor {
                     properties.set(arg.getKey(), arg.getValue());
                 }
 
-                QuarkusBootstrap quarkusBootstrap = existing.clonedBuilder()
-                        .setMode(QuarkusBootstrap.Mode.PROD)
+                QuarkusBootstrap quarkusBootstrap = existing.clonedBuilder().setMode(QuarkusBootstrap.Mode.PROD)
                         .setIsolateDeployment(true).build();
                 try (CuratedApplication bootstrap = quarkusBootstrap.bootstrap()) {
-                    AugmentResult augmentResult = bootstrap
-                            .createAugmentor().createProductionApplication();
+                    AugmentResult augmentResult = bootstrap.createAugmentor().createProductionApplication();
                     List<ArtifactResult> containerArtifactResults = augmentResult
                             .resultsMatchingType((s) -> s.contains("container"));
                     if (containerArtifactResults.size() >= 1) {
-                        return "Container image: " + containerArtifactResults.get(0).getMetadata().get("container-image")
-                                + " created.";
+                        return "Container image: "
+                                + containerArtifactResults.get(0).getMetadata().get("container-image") + " created.";
                     } else {
                         return "Unknown error (image not created)";
                     }

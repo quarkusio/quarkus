@@ -14,10 +14,8 @@ class GetterAccessorImplementor {
      * Implements a {@link GetterAccessor} that knows how to access a specific getter method of a specific type.
      */
     void implement(ClassOutput classOutput, GetterMetadata getterMetadata) {
-        ClassCreator classCreator = ClassCreator.builder()
-                .classOutput(classOutput).className(getterMetadata.getGetterAccessorName())
-                .interfaces(GetterAccessor.class)
-                .build();
+        ClassCreator classCreator = ClassCreator.builder().classOutput(classOutput)
+                .className(getterMetadata.getGetterAccessorName()).interfaces(GetterAccessor.class).build();
         MethodCreator methodCreator = classCreator.getMethodCreator("get", Object.class, Object.class);
         ResultHandle value = methodCreator.invokeVirtualMethod(
                 ofMethod(getterMetadata.getEntityType(), getterMetadata.getGetterName(), getterMetadata.getFieldType()),

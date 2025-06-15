@@ -16,12 +16,8 @@ import io.quarkus.vertx.web.Route;
 public class CurrentRequestTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MyRoute.class)
-                    .addAsResource(new StringAsset(
-                            "Hello {inject:vertxRequest.getParam('name')}!"),
-                            "templates/request.txt"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClass(MyRoute.class)
+            .addAsResource(new StringAsset("Hello {inject:vertxRequest.getParam('name')}!"), "templates/request.txt"));
 
     @Test
     public void testCurrentRequest() {

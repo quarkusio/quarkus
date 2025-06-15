@@ -31,8 +31,8 @@ import io.quarkus.runtime.configuration.ConfigurationException;
 @Recorder
 public class OAuth2Recorder {
 
-    public RuntimeValue<SecurityRealm> createRealm(OAuth2RuntimeConfig runtimeConfig)
-            throws IOException, NoSuchAlgorithmException, CertificateException, KeyStoreException, KeyManagementException {
+    public RuntimeValue<SecurityRealm> createRealm(OAuth2RuntimeConfig runtimeConfig) throws IOException,
+            NoSuchAlgorithmException, CertificateException, KeyStoreException, KeyManagementException {
         if (!runtimeConfig.clientId().isPresent() || !runtimeConfig.clientSecret().isPresent()
                 || !runtimeConfig.introspectionUrl().isPresent()) {
             throw new ConfigurationException(
@@ -40,8 +40,7 @@ public class OAuth2Recorder {
         }
 
         OAuth2IntrospectValidator.Builder validatorBuilder = OAuth2IntrospectValidator.builder()
-                .clientId(runtimeConfig.clientId().get())
-                .clientSecret(runtimeConfig.clientSecret().get())
+                .clientId(runtimeConfig.clientId().get()).clientSecret(runtimeConfig.clientSecret().get())
                 .tokenIntrospectionUrl(URI.create(runtimeConfig.introspectionUrl().get()).toURL());
 
         if (runtimeConfig.caCertFile().isPresent()) {
@@ -60,10 +59,8 @@ public class OAuth2Recorder {
 
         OAuth2IntrospectValidator validator = validatorBuilder.build();
 
-        TokenSecurityRealm tokenRealm = TokenSecurityRealm.builder()
-                .validator(validator)
-                .claimToPrincipal(claims -> new ElytronOAuth2CallerPrincipal(attributesToMap(claims)))
-                .build();
+        TokenSecurityRealm tokenRealm = TokenSecurityRealm.builder().validator(validator)
+                .claimToPrincipal(claims -> new ElytronOAuth2CallerPrincipal(attributesToMap(claims))).build();
 
         return new RuntimeValue<>(tokenRealm);
     }
@@ -80,14 +77,13 @@ public class OAuth2Recorder {
         return attributeMap;
     }
 
-    private SSLContext createSSLContext(OAuth2RuntimeConfig runtimeConfig)
-            throws IOException, CertificateException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
+    private SSLContext createSSLContext(OAuth2RuntimeConfig runtimeConfig) throws IOException, CertificateException,
+            NoSuchAlgorithmException, KeyStoreException, KeyManagementException {
         try (InputStream is = new FileInputStream(runtimeConfig.caCertFile().get())) {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             X509Certificate caCert = (X509Certificate) cf.generateCertificate(is);
 
-            TrustManagerFactory tmf = TrustManagerFactory
-                    .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
             KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
             ks.load(null); // You don't need the KeyStore instance to come from a file.
             ks.setCertificateEntry("caCert", caCert);

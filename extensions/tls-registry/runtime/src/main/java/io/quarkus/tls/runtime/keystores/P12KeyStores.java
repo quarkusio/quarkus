@@ -38,7 +38,8 @@ public class P12KeyStores {
         return new KeyStoreAndKeyCertOptions(ks, options);
     }
 
-    public static TrustStoreAndTrustOptions verifyP12TrustStoreStore(TrustStoreConfig config, Vertx vertx, String name) {
+    public static TrustStoreAndTrustOptions verifyP12TrustStoreStore(TrustStoreConfig config, Vertx vertx,
+            String name) {
         P12TrustStoreConfig p12Config = config.p12().orElseThrow();
         PfxOptions options = toOptions(p12Config, config.credentialsProvider(), name);
         KeyStore ks = loadKeyStore(vertx, name, options, "trust");
@@ -55,8 +56,7 @@ public class P12KeyStores {
         PfxOptions options = new PfxOptions();
         try {
             options.setValue(Buffer.buffer(read(config.path())));
-            String password = CredentialProviders.getKeyStorePassword(config.password(), pc)
-                    .orElse(null);
+            String password = CredentialProviders.getKeyStorePassword(config.password(), pc).orElse(null);
             if (password == null) {
                 throw new IllegalStateException("Invalid P12 key store configuration for certificate '" + name
                         + "' - the key store password is not set and cannot be retrieved from the credential provider.");
@@ -76,12 +76,12 @@ public class P12KeyStores {
         return options;
     }
 
-    private static PfxOptions toOptions(P12TrustStoreConfig config, TrustStoreCredentialProviderConfig cp, String name) {
+    private static PfxOptions toOptions(P12TrustStoreConfig config, TrustStoreCredentialProviderConfig cp,
+            String name) {
         PfxOptions options = new PfxOptions();
         try {
             options.setValue(Buffer.buffer(read(config.path())));
-            String password = CredentialProviders.getTrustStorePassword(config.password(), cp)
-                    .orElse(null);
+            String password = CredentialProviders.getTrustStorePassword(config.password(), cp).orElse(null);
             if (password == null) {
                 throw new IllegalStateException("Invalid P12 trust store configuration for certificate '" + name
                         + "' - the trust store password is not set and cannot be retrieved from the credential provider.");
@@ -99,8 +99,7 @@ public class P12KeyStores {
         return options;
     }
 
-    private static void verifyKeyStoreAlias(PfxOptions options, String name,
-            KeyStore ks) {
+    private static void verifyKeyStoreAlias(PfxOptions options, String name, KeyStore ks) {
         String alias = options.getAlias();
         String aliasPassword = options.getAliasPassword();
         if (alias != null) {
@@ -110,7 +109,8 @@ public class P12KeyStores {
                             "Alias '" + alias + "' not found in P12 key store (certificate not found)'" + name + "'");
                 }
             } catch (KeyStoreException e) {
-                throw new IllegalStateException("Unable to verify alias '" + alias + "' in P12 key store '" + name + "'", e);
+                throw new IllegalStateException(
+                        "Unable to verify alias '" + alias + "' in P12 key store '" + name + "'", e);
             }
 
             char[] pwd = null;
@@ -128,7 +128,8 @@ public class P12KeyStores {
                             "Alias '" + alias + "' not found in P12 key store (certificate not found)'" + name + "'");
                 }
             } catch (KeyStoreException | NoSuchAlgorithmException e) {
-                throw new IllegalStateException("Unable to verify alias '" + alias + "' in P12 key store '" + name + "'", e);
+                throw new IllegalStateException(
+                        "Unable to verify alias '" + alias + "' in P12 key store '" + name + "'", e);
             } catch (UnrecoverableKeyException e) {
                 throw new IllegalArgumentException(
                         "Unable to recover the key for alias '" + alias + "' in P12 key store '" + name + "'", e);
@@ -145,7 +146,8 @@ public class P12KeyStores {
                             "Alias '" + alias + "' not found in P12 trust store (certificate not found)'" + name + "'");
                 }
             } catch (KeyStoreException e) {
-                throw new IllegalStateException("Unable to verify alias '" + alias + "' in P12 trust store '" + name + "'", e);
+                throw new IllegalStateException(
+                        "Unable to verify alias '" + alias + "' in P12 trust store '" + name + "'", e);
             }
         }
     }
@@ -155,7 +157,8 @@ public class P12KeyStores {
         try {
             ks = options.loadKeyStore(vertx);
         } catch (Exception e) {
-            throw new IllegalStateException("Unable to load P12 " + type + " store '" + name + "', verify the password.", e);
+            throw new IllegalStateException(
+                    "Unable to load P12 " + type + " store '" + name + "', verify the password.", e);
         }
         return ks;
     }

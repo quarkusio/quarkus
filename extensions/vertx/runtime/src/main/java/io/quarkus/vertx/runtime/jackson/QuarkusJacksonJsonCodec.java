@@ -24,9 +24,8 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.spi.json.JsonCodec;
 
 /**
- * The functionality of this class is copied almost verbatim from {@code io.vertx.core.json.jackson.DatabindCodec}.
- * The difference is that this class obtains the ObjectMapper from Arc in order to inherit the
- * user-customized ObjectMapper.
+ * The functionality of this class is copied almost verbatim from {@code io.vertx.core.json.jackson.DatabindCodec}. The
+ * difference is that this class obtains the ObjectMapper from Arc in order to inherit the user-customized ObjectMapper.
  */
 public class QuarkusJacksonJsonCodec implements JsonCodec {
 
@@ -62,14 +61,16 @@ public class QuarkusJacksonJsonCodec implements JsonCodec {
         } else {
             ObjectMapper managedMapper = container.instance(ObjectMapper.class).get();
             if (managedMapper == null) {
-                // TODO: is this too heavy-handed? It should never happen but even if it does, it's a mostly recoverable state
+                // TODO: is this too heavy-handed? It should never happen but even if it does, it's a mostly recoverable
+                // state
                 throw new IllegalStateException("There was no ObjectMapper bean configured");
             }
             // We don't want to change settings the settings of the User configured ObjectMapper,
             // but we do want to inherit all the user's custom settings, so we copy the ObjectMapper.
             // Theoretically we could have checked to see if each of the settings
             // we want to apply is already applied, but in practice it doesn't make sense
-            // as at the very least InstantSerializer and InstantDeserializer will be different from those provided by the
+            // as at the very least InstantSerializer and InstantDeserializer will be different from those provided by
+            // the
             // (always included with quarkus-jackson) JavaTimeModule.
             mapper = managedMapper.copy();
         }

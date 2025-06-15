@@ -19,8 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class DevServicesPostgresqlDatasourceNamedWithUsernameTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withEmptyApplication()
+    static QuarkusUnitTest test = new QuarkusUnitTest().withEmptyApplication()
             .overrideConfigKey("quarkus.datasource.\"DB2\".db-kind", "postgresql")
             .overrideConfigKey("quarkus.datasource.\"DB2\".username", "foo")
             .overrideConfigKey("quarkus.datasource.\"DB2\".password", "foo");

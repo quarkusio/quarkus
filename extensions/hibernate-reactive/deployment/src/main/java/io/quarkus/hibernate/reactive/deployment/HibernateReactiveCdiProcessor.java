@@ -25,13 +25,12 @@ import io.quarkus.hibernate.reactive.runtime.HibernateReactiveRecorder;
 
 public class HibernateReactiveCdiProcessor {
 
-    private static final List<DotName> MUTINY_SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(
-            MUTINY_SESSION_FACTORY, IMPLEMENTOR);
+    private static final List<DotName> MUTINY_SESSION_FACTORY_EXPOSED_TYPES = Arrays.asList(MUTINY_SESSION_FACTORY,
+            IMPLEMENTOR);
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
-    void produceSessionFactoryBean(
-            HibernateReactiveRecorder recorder,
+    void produceSessionFactoryBean(HibernateReactiveRecorder recorder,
             List<PersistenceUnitDescriptorBuildItem> persistenceUnitDescriptors,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (persistenceUnitDescriptors.isEmpty()) {
@@ -50,9 +49,7 @@ public class HibernateReactiveCdiProcessor {
                         .configure(Mutiny.SessionFactory.class)
                         // NOTE: this is using ApplicationScope and not Singleton, by design, in order to be mockable
                         // See https://github.com/quarkusio/quarkus/issues/16437
-                        .scope(ApplicationScoped.class)
-                        .unremovable()
-                        .setRuntimeInit();
+                        .scope(ApplicationScoped.class).unremovable().setRuntimeInit();
 
                 for (DotName exposedType : MUTINY_SESSION_FACTORY_EXPOSED_TYPES) {
                     configurator.addType(exposedType);
@@ -65,10 +62,8 @@ public class HibernateReactiveCdiProcessor {
                 }
 
                 syntheticBeanBuildItemBuildProducer
-                        .produce(configurator
-                                .createWith(recorder.mutinySessionFactory(persistenceUnitName))
-                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class)))
-                                .done());
+                        .produce(configurator.createWith(recorder.mutinySessionFactory(persistenceUnitName))
+                                .addInjectionPoint(ClassType.create(DotName.createSimple(JPAConfig.class))).done());
             }
 
         }

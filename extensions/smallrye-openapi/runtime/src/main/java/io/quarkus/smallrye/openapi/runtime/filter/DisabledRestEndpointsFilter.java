@@ -14,8 +14,8 @@ import io.quarkus.runtime.rest.DisabledRestEndpoints;
 
 /**
  * If the RESTEasy Reactive extension passed us a list of REST paths that are disabled via the @DisabledRestEndpoint
- * annotation, remove them from the OpenAPI document. This has to be done at runtime because
- * the annotation is controlled by a runtime config property.
+ * annotation, remove them from the OpenAPI document. This has to be done at runtime because the annotation is
+ * controlled by a runtime config property.
  */
 public class DisabledRestEndpointsFilter implements OASFilter {
 
@@ -39,21 +39,16 @@ public class DisabledRestEndpointsFilter implements OASFilter {
     public void filterOpenAPI(OpenAPI openAPI) {
         Paths paths = openAPI.getPaths();
 
-        disabledEndpoints.entrySet()
-                .stream()
+        disabledEndpoints.entrySet().stream()
                 .map(pathMethods -> Map.entry(stripSlash(pathMethods.getKey()), pathMethods.getValue()))
                 // Skip paths that are not present in the OpenAPI model
-                .filter(pathMethods -> paths.hasPathItem(pathMethods.getKey()))
-                .forEach(pathMethods -> {
+                .filter(pathMethods -> paths.hasPathItem(pathMethods.getKey())).forEach(pathMethods -> {
                     String path = pathMethods.getKey();
                     PathItem pathItem = paths.getPathItem(path);
 
                     // Remove each operation identified as a disabled HTTP method
-                    Optional.ofNullable(pathMethods.getValue())
-                            .orElseGet(Collections::emptyList)
-                            .stream()
-                            .map(PathItem.HttpMethod::valueOf)
-                            .forEach(method -> pathItem.setOperation(method, null));
+                    Optional.ofNullable(pathMethods.getValue()).orElseGet(Collections::emptyList).stream()
+                            .map(PathItem.HttpMethod::valueOf).forEach(method -> pathItem.setOperation(method, null));
 
                     if (pathItem.getOperations().isEmpty()) {
                         paths.removePathItem(path);
@@ -62,8 +57,8 @@ public class DisabledRestEndpointsFilter implements OASFilter {
     }
 
     /**
-     * Removes any trailing slash character from the path when it is not the root '/'
-     * path. This is necessary to align with the paths generated in the OpenAPI model.
+     * Removes any trailing slash character from the path when it is not the root '/' path. This is necessary to align
+     * with the paths generated in the OpenAPI model.
      */
     static String stripSlash(String path) {
         if (path.endsWith("/") && path.length() > 1) {

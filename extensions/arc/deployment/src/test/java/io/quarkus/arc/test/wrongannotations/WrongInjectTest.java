@@ -17,9 +17,7 @@ public class WrongInjectTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(BeanWithIncorrectInject.class))
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(BeanWithIncorrectInject.class)).assertException(t -> {
                 Throwable rootCause = ExceptionUtil.getRootCause(t);
                 assertTrue(rootCause.getMessage().contains(
                         "@com.google.inject.Inject declared on io.quarkus.arc.test.wrongannotations.BeanWithIncorrectInject.bm1, use @jakarta.inject.Inject instead"),

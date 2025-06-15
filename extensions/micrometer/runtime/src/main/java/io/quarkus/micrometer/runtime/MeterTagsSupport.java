@@ -33,8 +33,7 @@ public class MeterTagsSupport {
     }
 
     Tags getTags(ArcInvocationContext context) {
-        return getCommonTags(context)
-                .and(getMeterTags(context));
+        return getCommonTags(context).and(getMeterTags(context));
     }
 
     private Tags getMeterTags(ArcInvocationContext context) {
@@ -47,8 +46,7 @@ public class MeterTagsSupport {
             if (annotation != null) {
                 Object parameterValue = context.getParameters()[i];
 
-                tags.add(Tag.of(
-                        resolveTagKey(annotation, methodParameter.getName()),
+                tags.add(Tag.of(resolveTagKey(annotation, methodParameter.getName()),
                         resolveTagValue(annotation, parameterValue)));
             }
         }

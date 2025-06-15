@@ -13,8 +13,7 @@ public class DuplicateIdReactiveMongoEntityTest {
     static QuarkusUnitTest runner = new QuarkusUnitTest()
             .overrideConfigKey("quarkus.mongodb.devservices.enabled", "false")
             .setExpectedException(BuildException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DuplicateIdReactiveMongoEntity.class));
+            .withApplicationRoot((jar) -> jar.addClasses(DuplicateIdReactiveMongoEntity.class));
 
     @Test
     void shouldThrow() {

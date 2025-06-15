@@ -32,8 +32,8 @@ public interface TrustedProxyCheck {
     }
 
     /**
-     * User can configure trusted proxies for `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers.
-     * Headers from untrusted proxies must be ignored.
+     * User can configure trusted proxies for `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers. Headers from
+     * untrusted proxies must be ignored.
      *
      * @return true if `Forwarded`, `X-Forwarded` or `X-Forwarded-*` headers were sent by trusted {@link SocketAddress}
      */

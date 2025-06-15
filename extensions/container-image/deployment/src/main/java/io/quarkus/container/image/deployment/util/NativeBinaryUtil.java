@@ -25,7 +25,8 @@ public final class NativeBinaryUtil {
             }
             return (firstBytes[0] == 0x7f && firstBytes[1] == 0x45 && firstBytes[2] == 0x4c && firstBytes[3] == 0x46);
         } catch (IOException e) {
-            throw new UncheckedIOException("Unable to determine type of native binary " + nativeImageBuildItem.getPath(), e);
+            throw new UncheckedIOException(
+                    "Unable to determine type of native binary " + nativeImageBuildItem.getPath(), e);
         }
     }
 }

@@ -37,8 +37,7 @@ import io.smallrye.config.ConfigMappings.ConfigClass;
 public class ConfigDescriptionBuildStep {
 
     @BuildStep
-    List<ConfigDescriptionBuildItem> createConfigDescriptions(
-            ConfigurationBuildItem config) throws Exception {
+    List<ConfigDescriptionBuildItem> createConfigDescriptions(ConfigurationBuildItem config) throws Exception {
         Properties javadoc = new Properties();
         ClassPathUtils.consumeAsStreams("META-INF/quarkus-javadoc.properties", in -> {
             try {
@@ -57,16 +56,16 @@ public class ConfigDescriptionBuildStep {
         return ret;
     }
 
-    private void processConfig(ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret, Properties javadoc,
-            ConfigPhase configPhase) {
+    private void processConfig(ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret,
+            Properties javadoc, ConfigPhase configPhase) {
         for (String childName : patterns.childNames()) {
             ConfigPatternMap<Container> child = patterns.getChild(childName);
             processConfigChild(childName, child, ret, javadoc, configPhase);
         }
     }
 
-    private void processConfigChild(String name, ConfigPatternMap<Container> patterns, List<ConfigDescriptionBuildItem> ret,
-            Properties javadoc, ConfigPhase configPhase) {
+    private void processConfigChild(String name, ConfigPatternMap<Container> patterns,
+            List<ConfigDescriptionBuildItem> ret, Properties javadoc, ConfigPhase configPhase) {
 
         Iterable<String> childNames = patterns.childNames();
         if (childNames.iterator().hasNext()) {
@@ -84,7 +83,8 @@ public class ConfigDescriptionBuildStep {
                     String defaultDefault;
                     final Class<?> valueClass = field.getType();
 
-                    EffectiveConfigTypeAndValues effectiveConfigTypeAndValues = getTypeName(valueClass, field.getGenericType());
+                    EffectiveConfigTypeAndValues effectiveConfigTypeAndValues = getTypeName(valueClass,
+                            field.getGenericType());
 
                     if (valueClass == boolean.class) {
                         defaultDefault = "false";
@@ -106,11 +106,8 @@ public class ConfigDescriptionBuildStep {
                         }
                     }
                     String javadocKey = field.getDeclaringClass().getName().replace('$', '.') + '.' + field.getName();
-                    ret.add(new ConfigDescriptionBuildItem(name,
-                            defVal,
-                            javadoc.getProperty(javadocKey),
-                            effectiveConfigTypeAndValues.typeName(),
-                            effectiveConfigTypeAndValues.allowedValues(),
+                    ret.add(new ConfigDescriptionBuildItem(name, defVal, javadoc.getProperty(javadocKey),
+                            effectiveConfigTypeAndValues.typeName(), effectiveConfigTypeAndValues.allowedValues(),
                             configPhase));
                 }
             });
@@ -144,9 +141,11 @@ public class ConfigDescriptionBuildStep {
                 }
 
                 String javadocKey = method.getDeclaringClass().getName().replace('$', '.') + '.' + method.getName();
-                EffectiveConfigTypeAndValues typeName = getTypeName(method.getReturnType(), method.getGenericReturnType());
+                EffectiveConfigTypeAndValues typeName = getTypeName(method.getReturnType(),
+                        method.getGenericReturnType());
                 descriptionBuildItems.add(new ConfigDescriptionBuildItem(propertyName, defaultValue,
-                        javaDocProperties.getProperty(javadocKey), typeName.typeName(), typeName.allowedValues(), configPhase));
+                        javaDocProperties.getProperty(javadocKey), typeName.typeName(), typeName.allowedValues(),
+                        configPhase));
             }
         }
     }

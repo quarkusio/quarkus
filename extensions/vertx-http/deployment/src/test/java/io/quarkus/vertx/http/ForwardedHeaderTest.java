@@ -13,55 +13,39 @@ import io.restassured.RestAssured;
 public class ForwardedHeaderTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ForwardedHandlerInitializer.class)
-                    .addAsResource(new StringAsset("quarkus.http.proxy.proxy-address-forwarding=true\n" +
-                            "quarkus.http.proxy.allow-forwarded=true"),
-                            "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(ForwardedHandlerInitializer.class)
+            .addAsResource(new StringAsset(
+                    "quarkus.http.proxy.proxy-address-forwarding=true\n" + "quarkus.http.proxy.allow-forwarded=true"),
+                    "application.properties"));
 
     @Test
     public void test() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
-        RestAssured.given()
-                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
-                .get("/forward")
-                .then()
-                .body(Matchers.equalTo("https|somehost|backend:4444"));
+        RestAssured.given().header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https").get("/forward")
+                .then().body(Matchers.equalTo("https|somehost|backend:4444"));
     }
 
     @Test
     public void testWithoutTrustedProxyHeader() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
-        RestAssured.given()
-                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
-                .get("/trusted-proxy")
-                .then()
-                .body(Matchers.equalTo("https|somehost|backend:4444|null"));
+        RestAssured.given().header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .get("/trusted-proxy").then().body(Matchers.equalTo("https|somehost|backend:4444|null"));
     }
 
     @Test
     public void testThatTrustedProxyHeaderCannotBeForged() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
-        RestAssured.given()
-                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
-                .header("X-Forwarded-Trusted-Proxy", "true")
-                .get("/trusted-proxy")
-                .then()
+        RestAssured.given().header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .header("X-Forwarded-Trusted-Proxy", "true").get("/trusted-proxy").then()
                 .body(Matchers.equalTo("https|somehost|backend:4444|null"));
 
-        RestAssured.given()
-                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
-                .header("X-Forwarded-Trusted-Proxy", "hello")
-                .get("/trusted-proxy")
-                .then()
+        RestAssured.given().header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .header("X-Forwarded-Trusted-Proxy", "hello").get("/trusted-proxy").then()
                 .body(Matchers.equalTo("https|somehost|backend:4444|null"));
 
-        RestAssured.given()
-                .header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
-                .header("X-Forwarded-Trusted-Proxy", "false")
-                .get("/trusted-proxy")
-                .then()
+        RestAssured.given().header("Forwarded", "by=proxy;for=backend:4444;host=somehost;proto=https")
+                .header("X-Forwarded-Trusted-Proxy", "false").get("/trusted-proxy").then()
                 .body(Matchers.equalTo("https|somehost|backend:4444|null"));
     }
 
@@ -69,11 +53,8 @@ public class ForwardedHeaderTest {
     public void testForwardedForWithSequenceOfProxies() {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
 
-        RestAssured.given()
-                .header("Forwarded", "by=proxy;for=backend:4444,for=backend2:5555;host=somehost;proto=https")
-                .get("/forward")
-                .then()
-                .body(Matchers.equalTo("https|somehost|backend:4444"));
+        RestAssured.given().header("Forwarded", "by=proxy;for=backend:4444,for=backend2:5555;host=somehost;proto=https")
+                .get("/forward").then().body(Matchers.equalTo("https|somehost|backend:4444"));
     }
 
     @Test
@@ -81,10 +62,9 @@ public class ForwardedHeaderTest {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
 
         RestAssured.given()
-                .header("Forwarded", "by=proxy;for=\"[2001:db8:cafe::17]:47011\",for=backend:4444;host=somehost;proto=https")
-                .get("/forward")
-                .then()
-                .body(Matchers.equalTo("https|somehost|[2001:db8:cafe::17]:47011"));
+                .header("Forwarded",
+                        "by=proxy;for=\"[2001:db8:cafe::17]:47011\",for=backend:4444;host=somehost;proto=https")
+                .get("/forward").then().body(Matchers.equalTo("https|somehost|[2001:db8:cafe::17]:47011"));
     }
 
     @Test
@@ -92,9 +72,8 @@ public class ForwardedHeaderTest {
         assertThat(RestAssured.get("/forward").asString()).startsWith("http|");
 
         RestAssured.given()
-                .header("Forwarded", "by=proxy;for=\"[2001:db8:cafe::17]:47011\",for=backend:4444;host=somehost;proto=https")
-                .get("/forward")
-                .then()
-                .body(Matchers.equalTo("https|somehost|[2001:db8:cafe::17]:47011"));
+                .header("Forwarded",
+                        "by=proxy;for=\"[2001:db8:cafe::17]:47011\",for=backend:4444;host=somehost;proto=https")
+                .get("/forward").then().body(Matchers.equalTo("https|somehost|[2001:db8:cafe::17]:47011"));
     }
 }

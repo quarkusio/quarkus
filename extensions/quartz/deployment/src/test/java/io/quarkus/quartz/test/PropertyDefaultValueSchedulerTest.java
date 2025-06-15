@@ -19,11 +19,9 @@ public class PropertyDefaultValueSchedulerTest {
     private static final String EXPECTED_IDENTITY = "TestIdentity";
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Jobs.class)
-                    .addAsResource(new StringAsset("PropertyDefaultValueSchedulerTest.default=" + EXPECTED_IDENTITY),
-                            "application.properties"));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Jobs.class)
+            .addAsResource(new StringAsset("PropertyDefaultValueSchedulerTest.default=" + EXPECTED_IDENTITY),
+                    "application.properties"));
 
     @Test
     public void testDefaultIdentity() throws InterruptedException {

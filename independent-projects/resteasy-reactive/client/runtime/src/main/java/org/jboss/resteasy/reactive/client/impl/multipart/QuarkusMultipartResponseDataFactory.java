@@ -66,18 +66,15 @@ public class QuarkusMultipartResponseDataFactory {
     private boolean deleteOnExit; // false is a good default cause true leaks
 
     /**
-     * Keep all {@link HttpData}s until cleaning methods are called.
-     * We need to use {@link IdentityHashMap} because different requests may be equal.
-     * See {@link DefaultHttpRequest#hashCode} and {@link DefaultHttpRequest#equals}.
-     * Similarly, when removing data items, we need to check their identities because
-     * different data items may be equal.
+     * Keep all {@link HttpData}s until cleaning methods are called. We need to use {@link IdentityHashMap} because
+     * different requests may be equal. See {@link DefaultHttpRequest#hashCode} and {@link DefaultHttpRequest#equals}.
+     * Similarly, when removing data items, we need to check their identities because different data items may be equal.
      */
     private final Map<HttpClientResponse, List<HttpData>> responseFileDeleteMap = Collections
             .synchronizedMap(new IdentityHashMap<>());
 
     /**
-     * HttpData will be in memory if less than default size (16KB).
-     * The type will be Mixed.
+     * HttpData will be in memory if less than default size (16KB). The type will be Mixed.
      */
     public QuarkusMultipartResponseDataFactory() {
         useDisk = false;
@@ -104,8 +101,8 @@ public class QuarkusMultipartResponseDataFactory {
     }
 
     /**
-     * HttpData will be on Disk if the size of the file is greater than minSize, else it
-     * will be in memory. The type will be Mixed.
+     * HttpData will be on Disk if the size of the file is greater than minSize, else it will be in memory. The type
+     * will be Mixed.
      */
     public QuarkusMultipartResponseDataFactory(long minSize) {
         useDisk = false;
@@ -121,7 +118,8 @@ public class QuarkusMultipartResponseDataFactory {
     /**
      * Override global {@link DiskAttribute#baseDirectory} and {@link DiskFileUpload#baseDirectory} values.
      *
-     * @param baseDir directory path where to store disk attributes and file uploads.
+     * @param baseDir
+     *        directory path where to store disk attributes and file uploads.
      */
     public void setBaseDir(String baseDir) {
         this.baseDir = baseDir;
@@ -131,7 +129,8 @@ public class QuarkusMultipartResponseDataFactory {
      * Override global {@link DiskAttribute#deleteOnExitTemporaryFile} and
      * {@link DiskFileUpload#deleteOnExitTemporaryFile} values.
      *
-     * @param deleteOnExit true if temporary files should be deleted with the JVM, false otherwise.
+     * @param deleteOnExit
+     *        true if temporary files should be deleted with the JVM, false otherwise.
      */
     public void setDeleteOnExit(boolean deleteOnExit) {
         this.deleteOnExit = deleteOnExit;
@@ -240,11 +239,10 @@ public class QuarkusMultipartResponseDataFactory {
 
     // to reuse netty stuff as much as possible, we use FileUpload class to represent the downloaded file
     // the difference between this and the original is that we always use DiskFileUpload
-    public FileUpload createFileUpload(HttpClientResponse response, String name, String filename,
-            String contentType, String contentTransferEncoding, Charset charset,
-            long size) {
-        FileUpload fileUpload = new DiskFileUpload(name, filename, contentType,
-                contentTransferEncoding, charset, size, baseDir, deleteOnExit);
+    public FileUpload createFileUpload(HttpClientResponse response, String name, String filename, String contentType,
+            String contentTransferEncoding, Charset charset, long size) {
+        FileUpload fileUpload = new DiskFileUpload(name, filename, contentType, contentTransferEncoding, charset, size,
+                baseDir, deleteOnExit);
         fileUpload.setMaxSize(maxSize);
         checkHttpDataSize(fileUpload);
         List<HttpData> list = getList(response);

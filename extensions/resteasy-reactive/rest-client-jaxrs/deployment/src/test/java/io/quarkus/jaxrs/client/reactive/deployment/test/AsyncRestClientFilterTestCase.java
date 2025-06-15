@@ -37,8 +37,7 @@ public class AsyncRestClientFilterTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class));
 
     @TestHTTPResource
     URL url;
@@ -48,11 +47,8 @@ public class AsyncRestClientFilterTestCase {
     @BeforeEach
     public void before() {
         // register one filter with builder to test configuration inheritance
-        client = ClientBuilder.newBuilder()
-                .register(SyncClientRequestFilter.class)
-                .build()
-                .register(AsyncClientRequestFilter.class)
-                .register(AsyncClientResponseFilter.class);
+        client = ClientBuilder.newBuilder().register(SyncClientRequestFilter.class).build()
+                .register(AsyncClientRequestFilter.class).register(AsyncClientResponseFilter.class);
     }
 
     @AfterEach
@@ -77,11 +73,8 @@ public class AsyncRestClientFilterTestCase {
                 public void handle(RoutingContext event) {
                     String syncHeader = event.request().getHeader("sync");
                     String asyncHeader = event.request().getHeader("async");
-                    event.response()
-                            .putHeader("content-type", "text/plain")
-                            .putHeader("sync", syncHeader)
-                            .putHeader("async", asyncHeader)
-                            .end();
+                    event.response().putHeader("content-type", "text/plain").putHeader("sync", syncHeader)
+                            .putHeader("async", asyncHeader).end();
                 }
             });
         }
@@ -102,9 +95,8 @@ public class AsyncRestClientFilterTestCase {
         @Override
         public void filter(ResteasyReactiveClientRequestContext requestContext) {
             requestContext.suspend();
-            Uni.createFrom().completionStage(CompletableFuture.supplyAsync(() -> "bar"))
-                    .onItem().delayIt().by(Duration.ofSeconds(3))
-                    .subscribe().with(new Consumer<String>() {
+            Uni.createFrom().completionStage(CompletableFuture.supplyAsync(() -> "bar")).onItem().delayIt()
+                    .by(Duration.ofSeconds(3)).subscribe().with(new Consumer<String>() {
                         @Override
                         public void accept(String s) {
                             requestContext.getHeaders().add("async", s);
@@ -125,9 +117,8 @@ public class AsyncRestClientFilterTestCase {
         @Override
         public void filter(ResteasyReactiveClientRequestContext requestContext, ClientResponseContext responseContext) {
             requestContext.suspend();
-            Uni.createFrom().completionStage(CompletableFuture.supplyAsync(() -> 201))
-                    .onItem().delayIt().by(Duration.ofSeconds(3))
-                    .subscribe().with(new Consumer<Integer>() {
+            Uni.createFrom().completionStage(CompletableFuture.supplyAsync(() -> 201)).onItem().delayIt()
+                    .by(Duration.ofSeconds(3)).subscribe().with(new Consumer<Integer>() {
                         @Override
                         public void accept(Integer r) {
                             responseContext.setStatus(r);

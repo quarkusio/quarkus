@@ -74,8 +74,7 @@ class SpringSecurityProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void addSpringSecuredSecurityCheck(CombinedIndexBuildItem index,
-            SecurityCheckRecorder securityCheckRecorder,
+    void addSpringSecuredSecurityCheck(CombinedIndexBuildItem index, SecurityCheckRecorder securityCheckRecorder,
             BuildProducer<AdditionalSecurityCheckBuildItem> additionalSecurityCheckBuildItems) {
 
         Set<MethodInfo> methodsWithSecurityAnnotation = new HashSet<>();
@@ -136,10 +135,11 @@ class SpringSecurityProcessor {
         return false;
     }
 
-    //Validates that there is no @Secured with the standard security annotations at class level
+    // Validates that there is no @Secured with the standard security annotations at class level
     private void checksStandardSecurity(AnnotationInstance instance, ClassInfo classInfo) {
         if (hasSecurityAnnotation(classInfo)) {
-            Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(classInfo);
+            Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(
+                    classInfo);
             if (firstStandardSecurityAnnotation.isPresent()) {
                 String securityAnnotationName = findFirstStandardSecurityAnnotation(classInfo).get().name()
                         .withoutPackagePrefix();
@@ -150,13 +150,13 @@ class SpringSecurityProcessor {
         }
     }
 
-    //Validates that there is no @Secured with the standard security annotations at method level
+    // Validates that there is no @Secured with the standard security annotations at method level
     private void checksStandardSecurity(AnnotationInstance instance, MethodInfo methodInfo) {
         if (hasSecurityAnnotation(methodInfo)) {
-            Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(methodInfo);
+            Optional<AnnotationInstance> firstStandardSecurityAnnotation = findFirstStandardSecurityAnnotation(
+                    methodInfo);
             if (firstStandardSecurityAnnotation.isPresent()) {
-                String securityAnnotationName = findFirstStandardSecurityAnnotation(methodInfo).get()
-                        .name()
+                String securityAnnotationName = findFirstStandardSecurityAnnotation(methodInfo).get().name()
                         .withoutPackagePrefix();
                 throw new IllegalArgumentException("An invalid security annotation combination was detected: Found "
                         + instance.name().withoutPackagePrefix() + " and " + securityAnnotationName + " on method "
@@ -171,8 +171,7 @@ class SpringSecurityProcessor {
     }
 
     @BuildStep
-    void locatePreAuthorizedInstances(
-            CombinedIndexBuildItem index,
+    void locatePreAuthorizedInstances(CombinedIndexBuildItem index,
             BuildProducer<SpringPreAuthorizeAnnotatedMethodBuildItem> springPreAuthorizeAnnotatedMethods,
             BuildProducer<AnnotationsTransformerBuildItem> annotationsTransformer) {
         Map<MethodInfo, AnnotationInstance> result = new HashMap<>();
@@ -242,8 +241,7 @@ class SpringSecurityProcessor {
 
         /*
          * Go through each of the classes that have an instance of a meta-annotation and add the @PreAuthorize
-         * annotation to the class.
-         * This is done in order so Arc will ensure that an interceptor will be introduced
+         * annotation to the class. This is done in order so Arc will ensure that an interceptor will be introduced
          */
         annotationsTransformer.produce(new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
             @Override
@@ -273,8 +271,8 @@ class SpringSecurityProcessor {
 
         Map<DotName, Set<FieldInfo>> stringPropertiesInNeedOfGeneratedAccessors = new HashMap<>();
 
-        for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods.getMethodToInstanceMap()
-                .entrySet()) {
+        for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods
+                .getMethodToInstanceMap().entrySet()) {
             AnnotationInstance instance = entry.getValue();
             MethodInfo methodInfo = entry.getKey();
             String value = instance.value().asString().trim();
@@ -299,28 +297,24 @@ class SpringSecurityProcessor {
                     }
 
                     ParameterNameAndIndex parameterNameAndIndex = getParameterNameAndIndexForPrincipalUserNameReference(
-                            methodInfo,
-                            matcher, part);
+                            methodInfo, matcher, part);
 
-                    String propertyName = matcher.group(PARAMETER_EQ_PRINCIPAL_USERNAME_PROPERTY_ACCESSOR_MATCHER_GROUP);
+                    String propertyName = matcher
+                            .group(PARAMETER_EQ_PRINCIPAL_USERNAME_PROPERTY_ACCESSOR_MATCHER_GROUP);
                     if (propertyName != null) {
                         /*
-                         * In this we need to call a getter method on the parameter. In order to do that we need to generate
-                         * an accessor for that method (which is ensured to return type String since that is the type of the
-                         * username).
+                         * In this we need to call a getter method on the parameter. In order to do that we need to
+                         * generate an accessor for that method (which is ensured to return type String since that is
+                         * the type of the username).
                          */
                         StringPropertyAccessorData stringPropertyAccessorData = StringPropertyAccessorData.from(
-                                methodInfo, parameterNameAndIndex.getIndex(),
-                                propertyName, index.getIndex(),
-                                part);
+                                methodInfo, parameterNameAndIndex.getIndex(), propertyName, index.getIndex(), part);
 
                         Set<FieldInfo> fields = stringPropertiesInNeedOfGeneratedAccessors.getOrDefault(
-                                stringPropertyAccessorData.getMatchingParameterClassInfo().name(),
-                                new HashSet<>());
+                                stringPropertyAccessorData.getMatchingParameterClassInfo().name(), new HashSet<>());
                         fields.add(stringPropertyAccessorData.getMatchingParameterFieldInfo());
-                        stringPropertiesInNeedOfGeneratedAccessors.put(
-                                stringPropertyAccessorData.getMatchingParameterClassInfo().name(),
-                                fields);
+                        stringPropertiesInNeedOfGeneratedAccessors
+                                .put(stringPropertyAccessorData.getMatchingParameterClassInfo().name(), fields);
                     }
                 }
             }
@@ -329,7 +323,8 @@ class SpringSecurityProcessor {
         // actually generate the accessor classes as beans
         if (!stringPropertiesInNeedOfGeneratedAccessors.isEmpty()) {
             GeneratedBeanGizmoAdaptor classOutput = new GeneratedBeanGizmoAdaptor(generatedBeans);
-            Set<String> generatedBeanClassNames = new HashSet<>(stringPropertiesInNeedOfGeneratedAccessors.keySet().size());
+            Set<String> generatedBeanClassNames = new HashSet<>(
+                    stringPropertiesInNeedOfGeneratedAccessors.keySet().size());
             for (Map.Entry<DotName, Set<FieldInfo>> entry : stringPropertiesInNeedOfGeneratedAccessors.entrySet()) {
                 String generateClassName = StringPropertyAccessorGenerator.generate(entry.getKey(), entry.getValue(),
                         classOutput);
@@ -342,8 +337,7 @@ class SpringSecurityProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void addSpringPreAuthorizeSecurityCheck(CombinedIndexBuildItem index,
-            SecurityCheckRecorder securityCheckRecorder,
+    void addSpringPreAuthorizeSecurityCheck(CombinedIndexBuildItem index, SecurityCheckRecorder securityCheckRecorder,
             SpringSecurityRecorder springSecurityRecorder,
             SpringPreAuthorizeAnnotatedMethodBuildItem springPreAuthorizeAnnotatedMethods,
             SpringBeanNameToDotNameBuildItem springBeanNames,
@@ -354,12 +348,12 @@ class SpringSecurityProcessor {
         Map<String, DotName> springBeansNameToDotName = springBeanNames.getMap();
         Map<String, ClassInfo> springBeansNameToClassInfo = new HashMap<>();
         Set<String> beansReferencedInPreAuthorized = new HashSet<>();
-        BeanMethodInvocationGenerator beanMethodInvocationGenerator = new BeanMethodInvocationGenerator(index.getIndex(),
-                springBeansNameToDotName, springBeansNameToClassInfo, beansReferencedInPreAuthorized,
+        BeanMethodInvocationGenerator beanMethodInvocationGenerator = new BeanMethodInvocationGenerator(
+                index.getIndex(), springBeansNameToDotName, springBeansNameToClassInfo, beansReferencedInPreAuthorized,
                 new GeneratedClassGizmoAdaptor(generatedClasses, true));
 
-        for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods.getMethodToInstanceMap()
-                .entrySet()) {
+        for (Map.Entry<MethodInfo, AnnotationInstance> entry : springPreAuthorizeAnnotatedMethods
+                .getMethodToInstanceMap().entrySet()) {
             AnnotationInstance instance = entry.getValue();
 
             MethodInfo methodInfo = entry.getKey();
@@ -411,12 +405,10 @@ class SpringSecurityProcessor {
 
                     String hasRoleValue = part.replace("hasRole(", "").replace(")", "");
                     Supplier<String[]> hasRoleValueProducer = HasRoleValueUtil.getHasRoleValueProducer(hasRoleValue,
-                            methodInfo,
-                            index.getIndex(), springBeansNameToDotName, springBeansNameToClassInfo,
-                            beansReferencedInPreAuthorized,
-                            springSecurityRecorder);
-                    securityChecks.add(
-                            springSecurityRecorder.rolesAllowed(Collections.singletonList(hasRoleValueProducer)));
+                            methodInfo, index.getIndex(), springBeansNameToDotName, springBeansNameToClassInfo,
+                            beansReferencedInPreAuthorized, springSecurityRecorder);
+                    securityChecks
+                            .add(springSecurityRecorder.rolesAllowed(Collections.singletonList(hasRoleValueProducer)));
 
                 } else if (part.startsWith("hasAnyRole(")) {
 
@@ -424,30 +416,31 @@ class SpringSecurityProcessor {
                     String[] hasRoleParts = hasRoleValues.split(",");
                     List<Supplier<String[]>> hasRoleValueProducers = new ArrayList<>(hasRoleParts.length);
                     for (String hasRolePart : hasRoleParts) {
-                        hasRoleValueProducers
-                                .add(HasRoleValueUtil.getHasRoleValueProducer(hasRolePart.trim(), methodInfo, index.getIndex(),
-                                        springBeansNameToDotName,
-                                        springBeansNameToClassInfo, beansReferencedInPreAuthorized, springSecurityRecorder));
+                        hasRoleValueProducers.add(HasRoleValueUtil.getHasRoleValueProducer(hasRolePart.trim(),
+                                methodInfo, index.getIndex(), springBeansNameToDotName, springBeansNameToClassInfo,
+                                beansReferencedInPreAuthorized, springSecurityRecorder));
                     }
                     securityChecks.add(springSecurityRecorder.rolesAllowed(hasRoleValueProducers));
 
-                } else if (part.matches(PARAMETER_EQ_PRINCIPAL_USERNAME_REGEX)) { // TODO this section needs to be improved
+                } else if (part.matches(PARAMETER_EQ_PRINCIPAL_USERNAME_REGEX)) { // TODO this section needs to be
+                                                                                  // improved
 
                     Matcher matcher = PARAMETER_EQ_PRINCIPAL_USERNAME_PATTERN.matcher(part);
                     if (!matcher.find()) { // should never happen
                         throw SpringSecurityProcessorUtil.createGenericMalformedException(methodInfo, part);
                     }
                     ParameterNameAndIndex parameterNameAndIndex = getParameterNameAndIndexForPrincipalUserNameReference(
-                            methodInfo,
-                            matcher, part);
+                            methodInfo, matcher, part);
 
-                    String propertyName = matcher.group(PARAMETER_EQ_PRINCIPAL_USERNAME_PROPERTY_ACCESSOR_MATCHER_GROUP);
+                    String propertyName = matcher
+                            .group(PARAMETER_EQ_PRINCIPAL_USERNAME_PROPERTY_ACCESSOR_MATCHER_GROUP);
                     if (propertyName == null) { // this is the case where the parameter is supposed to be a string
-                        if (!DotNames.STRING.equals(methodInfo.parameterType(parameterNameAndIndex.getIndex()).name())) {
-                            throw new IllegalArgumentException(
-                                    "Expression: '" + part + "' in the @PreAuthorize annotation on method '" + methodInfo.name()
-                                            + "' of class '" + methodInfo.declaringClass() + "' references method parameter '"
-                                            + parameterNameAndIndex.getName() + "' which is not a string");
+                        if (!DotNames.STRING
+                                .equals(methodInfo.parameterType(parameterNameAndIndex.getIndex()).name())) {
+                            throw new IllegalArgumentException("Expression: '" + part
+                                    + "' in the @PreAuthorize annotation on method '" + methodInfo.name()
+                                    + "' of class '" + methodInfo.declaringClass() + "' references method parameter '"
+                                    + parameterNameAndIndex.getName() + "' which is not a string");
                         }
                         PrincipalNameFromParameterSecurityCheck.CheckType checkType = part.contains("==")
                                 ? PrincipalNameFromParameterSecurityCheck.CheckType.EQ
@@ -456,14 +449,12 @@ class SpringSecurityProcessor {
                                 .principalNameFromParameterSecurityCheck(parameterNameAndIndex.getIndex(), checkType));
                     } else {
                         /*
-                         * In this the security check needs to check against a property of the method parameter.
-                         * We use a special SecurityCheck that leverages a generated accessor class
-                         * (see the generateStringPropertyAccessors method)
+                         * In this the security check needs to check against a property of the method parameter. We use
+                         * a special SecurityCheck that leverages a generated accessor class (see the
+                         * generateStringPropertyAccessors method)
                          */
                         StringPropertyAccessorData stringPropertyAccessorData = StringPropertyAccessorData.from(
-                                methodInfo, parameterNameAndIndex.getIndex(),
-                                propertyName, index.getIndex(),
-                                part);
+                                methodInfo, parameterNameAndIndex.getIndex(), propertyName, index.getIndex(), part);
 
                         PrincipalNameFromParameterObjectSecurityCheck.CheckType checkType = part.contains("==")
                                 ? PrincipalNameFromParameterObjectSecurityCheck.CheckType.EQ
@@ -472,11 +463,9 @@ class SpringSecurityProcessor {
                         securityChecks.add(springSecurityRecorder.principalNameFromParameterObjectSecurityCheck(
                                 parameterNameAndIndex.getIndex(),
                                 stringPropertyAccessorData.getMatchingParameterClassInfo().name().toString(),
-                                StringPropertyAccessorGenerator
-                                        .getAccessorClassName(
-                                                stringPropertyAccessorData.getMatchingParameterClassInfo().name()),
-                                stringPropertyAccessorData.getMatchingParameterFieldInfo().name(),
-                                checkType));
+                                StringPropertyAccessorGenerator.getAccessorClassName(
+                                        stringPropertyAccessorData.getMatchingParameterClassInfo().name()),
+                                stringPropertyAccessorData.getMatchingParameterFieldInfo().name(), checkType));
 
                     }
                 } else if (part.matches(SpringSecurityProcessorUtil.BASIC_BEAN_METHOD_INVOCATION_REGEX)) {
@@ -489,7 +478,8 @@ class SpringSecurityProcessor {
 
             // if there is only one security check we don't need to do any delegation
             if (securityChecks.size() == 1) {
-                additionalSecurityChecks.produce(new AdditionalSecurityCheckBuildItem(methodInfo, securityChecks.get(0)));
+                additionalSecurityChecks
+                        .produce(new AdditionalSecurityCheckBuildItem(methodInfo, securityChecks.get(0)));
             } else {
                 if (containsAnd) {
                     additionalSecurityChecks.produce(new AdditionalSecurityCheckBuildItem(methodInfo,
@@ -507,12 +497,12 @@ class SpringSecurityProcessor {
         }
     }
 
-    private ParameterNameAndIndex getParameterNameAndIndexForPrincipalUserNameReference(MethodInfo methodInfo, Matcher matcher,
-            String expression) {
+    private ParameterNameAndIndex getParameterNameAndIndexForPrincipalUserNameReference(MethodInfo methodInfo,
+            Matcher matcher, String expression) {
         String parameterName = matcher.group(PARAMETER_EQ_PRINCIPAL_USERNAME_PARAMETER_NAME_GROUP);
 
-        return new ParameterNameAndIndex(SpringSecurityProcessorUtil.getParameterIndex(methodInfo, parameterName, expression),
-                parameterName);
+        return new ParameterNameAndIndex(
+                SpringSecurityProcessorUtil.getParameterIndex(methodInfo, parameterName, expression), parameterName);
     }
 
 }

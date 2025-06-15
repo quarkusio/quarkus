@@ -7,7 +7,8 @@ import org.hibernate.engine.jdbc.mutation.internal.StandardMutationExecutorServi
 import org.hibernate.engine.jdbc.mutation.spi.MutationExecutorService;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
-public final class QuarkusMutationExecutorServiceInitiator implements StandardServiceInitiator<MutationExecutorService> {
+public final class QuarkusMutationExecutorServiceInitiator
+        implements StandardServiceInitiator<MutationExecutorService> {
     /**
      * Singleton access
      */

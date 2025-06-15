@@ -118,9 +118,8 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
         return Stream.concat(Stream.of(current), current.descendants()).map(p -> {
             ProcessHandle.Info i = p.info();
             return String.format("PID %8d (%8d) started:%s CPU:%s - %s", p.pid(),
-                    p.parent().map(ProcessHandle::pid).orElse(-1L),
-                    i.startInstant().orElse(null), i.totalCpuDuration().orElse(null),
-                    i.commandLine().orElse("<command line not available>"));
+                    p.parent().map(ProcessHandle::pid).orElse(-1L), i.startInstant().orElse(null),
+                    i.totalCpuDuration().orElse(null), i.commandLine().orElse("<command line not available>"));
         }).collect(Collectors.toList());
     }
 
@@ -201,15 +200,12 @@ public abstract class QuarkusDevGradleTestBase extends QuarkusGradleWrapperTestB
     }
 
     protected void assertUpdatedResponseContains(String path, String value, long waitAtMost, TimeUnit timeUnit) {
-        await()
-                .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(waitAtMost, timeUnit).until(() -> getHttpResponse(path, waitAtMost, timeUnit).contains(value));
+        await().pollDelay(100, TimeUnit.MILLISECONDS).atMost(waitAtMost, timeUnit)
+                .until(() -> getHttpResponse(path, waitAtMost, timeUnit).contains(value));
     }
 
     protected void assertStatusCode(String path, int code) {
-        await()
-                .pollDelay(100, TimeUnit.MILLISECONDS)
-                .atMost(devModeTimeoutSeconds(), TimeUnit.SECONDS)
+        await().pollDelay(100, TimeUnit.MILLISECONDS).atMost(devModeTimeoutSeconds(), TimeUnit.SECONDS)
                 .until(() -> Assert.assertTrue(devModeClient.getStrictHttpResponse(path, code)));
     }
 }

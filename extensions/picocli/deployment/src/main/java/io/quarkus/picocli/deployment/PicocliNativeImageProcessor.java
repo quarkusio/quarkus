@@ -94,21 +94,17 @@ public class PicocliNativeImageProcessor {
         // Register both declared methods and fields as they are accessed by picocli during initialization
         foundClasses.forEach(classInfo -> {
             if (Modifier.isInterface(classInfo.flags())) {
-                nativeImageProxies
-                        .produce(new NativeImageProxyDefinitionBuildItem(classInfo.name().toString()));
-                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).constructors(false)
-                        .methods().fields().build());
+                nativeImageProxies.produce(new NativeImageProxyDefinitionBuildItem(classInfo.name().toString()));
+                reflectiveClasses.produce(ReflectiveClassBuildItem.builder(classInfo.name().toString())
+                        .constructors(false).methods().fields().build());
             } else {
-                reflectiveClasses
-                        .produce(ReflectiveClassBuildItem.builder(classInfo.name().toString()).methods().fields().build());
+                reflectiveClasses.produce(
+                        ReflectiveClassBuildItem.builder(classInfo.name().toString()).methods().fields().build());
             }
         });
-        typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(ReflectiveHierarchyBuildItem
-                .builder(type)
-                .source(PicocliNativeImageProcessor.class.getSimpleName())
-                .ignoreFieldPredicate(fi -> true)
-                .ignoreMethodPredicate(mi -> true)
-                .build()));
+        typeAnnotationValues.forEach(type -> reflectiveHierarchies.produce(
+                ReflectiveHierarchyBuildItem.builder(type).source(PicocliNativeImageProcessor.class.getSimpleName())
+                        .ignoreFieldPredicate(fi -> true).ignoreMethodPredicate(mi -> true).build()));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)

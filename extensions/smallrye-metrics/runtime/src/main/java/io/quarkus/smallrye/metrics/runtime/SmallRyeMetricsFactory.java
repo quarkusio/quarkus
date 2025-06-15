@@ -46,8 +46,7 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
                     registry = MetricRegistries.get(MetricRegistry.Type.VENDOR);
                     break;
             }
-            builder = org.eclipse.microprofile.metrics.Metadata.builder()
-                    .withName(name);
+            builder = org.eclipse.microprofile.metrics.Metadata.builder().withName(name);
         }
 
         public MetricBuilder unit(String unit) {
@@ -76,7 +75,8 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
         @Override
         public <T, R extends Number> void buildCounter(T obj, Function<T, R> countFunction) {
             builder.withType(MetricType.COUNTER);
-            registry.register(builder.build(), new SmallRyeFunctionCounter<>(obj, countFunction), tags.toArray(new Tag[0]));
+            registry.register(builder.build(), new SmallRyeFunctionCounter<>(obj, countFunction),
+                    tags.toArray(new Tag[0]));
         }
 
         @Override
@@ -88,7 +88,8 @@ public class SmallRyeMetricsFactory implements MetricsFactory {
         @Override
         public <T, R extends Number> void buildGauge(T obj, Function<T, R> gaugeFunction) {
             builder.withType(MetricType.GAUGE);
-            registry.register(builder.build(), new SmallRyeFunctionGauge<>(obj, gaugeFunction), tags.toArray(new Tag[0]));
+            registry.register(builder.build(), new SmallRyeFunctionGauge<>(obj, gaugeFunction),
+                    tags.toArray(new Tag[0]));
         }
 
         @Override

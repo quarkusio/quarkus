@@ -28,8 +28,8 @@ import java.util.Locale;
 public @interface MessageBundle {
 
     /**
-     * Constant value for {@link #locale()} indicating that the default locale specified via the {@code quarkus.default-locale}
-     * config property should be used.
+     * Constant value for {@link #locale()} indicating that the default locale specified via the
+     * {@code quarkus.default-locale} config property should be used.
      */
     String DEFAULT_LOCALE = "<<default locale>>";
 
@@ -43,11 +43,10 @@ public @interface MessageBundle {
      * <p>
      * For a top-level class the {@value #DEFAULT_NAME} is used.
      * <p>
-     * For a nested class the name consists of the simple names of all enclosing classes in the hierarchy (top-level class goes
-     * first), followed by the simple name of the message bundle interface. Names are separated by underscores.
-     *
-     * For example, the name of the following message bundle will be defaulted to {@code Controller_index} and it could
-     * be used in a template via <code>{Controller_index:hello(name)}</code>:
+     * For a nested class the name consists of the simple names of all enclosing classes in the hierarchy (top-level
+     * class goes first), followed by the simple name of the message bundle interface. Names are separated by
+     * underscores. For example, the name of the following message bundle will be defaulted to {@code Controller_index}
+     * and it could be used in a template via <code>{Controller_index:hello(name)}</code>:
      *
      * <pre>
      * <code>
@@ -66,8 +65,8 @@ public @interface MessageBundle {
     String DEFAULTED_NAME = "<<defaulted name>>";
 
     /**
-     * The name is used as a namespace in templates expressions - <code>{msg:hello_world}</code>, and as a part of the name of a
-     * message bundle localized file - <code>msg_de.properties</code>.
+     * The name is used as a namespace in templates expressions - <code>{msg:hello_world}</code>, and as a part of the
+     * name of a message bundle localized file - <code>msg_de.properties</code>.
      * <p>
      * If multiple bundles declare the same name then the build fails.
      *
@@ -80,6 +79,7 @@ public @interface MessageBundle {
      * {@link Message#UNDERSCORED_ELEMENT_NAME}.
      *
      * @return the default key strategy
+     *
      * @see Message#key()
      */
     String defaultKey() default Message.ELEMENT_NAME;
@@ -88,6 +88,7 @@ public @interface MessageBundle {
      * The language tag (IETF) of the default locale.
      *
      * @return the locale for the default message bundle
+     *
      * @see Locale#forLanguageTag(String)
      */
     String locale() default DEFAULT_LOCALE;

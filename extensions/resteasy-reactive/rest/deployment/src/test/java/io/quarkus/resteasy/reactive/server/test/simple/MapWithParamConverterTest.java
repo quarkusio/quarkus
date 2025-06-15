@@ -31,23 +31,18 @@ import io.restassured.RestAssured;
 public class MapWithParamConverterTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(HelloResource.class, MapParamConverter.class, MapParamConverterProvider.class));
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
+            .addClasses(HelloResource.class, MapParamConverter.class, MapParamConverterProvider.class));
 
     @Test
     public void noQueryParams() {
-        RestAssured.get("/hello")
-                .then().statusCode(200).body(Matchers.equalTo(""));
+        RestAssured.get("/hello").then().statusCode(200).body(Matchers.equalTo(""));
     }
 
     @Test
     public void jsonQueryParam() {
-        RestAssured
-                .with()
-                .queryParam("param", "{\"a\":\"1\",\"b\":\"2\"}")
-                .get("/hello")
-                .then().statusCode(200).body(Matchers.equalTo("a:1-b:2"));
+        RestAssured.with().queryParam("param", "{\"a\":\"1\",\"b\":\"2\"}").get("/hello").then().statusCode(200)
+                .body(Matchers.equalTo("a:1-b:2"));
     }
 
     @Path("hello")
@@ -56,10 +51,8 @@ public class MapWithParamConverterTest {
         @GET
         @Produces("text/plain")
         public String hello(@RestQuery("param") Map<String, Integer> names) {
-            return Optional.ofNullable(names)
-                    .orElse(Map.of())
-                    .entrySet().stream().map(e -> e.getKey() + ":" + e.getValue())
-                    .collect(Collectors.joining("-"));
+            return Optional.ofNullable(names).orElse(Map.of()).entrySet().stream()
+                    .map(e -> e.getKey() + ":" + e.getValue()).collect(Collectors.joining("-"));
         }
 
     }
@@ -90,7 +83,7 @@ public class MapWithParamConverterTest {
         @Override
         public T fromString(String value) {
             if (rawType.isAssignableFrom(String.class)) {
-                //noinspection unchecked
+                // noinspection unchecked
                 return (T) value;
             }
             try {

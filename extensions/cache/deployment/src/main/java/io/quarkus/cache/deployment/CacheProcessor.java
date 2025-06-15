@@ -97,16 +97,16 @@ class CacheProcessor {
 
     @BuildStep
     CacheTypeBuildItem type(CacheBuildConfig config) {
-        return new CacheTypeBuildItem(
-                CAFFEINE_CACHE_TYPE.equals(config.type()) ? CacheTypeBuildItem.Type.LOCAL : CacheTypeBuildItem.Type.REMOTE);
+        return new CacheTypeBuildItem(CAFFEINE_CACHE_TYPE.equals(config.type()) ? CacheTypeBuildItem.Type.LOCAL
+                : CacheTypeBuildItem.Type.REMOTE);
     }
 
     @BuildStep
     void validateCacheAnnotationsAndProduceCacheNames(CombinedIndexBuildItem combinedIndex,
             List<AdditionalCacheNameBuildItem> additionalCacheNames,
             List<io.quarkus.cache.deployment.AdditionalCacheNameBuildItem> additionalCacheNamesDeprecated,
-            BuildProducer<ValidationErrorBuildItem> validationErrors,
-            BuildProducer<CacheNamesBuildItem> cacheNames, BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
+            BuildProducer<ValidationErrorBuildItem> validationErrors, BuildProducer<CacheNamesBuildItem> cacheNames,
+            BeanDiscoveryFinishedBuildItem beanDiscoveryFinished) {
 
         // Validation errors produced by this build step.
         List<Throwable> throwables = new ArrayList<>();
@@ -116,9 +116,8 @@ class CacheProcessor {
         Set<DotName> keyGenerators = new HashSet<>();
 
         /*
-         * First, for each non-repeated cache interceptor binding:
-         * - its target is validated
-         * - the corresponding cache name is collected
+         * First, for each non-repeated cache interceptor binding: - its target is validated - the corresponding cache
+         * name is collected
          */
         for (DotName bindingName : INTERCEPTOR_BINDINGS) {
             for (AnnotationInstance binding : combinedIndex.getIndex().getAnnotations(bindingName)) {
@@ -126,8 +125,8 @@ class CacheProcessor {
                 findCacheKeyGenerator(binding, binding.target()).ifPresent(keyGenerators::add);
                 if (binding.target().kind() == METHOD) {
                     /*
-                     * Cache names from the interceptor bindings placed on cache interceptors must not be collected to prevent
-                     * the instantiation of a cache with an empty name.
+                     * Cache names from the interceptor bindings placed on cache interceptors must not be collected to
+                     * prevent the instantiation of a cache with an empty name.
                      */
                     names.add(binding.value(CACHE_NAME_PARAM).asString());
                 }
@@ -143,9 +142,9 @@ class CacheProcessor {
                     names.add(binding.value(CACHE_NAME_PARAM).asString());
                 }
                 /*
-                 * Interception from repeated interceptor bindings won't work with the CDI implementation from MicroProfile REST
-                 * Client. Using repeated interceptor bindings on a method from a class annotated with @RegisterRestClient must
-                 * therefore be forbidden.
+                 * Interception from repeated interceptor bindings won't work with the CDI implementation from
+                 * MicroProfile REST Client. Using repeated interceptor bindings on a method from a class annotated
+                 * with @RegisterRestClient must therefore be forbidden.
                  */
                 if (container.target().kind() == METHOD) {
                     MethodInfo methodInfo = container.target().asMethod();
@@ -161,9 +160,9 @@ class CacheProcessor {
             // The @CacheName annotation from CacheProducer must be ignored.
             if (qualifier.target().kind() == METHOD) {
                 /*
-                 * This should only happen in CacheProducer. It'd be nice if we could forbid using @CacheName on a method in
-                 * any other class, but Arc throws an AmbiguousResolutionException before we get a chance to validate things
-                 * here.
+                 * This should only happen in CacheProducer. It'd be nice if we could forbid using @CacheName on a
+                 * method in any other class, but Arc throws an AmbiguousResolutionException before we get a chance to
+                 * validate things here.
                  */
             } else {
                 names.add(qualifier.value().asString());
@@ -204,7 +203,8 @@ class CacheProcessor {
                     if (methodInfo.returnType().kind() == Type.Kind.VOID) {
                         throwables.add(new VoidReturnTypeTargetException(methodInfo));
                     } else if (MULTI.equals(methodInfo.returnType().name())) {
-                        LOGGER.warnf("@CacheResult is not currently supported on a method returning %s [class=%s, method=%s]",
+                        LOGGER.warnf(
+                                "@CacheResult is not currently supported on a method returning %s [class=%s, method=%s]",
                                 MULTI, methodInfo.declaringClass().name(), methodInfo.name());
                     }
                 }
@@ -217,7 +217,8 @@ class CacheProcessor {
     }
 
     private Optional<DotName> findCacheKeyGenerator(AnnotationInstance binding, AnnotationTarget target) {
-        if (target.kind() == METHOD && (CACHE_RESULT.equals(binding.name()) || CACHE_INVALIDATE.equals(binding.name()))) {
+        if (target.kind() == METHOD
+                && (CACHE_RESULT.equals(binding.name()) || CACHE_INVALIDATE.equals(binding.name()))) {
             AnnotationValue keyGenerator = binding.value("keyGenerator");
             if (keyGenerator != null) {
                 return Optional.of(keyGenerator.asClass().name());
@@ -268,16 +269,14 @@ class CacheProcessor {
             CacheNamesBuildItem cacheNames, Optional<MetricsCapabilityBuildItem> metricsCapability,
             CacheManagerRecorder cacheManagerRecorder) {
 
-        boolean micrometerSupported = metricsCapability.isPresent() && metricsCapability.get().metricsSupported(MICROMETER);
+        boolean micrometerSupported = metricsCapability.isPresent()
+                && metricsCapability.get().metricsSupported(MICROMETER);
         Supplier<CacheManager> cacheManagerSupplier = cacheManagerRecorder.resolveCacheInfo(
                 infos.stream().map(CacheManagerInfoBuildItem::get).collect(toList()), cacheNames.getNames(),
                 micrometerSupported);
 
-        return SyntheticBeanBuildItem.configure(CacheManager.class)
-                .scope(ApplicationScoped.class)
-                .supplier(cacheManagerSupplier)
-                .setRuntimeInit()
-                .done();
+        return SyntheticBeanBuildItem.configure(CacheManager.class).scope(ApplicationScoped.class)
+                .supplier(cacheManagerSupplier).setRuntimeInit().done();
     }
 
     @BuildStep
@@ -288,7 +287,8 @@ class CacheProcessor {
         boolean cacheResult = false;
         boolean cacheInvalidateAll = false;
 
-        for (AnnotationInstance registerRestClientAnnotation : combinedIndex.getIndex().getAnnotations(REGISTER_REST_CLIENT)) {
+        for (AnnotationInstance registerRestClientAnnotation : combinedIndex.getIndex()
+                .getAnnotations(REGISTER_REST_CLIENT)) {
             if (registerRestClientAnnotation.target().kind() == Kind.CLASS) {
                 ClassInfo classInfo = registerRestClientAnnotation.target().asClass();
                 for (MethodInfo methodInfo : classInfo.methods()) {
@@ -302,15 +302,16 @@ class CacheProcessor {
                         transform = true;
                         cacheResult = true;
                     }
-                    if (methodInfo.hasAnnotation(CACHE_INVALIDATE_ALL) || methodInfo.hasAnnotation(CACHE_INVALIDATE_ALL_LIST)) {
+                    if (methodInfo.hasAnnotation(CACHE_INVALIDATE_ALL)
+                            || methodInfo.hasAnnotation(CACHE_INVALIDATE_ALL_LIST)) {
                         cacheInvalidateAll = true;
                     }
 
                     if (transform) {
                         short[] cacheKeyParameterPositions = getCacheKeyParameterPositions(methodInfo);
                         /*
-                         * The bytecode transformation is always performed even if `cacheKeyParameterPositions` is empty because
-                         * the method parameters would be inspected using reflection at run time otherwise.
+                         * The bytecode transformation is always performed even if `cacheKeyParameterPositions` is empty
+                         * because the method parameters would be inspected using reflection at run time otherwise.
                          */
                         bytecodeTransformers.add(new BytecodeTransformerBuildItem(classInfo.toString(),
                                 new RestClientMethodEnhancer(methodInfo.name(), cacheKeyParameterPositions)));
@@ -320,15 +321,18 @@ class CacheProcessor {
         }
 
         // Interceptors need to be registered as unremovable due to the rest-client integration - interceptors
-        // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on interfaces
+        // are currently resolved dynamically at runtime because per the spec interceptor bindings cannot be declared on
+        // interfaces
         if (cacheResult) {
             unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(CacheResultInterceptor.class.getName()));
         }
         if (cacheInvalidate) {
-            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(CacheInvalidateInterceptor.class.getName()));
+            unremovableBeans
+                    .produce(UnremovableBeanBuildItem.beanClassNames(CacheInvalidateInterceptor.class.getName()));
         }
         if (cacheInvalidateAll) {
-            unremovableBeans.produce(UnremovableBeanBuildItem.beanClassNames(CacheInvalidateAllInterceptor.class.getName()));
+            unremovableBeans
+                    .produce(UnremovableBeanBuildItem.beanClassNames(CacheInvalidateAllInterceptor.class.getName()));
         }
         return bytecodeTransformers;
     }
@@ -337,7 +341,9 @@ class CacheProcessor {
      * Returns an array containing the positions of the given method parameters annotated with
      * {@link io.quarkus.cache.CacheKey @CacheKey}, or an empty array if no such parameter is found.
      *
-     * @param methodInfo method info
+     * @param methodInfo
+     *        method info
+     *
      * @return cache key parameters positions
      */
     private short[] getCacheKeyParameterPositions(MethodInfo methodInfo) {

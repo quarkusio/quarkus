@@ -10,8 +10,8 @@ import io.quarkus.builder.item.BuildItem;
 import io.smallrye.common.constraint.Assert;
 
 /**
- * A builder for build step instances within a chain. A build step can consume and produce items. It may also register
- * a destructor for items it produces, which will be run (in indeterminate order) at the end of processing.
+ * A builder for build step instances within a chain. A build step can consume and produce items. It may also register a
+ * destructor for items it produces, which will be run (in indeterminate order) at the end of processing.
  */
 public final class BuildStepBuilder {
     private static final StackTraceElement[] EMPTY_STACK_TRACE = new StackTraceElement[0];
@@ -26,10 +26,12 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * Set the build step for this builder. If no build step is specified, then this step will be excluded from
-     * the final chain.
+     * Set the build step for this builder. If no build step is specified, then this step will be excluded from the
+     * final chain.
      *
-     * @param buildStep the build step
+     * @param buildStep
+     *        the build step
+     *
      * @return this builder
      */
     public BuildStepBuilder setBuildStep(final BuildStep buildStep) {
@@ -41,7 +43,9 @@ public final class BuildStepBuilder {
      * This build step should complete before any build steps which consume the given item {@code type} are initiated.
      * If no such build steps exist, no ordering constraint is enacted.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder beforeConsume(Class<? extends BuildItem> type) {
@@ -54,8 +58,11 @@ public final class BuildStepBuilder {
      * This build step should complete before any build steps which consume the given item {@code type} are initiated.
      * If no such build steps exist, no ordering constraint is enacted.
      *
-     * @param type the item type (must not be {@code null})
-     * @param flag the producer flag to apply (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     * @param flag
+     *        the producer flag to apply (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder beforeConsume(Class<? extends BuildItem> type, ProduceFlag flag) {
@@ -66,10 +73,12 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * This build step should be initiated after any build steps which produce the given item {@code type} are completed.
-     * If no such build steps exist, no ordering constraint is enacted.
+     * This build step should be initiated after any build steps which produce the given item {@code type} are
+     * completed. If no such build steps exist, no ordering constraint is enacted.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder afterProduce(Class<? extends BuildItem> type) {
@@ -79,11 +88,13 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of the
-     * given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
+     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of
+     * the given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
      * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type) {
@@ -94,12 +105,15 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of the
-     * given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
+     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of
+     * the given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
      * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
      *
-     * @param type the item type (must not be {@code null})
-     * @param flag the producer flag to apply (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     * @param flag
+     *        the producer flag to apply (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlag flag) {
@@ -111,13 +125,17 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of the
-     * given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
+     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of
+     * the given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
      * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
      *
-     * @param type the item type (must not be {@code null})
-     * @param flag1 the first producer flag to apply (must not be {@code null})
-     * @param flag2 the second producer flag to apply (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     * @param flag1
+     *        the first producer flag to apply (must not be {@code null})
+     * @param flag2
+     *        the second producer flag to apply (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlag flag1, ProduceFlag flag2) {
@@ -129,12 +147,15 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of the
-     * given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
+     * Similarly to {@link #beforeConsume(Class)}, establish that this build step must come before the consumer(s) of
+     * the given item {@code type}; however, only one {@code producer} may exist for the given item. In addition, the
      * build step may produce an actual value for this item, which will be shared to all consumers during deployment.
      *
-     * @param type the item type (must not be {@code null})
-     * @param flags the producer flag to apply (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     * @param flags
+     *        the producer flag to apply (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder produces(Class<? extends BuildItem> type, ProduceFlags flags) {
@@ -146,10 +167,12 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * This build step consumes the given produced item. The item must be produced somewhere in the chain. If
-     * no such producer exists, the chain will not be constructed; instead, an error will be raised.
+     * This build step consumes the given produced item. The item must be produced somewhere in the chain. If no such
+     * producer exists, the chain will not be constructed; instead, an error will be raised.
      *
-     * @param type the item type (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder consumes(Class<? extends BuildItem> type) {
@@ -160,11 +183,14 @@ public final class BuildStepBuilder {
     }
 
     /**
-     * This build step consumes the given produced item. The item must be produced somewhere in the chain. If
-     * no such producer exists, the chain will not be constructed; instead, an error will be raised.
+     * This build step consumes the given produced item. The item must be produced somewhere in the chain. If no such
+     * producer exists, the chain will not be constructed; instead, an error will be raised.
      *
-     * @param type the item type (must not be {@code null})
-     * @param flags a set of flags which modify the consume operation (must not be {@code null})
+     * @param type
+     *        the item type (must not be {@code null})
+     * @param flags
+     *        a set of flags which modify the consume operation (must not be {@code null})
+     *
      * @return this builder
      */
     public BuildStepBuilder consumes(Class<? extends BuildItem> type, ConsumeFlags flags) {
@@ -182,13 +208,12 @@ public final class BuildStepBuilder {
     public BuildChainBuilder build() {
         final BuildChainBuilder chainBuilder = this.buildChainBuilder;
         if (produces.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Build step '" + buildStep.getId()
-                            + "' does not produce any build item and thus will never get executed."
-                            + " Either change the return type of the method to a build item type,"
-                            + " add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>,"
-                            + " or annotate the method with @Produces."
-                            + " Use @Produce(ArtifactResultBuildItem.class) if you want to always execute this step.");
+            throw new IllegalArgumentException("Build step '" + buildStep.getId()
+                    + "' does not produce any build item and thus will never get executed."
+                    + " Either change the return type of the method to a build item type,"
+                    + " add a parameter of type BuildProducer<[some build item type]>/Consumer<[some build item type]>,"
+                    + " or annotate the method with @Produces."
+                    + " Use @Produce(ArtifactResultBuildItem.class) if you want to always execute this step.");
         }
         if (BuildChainBuilder.LOG_CONFLICT_CAUSING) {
             chainBuilder.addStep(this, new Exception().getStackTrace());
@@ -201,7 +226,9 @@ public final class BuildStepBuilder {
     /**
      * Build this step into the chain if the supplier returns {@code true}.
      *
-     * @param supp the {@code boolean} supplier (must not be {@code null})
+     * @param supp
+     *        the {@code boolean} supplier (must not be {@code null})
+     *
      * @return the chain builder that this step was added to, or {@code null} if it was not added
      */
     public BuildChainBuilder buildIf(BooleanSupplier supp) {

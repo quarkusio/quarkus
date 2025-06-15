@@ -40,7 +40,7 @@ public class RedisCommand {
         } else if (x instanceof RedisCommandExtraArguments) {
             putArgs((RedisCommandExtraArguments) x);
         } else if (x instanceof List) {
-            //noinspection rawtypes
+            // noinspection rawtypes
             putAll((List) x);
         } else {
             throw new UnsupportedOperationException("Unsupported type: " + x);

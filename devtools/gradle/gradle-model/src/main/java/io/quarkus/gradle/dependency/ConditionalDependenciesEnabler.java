@@ -27,8 +27,8 @@ public class ConditionalDependenciesEnabler {
      */
     private final Map<ArtifactKey, Set<ExtensionDependency<?>>> featureVariants = new HashMap<>();
     /**
-     * Despite its name, only contains extensions which have no conditional dependencies, or have
-     * resolved their conditional dependencies.
+     * Despite its name, only contains extensions which have no conditional dependencies, or have resolved their
+     * conditional dependencies.
      */
     private final Map<ModuleVersionIdentifier, ExtensionDependency<?>> allExtensions = new HashMap<>();
     private final Project project;
@@ -36,8 +36,7 @@ public class ConditionalDependenciesEnabler {
     private final Set<ArtifactKey> existingArtifacts = new HashSet<>();
     private final List<Dependency> unsatisfiedConditionalDeps = new ArrayList<>();
 
-    public ConditionalDependenciesEnabler(Project project, LaunchMode mode,
-            Configuration platforms) {
+    public ConditionalDependenciesEnabler(Project project, LaunchMode mode, Configuration platforms) {
         this.project = project;
         this.enforcedPlatforms = platforms;
 
@@ -107,7 +106,8 @@ public class ConditionalDependenciesEnabler {
         }
     }
 
-    private void queueConditionalDependencies(ExtensionDependency<?> extension, Collection<Dependency> conditionalDeps) {
+    private void queueConditionalDependencies(ExtensionDependency<?> extension,
+            Collection<Dependency> conditionalDeps) {
         for (Dependency conditionalDep : conditionalDeps) {
             // If the dependency is not present yet in the graph, queue it for resolution later
             if (!exists(conditionalDep)) {
@@ -130,11 +130,11 @@ public class ConditionalDependenciesEnabler {
                     && conditionalDep.getVersion().equals(artifact.getModuleVersion().getId().getVersion())
                     && artifact.getModuleVersion().getId().getGroup().equals(conditionalDep.getGroup())) {
                 // Once the dependency is found, reload the extension info from within
-                final ExtensionDependency<?> extensionDependency = DependencyUtils.getExtensionInfoOrNull(project, artifact);
+                final ExtensionDependency<?> extensionDependency = DependencyUtils.getExtensionInfoOrNull(project,
+                        artifact);
                 // Now check if this conditional dependency is resolved given the latest graph evolution
-                if (extensionDependency == null ||
-                        (extensionDependency.getDependencyConditions().isEmpty() ||
-                                exist(extensionDependency.getDependencyConditions()))) {
+                if (extensionDependency == null || (extensionDependency.getDependencyConditions().isEmpty()
+                        || exist(extensionDependency.getDependencyConditions()))) {
                     satisfied = true;
                     enableConditionalDependency(artifact.getModuleVersion().getId());
                     break;
@@ -178,8 +178,7 @@ public class ConditionalDependenciesEnabler {
         // on conditional dependencies (https://github.com/gradle/gradle/issues/6881)
         // However, if we use a named configuration we run into issues preventing IDEs to import projects
         // (https://github.com/quarkusio/quarkus/issues/41825) and ./gradlew refreshVersions seems to break as well.
-        Configuration conditionalDepConfiguration = project.getConfigurations()
-                .detachedConfiguration()
+        Configuration conditionalDepConfiguration = project.getConfigurations().detachedConfiguration()
                 .extendsFrom(enforcedPlatforms);
         conditionalDepConfiguration.getDependencies().add(conditionalDep);
         return conditionalDepConfiguration;

@@ -17,12 +17,10 @@ import io.restassured.RestAssured;
 public class GraphQLFederationTracingTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(FooApi.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.federation.enabled=true"),
-                            "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(FooApi.class)
+            .addAsResource(new StringAsset("quarkus.smallrye-graphql.federation.enabled=true"),
+                    "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void resolvePerFederation() {
@@ -31,19 +29,9 @@ public class GraphQLFederationTracingTest extends AbstractGraphQLTest {
         String ftKey = "ftv1";
 
         String request = getPayload(TEST_QUERY);
-        RestAssured.given().when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(request)
-                .header(FEDERATED_TRACING_HEADER_NAME, ftKey)
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(200)
-                .and()
-                .body(CoreMatchers.containsString(
-                        "{\"data\":{\"foo\":\"foo\"}"))
-                .and()
+        RestAssured.given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(request)
+                .header(FEDERATED_TRACING_HEADER_NAME, ftKey).post("/graphql").then().assertThat().statusCode(200).and()
+                .body(CoreMatchers.containsString("{\"data\":{\"foo\":\"foo\"}")).and()
                 .body(CoreMatchers.containsString("\"extensions\":{\"" + ftKey + "\":\""));
     }
 

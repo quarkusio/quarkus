@@ -33,7 +33,9 @@ public final class BuildChain {
     /**
      * Create a new execution builder for this build chain.
      *
-     * @param name the name of the build target for diagnostic purposes (must not be {@code null})
+     * @param name
+     *        the name of the build target for diagnostic purposes (must not be {@code null})
+     *
      * @return the new build execution builder (not {@code null})
      */
     public BuildExecutionBuilder createExecutionBuilder(String name) {
@@ -56,9 +58,13 @@ public final class BuildChain {
     /**
      * Construct a build chain with the given name from providers found in the given class loader.
      *
-     * @param classLoader the class loader to use
+     * @param classLoader
+     *        the class loader to use
+     *
      * @return the build chain (not {@code null})
-     * @throws ChainBuildException if building the chain failed
+     *
+     * @throws ChainBuildException
+     *         if building the chain failed
      */
     static BuildChain fromProviders(ClassLoader classLoader) throws ChainBuildException {
         final ArrayList<BuildProvider> list = new ArrayList<>();
@@ -72,9 +78,13 @@ public final class BuildChain {
     /**
      * Construct a deployment chain with the given name from the given providers.
      *
-     * @param providers the providers to use (must not be {@code null})
+     * @param providers
+     *        the providers to use (must not be {@code null})
+     *
      * @return the deployment chain (not {@code null})
-     * @throws ChainBuildException if building the chain failed
+     *
+     * @throws ChainBuildException
+     *         if building the chain failed
      */
     static BuildChain fromProviders(Collection<BuildProvider> providers) throws ChainBuildException {
         Assert.checkNotNullParam("providers", providers);

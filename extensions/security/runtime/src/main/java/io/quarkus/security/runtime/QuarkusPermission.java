@@ -13,8 +13,8 @@ import io.quarkus.security.spi.runtime.BlockingSecurityExecutor;
 import io.smallrye.mutiny.Uni;
 
 /**
- * Special type of {@link Permission} which is used by Quarkus Security to call CDI bean methods annotated
- * with the {@link PermissionChecker}.
+ * Special type of {@link Permission} which is used by Quarkus Security to call CDI bean methods annotated with the
+ * {@link PermissionChecker}.
  */
 public abstract class QuarkusPermission<T> extends Permission {
 
@@ -23,7 +23,9 @@ public abstract class QuarkusPermission<T> extends Permission {
     /**
      * Subclasses can declare constructors that accept permission name and/or arguments of a secured method.
      *
-     * @param permissionName permission name, this matches {@link PermissionChecker#value()}
+     * @param permissionName
+     *        permission name, this matches {@link PermissionChecker#value()}
+     *
      * @see PermissionsAllowed#params() for more information about additional Permission arguments
      */
     protected QuarkusPermission(String permissionName) {
@@ -56,19 +58,23 @@ public abstract class QuarkusPermission<T> extends Permission {
     }
 
     /**
-     * Determines whether access to secured resource should be granted in a synchronous manner.
-     * Subclasses should override this method unless they need to perform permission check in an asynchronous manner.
+     * Determines whether access to secured resource should be granted in a synchronous manner. Subclasses should
+     * override this method unless they need to perform permission check in an asynchronous manner.
      *
-     * @param securityIdentity {@link SecurityIdentity}
+     * @param securityIdentity
+     *        {@link SecurityIdentity}
+     *
      * @return true if access should be granted and false otherwise
      */
     protected abstract boolean isGranted(SecurityIdentity securityIdentity);
 
     /**
-     * Determines whether access to secured resource should be granted in an asynchronous manner.
-     * Subclasses can override this method, however it is only called when {@link #isReactive()} returns {@code true}.
+     * Determines whether access to secured resource should be granted in an asynchronous manner. Subclasses can
+     * override this method, however it is only called when {@link #isReactive()} returns {@code true}.
      *
-     * @param securityIdentity {@link SecurityIdentity}
+     * @param securityIdentity
+     *        {@link SecurityIdentity}
+     *
      * @return Uni with {@code true} if access should be granted and Uni with {@code false} otherwise
      */
     protected abstract Uni<Boolean> isGrantedUni(SecurityIdentity securityIdentity);
@@ -95,7 +101,8 @@ public abstract class QuarkusPermission<T> extends Permission {
     }
 
     /**
-     * @throws IllegalStateException for this permission can only be set to the {@link PermissionsAllowed#permission()}
+     * @throws IllegalStateException
+     *         for this permission can only be set to the {@link PermissionsAllowed#permission()}
      */
     @Override
     public final boolean implies(Permission requiredPermission) {
@@ -122,7 +129,8 @@ public abstract class QuarkusPermission<T> extends Permission {
 
     private InstanceHandle<T> getBeanInstanceHandle() {
         if (bean == null) {
-            // this is done lazily because permissions without extra constructor arguments are created before Arc is ready
+            // this is done lazily because permissions without extra constructor arguments are created before Arc is
+            // ready
             bean = Arc.container().instance(getBeanClass());
             if (!bean.isAvailable()) {
                 throw new IllegalStateException(

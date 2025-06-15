@@ -17,10 +17,9 @@ import io.quarkus.devtools.messagewriter.MessageWriter;
 import io.quarkus.devtools.project.QuarkusProject;
 
 /**
- * Allow adding an extension to an existing pom.xml file.
- * Because you can add one or several extension in one go, there are 2 mojos:
- * {@code add-extensions} and {@code add-extension}. Both supports the {@code extension} and {@code extensions}
- * parameters.
+ * Allow adding an extension to an existing pom.xml file. Because you can add one or several extension in one go, there
+ * are 2 mojos: {@code add-extensions} and {@code add-extension}. Both supports the {@code extension} and
+ * {@code extensions} parameters.
  */
 @Mojo(name = "add-extension")
 public class AddExtensionMojo extends QuarkusProjectMojoBase {
@@ -46,8 +45,7 @@ public class AddExtensionMojo extends QuarkusProjectMojoBase {
     }
 
     @Override
-    public void doExecute(final QuarkusProject quarkusProject, final MessageWriter log)
-            throws MojoExecutionException {
+    public void doExecute(final QuarkusProject quarkusProject, final MessageWriter log) throws MojoExecutionException {
         Set<String> ext = new HashSet<>();
         if (extensions != null && !extensions.isEmpty()) {
             ext.addAll(extensions);

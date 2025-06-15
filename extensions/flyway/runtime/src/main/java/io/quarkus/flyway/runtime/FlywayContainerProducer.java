@@ -19,15 +19,9 @@ import io.quarkus.flyway.FlywayConfigurationCustomizer;
 import io.quarkus.flyway.FlywayDataSource;
 
 /**
- * This class is sort of a producer for {@link Flyway}.
- *
- * It isn't a CDI producer in the literal sense, but it is marked as a bean
- * and it's {@code createFlyway} method is called at runtime in order to produce
- * the actual {@code Flyway} objects.
- *
- * CDI scopes and qualifiers are set up at build-time, which is why this class is devoid of
- * any CDI annotations
- *
+ * This class is sort of a producer for {@link Flyway}. It isn't a CDI producer in the literal sense, but it is marked
+ * as a bean and it's {@code createFlyway} method is called at runtime in order to produce the actual {@code Flyway}
+ * objects. CDI scopes and qualifiers are set up at build-time, which is why this class is devoid of any CDI annotations
  */
 public class FlywayContainerProducer {
 
@@ -48,14 +42,13 @@ public class FlywayContainerProducer {
         FlywayDataSourceRuntimeConfig matchingRuntimeConfig = flywayRuntimeConfig.datasources().get(dataSourceName);
         FlywayDataSourceBuildTimeConfig matchingBuildTimeConfig = flywayBuildConfig.datasources().get(dataSourceName);
         final Collection<Callback> callbacks = QuarkusPathLocationScanner.callbacksForDataSource(dataSourceName);
-        final Flyway flyway = new FlywayCreator(matchingRuntimeConfig, matchingBuildTimeConfig, matchingConfigCustomizers(
-                configCustomizerInstances, dataSourceName)).withCallbacks(callbacks)
+        final Flyway flyway = new FlywayCreator(matchingRuntimeConfig, matchingBuildTimeConfig,
+                matchingConfigCustomizers(configCustomizerInstances, dataSourceName)).withCallbacks(callbacks)
                 .createFlyway(dataSource);
-        return new FlywayContainer(flyway, matchingRuntimeConfig.baselineAtStart(), matchingRuntimeConfig.cleanAtStart(),
-                matchingRuntimeConfig.cleanOnValidationError(), matchingRuntimeConfig.migrateAtStart(),
-                matchingRuntimeConfig.repairAtStart(), matchingRuntimeConfig.validateAtStart(),
-                dataSourceName, hasMigrations,
-                createPossible);
+        return new FlywayContainer(flyway, matchingRuntimeConfig.baselineAtStart(),
+                matchingRuntimeConfig.cleanAtStart(), matchingRuntimeConfig.cleanOnValidationError(),
+                matchingRuntimeConfig.migrateAtStart(), matchingRuntimeConfig.repairAtStart(),
+                matchingRuntimeConfig.validateAtStart(), dataSourceName, hasMigrations, createPossible);
     }
 
     private List<FlywayConfigurationCustomizer> matchingConfigCustomizers(
@@ -80,7 +73,8 @@ public class FlywayContainerProducer {
             if (qualifierMatchesDS) {
                 result.add(instance.get());
             } else if (DataSourceUtil.isDefault(dataSourceName) && !hasFlywayDataSourceQualifier) {
-                // this is the case where a FlywayConfigurationCustomizer does not have a qualifier at all, therefore is applies to the default datasource
+                // this is the case where a FlywayConfigurationCustomizer does not have a qualifier at all, therefore is
+                // applies to the default datasource
                 result.add(instance.get());
             }
         }

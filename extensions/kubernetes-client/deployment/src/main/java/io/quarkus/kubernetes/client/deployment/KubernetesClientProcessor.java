@@ -74,20 +74,22 @@ public class KubernetesClientProcessor {
             Capabilities capabilities) {
         additionalBeanBuildItemBuildItem
                 .produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientObjectMapperProducer.class));
-        additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesSerializationProducer.class));
+        additionalBeanBuildItemBuildItem
+                .produce(AdditionalBeanBuildItem.unremovableOf(KubernetesSerializationProducer.class));
         // wire up the Config bean support
         additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesConfigProducer.class));
         // do not register our client producer if the openshift client is present, because it provides it too
         if (capabilities.isMissing(Capability.OPENSHIFT_CLIENT)) {
             // wire up the KubernetesClient bean support
-            additionalBeanBuildItemBuildItem.produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
+            additionalBeanBuildItemBuildItem
+                    .produce(AdditionalBeanBuildItem.unremovableOf(KubernetesClientProducer.class));
         }
     }
 
     @BuildStep
     public void nativeImageSupport(BuildProducer<RuntimeReinitializedClassBuildItem> runtimeInitializedClassProducer) {
-        runtimeInitializedClassProducer
-                .produce(new RuntimeReinitializedClassBuildItem(io.fabric8.kubernetes.client.utils.Utils.class.getName()));
+        runtimeInitializedClassProducer.produce(
+                new RuntimeReinitializedClassBuildItem(io.fabric8.kubernetes.client.utils.Utils.class.getName()));
     }
 
     @BuildStep
@@ -101,8 +103,7 @@ public class KubernetesClientProcessor {
     public void process(ApplicationIndexBuildItem applicationIndex, CombinedIndexBuildItem combinedIndexBuildItem,
             KubernetesClientBuildConfig kubernetesClientConfig,
             BuildProducer<ExtensionSslNativeSupportBuildItem> sslNativeSupport,
-            BuildProducer<FeatureBuildItem> featureProducer,
-            BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
+            BuildProducer<FeatureBuildItem> featureProducer, BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveHierarchyBuildItem> reflectiveHierarchies,
             BuildProducer<IgnoreJsonDeserializeClassBuildItem> ignoredJsonDeserializationClasses,
             BuildProducer<ServiceProviderBuildItem> serviceProviderProducer,
@@ -134,12 +135,9 @@ public class KubernetesClientProcessor {
             if (watchedClass == null) {
                 log.warnv("Unable to lookup class: {0}", className);
             } else {
-                reflectiveHierarchies
-                        .produce(ReflectiveHierarchyBuildItem
-                                .builder(className)
-                                .ignoreTypePredicate(reflectionIgnorePredicate)
-                                .source(getClass().getSimpleName() + " > " + className)
-                                .build());
+                reflectiveHierarchies.produce(
+                        ReflectiveHierarchyBuildItem.builder(className).ignoreTypePredicate(reflectionIgnorePredicate)
+                                .source(getClass().getSimpleName() + " > " + className).build());
             }
         }
 
@@ -147,8 +145,10 @@ public class KubernetesClientProcessor {
         Collection<ClassInfo> kubernetesResourceListImpls = fullIndex.getAllKnownImplementors(KUBERNETES_RESOURCE_LIST);
         Collection<ClassInfo> visitableBuilderImpls = fullIndex.getAllKnownImplementors(VISITABLE_BUILDER);
 
-        // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the array list
-        int defSize = kubernetesResourceImpls.size() + kubernetesResourceListImpls.size() + visitableBuilderImpls.size();
+        // default sizes determined experimentally - these are only set in order to prevent continuous expansion of the
+        // array list
+        int defSize = kubernetesResourceImpls.size() + kubernetesResourceListImpls.size()
+                + visitableBuilderImpls.size();
         List<String> withFieldsRegistration = new ArrayList<>(defSize);
         List<DotName> ignoreJsonDeserialization = new ArrayList<>(defSize);
 
@@ -160,66 +160,52 @@ public class KubernetesClientProcessor {
                 withFieldsRegistration);
 
         if (!withFieldsRegistration.isEmpty()) {
-            reflectiveClasses.produce(ReflectiveClassBuildItem
-                    .builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY))
-                    .reason(getClass().getName())
-                    .weak().methods().fields()
-                    .build());
+            reflectiveClasses
+                    .produce(ReflectiveClassBuildItem.builder(withFieldsRegistration.toArray(EMPTY_STRINGS_ARRAY))
+                            .reason(getClass().getName()).weak().methods().fields().build());
         }
 
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(ignoreJsonDeserialization));
 
-        // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the entire model
+        // we also ignore some classes that are annotated with @JsonDeserialize that would force the registration of the
+        // entire model
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE_LIST));
         ignoredJsonDeserializationClasses.produce(new IgnoreJsonDeserializeClassBuildItem(KUBERNETES_RESOURCE));
 
         final String[] deserializerClasses = fullIndex
-                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer"))
-                .stream()
-                .map(c -> c.name().toString())
-                .filter(s -> s.startsWith("io.fabric8.kubernetes"))
+                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonDeserializer")).stream()
+                .map(c -> c.name().toString()).filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(deserializerClasses)
-                .reason(getClass().getName())
-                .methods().build());
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(deserializerClasses).reason(getClass().getName()).methods().build());
 
         final String[] serializerClasses = fullIndex
-                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer"))
-                .stream()
-                .map(c -> c.name().toString())
-                .filter(s -> s.startsWith("io.fabric8.kubernetes"))
+                .getAllKnownSubclasses(DotName.createSimple("com.fasterxml.jackson.databind.JsonSerializer")).stream()
+                .map(c -> c.name().toString()).filter(s -> s.startsWith("io.fabric8.kubernetes"))
                 .toArray(String[]::new);
-        reflectiveClasses.produce(ReflectiveClassBuildItem.builder(serializerClasses)
-                .reason(getClass().getName())
-                .methods().build());
-
         reflectiveClasses.produce(
-                ReflectiveClassBuildItem.builder(KubernetesClientImpl.class, DefaultKubernetesClient.class, VersionInfo.class)
-                        .reason(getClass().getName())
-                        .methods().fields().build());
+                ReflectiveClassBuildItem.builder(serializerClasses).reason(getClass().getName()).methods().build());
+
         reflectiveClasses.produce(ReflectiveClassBuildItem
-                .builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class)
-                .reason(getClass().getName())
-                .methods().build());
+                .builder(KubernetesClientImpl.class, DefaultKubernetesClient.class, VersionInfo.class)
+                .reason(getClass().getName()).methods().fields().build());
+        reflectiveClasses.produce(
+                ReflectiveClassBuildItem.builder(AnyType.class, IntOrString.class, KubernetesDeserializer.class)
+                        .reason(getClass().getName()).methods().build());
 
         // exec credentials support
         reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(Config.ExecCredential.class,
-                        Config.ExecCredentialSpec.class,
-                        Config.ExecCredentialStatus.class)
-                        .reason(getClass().getName())
-                        .methods().fields().build());
+                .produce(ReflectiveClassBuildItem
+                        .builder(Config.ExecCredential.class, Config.ExecCredentialSpec.class,
+                                Config.ExecCredentialStatus.class)
+                        .reason(getClass().getName()).methods().fields().build());
         // OpenID support
-        reflectiveClasses
-                .produce(ReflectiveClassBuildItem.builder(OpenIDConnectionUtils.OpenIdConfiguration.class,
-                        OpenIDConnectionUtils.OAuthToken.class)
-                        .reason(getClass().getName())
-                        .methods().fields().build());
+        reflectiveClasses.produce(ReflectiveClassBuildItem
+                .builder(OpenIDConnectionUtils.OpenIdConfiguration.class, OpenIDConnectionUtils.OAuthToken.class)
+                .reason(getClass().getName()).methods().fields().build());
 
         if (log.isDebugEnabled()) {
-            final String watchedClassNames = watchedClasses
-                    .stream().map(Object::toString)
-                    .sorted()
+            final String watchedClassNames = watchedClasses.stream().map(Object::toString).sorted()
                     .collect(Collectors.joining("\n"));
             log.debugv("Watched Classes:\n{0}", watchedClassNames);
             List<String> modelClasses = new ArrayList<>(withFieldsRegistration.size());
@@ -229,19 +215,21 @@ public class KubernetesClientProcessor {
         }
 
         // Register all HttpClient implementations
-        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(HttpClient.Factory.class.getName()));
+        serviceProviderProducer
+                .produce(ServiceProviderBuildItem.allProvidersFromClassPath(HttpClient.Factory.class.getName()));
         // Register all KubernetesResource providers (needed for the KubernetesDeserializer)
-        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(KubernetesResource.class.getName()));
+        serviceProviderProducer
+                .produce(ServiceProviderBuildItem.allProvidersFromClassPath(KubernetesResource.class.getName()));
         // Register all KubernetesClient extensions
-        serviceProviderProducer.produce(ServiceProviderBuildItem.allProvidersFromClassPath(ExtensionAdapter.class.getName()));
+        serviceProviderProducer
+                .produce(ServiceProviderBuildItem.allProvidersFromClassPath(ExtensionAdapter.class.getName()));
 
         // Enable SSL support by default
         sslNativeSupport.produce(new ExtensionSslNativeSupportBuildItem(Feature.KUBERNETES_CLIENT));
     }
 
     private static void populateReflectionRegistrationLists(Collection<ClassInfo> kubernetesResourceImpls,
-            Set<DotName> watchedClasses,
-            List<DotName> ignoredJsonDeserializationClasses,
+            Set<DotName> watchedClasses, List<DotName> ignoredJsonDeserializationClasses,
             List<String> withFieldsRegistration) {
         for (ClassInfo resource : kubernetesResourceImpls) {
             // we need to make sure that the Jackson extension does not try to fully
@@ -253,17 +241,17 @@ public class KubernetesClientProcessor {
         }
     }
 
-    private void findWatchedClasses(final DotName implementedOrExtendedClass,
-            final Set<DotName> watchedClasses, final int expectedGenericTypeCardinality, boolean isTargetClassAnInterface,
-            IndexView targetIndex,
+    private void findWatchedClasses(final DotName implementedOrExtendedClass, final Set<DotName> watchedClasses,
+            final int expectedGenericTypeCardinality, boolean isTargetClassAnInterface, IndexView targetIndex,
             IndexView fullIndex) {
 
-        final var implementors = isTargetClassAnInterface ? targetIndex.getAllKnownImplementors(implementedOrExtendedClass)
+        final var implementors = isTargetClassAnInterface
+                ? targetIndex.getAllKnownImplementors(implementedOrExtendedClass)
                 : targetIndex.getAllKnownSubclasses(implementedOrExtendedClass);
         implementors.forEach(c -> {
             try {
-                final List<Type> watcherGenericTypes = JandexUtil.resolveTypeParameters(c.name(), implementedOrExtendedClass,
-                        fullIndex);
+                final List<Type> watcherGenericTypes = JandexUtil.resolveTypeParameters(c.name(),
+                        implementedOrExtendedClass, fullIndex);
                 if (!isTargetClassAnInterface) {
                     // add the class itself: for example, in the case of CustomResource, we want to
                     // register the class that extends CustomResource in addition to its type parameters
@@ -276,10 +264,9 @@ public class KubernetesClientProcessor {
                 // when the class has no subclasses and we were not able to determine the generic types,
                 // it's likely that the class might be able to get deserialized
                 if (targetIndex.getAllKnownSubclasses(c.name()).isEmpty()) {
-                    log.warnv("{0} '{1}' will most likely not work correctly in native mode. " +
-                            "Consider specifying the generic type of '{2}' that this class handles. "
-                            +
-                            "See https://quarkus.io/guides/kubernetes-client#note-on-generic-types for more details",
+                    log.warnv("{0} '{1}' will most likely not work correctly in native mode. "
+                            + "Consider specifying the generic type of '{2}' that this class handles. "
+                            + "See https://quarkus.io/guides/kubernetes-client#note-on-generic-types for more details",
                             implementedOrExtendedClass.local(), c.name(), implementedOrExtendedClass);
                 }
             }

@@ -33,7 +33,7 @@ public class ArcContextProvider implements ThreadContextProvider {
     public ThreadContextSnapshot currentContext(Map<String, String> map) {
         ArcContainer container = Arc.container();
         if (container == null) {
-            //return null as per docs to state that propagation of this context is not supported
+            // return null as per docs to state that propagation of this context is not supported
             return null;
         }
 
@@ -51,7 +51,7 @@ public class ArcContextProvider implements ThreadContextProvider {
         // note that by cleared we mean that we still activate context if need be, just leave the contents blank
         ArcContainer container = Arc.container();
         if (container == null) {
-            //return null as per docs to state that propagation of this context is not supported
+            // return null as per docs to state that propagation of this context is not supported
             return null;
         }
         return CLEAR_CONTEXT_SNAPSHOT;
@@ -95,8 +95,8 @@ public class ArcContextProvider implements ThreadContextProvider {
             // can be called later on, we should retrieve the container again
             ArcContainer container = Arc.container();
             if (container == null) {
-                //this happens on shutdown, if we blow up here it can break shutdown, and stop
-                //resources from being cleaned up, causing tests to fail
+                // this happens on shutdown, if we blow up here it can break shutdown, and stop
+                // resources from being cleaned up, causing tests to fail
                 return NOOP_CONTROLLER;
             }
             ManagedContext requestContext = container.requestContext();
@@ -131,8 +131,8 @@ public class ArcContextProvider implements ThreadContextProvider {
             // can be called later on, we should retrieve the container again
             ArcContainer container = Arc.container();
             if (container == null) {
-                //this happens on shutdown, if we blow up here it can break shutdown, and stop
-                //resources from being cleaned up, causing tests to fail
+                // this happens on shutdown, if we blow up here it can break shutdown, and stop
+                // resources from being cleaned up, causing tests to fail
                 return NOOP_CONTROLLER;
             }
             ManagedContext requestContext = container.requestContext();
@@ -165,7 +165,8 @@ public class ArcContextProvider implements ThreadContextProvider {
         }
 
         // in case of ClearContextSnapshot, we want to destroy instances of the intermediate context
-        RestoreContextController(ManagedContext requestContext, ContextState stateToRestore, boolean destroyRequestContext) {
+        RestoreContextController(ManagedContext requestContext, ContextState stateToRestore,
+                boolean destroyRequestContext) {
             this.requestContext = requestContext;
             this.stateToRestore = stateToRestore;
             this.destroyRequestContext = destroyRequestContext;

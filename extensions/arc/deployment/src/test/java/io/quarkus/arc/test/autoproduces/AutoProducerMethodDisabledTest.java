@@ -27,10 +27,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class AutoProducerMethodDisabledTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AutoProducerMethodDisabledTest.class, Client.class, Producers.class)
-                    .addAsResource(new StringAsset("quarkus.arc.auto-producer-methods=false"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(AutoProducerMethodDisabledTest.class, Client.class, Producers.class).addAsResource(
+                    new StringAsset("quarkus.arc.auto-producer-methods=false"), "application.properties"));
 
     @Inject
     Client bean;

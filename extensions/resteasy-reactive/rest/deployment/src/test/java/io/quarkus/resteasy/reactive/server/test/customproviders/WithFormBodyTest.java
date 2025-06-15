@@ -21,29 +21,22 @@ import io.restassured.RestAssured;
 public class WithFormBodyTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(HelloResource.class);
-                }
-            });
+    static QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(HelloResource.class);
+        }
+    });
 
     @Test
     public void testMethodWithBody() {
-        RestAssured.with()
-                .formParam("name", "Quarkus")
-                .post("/hello")
-                .then().body(Matchers.equalTo("hello Quarkus"));
+        RestAssured.with().formParam("name", "Quarkus").post("/hello").then().body(Matchers.equalTo("hello Quarkus"));
     }
 
     @Test
     public void testMethodWithUndeclaredBody() {
-        RestAssured.with()
-                .formParam("name", "Quarkus")
-                .post("/hello/empty")
-                .then().body(Matchers.equalTo("hello Quarkus"));
+        RestAssured.with().formParam("name", "Quarkus").post("/hello/empty").then()
+                .body(Matchers.equalTo("hello Quarkus"));
     }
 
     @Path("hello")

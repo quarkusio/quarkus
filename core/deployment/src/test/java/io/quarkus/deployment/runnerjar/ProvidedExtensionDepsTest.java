@@ -35,11 +35,8 @@ public class ProvidedExtensionDepsTest extends BootstrapFromOriginalJarTestBase 
 
         final TsQuarkusExt extA = new TsQuarkusExt("ext-a");
         addToExpectedLib(extA.getRuntime());
-        extA.getRuntime()
-                .addDependency(extADep)
-                .addDependency(new TsDependency(extAProvidedDep, JavaScopes.PROVIDED));
-        extA.getDeployment()
-                .addDependency(extADeploymentDep)
+        extA.getRuntime().addDependency(extADep).addDependency(new TsDependency(extAProvidedDep, JavaScopes.PROVIDED));
+        extA.getDeployment().addDependency(extADeploymentDep)
                 .addDependency(new TsDependency(extAOptionalDeploymentDep, JavaScopes.PROVIDED));
 
         final TsQuarkusExt extB = new TsQuarkusExt("ext-b");
@@ -55,11 +52,8 @@ public class ProvidedExtensionDepsTest extends BootstrapFromOriginalJarTestBase 
         final TsArtifact transitiveProvidedDep = TsArtifact.jar("transitive-provided-dep");
         directProvidedDep.addDependency(transitiveProvidedDep);
 
-        return TsArtifact.jar("app")
-                .addManagedDependency(platformDescriptor())
-                .addManagedDependency(platformProperties())
-                .addDependency(extA)
-                .addDependency(extB, JavaScopes.PROVIDED)
+        return TsArtifact.jar("app").addManagedDependency(platformDescriptor())
+                .addManagedDependency(platformProperties()).addDependency(extA).addDependency(extB, JavaScopes.PROVIDED)
                 .addDependency(new TsDependency(directProvidedDep, JavaScopes.PROVIDED));
     }
 
@@ -68,48 +62,35 @@ public class ProvidedExtensionDepsTest extends BootstrapFromOriginalJarTestBase 
         Set<Dependency> expected = new HashSet<>();
         expected.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment", "1"),
                 DependencyFlags.DEPLOYMENT_CP));
-        expected.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"),
-                DependencyFlags.DEPLOYMENT_CP, DependencyFlags.COMPILE_ONLY));
+        expected.add(
+                new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"),
+                        DependencyFlags.DEPLOYMENT_CP, DependencyFlags.COMPILE_ONLY));
         assertEquals(expected, getDeploymentOnlyDeps(model));
 
         final Set<Dependency> expectedRuntime = new HashSet<>();
         expectedRuntime.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a", "1"),
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.DIRECT,
-                DependencyFlags.RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT));
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP, DependencyFlags.DIRECT,
+                DependencyFlags.RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT));
         expectedRuntime.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-dep", "1"),
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP));
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP));
         expectedRuntime.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "dep-c", "1"),
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.COMPILE_ONLY));
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP, DependencyFlags.COMPILE_ONLY));
         assertEquals(expectedRuntime, getDependenciesWithFlag(model, DependencyFlags.RUNTIME_CP));
 
         final Set<Dependency> expectedCompileOnly = new HashSet<>();
         expectedCompileOnly.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-b", "1"),
-                JavaScopes.PROVIDED,
-                DependencyFlags.RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.DIRECT,
-                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT,
-                DependencyFlags.COMPILE_ONLY));
+                JavaScopes.PROVIDED, DependencyFlags.RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.DIRECT,
+                DependencyFlags.TOP_LEVEL_RUNTIME_EXTENSION_ARTIFACT, DependencyFlags.COMPILE_ONLY));
         expectedCompileOnly
                 .add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "direct-provided-dep", "1"),
-                        JavaScopes.PROVIDED,
-                        DependencyFlags.DIRECT,
-                        DependencyFlags.COMPILE_ONLY));
-        expectedCompileOnly
-                .add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "transitive-provided-dep", "1"),
-                        JavaScopes.PROVIDED,
-                        DependencyFlags.COMPILE_ONLY));
+                        JavaScopes.PROVIDED, DependencyFlags.DIRECT, DependencyFlags.COMPILE_ONLY));
+        expectedCompileOnly.add(
+                new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "transitive-provided-dep", "1"),
+                        JavaScopes.PROVIDED, DependencyFlags.COMPILE_ONLY));
         expectedCompileOnly.add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "dep-c", "1"),
-                DependencyFlags.RUNTIME_CP,
-                DependencyFlags.DEPLOYMENT_CP,
-                DependencyFlags.COMPILE_ONLY));
-        expectedCompileOnly
-                .add(new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"),
+                DependencyFlags.RUNTIME_CP, DependencyFlags.DEPLOYMENT_CP, DependencyFlags.COMPILE_ONLY));
+        expectedCompileOnly.add(
+                new ArtifactDependency(ArtifactCoords.jar("io.quarkus.bootstrap.test", "ext-a-deployment-dep", "1"),
                         DependencyFlags.DEPLOYMENT_CP, DependencyFlags.COMPILE_ONLY));
         assertEquals(expectedCompileOnly, getDependenciesWithFlag(model, DependencyFlags.COMPILE_ONLY));
 

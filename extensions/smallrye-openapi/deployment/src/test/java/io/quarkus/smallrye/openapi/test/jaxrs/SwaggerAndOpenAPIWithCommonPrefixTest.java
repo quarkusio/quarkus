@@ -16,14 +16,13 @@ public class SwaggerAndOpenAPIWithCommonPrefixTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(OpenApiResource.class, ResourceBean.class)
+            .withApplicationRoot((jar) -> jar.addClasses(OpenApiResource.class, ResourceBean.class)
                     .addAsResource(new StringAsset("quarkus.smallrye-openapi.path=swagger"), "application.properties"));
 
     @Test
     public void shouldWorkEvenWithCommonPrefix() {
         RestAssured.when().get("/q/swagger-ui/index.html").then().statusCode(200).body(containsString("/q/swagger"));
-        RestAssured.when().get("/q/swagger").then().statusCode(200)
-                .body(containsString("/resource"), containsString("QUERY_PARAM_1"));
+        RestAssured.when().get("/q/swagger").then().statusCode(200).body(containsString("/resource"),
+                containsString("QUERY_PARAM_1"));
     }
 }

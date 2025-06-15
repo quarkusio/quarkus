@@ -18,11 +18,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class TemplateExtensionAttributeTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(
-                            new StringAsset("{ping:transform('Foo')}"),
-                            "templates/foo.txt")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addAsResource(new StringAsset("{ping:transform('Foo')}"), "templates/foo.txt")
                     .addClasses(Extensions.class));
 
     @Inject
@@ -32,14 +29,10 @@ public class TemplateExtensionAttributeTest {
     public void testTemplateExtensions() {
         assertEquals("bar::en",
                 engine.parse("{foo.transform}").data("foo", "bar").setAttribute("locale", Locale.ENGLISH).render());
-        assertEquals("OK",
-                engine.parse("{foo.myAttr}").instance().setAttribute("myAttribute", "OK").render());
-        assertEquals("NULL",
-                engine.parse("{foo.myAttr}").render());
-        assertEquals("OK",
-                engine.parse("{attr:ping}").instance().setAttribute("myAttribute", "OK").render());
-        assertEquals("foo::cs",
-                engine.getTemplate("foo").instance().setAttribute("locale", "cs").render());
+        assertEquals("OK", engine.parse("{foo.myAttr}").instance().setAttribute("myAttribute", "OK").render());
+        assertEquals("NULL", engine.parse("{foo.myAttr}").render());
+        assertEquals("OK", engine.parse("{attr:ping}").instance().setAttribute("myAttribute", "OK").render());
+        assertEquals("foo::cs", engine.getTemplate("foo").instance().setAttribute("locale", "cs").render());
     }
 
     @TemplateExtension

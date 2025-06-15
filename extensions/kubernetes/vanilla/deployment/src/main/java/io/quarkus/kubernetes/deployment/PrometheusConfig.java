@@ -14,8 +14,8 @@ public interface PrometheusConfig {
     // https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus-kubernetes.yml#L139
 
     /**
-     * When true (the default), emit a set of annotations to identify services that should be scraped by prometheus
-     * for metrics.
+     * When true (the default), emit a set of annotations to identify services that should be scraped by prometheus for
+     * metrics.
      * <p>
      * In configurations that use the Prometheus operator with ServiceMonitor, annotations may not be necessary.
      */
@@ -23,8 +23,8 @@ public interface PrometheusConfig {
     boolean annotations();
 
     /**
-     * When true (the default), emit a set of annotations to identify services that should be scraped by prometheus
-     * for metrics.
+     * When true (the default), emit a set of annotations to identify services that should be scraped by prometheus for
+     * metrics.
      * <p>
      * In configurations that use the Prometheus operator with ServiceMonitor, annotations may not be necessary.
      */
@@ -34,10 +34,8 @@ public interface PrometheusConfig {
     /**
      * Define the annotation prefix used for scrape values, this value will be used as the base for other annotation
      * name defaults. Altering the base for generated annotations can make it easier to define re-labeling rules and
-     * avoid unexpected knock-on effects. The default value is {@code prometheus.io}
-     *
-     * See Prometheus
-     * <a href="https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus-kubernetes.yml">example</a>
+     * avoid unexpected knock-on effects. The default value is {@code prometheus.io} See Prometheus <a href=
+     * "https://github.com/prometheus/prometheus/blob/main/documentation/examples/prometheus-kubernetes.yml">example</a>
      */
     @WithDefault("prometheus.io")
     String prefix();

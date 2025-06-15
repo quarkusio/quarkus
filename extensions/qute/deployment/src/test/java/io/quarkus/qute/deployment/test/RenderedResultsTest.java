@@ -23,8 +23,7 @@ public class RenderedResultsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root
-                    .addClasses(SimpleBean.class, FooTemplates.class)
+            .withApplicationRoot(root -> root.addClasses(SimpleBean.class, FooTemplates.class)
                     .addAsResource(new StringAsset("quarkus.qute.suffixes=txt,html"), "application.properties")
                     .addAsResource(new StringAsset("{name}{#fragment id=bar rendered=false}bar{/fragment}"),
                             "templates/foo.txt")
@@ -46,8 +45,7 @@ public class RenderedResultsTest {
     public void testInjectedTemplateSelectedVariant() throws InterruptedException {
         assertResults(() -> bean.fooInstance()
                 .setAttribute(TemplateInstance.SELECTED_VARIANT, Variant.forContentType(Variant.TEXT_HTML))
-                .data("name", "oof")
-                .render(), "foo.html", "<h1>oof</h1>");
+                .data("name", "oof").render(), "foo.html", "<h1>oof</h1>");
     }
 
     @Test
@@ -62,17 +60,15 @@ public class RenderedResultsTest {
 
     @Test
     public void testTypesafeTemplateSelectedVariant() throws InterruptedException {
-        assertResults(
-                () -> FooTemplates.foo("oof")
-                        .setAttribute(TemplateInstance.SELECTED_VARIANT, Variant.forContentType(Variant.TEXT_HTML)).render(),
+        assertResults(() -> FooTemplates.foo("oof")
+                .setAttribute(TemplateInstance.SELECTED_VARIANT, Variant.forContentType(Variant.TEXT_HTML)).render(),
                 "foo.html", "<h1>oof</h1>");
     }
 
     @Test
     public void testTypesafeFragmentSelectedVariant() throws InterruptedException {
-        assertResults(
-                () -> FooTemplates.foo$bar()
-                        .setAttribute(TemplateInstance.SELECTED_VARIANT, Variant.forContentType(Variant.TEXT_HTML)).render(),
+        assertResults(() -> FooTemplates.foo$bar()
+                .setAttribute(TemplateInstance.SELECTED_VARIANT, Variant.forContentType(Variant.TEXT_HTML)).render(),
                 "foo.html$bar", "bar");
     }
 
@@ -81,7 +77,8 @@ public class RenderedResultsTest {
         renderedResults.clear();
         assertEquals(expectedResult, renderAction.get());
         // Wait a little so that we can test the RenderedResult#timeout()
-        // Note that LocalDateTime.now() has precision of the system clock and it seems that windows has millisecond precision
+        // Note that LocalDateTime.now() has precision of the system clock and it seems that windows has millisecond
+        // precision
         TimeUnit.MILLISECONDS.sleep(50);
         List<RenderedResult> results = renderedResults.getResults(templateId);
         assertEquals(1, results.size(), renderedResults.toString());

@@ -6,7 +6,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The request line
- *
  */
 public class RequestLineAttribute implements ExchangeAttribute {
 

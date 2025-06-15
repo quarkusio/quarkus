@@ -46,8 +46,8 @@ public interface ServerLimitsConfig {
     int maxFormFields();
 
     /**
-     * Set the maximum number of bytes a server can buffer when decoding a form.
-     * Set to {@code -1} to allow unlimited length, up to {@code Integer.MAX_VALUE} bytes.
+     * Set the maximum number of bytes a server can buffer when decoding a form. Set to {@code -1} to allow unlimited
+     * length, up to {@code Integer.MAX_VALUE} bytes.
      **/
     @WithDefault("1K")
     MemorySize maxFormBufferedBytes();
@@ -61,18 +61,18 @@ public interface ServerLimitsConfig {
     int maxParameters();
 
     /**
-     * The maximum number of connections that are allowed at any one time. If this is set
-     * it is recommended to set a short idle timeout.
+     * The maximum number of connections that are allowed at any one time. If this is set it is recommended to set a
+     * short idle timeout.
      */
     OptionalInt maxConnections();
 
     /**
      * Set the SETTINGS_HEADER_TABLE_SIZE HTTP/2 setting.
      * <p>
-     * Allows the sender to inform the remote endpoint of the maximum size of the header compression table used to decode
-     * header blocks, in octets. The encoder can select any size equal to or less than this value by using signaling
-     * specific to the header compression format inside a header block.
-     * The initial value is {@code 4,096} octets.
+     * Allows the sender to inform the remote endpoint of the maximum size of the header compression table used to
+     * decode header blocks, in octets. The encoder can select any size equal to or less than this value by using
+     * signaling specific to the header compression format inside a header block. The initial value is {@code 4,096}
+     * octets.
      */
     OptionalLong headerTableSize();
 
@@ -86,18 +86,16 @@ public interface ServerLimitsConfig {
     OptionalLong maxConcurrentStreams();
 
     /**
-     * Set the SETTINGS_MAX_FRAME_SIZE HTTP/2 setting.
-     * Indicates the size of the largest frame payload that the sender is willing to receive, in octets.
-     * The initial value is {@code 2^14} (16,384) octets.
+     * Set the SETTINGS_MAX_FRAME_SIZE HTTP/2 setting. Indicates the size of the largest frame payload that the sender
+     * is willing to receive, in octets. The initial value is {@code 2^14} (16,384) octets.
      */
     OptionalInt maxFrameSize();
 
     /**
-     * Set the SETTINGS_MAX_HEADER_LIST_SIZE HTTP/2 setting.
-     * This advisory setting informs a peer of the maximum size of header list that the sender is prepared to accept,
-     * in octets. The value is based on the uncompressed size of header fields, including the length of the name and
-     * value in octets plus an overhead of 32 octets for each header field.
-     * The default value is {@code 8192}
+     * Set the SETTINGS_MAX_HEADER_LIST_SIZE HTTP/2 setting. This advisory setting informs a peer of the maximum size of
+     * header list that the sender is prepared to accept, in octets. The value is based on the uncompressed size of
+     * header fields, including the length of the name and value in octets plus an overhead of 32 octets for each header
+     * field. The default value is {@code 8192}
      */
     OptionalLong maxHeaderListSize();
 

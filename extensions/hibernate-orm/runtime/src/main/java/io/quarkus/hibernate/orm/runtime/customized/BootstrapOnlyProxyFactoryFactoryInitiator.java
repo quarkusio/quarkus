@@ -10,8 +10,8 @@ import org.hibernate.service.spi.ServiceRegistryImplementor;
 import net.bytebuddy.ClassFileVersion;
 
 /**
- * We need a different implementation of ProxyFactoryFactory during the build than at runtime,
- * so to allow metadata validation. This implementation is then swapped after the metadata has been recorded.
+ * We need a different implementation of ProxyFactoryFactory during the build than at runtime, so to allow metadata
+ * validation. This implementation is then swapped after the metadata has been recorded.
  *
  * @see io.quarkus.hibernate.orm.runtime.customized.QuarkusRuntimeProxyFactoryFactory
  */

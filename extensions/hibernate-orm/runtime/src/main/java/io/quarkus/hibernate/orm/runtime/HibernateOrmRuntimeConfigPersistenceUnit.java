@@ -19,12 +19,10 @@ import io.smallrye.config.WithParentName;
 public interface HibernateOrmRuntimeConfigPersistenceUnit {
 
     /**
-     * Whether this persistence unit should be active at runtime.
-     *
-     * See xref:hibernate-orm.adoc#persistence-unit-active[this section of the documentation].
-     *
-     * Note that if Hibernate ORM is disabled (i.e. `quarkus.hibernate-orm.enabled` is set to `false`),
-     * all persistence units are deactivated, and setting this property to `true` will fail.
+     * Whether this persistence unit should be active at runtime. See
+     * xref:hibernate-orm.adoc#persistence-unit-active[this section of the documentation]. Note that if Hibernate ORM is
+     * disabled (i.e. `quarkus.hibernate-orm.enabled` is set to `false`), all persistence units are deactivated, and
+     * setting this property to `true` will fail.
      *
      * @asciidoclet
      */
@@ -62,22 +60,14 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     HibernateOrmConfigPersistenceUnitFlush flush();
 
     /**
-     * Properties that should be passed on directly to Hibernate ORM.
-     * Use the full configuration property key here,
-     * for instance `quarkus.hibernate-orm.unsupported-properties."hibernate.order_inserts" = true`.
-     *
-     * [WARNING]
-     * ====
-     * Properties set here are completely unsupported:
-     * as Quarkus doesn't generally know about these properties and their purpose,
-     * there is absolutely no guarantee that they will work correctly,
-     * and even if they do, that may change when upgrading to a newer version of Quarkus
-     * (even just a micro/patch version).
-     * ====
-     *
-     * Consider using a supported configuration property before falling back to unsupported ones.
-     * If none exists, make sure to file a feature request so that a supported configuration property can be added to Quarkus,
-     * and more importantly so that the configuration property is tested regularly.
+     * Properties that should be passed on directly to Hibernate ORM. Use the full configuration property key here, for
+     * instance `quarkus.hibernate-orm.unsupported-properties."hibernate.order_inserts" = true`. [WARNING] ====
+     * Properties set here are completely unsupported: as Quarkus doesn't generally know about these properties and
+     * their purpose, there is absolutely no guarantee that they will work correctly, and even if they do, that may
+     * change when upgrading to a newer version of Quarkus (even just a micro/patch version). ==== Consider using a
+     * supported configuration property before falling back to unsupported ones. If none exists, make sure to file a
+     * feature request so that a supported configuration property can be added to Quarkus, and more importantly so that
+     * the configuration property is tested regularly.
      *
      * @asciidoclet
      */
@@ -104,16 +94,14 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
         Optional<@WithConverter(TrimmedStringConverter.class) String> defaultSchema();
 
         /**
-         * Whether Hibernate ORM should check on startup
-         * that the version of the database matches the version configured on the dialect
-         * (either the default version, or the one set through `quarkus.datasource.db-version`).
-         *
-         * This should be set to `false` if the database is not available on startup.
+         * Whether Hibernate ORM should check on startup that the version of the database matches the version configured
+         * on the dialect (either the default version, or the one set through `quarkus.datasource.db-version`). This
+         * should be set to `false` if the database is not available on startup.
          *
          * @asciidoclet
          */
         // TODO disable the check by default when offline startup is opted in
-        //   See https://github.com/quarkusio/quarkus/issues/13522
+        // See https://github.com/quarkusio/quarkus/issues/13522
         @WithName("version-check.enabled")
         @ConfigDocDefault("`true`")
         Optional<Boolean> versionCheckEnabled();
@@ -133,16 +121,10 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitSchemaManagement {
 
         /**
-         * Select whether the database schema is generated or not.
-         *
-         * `drop-and-create` is awesome in development mode.
-         *
-         * This defaults to 'none'.
-         *
-         * However if Dev Services is in use and no other extensions that manage the schema are present
-         * the value will be automatically overridden to 'drop-and-create'.
-         *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
+         * Select whether the database schema is generated or not. `drop-and-create` is awesome in development mode.
+         * This defaults to 'none'. However if Dev Services is in use and no other extensions that manage the schema are
+         * present the value will be automatically overridden to 'drop-and-create'. Accepted values: `none`, `create`,
+         * `drop-and-create`, `drop`, `update`, `validate`.
          *
          * @asciidoclet
          */
@@ -168,14 +150,10 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitDatabaseGeneration {
 
         /**
-         * Select whether the database schema is generated or not.
-         *
-         * `drop-and-create` is awesome in development mode.
-         *
-         * This defaults to 'none', however if Dev Services is in use and no other extensions that manage the schema are present
-         * this will default to 'drop-and-create'.
-         *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
+         * Select whether the database schema is generated or not. `drop-and-create` is awesome in development mode.
+         * This defaults to 'none', however if Dev Services is in use and no other extensions that manage the schema are
+         * present this will default to 'drop-and-create'. Accepted values: `none`, `create`, `drop-and-create`, `drop`,
+         * `update`, `validate`.
          */
         @WithParentName
         @Deprecated(forRemoval = true, since = "3.22")
@@ -198,9 +176,8 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     interface HibernateOrmConfigPersistenceUnitScriptGeneration {
 
         /**
-         * Select whether the database schema DDL files are generated or not.
-         *
-         * Accepted values: `none`, `create`, `drop-and-create`, `drop`, `update`, `validate`.
+         * Select whether the database schema DDL files are generated or not. Accepted values: `none`, `create`,
+         * `drop-and-create`, `drop`, `update`, `validate`.
          */
         @WithParentName
         @WithDefault("none")
@@ -258,13 +235,10 @@ public interface HibernateOrmRuntimeConfigPersistenceUnit {
     @ConfigGroup
     interface HibernateOrmConfigPersistenceUnitFlush {
         /**
-         * The default flushing strategy, or when to flush entities to the database in a Hibernate session:
-         * before every query, on commit, ...
-         *
-         * This default can be overridden on a per-session basis with `Session#setHibernateFlushMode()`
-         * or on a per-query basis with the hint `HibernateHints#HINT_FLUSH_MODE`.
-         *
-         * See the javadoc of `org.hibernate.FlushMode` for details.
+         * The default flushing strategy, or when to flush entities to the database in a Hibernate session: before every
+         * query, on commit, ... This default can be overridden on a per-session basis with
+         * `Session#setHibernateFlushMode()` or on a per-query basis with the hint `HibernateHints#HINT_FLUSH_MODE`. See
+         * the javadoc of `org.hibernate.FlushMode` for details.
          *
          * @asciidoclet
          */

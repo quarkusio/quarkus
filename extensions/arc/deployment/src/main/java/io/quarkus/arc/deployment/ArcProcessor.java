@@ -103,8 +103,8 @@ import io.quarkus.smallrye.context.deployment.spi.ThreadContextProviderBuildItem
 /**
  * This class contains build steps that trigger various phases of the bean processing.
  * <p>
- * Other build steps can either register "configuring" build items, such as {@link AdditionalBeanBuildItem} or inject build
- * items representing particular phases:
+ * Other build steps can either register "configuring" build items, such as {@link AdditionalBeanBuildItem} or inject
+ * build items representing particular phases:
  * <ol>
  * <li>{@link ContextRegistrationPhaseBuildItem}</li>
  * <li>{@link BeanRegistrationPhaseBuildItem}</li>
@@ -120,7 +120,8 @@ public class ArcProcessor {
     private static final Logger LOGGER = Logger.getLogger(ArcProcessor.class);
 
     static final DotName ADDITIONAL_BEAN = DotName.createSimple(AdditionalBean.class.getName());
-    static final DotName ASYNC_OBSERVER_EXCEPTION_HANDLER = DotName.createSimple(AsyncObserverExceptionHandler.class.getName());
+    static final DotName ASYNC_OBSERVER_EXCEPTION_HANDLER = DotName
+            .createSimple(AsyncObserverExceptionHandler.class.getName());
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -144,19 +145,14 @@ public class ArcProcessor {
 
         return AdditionalBeanBuildItem.builder().setUnremovable()
                 .setDefaultScope(DotName.createSimple(ApplicationScoped.class.getName()))
-                .addBeanClasses(quarkusApplications)
-                .build();
+                .addBeanClasses(quarkusApplications).build();
     }
 
     // PHASE 1 - build BeanProcessor
     @BuildStep
-    public ContextRegistrationPhaseBuildItem initialize(
-            ArcConfig arcConfig,
-            BeanArchiveIndexBuildItem beanArchiveIndex,
-            CombinedIndexBuildItem combinedIndex,
-            ApplicationIndexBuildItem applicationIndex,
-            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions,
-            List<ExcludedTypeBuildItem> excludedTypes,
+    public ContextRegistrationPhaseBuildItem initialize(ArcConfig arcConfig, BeanArchiveIndexBuildItem beanArchiveIndex,
+            CombinedIndexBuildItem combinedIndex, ApplicationIndexBuildItem applicationIndex,
+            BuildCompatibleExtensionsBuildItem buildCompatibleExtensions, List<ExcludedTypeBuildItem> excludedTypes,
             List<AnnotationsTransformerBuildItem> annotationTransformers,
             List<InjectionPointTransformerBuildItem> injectionPointTransformers,
             List<ObserverTransformerBuildItem> observerTransformers,
@@ -164,19 +160,16 @@ public class ArcProcessor {
             List<QualifierRegistrarBuildItem> qualifierRegistrars,
             List<StereotypeRegistrarBuildItem> stereotypeRegistrars,
             List<ApplicationClassPredicateBuildItem> applicationClassPredicates,
-            List<AdditionalBeanBuildItem> additionalBeans,
-            List<ResourceAnnotationBuildItem> resourceAnnotations,
+            List<AdditionalBeanBuildItem> additionalBeans, List<ResourceAnnotationBuildItem> resourceAnnotations,
             List<BeanDefiningAnnotationBuildItem> additionalBeanDefiningAnnotations,
             List<SuppressConditionGeneratorBuildItem> suppressConditionGenerators,
-            Optional<TestClassPredicateBuildItem> testClassPredicate,
-            Capabilities capabilities,
-            CustomScopeAnnotationsBuildItem customScopes,
-            LaunchModeBuildItem launchModeBuildItem,
+            Optional<TestClassPredicateBuildItem> testClassPredicate, Capabilities capabilities,
+            CustomScopeAnnotationsBuildItem customScopes, LaunchModeBuildItem launchModeBuildItem,
             BuildProducer<CompletedApplicationClassPredicateBuildItem> applicationClassPredicateProducer) {
 
         if (!arcConfig.isRemoveUnusedBeansFieldValid()) {
-            throw new IllegalArgumentException("Invalid configuration value set for 'quarkus.arc.remove-unused-beans'." +
-                    " Please use one of " + ArcConfig.ALLOWED_REMOVE_UNUSED_BEANS_VALUES);
+            throw new IllegalArgumentException("Invalid configuration value set for 'quarkus.arc.remove-unused-beans'."
+                    + " Please use one of " + ArcConfig.ALLOWED_REMOVE_UNUSED_BEANS_VALUES);
         }
 
         // bean type -> default scope (may be null)
@@ -185,10 +178,10 @@ public class ArcProcessor {
             DotName defaultScope = additionalBean.getDefaultScope();
             for (String beanClass : additionalBean.getBeanClasses()) {
                 DotName existingDefaultScope = additionalBeanTypes.get(beanClass);
-                if (existingDefaultScope != null && defaultScope != null && !existingDefaultScope.equals(defaultScope)) {
-                    throw new IllegalStateException("Different default scopes defined for additional bean class: " + beanClass
-                            + "\n\t - scopes: " + defaultScope + " and "
-                            + existingDefaultScope);
+                if (existingDefaultScope != null && defaultScope != null
+                        && !existingDefaultScope.equals(defaultScope)) {
+                    throw new IllegalStateException("Different default scopes defined for additional bean class: "
+                            + beanClass + "\n\t - scopes: " + defaultScope + " and " + existingDefaultScope);
                 }
                 additionalBeanTypes.put(beanClass, defaultScope);
             }
@@ -205,7 +198,8 @@ public class ArcProcessor {
                 return dotName;
             }
         };
-        applicationClassPredicateProducer.produce(new CompletedApplicationClassPredicateBuildItem(applicationClassPredicate));
+        applicationClassPredicateProducer
+                .produce(new CompletedApplicationClassPredicateBuildItem(applicationClassPredicate));
         builder.setApplicationClassPredicate(applicationClassPredicate);
 
         builder.addAnnotationTransformation(new AnnotationsTransformer() {
@@ -236,7 +230,8 @@ public class ArcProcessor {
                     transformationContext.transform().add(defaultScope).done();
                 } else {
                     if (!beanClass.annotationsMap().containsKey(ADDITIONAL_BEAN)) {
-                        // Add special stereotype is added so that @Dependent is automatically used even if no scope is declared
+                        // Add special stereotype is added so that @Dependent is automatically used even if no scope is
+                        // declared
                         // Otherwise the bean class would be ignored during bean discovery
                         transformationContext.transform().add(ADDITIONAL_BEAN).done();
                     }
@@ -287,7 +282,8 @@ public class ArcProcessor {
                 }
             });
         }
-        builder.addRemovalExclusion(new BeanTypeExclusion(DotName.createSimple(TestApplicationClassPredicate.class.getName())));
+        builder.addRemovalExclusion(
+                new BeanTypeExclusion(DotName.createSimple(TestApplicationClassPredicate.class.getName())));
         for (AdditionalBeanBuildItem additionalBean : additionalBeans) {
             if (!additionalBean.isRemovable()) {
                 for (String beanClass : additionalBean.getBeanClasses()) {
@@ -372,8 +368,7 @@ public class ArcProcessor {
         }
 
         if (arcConfig.excludeTypes().isPresent()) {
-            for (Predicate<ClassInfo> predicate : initClassPredicates(
-                    arcConfig.excludeTypes().get())) {
+            for (Predicate<ClassInfo> predicate : initClassPredicates(arcConfig.excludeTypes().get())) {
                 builder.addExcludeType(predicate);
             }
         }
@@ -444,8 +439,8 @@ public class ArcProcessor {
 
     // PHASE 3 - register synthetic observers
     @BuildStep
-    public ObserverRegistrationPhaseBuildItem registerSyntheticObservers(BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            List<BeanConfiguratorBuildItem> beanConfigurators,
+    public ObserverRegistrationPhaseBuildItem registerSyntheticObservers(
+            BeanRegistrationPhaseBuildItem beanRegistrationPhase, List<BeanConfiguratorBuildItem> beanConfigurators,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
             BuildProducer<UnremovableBeanBuildItem> unremovableBeans,
@@ -483,11 +478,13 @@ public class ArcProcessor {
         BeanProcessor beanProcessor = observerRegistrationPhase.getBeanProcessor();
         synthesisFinished.produce(new SynthesisFinishedBuildItem(beanProcessor.getBeanDeployment()));
 
-        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(bytecodeTransformer);
+        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(
+                bytecodeTransformer);
 
         beanProcessor.initialize(bytecodeTransformerConsumer,
                 unremovableBeans.stream().map(UnremovableBeanBuildItem::getPredicate).collect(Collectors.toList()));
-        BeanDeploymentValidator.ValidationContext validationContext = beanProcessor.validate(bytecodeTransformerConsumer);
+        BeanDeploymentValidator.ValidationContext validationContext = beanProcessor
+                .validate(bytecodeTransformerConsumer);
 
         return new ValidationPhaseBuildItem(validationContext, beanProcessor);
     }
@@ -495,18 +492,15 @@ public class ArcProcessor {
     // PHASE 5 - generate resources
     @BuildStep
     @Produce(ResourcesGeneratedPhaseBuildItem.class)
-    public void generateResources(ArcConfig config,
-            ValidationPhaseBuildItem validationPhase,
+    public void generateResources(ArcConfig config, ValidationPhaseBuildItem validationPhase,
             List<ValidationPhaseBuildItem.ValidationErrorBuildItem> validationErrors,
             BuildProducer<ReflectiveClassBuildItem> reflectiveClasses,
             BuildProducer<ReflectiveMethodBuildItem> reflectiveMethods,
             BuildProducer<ReflectiveFieldBuildItem> reflectiveFields,
-            BuildProducer<GeneratedClassBuildItem> generatedClass,
-            LiveReloadBuildItem liveReloadBuildItem,
+            BuildProducer<GeneratedClassBuildItem> generatedClass, LiveReloadBuildItem liveReloadBuildItem,
             BuildProducer<GeneratedResourceBuildItem> generatedResource,
             BuildProducer<BytecodeTransformerBuildItem> bytecodeTransformer,
-            List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses,
-            ExecutorService buildExecutor) throws Exception {
+            List<ReflectiveBeanClassBuildItem> reflectiveBeanClasses, ExecutorService buildExecutor) throws Exception {
 
         for (ValidationErrorBuildItem validationError : validationErrors) {
             for (Throwable error : validationError.getValues()) {
@@ -523,9 +517,10 @@ public class ArcProcessor {
             liveReloadBuildItem.setContextObject(ExistingClasses.class, existingClasses);
         }
 
-        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(bytecodeTransformer);
-        Set<DotName> reflectiveBeanClassesNames = reflectiveBeanClasses.stream().map(ReflectiveBeanClassBuildItem::getClassName)
-                .collect(Collectors.toSet());
+        Consumer<BytecodeTransformer> bytecodeTransformerConsumer = new BytecodeTransformerConsumer(
+                bytecodeTransformer);
+        Set<DotName> reflectiveBeanClassesNames = reflectiveBeanClasses.stream()
+                .map(ReflectiveBeanClassBuildItem::getClassName).collect(Collectors.toSet());
 
         boolean parallelResourceGeneration = Boolean
                 .parseBoolean(System.getProperty("quarkus.arc.parallel-resource-generation", "true"));
@@ -536,7 +531,8 @@ public class ArcProcessor {
 
             @Override
             public void registerMethod(String declaringClass, String name, String... params) {
-                reflectiveMethods.produce(new ReflectiveMethodBuildItem(getClass().getName(), declaringClass, name, params));
+                reflectiveMethods
+                        .produce(new ReflectiveMethodBuildItem(getClass().getName(), declaringClass, name, params));
             }
 
             @Override
@@ -553,10 +549,8 @@ public class ArcProcessor {
             public void registerClientProxy(DotName beanClassName, String clientProxyName) {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for client proxies
-                    reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(clientProxyName)
-                                    .reason(getClass().getName())
-                                    .methods().build());
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(clientProxyName)
+                            .reason(getClass().getName()).methods().build());
                 }
             }
 
@@ -564,10 +558,8 @@ public class ArcProcessor {
             public void registerSubclass(DotName beanClassName, String subclassName) {
                 if (reflectiveBeanClassesNames.contains(beanClassName)) {
                     // Fields should never be registered for subclasses
-                    reflectiveClasses
-                            .produce(ReflectiveClassBuildItem.builder(subclassName)
-                                    .reason(getClass().getName())
-                                    .methods().build());
+                    reflectiveClasses.produce(ReflectiveClassBuildItem.builder(subclassName)
+                            .reason(getClass().getName()).methods().build());
                 }
             }
 
@@ -579,15 +571,15 @@ public class ArcProcessor {
                 case JAVA_CLASS:
                     LOGGER.debugf("Add %s class: %s", (resource.isApplicationClass() ? "APP" : "FWK"),
                             resource.getFullyQualifiedName());
-                    generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(), resource.getName(),
-                            resource.getData(), resource.getSource()));
+                    generatedClass.produce(new GeneratedClassBuildItem(resource.isApplicationClass(),
+                            resource.getName(), resource.getData(), resource.getSource()));
                     if (!resource.isApplicationClass()) {
                         existingClasses.existingClasses.add(resource.getName());
                     }
                     break;
                 case SERVICE_PROVIDER:
-                    generatedResource.produce(
-                            new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(), resource.getData()));
+                    generatedResource.produce(new GeneratedResourceBuildItem("META-INF/services/" + resource.getName(),
+                            resource.getData()));
                     break;
                 default:
                     break;
@@ -598,18 +590,14 @@ public class ArcProcessor {
 
         // Register all qualifiers for reflection to support type-safe resolution at runtime in native image
         for (ClassInfo qualifier : beanProcessor.getBeanDeployment().getQualifiers()) {
-            reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(qualifier.name().toString())
-                            .reason(getClass().getName())
-                            .methods().build());
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(qualifier.name().toString())
+                    .reason(getClass().getName()).methods().build());
         }
 
         // Register all interceptor bindings for reflection so that AnnotationLiteral.equals() works in a native image
         for (ClassInfo binding : beanProcessor.getBeanDeployment().getInterceptorBindings()) {
-            reflectiveClasses
-                    .produce(ReflectiveClassBuildItem.builder(binding.name().toString())
-                            .reason(getClass().getName())
-                            .methods().build());
+            reflectiveClasses.produce(ReflectiveClassBuildItem.builder(binding.name().toString())
+                    .reason(getClass().getName()).methods().build());
         }
     }
 
@@ -629,7 +617,8 @@ public class ArcProcessor {
     @BuildStep
     @Record(STATIC_INIT)
     public PreBeanContainerBuildItem notifyBeanContainerListeners(ArcContainerBuildItem container,
-            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems, ArcRecorder recorder) throws Exception {
+            List<BeanContainerListenerBuildItem> beanContainerListenerBuildItems, ArcRecorder recorder)
+            throws Exception {
         BeanContainer beanContainer = recorder.initBeanContainer(container.getContainer(),
                 beanContainerListenerBuildItems.stream().map(BeanContainerListenerBuildItem::getBeanContainerListener)
                         .collect(Collectors.toList()));
@@ -650,7 +639,8 @@ public class ArcProcessor {
     @BuildStep
     List<AdditionalApplicationArchiveMarkerBuildItem> marker() {
         return Arrays.asList(new AdditionalApplicationArchiveMarkerBuildItem("META-INF/beans.xml"),
-                new AdditionalApplicationArchiveMarkerBuildItem("META-INF/services/jakarta.enterprise.inject.spi.Extension"),
+                new AdditionalApplicationArchiveMarkerBuildItem(
+                        "META-INF/services/jakarta.enterprise.inject.spi.Extension"),
                 new AdditionalApplicationArchiveMarkerBuildItem(
                         "META-INF/services/jakarta.enterprise.inject.build.compatible.spi.BuildCompatibleExtension"));
     }
@@ -726,7 +716,8 @@ public class ArcProcessor {
 
     @BuildStep
     BeanDefiningAnnotationBuildItem quarkusMain() {
-        return new BeanDefiningAnnotationBuildItem(DotName.createSimple(QuarkusMain.class.getName()), DotNames.SINGLETON);
+        return new BeanDefiningAnnotationBuildItem(DotName.createSimple(QuarkusMain.class.getName()),
+                DotNames.SINGLETON);
     }
 
     @BuildStep
@@ -740,8 +731,8 @@ public class ArcProcessor {
             BuildProducer<ValidationErrorBuildItem> errors) {
         BeanResolver resolver = validationPhase.getBeanProcessor().getBeanDeployment().getBeanResolver();
         try {
-            BeanInfo bean = resolver.resolveAmbiguity(
-                    resolver.resolveBeans(Type.create(ASYNC_OBSERVER_EXCEPTION_HANDLER, org.jboss.jandex.Type.Kind.CLASS)));
+            BeanInfo bean = resolver.resolveAmbiguity(resolver
+                    .resolveBeans(Type.create(ASYNC_OBSERVER_EXCEPTION_HANDLER, org.jboss.jandex.Type.Kind.CLASS)));
             if (bean == null) {
                 // This should never happen because of the default impl
                 errors.produce(new ValidationErrorBuildItem(
@@ -753,7 +744,8 @@ public class ArcProcessor {
     }
 
     @BuildStep
-    void registerContextPropagation(ArcConfig config, BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
+    void registerContextPropagation(ArcConfig config,
+            BuildProducer<ThreadContextProviderBuildItem> threadContextProvider) {
         if (config.contextPropagation().enabled()) {
             threadContextProvider.produce(new ThreadContextProviderBuildItem(ArcContextProvider.class));
         }
@@ -764,13 +756,13 @@ public class ArcProcessor {
         // 1. Test class annotated with @QuarkusComponentTest
         // 2. Test class with a static field of a type QuarkusComponentTestExtension
         DotName quarkusComponentTest = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTest");
-        DotName quarkusComponentTestExtension = DotName.createSimple("io.quarkus.test.component.QuarkusComponentTestExtension");
+        DotName quarkusComponentTestExtension = DotName
+                .createSimple("io.quarkus.test.component.QuarkusComponentTestExtension");
         return new Predicate<ClassInfo>() {
 
             @Override
             public boolean test(ClassInfo clazz) {
-                if (clazz.nestingType() == NestingType.INNER
-                        && Modifier.isStatic(clazz.flags())) {
+                if (clazz.nestingType() == NestingType.INNER && Modifier.isStatic(clazz.flags())) {
                     DotName enclosingClassName = clazz.enclosingClass();
                     ClassInfo enclosingClass = index.getClassByName(enclosingClassName);
                     if (enclosingClass != null) {
@@ -778,8 +770,7 @@ public class ArcProcessor {
                             return true;
                         } else {
                             for (FieldInfo field : enclosingClass.fields()) {
-                                if (!field.isSynthetic()
-                                        && Modifier.isStatic(field.flags())
+                                if (!field.isSynthetic() && Modifier.isStatic(field.flags())
                                         && field.type().name().equals(quarkusComponentTestExtension)) {
                                     return true;
                                 }
@@ -855,7 +846,8 @@ public class ArcProcessor {
 
         @Override
         public void accept(BytecodeTransformer t) {
-            bytecodeTransformer.produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
+            bytecodeTransformer
+                    .produce(new BytecodeTransformerBuildItem(t.getClassToTransform(), t.getVisitorFunction()));
         }
     }
 }

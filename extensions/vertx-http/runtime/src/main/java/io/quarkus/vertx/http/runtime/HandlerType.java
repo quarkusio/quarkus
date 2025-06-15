@@ -20,8 +20,7 @@ public enum HandlerType {
      */
     BLOCKING,
     /**
-     * A failure handler, invoked when an exception is thrown from a route handler.
-     * This is invoked on the event loop.
+     * A failure handler, invoked when an exception is thrown from a route handler. This is invoked on the event loop.
      *
      * @see io.vertx.ext.web.Route#failureHandler(Handler)
      */

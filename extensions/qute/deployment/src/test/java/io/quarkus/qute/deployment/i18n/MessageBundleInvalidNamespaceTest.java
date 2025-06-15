@@ -15,9 +15,7 @@ public class MessageBundleInvalidNamespaceTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Hellos.class))
-            .assertException(t -> {
+            .withApplicationRoot((jar) -> jar.addClasses(Hellos.class)).assertException(t -> {
                 Throwable e = t;
                 MessageBundleException me = null;
                 while (e != null) {

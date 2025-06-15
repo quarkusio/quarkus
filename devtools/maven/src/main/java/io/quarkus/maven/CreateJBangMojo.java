@@ -93,13 +93,10 @@ public class CreateJBangMojo extends AbstractMojo {
 
         final MavenArtifactResolver mvn;
         try {
-            mvn = MavenArtifactResolver.builder()
-                    .setRepositorySystem(repoSystem)
+            mvn = MavenArtifactResolver.builder().setRepositorySystem(repoSystem)
                     .setRepositorySystemSession(
                             getLog().isDebugEnabled() ? repoSession : MojoUtils.muteTransferListener(repoSession))
-                    .setRemoteRepositories(repos)
-                    .setRemoteRepositoryManager(remoteRepoManager)
-                    .build();
+                    .setRemoteRepositories(repos).setRemoteRepositoryManager(remoteRepoManager).build();
         } catch (Exception e) {
             throw new MojoExecutionException("Failed to initialize Maven artifact resolver", e);
         }
@@ -113,15 +110,11 @@ public class CreateJBangMojo extends AbstractMojo {
             throw new MojoExecutionException("Failed to resolve Quarkus extension catalog", e);
         }
 
-        final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder(log)
-                .catalog(catalog)
-                .artifactResolver(mvn)
-                .build();
+        final List<ResourceLoader> codestartsResourceLoader = codestartLoadersBuilder(log).catalog(catalog)
+                .artifactResolver(mvn).build();
         final CreateJBangProject createJBangProject = new CreateJBangProject(QuarkusProject.of(projectDirPath, catalog,
-                codestartsResourceLoader, log, BuildTool.MAVEN, new JavaVersion(javaVersion)))
-                .extensions(extensions)
-                .javaVersion(javaVersion)
-                .setValue(NO_JBANG_WRAPPER, noJBangWrapper);
+                codestartsResourceLoader, log, BuildTool.MAVEN, new JavaVersion(javaVersion))).extensions(extensions)
+                .javaVersion(javaVersion).setValue(NO_JBANG_WRAPPER, noJBangWrapper);
 
         boolean success;
 
@@ -138,8 +131,7 @@ public class CreateJBangMojo extends AbstractMojo {
             getLog().info("========================================================================");
             getLog().info("");
         } else {
-            throw new MojoExecutionException(
-                    "Failed to generate JBang Quarkus project");
+            throw new MojoExecutionException("Failed to generate JBang Quarkus project");
         }
     }
 }

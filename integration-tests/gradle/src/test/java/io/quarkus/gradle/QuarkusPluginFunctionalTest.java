@@ -37,7 +37,8 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
     @ParameterizedTest(name = "Build {0} project")
     @EnumSource(SourceType.class)
     public void canBuild(SourceType sourceType) throws Exception {
-        Set<String> extensions = JAVA.equals(sourceType) ? Collections.emptySet() : Set.of(sourceType.toString().toLowerCase());
+        Set<String> extensions = JAVA.equals(sourceType) ? Collections.emptySet()
+                : Set.of(sourceType.toString().toLowerCase());
         createProject(extensions);
 
         BuildResult build = runGradleWrapper(projectRoot, "build");
@@ -68,7 +69,8 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
-        final File applicationProperties = projectRoot.toPath().resolve("src/main/resources/application.properties").toFile();
+        final File applicationProperties = projectRoot.toPath().resolve("src/main/resources/application.properties")
+                .toFile();
         Files.write(applicationProperties.toPath(), "quarkus.http.port=8888".getBytes());
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
@@ -82,8 +84,8 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
         BuildResult firstBuild = runGradleWrapper(projectRoot, "quarkusBuild");
         assertThat(BuildResult.isSuccessful(firstBuild.getTasks().get(":quarkusBuild"))).isTrue();
 
-        final File greetingResourceFile = projectRoot.toPath().resolve("src/main/java/org/acme/foo/GreetingResource.java")
-                .toFile();
+        final File greetingResourceFile = projectRoot.toPath()
+                .resolve("src/main/java/org/acme/foo/GreetingResource.java").toFile();
         DevModeClient.filter(greetingResourceFile, ImmutableMap.of("\"/greeting\"", "\"/test/hello\""));
 
         BuildResult secondBuild = runGradleWrapper(projectRoot, "quarkusBuild");
@@ -171,16 +173,9 @@ public class QuarkusPluginFunctionalTest extends QuarkusGradleDevToolsTestBase {
 
     private void createProject(Set<String> extensions) throws Exception {
         Map<String, Object> context = new HashMap<>();
-        assertThat(new CreateProject(QuarkusProjectHelper.getProject(projectRoot.toPath(),
-                BuildTool.GRADLE))
-                .groupId("com.acme.foo")
-                .extensions(extensions)
-                .resourcePath("/greeting")
-                .artifactId("foo")
-                .version("1.0.0-SNAPSHOT")
-                .packageName("org.acme.foo")
-                .doCreateProject(context))
-                .withFailMessage("Project was not created")
-                .isTrue();
+        assertThat(new CreateProject(QuarkusProjectHelper.getProject(projectRoot.toPath(), BuildTool.GRADLE))
+                .groupId("com.acme.foo").extensions(extensions).resourcePath("/greeting").artifactId("foo")
+                .version("1.0.0-SNAPSHOT").packageName("org.acme.foo").doCreateProject(context))
+                .withFailMessage("Project was not created").isTrue();
     }
 }

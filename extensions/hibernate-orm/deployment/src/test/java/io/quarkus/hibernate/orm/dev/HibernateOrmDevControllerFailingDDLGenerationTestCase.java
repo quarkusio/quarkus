@@ -13,22 +13,16 @@ import io.restassured.RestAssured;
 @Tag(TestTags.DEVMODE)
 public class HibernateOrmDevControllerFailingDDLGenerationTestCase {
     @RegisterExtension
-    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntityWithFailingDDLGeneration.class,
-                            TypeWithUnsupportedSqlCode.class,
-                            H2CustomDialect.class,
-                            HibernateOrmDevInfoServiceTestResource.class)
-                    .addAsResource("application-generation-none-customh2.properties", "application.properties")
-                    .addAsResource("import-custom-table-name.sql", "import.sql"));
+    final static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyEntityWithFailingDDLGeneration.class, TypeWithUnsupportedSqlCode.class, H2CustomDialect.class,
+                    HibernateOrmDevInfoServiceTestResource.class)
+            .addAsResource("application-generation-none-customh2.properties", "application.properties")
+            .addAsResource("import-custom-table-name.sql", "import.sql"));
 
     @Test
     public void infoAvailableButWithException() {
-        RestAssured.given()
-                .param("expectedCreateDDLContent", "EXCEPTION")
-                .param("expectedDropDDLContent", "EXCEPTION")
-                .when().get("/dev-info/check-pu-info-with-failing-ddl-generation")
-                .then().body(is("OK"));
+        RestAssured.given().param("expectedCreateDDLContent", "EXCEPTION").param("expectedDropDDLContent", "EXCEPTION")
+                .when().get("/dev-info/check-pu-info-with-failing-ddl-generation").then().body(is("OK"));
     }
 
 }

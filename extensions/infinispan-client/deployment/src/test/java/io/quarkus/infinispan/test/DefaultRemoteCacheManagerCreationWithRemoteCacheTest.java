@@ -18,7 +18,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class DefaultRemoteCacheManagerCreationWithRemoteCacheTest {
 
-    //tag::injection[]
+    // tag::injection[]
     @Inject
     @Remote("cache1") // default connection
     RemoteCache<String, String> cache1;

@@ -29,7 +29,7 @@ public class ParameterSubResClassSub {
     public String get(@Context HttpHeaders headers, @Context UriInfo uriInfo) {
         Assertions.assertEquals("/path/subclass", uriInfo.getPath());
         Assertions.assertNotNull(headers.getHeaderString("Host"));
-        return "resourceCounter:" + resourceCounter.incrementAndGet() + ",appscope:" + appScope.getCount() + ",requestScope:"
-                + requestScope.getCount();
+        return "resourceCounter:" + resourceCounter.incrementAndGet() + ",appscope:" + appScope.getCount()
+                + ",requestScope:" + requestScope.getCount();
     }
 }

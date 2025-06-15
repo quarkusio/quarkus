@@ -26,15 +26,17 @@ public class TlsUtils {
         // Avoid direct instantiation
     }
 
-    public static KeyCertOptions computeKeyStoreOptions(CertificateConfig certificates, Optional<String> keyStorePassword,
-            Optional<String> keyStoreAliasPassword) throws IOException {
+    public static KeyCertOptions computeKeyStoreOptions(CertificateConfig certificates,
+            Optional<String> keyStorePassword, Optional<String> keyStoreAliasPassword) throws IOException {
 
         if (certificates.keyFiles().isPresent() || certificates.files().isPresent()) {
             if (certificates.keyFiles().isEmpty()) {
-                throw new IllegalArgumentException("You must specify the key files when specifying the certificate files");
+                throw new IllegalArgumentException(
+                        "You must specify the key files when specifying the certificate files");
             }
             if (certificates.files().isEmpty()) {
-                throw new IllegalArgumentException("You must specify the certificate files when specifying the key files");
+                throw new IllegalArgumentException(
+                        "You must specify the certificate files when specifying the key files");
             }
             if (certificates.files().get().size() != certificates.keyFiles().get().size()) {
                 throw new IllegalArgumentException(
@@ -43,12 +45,8 @@ public class TlsUtils {
             return createPemKeyCertOptions(certificates.files().get(), certificates.keyFiles().get());
         } else if (certificates.keyStoreFile().isPresent()) {
             var type = getKeyStoreType(certificates.keyStoreFile().get(), certificates.keyStoreFileType());
-            return createKeyStoreOptions(
-                    certificates.keyStoreFile().get(),
-                    keyStorePassword,
-                    type,
-                    certificates.keyStoreProvider(),
-                    or(certificates.keyStoreAlias(), certificates.keyStoreKeyAlias()),
+            return createKeyStoreOptions(certificates.keyStoreFile().get(), keyStorePassword, type,
+                    certificates.keyStoreProvider(), or(certificates.keyStoreAlias(), certificates.keyStoreKeyAlias()),
                     keyStoreAliasPassword);
         }
         return null;
@@ -63,8 +61,7 @@ public class TlsUtils {
             String type = getTruststoreType(singleTrustStoreFile, certificates.trustStoreFileType());
             if (type.equalsIgnoreCase("pem")) {
                 byte[] cert = getFileContent(singleTrustStoreFile);
-                return new PemTrustOptions()
-                        .addCertValue(Buffer.buffer(cert));
+                return new PemTrustOptions().addCertValue(Buffer.buffer(cert));
             }
 
             if ((type.equalsIgnoreCase("pkcs12") || type.equalsIgnoreCase("jks"))) {
@@ -74,13 +71,8 @@ public class TlsUtils {
                 }
             }
 
-            return createKeyStoreOptions(
-                    singleTrustStoreFile,
-                    trustStorePassword,
-                    type,
-                    certificates.trustStoreProvider(),
-                    certificates.trustStoreCertAlias(),
-                    Optional.empty());
+            return createKeyStoreOptions(singleTrustStoreFile, trustStorePassword, type,
+                    certificates.trustStoreProvider(), certificates.trustStoreCertAlias(), Optional.empty());
         }
 
         // We have multiple trust store files (PEM).
@@ -156,15 +148,10 @@ public class TlsUtils {
     }
 
     private static KeyStoreOptions createKeyStoreOptions(Path path, Optional<String> password, String type,
-            Optional<String> provider, Optional<String> alias,
-            Optional<String> aliasPassword) throws IOException {
+            Optional<String> provider, Optional<String> alias, Optional<String> aliasPassword) throws IOException {
         byte[] data = getFileContent(path);
-        return new KeyStoreOptions()
-                .setPassword(password.orElse(null))
-                .setValue(Buffer.buffer(data))
-                .setType(type.toUpperCase())
-                .setProvider(provider.orElse(null))
-                .setAlias(alias.orElse(null))
+        return new KeyStoreOptions().setPassword(password.orElse(null)).setValue(Buffer.buffer(data))
+                .setType(type.toUpperCase()).setProvider(provider.orElse(null)).setAlias(alias.orElse(null))
                 .setAliasPassword(aliasPassword.orElse(null));
     }
 
@@ -178,7 +165,8 @@ public class TlsUtils {
         return type;
     }
 
-    private static PemKeyCertOptions createPemKeyCertOptions(List<Path> certFile, List<Path> keyFile) throws IOException {
+    private static PemKeyCertOptions createPemKeyCertOptions(List<Path> certFile, List<Path> keyFile)
+            throws IOException {
         List<Buffer> certificates = new ArrayList<>();
         List<Buffer> keys = new ArrayList<>();
 
@@ -192,8 +180,6 @@ public class TlsUtils {
             keys.add(Buffer.buffer(key));
         }
 
-        return new PemKeyCertOptions()
-                .setCertValues(certificates)
-                .setKeyValues(keys);
+        return new PemKeyCertOptions().setCertValues(certificates).setKeyValues(keys);
     }
 }

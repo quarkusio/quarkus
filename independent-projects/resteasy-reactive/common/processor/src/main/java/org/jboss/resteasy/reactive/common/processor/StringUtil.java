@@ -85,8 +85,8 @@ public class StringUtil {
     }
 
     /**
-     * Hyphenates every part of the original string, but also converts the first letter
-     * of every part into a capital letter
+     * Hyphenates every part of the original string, but also converts the first letter of every part into a capital
+     * letter
      */
     public static String hyphenateWithCapitalFirstLetter(final String orig) {
         StringBuilder sb = new StringBuilder();

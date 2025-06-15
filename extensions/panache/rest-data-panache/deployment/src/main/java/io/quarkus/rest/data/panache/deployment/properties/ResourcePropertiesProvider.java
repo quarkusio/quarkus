@@ -22,8 +22,8 @@ public class ResourcePropertiesProvider {
     private static final DotName RESOURCE_PROPERTIES_ANNOTATION = DotName
             .createSimple(io.quarkus.rest.data.panache.ResourceProperties.class.getName());
 
-    private static final DotName METHOD_PROPERTIES_ANNOTATION = DotName.createSimple(
-            io.quarkus.rest.data.panache.MethodProperties.class.getName());
+    private static final DotName METHOD_PROPERTIES_ANNOTATION = DotName
+            .createSimple(io.quarkus.rest.data.panache.MethodProperties.class.getName());
 
     private static final List<String> ANNOTATIONS_TO_COPY = List.of(RolesAllowed.class.getPackageName(),
             // To also support `@EndpointDisabled` if used
@@ -36,21 +36,15 @@ public class ResourcePropertiesProvider {
     }
 
     /**
-     * Find resource and method properties annotations used by a given interface
-     * and build {@link ResourceProperties} instance.
+     * Find resource and method properties annotations used by a given interface and build {@link ResourceProperties}
+     * instance.
      */
     public ResourceProperties getFromClass(String resourceClass) {
         DotName resourceClassName = DotName.createSimple(resourceClass);
         AnnotationInstance annotation = findResourcePropertiesAnnotation(resourceClassName);
-        return new ResourceProperties(
-                isExposed(annotation),
-                getPath(annotation, resourceClass),
-                isPaged(annotation),
-                isHal(annotation),
-                getHalCollectionName(annotation, resourceClass),
-                getRolesAllowed(annotation),
-                collectAnnotationsToCopy(resourceClassName),
-                collectMethodProperties(resourceClassName));
+        return new ResourceProperties(isExposed(annotation), getPath(annotation, resourceClass), isPaged(annotation),
+                isHal(annotation), getHalCollectionName(annotation, resourceClass), getRolesAllowed(annotation),
+                collectAnnotationsToCopy(resourceClassName), collectMethodProperties(resourceClassName));
     }
 
     private Collection<AnnotationInstance> collectAnnotationsToCopy(DotName className) {
@@ -103,8 +97,7 @@ public class ResourcePropertiesProvider {
                 }
             }
 
-            if (!methodProperties.containsKey(method.name())
-                    && (annotation != null || !annotationsToCopy.isEmpty())) {
+            if (!methodProperties.containsKey(method.name()) && (annotation != null || !annotationsToCopy.isEmpty())) {
                 methodProperties.put(method.name(), getMethodProperties(annotation, annotationsToCopy));
             }
         }
@@ -115,26 +108,22 @@ public class ResourcePropertiesProvider {
         return methodProperties;
     }
 
-    private MethodProperties getMethodProperties(AnnotationInstance annotation, Set<AnnotationInstance> annotationsToCopy) {
-        return new MethodProperties(isExposed(annotation), getPath(annotation), getRolesAllowed(annotation), annotationsToCopy);
+    private MethodProperties getMethodProperties(AnnotationInstance annotation,
+            Set<AnnotationInstance> annotationsToCopy) {
+        return new MethodProperties(isExposed(annotation), getPath(annotation), getRolesAllowed(annotation),
+                annotationsToCopy);
     }
 
     private boolean isHal(AnnotationInstance annotation) {
-        return annotation != null
-                && annotation.value("hal") != null
-                && annotation.value("hal").asBoolean();
+        return annotation != null && annotation.value("hal") != null && annotation.value("hal").asBoolean();
     }
 
     private boolean isPaged(AnnotationInstance annotation) {
-        return annotation == null
-                || annotation.value("paged") == null
-                || annotation.value("paged").asBoolean();
+        return annotation == null || annotation.value("paged") == null || annotation.value("paged").asBoolean();
     }
 
     private boolean isExposed(AnnotationInstance annotation) {
-        return annotation == null
-                || annotation.value("exposed") == null
-                || annotation.value("exposed").asBoolean();
+        return annotation == null || annotation.value("exposed") == null || annotation.value("exposed").asBoolean();
     }
 
     private String getPath(AnnotationInstance annotation) {

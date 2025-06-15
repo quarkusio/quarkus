@@ -19,11 +19,14 @@ import io.smallrye.config.ConfigValue;
 public class ConfigTrackingWriter {
 
     /**
-     * Checks whether a given configuration option matches at least one of the patterns.
-     * If the list of patterns is empty, the method will return false.
+     * Checks whether a given configuration option matches at least one of the patterns. If the list of patterns is
+     * empty, the method will return false.
      *
-     * @param name configuration option name
-     * @param patterns a list of name patterns
+     * @param name
+     *        configuration option name
+     * @param patterns
+     *        a list of name patterns
+     *
      * @return true in case the option name matches at least one of the patterns, otherwise - false
      */
     private static boolean matches(String name, List<Pattern> patterns) {
@@ -36,21 +39,20 @@ public class ConfigTrackingWriter {
     }
 
     /**
-     * Configuration writer that will persist collected configuration options and their values
-     * to a file derived from the config.
+     * Configuration writer that will persist collected configuration options and their values to a file derived from
+     * the config.
      */
     public static void write(Map<String, String> readOptions, ConfigTrackingConfig config,
-            BuildTimeConfigurationReader.ReadResult configReadResult,
-            List<String> profiles, Path buildDirectory) {
+            BuildTimeConfigurationReader.ReadResult configReadResult, List<String> profiles, Path buildDirectory) {
         if (!config.enabled()) {
             return;
         }
 
         Path file = config.file().orElse(null);
         if (file == null) {
-            final Path dir = config.directory().orElseGet(() -> (buildDirectory.getParent() == null
-                    ? buildDirectory
-                    : buildDirectory.getParent()).resolve(".quarkus"));
+            final Path dir = config.directory()
+                    .orElseGet(() -> (buildDirectory.getParent() == null ? buildDirectory : buildDirectory.getParent())
+                            .resolve(".quarkus"));
             file = dir.resolve(config.filePrefix() + "-" + String.join("-", profiles) + config.fileSuffix());
         } else if (!file.isAbsolute()) {
             file = config.directory().orElse(buildDirectory).resolve(file);
@@ -68,8 +70,7 @@ public class ConfigTrackingWriter {
     }
 
     /**
-     * Configuration writer that will persist collected configuration options and their values
-     * to a file.
+     * Configuration writer that will persist collected configuration options and their values to a file.
      */
     public static void write(Map<String, String> readOptions, ConfigTrackingConfig config,
             BuildTimeConfigurationReader.ReadResult configReadResult, Path file) {
@@ -97,14 +98,18 @@ public class ConfigTrackingWriter {
     }
 
     /**
-     * Writes a config option with its value to the target writer,
-     * possibly applying some transformations, such as character escaping
-     * prior to writing.
+     * Writes a config option with its value to the target writer, possibly applying some transformations, such as
+     * character escaping prior to writing.
      *
-     * @param writer target writer
-     * @param name option name
-     * @param value option value
-     * @throws IOException in case of a failure
+     * @param writer
+     *        target writer
+     * @param name
+     *        option name
+     * @param value
+     *        option value
+     *
+     * @throws IOException
+     *         in case of a failure
      */
     public static void write(Writer writer, String name, String value) throws IOException {
         PropertyUtils.store(writer, name, value);

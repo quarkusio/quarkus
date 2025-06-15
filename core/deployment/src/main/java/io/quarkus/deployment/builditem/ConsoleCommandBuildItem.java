@@ -20,9 +20,7 @@ public final class ConsoleCommandBuildItem extends MultiBuildItem {
 
     public ConsoleCommandBuildItem(ProcessedCommand consoleCommand) {
         this.consoleCommand = new AeshCommandContainer(
-                CommandLineParserBuilder.builder()
-                        .processedCommand(consoleCommand)
-                        .create());
+                CommandLineParserBuilder.builder().processedCommand(consoleCommand).create());
     }
 
     public ConsoleCommandBuildItem(Command<?> consoleCommand) {

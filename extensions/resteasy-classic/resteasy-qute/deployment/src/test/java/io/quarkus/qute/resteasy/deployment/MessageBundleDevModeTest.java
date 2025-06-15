@@ -13,13 +13,9 @@ public class MessageBundleDevModeTest {
 
     @RegisterExtension
     static final QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AppMessages.class, AppMessageHelloResource.class)
-                    .addAsResource(new StringAsset(
-                            "{msg:hello_name('Georg')}"),
-                            "templates/hello.html")
-                    .addAsResource(new StringAsset(
-                            "hello=Hallo Welt!\nhello_name=Hallo {name}!"),
+            .withApplicationRoot((jar) -> jar.addClasses(AppMessages.class, AppMessageHelloResource.class)
+                    .addAsResource(new StringAsset("{msg:hello_name('Georg')}"), "templates/hello.html")
+                    .addAsResource(new StringAsset("hello=Hallo Welt!\nhello_name=Hallo {name}!"),
                             "messages/msg_de.properties"));
 
     @Test

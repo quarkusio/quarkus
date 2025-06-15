@@ -28,8 +28,7 @@ public class JpaListenerOnPrivateMethodOfSingletonCdiBeanTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("application.properties"));
+            .withApplicationRoot((jar) -> jar.addAsResource("application.properties"));
 
     @Inject
     EventStore eventStore;

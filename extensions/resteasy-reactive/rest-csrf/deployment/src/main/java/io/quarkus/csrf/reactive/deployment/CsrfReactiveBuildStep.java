@@ -20,8 +20,7 @@ public class CsrfReactiveBuildStep {
             BuildProducer<AdditionalIndexedClassesBuildItem> additionalIndexedClassesBuildItem) {
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CsrfRequestResponseReactiveFilter.class));
         reflectiveClass.produce(ReflectiveClassBuildItem.builder(CsrfRequestResponseReactiveFilter.class)
-                .reason(getClass().getName())
-                .methods().fields().build());
+                .reason(getClass().getName()).methods().fields().build());
         additionalBeans.produce(AdditionalBeanBuildItem.unremovableOf(CsrfTokenParameterProvider.class));
         additionalIndexedClassesBuildItem
                 .produce(new AdditionalIndexedClassesBuildItem(CsrfRequestResponseReactiveFilter.class.getName()));

@@ -9,9 +9,8 @@ import java.util.function.Function;
 import io.quarkus.arc.impl.Reflections;
 
 /**
- * Key can be any primitive, primitive object (i.e. Integer), or String
- * Value can be any primitive, primitive object, string, or bean style class
- *
+ * Key can be any primitive, primitive object (i.e. Integer), or String Value can be any primitive, primitive object,
+ * string, or bean style class
  */
 class QueryMapReader extends BaseObjectReader implements BaseObjectReader.ValueSetter {
     private Function<String, Object> keyExtractor;

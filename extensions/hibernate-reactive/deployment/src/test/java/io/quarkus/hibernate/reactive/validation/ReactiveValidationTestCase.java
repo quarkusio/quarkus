@@ -14,24 +14,24 @@ public class ReactiveValidationTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class, ReactiveTestValidationResource.class)
-                    .addAsResource("application.properties")
-                    .addAsResource(new StringAsset(""), "import.sql")); // define an empty import.sql file
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class, ReactiveTestValidationResource.class)
+                    .addAsResource("application.properties").addAsResource(new StringAsset(""), "import.sql")); // define
+                                                                                                                                                                                                                                                                       // an
+                                                                                                                                                                                                                                                                       // empty
+                                                                                                                                                                                                                                                                       // import.sql
+                                                                                                                                                                                                                                                                       // file
 
     @Test
     public void testValidEntity() {
         String entityName = "valid";
-        RestAssured.given().body(entityName).when().post("/validation").then()
-                .body(is("OK"));
+        RestAssured.given().body(entityName).when().post("/validation").then().body(is("OK"));
     }
 
     @Test
     public void testInvalidEntityWithLongName() {
-        RestAssured.given().body(
-                "Post method should not persist an entity having a Size constraint of 50 on the name column.")
-                .when().post("/validation").then()
-                .body(containsString(MyEntity.ENTITY_NAME_TOO_LONG));
+        RestAssured.given()
+                .body("Post method should not persist an entity having a Size constraint of 50 on the name column.")
+                .when().post("/validation").then().body(containsString(MyEntity.ENTITY_NAME_TOO_LONG));
     }
 
     @Test

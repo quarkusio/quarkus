@@ -33,18 +33,12 @@ public class MultipleResponseFiltersWithPrioritiesTest {
 
     @Test
     void requestDoesNotContainCookie() {
-        when().get("/test")
-                .then()
-                .statusCode(200)
-                .body(is("foo"));
+        when().get("/test").then().statusCode(200).body(is("foo"));
     }
 
     @Test
     void test() {
-        Headers headers = get("/hello")
-                .then()
-                .statusCode(200)
-                .extract().headers();
+        Headers headers = get("/hello").then().statusCode(200).extract().headers();
         assertThat(headers.getValues("filter-response")).containsOnly("max-default-0-minPlus1-min");
     }
 

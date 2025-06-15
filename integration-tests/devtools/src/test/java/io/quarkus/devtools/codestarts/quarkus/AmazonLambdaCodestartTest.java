@@ -10,10 +10,8 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 
 public class AmazonLambdaCodestartTest {
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("amazon-lambda")
-            .languages(JAVA)
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("amazon-lambda")
+            .languages(JAVA).build();
 
     @Test
     void testContent() throws Throwable {

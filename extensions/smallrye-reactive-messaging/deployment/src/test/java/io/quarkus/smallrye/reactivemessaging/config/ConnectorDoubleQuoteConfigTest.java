@@ -19,8 +19,7 @@ public class ConnectorDoubleQuoteConfigTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DumbConnector.class, BeanUsingDummyConnector.class))
+            .withApplicationRoot((jar) -> jar.addClasses(DumbConnector.class, BeanUsingDummyConnector.class))
             .overrideConfigKey("mp.messaging.incoming.\"a.b\".values", "bonjour")
             .overrideConfigKey("mp.messaging.incoming.\"a.b\".connector", "dummy");
 

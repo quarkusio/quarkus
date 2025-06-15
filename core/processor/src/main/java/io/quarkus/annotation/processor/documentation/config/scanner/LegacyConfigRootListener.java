@@ -84,8 +84,7 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
         String overriddenDocPrefix = null;
         if (configDocPrefixAnnotation != null) {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocPrefixAnnotation
-                    .getElementValues()
-                    .entrySet()) {
+                    .getElementValues().entrySet()) {
                 if ("value()".equals(entry.getKey().toString())) {
                     overriddenDocPrefix = entry.getValue().getValue().toString();
                     break;
@@ -96,8 +95,7 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
         String overriddenDocFileName = null;
         if (configDocFileNameAnnotation != null) {
             for (Map.Entry<? extends ExecutableElement, ? extends AnnotationValue> entry : configDocFileNameAnnotation
-                    .getElementValues()
-                    .entrySet()) {
+                    .getElementValues().entrySet()) {
                 if ("value()".equals(entry.getKey().toString())) {
                     overriddenDocFileName = entry.getValue().getValue().toString();
                     break;
@@ -105,13 +103,13 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
             }
         }
 
-        String rootPrefix = ConfigNamingUtil.getRootPrefix(prefix, name, configRoot.getSimpleName().toString(), configPhase);
+        String rootPrefix = ConfigNamingUtil.getRootPrefix(prefix, name, configRoot.getSimpleName().toString(),
+                configPhase);
         String binaryName = utils.element().getBinaryName(configRoot);
 
-        DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(),
-                rootPrefix, overriddenDocPrefix,
-                binaryName, configRoot.getQualifiedName().toString(),
-                configPhase, overriddenDocFileName, false);
+        DiscoveryConfigRoot discoveryConfigRoot = new DiscoveryConfigRoot(config.getExtension(), rootPrefix,
+                overriddenDocPrefix, binaryName, configRoot.getQualifiedName().toString(), configPhase,
+                overriddenDocFileName, false);
         configCollector.addConfigRoot(discoveryConfigRoot);
         return Optional.of(discoveryConfigRoot);
     }
@@ -152,8 +150,8 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
                 // while ConfigDocDefault was added for ConfigMappings, it's allowed on fields so let's be safe
                 AnnotationMirror configDocDefaultAnnotation = fieldAnnotations.get(Types.ANNOTATION_CONFIG_DOC_DEFAULT);
                 if (configDocDefaultAnnotation != null) {
-                    builder.defaultValueForDoc(
-                            configDocDefaultAnnotation.getElementValues().values().iterator().next().getValue().toString());
+                    builder.defaultValueForDoc(configDocDefaultAnnotation.getElementValues().values().iterator().next()
+                            .getValue().toString());
                 }
             }
         }
@@ -168,8 +166,8 @@ public class LegacyConfigRootListener extends AbstractConfigListener {
             builder.mapKey(mapKey);
         }
 
-        if (fieldAnnotations.containsKey(Types.ANNOTATION_DEFAULT_CONVERTER) ||
-                fieldAnnotations.containsKey(Types.ANNOTATION_CONVERT_WITH)) {
+        if (fieldAnnotations.containsKey(Types.ANNOTATION_DEFAULT_CONVERTER)
+                || fieldAnnotations.containsKey(Types.ANNOTATION_CONVERT_WITH)) {
             builder.converted();
         }
 

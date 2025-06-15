@@ -51,22 +51,29 @@ public class SpringWebResteasyClassicProcessor {
 
     private static final DotName REQUEST_MAPPING = DotName
             .createSimple("org.springframework.web.bind.annotation.RequestMapping");
-    private static final DotName GET_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.GetMapping");
-    private static final DotName POST_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PostMapping");
-    private static final DotName PUT_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PutMapping");
-    private static final DotName DELETE_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.DeleteMapping");
-    private static final DotName PATCH_MAPPING = DotName.createSimple("org.springframework.web.bind.annotation.PatchMapping");
+    private static final DotName GET_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.GetMapping");
+    private static final DotName POST_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.PostMapping");
+    private static final DotName PUT_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.PutMapping");
+    private static final DotName DELETE_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.DeleteMapping");
+    private static final DotName PATCH_MAPPING = DotName
+            .createSimple("org.springframework.web.bind.annotation.PatchMapping");
     private static final List<DotName> MAPPING_ANNOTATIONS = List.of(REQUEST_MAPPING, GET_MAPPING, POST_MAPPING,
             PUT_MAPPING, DELETE_MAPPING, PATCH_MAPPING);
 
     private static final DotName REST_CONTROLLER_ANNOTATION = DotName
             .createSimple("org.springframework.web.bind.annotation.RestController");
 
-    private static final DotName PATH_VARIABLE = DotName.createSimple("org.springframework.web.bind.annotation.PathVariable");
+    private static final DotName PATH_VARIABLE = DotName
+            .createSimple("org.springframework.web.bind.annotation.PathVariable");
 
     @BuildStep
     public IgnoredServletContainerInitializerBuildItem ignoreSpringServlet() {
-        return new IgnoredServletContainerInitializerBuildItem("org.springframework.web.SpringServletContainerInitializer");
+        return new IgnoredServletContainerInitializerBuildItem(
+                "org.springframework.web.SpringServletContainerInitializer");
     }
 
     @BuildStep
@@ -77,8 +84,7 @@ public class SpringWebResteasyClassicProcessor {
     @BuildStep
     public AdditionalJaxRsResourceMethodParamAnnotations additionalJaxRsResourceMethodParamAnnotations() {
         return new AdditionalJaxRsResourceMethodParamAnnotations(
-                List.of(DotName.createSimple("org.springframework.web.bind.annotation.RequestParam"),
-                        PATH_VARIABLE,
+                List.of(DotName.createSimple("org.springframework.web.bind.annotation.RequestParam"), PATH_VARIABLE,
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestBody"),
                         DotName.createSimple("org.springframework.web.bind.annotation.MatrixVariable"),
                         DotName.createSimple("org.springframework.web.bind.annotation.RequestHeader"),
@@ -87,8 +93,7 @@ public class SpringWebResteasyClassicProcessor {
 
     @BuildStep
     public void registerStandardExceptionMappers(BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer) {
-        providersProducer
-                .produce(new ResteasyJaxrsProviderBuildItem(ResponseStatusExceptionMapper.class.getName()));
+        providersProducer.produce(new ResteasyJaxrsProviderBuildItem(ResponseStatusExceptionMapper.class.getName()));
     }
 
     @BuildStep
@@ -112,20 +117,19 @@ public class SpringWebResteasyClassicProcessor {
 
         // initialize the init params that will be used in case of servlet
         initParamProducer.produce(
-                new ServletInitParamBuildItem(
-                        ResteasyContextParameters.RESTEASY_SCANNED_RESOURCE_CLASSES_WITH_BUILDER,
+                new ServletInitParamBuildItem(ResteasyContextParameters.RESTEASY_SCANNED_RESOURCE_CLASSES_WITH_BUILDER,
                         SpringResourceBuilder.class.getName() + ":" + String.join(",", classNames)));
         // customize the deployment that will be used in case of RESTEasy standalone
-        deploymentCustomizerProducer.produce(new ResteasyDeploymentCustomizerBuildItem(new Consumer<ResteasyDeployment>() {
-            @Override
-            public void accept(ResteasyDeployment resteasyDeployment) {
-                resteasyDeployment.getScannedResourceClassesWithBuilder().put(SpringResourceBuilder.class.getName(),
-                        new ArrayList<>(classNames));
-            }
-        }));
+        deploymentCustomizerProducer
+                .produce(new ResteasyDeploymentCustomizerBuildItem(new Consumer<ResteasyDeployment>() {
+                    @Override
+                    public void accept(ResteasyDeployment resteasyDeployment) {
+                        resteasyDeployment.getScannedResourceClassesWithBuilder()
+                                .put(SpringResourceBuilder.class.getName(), new ArrayList<>(classNames));
+                    }
+                }));
 
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(SpringResourceBuilder.class.getName())
-                .build());
+        reflectiveClass.produce(ReflectiveClassBuildItem.builder(SpringResourceBuilder.class.getName()).build());
     }
 
     /**
@@ -134,7 +138,8 @@ public class SpringWebResteasyClassicProcessor {
     private void validateControllers(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem) {
         Set<DotName> classesWithoutRestController = new HashSet<>();
         for (DotName mappingAnnotation : MAPPING_ANNOTATIONS) {
-            Collection<AnnotationInstance> annotations = beanArchiveIndexBuildItem.getIndex().getAnnotations(mappingAnnotation);
+            Collection<AnnotationInstance> annotations = beanArchiveIndexBuildItem.getIndex()
+                    .getAnnotations(mappingAnnotation);
             for (AnnotationInstance annotation : annotations) {
                 ClassInfo targetClass;
                 if (annotation.target().kind() == AnnotationTarget.Kind.CLASS) {
@@ -163,7 +168,7 @@ public class SpringWebResteasyClassicProcessor {
     public void registerProviders(BeanArchiveIndexBuildItem beanArchiveIndexBuildItem,
             BuildProducer<ResteasyJaxrsProviderBuildItem> providersProducer) throws IOException {
 
-        //TODO only read this information once since it is exactly the same in ResteasyCommonProcessor#setupProviders
+        // TODO only read this information once since it is exactly the same in ResteasyCommonProcessor#setupProviders
         final Set<String> availableProviders = ServiceUtil.classNamesNamedIn(getClass().getClassLoader(),
                 "META-INF/services/" + Providers.class.getName());
 
@@ -173,14 +178,14 @@ public class SpringWebResteasyClassicProcessor {
         final Set<String> otherProviders = new HashSet<>();
 
         ResteasyCommonProcessor.categorizeProviders(availableProviders, categorizedReaders, categorizedWriters,
-                categorizedContextResolvers,
-                otherProviders);
+                categorizedContextResolvers, otherProviders);
 
         boolean useAllAvailable = false;
         Set<String> providersToRegister = new HashSet<>();
 
         OUTER: for (DotName mappingClass : MAPPING_ANNOTATIONS) {
-            final Collection<AnnotationInstance> instances = beanArchiveIndexBuildItem.getIndex().getAnnotations(mappingClass);
+            final Collection<AnnotationInstance> instances = beanArchiveIndexBuildItem.getIndex()
+                    .getAnnotations(mappingClass);
             for (AnnotationInstance instance : instances) {
                 if (collectProviders(providersToRegister, categorizedWriters, instance, "produces")) {
                     useAllAvailable = true;
@@ -244,7 +249,8 @@ public class SpringWebResteasyClassicProcessor {
             String basePath = "/";
             ClassInfo restControllerAnnotatedClass = restControllerInstance.target().asClass();
 
-            AnnotationInstance requestMappingInstance = restControllerAnnotatedClass.declaredAnnotation(REQUEST_MAPPING);
+            AnnotationInstance requestMappingInstance = restControllerAnnotatedClass
+                    .declaredAnnotation(REQUEST_MAPPING);
             if (requestMappingInstance != null) {
                 String basePathFromAnnotation = getMappingValue(requestMappingInstance);
                 if (basePathFromAnnotation != null) {
@@ -258,7 +264,8 @@ public class SpringWebResteasyClassicProcessor {
 
             List<MethodInfo> methods = restControllerAnnotatedClass.methods();
 
-            // go through each of the methods and see if there are any mapping Spring annotation from which to get the path
+            // go through each of the methods and see if there are any mapping Spring annotation from which to get the
+            // path
             METHOD: for (MethodInfo method : methods) {
                 String methodName = method.name();
                 String methodPath;
@@ -279,7 +286,8 @@ public class SpringWebResteasyClassicProcessor {
                 }
             }
 
-            // if there was at least one controller method, add the controller since it contains methods that handle http requests
+            // if there was at least one controller method, add the controller since it contains methods that handle
+            // http requests
             if (!methodNameToPath.isEmpty()) {
                 nonJaxRsPaths.put(restControllerAnnotatedClass.name().toString(), nonJaxRsClassMappings);
             }

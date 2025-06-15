@@ -13,9 +13,9 @@ public class NettyOverrideMetadata {
 
     @BuildStep
     void excludeNettyDirectives(BuildProducer<ExcludeConfigBuildItem> nativeImageExclusions) {
-        nativeImageExclusions
-                .produce(new ExcludeConfigBuildItem(NETTY_CODEC_JAR_MATCH_REGEX, NETTY_CODEC_REFLECT_CONFIG_MATCH_REGEX));
-        nativeImageExclusions
-                .produce(new ExcludeConfigBuildItem(NETTY_HANDLER_JAR_MATCH_REGEX, NETTY_HANDLER_REFLECT_CONFIG_MATCH_REGEX));
+        nativeImageExclusions.produce(
+                new ExcludeConfigBuildItem(NETTY_CODEC_JAR_MATCH_REGEX, NETTY_CODEC_REFLECT_CONFIG_MATCH_REGEX));
+        nativeImageExclusions.produce(
+                new ExcludeConfigBuildItem(NETTY_HANDLER_JAR_MATCH_REGEX, NETTY_HANDLER_REFLECT_CONFIG_MATCH_REGEX));
     }
 }

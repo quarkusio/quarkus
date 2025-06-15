@@ -20,8 +20,7 @@ public class HttpServerOptionsCustomizerTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class, MyCustomizer.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class, MyCustomizer.class));
 
     @Inject
     MyCustomizer customizer;

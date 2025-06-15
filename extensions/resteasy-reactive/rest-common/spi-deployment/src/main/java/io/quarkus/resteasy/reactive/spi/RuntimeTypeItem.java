@@ -8,8 +8,7 @@ import jakarta.ws.rs.RuntimeType;
 public interface RuntimeTypeItem {
 
     /**
-     * Returns the runtime type for this build item. If the value is null
-     * then it applies to both server and client.
+     * Returns the runtime type for this build item. If the value is null then it applies to both server and client.
      */
     RuntimeType getRuntimeType();
 

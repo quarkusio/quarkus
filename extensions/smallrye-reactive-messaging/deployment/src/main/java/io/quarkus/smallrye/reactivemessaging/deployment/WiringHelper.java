@@ -34,17 +34,20 @@ public class WiringHelper {
     }
 
     /**
-     * Retrieves the connector name from the given bean.
-     * Throws a {@link NoSuchElementException} if the given bean does not have the {@code @Connector} qualifier
+     * Retrieves the connector name from the given bean. Throws a {@link NoSuchElementException} if the given bean does
+     * not have the {@code @Connector} qualifier
      *
-     * @param bi the bean
+     * @param bi
+     *        the bean
+     *
      * @return the connector name
-     * @throws NoSuchElementException if the bean does not have the {@code @Connector} qualifier
+     *
+     * @throws NoSuchElementException
+     *         if the bean does not have the {@code @Connector} qualifier
      */
     static String getConnectorName(BeanInfo bi) {
         return bi.getQualifier(ReactiveMessagingDotNames.CONNECTOR)
-                .orElseThrow(() -> new NoSuchElementException("Expecting a @Connector"))
-                .value().asString();
+                .orElseThrow(() -> new NoSuchElementException("Expecting a @Connector")).value().asString();
     }
 
     static void produceIncomingChannel(BuildProducer<ChannelBuildItem> producer, String name) {
@@ -74,11 +77,14 @@ public class WiringHelper {
     }
 
     /**
-     * Gets the name of the connector managing the channel if any.
-     * This method looks inside the application configuration.
+     * Gets the name of the connector managing the channel if any. This method looks inside the application
+     * configuration.
      *
-     * @param direction the direction (incoming or outgoing)
-     * @param channel the channel name
+     * @param direction
+     *        the direction (incoming or outgoing)
+     * @param channel
+     *        the channel name
+     *
      * @return an optional with the connector name if the channel is managed, empty otherwise
      */
     static Optional<String> getManagingConnector(ChannelDirection direction, String channel) {
@@ -90,22 +96,25 @@ public class WiringHelper {
     /**
      * Checks if the given channel is enabled / disabled in the configuration
      *
-     * @param direction the direction (incoming or outgoing)
-     * @param channel the channel name
+     * @param direction
+     *        the direction (incoming or outgoing)
+     * @param channel
+     *        the channel name
+     *
      * @return {@code true} if the channel is enabled, {@code false} otherwise
      */
     static boolean isChannelEnabled(ChannelDirection direction, String channel) {
-        return ConfigProvider.getConfig()
-                .getOptionalValue(
-                        "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".enabled",
-                        Boolean.class)
-                .orElse(true);
+        return ConfigProvider.getConfig().getOptionalValue(
+                "mp.messaging." + direction.name().toLowerCase() + "." + normalizeChannelName(channel) + ".enabled",
+                Boolean.class).orElse(true);
     }
 
     /**
      * Checks if the given class is an inbound (incoming) connector.
      *
-     * @param ci the class
+     * @param ci
+     *        the class
+     *
      * @return {@code true} if the class implements the inbound connector interface
      */
     static boolean isInboundConnector(ClassInfo ci) {
@@ -116,7 +125,9 @@ public class WiringHelper {
     /**
      * Checks if the given class is an outbound (outgoing) connector.
      *
-     * @param ci the class
+     * @param ci
+     *        the class
+     *
      * @return {@code true} if the class implements the outbound connector interface
      */
     static boolean isOutboundConnector(ClassInfo ci) {
@@ -127,9 +138,13 @@ public class WiringHelper {
     /**
      * Collects connector attributes from the given connector implementation.
      *
-     * @param bi the bean implementing the connector interfaces
-     * @param index the index
-     * @param directions the attribute direction to includes in the result
+     * @param bi
+     *        the bean implementing the connector interfaces
+     * @param index
+     *        the index
+     * @param directions
+     *        the attribute direction to includes in the result
+     *
      * @return the list of connector attributes, empty if none
      */
     static List<ConnectorAttribute> getConnectorAttributes(BeanInfo bi, CombinedIndexBuildItem index,
@@ -138,7 +153,8 @@ public class WiringHelper {
                 .declaredAnnotationsWithRepeatable(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTES, index.getIndex())
                 .stream().flatMap(ai -> Arrays.stream(ai.value().asNestedArray())).collect(Collectors.toList());
         if (attributes.isEmpty()) {
-            AnnotationInstance attribute = bi.getImplClazz().declaredAnnotation(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTE);
+            AnnotationInstance attribute = bi.getImplClazz()
+                    .declaredAnnotation(ReactiveMessagingDotNames.CONNECTOR_ATTRIBUTE);
             if (attribute != null) {
                 attributes = Collections.singletonList(attribute);
             }
@@ -160,8 +176,11 @@ public class WiringHelper {
     /**
      * Creates a {@code ConnectorAttribute} literal for the given instance.
      *
-     * @param instance the instance
-     * @param direction the direction
+     * @param instance
+     *        the instance
+     * @param direction
+     *        the direction
+     *
      * @return the connector attribute.
      */
     private static ConnectorAttribute createConnectorAttribute(AnnotationInstance instance,
@@ -176,8 +195,8 @@ public class WiringHelper {
         String defaultValue = getStringValueOrDefault(instance, "defaultValue");
         String alias = getStringValueOrDefault(instance, "alias");
 
-        return ConnectorAttributeLiteral.create(name, description, hidden, mandatory,
-                direction, defaultValue, deprecated, alias, type);
+        return ConnectorAttributeLiteral.create(name, description, hidden, mandatory, direction, defaultValue,
+                deprecated, alias, type);
     }
 
     private static String getStringValueOrDefault(AnnotationInstance instance, String attribute) {
@@ -197,14 +216,14 @@ public class WiringHelper {
     }
 
     /**
-     * Normalize the name of a given channel.
-     *
-     * Concatenate the channel name with double quotes when it contains dots.
+     * Normalize the name of a given channel. Concatenate the channel name with double quotes when it contains dots.
      * <p>
-     * Otherwise, the SmallRye Reactive Messaging only considers the
-     * text up to the first occurrence of a dot as the channel name.
+     * Otherwise, the SmallRye Reactive Messaging only considers the text up to the first occurrence of a dot as the
+     * channel name.
      *
-     * @param name the channel name.
+     * @param name
+     *        the channel name.
+     *
      * @return normalized channel name.
      */
     private static String normalizeChannelName(String name) {
@@ -214,9 +233,13 @@ public class WiringHelper {
     /**
      * Finds a connector by name and direction in the given list.
      *
-     * @param connectors the list of connectors
-     * @param name the name
-     * @param direction the direction
+     * @param connectors
+     *        the list of connectors
+     * @param name
+     *        the name
+     * @param direction
+     *        the direction
+     *
      * @return the found connector, {@code null} otherwise
      */
     static ConnectorBuildItem find(List<ConnectorBuildItem> connectors, String name, ChannelDirection direction) {
@@ -261,8 +284,7 @@ public class WiringHelper {
     }
 
     static Optional<AnnotationInstance> getAnnotation(TransformedAnnotationsBuildItem transformedAnnotations,
-            InjectionPointInfo injectionPoint,
-            DotName annotationName) {
+            InjectionPointInfo injectionPoint, DotName annotationName) {
         // For field IP -> set of field annotations
         // For method param IP -> set of param annotations
         Collection<AnnotationInstance> annotations = transformedAnnotations

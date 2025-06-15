@@ -11,15 +11,15 @@ public enum ImageMode {
      */
     JVM,
     /**
-     * The image mode which indicates that the application is currently executing the build phase of a native static image.
+     * The image mode which indicates that the application is currently executing the build phase of a native static
+     * image.
      */
     NATIVE_BUILD,
     /**
-     * The image mode which indicates that the application is a native static image which is currently running on a target
-     * system.
+     * The image mode which indicates that the application is a native static image which is currently running on a
+     * target system.
      */
-    NATIVE_RUN,
-    ;
+    NATIVE_RUN,;
 
     /**
      * Determine whether the application image is a native static image.
@@ -31,8 +31,8 @@ public enum ImageMode {
     }
 
     /**
-     * Get the current image mode. Note that it is possible for the image mode to change during the lifetime of
-     * an application.
+     * Get the current image mode. Note that it is possible for the image mode to change during the lifetime of an
+     * application.
      *
      * @return the image mode (not {@code null})
      */

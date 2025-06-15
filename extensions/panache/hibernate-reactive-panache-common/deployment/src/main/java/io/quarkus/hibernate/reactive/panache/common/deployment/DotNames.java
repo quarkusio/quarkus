@@ -31,7 +31,8 @@ final class DotNames {
 
     static final DotName PANACHE_REPOSITORY_BASE = DotName
             .createSimple("io.quarkus.hibernate.reactive.panache.PanacheRepositoryBase");
-    static final DotName PANACHE_REPOSITORY = DotName.createSimple("io.quarkus.hibernate.reactive.panache.PanacheRepository");
+    static final DotName PANACHE_REPOSITORY = DotName
+            .createSimple("io.quarkus.hibernate.reactive.panache.PanacheRepository");
     static final DotName PANACHE_KOTLIN_REPOSITORY_BASE = DotName
             .createSimple("io.quarkus.hibernate.reactive.panache.kotlin.PanacheRepositoryBase");
     static final DotName PANACHE_KOTLIN_REPOSITORY = DotName

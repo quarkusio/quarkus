@@ -49,8 +49,7 @@ public class CountMinCommandsTest extends DatasourceTestBase {
         cm.cmsInitByDim(key, 10, 2);
         assertThat(cm.cmsIncrBy(key, leia, 10)).isEqualTo(10);
         assertThat(cm.cmsIncrBy(key, Map.of(leia, 2L, luke, 5L, anakin, 3L)))
-                .contains(entry(leia, 12L), entry(luke, 5L), entry(anakin, 3L))
-                .hasSize(3);
+                .contains(entry(leia, 12L), entry(luke, 5L), entry(anakin, 3L)).hasSize(3);
 
         assertThat(cm.cmsQuery(key, anakin)).isEqualTo(3);
         assertThat(cm.cmsQuery(key, leia, luke)).containsExactly(12L, 5L);

@@ -42,11 +42,12 @@ public class GzipCompressionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Endpoint.class, Client1.class, TestUtils.class))
-            .overrideRuntimeConfigKey("quarkus.rest-client.client1.url", "http://localhost:${quarkus.http.test-port:8081}")
+            .withApplicationRoot((jar) -> jar.addClasses(Endpoint.class, Client1.class, TestUtils.class))
+            .overrideRuntimeConfigKey("quarkus.rest-client.client1.url",
+                    "http://localhost:${quarkus.http.test-port:8081}")
             .overrideRuntimeConfigKey("quarkus.rest-client.client1.enable-compression", "true")
-            .overrideRuntimeConfigKey("quarkus.rest-client.client2.url", "http://localhost:${quarkus.http.test-port:8081}")
+            .overrideRuntimeConfigKey("quarkus.rest-client.client2.url",
+                    "http://localhost:${quarkus.http.test-port:8081}")
             .overrideRuntimeConfigKey("quarkus.rest-client.client2.enable-compression", "false");
 
     private static final String uncompressedString;
@@ -70,8 +71,7 @@ public class GzipCompressionTest {
     Client2 client2;
 
     /**
-     * This test is very important to ensure that we know the server is actually capable of sending
-     * gzip encoded data
+     * This test is very important to ensure that we know the server is actually capable of sending gzip encoded data
      */
     @Test
     void ensureServerCanSendCompressedData()
@@ -81,11 +81,8 @@ public class GzipCompressionTest {
         try {
             client.get(port, "localhost", "/client/message")
                     .putHeader(HttpHeaderNames.ACCEPT_ENCODING.toString(), "gzip")
-                    .putHeader(HttpHeaderNames.ACCEPT.toString(), "text/plain")
-                    .as(BodyCodec.buffer())
-                    .send()
-                    .onFailure(receivedBufferCF::completeExceptionally)
-                    .onSuccess(response -> {
+                    .putHeader(HttpHeaderNames.ACCEPT.toString(), "text/plain").as(BodyCodec.buffer()).send()
+                    .onFailure(receivedBufferCF::completeExceptionally).onSuccess(response -> {
                         receivedBufferCF.complete(response.bodyAsBuffer());
                     });
             Buffer receivedBuffer = receivedBufferCF.get(10, TimeUnit.SECONDS);
@@ -105,11 +102,8 @@ public class GzipCompressionTest {
         CompletableFuture<Buffer> receivedBufferCF = new CompletableFuture<>();
         WebClient client = WebClient.create(vertx);
         try {
-            client.get(port, "localhost", "/client/message")
-                    .putHeader(HttpHeaderNames.ACCEPT.toString(), "text/plain")
-                    .as(BodyCodec.buffer())
-                    .send()
-                    .onFailure(receivedBufferCF::completeExceptionally)
+            client.get(port, "localhost", "/client/message").putHeader(HttpHeaderNames.ACCEPT.toString(), "text/plain")
+                    .as(BodyCodec.buffer()).send().onFailure(receivedBufferCF::completeExceptionally)
                     .onSuccess(response -> {
                         receivedBufferCF.complete(response.bodyAsBuffer());
                     });
@@ -163,8 +157,8 @@ public class GzipCompressionTest {
                 @Override
                 public void handle(RoutingContext rc) {
                     HttpServerRequest req = rc.request();
-                    HttpServerResponse response = req.response().setStatusCode(200).putHeader(HttpHeaderNames.CONTENT_TYPE,
-                            "text/plain");
+                    HttpServerResponse response = req.response().setStatusCode(200)
+                            .putHeader(HttpHeaderNames.CONTENT_TYPE, "text/plain");
                     Buffer body = Buffer.buffer(uncompressedBytes);
                     response.end(body);
                 }

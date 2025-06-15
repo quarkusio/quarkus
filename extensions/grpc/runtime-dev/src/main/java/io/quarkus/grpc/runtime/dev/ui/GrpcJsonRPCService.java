@@ -36,11 +36,9 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 /**
- * We should consider to use gRPC directly from the Javascript client.
- * At the moment we send the data over json-rpc (web socket) to just create a Java gRPC client that calls the gRPC server
- * method.
- * We can just call the server method directly from Javascript.
- * See @grpc/grpc-js
+ * We should consider to use gRPC directly from the Javascript client. At the moment we send the data over json-rpc (web
+ * socket) to just create a Java gRPC client that calls the gRPC server method. We can just call the server method
+ * directly from Javascript. See @grpc/grpc-js
  */
 public class GrpcJsonRPCService {
     private static final Logger LOG = Logger.getLogger(GrpcJsonRPCService.class);
@@ -78,8 +76,7 @@ public class GrpcJsonRPCService {
     }
 
     private boolean isTLSConfigured(CertificateConfig certificate) {
-        return certificate.files().isPresent()
-                || certificate.keyFiles().isPresent()
+        return certificate.files().isPresent() || certificate.keyFiles().isPresent()
                 || certificate.keyStoreFile().isPresent();
     }
 
@@ -119,8 +116,8 @@ public class GrpcJsonRPCService {
     }
 
     public Multi<String> streamService(String id, String serviceName, String methodName, boolean isRunning,
-            String content)
-            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InvalidProtocolBufferException {
+            String content) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException,
+            InvalidProtocolBufferException {
         if (content == null) {
             return Multi.createFrom().item(error("Invalid message").encodePrettily());
         }
@@ -153,7 +150,7 @@ public class GrpcJsonRPCService {
 
             if (stubMethod.getParameterCount() == 1 && stubMethod.getReturnType() == StreamObserver.class) {
                 // returned StreamObserver consumes incoming messages
-                //noinspection unchecked
+                // noinspection unchecked
                 incomingStream = (StreamObserver<Message>) stubMethod.invoke(grpcStub, responseObserver);
                 callsInProgress.put(id, incomingStream);
                 // will be streamed continuously
@@ -168,8 +165,8 @@ public class GrpcJsonRPCService {
         return streamEvent;
     }
 
-    private static Message createMessage(String content, Class<?> requestType)
-            throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InvalidProtocolBufferException {
+    private static Message createMessage(String content, Class<?> requestType) throws NoSuchMethodException,
+            IllegalAccessException, InvocationTargetException, InvalidProtocolBufferException {
         // Create a new builder for the request message, e.g. HelloRequest.newBuilder()
         Method newBuilderMethod = requestType.getDeclaredMethod("newBuilder");
         Message.Builder builder = (Message.Builder) newBuilderMethod.invoke(null);
@@ -193,8 +190,8 @@ public class GrpcJsonRPCService {
             try {
                 Class<?> grpcServiceClass = tccl.loadClass(className);
                 ServiceDescriptor serviceDescriptor = createServiceDescriptor(grpcServiceClass);
-                GrpcJsonRPCService.GrpcServiceClassInfo s = new GrpcJsonRPCService.GrpcServiceClassInfo(serviceDescriptor,
-                        grpcServiceClass);
+                GrpcJsonRPCService.GrpcServiceClassInfo s = new GrpcJsonRPCService.GrpcServiceClassInfo(
+                        serviceDescriptor, grpcServiceClass);
                 m.put(serviceDescriptor.getName(), s);
             } catch (ClassNotFoundException ex) {
                 ex.printStackTrace();
@@ -237,8 +234,7 @@ public class GrpcJsonRPCService {
         if (name == null || name.length() == 0) {
             return name;
         }
-        if (name.length() > 1 && Character.isUpperCase(name.charAt(1)) &&
-                Character.isUpperCase(name.charAt(0))) {
+        if (name.length() > 1 && Character.isUpperCase(name.charAt(1)) && Character.isUpperCase(name.charAt(0))) {
             return name;
         }
         char[] chars = name.toCharArray();
@@ -266,10 +262,7 @@ public class GrpcJsonRPCService {
     }
 
     private ManagedChannel getChannel(String host, int port) {
-        return NettyChannelBuilder
-                .forAddress(host, port)
-                .usePlaintext()
-                .build();
+        return NettyChannelBuilder.forAddress(host, port).usePlaintext().build();
     }
 
     private class TestObserver<Object> implements StreamObserver<Object> {

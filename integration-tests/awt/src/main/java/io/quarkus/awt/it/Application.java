@@ -51,24 +51,19 @@ public class Application {
     @PostConstruct
     public void init() throws IOException, FontFormatException {
         // Touch image readers list
-        IIORegistry.getDefaultInstance()
-                .getServiceProviders(ImageReaderSpi.class, true)
-                .forEachRemaining(reader -> LOG.infof("Available image reader: %s",
-                        reader.getDescription(Locale.FRENCH)));
+        IIORegistry.getDefaultInstance().getServiceProviders(ImageReaderSpi.class, true).forEachRemaining(
+                reader -> LOG.infof("Available image reader: %s", reader.getDescription(Locale.FRENCH)));
 
         final GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
         // Font source: https://ftp.gnu.org/gnu/freefont/
         // Note those fonts binaries were altered to bear different names, "My" prefix, "X" suffix.
         ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
-                Application.class.getResourceAsStream("/MyFreeMono.ttf"),
-                "MyFreeMono.ttf not found.")));
+                Application.class.getResourceAsStream("/MyFreeMono.ttf"), "MyFreeMono.ttf not found.")));
         ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
-                Application.class.getResourceAsStream("/MyFreeSerif.ttf"),
-                "MyFreeSerif.ttf not found.")));
+                Application.class.getResourceAsStream("/MyFreeSerif.ttf"), "MyFreeSerif.ttf not found.")));
         ge.registerFont(Font.createFont(Font.TRUETYPE_FONT, Objects.requireNonNull(
-                Application.class.getResourceAsStream("/DejaVuSansMonoX.ttf"),
-                "DejaVuSansMonoX.ttf not found.")));
+                Application.class.getResourceAsStream("/DejaVuSansMonoX.ttf"), "DejaVuSansMonoX.ttf not found.")));
     }
 
     public BufferedImage getABGRTestImage() throws IOException {
@@ -80,26 +75,19 @@ public class Application {
     }
 
     /**
-     * Creates a test image a thumbnail strip of which is located in the doc directory
-     * of this project, where java2d.png shows three interpretations next
-     * to each other.
-     *
-     * **DO NOT** edit this method unless you also update ImageGeometryFontsTest.java
-     * where particular pixels are sampled to smoke test the resulting imagery.
-     * i.e. if you remove a rendered text or a shape from the image, the test
-     * might fail unless you altered a part that is not sampled.
-     *
-     * See ImageGeometryFontsTest.java
+     * Creates a test image a thumbnail strip of which is located in the doc directory of this project, where java2d.png
+     * shows three interpretations next to each other. **DO NOT** edit this method unless you also update
+     * ImageGeometryFontsTest.java where particular pixels are sampled to smoke test the resulting imagery. i.e. if you
+     * remove a rendered text or a shape from the image, the test might fail unless you altered a part that is not
+     * sampled. See ImageGeometryFontsTest.java
      *
      * @return a test image
      */
     private static BufferedImage createABGRTestImage() {
         final int dx = 50; // times number of colours below, i.e. 350px
         final int h = 300;
-        final Color[] colors = new Color[] {
-                Color.WHITE, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK,
-                new Color(190, 32, 40, 100),
-                new Color(Color.HSBtoRGB(20, 200, 30)) };
+        final Color[] colors = new Color[] { Color.WHITE, Color.RED, Color.GREEN, Color.BLUE, Color.BLACK,
+                new Color(190, 32, 40, 100), new Color(Color.HSBtoRGB(20, 200, 30)) };
         final BufferedImage img = new BufferedImage(dx * colors.length, h, TYPE_4BYTE_ABGR);
         final Graphics2D g = img.createGraphics();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
@@ -128,13 +116,10 @@ public class Application {
 
         // Some transformations and arbitrary render hints.
         // Note that these calls make little sense chained as such. We are merely touching relevant code paths.
-        final float[] BLUR_ISH_KERNEL = {
-                0.1f, 0.1f, 0.1f,
-                0.1f, 0.5f, 0.1f,
-                0.1f, 0.1f, 0.1f
-        };
+        final float[] BLUR_ISH_KERNEL = { 0.1f, 0.1f, 0.1f, 0.1f, 0.5f, 0.1f, 0.1f, 0.1f, 0.1f };
         g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f));
-        final RenderingHints rhints = new RenderingHints(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
+        final RenderingHints rhints = new RenderingHints(RenderingHints.KEY_DITHERING,
+                RenderingHints.VALUE_DITHER_ENABLE);
         final ConvolveOp cop = new ConvolveOp(new Kernel(3, 3, BLUR_ISH_KERNEL), ConvolveOp.EDGE_NO_OP, rhints);
         g.drawImage(img, cop, 0, 0);
         final AffineTransform at = AffineTransform.getScaleInstance(1.9, 1.1);

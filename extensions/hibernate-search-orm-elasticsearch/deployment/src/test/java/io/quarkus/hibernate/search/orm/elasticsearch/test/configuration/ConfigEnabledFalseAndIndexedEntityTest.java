@@ -22,8 +22,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ConfigEnabledFalseAndIndexedEntityTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest()
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClass(IndexedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-search-orm.enabled", "false");
 
@@ -33,28 +33,24 @@ public class ConfigEnabledFalseAndIndexedEntityTest {
     @Test
     public void searchMapping() {
         // The bean is not defined during static init, so it's null.
-        assertThat(Arc.container().instance(SearchMapping.class).get())
-                .isNull();
+        assertThat(Arc.container().instance(SearchMapping.class).get()).isNull();
 
         // Hibernate Search APIs throw exceptions,
         // even if the messages are not very explicit (we can't really do better).
-        assertThatThrownBy(() -> Search.mapping(sessionFactory))
-                .isInstanceOf(SearchException.class)
+        assertThatThrownBy(() -> Search.mapping(sessionFactory)).isInstanceOf(SearchException.class)
                 .hasMessageContaining("Hibernate Search was not initialized");
     }
 
     @Test
     public void searchSession() {
         // The bean is not defined during static init, so it's null.
-        assertThat(Arc.container().instance(SearchSession.class).get())
-                .isNull();
+        assertThat(Arc.container().instance(SearchSession.class).get()).isNull();
 
         // Hibernate Search APIs throw exceptions,
         // even if the messages are not very explicit (we can't really do better).
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> Search.session(session).search(IndexedEntity.class))
-                    .isInstanceOf(SearchException.class)
-                    .hasMessageContaining("Hibernate Search was not initialized");
+                    .isInstanceOf(SearchException.class).hasMessageContaining("Hibernate Search was not initialized");
         }
     }
 }

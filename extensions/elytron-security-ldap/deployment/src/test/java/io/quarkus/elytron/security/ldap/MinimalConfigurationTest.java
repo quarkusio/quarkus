@@ -7,10 +7,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MinimalConfigurationTest extends LdapSecurityRealmTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(testClasses)
-                    .addAsResource("minimal-config/application.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(testClasses)
+            .addAsResource("minimal-config/application.properties", "application.properties"));
 
     protected String expectedStandardUserName() {
         return "standardUser:Standard User";

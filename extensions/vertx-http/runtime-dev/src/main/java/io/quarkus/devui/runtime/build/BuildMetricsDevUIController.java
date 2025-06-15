@@ -74,14 +74,14 @@ public class BuildMetricsDevUIController {
             try {
                 JsonObject data = new JsonObject(Files.readString(buildMetricsPath));
                 buildDuration = data.getLong("duration");
-                buildStarted = LocalDateTime
-                        .parse(data.getString("started"), DateTimeFormatter.ISO_LOCAL_DATE_TIME).toLocalTime();
+                buildStarted = LocalDateTime.parse(data.getString("started"), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                        .toLocalTime();
 
                 JsonArray records = data.getJsonArray("records");
                 for (Object record : records) {
                     JsonObject recordObj = (JsonObject) record;
-                    recordObj.put("encodedStepId", URLEncoder.encode(recordObj.getString("stepId"),
-                            StandardCharsets.UTF_8.toString()));
+                    recordObj.put("encodedStepId",
+                            URLEncoder.encode(recordObj.getString("stepId"), StandardCharsets.UTF_8.toString()));
                     String thread = recordObj.getString("thread");
                     stepIdToRecord.put(recordObj.getString("stepId"), recordObj);
                     recordIdToRecord.put(recordObj.getInteger("id"), recordObj);
@@ -184,10 +184,12 @@ public class BuildMetricsDevUIController {
             for (Object dependentRecordId : entry.getValue().getJsonArray("dependents")) {
                 int recordId = (int) dependentRecordId;
                 if (record.getInteger("id") == recordId) {
-                    links.add(Link.dependency(root.equals(record),
-                            record.getString("stepId"), entry.getValue().getString("stepId")));
-                    nodes.add(new Node(entry.getValue().getString("stepId"), entry.getValue().getString("encodedStepId")));
-                    // NOTE: we do not fetch transient dependencies yet because the UI is not ready to show so many nodes
+                    links.add(Link.dependency(root.equals(record), record.getString("stepId"),
+                            entry.getValue().getString("stepId")));
+                    nodes.add(new Node(entry.getValue().getString("stepId"),
+                            entry.getValue().getString("encodedStepId")));
+                    // NOTE: we do not fetch transient dependencies yet because the UI is not ready to show so many
+                    // nodes
                     // if (added) {
                     // addNodeDependencies(root, nodes, links, entry.getValue(), stepIdToRecord, recordIdToRecord);
                     // }

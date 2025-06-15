@@ -20,8 +20,7 @@ public class ApplicationPathHttpRootTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, HelloApp.class, BaseApplication.class)
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, HelloApp.class, BaseApplication.class)
                     .addAsResource(new StringAsset("quarkus.http.root-path=/foo"), "application.properties"));
 
     @Test

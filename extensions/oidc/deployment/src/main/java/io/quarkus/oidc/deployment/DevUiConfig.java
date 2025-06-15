@@ -10,12 +10,10 @@ import io.smallrye.config.WithDefault;
 public interface DevUiConfig {
 
     /**
-     * Grant type which affects how OpenId Connect Dev UI will facilitate the token acquisition.
-     *
-     * For example: if the grant type is 'code' then an authorization code will be returned directly to Dev UI which will use a
-     * code
-     * handler to acquire the tokens while a username and password will have to be entered to request a token using a
-     * 'password' grant.
+     * Grant type which affects how OpenId Connect Dev UI will facilitate the token acquisition. For example: if the
+     * grant type is 'code' then an authorization code will be returned directly to Dev UI which will use a code handler
+     * to acquire the tokens while a username and password will have to be entered to request a token using a 'password'
+     * grant.
      */
     Grant grant();
 
@@ -64,9 +62,8 @@ public interface DevUiConfig {
     Map<String, Map<String, String>> grantOptions();
 
     /**
-     * The WebClient timeout.
-     * Use this property to configure how long an HTTP client used by Dev UI handlers will wait for a response when requesting
-     * tokens from OpenId Connect Provider and sending them to the service endpoint.
+     * The WebClient timeout. Use this property to configure how long an HTTP client used by Dev UI handlers will wait
+     * for a response when requesting tokens from OpenId Connect Provider and sending them to the service endpoint.
      */
     @WithDefault("4S")
     Duration webClientTimeout();

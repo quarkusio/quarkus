@@ -81,17 +81,12 @@ class ObservabilityDevServiceProcessor {
     }
 
     @BuildStep
-    public void startContainers(LaunchModeBuildItem launchMode,
-            DockerStatusBuildItem dockerStatusBuildItem,
-            ObservabilityConfiguration configuration,
-            Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
+    public void startContainers(LaunchModeBuildItem launchMode, DockerStatusBuildItem dockerStatusBuildItem,
+            ObservabilityConfiguration configuration, Optional<ConsoleInstalledBuildItem> consoleInstalledBuildItem,
             CuratedApplicationShutdownBuildItem closeBuildItem,
-            DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            LoggingSetupBuildItem loggingSetupBuildItem,
-            DevServicesConfig devServicesConfig,
-            BuildProducer<DevServicesResultBuildItem> services,
-            BuildProducer<RunTimeConfigurationDefaultBuildItem> properties,
-            Capabilities capabilities,
+            DevServicesComposeProjectBuildItem composeProjectBuildItem, LoggingSetupBuildItem loggingSetupBuildItem,
+            DevServicesConfig devServicesConfig, BuildProducer<DevServicesResultBuildItem> services,
+            BuildProducer<RunTimeConfigurationDefaultBuildItem> properties, Capabilities capabilities,
             Optional<MetricsCapabilityBuildItem> metricsConfiguration,
             BuildProducer<ObservabilityDevServicesConfigBuildItem> configBuildProducer) {
 
@@ -108,7 +103,7 @@ class ObservabilityDevServiceProcessor {
         @SuppressWarnings("rawtypes")
         List<DevResourceLifecycleManager> resources = DevResources.resources();
         // this should throw an exception on a duplicate
-        //noinspection ResultOfMethodCallIgnored
+        // noinspection ResultOfMethodCallIgnored
         resources.stream().collect(Collectors.toMap(this::devId, Function.identity()));
 
         @SuppressWarnings("rawtypes")
@@ -122,13 +117,9 @@ class ObservabilityDevServiceProcessor {
 
             // only do get, not remove, so it can be re-used
             DevServicesResultBuildItem.RunningDevService devService = devServices.get(devId);
-            ContainerConfig currentDevServicesConfiguration = dev.config(
-                    configuration,
-                    new ExtensionsCatalog(
-                            QuarkusClassLoader::isResourcePresentAtRuntime,
-                            QuarkusClassLoader::isClassPresentAtRuntime,
-                            capabilities.isPresent(Capability.OPENTELEMETRY_TRACER),
-                            hasMicrometerOtlp(metricsConfiguration)));
+            ContainerConfig currentDevServicesConfiguration = dev.config(configuration, new ExtensionsCatalog(
+                    QuarkusClassLoader::isResourcePresentAtRuntime, QuarkusClassLoader::isClassPresentAtRuntime,
+                    capabilities.isPresent(Capability.OPENTELEMETRY_TRACER), hasMicrometerOtlp(metricsConfiguration)));
 
             if (devService != null) {
                 ContainerConfig capturedDevServicesConfiguration = capturedDevServicesConfigurations.get(devId);
@@ -158,19 +149,21 @@ class ObservabilityDevServiceProcessor {
 
             StartupLogCompressor compressor = new StartupLogCompressor(
                     (launchMode.isTest() ? "(test) " : "") + devId + " Dev Services Starting:",
-                    consoleInstalledBuildItem,
-                    loggingSetupBuildItem,
-                    s -> false,
-                    s -> s.contains(getClass().getSimpleName()) ||
-                            s.contains("Resource") ||
-                            s.contains("Container")); // log if it comes from this class or Resource / Container
+                    consoleInstalledBuildItem, loggingSetupBuildItem, s -> false,
+                    s -> s.contains(getClass().getSimpleName()) || s.contains("Resource") || s.contains("Container")); // log
+                                                                                                                                                                                                                                                                                                                            // if
+                                                                                                                                                                                                                                                                                                                            // it
+                                                                                                                                                                                                                                                                                                                            // comes
+                                                                                                                                                                                                                                                                                                                            // from
+                                                                                                                                                                                                                                                                                                                            // this
+                                                                                                                                                                                                                                                                                                                            // class
+                                                                                                                                                                                                                                                                                                                            // or
+                                                                                                                                                                                                                                                                                                                            // Resource
+                                                                                                                                                                                                                                                                                                                            // /
+                                                                                                                                                                                                                                                                                                                            // Container
             try {
-                DevServicesResultBuildItem.RunningDevService newDevService = startContainer(
-                        devId,
-                        composeProjectBuildItem,
-                        dev,
-                        currentDevServicesConfiguration,
-                        configuration,
+                DevServicesResultBuildItem.RunningDevService newDevService = startContainer(devId,
+                        composeProjectBuildItem, dev, currentDevServicesConfiguration, configuration,
                         devServicesConfig.timeout());
                 if (newDevService == null) {
                     compressor.closeAndDumpCaptured();
@@ -200,7 +193,7 @@ class ObservabilityDevServiceProcessor {
                             }
                         }
                         firstStart.remove(devId);
-                        //noinspection resource
+                        // noinspection resource
                         devServices.remove(devId);
                         capturedDevServicesConfigurations.remove(devId);
                     }
@@ -213,20 +206,17 @@ class ObservabilityDevServiceProcessor {
     }
 
     private static boolean hasMicrometerOtlp(Optional<MetricsCapabilityBuildItem> metricsConfiguration) {
-        if (metricsConfiguration.isPresent() &&
-                metricsConfiguration.get().metricsSupported(MetricsFactory.MICROMETER)) {
+        if (metricsConfiguration.isPresent()
+                && metricsConfiguration.get().metricsSupported(MetricsFactory.MICROMETER)) {
             return QuarkusClassLoader.isClassPresentAtRuntime(OTLP_REGISTRY.toString());
         }
         return false;
     }
 
-    private DevServicesResultBuildItem.RunningDevService startContainer(
-            String devId,
+    private DevServicesResultBuildItem.RunningDevService startContainer(String devId,
             DevServicesComposeProjectBuildItem composeProjectBuildItem,
-            DevResourceLifecycleManager<ContainerConfig> dev,
-            ContainerConfig capturedDevServicesConfiguration,
-            ModulesConfiguration root,
-            Optional<Duration> timeout) {
+            DevResourceLifecycleManager<ContainerConfig> dev, ContainerConfig capturedDevServicesConfiguration,
+            ModulesConfiguration root, Optional<Duration> timeout) {
 
         if (!capturedDevServicesConfiguration.enabled()) {
             // explicitly disabled
@@ -245,33 +235,35 @@ class ObservabilityDevServiceProcessor {
                 timeout.ifPresent(container::withStartupTimeout);
                 Map<String, String> config = dev.start();
                 log.infof("Dev Service %s started, config: %s", devId, config);
-                return new DevServicesResultBuildItem.RunningDevService(
-                        Feature.OBSERVABILITY.getName(), container.getContainerId(),
+                return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(),
+                        container.getContainerId(),
                         container.closeableCallback(capturedDevServicesConfiguration.serviceName()), config);
             }
         };
 
         Map<String, String> config = new LinkedHashMap<>(); // old config
-        ContainerLocator containerLocator = new ContainerLocator(capturedDevServicesConfiguration.label(), 0); // can be 0, as we don't use it
-        return containerLocator
-                .locateContainer(
-                        capturedDevServicesConfiguration.serviceName(), capturedDevServicesConfiguration.shared(),
-                        LaunchMode.current(), (p, ca) -> config.putAll(dev.config(p, ca.getHost(), ca.getPort())))
-                .map(cid -> {
+        ContainerLocator containerLocator = new ContainerLocator(capturedDevServicesConfiguration.label(), 0); // can be
+                                                                                                               // 0, as
+                                                                                                               // we
+                                                                                                               // don't
+                                                                                                               // use it
+        return containerLocator.locateContainer(capturedDevServicesConfiguration.serviceName(),
+                capturedDevServicesConfiguration.shared(), LaunchMode.current(),
+                (p, ca) -> config.putAll(dev.config(p, ca.getHost(), ca.getPort()))).map(cid -> {
                     log.infof("Dev Service %s re-used, config: %s", devId, config);
-                    return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(), cid,
-                            null, config);
+                    return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(), cid, null,
+                            config);
                 })
-                .or(() -> ComposeLocator.locateContainer(composeProjectBuildItem,
-                        List.of(capturedDevServicesConfiguration.imageName(), capturedDevServicesConfiguration.serviceName()),
-                        LaunchMode.current())
-                        .stream().findFirst()
-                        .map(r -> {
+                .or(() -> ComposeLocator
+                        .locateContainer(composeProjectBuildItem,
+                                List.of(capturedDevServicesConfiguration.imageName(),
+                                        capturedDevServicesConfiguration.serviceName()),
+                                LaunchMode.current())
+                        .stream().findFirst().map(r -> {
                             Map<String, String> cfg = new LinkedHashMap<>();
                             for (ContainerInfo.ContainerPort port : r.containerInfo().exposedPorts()) {
                                 cfg.putAll(dev.config(port.privatePort(),
-                                        DockerClientFactory.instance().dockerHostIpAddress(),
-                                        port.publicPort()));
+                                        DockerClientFactory.instance().dockerHostIpAddress(), port.publicPort()));
                             }
                             log.infof("Compose Dev Service %s started, config: %s", devId, cfg);
                             return new DevServicesResultBuildItem.RunningDevService(Feature.OBSERVABILITY.getName(),

@@ -14,11 +14,6 @@ class GreetingFunctionsPubsubTest {
     @Test
     public void test() {
         // test the function using RestAssured
-        given()
-                .body("{\"data\":{\"data\":\"world\"}}")
-                .when()
-                .post()
-                .then()
-                .statusCode(200);
+        given().body("{\"data\":{\"data\":\"world\"}}").when().post().then().statusCode(200);
     }
 }

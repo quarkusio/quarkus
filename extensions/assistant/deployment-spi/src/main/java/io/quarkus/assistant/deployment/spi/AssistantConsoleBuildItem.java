@@ -12,10 +12,8 @@ import io.quarkus.deployment.console.ConsoleCommand;
 import io.quarkus.deployment.dev.testing.MessageFormat;
 
 /**
- * Add a menu item in the Assistant console menu
- *
- * Extensions can produce this to add a item under the Assistant heading in the console
- * This will only appear in the console if the assistant is available
+ * Add a menu item in the Assistant console menu Extensions can produce this to add a item under the Assistant heading
+ * in the console This will only appear in the console if the assistant is available
  */
 public final class AssistantConsoleBuildItem extends MultiBuildItem {
     private final ConsoleCommand consoleCommand;

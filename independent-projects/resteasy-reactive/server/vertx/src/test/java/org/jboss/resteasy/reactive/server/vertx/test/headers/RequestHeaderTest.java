@@ -28,12 +28,7 @@ public class RequestHeaderTest {
     public void testISO2Language() {
         String expected = "en";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -41,12 +36,7 @@ public class RequestHeaderTest {
     public void testISO3Language() {
         String expected = "tlh";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -54,12 +44,7 @@ public class RequestHeaderTest {
     public void testScriptSubtag() {
         String expected = "zh-Hans";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -67,12 +52,7 @@ public class RequestHeaderTest {
     public void testRegionSubtag() {
         String expected = "en-GB";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -80,12 +60,7 @@ public class RequestHeaderTest {
     public void testRegionSubtag2() {
         String expected = "es-005";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -93,12 +68,7 @@ public class RequestHeaderTest {
     public void testRegionSubtag3() {
         String expected = "zh-Hant-HK";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -106,12 +76,7 @@ public class RequestHeaderTest {
     public void testVariantSubtag() {
         String expected = "sl-nedis";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -119,12 +84,7 @@ public class RequestHeaderTest {
     public void testVariantSubtag2() {
         String expected = "sl-IT-nedis";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -132,12 +92,7 @@ public class RequestHeaderTest {
     public void testExtensionSubtag() {
         String expected = "de-DE-u-co-phonebk";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 
@@ -145,12 +100,7 @@ public class RequestHeaderTest {
     public void testPrivateUseSubtag() {
         String expected = "en-US-x-twain";
 
-        RestAssured
-                .given()
-                .header(HttpHeaders.ACCEPT_LANGUAGE, expected)
-                .get(BASE_PATH)
-                .then()
-                .statusCode(200)
+        RestAssured.given().header(HttpHeaders.ACCEPT_LANGUAGE, expected).get(BASE_PATH).then().statusCode(200)
                 .assertThat().body(equalToIgnoringCase(expected));
     }
 

@@ -28,18 +28,12 @@ import io.restassured.http.Headers;
 public class CustomHeadersAndWriterInterceptorTest {
 
     @RegisterExtension
-    static ResteasyReactiveUnitTest runner = new ResteasyReactiveUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestResource.class, DummyWriterInterceptor.class, FailingWriterInterceptor.class));
+    static ResteasyReactiveUnitTest runner = new ResteasyReactiveUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(TestResource.class, DummyWriterInterceptor.class, FailingWriterInterceptor.class));
 
     @Test
     void testResponseHeaders() {
-        Headers headers = when()
-                .get("/test")
-                .then()
-                .statusCode(200)
-                .header("etag", is("0"))
-                .extract().headers();
+        Headers headers = when().get("/test").then().statusCode(200).header("etag", is("0")).extract().headers();
         assertThat(headers.getList("etag")).hasSize(1);
         assertThat(headers.getList("Last-Modified")).hasSize(1);
     }

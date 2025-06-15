@@ -25,7 +25,8 @@ public class WebSocketClientRecorder {
                         return connection;
                     }
                 }
-                throw new WebSocketClientException("Unable to obtain the connection from the Vert.x duplicated context");
+                throw new WebSocketClientException(
+                        "Unable to obtain the connection from the Vert.x duplicated context");
             }
         };
     }

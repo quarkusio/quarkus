@@ -23,12 +23,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class PublicFieldWithProxyAndLazyLoadingAndInheritanceTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(TransactionTestUtils.class)
-                    .addClasses(Containing.class, Contained.class, ContainedExtended.class)
-                    .addClass(FieldAccessEnhancedDelegate.class))
-            .withConfigurationResource("application.properties");
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClass(TransactionTestUtils.class).addClasses(Containing.class, Contained.class, ContainedExtended.class)
+            .addClass(FieldAccessEnhancedDelegate.class)).withConfigurationResource("application.properties");
 
     @Inject
     EntityManager em;

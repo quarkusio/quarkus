@@ -280,8 +280,8 @@ public abstract class AbstractLazyBasicTest {
     }
 
     /**
-     * An interface for delegate classes,
-     * classes whose bytecode is transformed by Quarkus to replace public field access with getter/setter access.
+     * An interface for delegate classes, classes whose bytecode is transformed by Quarkus to replace public field
+     * access with getter/setter access.
      * <p>
      * (Test bytecode was not transformed by Quarkus when using QuarkusUnitTest last time I checked).
      */
@@ -289,19 +289,18 @@ public abstract class AbstractLazyBasicTest {
 
         long create(EntityManager entityManager, String eagerProperty1, String lazyProperty1, String lazyProperty2);
 
-        void updateAllProperties(EntityManager entityManager, long entityId, String eagerProperty1, String lazyProperty1,
-                String lazyProperty2);
+        void updateAllProperties(EntityManager entityManager, long entityId, String eagerProperty1,
+                String lazyProperty1, String lazyProperty2);
 
-        void updateAllLazyProperties(EntityManager entityManager, long entityId, String lazyProperty1, String lazyProperty2);
+        void updateAllLazyProperties(EntityManager entityManager, long entityId, String lazyProperty1,
+                String lazyProperty2);
 
         void updateOneEagerProperty(EntityManager entityManager, long entityId, String eagerProperty1);
 
         void updateOneLazyProperty(EntityManager entityManager, long entityId, String lazyProperty1);
 
         void testLazyLoadingAndPersistedValues(EntityManager entityManager, long entityId,
-                String expectedEagerProperty1,
-                String expectedLazyProperty1,
-                String expectedLazyProperty2);
+                String expectedEagerProperty1, String expectedLazyProperty1, String expectedLazyProperty2);
     }
 
     @PersistenceUnitExtension
@@ -309,14 +308,12 @@ public abstract class AbstractLazyBasicTest {
         private static final ThreadLocal<List<String>> statements = new ThreadLocal<>();
 
         public static void checkAtLeastOneUpdate(Runnable runnable) {
-            check(runnable, list -> assertThat(list)
-                    .isNotEmpty() // Something is wrong if we didn't even load an entity
+            check(runnable, list -> assertThat(list).isNotEmpty() // Something is wrong if we didn't even load an entity
                     .anySatisfy(sql -> assertThat(sql).containsIgnoringCase("update")));
         }
 
         public static void checkNoUpdate(Runnable runnable) {
-            check(runnable, list -> assertThat(list)
-                    .isNotEmpty() // Something is wrong if we didn't even load an entity
+            check(runnable, list -> assertThat(list).isNotEmpty() // Something is wrong if we didn't even load an entity
                     .allSatisfy(sql -> assertThat(sql).doesNotContainIgnoringCase("update")));
         }
 

@@ -34,7 +34,8 @@ import io.vertx.ext.web.client.WebClientOptions;
  */
 @Certificates(baseDir = "target/certs/lets-encrypt", certificates = {
         @Certificate(name = "self-signed", formats = { Format.PEM }), // Initial certificate
-        @Certificate(name = "acme", formats = { Format.PEM }, duration = 365) // ACME certificate (fake), unused in this test
+        @Certificate(name = "acme", formats = { Format.PEM }, duration = 365) // ACME certificate (fake), unused in this
+                                                                              // test
 })
 @DisabledOnOs(OS.WINDOWS)
 public class NoLetEncryptDisableRoutesTest {
@@ -51,10 +52,8 @@ public class NoLetEncryptDisableRoutesTest {
             """.formatted(SELF_SIGNED_CERT, SELF_SIGNED_KEY);
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class)
-                    .addAsResource(new StringAsset((configuration)), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(MyBean.class).addAsResource(new StringAsset((configuration)), "application.properties"));
 
     @Inject
     Vertx vertx;
@@ -77,7 +76,7 @@ public class NoLetEncryptDisableRoutesTest {
                 .setTrustOptions(new PemTrustOptions().addCertPath(SELF_SIGNED_CA.getAbsolutePath()));
         WebClient client = WebClient.create(vertx, options);
 
-        //  Verify the application is serving the application
+        // Verify the application is serving the application
         HttpResponse<Buffer> response = await(client.getAbs(url.toExternalForm()).send());
         Assertions.assertThat(response.statusCode()).isEqualTo(200);
 

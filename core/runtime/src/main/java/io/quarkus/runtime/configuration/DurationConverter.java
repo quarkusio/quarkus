@@ -32,17 +32,20 @@ public class DurationConverter implements Converter<Duration>, Serializable {
      * <ul>
      * <li>If the value is only a number, it is treated as a number of seconds.</li>
      * <li>If the value is a number followed by {@code ms}, it is treated as a number of milliseconds.</li>
-     * <li>If the value is a number followed by {@code h}, {@code m}, or {@code s}, it is prefixed with {@code PT}
-     * and {@link Duration#parse(CharSequence)} is called.</li>
-     * <li>If the value is a number followed by {@code d}, it is prefixed with {@code P}
-     * and {@link Duration#parse(CharSequence)} is called.</li>
+     * <li>If the value is a number followed by {@code h}, {@code m}, or {@code s}, it is prefixed with {@code PT} and
+     * {@link Duration#parse(CharSequence)} is called.</li>
+     * <li>If the value is a number followed by {@code d}, it is prefixed with {@code P} and
+     * {@link Duration#parse(CharSequence)} is called.</li>
      * </ul>
-     *
      * Otherwise, {@link Duration#parse(CharSequence)} is called.
      *
-     * @param value a string duration
+     * @param value
+     *        a string duration
+     *
      * @return the parsed {@link Duration}
-     * @throws IllegalArgumentException in case of parse failure
+     *
+     * @throws IllegalArgumentException
+     *         in case of parse failure
      */
     @Override
     public Duration convert(String value) {
@@ -54,17 +57,20 @@ public class DurationConverter implements Converter<Duration>, Serializable {
      * <ul>
      * <li>If the value is only a number, it is treated as a number of seconds.</li>
      * <li>If the value is a number followed by {@code ms}, it is treated as a number of milliseconds.</li>
-     * <li>If the value is a number followed by {@code h}, {@code m}, or {@code s}, it is prefixed with {@code PT}
-     * and {@link Duration#parse(CharSequence)} is called.</li>
-     * <li>If the value is a number followed by {@code d}, it is prefixed with {@code P}
-     * and {@link Duration#parse(CharSequence)} is called.</li>
+     * <li>If the value is a number followed by {@code h}, {@code m}, or {@code s}, it is prefixed with {@code PT} and
+     * {@link Duration#parse(CharSequence)} is called.</li>
+     * <li>If the value is a number followed by {@code d}, it is prefixed with {@code P} and
+     * {@link Duration#parse(CharSequence)} is called.</li>
      * </ul>
-     *
      * Otherwise, {@link Duration#parse(CharSequence)} is called.
      *
-     * @param value a string duration
+     * @param value
+     *        a string duration
+     *
      * @return the parsed {@link Duration}
-     * @throws IllegalArgumentException in case of parse failure
+     *
+     * @throws IllegalArgumentException
+     *         in case of parse failure
      */
     public static Duration parseDuration(String value) {
         value = value.trim();

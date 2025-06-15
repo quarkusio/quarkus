@@ -20,10 +20,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ListOfBeansTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, Bar.class, CdiBean.class, ServiceAlpha.class, ServiceBravo.class, Service.class,
-                            Converter.class, ConverterAlpha.class, ConverterBravo.class, Configuration.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Foo.class, Bar.class, CdiBean.class, ServiceAlpha.class, ServiceBravo.class,
+                    Service.class, Converter.class, ConverterAlpha.class, ConverterBravo.class, Configuration.class))
             .overrideConfigKey("test.value", "foo,bar");
 
     @Inject

@@ -38,8 +38,7 @@ public class SkippedExecution {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("Skipped execution of [")
-                .append(execution.getTrigger().getId())
+        StringBuilder builder = new StringBuilder("Skipped execution of [").append(execution.getTrigger().getId())
                 .append("]");
         if (detail != null) {
             builder.append(": ").append(detail);

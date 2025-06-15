@@ -31,14 +31,12 @@ public class EnvConverter {
 
         Map<String, EnvVarPrefixConfig> prefixMap = collectPrefixes(e);
 
-        e.secrets().ifPresent(sl -> sl
-                .forEach(s -> envs.add(new EnvBuilder().withName(convertName(s)).withSecret(s)
-                        .withPrefix(extractSecretPrefix(s, prefixMap).orElse(null)).build())));
-        e.configmaps()
-                .ifPresent(cl -> cl.forEach(c -> envs
-                        .add(new EnvBuilder().withName(convertName(c)).withConfigmap(c)
-                                .withPrefix(extractConfigmapPrefix(c, prefixMap).orElse(null)).build())));
-        e.vars().forEach((k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withValue(v.value().orElse("")).build()));
+        e.secrets().ifPresent(sl -> sl.forEach(s -> envs.add(new EnvBuilder().withName(convertName(s)).withSecret(s)
+                .withPrefix(extractSecretPrefix(s, prefixMap).orElse(null)).build())));
+        e.configmaps().ifPresent(cl -> cl.forEach(c -> envs.add(new EnvBuilder().withName(convertName(c))
+                .withConfigmap(c).withPrefix(extractConfigmapPrefix(c, prefixMap).orElse(null)).build())));
+        e.vars().forEach(
+                (k, v) -> envs.add(new EnvBuilder().withName(convertName(k)).withValue(v.value().orElse("")).build()));
         e.fields().forEach((k, v) -> {
             // env vars from fields need to have their name set in addition to their field field :)
             final String field = convertName(k);
@@ -54,16 +52,15 @@ public class EnvConverter {
         return name != null ? name.toUpperCase().replace('-', '_').replace('.', '_').replace('/', '_') : null;
     }
 
-    public static Optional<String> extractSecretPrefix(String secret, Map<String, EnvVarPrefixConfig> mappingWithPrefix) {
-        return mappingWithPrefix.entrySet().stream()
-                .filter(m -> m.getValue().hasPrefixForSecret(secret))
-                .findFirst().map(Map.Entry::getKey);
+    public static Optional<String> extractSecretPrefix(String secret,
+            Map<String, EnvVarPrefixConfig> mappingWithPrefix) {
+        return mappingWithPrefix.entrySet().stream().filter(m -> m.getValue().hasPrefixForSecret(secret)).findFirst()
+                .map(Map.Entry::getKey);
     }
 
     public static Optional<String> extractConfigmapPrefix(String configmap,
             Map<String, EnvVarPrefixConfig> mappingWithPrefix) {
-        return mappingWithPrefix.entrySet().stream()
-                .filter(m -> m.getValue().hasPrefixForConfigmap(configmap))
+        return mappingWithPrefix.entrySet().stream().filter(m -> m.getValue().hasPrefixForConfigmap(configmap))
                 .findFirst().map(Map.Entry::getKey);
     }
 

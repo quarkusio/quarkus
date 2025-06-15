@@ -22,30 +22,22 @@ import io.restassured.RestAssured;
 public class UserProvidedExceptionHandlingTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(Resource.class, CustomExceptionMapper.class);
-                }
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClasses(Resource.class, CustomExceptionMapper.class);
+        }
 
-            });
+    });
 
     @Test
     public void testDefaultErrorHandler() {
-        RestAssured.given().accept("text/html")
-                .get("/test/exception")
-                .then()
-                .statusCode(999);
+        RestAssured.given().accept("text/html").get("/test/exception").then().statusCode(999);
     }
 
     @Test
     public void testNotFoundErrorHandler() {
-        RestAssured.given().accept("text/html")
-                .get("/test/exception2")
-                .then()
-                .statusCode(999);
+        RestAssured.given().accept("text/html").get("/test/exception2").then().statusCode(999);
     }
 
     @Path("test")

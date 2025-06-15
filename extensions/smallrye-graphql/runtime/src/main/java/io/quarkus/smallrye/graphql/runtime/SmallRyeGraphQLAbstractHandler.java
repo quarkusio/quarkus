@@ -41,10 +41,8 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
 
     protected static final JsonReaderFactory jsonReaderFactory = jsonProvider().createReaderFactory(null);
 
-    public SmallRyeGraphQLAbstractHandler(
-            CurrentIdentityAssociation currentIdentityAssociation,
-            CurrentVertxRequest currentVertxRequest,
-            boolean runBlocking) {
+    public SmallRyeGraphQLAbstractHandler(CurrentIdentityAssociation currentIdentityAssociation,
+            CurrentVertxRequest currentVertxRequest, boolean runBlocking) {
 
         this.currentIdentityAssociation = currentIdentityAssociation;
         this.currentVertxRequest = currentVertxRequest;
@@ -66,8 +64,7 @@ public abstract class SmallRyeGraphQLAbstractHandler implements Handler<RoutingC
     @Override
     public void handle(final RoutingContext ctx) {
 
-        ctx.response()
-                .endHandler(currentManagedContextTerminationHandler)
+        ctx.response().endHandler(currentManagedContextTerminationHandler)
                 .exceptionHandler(currentManagedContextExceptionHandler)
                 .closeHandler(currentManagedContextTerminationHandler);
         if (!currentManagedContext.isActive()) {

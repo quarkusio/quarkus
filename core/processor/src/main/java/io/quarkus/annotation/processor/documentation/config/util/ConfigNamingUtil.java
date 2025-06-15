@@ -35,7 +35,8 @@ public final class ConfigNamingUtil {
         }
 
         if (rootPrefix.endsWith(Markers.DOT + Markers.PARENT)) {
-            // take into account the root case which would contain characters that can't be used to create the final file
+            // take into account the root case which would contain characters that can't be used to create the final
+            // file
             rootPrefix = rootPrefix.replace(Markers.DOT + Markers.PARENT, "");
         }
 
@@ -194,17 +195,15 @@ public final class ConfigNamingUtil {
 
     /**
      * Replace each character that is neither alphanumeric nor _ with _ then convert the name to upper case, e.g.
-     * quarkus.datasource.jdbc.initial-size -> QUARKUS_DATASOURCE_JDBC_INITIAL_SIZE
-     * See also: io.smallrye.config.common.utils.StringUtil#replaceNonAlphanumericByUnderscores(java.lang.String)
+     * quarkus.datasource.jdbc.initial-size -> QUARKUS_DATASOURCE_JDBC_INITIAL_SIZE See also:
+     * io.smallrye.config.common.utils.StringUtil#replaceNonAlphanumericByUnderscores(java.lang.String)
      */
     public static String toEnvVarName(final String name) {
         int length = name.length();
         StringBuilder sb = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
             char c = name.charAt(i);
-            if ('a' <= c && c <= 'z' ||
-                    'A' <= c && c <= 'Z' ||
-                    '0' <= c && c <= '9') {
+            if ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9') {
                 sb.append(c);
             } else {
                 sb.append('_');

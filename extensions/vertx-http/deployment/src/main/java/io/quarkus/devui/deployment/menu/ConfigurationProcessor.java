@@ -45,23 +45,16 @@ import io.quarkus.vertx.http.runtime.devmode.ConfigDescription;
 public class ConfigurationProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
-    InternalPageBuildItem createConfigurationPages(
-            List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
+    InternalPageBuildItem createConfigurationPages(List<ConfigDescriptionBuildItem> configDescriptionBuildItems,
             Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig) {
 
         InternalPageBuildItem configurationPages = new InternalPageBuildItem("Configuration", 20);
 
-        configurationPages.addPage(Page.webComponentPageBuilder()
-                .namespace(NAMESPACE)
-                .title("Form Editor")
-                .icon("font-awesome-solid:sliders")
-                .componentLink("qwc-configuration.js"));
+        configurationPages.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).title("Form Editor")
+                .icon("font-awesome-solid:sliders").componentLink("qwc-configuration.js"));
 
-        configurationPages.addPage(Page.webComponentPageBuilder()
-                .namespace(NAMESPACE)
-                .title("Source Editor")
-                .icon("font-awesome-solid:code")
-                .componentLink("qwc-configuration-editor.js"));
+        configurationPages.addPage(Page.webComponentPageBuilder().namespace(NAMESPACE).title("Source Editor")
+                .icon("font-awesome-solid:code").componentLink("qwc-configuration-editor.js"));
 
         configurationPages.addBuildTimeData("allConfiguration", new ArrayList<ConfigDescription>());
 
@@ -76,14 +69,10 @@ public class ConfigurationProcessor {
 
         List<ConfigDescription> configDescriptions = new ArrayList<>();
         for (ConfigDescriptionBuildItem item : configDescriptionBuildItems) {
-            configDescriptions.add(
-                    new ConfigDescription(item.getPropertyName(),
-                            formatJavadoc(cleanUpAsciiDocIfNecessary(item.getDocs())),
-                            item.getDefaultValue(),
-                            isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()),
-                            item.getValueTypeName(),
-                            item.getAllowedValues(),
-                            item.getConfigPhase().name()));
+            configDescriptions.add(new ConfigDescription(item.getPropertyName(),
+                    formatJavadoc(cleanUpAsciiDocIfNecessary(item.getDocs())), item.getDefaultValue(),
+                    isSetByDevServices(devServicesLauncherConfig, item.getPropertyName()), item.getValueTypeName(),
+                    item.getAllowedValues(), item.getConfigPhase().name()));
         }
 
         Set<String> devServicesConfig = new HashSet<>();
@@ -96,10 +85,8 @@ public class ConfigurationProcessor {
 
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(ExecutionTime.RUNTIME_INIT)
-    void registerBuildTimeActions(
-            BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
-            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer,
-            ConfigDevUIRecorder recorder,
+    void registerBuildTimeActions(BuildProducer<BuildTimeActionBuildItem> buildTimeActionProducer,
+            BuildProducer<SyntheticBeanBuildItem> syntheticBeanProducer, ConfigDevUIRecorder recorder,
             CuratedApplicationShutdownBuildItem shutdown) {
 
         BuildTimeActionBuildItem configActions = new BuildTimeActionBuildItem(NAMESPACE);
@@ -128,12 +115,8 @@ public class ConfigurationProcessor {
         });
         buildTimeActionProducer.produce(configActions);
 
-        syntheticBeanProducer.produce(
-                SyntheticBeanBuildItem.configure(ConfigDescriptionBean.class).unremovable()
-                        .supplier(recorder.configDescriptionBean())
-                        .scope(Singleton.class)
-                        .setRuntimeInit()
-                        .done());
+        syntheticBeanProducer.produce(SyntheticBeanBuildItem.configure(ConfigDescriptionBean.class).unremovable()
+                .supplier(recorder.configDescriptionBean()).scope(Singleton.class).setRuntimeInit().done());
 
         CurrentConfig.EDITOR = ConfigurationProcessor::updateConfig;
         shutdown.addCloseTask(new Runnable() {
@@ -173,15 +156,13 @@ public class ConfigurationProcessor {
         // TODO #26199 Ideally we'd use a proper AsciiDoc renderer, but for now we'll just clean it up a bit.
         return docs.replace("@asciidoclet", "")
                 // Avoid problems with links.
-                .replace("<<", "&lt;&lt;")
-                .replace(">>", "&gt;&gt;")
+                .replace("<<", "&lt;&lt;").replace(">>", "&gt;&gt;")
                 // Try to render line breaks... kind of.
-                .replace("\n\n", "<p>")
-                .replace("\n", "<br>");
+                .replace("\n\n", "<p>").replace("\n", "<br>");
     }
 
-    private static boolean isSetByDevServices(Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig,
-            String propertyName) {
+    private static boolean isSetByDevServices(
+            Optional<DevServicesLauncherConfigResultBuildItem> devServicesLauncherConfig, String propertyName) {
         if (devServicesLauncherConfig.isPresent()) {
             return devServicesLauncherConfig.get().getConfig().containsKey(propertyName);
         }

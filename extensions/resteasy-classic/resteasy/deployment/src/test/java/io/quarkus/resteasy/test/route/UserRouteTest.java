@@ -20,8 +20,7 @@ public class UserRouteTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(RootResource.class, MyRoute.class));
+            .withApplicationRoot((jar) -> jar.addClasses(RootResource.class, MyRoute.class));
 
     @Inject
     MyRoute myRoute;
@@ -29,24 +28,17 @@ public class UserRouteTest {
     @Test
     public void test() {
         // test accessing the root resource
-        RestAssured.get("/").then()
-                .statusCode(200)
-                .body(is("Root Resource"));
+        RestAssured.get("/").then().statusCode(200).body(is("Root Resource"));
         // test without the route
-        RestAssured.get("/my-route").then()
-                .statusCode(404);
+        RestAssured.get("/my-route").then().statusCode(404);
 
         myRoute.register();
 
         // test with the route
-        RestAssured.get("/my-route").then()
-                .statusCode(200)
-                .body(is("OK"));
+        RestAssured.get("/my-route").then().statusCode(200).body(is("OK"));
 
         // test we can still access the default route
-        RestAssured.get("/").then()
-                .statusCode(200)
-                .body(is("Root Resource"));
+        RestAssured.get("/").then().statusCode(200).body(is("Root Resource"));
     }
 
     @ApplicationScoped

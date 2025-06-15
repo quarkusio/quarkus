@@ -5,7 +5,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The remote IP address
- *
  */
 public class RemoteIPAttribute implements ExchangeAttribute {
 

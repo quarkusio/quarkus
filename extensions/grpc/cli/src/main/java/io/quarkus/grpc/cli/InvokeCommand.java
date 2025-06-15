@@ -36,9 +36,7 @@ public class InvokeCommand extends GcurlBaseCommand {
         String[] split = toInvoke.split("/");
         String serviceName = split[0];
         String methodName = split[1];
-        ServerReflectionRequest request = ServerReflectionRequest
-                .newBuilder()
-                .setFileContainingSymbol(serviceName)
+        ServerReflectionRequest request = ServerReflectionRequest.newBuilder().setFileContainingSymbol(serviceName)
                 .build();
         Multi<ServerReflectionResponse> response = stub.serverReflectionInfo(Multi.createFrom().item(request));
         response.emitOn(Infrastructure.getDefaultWorkerPool()).toUni().map(r -> {
@@ -46,18 +44,17 @@ public class InvokeCommand extends GcurlBaseCommand {
             if (responseCase == ServerReflectionResponse.MessageResponseCase.FILE_DESCRIPTOR_RESPONSE) {
                 List<ByteString> byteStrings = r.getFileDescriptorResponse().getFileDescriptorProtoList();
                 for (Descriptors.FileDescriptor fd : getFileDescriptorsFromProtos(byteStrings)) {
-                    fd.getServices().forEach(
-                            sd -> {
-                                String fullName = sd.getFullName();
-                                if (fullName.equals(serviceName)) {
-                                    Descriptors.MethodDescriptor md = sd.findMethodByName(methodName);
-                                    if (md != null) {
-                                        invokeMethod(md);
-                                    } else {
-                                        log("Method not found: " + methodName);
-                                    }
-                                }
-                            });
+                    fd.getServices().forEach(sd -> {
+                        String fullName = sd.getFullName();
+                        if (fullName.equals(serviceName)) {
+                            Descriptors.MethodDescriptor md = sd.findMethodByName(methodName);
+                            if (md != null) {
+                                invokeMethod(md);
+                            } else {
+                                log("Method not found: " + methodName);
+                            }
+                        }
+                    });
                 }
             } else {
                 err("Unexpected response from server reflection: " + responseCase);
@@ -90,19 +87,13 @@ public class InvokeCommand extends GcurlBaseCommand {
                 methodType = MethodDescriptor.MethodType.BIDI_STREAMING;
             }
             MethodDescriptor<DynamicMessage, DynamicMessage> methodDescriptor = io.grpc.MethodDescriptor
-                    .<DynamicMessage, DynamicMessage> newBuilder()
-                    .setType(methodType)
-                    .setFullMethodName(fullMethodName)
+                    .<DynamicMessage, DynamicMessage> newBuilder().setType(methodType).setFullMethodName(fullMethodName)
                     .setRequestMarshaller(ProtoUtils.marshaller(DynamicMessage.getDefaultInstance(inputType)))
-                    .setResponseMarshaller(
-                            ProtoUtils.marshaller(DynamicMessage.getDefaultInstance(md.getOutputType())))
+                    .setResponseMarshaller(ProtoUtils.marshaller(DynamicMessage.getDefaultInstance(md.getOutputType())))
                     .build();
 
             execute(channel -> {
-                DynamicMessage response = ClientCalls.blockingUnaryCall(
-                        channel,
-                        methodDescriptor,
-                        CallOptions.DEFAULT,
+                DynamicMessage response = ClientCalls.blockingUnaryCall(channel, methodDescriptor, CallOptions.DEFAULT,
                         msg);
 
                 try {

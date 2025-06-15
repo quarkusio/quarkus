@@ -55,12 +55,12 @@ public class ConfigDevUIRecorder {
             String[] parts = propertyName.split("\\.");
 
             List<String> accumulate = new ArrayList<>();
-            //we never want to add the full string
-            //hence -1
+            // we never want to add the full string
+            // hence -1
             for (int i = 0; i < parts.length - 1; ++i) {
                 if (parts[i].isEmpty()) {
-                    //this can't map to a quarkus prop as it has an empty segment
-                    //so skip
+                    // this can't map to a quarkus prop as it has an empty segment
+                    // so skip
                     break;
                 }
                 // If there was a quoted dot, put that back
@@ -69,8 +69,8 @@ public class ConfigDevUIRecorder {
                 }
 
                 accumulate.add(parts[i]);
-                //if there is both a quoted and unquoted version we only want to apply the quoted version
-                //and remove the unquoted one
+                // if there is both a quoted and unquoted version we only want to apply the quoted version
+                // and remove the unquoted one
                 Set<String> potentialSegmentSet = allPropertySegments.computeIfAbsent(List.copyOf(accumulate),
                         (k) -> new HashSet<>());
                 if (isQuoted(parts[i + 1])) {
@@ -88,16 +88,16 @@ public class ConfigDevUIRecorder {
         Map<List<String>, Set<String>> wildcardsToAdd = new HashMap<>();
         Map<String, Holder> foundItems = new HashMap<>();
         Set<String> bannedExpansionCombos = new HashSet<>();
-        //we iterate over every config description
+        // we iterate over every config description
         for (ConfigDescription item : configDescriptions) {
-            //if they are a non-wildcard description we just add them directly
+            // if they are a non-wildcard description we just add them directly
             if (!item.getName().contains("{*}")) {
-                //we don't want to accidentally use these properties as name expansions
-                //we ban them which means that the only way the name can be expanded into a map
-                //is if it is quoted
+                // we don't want to accidentally use these properties as name expansions
+                // we ban them which means that the only way the name can be expanded into a map
+                // is if it is quoted
                 bannedExpansionCombos.add(item.getName());
                 for (int i = 0; i < item.getName().length(); ++i) {
-                    //add all possible segments to the banned list
+                    // add all possible segments to the banned list
                     if (item.getName().charAt(i) == '.') {
                         bannedExpansionCombos.add(item.getName().substring(0, i));
                     }
@@ -105,12 +105,13 @@ public class ConfigDevUIRecorder {
                 properties.add(item.getName());
                 item.setConfigValue(getConfigValue(current, item.getName()));
                 ordered.add(item);
-            } else if (!item.getName().startsWith("quarkus.log.filter")) { //special case, we use this internally and we don't want it clogging up the editor
-                //we need to figure out how to expand it
-                //this can have multiple stars
+            } else if (!item.getName().startsWith("quarkus.log.filter")) { // special case, we use this internally and
+                                                                           // we don't want it clogging up the editor
+                                                                           // we need to figure out how to expand it
+                                                                           // this can have multiple stars
                 List<List<String>> componentParts = new ArrayList<>();
                 List<String> accumulator = new ArrayList<>();
-                //keys that were used to expand, checked against the banned list before adding
+                // keys that were used to expand, checked against the banned list before adding
                 for (var i : item.getName().split("\\.")) {
                     if (i.equals("{*}")) {
                         componentParts.add(accumulator);
@@ -119,8 +120,8 @@ public class ConfigDevUIRecorder {
                         accumulator.add(i);
                     }
                 }
-                //note that accumulator is still holding the final part
-                //we need it later, but we don't want it in this loop
+                // note that accumulator is still holding the final part
+                // we need it later, but we don't want it in this loop
                 Map<List<String>, Set<String>> building = new HashMap<>();
                 building.put(List.of(), new HashSet<>());
                 for (List<String> currentPart : componentParts) {
@@ -136,8 +137,8 @@ public class ConfigDevUIRecorder {
                             for (String definedName : potential) {
                                 List<String> toAdd = new ArrayList<>(newBase);
                                 toAdd.add(definedName);
-                                //for expansion keys we always use unquoted values, same with banned
-                                //so we are always comparing unquoted
+                                // for expansion keys we always use unquoted values, same with banned
+                                // so we are always comparing unquoted
                                 Set<String> expansionKeys = new HashSet<>(entry.getValue());
                                 expansionKeys.add(String.join(".", newBase) + "." + definedName);
                                 newBuilding.put(toAdd, expansionKeys);
@@ -146,7 +147,7 @@ public class ConfigDevUIRecorder {
                     }
                     building = newBuilding;
                 }
-                //now we have our config properties
+                // now we have our config properties
                 for (var entry : building.entrySet()) {
                     List<String> segments = entry.getKey();
                     StringBuilder sb = new StringBuilder();
@@ -156,7 +157,7 @@ public class ConfigDevUIRecorder {
                         }
                         sb.append(segments.get(i));
                     }
-                    //accumulator holds the find string
+                    // accumulator holds the find string
                     for (String s : accumulator) {
                         sb.append(".").append(s);
                     }
@@ -180,15 +181,14 @@ public class ConfigDevUIRecorder {
             var item = e.getValue().configDescription;
             ConfigDescription newDesc = new ConfigDescription(expandedName, item.getDescription(),
                     item.getDefaultValue(), devServicesProperties.contains(expandedName), item.getTypeName(),
-                    item.getAllowedValues(),
-                    item.getConfigPhase());
+                    item.getAllowedValues(), item.getConfigPhase());
 
             properties.add(newDesc.getName());
             newDesc.setConfigValue(getConfigValue(current, newDesc.getName()));
             ordered.add(newDesc);
         }
 
-        //now add our star properties
+        // now add our star properties
         for (var entry : wildcardsToAdd.entrySet()) {
             boolean ok = true;
             for (String key : entry.getValue()) {
@@ -226,7 +226,8 @@ public class ConfigDevUIRecorder {
                     continue;
                 }
 
-                ConfigDescription item = new ConfigDescription(propertyName, null, null, getConfigValue(current, propertyName));
+                ConfigDescription item = new ConfigDescription(propertyName, null, null,
+                        getConfigValue(current, propertyName));
                 ordered.add(item);
 
                 configDescriptions.add(item);

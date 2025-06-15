@@ -7,8 +7,8 @@ import org.junit.jupiter.api.Disabled;
 import com.google.common.collect.ImmutableMap;
 
 /**
- * A test to check if a proto file that imports another proto from dependencies
- * works properly in dev mode if quarkus.generate-code.grpc.scan-for-imports=true is specified
+ * A test to check if a proto file that imports another proto from dependencies works properly in dev mode if
+ * quarkus.generate-code.grpc.scan-for-imports=true is specified
  */
 @Disabled
 public class GrpcWithIncludesDevModeTest extends QuarkusDevGradleTestBase {
@@ -21,8 +21,7 @@ public class GrpcWithIncludesDevModeTest extends QuarkusDevGradleTestBase {
     protected void testDevMode() throws Exception {
         assertThat(getHttpResponse("/hello")).isEqualTo("hello 2");
 
-        replace("application/src/main/proto/hello.proto",
-                ImmutableMap.of("TEST_ONE = 2;", "TEST_ONE = 15;"));
+        replace("application/src/main/proto/hello.proto", ImmutableMap.of("TEST_ONE = 2;", "TEST_ONE = 15;"));
 
         Thread.sleep(1000);
 

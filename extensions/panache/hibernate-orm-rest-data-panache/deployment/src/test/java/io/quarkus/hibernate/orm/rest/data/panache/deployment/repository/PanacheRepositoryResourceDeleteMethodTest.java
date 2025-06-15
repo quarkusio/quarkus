@@ -8,11 +8,8 @@ import io.quarkus.test.QuarkusUnitTest;
 class PanacheRepositoryResourceDeleteMethodTest extends AbstractDeleteMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class,
-                            AbstractEntity.class, AbstractItem.class, Item.class, ItemsResource.class,
-                            ItemsRepository.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class, AbstractEntity.class,
+                    AbstractItem.class, Item.class, ItemsResource.class, ItemsRepository.class)
+            .addAsResource("application.properties").addAsResource("import.sql"));
 }

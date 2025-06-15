@@ -44,38 +44,24 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File file = new File("target/basic-resteasy");
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
-        assertCreateProject(newCreateProject(projectDir)
-                .groupId("org.acme.foo")
-                .artifactId("resteasy-app")
-                .version("1.0.0-FOO")
-                .resourceClassName("org.acme.getting.started.GreetingResource")
-                .resourcePath("/foo")
-                .extensions(Collections.singleton("resteasy")));
+        assertCreateProject(newCreateProject(projectDir).groupId("org.acme.foo").artifactId("resteasy-app")
+                .version("1.0.0-FOO").resourceClassName("org.acme.getting.started.GreetingResource")
+                .resourcePath("/foo").extensions(Collections.singleton("resteasy")));
         final Properties quarkusProp = getQuarkusProperties();
-        assertThat(projectDir.resolve(".gitignore"))
-                .exists()
-                .satisfies(checkMatches("(?s).*target/\\R.*"));
-        assertThat(projectDir.resolve("src/main/java/org/acme/getting/started/GreetingResource.java"))
-                .exists()
+        assertThat(projectDir.resolve(".gitignore")).exists().satisfies(checkMatches("(?s).*target/\\R.*"));
+        assertThat(projectDir.resolve("src/main/java/org/acme/getting/started/GreetingResource.java")).exists()
                 .satisfies(checkContains("package org.acme.getting.started;"))
-                .satisfies(checkContains("class GreetingResource"))
-                .satisfies(checkContains("@Path(\"/foo\")"));
-        assertThat(projectDir.resolve("pom.xml"))
-                .exists()
-                .satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
+                .satisfies(checkContains("class GreetingResource")).satisfies(checkContains("@Path(\"/foo\")"));
+        assertThat(projectDir.resolve("pom.xml")).exists().satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
                 .satisfies(checkContains("<artifactId>resteasy-app</artifactId>"))
                 .satisfies(checkContains("<version>1.0.0-FOO</version>"))
-                .satisfies(checkContains(
-                        "<surefire-plugin.version>" + quarkusProp.getProperty(PROP_SUREFIRE_PLUGIN_VERSION)
-                                + "</surefire-plugin.version>"))
-                .satisfies(checkContains(
-                        "<compiler-plugin.version>" + quarkusProp.getProperty(PROP_COMPILER_PLUGIN_VERSION)
-                                + "</compiler-plugin.version>"))
+                .satisfies(checkContains("<surefire-plugin.version>"
+                        + quarkusProp.getProperty(PROP_SUREFIRE_PLUGIN_VERSION) + "</surefire-plugin.version>"))
+                .satisfies(checkContains("<compiler-plugin.version>"
+                        + quarkusProp.getProperty(PROP_COMPILER_PLUGIN_VERSION) + "</compiler-plugin.version>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
 
-        assertThat(projectDir.resolve("README.md"))
-                .exists()
-                .satisfies(checkContains("./mvnw"));
+        assertThat(projectDir.resolve("README.md")).exists().satisfies(checkContains("./mvnw"));
     }
 
     @Test
@@ -83,22 +69,13 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File file = new File("target/with-package");
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
-        assertCreateProject(newCreateProject(projectDir)
-                .groupId("org.acme.foo")
-                .artifactId("package-app")
-                .version("1.0.0-FOO")
-                .resourceClassName("SomeResource")
-                .packageName("io.aloha")
-                .resourcePath("/bar")
+        assertCreateProject(newCreateProject(projectDir).groupId("org.acme.foo").artifactId("package-app")
+                .version("1.0.0-FOO").resourceClassName("SomeResource").packageName("io.aloha").resourcePath("/bar")
                 .extensions(Collections.singleton("resteasy")));
-        assertThat(projectDir.resolve("src/main/java/io/aloha/SomeResource.java"))
-                .exists()
-                .satisfies(checkContains("package io.aloha;"))
-                .satisfies(checkContains("class SomeResource"))
+        assertThat(projectDir.resolve("src/main/java/io/aloha/SomeResource.java")).exists()
+                .satisfies(checkContains("package io.aloha;")).satisfies(checkContains("class SomeResource"))
                 .satisfies(checkContains("@Path(\"/bar\")"));
-        assertThat(projectDir.resolve("pom.xml"))
-                .exists()
-                .satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
+        assertThat(projectDir.resolve("pom.xml")).exists().satisfies(checkContains("<groupId>org.acme.foo</groupId>"))
                 .satisfies(checkContains("<artifactId>package-app</artifactId>"))
                 .satisfies(checkContains("<version>1.0.0-FOO</version>"));
     }
@@ -108,27 +85,17 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File file = new File("target/create-spring");
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
-        assertCreateProject(newCreateProject(projectDir)
-                .groupId("org.acme.bar")
-                .packageName("org.acme.bar.spr")
-                .artifactId("spring-web-app")
-                .version("1.0.0-BAR")
-                .resourceClassName("BarController")
-                .resourcePath("/bar")
-                .extensions(Collections.singleton("spring-web")));
-        assertThat(projectDir.resolve("pom.xml"))
-                .exists()
-                .satisfies(checkContains("<groupId>org.acme.bar</groupId>"))
+        assertCreateProject(newCreateProject(projectDir).groupId("org.acme.bar").packageName("org.acme.bar.spr")
+                .artifactId("spring-web-app").version("1.0.0-BAR").resourceClassName("BarController")
+                .resourcePath("/bar").extensions(Collections.singleton("spring-web")));
+        assertThat(projectDir.resolve("pom.xml")).exists().satisfies(checkContains("<groupId>org.acme.bar</groupId>"))
                 .satisfies(checkContains("<artifactId>spring-web-app</artifactId>"))
                 .satisfies(checkContains("<version>1.0.0-BAR</version>"))
                 .satisfies(checkContains("<artifactId>quarkus-spring-web</artifactId>"));
 
-        assertThat(projectDir.resolve("src/main/java/org/acme/bar/spr/BarController.java"))
-                .exists()
-                .satisfies(checkContains("package org.acme.bar.spr"))
-                .satisfies(checkContains("@RestController"))
-                .satisfies(checkContains("class BarController"))
-                .satisfies(checkContains("@RequestMapping(\"/bar\")"));
+        assertThat(projectDir.resolve("src/main/java/org/acme/bar/spr/BarController.java")).exists()
+                .satisfies(checkContains("package org.acme.bar.spr")).satisfies(checkContains("@RestController"))
+                .satisfies(checkContains("class BarController")).satisfies(checkContains("@RequestMapping(\"/bar\")"));
     }
 
     @Test
@@ -136,29 +103,21 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File file = new File("target/create-spring-resteasy");
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
-        assertCreateProject(newCreateProject(projectDir)
-                .artifactId("spring-web-resteasy-app")
-                .resourceClassName("BarController")
-                .packageName("io.test")
-                .resourcePath("/bar")
+        assertCreateProject(newCreateProject(projectDir).artifactId("spring-web-resteasy-app")
+                .resourceClassName("BarController").packageName("io.test").resourcePath("/bar")
                 .extensions(new HashSet<>(Arrays.asList("resteasy", "spring-web"))));
-        assertThat(projectDir.resolve("pom.xml"))
-                .exists()
+        assertThat(projectDir.resolve("pom.xml")).exists()
                 .satisfies(checkContains("<artifactId>spring-web-resteasy-app</artifactId>"))
                 .satisfies(checkContains("<artifactId>quarkus-spring-web</artifactId>"))
                 .satisfies(checkContains("<artifactId>quarkus-resteasy</artifactId>"));
 
-        assertThat(projectDir.resolve("src/main/java/io/test/GreetingController.java"))
-                .exists()
-                .satisfies(checkContains("package io.test;"))
-                .satisfies(checkContains("@RestController"))
+        assertThat(projectDir.resolve("src/main/java/io/test/GreetingController.java")).exists()
+                .satisfies(checkContains("package io.test;")).satisfies(checkContains("@RestController"))
                 .satisfies(checkContains("class GreetingController"))
                 .satisfies(checkContains("@RequestMapping(\"/greeting\")"));
 
-        assertThat(projectDir.resolve("src/main/java/io/test/GreetingResource.java"))
-                .exists()
-                .satisfies(checkContains("package io.test;"))
-                .satisfies(checkContains("class GreetingResource"))
+        assertThat(projectDir.resolve("src/main/java/io/test/GreetingResource.java")).exists()
+                .satisfies(checkContains("package io.test;")).satisfies(checkContains("class GreetingResource"))
                 .satisfies(checkContains("@Path(\"/hello\")"));
     }
 
@@ -167,35 +126,22 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         final File file = new File("target/create-resteasy-gradle");
         final Path projectDir = file.toPath();
         SnapshotTesting.deleteTestDirectory(file);
-        assertCreateProject(newCreateProject(projectDir, BuildTool.GRADLE)
-                .groupId("io.foo")
-                .packageName("my.project")
-                .artifactId("resteasy-app")
-                .version("1.0.0-FOO")
-                .resourceClassName("FooResource")
-                .resourcePath("/foo")
+        assertCreateProject(newCreateProject(projectDir, BuildTool.GRADLE).groupId("io.foo").packageName("my.project")
+                .artifactId("resteasy-app").version("1.0.0-FOO").resourceClassName("FooResource").resourcePath("/foo")
                 .extensions(Collections.singleton("resteasy")));
 
-        assertThat(projectDir.resolve(".gitignore"))
-                .exists()
-                .satisfies(checkMatches("(?s).*build/\\R.*"))
+        assertThat(projectDir.resolve(".gitignore")).exists().satisfies(checkMatches("(?s).*build/\\R.*"))
                 .satisfies(checkMatches("(?s).*\\.gradle/\\R.*"));
-        assertThat(projectDir.resolve("src/main/java/my/project/FooResource.java"))
-                .exists()
+        assertThat(projectDir.resolve("src/main/java/my/project/FooResource.java")).exists()
                 .satisfies(checkContains("@Path(\"/foo\")"));
-        assertThat(projectDir.resolve("build.gradle"))
-                .exists()
-                .satisfies(checkContains("group 'io.foo'"))
+        assertThat(projectDir.resolve("build.gradle")).exists().satisfies(checkContains("group 'io.foo'"))
                 .satisfies(checkContains("version '1.0.0-FOO'"))
                 .satisfies(checkContains("implementation 'io.quarkus:quarkus-resteasy'"));
 
-        assertThat(projectDir.resolve("settings.gradle"))
-                .exists()
+        assertThat(projectDir.resolve("settings.gradle")).exists()
                 .satisfies(checkContains("rootProject.name='resteasy-app'"));
 
-        assertThat(projectDir.resolve("README.md"))
-                .exists()
-                .satisfies(checkContains("./gradlew"));
+        assertThat(projectDir.resolve("README.md")).exists().satisfies(checkContains("./gradlew"));
     }
 
     private CreateProject newCreateProject(Path dir) {
@@ -221,12 +167,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         MojoUtils.write(model, pom);
         assertThatExceptionOfType(QuarkusCommandException.class).isThrownBy(() -> {
             final QuarkusProject project = QuarkusProjectHelper.getProject(testDir.toPath(), BuildTool.MAVEN);
-            new CreateProject(project)
-                    .groupId("something.is")
-                    .artifactId("wrong")
-                    .version("1.0.0-SNAPSHOT")
-                    .resourceClassName("org.foo.MyResource")
-                    .execute();
+            new CreateProject(project).groupId("something.is").artifactId("wrong").version("1.0.0-SNAPSHOT")
+                    .resourceClassName("org.foo.MyResource").execute();
         }).withRootCauseInstanceOf(IOException.class);
     }
 
@@ -240,12 +182,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         List<Callable<Void>> collect = IntStream.range(0, 15).boxed().map(i -> (Callable<Void>) () -> {
             File tempDir = Files.createTempDirectory("test").toFile();
             final QuarkusProject project = QuarkusProjectHelper.getProject(tempDir.toPath(), BuildTool.MAVEN);
-            final QuarkusCommandOutcome result = new CreateProject(project)
-                    .groupId("org.acme")
-                    .artifactId("acme")
-                    .version("1.0.0-SNAPSHOT")
-                    .resourceClassName("org.acme.MyResource")
-                    .execute();
+            final QuarkusCommandOutcome result = new CreateProject(project).groupId("org.acme").artifactId("acme")
+                    .version("1.0.0-SNAPSHOT").resourceClassName("org.acme.MyResource").execute();
             assertTrue(result.isSuccess());
             latch.countDown();
             tempDir.delete();
@@ -255,11 +193,8 @@ public class CreateProjectTest extends PlatformAwareTestBase {
         latch.await();
     }
 
-    private void assertCreateProject(CreateProject createProject)
-            throws QuarkusCommandException {
-        final QuarkusCommandOutcome result = createProject
-                .quarkusPluginVersion("2.3.5")
-                .execute();
+    private void assertCreateProject(CreateProject createProject) throws QuarkusCommandException {
+        final QuarkusCommandOutcome result = createProject.quarkusPluginVersion("2.3.5").execute();
         assertTrue(result.isSuccess());
     }
 

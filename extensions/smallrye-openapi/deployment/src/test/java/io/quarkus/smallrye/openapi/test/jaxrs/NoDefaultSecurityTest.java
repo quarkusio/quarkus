@@ -12,14 +12,11 @@ public class NoDefaultSecurityTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NoDefaultSecurityResource.class, Greeting.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NoDefaultSecurityResource.class, Greeting.class));
 
     @Test
     public void testOpenApiNoSecurity() {
-        RestAssured.given().queryParam("format", "JSON")
-                .when().get(OPEN_API_PATH)
-                .then()
+        RestAssured.given().queryParam("format", "JSON").when().get(OPEN_API_PATH).then()
                 .body("components.securitySchemes.SecurityScheme.type", Matchers.nullValue());
     }
 

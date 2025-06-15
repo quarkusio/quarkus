@@ -10,14 +10,11 @@ public abstract class BootstrapFromWorkspaceModuleTestBase extends PackageAppTes
 
     protected abstract WorkspaceModule composeApplication() throws Exception;
 
-    protected QuarkusBootstrap.Builder initBootstrapBuilder()
-            throws Exception {
+    protected QuarkusBootstrap.Builder initBootstrapBuilder() throws Exception {
         final ApplicationModel appModel = resolver.resolveModel(composeApplication());
         Path applicationRoot = appModel.getAppArtifact().getResolvedPaths().getSinglePath();
-        final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder()
-                .setExistingModel(appModel)
-                .setApplicationRoot(applicationRoot)
-                .setProjectRoot(applicationRoot)
+        final QuarkusBootstrap.Builder bootstrap = QuarkusBootstrap.builder().setExistingModel(appModel)
+                .setApplicationRoot(applicationRoot).setProjectRoot(applicationRoot)
                 .setTargetDirectory(appModel.getAppArtifact().getWorkspaceModule().getBuildDir().toPath())
                 .setAppModelResolver(resolver);
         switch (getBootstrapMode()) {

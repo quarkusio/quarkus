@@ -22,15 +22,11 @@ class NullHeaderTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(NullFilter.class, NullResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(NullFilter.class, NullResource.class));
 
     @Test
     void nullHeaderTest() {
-        when()
-                .get("/null")
-                .then().statusCode(200)
-                .header("nullHeader", "");
+        when().get("/null").then().statusCode(200).header("nullHeader", "");
     }
 
     @Provider

@@ -19,8 +19,7 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ClassNameScopeOverrideTest {
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EchoResource.class, HelloClientWithBaseUri.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EchoResource.class, HelloClientWithBaseUri.class))
             .withConfigurationResource("classname-scope-test-application.properties");
 
     @RestClient

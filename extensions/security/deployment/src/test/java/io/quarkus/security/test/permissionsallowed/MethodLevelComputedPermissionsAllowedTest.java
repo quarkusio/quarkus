@@ -59,8 +59,7 @@ public class MethodLevelComputedPermissionsAllowedTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     SecuredBean securedBean;
@@ -76,15 +75,17 @@ public class MethodLevelComputedPermissionsAllowedTest {
         assertFailureFor(() -> securedBean.autodetect("what", "ever", "?"), UnauthorizedException.class, anonymous);
         assertSuccess(securedBean.autodetectNonBlocking("hello", "world", "!"), SUCCESS, user);
         assertFailureFor(securedBean.autodetectNonBlocking("what", "ever", "?"), ForbiddenException.class, user);
-        assertFailureFor(securedBean.autodetectNonBlocking("what", "ever", "?"), UnauthorizedException.class, anonymous);
+        assertFailureFor(securedBean.autodetectNonBlocking("what", "ever", "?"), UnauthorizedException.class,
+                anonymous);
 
-        // secured method has more parameters with all variety of data types, while Permission constructor accepts 3 'int' params
+        // secured method has more parameters with all variety of data types, while Permission constructor accepts 3
+        // 'int' params
         assertSuccess(() -> securedBean.autodetect(1, "something", 2, 3, new Object(), null), SUCCESS, user);
-        assertFailureFor(() -> securedBean.autodetect(1, "something", 5, 3, new Object(), null), ForbiddenException.class,
-                user);
+        assertFailureFor(() -> securedBean.autodetect(1, "something", 5, 3, new Object(), null),
+                ForbiddenException.class, user);
         assertSuccess(securedBean.autodetectNonBlocking(1, "something", 2, 3, new Object(), null), SUCCESS, user);
-        assertFailureFor(securedBean.autodetectNonBlocking(1, "something", 5, 3, new Object(), null), ForbiddenException.class,
-                user);
+        assertFailureFor(securedBean.autodetectNonBlocking(1, "something", 5, 3, new Object(), null),
+                ForbiddenException.class, user);
 
         // inheritance (constructor is called with actions and that is checked)
         assertSuccess(() -> securedBean.autodetect(new Child(true)), SUCCESS, user);
@@ -92,12 +93,14 @@ public class MethodLevelComputedPermissionsAllowedTest {
         assertSuccess(securedBean.autodetectNonBlocking(new Child(true)), SUCCESS, user);
         assertFailureFor(securedBean.autodetectNonBlocking(new Child(false)), ForbiddenException.class, user);
 
-        // in addition to inheritance calls right above, here 2 permissions are created and tested for 1 annotation (both with actions)
+        // in addition to inheritance calls right above, here 2 permissions are created and tested for 1 annotation
+        // (both with actions)
         assertSuccess(() -> securedBean.autodetectMultiplePermissions(new Child(true)), SUCCESS, user);
-        assertFailureFor(() -> securedBean.autodetectMultiplePermissions(new Child(false)), ForbiddenException.class, user);
-        assertSuccess(securedBean.autodetectMultiplePermissionsNonBlocking(new Child(true)), SUCCESS, user);
-        assertFailureFor(securedBean.autodetectMultiplePermissionsNonBlocking(new Child(false)), ForbiddenException.class,
+        assertFailureFor(() -> securedBean.autodetectMultiplePermissions(new Child(false)), ForbiddenException.class,
                 user);
+        assertSuccess(securedBean.autodetectMultiplePermissionsNonBlocking(new Child(true)), SUCCESS, user);
+        assertFailureFor(securedBean.autodetectMultiplePermissionsNonBlocking(new Child(false)),
+                ForbiddenException.class, user);
     }
 
     @Test
@@ -105,42 +108,38 @@ public class MethodLevelComputedPermissionsAllowedTest {
         var anonymous = new AuthData(null, true, null, CHECKING_PERMISSION);
         var user = new AuthData(Collections.singleton("user"), false, "user", CHECKING_PERMISSION);
 
-        // secured method 'sayHelloWorld' accepts multiple arguments, however only 'hello', 'world' and 'exclamationMark'
+        // secured method 'sayHelloWorld' accepts multiple arguments, however only 'hello', 'world' and
+        // 'exclamationMark'
         // are passed to Permission constructor as specified by 'params' attribute
-        assertSuccess(() -> securedBean.explicitlyDeclaredParams("something", "hello", "whatever", "world", "!", 1), SUCCESS,
-                user);
+        assertSuccess(() -> securedBean.explicitlyDeclaredParams("something", "hello", "whatever", "world", "!", 1),
+                SUCCESS, user);
         assertFailureFor(() -> securedBean.explicitlyDeclaredParams("something", "test", "whatever", "world", "!", 1),
                 ForbiddenException.class, user);
         assertFailureFor(() -> securedBean.explicitlyDeclaredParams("something", "hello", "whatever", "rest", "!", 1),
                 UnauthorizedException.class, anonymous);
 
         // same as above, however method returns reactive data type, therefore the check is done asynchronously
-        assertSuccess(securedBean.explicitlyDeclaredParamsNonBlocking("something", "hello", "whatever", "world", "!", 1),
+        assertSuccess(
+                securedBean.explicitlyDeclaredParamsNonBlocking("something", "hello", "whatever", "world", "!", 1),
                 SUCCESS, user);
-        assertFailureFor(securedBean.explicitlyDeclaredParamsNonBlocking("something", "test", "whatever", "world", "!", 1),
+        assertFailureFor(
+                securedBean.explicitlyDeclaredParamsNonBlocking("something", "test", "whatever", "world", "!", 1),
                 ForbiddenException.class, user);
-        assertFailureFor(securedBean.explicitlyDeclaredParamsNonBlocking("something", "hello", "whatever", "rest", "!", 1),
+        assertFailureFor(
+                securedBean.explicitlyDeclaredParamsNonBlocking("something", "hello", "whatever", "rest", "!", 1),
                 UnauthorizedException.class, anonymous);
 
         // inheritance - Permission constructor accepts Parent while secured method accepts Child, should work
         // as user explicitly marked param via 'params = "obj"'
         // this test also differs from above ones in that Permission does not accept actions
-        assertSuccess(
-                securedBean.explicitlyDeclaredParamsInheritanceNonBlocking("something", "hello", "whatever", "world", "!", 1,
-                        new Child(true)),
-                SUCCESS, user);
-        assertFailureFor(
-                securedBean.explicitlyDeclaredParamsInheritanceNonBlocking("something", "test", "whatever", "world", "!", 1,
-                        new Child(false)),
-                ForbiddenException.class, user);
-        assertSuccess(
-                () -> securedBean.explicitlyDeclaredParamsInheritance("something", "hello", "whatever", "world", "!", 1,
-                        new Child(true)),
-                SUCCESS, user);
-        assertFailureFor(
-                () -> securedBean.explicitlyDeclaredParamsInheritance("something", "test", "whatever", "world", "!", 1,
-                        new Child(false)),
-                ForbiddenException.class, user);
+        assertSuccess(securedBean.explicitlyDeclaredParamsInheritanceNonBlocking("something", "hello", "whatever",
+                "world", "!", 1, new Child(true)), SUCCESS, user);
+        assertFailureFor(securedBean.explicitlyDeclaredParamsInheritanceNonBlocking("something", "test", "whatever",
+                "world", "!", 1, new Child(false)), ForbiddenException.class, user);
+        assertSuccess(() -> securedBean.explicitlyDeclaredParamsInheritance("something", "hello", "whatever", "world",
+                "!", 1, new Child(true)), SUCCESS, user);
+        assertFailureFor(() -> securedBean.explicitlyDeclaredParamsInheritance("something", "test", "whatever", "world",
+                "!", 1, new Child(false)), ForbiddenException.class, user);
     }
 
     @Test
@@ -199,17 +198,17 @@ public class MethodLevelComputedPermissionsAllowedTest {
             return Uni.createFrom().item(SUCCESS);
         }
 
-        @PermissionsAllowed(value = IGNORED, permission = AllStrMatchingParamsPermission.class, params = {
-                "hello", "world", "exclamationMark" })
+        @PermissionsAllowed(value = IGNORED, permission = AllStrMatchingParamsPermission.class, params = { "hello",
+                "world", "exclamationMark" })
         public String explicitlyDeclaredParams(String something, String hello, String whatever, String world,
                 String exclamationMark, int i) {
             return SUCCESS;
         }
 
-        @PermissionsAllowed(value = IGNORED, permission = AllStrMatchingParamsPermission.class, params = {
-                "hello", "world", "exclamationMark" })
-        public Uni<String> explicitlyDeclaredParamsNonBlocking(String something, String hello, String whatever, String world,
-                String exclamationMark, int i) {
+        @PermissionsAllowed(value = IGNORED, permission = AllStrMatchingParamsPermission.class, params = { "hello",
+                "world", "exclamationMark" })
+        public Uni<String> explicitlyDeclaredParamsNonBlocking(String something, String hello, String whatever,
+                String world, String exclamationMark, int i) {
             return Uni.createFrom().item(SUCCESS);
         }
 
@@ -220,8 +219,8 @@ public class MethodLevelComputedPermissionsAllowedTest {
         }
 
         @PermissionsAllowed(value = IGNORED, permission = InheritancePermission.class, params = "obj")
-        public Uni<String> explicitlyDeclaredParamsInheritanceNonBlocking(String something, String hello, String whatever,
-                String world, String exclamationMark, int i, Child obj) {
+        public Uni<String> explicitlyDeclaredParamsInheritanceNonBlocking(String something, String hello,
+                String whatever, String world, String exclamationMark, int i, Child obj) {
             return Uni.createFrom().item(SUCCESS);
         }
 
@@ -332,7 +331,8 @@ public class MethodLevelComputedPermissionsAllowedTest {
     public static class AllStrAutodetectedPermission extends Permission {
         private final boolean pass;
 
-        public AllStrAutodetectedPermission(String name, String[] actions, String hello, String exclamationMark, String world) {
+        public AllStrAutodetectedPermission(String name, String[] actions, String hello, String exclamationMark,
+                String world) {
             super(name);
             this.pass = "hello".equals(hello) && "world".equals(world) && "!".equals(exclamationMark);
         }

@@ -15,8 +15,8 @@ import io.opentelemetry.instrumentation.api.annotation.support.ParameterAttribut
 import io.quarkus.arc.ArcInvocationContext;
 
 /**
- * Will capture the arguments annotated with {@link SpanAttribute} on methods annotated with {@link AddingSpanAttributes}.
- * Will not start a Span if one is not already started.
+ * Will capture the arguments annotated with {@link SpanAttribute} on methods annotated with
+ * {@link AddingSpanAttributes}. Will not start a Span if one is not already started.
  */
 @SuppressWarnings("CdiInterceptorInspection")
 @Interceptor

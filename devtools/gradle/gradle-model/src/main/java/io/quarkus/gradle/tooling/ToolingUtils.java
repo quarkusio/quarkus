@@ -89,9 +89,10 @@ public class ToolingUtils {
 
     public static Project findLocalProject(final Project project, final ArtifactCoords artifactCoords) {
         for (Project subproject : project.getRootProject().getSubprojects()) {
-            if (subproject.getGroup().equals(artifactCoords.getGroupId()) &&
-                    subproject.getName().equals(artifactCoords.getArtifactId()) &&
-                    (artifactCoords.getVersion() == null || subproject.getVersion().equals(artifactCoords.getVersion()))) {
+            if (subproject.getGroup().equals(artifactCoords.getGroupId())
+                    && subproject.getName().equals(artifactCoords.getArtifactId())
+                    && (artifactCoords.getVersion() == null
+                            || subproject.getVersion().equals(artifactCoords.getVersion()))) {
                 return subproject;
             }
         }
@@ -127,8 +128,7 @@ public class ToolingUtils {
 
     private static Project findLocalProject(Project project, ExternalModuleDependency dependency) {
         for (Project p : project.getRootProject().getSubprojects()) {
-            if (Objects.equals(p.getGroup(), dependency.getGroup())
-                    && Objects.equals(p.getName(), dependency.getName())
+            if (Objects.equals(p.getGroup(), dependency.getGroup()) && Objects.equals(p.getName(), dependency.getName())
                     && (dependency.getVersion() == null || Objects.equals(p.getVersion(), dependency.getVersion()))) {
                 return p;
             }
@@ -190,10 +190,11 @@ public class ToolingUtils {
     }
 
     /**
-     * This method is meant to figure out the output directory containing class files for a compile task
-     * which is not available in the plugin classpath. An example would be KotlinCompile.
+     * This method is meant to figure out the output directory containing class files for a compile task which is not
+     * available in the plugin classpath. An example would be KotlinCompile.
      *
-     * @param compileTask a compile task
+     * @param compileTask
+     *        a compile task
      */
     public static File getClassesOutputDir(Task compileTask) {
         if (compileTask.getOutputs().getHasOutput()) {
@@ -201,7 +202,8 @@ public class ToolingUtils {
             compileTask.getOutputs().getFiles().getAsFileTree().visit(visitor -> {
                 // We are looking for the first class file, since a compile task would typically
                 // have a single output location for classes.
-                // There in fact could be a few output locations, the rest though would typically be some internal caching bits
+                // There in fact could be a few output locations, the rest though would typically be some internal
+                // caching bits
                 if (visitor.getName().endsWith(".class")) {
                     visitor.stopVisiting();
                     var file = visitor.getFile();

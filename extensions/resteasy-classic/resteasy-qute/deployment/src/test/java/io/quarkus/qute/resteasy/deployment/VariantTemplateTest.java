@@ -14,8 +14,7 @@ public class VariantTemplateTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ItemResource.class, Item.class)
+            .withApplicationRoot((jar) -> jar.addClasses(ItemResource.class, Item.class)
                     .addAsResource(new StringAsset("Item {item.name}: {item.price}"), "templates/ItemResource/item.txt")
                     .addAsResource(new StringAsset("<html><body>Item {item.name}: {item.price}</body></html>"),
                             "templates/ItemResource/item.html"));
@@ -23,7 +22,8 @@ public class VariantTemplateTest {
     @Test
     public void testVariant() {
         given().when().accept("text/plain").get("/item/10").then().body(Matchers.is("Item foo: 10"));
-        given().when().accept("text/html").get("/item/20").then().body(Matchers.is("<html><body>Item foo: 20</body></html>"));
+        given().when().accept("text/html").get("/item/20").then()
+                .body(Matchers.is("<html><body>Item foo: 20</body></html>"));
     }
 
 }

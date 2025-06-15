@@ -12,9 +12,8 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     private final String methodDescriptor;
     private final MetamodelInfo modelInfo;
 
-    public PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String methodOwner,
-            String methodName, String methodDescriptor,
-            MetamodelInfo modelInfo) {
+    public PanacheFieldAccessMethodVisitor(MethodVisitor methodVisitor, String methodOwner, String methodName,
+            String methodDescriptor, MetamodelInfo modelInfo) {
         super(Gizmo.ASM_API_VERSION, methodVisitor);
         this.methodOwnerClassName = methodOwner.replace('/', '.');
         this.methodName = methodName;
@@ -64,8 +63,7 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
         // e.g. generated methods like $$_hibernate_read_myProperty()
         boolean useJavaBeanAccessor = EntityField.Visibility.PUBLIC.equals(entityField.visibility);
 
-        if (fieldOwnerClassName.equals(this.methodOwnerClassName)
-                && javaBeanMethodName.equals(this.methodName)
+        if (fieldOwnerClassName.equals(this.methodOwnerClassName) && javaBeanMethodName.equals(this.methodName)
                 && methodDescriptor.equals(this.methodDescriptor)) {
             // The current method accessing the entity field is the corresponding getter/setter.
 
@@ -98,8 +96,8 @@ public class PanacheFieldAccessMethodVisitor extends MethodVisitor {
     }
 
     /**
-     * Make sure that the target class is in the (superclass, since interfaces have no fields)
-     * hierarchy of the current class
+     * Make sure that the target class is in the (superclass, since interfaces have no fields) hierarchy of the current
+     * class
      */
     private boolean targetIsInHierarchy(String currentClass, String targetClass) {
         if (currentClass.equals(targetClass))

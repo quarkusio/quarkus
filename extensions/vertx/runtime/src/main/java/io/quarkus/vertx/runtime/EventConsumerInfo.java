@@ -13,22 +13,20 @@ public class EventConsumerInfo {
     public final ConsumeEvent annotation;
 
     /**
-     * Whether the {@link io.smallrye.common.annotation.Blocking} annotation
-     * was declared on the event consumer method.
+     * Whether the {@link io.smallrye.common.annotation.Blocking} annotation was declared on the event consumer method.
      */
     public final boolean blockingAnnotation;
 
     /**
-     * Whether the {@link io.smallrye.common.annotation.RunOnVirtualThread} annotation
-     * was declared on the event consumer method.
+     * Whether the {@link io.smallrye.common.annotation.RunOnVirtualThread} annotation was declared on the event
+     * consumer method.
      */
     public final boolean runOnVirtualThreadAnnotation;
 
     /**
-     * Whether the event consumer method declares 2 parameters, where the first
-     * is the event headers and the second is the event body. In this case,
-     * the {@link io.quarkus.vertx.runtime.EventConsumerInvoker} has to split
-     * the headers and body parameters explicitly.
+     * Whether the event consumer method declares 2 parameters, where the first is the event headers and the second is
+     * the event body. In this case, the {@link io.quarkus.vertx.runtime.EventConsumerInvoker} has to split the headers
+     * and body parameters explicitly.
      */
     public final boolean splitHeadersBodyParams;
 

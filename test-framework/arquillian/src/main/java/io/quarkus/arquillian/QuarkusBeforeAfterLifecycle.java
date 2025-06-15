@@ -94,8 +94,8 @@ public class QuarkusBeforeAfterLifecycle {
     }
 
     private void invokeCallbacks(String methodName, String junitOrTestNgCallbackClass)
-            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-            NoSuchMethodException, SecurityException, ClassNotFoundException {
+            throws IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException,
+            SecurityException, ClassNotFoundException {
         ClassLoader old = Thread.currentThread().getContextClassLoader();
         ClassLoader cl = deployment.get() != null && deployment.get().hasAppClassLoader()
                 ? deployment.get().getAppClassLoader()

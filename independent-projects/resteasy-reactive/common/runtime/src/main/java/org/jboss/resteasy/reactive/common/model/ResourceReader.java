@@ -73,7 +73,7 @@ public class ResourceReader {
         if (instance == null) {
             synchronized (this) {
                 if (instance == null) {
-                    //todo: manage lifecycle of bean
+                    // todo: manage lifecycle of bean
                     instance = factory.createInstance().getInstance();
                 }
             }
@@ -83,7 +83,7 @@ public class ResourceReader {
 
     public List<MediaType> mediaTypes() {
         if (mediaTypes == null) {
-            //todo: does this actually need to be threadsafe?
+            // todo: does this actually need to be threadsafe?
             synchronized (this) {
                 List<MediaType> mts = new ArrayList<>(mediaTypeStrings.size());
                 for (int i = 0; i < mediaTypeStrings.size(); i++) {
@@ -106,14 +106,10 @@ public class ResourceReader {
     }
 
     /**
-     * The comparison for now is simple:
-     * 1) Application provided writers come first
-     * 2) Readers with lower priority come first (same as reader interceptors)
-     * 3) Then the more specific the media type, the higher the priority
-     * 4) Finally we compare the number of media types
-     *
-     * The spec doesn't seem to mention this sorting being explicitly needed, but there are tests
-     * in the TCK that only pass reliably if the Readers are sorted like this
+     * The comparison for now is simple: 1) Application provided writers come first 2) Readers with lower priority come
+     * first (same as reader interceptors) 3) Then the more specific the media type, the higher the priority 4) Finally
+     * we compare the number of media types The spec doesn't seem to mention this sorting being explicitly needed, but
+     * there are tests in the TCK that only pass reliably if the Readers are sorted like this
      */
     public static class ResourceReaderComparator implements Comparator<ResourceReader> {
 

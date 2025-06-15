@@ -39,7 +39,7 @@ class MockSupport {
     }
 
     static synchronized <T> void installMock(T instance, T mock) {
-        //due to class loading issues we can't access the interface directly
+        // due to class loading issues we can't access the interface directly
         List<Object> inst = contexts.peek();
         if (inst == null) {
             throw new IllegalStateException("No test in progress");
@@ -74,7 +74,8 @@ class MockSupport {
         Method getIdMethod = bean.getClass().getDeclaredMethod("getIdentifier");
         String id = getIdMethod.invoke(bean).toString();
         // io.quarkus.arc.impl.ArcContainerImpl.mockObservers(String, boolean)
-        Method mockObserversMethod = instance.getClass().getClassLoader().loadClass("io.quarkus.arc.impl.ArcContainerImpl")
+        Method mockObserversMethod = instance.getClass().getClassLoader()
+                .loadClass("io.quarkus.arc.impl.ArcContainerImpl")
                 .getDeclaredMethod("mockObservers", String.class, boolean.class);
         mockObserversMethod.invoke(null, id, mock);
     }

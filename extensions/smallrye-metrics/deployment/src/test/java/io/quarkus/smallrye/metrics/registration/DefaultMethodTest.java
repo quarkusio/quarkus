@@ -15,16 +15,14 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Verify that metrics are registered correctly for inherited default methods when a bean is annotated with a
- * metric annotation.
+ * Verify that metrics are registered correctly for inherited default methods when a bean is annotated with a metric
+ * annotation.
  */
 public class DefaultMethodTest {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(A.class, B.class, Y.class, C.class,
-                            D.class, ClashA.class, I.class, ClashB.class));
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar.addClasses(A.class, B.class, Y.class, C.class, D.class, ClashA.class, I.class, ClashB.class));
 
     @Inject
     B b;

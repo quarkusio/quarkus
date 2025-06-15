@@ -83,7 +83,8 @@ public class JaxbContextProducer {
         }
     }
 
-    private List<JaxbContextCustomizer> sortCustomizersInDescendingPriorityOrder(Instance<JaxbContextCustomizer> customizers) {
+    private List<JaxbContextCustomizer> sortCustomizersInDescendingPriorityOrder(
+            Instance<JaxbContextCustomizer> customizers) {
         List<JaxbContextCustomizer> sortedCustomizers = new ArrayList<>();
         for (JaxbContextCustomizer customizer : customizers) {
             sortedCustomizers.add(customizer);

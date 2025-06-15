@@ -24,13 +24,11 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MetricsFromMetricsFactoryTestCase {
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.registry-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClass(MeasureThis.class));
+            .withApplicationRoot((jar) -> jar.addClass(MeasureThis.class));
 
     @Inject
     MeterRegistry meterRegistry;
@@ -75,7 +73,6 @@ public class MetricsFromMetricsFactoryTestCase {
         Meter recorder = Search.in(meterRegistry).name("time.recorder").meter();
         Assertions.assertTrue(Timer.class.isInstance(recorder));
         MeasureThis.timeRecorder.update(10, TimeUnit.MINUTES);
-        Assertions.assertEquals(1L, ((Timer) recorder).count(),
-                "Recorder invocation count should match");
+        Assertions.assertEquals(1L, ((Timer) recorder).count(), "Recorder invocation count should match");
     }
 }

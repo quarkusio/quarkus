@@ -25,7 +25,8 @@ class QuarkusSecurityJpaCommonProcessor {
     static final DotName DOTNAME_PASSWORD = DotName.createSimple(Password.class.getName());
 
     @BuildStep
-    void provideJpaSecurityDefinition(ApplicationIndexBuildItem index, PanacheEntityPredicateBuildItem panacheEntityPredicate,
+    void provideJpaSecurityDefinition(ApplicationIndexBuildItem index,
+            PanacheEntityPredicateBuildItem panacheEntityPredicate,
             BuildProducer<JpaSecurityDefinitionBuildItem> producer) {
 
         // Generate an IdentityProvider if we have a @UserDefinition
@@ -39,11 +40,8 @@ class QuarkusSecurityJpaCommonProcessor {
             AnnotationTarget annotatedRoles = getSingleAnnotatedElement(index.getIndex(), DOTNAME_ROLES);
             // collect associated getters if required
             JpaSecurityDefinition jpaSecurityDefinition = new JpaSecurityDefinition(index.getIndex(),
-                    userDefinitionClass,
-                    panacheEntityPredicate.isPanache(userDefinitionClass),
-                    annotatedUsername,
-                    annotatedPassword,
-                    annotatedRoles);
+                    userDefinitionClass, panacheEntityPredicate.isPanache(userDefinitionClass), annotatedUsername,
+                    annotatedPassword, annotatedRoles);
             producer.produce(new JpaSecurityDefinitionBuildItem(jpaSecurityDefinition));
         }
     }

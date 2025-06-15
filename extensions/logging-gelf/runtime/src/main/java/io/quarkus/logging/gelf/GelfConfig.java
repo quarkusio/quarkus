@@ -21,8 +21,8 @@ public interface GelfConfig {
     boolean enabled();
 
     /**
-     * Hostname/IP-Address of the Logstash/Graylog Host
-     * By default it uses UDP, prepend tcp: to the hostname to switch to TCP, example: "tcp:localhost"
+     * Hostname/IP-Address of the Logstash/Graylog Host By default it uses UDP, prepend tcp: to the hostname to switch
+     * to TCP, example: "tcp:localhost"
      */
     @WithDefault("localhost")
     String host();
@@ -48,10 +48,8 @@ public interface GelfConfig {
     boolean extractStackTrace();
 
     /**
-     * Only used when `extractStackTrace` is `true`.
-     * A value of 0 will extract the whole stack trace.
-     * Any positive value will walk the cause chain: 1 corresponds with exception.getCause(),
-     * 2 with exception.getCause().getCause(), ...
+     * Only used when `extractStackTrace` is `true`. A value of 0 will extract the whole stack trace. Any positive value
+     * will walk the cause chain: 1 corresponds with exception.getCause(), 2 with exception.getCause().getCause(), ...
      * Negative throwable reference walk the exception chain from the root cause side: -1 will extract the root cause,
      * -2 the exception wrapping the root cause, ...
      */
@@ -83,8 +81,7 @@ public interface GelfConfig {
     String facility();
 
     /**
-     * Post additional fields.
-     * You can add static fields to each log event in the following form:
+     * Post additional fields. You can add static fields to each log event in the following form:
      *
      * <pre>
      * quarkus.log.handler.gelf.additional-field.field1.value=value1
@@ -108,8 +105,8 @@ public interface GelfConfig {
     Optional<String> mdcFields();
 
     /**
-     * Dynamic MDC Fields allows you to extract MDC values based on one or more regular expressions. Multiple regexes are
-     * comma-separated. The name of the MDC entry is used as GELF field name.
+     * Dynamic MDC Fields allows you to extract MDC values based on one or more regular expressions. Multiple regexes
+     * are comma-separated. The name of the MDC entry is used as GELF field name.
      */
     Optional<String> dynamicMdcFields();
 
@@ -120,8 +117,8 @@ public interface GelfConfig {
     Optional<String> dynamicMdcFieldTypes();
 
     /**
-     * Maximum message size (in bytes).
-     * If the message size is exceeded, the appender will submit the message in multiple chunks.
+     * Maximum message size (in bytes). If the message size is exceeded, the appender will submit the message in
+     * multiple chunks.
      */
     @WithDefault("8192")
     int maximumMessageSize();
@@ -144,8 +141,8 @@ public interface GelfConfig {
     Optional<String> originHost();
 
     /**
-     * Bypass hostname resolution. If you didn't set the {@code originHost} property, and resolution is disabled, the value
-     * “unknown” will be used as hostname
+     * Bypass hostname resolution. If you didn't set the {@code originHost} property, and resolution is disabled, the
+     * value “unknown” will be used as hostname
      */
     @WithDefault("false")
     boolean skipHostnameResolution();

@@ -33,63 +33,54 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     @Override
     public <T> Uni<Void> jsonSet(K key, String path, T value) {
-        return _jsonSet(key, path, value)
-                .replaceWithVoid();
+        return _jsonSet(key, path, value).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonSet(K key, String path, JsonObject json) {
-        return _jsonSet(key, path, json)
-                .replaceWithVoid();
+        return _jsonSet(key, path, json).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonSet(K key, String path, JsonObject json, JsonSetArgs args) {
-        return _jsonSet(key, path, json, args)
-                .replaceWithVoid();
+        return _jsonSet(key, path, json, args).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonSet(K key, String path, JsonArray json) {
-        return _jsonSet(key, path, json)
-                .replaceWithVoid();
+        return _jsonSet(key, path, json).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> jsonSet(K key, String path, JsonArray json, JsonSetArgs args) {
-        return _jsonSet(key, path, json, args)
-                .replaceWithVoid();
+        return _jsonSet(key, path, json, args).replaceWithVoid();
     }
 
     @Override
     public <T> Uni<Void> jsonSet(K key, String path, T value, JsonSetArgs args) {
-        return _jsonSet(key, path, value, args)
-                .replaceWithVoid();
+        return _jsonSet(key, path, value, args).replaceWithVoid();
     }
 
     @Override
     public <T> Uni<T> jsonGet(K key, Class<T> clazz) {
         nonNull(clazz, "clazz");
-        return _jsonGet(key)
-                .map(r -> {
-                    var m = getJsonObject(r);
-                    if (m != null) {
-                        return m.mapTo(clazz);
-                    }
-                    return null;
-                });
+        return _jsonGet(key).map(r -> {
+            var m = getJsonObject(r);
+            if (m != null) {
+                return m.mapTo(clazz);
+            }
+            return null;
+        });
     }
 
     @Override
     public Uni<JsonObject> jsonGetObject(K key) {
-        return _jsonGet(key)
-                .map(ReactiveJsonCommandsImpl::getJsonObject);
+        return _jsonGet(key).map(ReactiveJsonCommandsImpl::getJsonObject);
     }
 
     @Override
     public Uni<JsonArray> jsonGetArray(K key) {
-        return _jsonGet(key)
-                .map(ReactiveJsonCommandsImpl::getJsonArray);
+        return _jsonGet(key).map(ReactiveJsonCommandsImpl::getJsonArray);
     }
 
     static JsonArray getJsonArray(Response r) {
@@ -139,26 +130,22 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     @Override
     public Uni<JsonArray> jsonGet(K key, String path) {
-        return _jsonGet(key, path)
-                .map(ReactiveJsonCommandsImpl::getJsonArrayFromJsonGet);
+        return _jsonGet(key, path).map(ReactiveJsonCommandsImpl::getJsonArrayFromJsonGet);
     }
 
     @Override
     public Uni<JsonObject> jsonGet(K key, String... paths) {
-        return _jsonGet(key, paths)
-                .map(ReactiveJsonCommandsImpl::getJsonObject);
+        return _jsonGet(key, paths).map(ReactiveJsonCommandsImpl::getJsonObject);
     }
 
     @Override
     public <T> Uni<List<Integer>> jsonArrAppend(K key, String path, T... values) {
-        return _jsonArrAppend(key, path, values)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonArrAppend(key, path, values).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     @Override
     public <T> Uni<List<Integer>> jsonArrIndex(K key, String path, T value, int start, int end) {
-        return _jsonArrIndex(key, path, value, start, end)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonArrIndex(key, path, value, start, end).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     static List<Integer> decodeAsListOfInteger(Response r) {
@@ -175,21 +162,18 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     @Override
     public <T> Uni<List<Integer>> jsonArrInsert(K key, String path, int index, T... values) {
-        return _jsonArrInsert(key, path, index, values)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonArrInsert(key, path, index, values).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     @Override
     public Uni<List<Integer>> jsonArrLen(K key, String path) {
-        return _jsonArrLen(key, path)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonArrLen(key, path).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     @Override
     public <T> Uni<List<T>> jsonArrPop(K key, Class<T> clazz, String path, int index) {
         nonNull(clazz, "clazz");
-        return _jsonArrPop(key, path, index)
-                .map(r -> decodeArrPopResponse(clazz, r));
+        return _jsonArrPop(key, path, index).map(r -> decodeArrPopResponse(clazz, r));
     }
 
     static <T> List<T> decodeArrPopResponse(Class<T> clazz, Response r) {
@@ -210,26 +194,22 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     @Override
     public Uni<List<Integer>> jsonArrTrim(K key, String path, int start, int stop) {
-        return _jsonArrTrim(key, path, start, stop)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonArrTrim(key, path, start, stop).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     @Override
     public Uni<Integer> jsonClear(K key, String path) {
-        return _jsonClear(key, path)
-                .map(Response::toInteger);
+        return _jsonClear(key, path).map(Response::toInteger);
     }
 
     @Override
     public Uni<Integer> jsonDel(K key, String path) {
-        return _jsonDel(key, path)
-                .map(Response::toInteger);
+        return _jsonDel(key, path).map(Response::toInteger);
     }
 
     @Override
     public Uni<List<JsonArray>> jsonMget(String path, K... keys) {
-        return _jsonMget(path, keys)
-                .map(ReactiveJsonCommandsImpl::decodeMGetResponse);
+        return _jsonMget(path, keys).map(ReactiveJsonCommandsImpl::decodeMGetResponse);
     }
 
     static List<JsonArray> decodeMGetResponse(Response r) {
@@ -246,14 +226,12 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     @Override
     public Uni<Void> jsonNumincrby(K key, String path, double value) {
-        return _jsonNumincrby(key, path, value)
-                .replaceWithVoid();
+        return _jsonNumincrby(key, path, value).replaceWithVoid();
     }
 
     @Override
     public Uni<List<List<String>>> jsonObjKeys(K key, String path) {
-        return _jsonObjKeys(key, path)
-                .map(ReactiveJsonCommandsImpl::decodeObjKeysResponse);
+        return _jsonObjKeys(key, path).map(ReactiveJsonCommandsImpl::decodeObjKeysResponse);
     }
 
     static List<List<String>> decodeObjKeysResponse(Response r) {
@@ -282,26 +260,22 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     @Override
     public Uni<List<Integer>> jsonObjLen(K key, String path) {
-        return _jsonObjLen(key, path)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonObjLen(key, path).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     @Override
     public Uni<List<Integer>> jsonStrAppend(K key, String path, String value) {
-        return _jsonStrAppend(key, path, value)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonStrAppend(key, path, value).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     @Override
     public Uni<List<Integer>> jsonStrLen(K key, String path) {
-        return _jsonStrLen(key, path)
-                .map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
+        return _jsonStrLen(key, path).map(ReactiveJsonCommandsImpl::decodeAsListOfInteger);
     }
 
     @Override
     public Uni<List<Boolean>> jsonToggle(K key, String path) {
-        return _jsonToggle(key, path)
-                .map(ReactiveJsonCommandsImpl::decodeToggleResponse);
+        return _jsonToggle(key, path).map(ReactiveJsonCommandsImpl::decodeToggleResponse);
     }
 
     static List<Boolean> decodeToggleResponse(Response r) {
@@ -318,8 +292,7 @@ public class ReactiveJsonCommandsImpl<K> extends AbstractJsonCommands<K> impleme
 
     @Override
     public Uni<List<String>> jsonType(K key, String path) {
-        return _jsonType(key, path)
-                .map(ReactiveJsonCommandsImpl::decodeTypeResponse);
+        return _jsonType(key, path).map(ReactiveJsonCommandsImpl::decodeTypeResponse);
     }
 
     static List<String> decodeTypeResponse(Response r) {

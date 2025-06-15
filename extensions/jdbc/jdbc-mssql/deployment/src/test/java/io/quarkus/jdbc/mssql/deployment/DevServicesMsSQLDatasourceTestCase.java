@@ -22,8 +22,7 @@ public class DevServicesMsSQLDatasourceTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("container-license-acceptance.txt"))
+            .withApplicationRoot((jar) -> jar.addAsResource("container-license-acceptance.txt"))
             // Expect no warnings (in particular from Agroal)
             .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()
                     // There are other warnings: JDK8, TestContainers, drivers, ...
@@ -31,8 +30,7 @@ public class DevServicesMsSQLDatasourceTestCase {
                     && record.getMessage().contains("Agroal"))
             .assertLogRecords(records -> assertThat(records)
                     // This is just to get meaningful error messages, as LogRecord doesn't have a toString()
-                    .extracting(LogRecord::getMessage)
-                    .isEmpty());
+                    .extracting(LogRecord::getMessage).isEmpty());
 
     @Inject
     AgroalDataSource dataSource;

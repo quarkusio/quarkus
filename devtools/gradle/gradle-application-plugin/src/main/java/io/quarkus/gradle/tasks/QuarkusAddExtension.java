@@ -33,15 +33,11 @@ public abstract class QuarkusAddExtension extends QuarkusPlatformTask {
 
     @TaskAction
     public void addExtension() {
-        Set<String> extensionsSet = getExtensionsToAdd()
-                .stream()
-                .flatMap(ext -> stream(ext.split(",")))
-                .map(String::trim)
-                .collect(toSet());
+        Set<String> extensionsSet = getExtensionsToAdd().stream().flatMap(ext -> stream(ext.split(",")))
+                .map(String::trim).collect(toSet());
 
         try {
-            AddExtensions addExtensions = new AddExtensions(getQuarkusProject(false))
-                    .extensions(extensionsSet);
+            AddExtensions addExtensions = new AddExtensions(getQuarkusProject(false)).extensions(extensionsSet);
             addExtensions.execute();
         } catch (Exception e) {
             throw new GradleException("Failed to add extensions " + getExtensionsToAdd(), e);

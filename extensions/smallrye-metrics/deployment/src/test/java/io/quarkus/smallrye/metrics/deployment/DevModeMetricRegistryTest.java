@@ -35,16 +35,15 @@ public class DevModeMetricRegistryTest {
         @Path("/check/{scope}/{name}")
         @Produces("text/plain")
         public Boolean doesMetricExist(@PathParam("scope") String scope, @PathParam("name") String name) {
-            return MetricRegistries.get(MetricRegistry.Type.valueOf(scope.toUpperCase()))
-                    .getCounters().containsKey(new MetricID(name));
+            return MetricRegistries.get(MetricRegistry.Type.valueOf(scope.toUpperCase())).getCounters()
+                    .containsKey(new MetricID(name));
         }
 
     }
 
     @RegisterExtension
     static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(DevModeMetricRegistryTest.class, MetricsResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(DevModeMetricRegistryTest.class, MetricsResource.class));
 
     @Test
     public void verifyRegistryCleanup() {

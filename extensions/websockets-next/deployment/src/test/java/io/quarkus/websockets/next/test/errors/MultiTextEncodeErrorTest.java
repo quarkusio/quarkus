@@ -29,10 +29,9 @@ import io.vertx.mutiny.core.Context;
 public class MultiTextEncodeErrorTest {
 
     @RegisterExtension
-    public static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot(root -> {
-                root.addClasses(Echo.class, WSClient.class);
-            });
+    public static final QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot(root -> {
+        root.addClasses(Echo.class, WSClient.class);
+    });
 
     @Inject
     Vertx vertx;

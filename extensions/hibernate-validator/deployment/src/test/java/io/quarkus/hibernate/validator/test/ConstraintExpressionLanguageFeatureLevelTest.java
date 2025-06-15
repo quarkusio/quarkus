@@ -59,7 +59,8 @@ public class ConstraintExpressionLanguageFeatureLevelTest {
         Class<? extends Payload>[] payload() default {};
     }
 
-    public static class BeanMethodsConstraintStringValidator implements ConstraintValidator<BeanMethodsConstraint, String> {
+    public static class BeanMethodsConstraintStringValidator
+            implements ConstraintValidator<BeanMethodsConstraint, String> {
 
         @Override
         public boolean isValid(String value, ConstraintValidatorContext context) {

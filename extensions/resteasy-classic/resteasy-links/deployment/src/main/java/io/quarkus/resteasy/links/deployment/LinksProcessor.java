@@ -15,11 +15,10 @@ final class LinksProcessor {
             BuildProducer<AdditionalBeanBuildItem> additionalBeans) {
         boolean isHalSupported = capabilities.isPresent(Capability.HAL);
         if (isHalSupported) {
-            jaxRsProviders.produce(
-                    new ResteasyJaxrsProviderBuildItem(HalServerResponseFilter.class.getName()));
+            jaxRsProviders.produce(new ResteasyJaxrsProviderBuildItem(HalServerResponseFilter.class.getName()));
 
-            additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                    .addBeanClass(ResteasyHalService.class).setUnremovable().build());
+            additionalBeans.produce(
+                    AdditionalBeanBuildItem.builder().addBeanClass(ResteasyHalService.class).setUnremovable().build());
         }
     }
 }

@@ -27,18 +27,18 @@ final class OidcRedisTokenStateManager implements TokenStateManager {
     }
 
     @Override
-    public Uni<String> createTokenState(RoutingContext event, OidcTenantConfig oidcConfig, AuthorizationCodeTokens tokens,
-            OidcRequestContext<String> requestContext) {
-        return createTokenState(AuthorizationCodeTokensRecord.of(tokens), 0, newSetArgs(event))
-                .onFailure().transform(AuthenticationFailedException::new);
+    public Uni<String> createTokenState(RoutingContext event, OidcTenantConfig oidcConfig,
+            AuthorizationCodeTokens tokens, OidcRequestContext<String> requestContext) {
+        return createTokenState(AuthorizationCodeTokensRecord.of(tokens), 0, newSetArgs(event)).onFailure()
+                .transform(AuthenticationFailedException::new);
     }
 
     @Override
-    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig, String tokenState,
-            OidcRequestContext<AuthorizationCodeTokens> requestContext) {
-        return dataSource.value(AuthorizationCodeTokensRecord.class).get(toTokenKey(tokenState))
-                .onItem().ifNotNull().transform(AuthorizationCodeTokensRecord::toTokens)
-                .onFailure().transform(AuthenticationCompletionException::new);
+    public Uni<AuthorizationCodeTokens> getTokens(RoutingContext routingContext, OidcTenantConfig oidcConfig,
+            String tokenState, OidcRequestContext<AuthorizationCodeTokens> requestContext) {
+        return dataSource.value(AuthorizationCodeTokensRecord.class).get(toTokenKey(tokenState)).onItem().ifNotNull()
+                .transform(AuthorizationCodeTokensRecord::toTokens).onFailure()
+                .transform(AuthenticationCompletionException::new);
     }
 
     @Override
@@ -53,9 +53,7 @@ final class OidcRedisTokenStateManager implements TokenStateManager {
                     new RuntimeException("Failed to store OIDC token state in Redis as generated key already existed"));
         }
         final String tokenState = UUID.randomUUID().toString();
-        return dataSource
-                .value(AuthorizationCodeTokensRecord.class)
-                .setGet(toTokenKey(tokenState), tokens, setArgs)
+        return dataSource.value(AuthorizationCodeTokensRecord.class).setGet(toTokenKey(tokenState), tokens, setArgs)
                 .flatMap(new Function<AuthorizationCodeTokensRecord, Uni<? extends String>>() {
                     @Override
                     public Uni<? extends String> apply(AuthorizationCodeTokensRecord previousValue) {
@@ -81,16 +79,17 @@ final class OidcRedisTokenStateManager implements TokenStateManager {
         return Instant.now().plusSeconds(event.<Long> get(SESSION_MAX_AGE_PARAM));
     }
 
-    record AuthorizationCodeTokensRecord(String idToken, String accessToken, String refreshToken, Long accessTokenExpiresIn,
-            String accessTokenScope) {
+    record AuthorizationCodeTokensRecord(String idToken, String accessToken, String refreshToken,
+            Long accessTokenExpiresIn, String accessTokenScope) {
 
         private static AuthorizationCodeTokensRecord of(AuthorizationCodeTokens tokens) {
-            return new AuthorizationCodeTokensRecord(tokens.getIdToken(), tokens.getAccessToken(), tokens.getRefreshToken(),
-                    tokens.getAccessTokenExpiresIn(), tokens.getAccessTokenScope());
+            return new AuthorizationCodeTokensRecord(tokens.getIdToken(), tokens.getAccessToken(),
+                    tokens.getRefreshToken(), tokens.getAccessTokenExpiresIn(), tokens.getAccessTokenScope());
         }
 
         private AuthorizationCodeTokens toTokens() {
-            return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, accessTokenExpiresIn, accessTokenScope);
+            return new AuthorizationCodeTokens(idToken, accessToken, refreshToken, accessTokenExpiresIn,
+                    accessTokenScope);
         }
     }
 }

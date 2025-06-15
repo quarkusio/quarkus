@@ -28,7 +28,8 @@ public class StaticResourcesRecorder {
     final RuntimeValue<VertxHttpConfig> httpConfig;
     final VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
-    public StaticResourcesRecorder(RuntimeValue<VertxHttpConfig> httpConfig, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+    public StaticResourcesRecorder(RuntimeValue<VertxHttpConfig> httpConfig,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         this.httpConfig = httpConfig;
         this.httpBuildTimeConfig = httpBuildTimeConfig;
     }
@@ -51,10 +52,8 @@ public class StaticResourcesRecorder {
             for (Path resourcePath : hotDeploymentResourcePaths) {
                 String root = resourcePath.toAbsolutePath().toString();
                 StaticHandler staticHandler = StaticHandler.create(FileSystemAccess.ROOT, root)
-                        .setDefaultContentEncoding(config.contentEncoding().name())
-                        .setCachingEnabled(false)
-                        .setIndexPage(config.indexPage())
-                        .setIncludeHidden(config.includeHidden())
+                        .setDefaultContentEncoding(config.contentEncoding().name()).setCachingEnabled(false)
+                        .setIndexPage(config.indexPage()).setIncludeHidden(config.includeHidden())
                         .setEnableRangeSupport(config.enableRangeSupport());
                 handlers.add(new Handler<>() {
                     @Override
@@ -78,19 +77,14 @@ public class StaticResourcesRecorder {
         }
         if (!knownPaths.isEmpty()) {
             ClassLoader currentCl = Thread.currentThread().getContextClassLoader();
-            StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES)
-                    .setDefaultContentEncoding("UTF-8")
-                    .setCachingEnabled(config.cachingEnabled())
-                    .setIndexPage(config.indexPage())
-                    .setIncludeHidden(config.includeHidden())
-                    .setEnableRangeSupport(config.enableRangeSupport())
-                    .setMaxCacheSize(config.maxCacheSize())
-                    .setCacheEntryTimeout(config.cacheEntryTimeout().toMillis())
+            StaticHandler staticHandler = StaticHandler.create(META_INF_RESOURCES).setDefaultContentEncoding("UTF-8")
+                    .setCachingEnabled(config.cachingEnabled()).setIndexPage(config.indexPage())
+                    .setIncludeHidden(config.includeHidden()).setEnableRangeSupport(config.enableRangeSupport())
+                    .setMaxCacheSize(config.maxCacheSize()).setCacheEntryTimeout(config.cacheEntryTimeout().toMillis())
                     .setMaxAgeSeconds(config.maxAge().toSeconds());
             // normalize index page like StaticHandler because its not expose
             // TODO: create a converter to normalize filename in config.indexPage?
-            final String indexPage = (config.indexPage().charAt(0) == '/')
-                    ? config.indexPage().substring(1)
+            final String indexPage = (config.indexPage().charAt(0) == '/') ? config.indexPage().substring(1)
                     : config.indexPage();
             handlers.add(new Handler<>() {
                 @Override

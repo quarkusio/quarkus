@@ -15,30 +15,20 @@ import io.restassured.RestAssured;
 public class AnnotationChangeReloadTest {
 
     @RegisterExtension
-    static QuarkusDevModeTest TEST = new QuarkusDevModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Roles.class,
-                            Person.class,
-                            SpringComponent.class,
-                            SpringController.class));
+    static QuarkusDevModeTest TEST = new QuarkusDevModeTest().withApplicationRoot(
+            (jar) -> jar.addClasses(Roles.class, Person.class, SpringComponent.class, SpringController.class));
 
     @Test()
     public void testUpdatedAnnotationWorks() {
-        RestAssured.given().auth().preemptive().basic("bob", "bob")
-                .when().get("/secure/admin").then()
-                .statusCode(403);
-        RestAssured.given().auth().preemptive().basic("alice", "alice")
-                .when().get("/secure/admin").then()
+        RestAssured.given().auth().preemptive().basic("bob", "bob").when().get("/secure/admin").then().statusCode(403);
+        RestAssured.given().auth().preemptive().basic("alice", "alice").when().get("/secure/admin").then()
                 .statusCode(200);
 
-        TEST.modifySourceFile("SpringComponent.java", s -> s.replace("@PreAuthorize(\"hasRole(@roles.ADMIN)\")",
-                "@PreAuthorize(\"hasRole(@roles.USER)\")"));
+        TEST.modifySourceFile("SpringComponent.java",
+                s -> s.replace("@PreAuthorize(\"hasRole(@roles.ADMIN)\")", "@PreAuthorize(\"hasRole(@roles.USER)\")"));
 
-        RestAssured.given().auth().preemptive().basic("bob", "bob")
-                .when().get("/secure/admin").then()
-                .statusCode(200);
-        RestAssured.given().auth().preemptive().basic("alice", "alice")
-                .when().get("/secure/admin").then()
+        RestAssured.given().auth().preemptive().basic("bob", "bob").when().get("/secure/admin").then().statusCode(200);
+        RestAssured.given().auth().preemptive().basic("alice", "alice").when().get("/secure/admin").then()
                 .statusCode(403);
     }
 }

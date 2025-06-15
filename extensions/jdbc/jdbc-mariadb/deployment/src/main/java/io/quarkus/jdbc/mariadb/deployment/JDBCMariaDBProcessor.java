@@ -26,9 +26,10 @@ public class JDBCMariaDBProcessor {
     }
 
     @BuildStep
-    void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver, BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
-        jdbcDriver.produce(
-                new JdbcDriverBuildItem(DatabaseKind.MARIADB, "org.mariadb.jdbc.Driver", "org.mariadb.jdbc.MariaDbDataSource"));
+    void registerDriver(BuildProducer<JdbcDriverBuildItem> jdbcDriver,
+            BuildProducer<DefaultDataSourceDbKindBuildItem> dbKind) {
+        jdbcDriver.produce(new JdbcDriverBuildItem(DatabaseKind.MARIADB, "org.mariadb.jdbc.Driver",
+                "org.mariadb.jdbc.MariaDbDataSource"));
 
         dbKind.produce(new DefaultDataSourceDbKindBuildItem(DatabaseKind.MARIADB));
     }
@@ -39,27 +40,24 @@ public class JDBCMariaDBProcessor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MariaDBAgroalConnectionConfigurer.class)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                    .setUnremovable()
-                    .build());
+            additionalBeans
+                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(MariaDBAgroalConnectionConfigurer.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
     @BuildStep
     void registerAuthenticationPlugins(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         // make sure that all plugins are available
-        serviceProvider
-                .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.AuthenticationPlugin"));
+        serviceProvider.produce(
+                ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.AuthenticationPlugin"));
     }
 
     @BuildStep
     void registerCodecs(BuildProducer<ServiceProviderBuildItem> serviceProvider) {
-        serviceProvider
-                .produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.Codec"));
+        serviceProvider.produce(ServiceProviderBuildItem.allProvidersFromClassPath("org.mariadb.jdbc.plugin.Codec"));
     }
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
@@ -74,12 +72,11 @@ public class JDBCMariaDBProcessor {
     }
 
     @BuildStep
-    void registerServiceBinding(Capabilities capabilities,
-            BuildProducer<ServiceProviderBuildItem> serviceProvider) {
+    void registerServiceBinding(Capabilities capabilities, BuildProducer<ServiceProviderBuildItem> serviceProvider) {
         if (capabilities.isPresent(Capability.KUBERNETES_SERVICE_BINDING)) {
-            serviceProvider.produce(
-                    new ServiceProviderBuildItem("io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
-                            MariaDBServiceBindingConverter.class.getName()));
+            serviceProvider.produce(new ServiceProviderBuildItem(
+                    "io.quarkus.kubernetes.service.binding.runtime.ServiceBindingConverter",
+                    MariaDBServiceBindingConverter.class.getName()));
         }
     }
 }

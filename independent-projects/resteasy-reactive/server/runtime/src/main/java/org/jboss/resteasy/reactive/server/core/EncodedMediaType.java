@@ -9,9 +9,8 @@ import org.jboss.resteasy.reactive.common.util.MediaTypeHelper;
 import org.jboss.resteasy.reactive.server.spi.ContentType;
 
 /**
- * Wrapper around MediaType that saves the toString value, to avoid
- * the expensive header delegate processing.
- * It also harmonizes the use of charset
+ * Wrapper around MediaType that saves the toString value, to avoid the expensive header delegate processing. It also
+ * harmonizes the use of charset
  */
 public class EncodedMediaType implements ContentType {
     final MediaType mediaType;

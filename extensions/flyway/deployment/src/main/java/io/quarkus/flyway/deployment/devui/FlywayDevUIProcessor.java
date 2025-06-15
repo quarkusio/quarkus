@@ -24,8 +24,7 @@ public class FlywayDevUIProcessor {
     @BuildStep(onlyIf = IsLocalDevelopment.class)
     @Record(value = RUNTIME_INIT, optional = true)
     CardPageBuildItem create(FlywayDevUIRecorder recorder, FlywayBuildTimeConfig buildTimeConfig,
-            List<JdbcInitialSQLGeneratorBuildItem> generatorBuildItem,
-            CurateOutcomeBuildItem curateOutcomeBuildItem) {
+            List<JdbcInitialSQLGeneratorBuildItem> generatorBuildItem, CurateOutcomeBuildItem curateOutcomeBuildItem) {
 
         Map<String, Supplier<String>> initialSqlSuppliers = new HashMap<>();
         for (JdbcInitialSQLGeneratorBuildItem buildItem : generatorBuildItem) {
@@ -38,10 +37,8 @@ public class FlywayDevUIProcessor {
 
         CardPageBuildItem card = new CardPageBuildItem();
 
-        card.addPage(Page.webComponentPageBuilder()
-                .componentLink("qwc-flyway-datasources.js")
-                .dynamicLabelJsonRPCMethodName("getNumberOfDatasources")
-                .icon("font-awesome-solid:database"));
+        card.addPage(Page.webComponentPageBuilder().componentLink("qwc-flyway-datasources.js")
+                .dynamicLabelJsonRPCMethodName("getNumberOfDatasources").icon("font-awesome-solid:database"));
         return card;
     }
 

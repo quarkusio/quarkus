@@ -21,9 +21,7 @@ public class UserEntityIdentityProvider extends JpaReactiveIdentityProvider {
 
     @Override
     public Uni<SecurityIdentity> authenticate(Mutiny.Session session, UsernamePasswordAuthenticationRequest request) {
-        return session.find(PlainUserEntity.class, Identifier.id("name", request.getUsername()))
-                .onItem()
-                .ifNotNull()
+        return session.find(PlainUserEntity.class, Identifier.id("name", request.getUsername())).onItem().ifNotNull()
                 .transform(user -> {
                     Password storedPassword = getClearPassword(user.pass);
                     QuarkusSecurityIdentity.Builder builder = checkPassword(storedPassword, request);

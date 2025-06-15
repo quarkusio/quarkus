@@ -37,8 +37,8 @@ public class JavadocToMarkdownTransformer {
     /**
      * This is not definitely not perfect but it can be used to filter the Javadoc included in Markdown.
      * <p>
-     * We will need to discuss further how to handle passing the Javadoc to the IDE.
-     * In Quarkus, we have Asciidoc, standard Javadoc and soon we might have Markdown javadoc.
+     * We will need to discuss further how to handle passing the Javadoc to the IDE. In Quarkus, we have Asciidoc,
+     * standard Javadoc and soon we might have Markdown javadoc.
      */
     private static String simplifyJavadoc(JavadocDescription javadocDescription) {
         StringBuilder sb = new StringBuilder();

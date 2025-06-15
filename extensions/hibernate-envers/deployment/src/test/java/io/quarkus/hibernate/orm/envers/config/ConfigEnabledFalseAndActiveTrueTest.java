@@ -23,10 +23,8 @@ public class ConfigEnabledFalseAndActiveTrueTest {
             .withApplicationRoot((jar) -> jar.addClass(MyAuditedEntity.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-envers.enabled", "false")
-            .overrideConfigKey("quarkus.hibernate-envers.active", "true")
-            .assertException(throwable -> assertThat(throwable)
-                    .isInstanceOf(ConfigurationException.class)
-                    .hasMessageContaining(
+            .overrideConfigKey("quarkus.hibernate-envers.active", "true").assertException(
+                    throwable -> assertThat(throwable).isInstanceOf(ConfigurationException.class).hasMessageContaining(
                             "Hibernate Envers activated explicitly for persistence unit '<default>', but the Hibernate Envers extension was disabled at build time",
                             "If you want Hibernate Envers to be active for this persistence unit, you must set 'quarkus.hibernate-envers.enabled' to 'true' at build time",
                             "If you don't want Hibernate Envers to be active for this persistence unit, you must leave 'quarkus.hibernate-envers.active' unset or set it to 'false'"));
@@ -36,15 +34,13 @@ public class ConfigEnabledFalseAndActiveTrueTest {
 
     @Test
     public void test() {
-        assertThat(sessionFactory.getMetamodel().getEntities())
-                .extracting(Bindable::getBindableJavaType)
+        assertThat(sessionFactory.getMetamodel().getEntities()).extracting(Bindable::getBindableJavaType)
                 // In particular this should not contain the revision entity
                 .containsExactlyInAnyOrder((Class) MyAuditedEntity.class);
 
         try (Session session = sessionFactory.openSession()) {
             assertThatThrownBy(() -> AuditReaderFactory.get(session).isEntityClassAudited(MyAuditedEntity.class))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("Service is not yet initialized");
+                    .isInstanceOf(IllegalStateException.class).hasMessageContaining("Service is not yet initialized");
         }
     }
 }

@@ -74,20 +74,17 @@ public class OidcClientBuildStep {
     }
 
     @BuildStep
-    void extractInjectedOidcClientNames(
-            ApplicationArchivesBuildItem beanArchiveIndex,
+    void extractInjectedOidcClientNames(ApplicationArchivesBuildItem beanArchiveIndex,
             BuildProducer<OidcClientNamesBuildItem> oidcClientNames) {
 
         oidcClientNames.produce(new OidcClientNamesBuildItem(oidcClientNamesOf(beanArchiveIndex)));
     }
 
     private Set<String> oidcClientNamesOf(ApplicationArchivesBuildItem beanArchiveIndex) {
-        return beanArchiveIndex.getAllApplicationArchives().stream()
-                .map(ApplicationArchive::getIndex)
-                .flatMap(archive -> archive.getAnnotations(DotName.createSimple(NamedOidcClient.class.getName())).stream())
-                .map(annotation -> annotation.value().asString())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
+        return beanArchiveIndex.getAllApplicationArchives().stream().map(ApplicationArchive::getIndex)
+                .flatMap(archive -> archive.getAnnotations(DotName.createSimple(NamedOidcClient.class.getName()))
+                        .stream())
+                .map(annotation -> annotation.value().asString()).filter(Objects::nonNull).collect(Collectors.toSet());
     }
 
     @Consume(SyntheticBeansRuntimeInitBuildItem.class)
@@ -111,21 +108,17 @@ public class OidcClientBuildStep {
                 .forEach(syntheticBean::produce);
     }
 
-    private static SyntheticBeanBuildItem syntheticNamedOidcClientBeanFor(String clientName, OidcClientRecorder recorder) {
-        return SyntheticBeanBuildItem.configure(OidcClient.class).unremovable()
-                .types(OidcClient.class)
+    private static SyntheticBeanBuildItem syntheticNamedOidcClientBeanFor(String clientName,
+            OidcClientRecorder recorder) {
+        return SyntheticBeanBuildItem.configure(OidcClient.class).unremovable().types(OidcClient.class)
                 .addInjectionPoint(ClassType.create(OidcClients.class))
-                .createWith(recorder.createOidcClientBean(clientName))
-                .scope(Singleton.class)
-                .addQualifier().annotation(NamedOidcClient.class).addValue("value", clientName).done()
-                .setRuntimeInit()
-                .destroyer(BeanDestroyer.CloseableDestroyer.class)
-                .done();
+                .createWith(recorder.createOidcClientBean(clientName)).scope(Singleton.class).addQualifier()
+                .annotation(NamedOidcClient.class).addValue("value", clientName).done().setRuntimeInit()
+                .destroyer(BeanDestroyer.CloseableDestroyer.class).done();
     }
 
     @BuildStep
-    public void createNonDefaultTokensProducers(
-            BuildProducer<GeneratedBeanBuildItem> generatedBean,
+    public void createNonDefaultTokensProducers(BuildProducer<GeneratedBeanBuildItem> generatedBean,
             OidcClientNamesBuildItem oidcClientNames) {
 
         ClassOutput classOutput = new GeneratedBeanGizmoAdaptor(generatedBean);
@@ -167,8 +160,7 @@ public class OidcClientBuildStep {
         String generatedName = targetPackage + "TokensProducer_" + sanitize(oidcClientName);
 
         try (ClassCreator tokensProducer = ClassCreator.builder().classOutput(classOutput).className(generatedName)
-                .superClass(AbstractTokensProducer.class)
-                .build()) {
+                .superClass(AbstractTokensProducer.class).build()) {
             tokensProducer.addAnnotation(DotNames.SINGLETON.toString());
 
             try (MethodCreator produceMethod = tokensProducer.getMethodCreator("produceTokens", Tokens.class)) {

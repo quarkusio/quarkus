@@ -53,7 +53,8 @@ public class LambdaHttpHandlerTest {
 
     private final Application application = mock(Application.class);
     private final APIGatewayV2HTTPEvent request = mock(APIGatewayV2HTTPEvent.class);
-    private final APIGatewayV2HTTPEvent.RequestContext requestContext = mock(APIGatewayV2HTTPEvent.RequestContext.class);
+    private final APIGatewayV2HTTPEvent.RequestContext requestContext = mock(
+            APIGatewayV2HTTPEvent.RequestContext.class);
     private final APIGatewayV2HTTPEvent.RequestContext.Http requestContextMethod = mock(
             APIGatewayV2HTTPEvent.RequestContext.Http.class);
     private final AmazonLambdaContext context = mock(AmazonLambdaContext.class);
@@ -80,7 +81,8 @@ public class LambdaHttpHandlerTest {
             applicationMock.when(Application::currentApplication).thenReturn(application);
             LambdaHttpHandler lambda = new LambdaHttpHandler();
             CompletableFuture<APIGatewayV2HTTPResponse> requestFuture = CompletableFuture.supplyAsync(() -> {
-                try (MockedStatic<VirtualClientConnection> connectionMock = Mockito.mockStatic(VirtualClientConnection.class)) {
+                try (MockedStatic<VirtualClientConnection> connectionMock = Mockito
+                        .mockStatic(VirtualClientConnection.class)) {
                     connectionMock.when(() -> VirtualClientConnection.connect(any(), any(), any())).thenAnswer(i -> {
                         VirtualResponseHandler handler = i.getArgument(0);
                         CompletableFuture<Object> responseFuture = CompletableFuture.supplyAsync(() -> {
@@ -103,7 +105,8 @@ public class LambdaHttpHandlerTest {
 
     @ParameterizedTest
     @MethodSource("queries")
-    public void verifyQueryParametersBypass(String query, String expected) throws ExecutionException, InterruptedException {
+    public void verifyQueryParametersBypass(String query, String expected)
+            throws ExecutionException, InterruptedException {
         mockHttpFunction(query, HttpResponseStatus.OK);
         ArgumentCaptor<Object> captor = ArgumentCaptor.forClass(Object.class);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(captor.capture());
@@ -118,7 +121,8 @@ public class LambdaHttpHandlerTest {
 
     @ParameterizedTest
     @MethodSource("responses")
-    public void verifyResponseStatusBypass(final HttpResponseStatus status) throws ExecutionException, InterruptedException {
+    public void verifyResponseStatusBypass(final HttpResponseStatus status)
+            throws ExecutionException, InterruptedException {
         APIGatewayV2HTTPResponse response = mockHttpFunction(null, status);
         verify(connection, timeout(PROCESSING_TIMEOUT).times(2)).sendMessage(any());
         assertEquals(status.code(), response.getStatusCode());

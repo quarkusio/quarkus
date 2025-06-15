@@ -55,8 +55,8 @@ public class NoAnnotationBaseResourceWithoutPathExtParentRes extends NoAnnotatio
 
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnParentResource_SubDeclaredOnParent_SubImplOnBaseResource_NoSecurityAnnotation() {
-        return new NoAnnotationSubResourceWithoutPath(
-                CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT + SUB_IMPL_ON_BASE + NO_SECURITY_ANNOTATION_PATH);
+        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_PARENT_RESOURCE + SUB_DECLARED_ON_PARENT
+                + SUB_IMPL_ON_BASE + NO_SECURITY_ANNOTATION_PATH);
     }
 
     @PermitAll

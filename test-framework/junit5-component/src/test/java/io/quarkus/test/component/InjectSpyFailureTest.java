@@ -12,9 +12,7 @@ public class InjectSpyFailureTest {
 
     @RegisterExtension
     static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
-            .addComponentClasses(Delta.class)
-            .buildShouldFail()
-            .build();
+            .addComponentClasses(Delta.class).buildShouldFail().build();
 
     @InjectSpy
     Delta delta;

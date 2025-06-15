@@ -31,7 +31,8 @@ public class TestsAsBeansProcessor {
 
     private static final Logger LOG = Logger.getLogger(TestsAsBeansProcessor.class);
 
-    private static final DotName QUARKUS_TEST_PROFILE = DotName.createSimple("io.quarkus.test.junit.QuarkusTestProfile");
+    private static final DotName QUARKUS_TEST_PROFILE = DotName
+            .createSimple("io.quarkus.test.junit.QuarkusTestProfile");
     private static final DotName TEST_PROFILE = DotName.createSimple("io.quarkus.test.junit.TestProfile");
     private static final DotName QUARKUS_TEST = DotName.createSimple("io.quarkus.test.junit.QuarkusTest");
     private static final DotName QUARKUS_INTEGRATION_TEST = DotName
@@ -40,7 +41,8 @@ public class TestsAsBeansProcessor {
     private static final DotName NESTED = DotName.createSimple("org.junit.jupiter.api.Nested");
 
     @BuildStep
-    public void testAnnotations(List<TestAnnotationBuildItem> items, BuildProducer<BeanDefiningAnnotationBuildItem> producer) {
+    public void testAnnotations(List<TestAnnotationBuildItem> items,
+            BuildProducer<BeanDefiningAnnotationBuildItem> producer) {
         for (TestAnnotationBuildItem item : items) {
             producer.produce(new BeanDefiningAnnotationBuildItem(DotName.createSimple(item.getAnnotationClassName())));
         }
@@ -64,30 +66,27 @@ public class TestsAsBeansProcessor {
             CombinedIndexBuildItem index) {
         // Since we only need to register all test classes that belong to the "current" test profile
         // we need to veto other test classes during the build
-        return new AnnotationsTransformerBuildItem(AnnotationTransformation
-                .forClasses()
-                .when(tc -> {
-                    ClassInfo maybeTestClass = tc.declaration().asClass();
-                    boolean veto = false;
-                    if (maybeTestClass.hasAnnotation(QUARKUS_TEST)
-                            || maybeTestClass.hasAnnotation(QUARKUS_INTEGRATION_TEST)
-                            || maybeTestClass.hasAnnotation(QUARKUS_MAIN_TEST)) {
-                        String testProfileClassName = testProfile.map(TestProfileBuildItem::getTestProfileClassName)
-                                .orElse(null);
-                        veto = !matchesProfile(maybeTestClass, testProfileClassName);
-                        if (veto && hasMatchingNestedTest(maybeTestClass, testProfileClassName, index.getComputingIndex())) {
-                            // FIXME the current @Nested tests support makes it possible to specify a different test profile
-                            // which is wrong and may cause troubles if a test class injects beans enabled/disabled in a specific profile
-                            // See https://github.com/quarkusio/quarkus/issues/45349
-                            LOG.warnf(
-                                    "Test class [%s] does not match the current test profile [%s] but cannot be vetoed because it declares a matching @Nested test",
-                                    maybeTestClass, testProfileClassName);
-                            veto = false;
-                        }
-                    }
-                    return veto;
-                })
-                .transform(tc -> tc.add(AnnotationInstance.builder(DotNames.VETOED).buildWithTarget(tc.declaration()))));
+        return new AnnotationsTransformerBuildItem(AnnotationTransformation.forClasses().when(tc -> {
+            ClassInfo maybeTestClass = tc.declaration().asClass();
+            boolean veto = false;
+            if (maybeTestClass.hasAnnotation(QUARKUS_TEST) || maybeTestClass.hasAnnotation(QUARKUS_INTEGRATION_TEST)
+                    || maybeTestClass.hasAnnotation(QUARKUS_MAIN_TEST)) {
+                String testProfileClassName = testProfile.map(TestProfileBuildItem::getTestProfileClassName)
+                        .orElse(null);
+                veto = !matchesProfile(maybeTestClass, testProfileClassName);
+                if (veto && hasMatchingNestedTest(maybeTestClass, testProfileClassName, index.getComputingIndex())) {
+                    // FIXME the current @Nested tests support makes it possible to specify a different test profile
+                    // which is wrong and may cause troubles if a test class injects beans enabled/disabled in a
+                    // specific profile
+                    // See https://github.com/quarkusio/quarkus/issues/45349
+                    LOG.warnf(
+                            "Test class [%s] does not match the current test profile [%s] but cannot be vetoed because it declares a matching @Nested test",
+                            maybeTestClass, testProfileClassName);
+                    veto = false;
+                }
+            }
+            return veto;
+        }).transform(tc -> tc.add(AnnotationInstance.builder(DotNames.VETOED).buildWithTarget(tc.declaration()))));
     }
 
     @BuildStep(onlyIf = IsTest.class)

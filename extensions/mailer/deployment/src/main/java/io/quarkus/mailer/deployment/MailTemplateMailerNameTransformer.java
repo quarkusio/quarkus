@@ -32,10 +32,8 @@ public class MailTemplateMailerNameTransformer implements AnnotationsTransformer
             return;
         }
 
-        transformationContext.transform()
-                .remove(ai -> MailerProcessor.MAILER_NAME.equals(ai.name()))
-                .add(MailerProcessor.MAIL_TEMPLATE_MAILER_NAME, mailerName.value())
-                .done();
+        transformationContext.transform().remove(ai -> MailerProcessor.MAILER_NAME.equals(ai.name()))
+                .add(MailerProcessor.MAIL_TEMPLATE_MAILER_NAME, mailerName.value()).done();
     }
 
 }

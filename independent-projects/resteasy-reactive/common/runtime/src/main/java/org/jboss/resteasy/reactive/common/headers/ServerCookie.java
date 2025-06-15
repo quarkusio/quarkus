@@ -16,13 +16,11 @@ public class ServerCookie implements Serializable {
     private static final String tspecials2 = "()<>@,;:\\\"/[]?={} \t";
 
     /*
-     * Tests a string and returns true if the string counts as a
-     * reserved token in the Java language.
-     *
+     * Tests a string and returns true if the string counts as a reserved token in the Java language.
+     * 
      * @param value the <code>String</code> to be tested
-     *
-     * @return <code>true</code> if the <code>String</code> is a reserved
-     * token; <code>false</code> if it is not
+     * 
+     * @return <code>true</code> if the <code>String</code> is a reserved token; <code>false</code> if it is not
      */
     public static boolean isToken(String value) {
         if (value == null)
@@ -46,7 +44,7 @@ public class ServerCookie implements Serializable {
             char c = value.charAt(i);
             if (c < 0x20 || c >= 0x7f) {
                 if (c == 0x09)
-                    continue; //allow horizontal tabs
+                    continue; // allow horizontal tabs
                 return true;
             }
         }
@@ -68,12 +66,14 @@ public class ServerCookie implements Serializable {
 
     /**
      * @deprecated Not used: Deprecated in the original org.apache.tomcat.util.http.ServerCookie class.
-     * @param name name
+     *
+     * @param name
+     *        name
+     *
      * @return boolean flag
      */
     public static boolean checkName(String name) {
-        if (!isToken(name)
-                || name.equalsIgnoreCase("Comment") // rfc2019
+        if (!isToken(name) || name.equalsIgnoreCase("Comment") // rfc2019
                 || name.equalsIgnoreCase("Discard") // rfc2965
                 || name.equalsIgnoreCase("Domain") // rfc2019
                 || name.equalsIgnoreCase("Expires") // Netscape
@@ -93,7 +93,9 @@ public class ServerCookie implements Serializable {
     /**
      * Return the header name to set the cookie, based on cookie version.
      *
-     * @param version cookie version
+     * @param version
+     *        cookie version
+     *
      * @return cookie header name
      */
     public static String getCookieHeaderName(int version) {
@@ -137,8 +139,7 @@ public class ServerCookie implements Serializable {
         return ocf;
     }
 
-    public static void formatOldCookie(Date d, StringBuffer sb,
-            FieldPosition fp) {
+    public static void formatOldCookie(Date d, StringBuffer sb, FieldPosition fp) {
         synchronized (oldCookieFormat) {
             oldCookieFormat.format(d, sb, fp);
         }
@@ -147,15 +148,8 @@ public class ServerCookie implements Serializable {
     private static final String ancientDate = formatOldCookie(new Date(10000));
 
     // TODO RFC2965 fields also need to be passed
-    public static void appendCookieValue(StringBuilder headerBuf,
-            int version,
-            String name,
-            String value,
-            String path,
-            String domain,
-            String comment,
-            int maxAge,
-            boolean isSecure) {
+    public static void appendCookieValue(StringBuilder headerBuf, int version, String name, String value, String path,
+            String domain, String comment, int maxAge, boolean isSecure) {
         StringBuffer buf = new StringBuffer();
         // Servlet implementation checks name
         buf.append(name);
@@ -192,9 +186,7 @@ public class ServerCookie implements Serializable {
                 if (maxAge == 0)
                     buf.append(ancientDate);
                 else
-                    formatOldCookie(new Date(System.currentTimeMillis() +
-                            maxAge * 1000L), buf,
-                            new FieldPosition(0));
+                    formatOldCookie(new Date(System.currentTimeMillis() + maxAge * 1000L), buf, new FieldPosition(0));
 
             } else {
                 buf.append("; Max-Age=");
@@ -225,9 +217,12 @@ public class ServerCookie implements Serializable {
     /**
      * Quotes values using rules that vary depending on Cookie version.
      *
-     * @param version cookie version
-     * @param buf buffer
-     * @param value value
+     * @param version
+     *        cookie version
+     * @param buf
+     *        buffer
+     * @param value
+     *        value
      */
     public static void maybeQuote2(int version, StringBuffer buf, String value) {
         if (value == null || value.length() == 0) {
@@ -254,9 +249,13 @@ public class ServerCookie implements Serializable {
     /**
      * Escapes any double quotes in the given string.
      *
-     * @param s the input string
-     * @param beginIndex start index inclusive
-     * @param endIndex exclusive
+     * @param s
+     *        the input string
+     * @param beginIndex
+     *        start index inclusive
+     * @param endIndex
+     *        exclusive
+     *
      * @return The (possibly) escaped string
      */
     private static String escapeDoubleQuotes(String s, int beginIndex, int endIndex) {
@@ -270,7 +269,7 @@ public class ServerCookie implements Serializable {
             char c = s.charAt(i);
             if (c == '\\') {
                 b.append(c);
-                //ignore the character after an escape, just append it
+                // ignore the character after an escape, just append it
                 if (++i >= endIndex)
                     throw new IllegalArgumentException("Invalid escape character in cookie value");
                 b.append(s.charAt(i));

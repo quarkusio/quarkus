@@ -45,8 +45,7 @@ public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
         LOGGER.info("  Gradle version:              {}", params.getGradleVersion().get());
 
         try (CuratedApplication appCreationContext = createAppCreationContext();
-                AnalyticsService analyticsService = new AnalyticsService(
-                        FileLocationsImpl.INSTANCE,
+                AnalyticsService analyticsService = new AnalyticsService(FileLocationsImpl.INSTANCE,
                         new Slf4JMessageWriter(LOGGER))) {
 
             // Processes launched from within the build task of Gradle (daemon) lose content
@@ -55,9 +54,8 @@ public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
             // streamed, if they need to make available that generated data.
             // The io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory
             // does the necessary work to generate such a build item which the build step(s) can rely on
-            AugmentAction augmentor = appCreationContext
-                    .createAugmentor("io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory",
-                            Collections.emptyMap());
+            AugmentAction augmentor = appCreationContext.createAugmentor(
+                    "io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled$Factory", Collections.emptyMap());
 
             AugmentResult result = augmentor.createProductionApplication();
             if (result == null) {
@@ -65,19 +63,17 @@ public abstract class BuildWorker extends QuarkusWorker<BuildWorkerParams> {
             } else {
                 Map<String, Object> buildInfo = new HashMap<>(result.getGraalVMInfo());
                 buildInfo.put(GRADLE_VERSION, params.getGradleVersion().get());
-                analyticsService.sendAnalytics(
-                        TrackEventType.BUILD,
-                        appCreationContext.getApplicationModel(),
-                        buildInfo,
-                        params.getTargetDirectory().getAsFile().get());
+                analyticsService.sendAnalytics(TrackEventType.BUILD, appCreationContext.getApplicationModel(),
+                        buildInfo, params.getTargetDirectory().getAsFile().get());
                 Path nativeResult = result.getNativeResult();
                 LOGGER.info("AugmentResult.nativeResult = {}", nativeResult);
                 List<ArtifactResult> results = result.getResults();
                 if (results == null) {
                     LOGGER.warn("AugmentResult.results = null");
                 } else {
-                    LOGGER.info("AugmentResult.results = {}", results.stream().map(ArtifactResult::getPath)
-                            .map(r -> r == null ? "null" : r.toString()).collect(Collectors.joining("\n    ", "\n    ", "")));
+                    LOGGER.info("AugmentResult.results = {}",
+                            results.stream().map(ArtifactResult::getPath).map(r -> r == null ? "null" : r.toString())
+                                    .collect(Collectors.joining("\n    ", "\n    ", "")));
                 }
                 JarResult jar = result.getJar();
                 LOGGER.info("AugmentResult:");

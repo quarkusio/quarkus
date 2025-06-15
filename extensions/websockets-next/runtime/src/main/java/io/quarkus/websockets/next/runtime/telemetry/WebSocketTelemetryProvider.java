@@ -43,7 +43,9 @@ public final class WebSocketTelemetryProvider {
     /**
      * This method may only be called on the Vert.x context of the initial HTTP request as it collects context data.
      *
-     * @param path endpoint path with path param placeholders
+     * @param path
+     *        endpoint path with path param placeholders
+     *
      * @return TelemetryDecorator
      */
     public TelemetrySupport createServerTelemetrySupport(String path) {

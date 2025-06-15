@@ -15,18 +15,16 @@ public class ServletContainerInitializerTestCase {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsServiceProvider(ServletContainerInitializer.class, TestSCI.class)
+            .withApplicationRoot((jar) -> jar.addAsServiceProvider(ServletContainerInitializer.class, TestSCI.class)
                     .addAsResource(new StringAsset("index.html"), "META-INF/resources/index.html")
                     .addClasses(SCIInterface.class, SCIImplementation.class, TestSCI.class, SCIAnnotation.class,
                             AnnotatedSCIClass.class));
 
     @Test
     public void testSci() {
-        RestAssured.when().get("/sci").then()
-                .statusCode(200)
-                .body(containsString("io.quarkus.undertow.test.SCIImplementation"),
-                        containsString("io.quarkus.undertow.test.AnnotatedSCIClass"));
+        RestAssured.when().get("/sci").then().statusCode(200).body(
+                containsString("io.quarkus.undertow.test.SCIImplementation"),
+                containsString("io.quarkus.undertow.test.AnnotatedSCIClass"));
     }
 
 }

@@ -15,7 +15,8 @@ public class ServerNumberMessageBodyHandler extends NumberMessageBodyHandler
         implements ServerMessageBodyReader<Number> {
 
     @Override
-    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod, MediaType mediaType) {
+    public boolean isReadable(Class<?> type, Type genericType, ResteasyReactiveResourceInfo lazyMethod,
+            MediaType mediaType) {
         return Number.class.isAssignableFrom(type);
     }
 

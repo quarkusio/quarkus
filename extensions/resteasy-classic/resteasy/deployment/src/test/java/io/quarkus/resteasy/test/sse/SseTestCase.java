@@ -25,8 +25,7 @@ public class SseTestCase {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SseResource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(SseResource.class));
 
     @Test
     public void testSse() throws Exception {

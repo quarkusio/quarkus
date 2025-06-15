@@ -6,10 +6,8 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * When applied to a bean class or producer method (or field), the bean will only be enabled
- * if the Quarkus build time profile matches the rules of the annotation values.
- *
- * <blockquote>
+ * When applied to a bean class or producer method (or field), the bean will only be enabled if the Quarkus build time
+ * profile matches the rules of the annotation values. <blockquote>
  *
  * <pre>
  *    Enabled when "dev" profile is active:

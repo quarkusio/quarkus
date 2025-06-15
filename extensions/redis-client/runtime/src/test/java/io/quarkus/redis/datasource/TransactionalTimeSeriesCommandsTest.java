@@ -52,9 +52,7 @@ public class TransactionalTimeSeriesCommandsTest extends DatasourceTestBase {
 
             ts.tsAdd("ts1", 20, 20);
 
-            ts.tsMAdd(
-                    SeriesSample.from("ts1", 30, 3),
-                    SeriesSample.from("ts2", 30, 3),
+            ts.tsMAdd(SeriesSample.from("ts1", 30, 3), SeriesSample.from("ts2", 30, 3),
                     SeriesSample.from("ts3", 30, 5));
 
             ts.tsGet("ts3"); // 5
@@ -90,9 +88,7 @@ public class TransactionalTimeSeriesCommandsTest extends DatasourceTestBase {
 
             var u5 = ts.tsAdd("ts1", 20, 20);
 
-            var u6 = ts.tsMAdd(
-                    SeriesSample.from("ts1", 30, 3),
-                    SeriesSample.from("ts2", 30, 3),
+            var u6 = ts.tsMAdd(SeriesSample.from("ts1", 30, 3), SeriesSample.from("ts2", 30, 3),
                     SeriesSample.from("ts3", 30, 5));
 
             var u7 = ts.tsGet("ts3"); // 5
@@ -100,11 +96,11 @@ public class TransactionalTimeSeriesCommandsTest extends DatasourceTestBase {
             var u9 = ts.tsMGet(new MGetArgs().withLabels(), Filter.withLabel("foo", "baz")); // ts3
 
             var u10 = ts.tsRange("ts3", TimeSeriesRange.fromTimeSeries());
-            var u11 = ts.tsMRange(TimeSeriesRange.fromTimeSeries(), Filter.withLabelHavingValueFrom("foo", "bar", "baz"));
+            var u11 = ts.tsMRange(TimeSeriesRange.fromTimeSeries(),
+                    Filter.withLabelHavingValueFrom("foo", "bar", "baz"));
 
-            return u1.chain(() -> u2).chain(() -> u3).chain(() -> u4).chain(() -> u5)
-                    .chain(() -> u6).chain(() -> u7).chain(() -> u8)
-                    .chain(() -> u9).chain(() -> u10).chain(() -> u11);
+            return u1.chain(() -> u2).chain(() -> u3).chain(() -> u4).chain(() -> u5).chain(() -> u6).chain(() -> u7)
+                    .chain(() -> u8).chain(() -> u9).chain(() -> u10).chain(() -> u11);
         }).await().indefinitely();
 
         assertThat(result.size()).isEqualTo(11);

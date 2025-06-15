@@ -17,21 +17,18 @@ import io.quarkus.test.QuarkusUnitTest;
 public class MessageBundleLogicalLineTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Messages.class, MyEnum.class)
-                    .addAsResource("messages/msg_cs.properties")
-                    .addAsResource(new StringAsset(
-                            "{msg:hello('Edgar')}::{msg:helloNextLine('Edgar')}::{msg:fruits}::{msg:myEnum(MyEnum:OFF)}"),
-                            "templates/foo.html"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Messages.class, MyEnum.class).addAsResource("messages/msg_cs.properties")
+            .addAsResource(new StringAsset(
+                    "{msg:hello('Edgar')}::{msg:helloNextLine('Edgar')}::{msg:fruits}::{msg:myEnum(MyEnum:OFF)}"),
+                    "templates/foo.html"));
 
     @Inject
     Template foo;
 
     @Test
     public void testResolvers() {
-        assertEquals("Hello Edgar!::Hello \n Edgar!::apple, banana, pear, watermelon, kiwi, mango::Off",
-                foo.render());
+        assertEquals("Hello Edgar!::Hello \n Edgar!::apple, banana, pear, watermelon, kiwi, mango::Off", foo.render());
         assertEquals("Ahoj Edgar a dobrý den!::Ahoj \n Edgar!::jablko, banan, hruska, meloun, kiwi, mango::Vypnuto",
                 foo.instance().setLocale("cs").render());
     }
@@ -48,11 +45,7 @@ public class MessageBundleLogicalLineTest {
         @Message("apple, banana, pear, watermelon, kiwi, mango")
         String fruits();
 
-        @Message("{#when myEnum}"
-                + "{#is ON}On"
-                + "{#is OFF}Off"
-                + "{#else}Undefined"
-                + "{/when}")
+        @Message("{#when myEnum}" + "{#is ON}On" + "{#is OFF}Off" + "{#else}Undefined" + "{/when}")
         String myEnum(MyEnum myEnum);
 
     }

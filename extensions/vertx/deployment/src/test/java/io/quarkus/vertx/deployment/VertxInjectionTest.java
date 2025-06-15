@@ -17,8 +17,7 @@ public class VertxInjectionTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(MyBean.class));
 
     @Test
     public void test() {

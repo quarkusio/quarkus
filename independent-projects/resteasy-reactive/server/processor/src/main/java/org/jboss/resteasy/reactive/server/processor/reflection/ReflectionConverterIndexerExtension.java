@@ -46,7 +46,7 @@ public class ReflectionConverterIndexerExtension implements ServerEndpointIndexe
                     }
                 }
                 if (type.isEnum()) {
-                    //spec weirdness, enums order is different
+                    // spec weirdness, enums order is different
                     if (fromString != null) {
                         valueOf = null;
                     }
@@ -55,7 +55,8 @@ public class ReflectionConverterIndexerExtension implements ServerEndpointIndexe
         }
         ParameterConverterSupplier delegate = null;
         if (stringCtor != null) {
-            delegate = new ReflectionConstructorParameterConverterSupplier(stringCtor.declaringClass().name().toString());
+            delegate = new ReflectionConstructorParameterConverterSupplier(
+                    stringCtor.declaringClass().name().toString());
         } else if (valueOf != null) {
             delegate = new ReflectionValueOfParameterConverterSupplier(valueOf.declaringClass().name().toString());
         } else if (fromString != null) {

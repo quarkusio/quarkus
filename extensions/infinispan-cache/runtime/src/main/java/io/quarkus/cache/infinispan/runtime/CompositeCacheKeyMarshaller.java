@@ -30,8 +30,7 @@ public class CompositeCacheKeyMarshaller implements MessageMarshaller<CompositeC
     @Override
     public void writeTo(ProtoStreamWriter writer, CompositeCacheKey compositeCacheKey) throws IOException {
         List<WrappedMessage> wrappedMessages = Arrays.stream(compositeCacheKey.getKeyElements())
-                .map(e -> new WrappedMessage(e))
-                .collect(Collectors.toList());
+                .map(e -> new WrappedMessage(e)).collect(Collectors.toList());
         writer.writeCollection(KEYS, wrappedMessages, WrappedMessage.class);
     }
 

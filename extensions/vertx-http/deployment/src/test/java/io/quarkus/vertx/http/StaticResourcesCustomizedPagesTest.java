@@ -14,38 +14,27 @@ import io.restassured.RestAssured;
 public class StaticResourcesCustomizedPagesTest {
 
     @RegisterExtension
-    final static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .add(new StringAsset("" +
-                            "quarkus.http.static-resources.index-page=default.html\n" +
-                            "quarkus.http.static-resources.include-hidden=false\n" +
-                            "quarkus.http.static-resources.enable-range-support=false\n"),
-                            "application.properties")
-                    .addAsResource("static-file.html", "META-INF/resources/.hidden-file.html")
-                    .addAsResource("static-file.html", "META-INF/resources/default.html"));
+    final static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .add(new StringAsset("" + "quarkus.http.static-resources.index-page=default.html\n"
+                    + "quarkus.http.static-resources.include-hidden=false\n"
+                    + "quarkus.http.static-resources.enable-range-support=false\n"), "application.properties")
+            .addAsResource("static-file.html", "META-INF/resources/.hidden-file.html")
+            .addAsResource("static-file.html", "META-INF/resources/default.html"));
 
     @Test
     public void shouldContainCachingHeaders() {
-        RestAssured.when().get("/")
-                .then()
-                .header("Cache-Control", containsStringIgnoringCase("max-age="))
-                .header("Last-Modified", notNullValue())
-                .statusCode(200);
+        RestAssured.when().get("/").then().header("Cache-Control", containsStringIgnoringCase("max-age="))
+                .header("Last-Modified", notNullValue()).statusCode(200);
     }
 
     @Test
     public void shouldNotReturnHiddenHtmlPage() {
-        RestAssured.when().get("/.hidden-file.html")
-                .then()
-                .statusCode(404);
+        RestAssured.when().get("/.hidden-file.html").then().statusCode(404);
     }
 
     @Test
     public void shouldNotReturnRangeSupport() {
-        RestAssured.when().head("/")
-                .then()
-                .header("Accept-Ranges", nullValue())
-                .header("Content-Length", nullValue())
+        RestAssured.when().head("/").then().header("Accept-Ranges", nullValue()).header("Content-Length", nullValue())
                 .statusCode(200);
     }
 

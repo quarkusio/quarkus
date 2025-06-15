@@ -95,8 +95,8 @@ public class ResteasyStandaloneRecorder {
     }
 
     public Handler<RoutingContext> vertxRequestHandler(Supplier<Vertx> vertx, Executor executor,
-            Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths,
-            ResteasyVertxConfig config, VertxHttpBuildTimeConfig httpBuildTimeConfig) {
+            Map<String, NonJaxRsClassMappings> nonJaxRsClassNameToMethodPaths, ResteasyVertxConfig config,
+            VertxHttpBuildTimeConfig httpBuildTimeConfig) {
         if (deployment != null) {
             Handler<RoutingContext> handler = new VertxRequestHandler(vertx.get(), deployment, contextPath,
                     new ResteasyVertxAllocator(config.responseBufferSize()), executor,
@@ -104,14 +104,16 @@ public class ResteasyStandaloneRecorder {
 
             Set<String> compressMediaTypes = httpBuildTimeConfig.compressMediaTypes().map(Set::copyOf).orElse(Set.of());
             if (httpBuildTimeConfig.enableCompression() && !compressMediaTypes.isEmpty()) {
-                // If compression is enabled and the set of compressed media types is not empty then wrap the standalone handler
+                // If compression is enabled and the set of compressed media types is not empty then wrap the standalone
+                // handler
                 handler = new HttpCompressionHandler(handler, compressMediaTypes);
             }
 
             if (LaunchMode.current() == LaunchMode.DEVELOPMENT) {
                 // For Not Found Screen
                 Registry registry = deployment.getRegistry();
-                ResourceNotFoundData.setRuntimeRoutes(fromBoundResourceInvokers(registry, nonJaxRsClassNameToMethodPaths));
+                ResourceNotFoundData
+                        .setRuntimeRoutes(fromBoundResourceInvokers(registry, nonJaxRsClassNameToMethodPaths));
             }
 
             return handler;
@@ -119,9 +121,9 @@ public class ResteasyStandaloneRecorder {
         return null;
     }
 
-    public Handler<RoutingContext> vertxFailureHandler(Supplier<Vertx> vertx, Executor executor, ResteasyVertxConfig config,
-            boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper, boolean noCustomAuthRedirectExMapper,
-            boolean proactive) {
+    public Handler<RoutingContext> vertxFailureHandler(Supplier<Vertx> vertx, Executor executor,
+            ResteasyVertxConfig config, boolean noCustomAuthCompletionExMapper, boolean noCustomAuthFailureExMapper,
+            boolean noCustomAuthRedirectExMapper, boolean proactive) {
         if (deployment == null) {
             return null;
         } else {
@@ -134,9 +136,12 @@ public class ResteasyStandaloneRecorder {
                 @Override
                 public void handle(RoutingContext request) {
 
-                    // special handling when proactive auth is enabled as then we know default auth failure handler already run
-                    if (proactive && request.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
-                        // we want to prevent repeated handling of exceptions if user don't want to handle exception himself
+                    // special handling when proactive auth is enabled as then we know default auth failure handler
+                    // already run
+                    if (proactive
+                            && request.get(QuarkusHttpUser.AUTH_FAILURE_HANDLER) instanceof DefaultAuthFailureHandler) {
+                        // we want to prevent repeated handling of exceptions if user don't want to handle exception
+                        // himself
                         // we do not pass exception to abort handlers if proactive auth is enabled and user did not
                         // provide custom ex. mapper; we replace default auth failure handler as soon as we can, so that
                         // we can handle Quarkus Security Exceptions ourselves

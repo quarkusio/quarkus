@@ -11,10 +11,8 @@ import io.quarkus.test.QuarkusProdModeTest;
 public class HalLinksWithJsonbTest extends AbstractHalLinksTest {
     @RegisterExtension
     static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AbstractEntity.class, TestRecord.class, TestResource.class))
-            .setForcedDependencies(List.of(
-                    Dependency.of("io.quarkus", "quarkus-resteasy-jsonb", Version.getVersion()),
+            .withApplicationRoot((jar) -> jar.addClasses(AbstractEntity.class, TestRecord.class, TestResource.class))
+            .setForcedDependencies(List.of(Dependency.of("io.quarkus", "quarkus-resteasy-jsonb", Version.getVersion()),
                     Dependency.of("io.quarkus", "quarkus-hal", Version.getVersion())))
             .setRun(true);
 

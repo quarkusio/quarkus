@@ -18,8 +18,7 @@ import io.smallrye.certs.junit5.Certificate;
 import io.smallrye.certs.junit5.Certificates;
 
 @Certificates(baseDir = "target/certs", certificates = {
-        @Certificate(name = "test-ssl-options", password = "password", formats = { Format.PKCS12 })
-})
+        @Certificate(name = "test-ssl-options", password = "password", formats = { Format.PKCS12 }) })
 public class DefaultSSLOptionsTest {
 
     private static final String configuration = """
@@ -40,8 +39,7 @@ public class DefaultSSLOptionsTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .add(new StringAsset(configuration), "application.properties"));
+            () -> ShrinkWrap.create(JavaArchive.class).add(new StringAsset(configuration), "application.properties"));
 
     @Inject
     TlsConfigurationRegistry certificates;

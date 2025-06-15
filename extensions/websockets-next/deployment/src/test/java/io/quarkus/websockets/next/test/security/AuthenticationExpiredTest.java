@@ -46,15 +46,13 @@ public class AuthenticationExpiredTest {
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot(root -> root.addClasses(Endpoint.class, TestIdentityProvider.class,
-                    TestIdentityController.class, WSClient.class, ExpiredIdentityAugmentor.class, SecurityTestBase.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            root -> root.addClasses(Endpoint.class, TestIdentityProvider.class, TestIdentityController.class,
+                    WSClient.class, ExpiredIdentityAugmentor.class, SecurityTestBase.class));
 
     @Test
     public void testConnectionClosedWhenAuthExpires() {
@@ -80,13 +78,11 @@ public class AuthenticationExpiredTest {
             assertTrue(receivedMessages.size() > 2, receivedMessages.toString());
             assertTrue(receivedMessages.contains("Hello #1 from admin"), receivedMessages.toString());
             assertTrue(receivedMessages.contains("Hello #2 from admin"), receivedMessages.toString());
-            assertEquals(1008, client.closeStatusCode(), "Expected close status 1008, but got " + client.closeStatusCode());
+            assertEquals(1008, client.closeStatusCode(),
+                    "Expected close status 1008, but got " + client.closeStatusCode());
 
-            Awaitility
-                    .await()
-                    .atMost(Duration.ofSeconds(1))
-                    .untilAsserted(() -> assertTrue(Endpoint.CLOSED_MESSAGE.get()
-                            .startsWith("Connection closed with reason 'Authentication expired'")));
+            Awaitility.await().atMost(Duration.ofSeconds(1)).untilAsserted(() -> assertTrue(Endpoint.CLOSED_MESSAGE
+                    .get().startsWith("Connection closed with reason 'Authentication expired'")));
 
             assertTrue(client.isClosed());
         }
@@ -98,18 +94,12 @@ public class AuthenticationExpiredTest {
         @Override
         public Uni<SecurityIdentity> augment(SecurityIdentity securityIdentity,
                 AuthenticationRequestContext authenticationRequestContext) {
-            return Uni
-                    .createFrom()
-                    .item(QuarkusSecurityIdentity
-                            .builder(securityIdentity)
-                            .addAttribute("quarkus.identity.expire-time", expireIn2Seconds())
-                            .build());
+            return Uni.createFrom().item(QuarkusSecurityIdentity.builder(securityIdentity)
+                    .addAttribute("quarkus.identity.expire-time", expireIn2Seconds()).build());
         }
 
         private static long expireIn2Seconds() {
-            return Duration.ofMillis(System.currentTimeMillis())
-                    .plusSeconds(2)
-                    .toSeconds();
+            return Duration.ofMillis(System.currentTimeMillis()).plusSeconds(2).toSeconds();
         }
     }
 

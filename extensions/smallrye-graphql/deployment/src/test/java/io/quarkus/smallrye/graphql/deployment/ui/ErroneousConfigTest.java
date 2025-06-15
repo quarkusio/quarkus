@@ -11,10 +11,9 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ErroneousConfigTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.ui.root-path=/\n"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addAsResource(
+                    new StringAsset("quarkus.smallrye-graphql.ui.root-path=/\n"), "application.properties"));
 
     @Test
     public void shouldNotStartApplicationIfUIPathIsASlash() {

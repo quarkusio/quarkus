@@ -67,8 +67,8 @@ public abstract class QuarkusPluginExtensionView {
         getCodeGenForkOptions().set(getProviderFactory().provider(() -> extension.codeGenForkOptions));
         getBuildForkOptions().set(getProviderFactory().provider(() -> extension.buildForkOptions));
         getIgnoredEntries().set(extension.ignoredEntriesProperty());
-        getMainResources().setFrom(project.getExtensions().getByType(SourceSetContainer.class).getByName(MAIN_SOURCE_SET_NAME)
-                .getResources().getSourceDirectories());
+        getMainResources().setFrom(project.getExtensions().getByType(SourceSetContainer.class)
+                .getByName(MAIN_SOURCE_SET_NAME).getResources().getSourceDirectories());
         getQuarkusBuildProperties().set(extension.getQuarkusBuildProperties());
         getQuarkusRelevantProjectProperties().set(getQuarkusRelevantProjectProperties(project));
         getQuarkusProfileSystemVariable().set(getProviderFactory().systemProperty(QUARKUS_PROFILE));
@@ -101,8 +101,7 @@ public abstract class QuarkusPluginExtensionView {
             return getProviderFactory().gradlePropertiesPrefixedBy("quarkus.");
         } else {
             return getProviderFactory().provider(() -> project.getProperties().entrySet().stream()
-                    .filter(e -> e.getValue() != null)
-                    .map(e -> Map.entry(e.getKey(), e.getValue().toString()))
+                    .filter(e -> e.getValue() != null).map(e -> Map.entry(e.getKey(), e.getValue().toString()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         }
     }
@@ -198,14 +197,13 @@ public abstract class QuarkusPluginExtensionView {
 
     private void exportCustomManifestProperties(Map<String, Object> properties) {
         for (Map.Entry<String, Object> attribute : getManifestAttributes().get().entrySet()) {
-            properties.put(toManifestAttributeKey(attribute.getKey()),
-                    attribute.getValue());
+            properties.put(toManifestAttributeKey(attribute.getKey()), attribute.getValue());
         }
 
         for (Map.Entry<String, Attributes> section : getManifestSections().get().entrySet()) {
             for (Map.Entry<String, Object> attribute : section.getValue().entrySet()) {
-                properties
-                        .put(toManifestSectionAttributeKey(section.getKey(), attribute.getKey()), attribute.getValue());
+                properties.put(toManifestSectionAttributeKey(section.getKey(), attribute.getKey()),
+                        attribute.getValue());
             }
         }
     }
@@ -237,19 +235,16 @@ public abstract class QuarkusPluginExtensionView {
         if (getNativeBuild().get()) {
             forced.put("quarkus.native.enabled", "true");
         }
-        return EffectiveConfig.builder()
-                .withPlatformProperties(appModel.getPlatformProperties())
-                .withForcedProperties(forced)
-                .withTaskProperties(properties)
+        return EffectiveConfig.builder().withPlatformProperties(appModel.getPlatformProperties())
+                .withForcedProperties(forced).withTaskProperties(properties)
                 .withBuildProperties(getQuarkusBuildProperties().get())
                 .withProjectProperties(getQuarkusRelevantProjectProperties().get())
-                .withDefaultProperties(defaultProperties)
-                .withSourceDirectories(resourcesDirs)
-                .withProfile(getQuarkusProfile())
-                .build();
+                .withDefaultProperties(defaultProperties).withSourceDirectories(resourcesDirs)
+                .withProfile(getQuarkusProfile()).build();
     }
 
-    protected Map<String, String> buildSystemProperties(ResolvedDependency appArtifact, Map<String, String> quarkusProperties) {
+    protected Map<String, String> buildSystemProperties(ResolvedDependency appArtifact,
+            Map<String, String> quarkusProperties) {
         Map<String, String> buildSystemProperties = new HashMap<>();
         buildSystemProperties.putIfAbsent("quarkus.application.name", appArtifact.getArtifactId());
         buildSystemProperties.putIfAbsent("quarkus.application.version", appArtifact.getVersion());

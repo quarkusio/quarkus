@@ -40,13 +40,12 @@ import io.quarkus.annotation.processor.util.Strings;
 import io.quarkus.annotation.processor.util.Utils;
 
 /**
- * The goal of this class is to resolve the elements obtained on scanning/discovery
- * and assemble them into the final model.
+ * The goal of this class is to resolve the elements obtained on scanning/discovery and assemble them into the final
+ * model.
  * <p>
- * Note that the model is not exactly final as some elements might not be resolvable
- * because they are inside another module: this annotation processor doesn't cross
- * the module boundaries as it causes a lot of headaches (for instance for the Develocity
- * caching but not only).
+ * Note that the model is not exactly final as some elements might not be resolvable because they are inside another
+ * module: this annotation processor doesn't cross the module boundaries as it causes a lot of headaches (for instance
+ * for the Develocity caching but not only).
  * <p>
  * NEVER CROSS THE STREAMS!
  */
@@ -76,8 +75,8 @@ public class ConfigResolver {
 
             configRoot.addQualifiedName(discoveryConfigRoot.getQualifiedName());
 
-            ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(), discoveryConfigRoot,
-                    configRoot, 0, false, false, null);
+            ResolutionContext context = new ResolutionContext(configRoot.getPrefix(), new ArrayList<>(),
+                    discoveryConfigRoot, configRoot, 0, false, false, null);
             for (DiscoveryConfigProperty discoveryConfigProperty : discoveryConfigRoot.getProperties().values()) {
                 resolveProperty(configRoot, existingRootConfigSections, discoveryConfigRoot.getPhase(), context,
                         discoveryConfigProperty);
@@ -96,7 +95,8 @@ public class ConfigResolver {
         List<String> additionalPaths = context.getAdditionalPaths().stream()
                 .map(p -> appendPath(p, discoveryConfigProperty.getPath()))
                 .collect(Collectors.toCollection(ArrayList::new));
-        Deprecation deprecation = discoveryConfigProperty.getDeprecation() != null ? discoveryConfigProperty.getDeprecation()
+        Deprecation deprecation = discoveryConfigProperty.getDeprecation() != null
+                ? discoveryConfigProperty.getDeprecation()
                 : context.getDeprecation();
 
         String typeQualifiedName = discoveryConfigProperty.getType().qualifiedName();
@@ -109,8 +109,7 @@ public class ConfigResolver {
                 if (discoveryConfigProperty.isUnnamedMapKey()) {
                     ListIterator<String> additionalPathsIterator = additionalPaths.listIterator();
 
-                    additionalPathsIterator
-                            .add(path + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
+                    additionalPathsIterator.add(path + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
                     while (additionalPathsIterator.hasNext()) {
                         additionalPathsIterator.add(additionalPathsIterator.next()
                                 + ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey()));
@@ -126,7 +125,8 @@ public class ConfigResolver {
             ResolutionContext configGroupContext;
 
             boolean isWithinMap = context.isWithinMap() || discoveryConfigProperty.getType().isMap();
-            boolean isWithMapWithUnnamedKey = context.isWithinMapWithUnnamedKey() || discoveryConfigProperty.isUnnamedMapKey();
+            boolean isWithMapWithUnnamedKey = context.isWithinMapWithUnnamedKey()
+                    || discoveryConfigProperty.isUnnamedMapKey();
 
             if (discoveryConfigProperty.isSection()) {
                 ConfigSection configSection = existingRootConfigSections.get(path);
@@ -135,15 +135,16 @@ public class ConfigResolver {
                     configSection.appendState(discoveryConfigProperty.isSectionGenerated(), deprecation);
                 } else {
                     configSection = new ConfigSection(discoveryConfigProperty.getSourceType(),
-                            discoveryConfigProperty.getSourceElementName(), discoveryConfigProperty.getSourceElementType(),
-                            new SectionPath(path), typeQualifiedName,
+                            discoveryConfigProperty.getSourceElementName(),
+                            discoveryConfigProperty.getSourceElementType(), new SectionPath(path), typeQualifiedName,
                             context.getSectionLevel(), discoveryConfigProperty.isSectionGenerated(), deprecation);
                     context.getItemCollection().addItem(configSection);
                     existingRootConfigSections.put(path, configSection);
                 }
 
                 configGroupContext = new ResolutionContext(potentiallyMappedPath, additionalPaths, discoveryConfigGroup,
-                        configSection, context.getSectionLevel() + 1, isWithinMap, isWithMapWithUnnamedKey, deprecation);
+                        configSection, context.getSectionLevel() + 1, isWithinMap, isWithMapWithUnnamedKey,
+                        deprecation);
             } else {
                 configGroupContext = new ResolutionContext(potentiallyMappedPath, additionalPaths, discoveryConfigGroup,
                         context.getItemCollection(), context.getSectionLevel(), isWithinMap, isWithMapWithUnnamedKey,
@@ -157,23 +158,28 @@ public class ConfigResolver {
             String typeBinaryName = discoveryConfigProperty.getType().binaryName();
             String typeSimplifiedName = discoveryConfigProperty.getType().simplifiedName();
 
-            // if the property has a converter, we don't hyphenate the values (per historical rules, not exactly sure of the reason)
-            boolean hyphenateEnumValues = discoveryConfigProperty.isEnforceHyphenateEnumValue() ||
-                    !discoveryConfigProperty.isConverted();
+            // if the property has a converter, we don't hyphenate the values (per historical rules, not exactly sure of
+            // the reason)
+            boolean hyphenateEnumValues = discoveryConfigProperty.isEnforceHyphenateEnumValue()
+                    || !discoveryConfigProperty.isConverted();
 
             String defaultValue = getDefaultValue(discoveryConfigProperty.getDefaultValue(),
-                    discoveryConfigProperty.getDefaultValueForDoc(), discoveryConfigProperty.getType(), hyphenateEnumValues);
+                    discoveryConfigProperty.getDefaultValueForDoc(), discoveryConfigProperty.getType(),
+                    hyphenateEnumValues);
 
             EnumAcceptedValues enumAcceptedValues = null;
             if (discoveryConfigProperty.getType().isEnum()) {
                 EnumDefinition enumDefinition = configCollector.getResolvedEnum(typeQualifiedName);
                 Map<String, EnumAcceptedValue> localAcceptedValues = enumDefinition.constants().entrySet().stream()
-                        .collect(Collectors.toMap(
-                                e -> e.getKey(),
-                                e -> new EnumAcceptedValue(e.getValue().hasExplicitValue() ? e.getValue().explicitValue()
-                                        : (hyphenateEnumValues ? ConfigNamingUtil.hyphenateEnumValue(e.getKey())
-                                                : e.getKey())),
-                                (x, y) -> y, LinkedHashMap::new));
+                        .collect(
+                                Collectors
+                                        .toMap(e -> e.getKey(),
+                                                e -> new EnumAcceptedValue(e.getValue().hasExplicitValue()
+                                                        ? e.getValue().explicitValue()
+                                                        : (hyphenateEnumValues
+                                                                ? ConfigNamingUtil.hyphenateEnumValue(e.getKey())
+                                                                : e.getKey())),
+                                                (x, y) -> y, LinkedHashMap::new));
                 enumAcceptedValues = new EnumAcceptedValues(enumDefinition.qualifiedName(), localAcceptedValues);
             }
 
@@ -184,7 +190,8 @@ public class ConfigResolver {
                 // it is a leaf pass through map, it is always optional
                 optional = true;
                 typeQualifiedName = utils.element().getQualifiedName(discoveryConfigProperty.getType().wrapperType());
-                typeSimplifiedName = utils.element().simplifyGenericType(discoveryConfigProperty.getType().wrapperType());
+                typeSimplifiedName = utils.element()
+                        .simplifyGenericType(discoveryConfigProperty.getType().wrapperType());
 
                 potentiallyMappedPath += ConfigNamingUtil.getMapKey(discoveryConfigProperty.getMapKey());
                 additionalPaths = additionalPaths.stream()
@@ -197,24 +204,17 @@ public class ConfigResolver {
             PropertyPath propertyPath = new PropertyPath(potentiallyMappedPath,
                     ConfigNamingUtil.toEnvVarName(potentiallyMappedPath));
             List<PropertyPath> additionalPropertyPaths = additionalPaths.stream()
-                    .map(ap -> new PropertyPath(ap, ConfigNamingUtil.toEnvVarName(ap)))
-                    .toList();
+                    .map(ap -> new PropertyPath(ap, ConfigNamingUtil.toEnvVarName(ap))).toList();
 
             // this is a standard property
-            ConfigProperty configProperty = new ConfigProperty(phase,
-                    discoveryConfigProperty.getSourceType(),
-                    discoveryConfigProperty.getSourceElementName(),
-                    discoveryConfigProperty.getSourceElementType(),
-                    propertyPath, additionalPropertyPaths,
-                    typeQualifiedName, typeSimplifiedName,
-                    discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(),
-                    optional, discoveryConfigProperty.getMapKey(),
-                    discoveryConfigProperty.isUnnamedMapKey(), context.isWithinMap(),
-                    discoveryConfigProperty.isConverted(),
-                    discoveryConfigProperty.getType().isEnum(),
-                    enumAcceptedValues, defaultValue,
-                    JavadocUtil.getJavadocSiteLink(typeBinaryName),
-                    deprecation);
+            ConfigProperty configProperty = new ConfigProperty(phase, discoveryConfigProperty.getSourceType(),
+                    discoveryConfigProperty.getSourceElementName(), discoveryConfigProperty.getSourceElementType(),
+                    propertyPath, additionalPropertyPaths, typeQualifiedName, typeSimplifiedName,
+                    discoveryConfigProperty.getType().isMap(), discoveryConfigProperty.getType().isList(), optional,
+                    discoveryConfigProperty.getMapKey(), discoveryConfigProperty.isUnnamedMapKey(),
+                    context.isWithinMap(), discoveryConfigProperty.isConverted(),
+                    discoveryConfigProperty.getType().isEnum(), enumAcceptedValues, defaultValue,
+                    JavadocUtil.getJavadocSiteLink(typeBinaryName), deprecation);
             context.getItemCollection().addItem(configProperty);
         }
     }
@@ -267,8 +267,8 @@ public class ConfigResolver {
         private final Deprecation deprecation;
 
         private ResolutionContext(String path, List<String> additionalPaths, DiscoveryRootElement discoveryRootElement,
-                ConfigItemCollection itemCollection,
-                int sectionLevel, boolean withinMap, boolean withinMapWithUnnamedKey, Deprecation deprecation) {
+                ConfigItemCollection itemCollection, int sectionLevel, boolean withinMap,
+                boolean withinMapWithUnnamedKey, Deprecation deprecation) {
             this.path = path;
             this.additionalPaths = additionalPaths;
             this.discoveryRootElement = discoveryRootElement;

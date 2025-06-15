@@ -13,8 +13,7 @@ public class ApplicationPropertiesConfigSourceTest {
 
     @RegisterExtension
     static final QuarkusComponentTestExtension extension = QuarkusComponentTestExtension.builder()
-            .configProperty("org.acme.bar", "GRUT")
-            .build();
+            .configProperty("org.acme.bar", "GRUT").build();
 
     @Inject
     Component component;

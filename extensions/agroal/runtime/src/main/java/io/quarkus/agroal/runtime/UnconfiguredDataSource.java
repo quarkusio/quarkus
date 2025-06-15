@@ -48,7 +48,7 @@ public class UnconfiguredDataSource implements AgroalDataSource {
 
     @Override
     public void setPoolInterceptors(Collection<? extends AgroalPoolInterceptor> arg0) {
-        //noop
+        // noop
     }
 
     @Override

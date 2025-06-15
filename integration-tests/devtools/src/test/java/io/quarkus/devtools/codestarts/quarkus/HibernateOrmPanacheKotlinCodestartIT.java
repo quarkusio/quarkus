@@ -11,12 +11,9 @@ import io.quarkus.maven.ArtifactKey;
 public class HibernateOrmPanacheKotlinCodestartIT {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("hibernate-orm")
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("hibernate-orm")
             .extension(new ArtifactKey("io.quarkus", "quarkus-jdbc-h2"))
-            .extension(new ArtifactKey("io.quarkus", "quarkus-hibernate-orm-panache-kotlin"))
-            .languages(KOTLIN)
-            .build();
+            .extension(new ArtifactKey("io.quarkus", "quarkus-hibernate-orm-panache-kotlin")).languages(KOTLIN).build();
 
     @Test
     void testContent() throws Throwable {

@@ -161,10 +161,7 @@ final class PlatformHelper {
     }
 
     public static Set<Platform> parse(Collection<String> platformSpecifiers) {
-        return platformSpecifiers
-                .stream()
-                .map(PlatformHelper::parse)
-                .collect(Collectors.toSet());
+        return platformSpecifiers.stream().map(PlatformHelper::parse).collect(Collectors.toSet());
     }
 
 }

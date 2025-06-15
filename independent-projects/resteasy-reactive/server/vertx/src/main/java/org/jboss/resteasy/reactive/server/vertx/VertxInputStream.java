@@ -86,7 +86,7 @@ public class VertxInputStream extends InputStream {
         if (limit > 0 && exchange.request.bytesRead() > limit) {
             HttpServerResponse response = exchange.request.response();
             if (response.headWritten()) {
-                //the response has been written, not much we can do
+                // the response has been written, not much we can do
                 exchange.request.connection().close();
                 throw new IOException("Request too large");
             } else {
@@ -155,7 +155,7 @@ public class VertxInputStream extends InputStream {
                 }
             }
         } catch (IOException | RuntimeException e) {
-            //our exchange is all broken, just end it
+            // our exchange is all broken, just end it
             throw e;
         } finally {
             if (pooled != null) {
@@ -232,8 +232,8 @@ public class VertxInputStream extends InputStream {
                 while (input1 == null && !eof && readException == null) {
                     long rem = expire - System.currentTimeMillis();
                     if (rem <= 0) {
-                        //everything is broken, if read has timed out we can assume that the underling connection
-                        //is wrecked, so just close it
+                        // everything is broken, if read has timed out we can assume that the underling connection
+                        // is wrecked, so just close it
                         request.connection().close();
                         IOException throwable = new IOException("Read timed out");
                         readException = throwable;

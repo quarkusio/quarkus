@@ -19,9 +19,8 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ClientBlockingDeadlineTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addPackage(GreeterGrpc.class.getPackage()).addClasses(HelloService.class))
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
+            .create(JavaArchive.class).addPackage(GreeterGrpc.class.getPackage()).addClasses(HelloService.class))
             .withConfigurationResource("hello-config-deadline.properties");
 
     @GrpcClient("hello-service")
@@ -32,7 +31,7 @@ public class ClientBlockingDeadlineTest {
         Deadline deadline = stub.getCallOptions().getDeadline();
         assertNotNull(deadline);
         try {
-            //noinspection ResultOfMethodCallIgnored
+            // noinspection ResultOfMethodCallIgnored
             stub.sayHello(HelloRequest.newBuilder().setName("Scaladar").build());
         } catch (Exception e) {
             Assertions.assertTrue(e instanceof StatusRuntimeException);

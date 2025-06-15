@@ -24,10 +24,10 @@ import io.quarkus.test.QuarkusUnitTest;
 class CustomerRepositoryNestedFieldsDerivedMethodsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest().setArchiveProducer(
-            () -> ShrinkWrap.create(JavaArchive.class)
-                    .addAsResource("import_customers.sql", "import.sql")
-                    .addClasses(Customer.class, CustomerRepository.class))
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addAsResource("import_customers.sql", "import.sql")
+                            .addClasses(Customer.class, CustomerRepository.class))
             .withConfigurationResource("application.properties");
 
     @Autowired
@@ -47,14 +47,11 @@ class CustomerRepositoryNestedFieldsDerivedMethodsTest {
     @Transactional
     void findByAddressCountryIsoCode() {
 
-        assertEquals(2, customerRepository.findAllByAddressCountryIsoCode("ES")
-                .size());
+        assertEquals(2, customerRepository.findAllByAddressCountryIsoCode("ES").size());
 
-        assertEquals(2, customerRepository.findAllByAddress_CountryIsoCode("ES")
-                .size());
+        assertEquals(2, customerRepository.findAllByAddress_CountryIsoCode("ES").size());
 
-        assertEquals(2, customerRepository.findAllByAddress_Country_IsoCode("ES")
-                .size());
+        assertEquals(2, customerRepository.findAllByAddress_Country_IsoCode("ES").size());
     }
 
     @Test
@@ -63,10 +60,11 @@ class CustomerRepositoryNestedFieldsDerivedMethodsTest {
 
         QueryArgumentException exception = assertThrows(QueryArgumentException.class,
                 () -> customerRepository.findAllByAddressCountry("Spain"));
-        assertThat(exception).hasMessageContaining("Argument [Spain] of type [java.lang.String] did not match parameter type");
-        assertThrows(QueryArgumentException.class,
-                () -> customerRepository.findAllByAddress_Country("Spain"));
-        assertThat(exception).hasMessageContaining("Argument [Spain] of type [java.lang.String] did not match parameter type");
+        assertThat(exception)
+                .hasMessageContaining("Argument [Spain] of type [java.lang.String] did not match parameter type");
+        assertThrows(QueryArgumentException.class, () -> customerRepository.findAllByAddress_Country("Spain"));
+        assertThat(exception)
+                .hasMessageContaining("Argument [Spain] of type [java.lang.String] did not match parameter type");
 
     }
 

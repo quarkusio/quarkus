@@ -27,25 +27,13 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class IndexedPropertiesInjectionTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(IndexedBean.class)
-                    .addAsServiceProvider(Converter.class, ConvertedValueConverter.class)
-                    .addAsResource(new StringAsset(
-                            "my.prop=1234\n" +
-                                    "server.hosts[0]=localhost\n" +
-                                    "server.hosts[1]=config\n" +
-                                    "indexed.converted[0]=in\n" +
-                                    "indexed.override.defaults[0]=e\n" +
-                                    "indexed.override.defaults[1]=f\n" +
-                                    "indexed.comma=a,b,c\n" +
-                                    "indexed.comma[0]=a\n" +
-                                    "indexed.comma[1]=b\n" +
-                                    "optionals.indexed[0]=a\n" +
-                                    "optionals.indexed[1]=b\n" +
-                                    "supplier.indexed[0]=a\n" +
-                                    "supplier.indexed[1]=b\n"),
-                            "application.properties"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClass(IndexedBean.class).addAsServiceProvider(Converter.class, ConvertedValueConverter.class)
+            .addAsResource(new StringAsset("my.prop=1234\n" + "server.hosts[0]=localhost\n" + "server.hosts[1]=config\n"
+                    + "indexed.converted[0]=in\n" + "indexed.override.defaults[0]=e\n"
+                    + "indexed.override.defaults[1]=f\n" + "indexed.comma=a,b,c\n" + "indexed.comma[0]=a\n"
+                    + "indexed.comma[1]=b\n" + "optionals.indexed[0]=a\n" + "optionals.indexed[1]=b\n"
+                    + "supplier.indexed[0]=a\n" + "supplier.indexed[1]=b\n"), "application.properties"));
 
     @Inject
     IndexedBean indexedBean;

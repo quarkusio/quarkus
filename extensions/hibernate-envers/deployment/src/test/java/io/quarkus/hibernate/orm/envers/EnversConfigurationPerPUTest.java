@@ -19,8 +19,7 @@ public class EnversConfigurationPerPUTest {
 
     @RegisterExtension
     static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyAuditedEntity.class))
+            .withApplicationRoot((jar) -> jar.addClasses(MyAuditedEntity.class))
             .withConfigurationResource("application-multiple-pu.properties");
 
     @Inject
@@ -71,9 +70,7 @@ public class EnversConfigurationPerPUTest {
     }
 
     private Configuration getConfiguration(EntityManagerFactory emf) {
-        return ((((SessionFactoryImplementor) emf
-                .unwrap(SessionFactoryImpl.class))
-                .getServiceRegistry()).getParentServiceRegistry())
-                .getService(EnversService.class).getConfig();
+        return ((((SessionFactoryImplementor) emf.unwrap(SessionFactoryImpl.class)).getServiceRegistry())
+                .getParentServiceRegistry()).getService(EnversService.class).getConfig();
     }
 }

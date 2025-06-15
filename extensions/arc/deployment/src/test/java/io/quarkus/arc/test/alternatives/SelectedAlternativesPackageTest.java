@@ -21,10 +21,10 @@ public class SelectedAlternativesPackageTest {
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
             .withApplicationRoot((jar) -> jar
-                    .addClasses(SelectedAlternativesPackageTest.class, Alpha.class, Producers.class, Foo.class, Bar.class,
-                            MyStereotype.class)
-                    .addAsResource(new StringAsset(
-                            "quarkus.arc.selected-alternatives=io.quarkus.arc.test.alternatives.*"),
+                    .addClasses(SelectedAlternativesPackageTest.class, Alpha.class, Producers.class, Foo.class,
+                            Bar.class, MyStereotype.class)
+                    .addAsResource(
+                            new StringAsset("quarkus.arc.selected-alternatives=io.quarkus.arc.test.alternatives.*"),
                             "application.properties"));
 
     @Inject

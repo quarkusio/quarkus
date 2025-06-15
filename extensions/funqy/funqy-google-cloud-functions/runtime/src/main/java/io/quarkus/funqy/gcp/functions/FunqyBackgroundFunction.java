@@ -15,7 +15,7 @@ public class FunqyBackgroundFunction implements RawBackgroundFunction {
     static {
         StringWriter error = new StringWriter();
         PrintWriter errorWriter = new PrintWriter(error, true);
-        if (Application.currentApplication() == null) { // were we already bootstrapped?  Needed for mock unit testing.
+        if (Application.currentApplication() == null) { // were we already bootstrapped? Needed for mock unit testing.
             // For GCP functions, we need to set the TCCL to the QuarkusHttpFunction classloader then restore it.
             // Without this, we have a lot of classloading issues (ClassNotFoundException on existing classes)
             // during static init.

@@ -39,9 +39,7 @@ import io.quarkus.micrometer.runtime.binder.mpmetrics.MpMetricsRecorder;
 import io.quarkus.micrometer.runtime.config.MicrometerConfig;
 
 /**
- * The microprofile API must remain optional.
- *
- * Avoid importing classes that import MP Metrics API classes.
+ * The microprofile API must remain optional. Avoid importing classes that import MP Metrics API classes.
  */
 @BuildSteps(onlyIf = MicroprofileMetricsProcessor.MicroprofileMetricsEnabled.class)
 public class MicroprofileMetricsProcessor {
@@ -53,7 +51,8 @@ public class MicroprofileMetricsProcessor {
         MicrometerConfig mConfig;
 
         public boolean getAsBoolean() {
-            return METRIC_ANNOTATION_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().mpMetrics());
+            return METRIC_ANNOTATION_CLASS != null
+                    && mConfig.checkBinderEnabledWithDefault(mConfig.binder().mpMetrics());
         }
     }
 
@@ -69,21 +68,18 @@ public class MicroprofileMetricsProcessor {
 
     @BuildStep
     AdditionalBeanBuildItem registerBeanClasses() {
-        return AdditionalBeanBuildItem.builder()
-                .setUnremovable()
+        return AdditionalBeanBuildItem.builder().setUnremovable()
                 .addBeanClass(MetricDotNames.MP_METRICS_BINDER.toString())
                 .addBeanClass(MetricDotNames.CONCURRENT_GAUGE_INTERCEPTOR.toString())
                 .addBeanClass(MetricDotNames.COUNTED_INTERCEPTOR.toString())
                 .addBeanClass(MetricDotNames.INJECTED_METRIC_PRODUCER.toString())
                 .addBeanClass(MetricDotNames.TIMED_INTERCEPTOR.toString())
-                .addBeanClass(MetricDotNames.MP_METRICS_REGISTRY_PRODUCER.toString())
-                .build();
+                .addBeanClass(MetricDotNames.MP_METRICS_REGISTRY_PRODUCER.toString()).build();
     }
 
     @BuildStep
     void logWarningForMpMetricsUsage(CombinedIndexBuildItem combinedIndexBuildItem,
-            BeanRegistrationPhaseBuildItem beanRegistrationPhase,
-            BuildProducer<BeanConfiguratorBuildItem> errors) {
+            BeanRegistrationPhaseBuildItem beanRegistrationPhase, BuildProducer<BeanConfiguratorBuildItem> errors) {
         IndexView index = combinedIndexBuildItem.getIndex();
         boolean mpMetricsPresent = false;
 
@@ -111,10 +107,10 @@ public class MicroprofileMetricsProcessor {
         }
 
         if (mpMetricsPresent) {
-            log.warn("This application uses the MP Metrics API. " +
-                    "The micrometer extension currently provides a compatibility layer that supports the MP Metrics API, " +
-                    "but metric names and recorded values will be different. " +
-                    "Note that the MP Metrics compatibility layer will move to a different extension in the future.");
+            log.warn("This application uses the MP Metrics API. "
+                    + "The micrometer extension currently provides a compatibility layer that supports the MP Metrics API, "
+                    + "but metric names and recorded values will be different. "
+                    + "Note that the MP Metrics compatibility layer will move to a different extension in the future.");
         }
     }
 
@@ -168,30 +164,29 @@ public class MicroprofileMetricsProcessor {
 
         // Gauges.
         GaugeAnnotationHandler.processAnnotatedGauges(index, classOutput);
-        annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index,
-                MetricDotNames.CONCURRENT_GAUGE_ANNOTATION));
+        annotationsTransformers
+                .produce(AnnotationHandler.transformAnnotations(index, MetricDotNames.CONCURRENT_GAUGE_ANNOTATION));
 
         // Invocation counters
-        annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index,
+        annotationsTransformers
+                .produce(AnnotationHandler.transformAnnotations(index, MetricDotNames.COUNTED_ANNOTATION));
+        annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index, MetricDotNames.METERED_ANNOTATION,
                 MetricDotNames.COUNTED_ANNOTATION));
-        annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index,
-                MetricDotNames.METERED_ANNOTATION, MetricDotNames.COUNTED_ANNOTATION));
 
         // Timed annotations. SimplyTimed --> Timed
-        annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index,
-                MetricDotNames.TIMED_ANNOTATION));
+        annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index, MetricDotNames.TIMED_ANNOTATION));
         annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index,
                 MetricDotNames.SIMPLY_TIMED_ANNOTATION, MetricDotNames.TIMED_ANNOTATION));
 
         // @Metric
-        annotationsTransformers.produce(AnnotationHandler.transformAnnotations(index,
-                MetricDotNames.METRIC_ANNOTATION));
+        annotationsTransformers
+                .produce(AnnotationHandler.transformAnnotations(index, MetricDotNames.METRIC_ANNOTATION));
 
         return new UnremovableBeanBuildItem(new Predicate<BeanInfo>() {
             @Override
             public boolean test(io.quarkus.arc.processor.BeanInfo beanInfo) {
-                if (beanInfo.hasType(MetricDotNames.METRIC) ||
-                        beanInfo.hasType(MetricDotNames.ANNOTATED_GAUGE_ADAPTER)) {
+                if (beanInfo.hasType(MetricDotNames.METRIC)
+                        || beanInfo.hasType(MetricDotNames.ANNOTATED_GAUGE_ADAPTER)) {
                     return true;
                 }
                 return false;
@@ -201,8 +196,7 @@ public class MicroprofileMetricsProcessor {
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
-    void configureRegistry(MpMetricsRecorder recorder,
-            RootMeterRegistryBuildItem rootMeterRegistryBuildItem) {
+    void configureRegistry(MpMetricsRecorder recorder, RootMeterRegistryBuildItem rootMeterRegistryBuildItem) {
         recorder.configureRegistryAdapter(rootMeterRegistryBuildItem.getValue());
 
     }

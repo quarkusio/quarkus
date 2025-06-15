@@ -49,7 +49,8 @@ public abstract class ResourcePropertiesProvider {
         String halCollectionName = getHalCollectionName(annotation, ResourceName.fromClass(interfaceName));
 
         return new ResourceProperties(isExposed(annotation), resourcePath, paged, true, halCollectionName,
-                new String[0], collectAnnotationsToCopy(repositoryInterfaceName), getMethodProperties(repositoryInterfaceName));
+                new String[0], collectAnnotationsToCopy(repositoryInterfaceName),
+                getMethodProperties(repositoryInterfaceName));
     }
 
     private Map<String, MethodProperties> getMethodProperties(DotName interfaceName) {
@@ -71,7 +72,8 @@ public abstract class ResourcePropertiesProvider {
         return methodPropertiesMap;
     }
 
-    private MethodProperties getMethodProperties(AnnotationInstance annotation, Set<AnnotationInstance> annotationsToCopy) {
+    private MethodProperties getMethodProperties(AnnotationInstance annotation,
+            Set<AnnotationInstance> annotationsToCopy) {
         return new MethodProperties(isExposed(annotation), getPath(annotation, ""), new String[0], annotationsToCopy);
     }
 
@@ -137,9 +139,7 @@ public abstract class ResourcePropertiesProvider {
     }
 
     private boolean isExposed(AnnotationInstance annotation) {
-        return annotation == null
-                || annotation.value("exported") == null
-                || annotation.value("exported").asBoolean();
+        return annotation == null || annotation.value("exported") == null || annotation.value("exported").asBoolean();
     }
 
     private String getPath(AnnotationInstance annotation, String defaultValue) {

@@ -22,20 +22,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class BeanValidationGraphQLDirectivesTest extends AbstractGraphQLTest {
 
     @RegisterExtension
-    static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Person.class)
-                    .addAsResource(new StringAsset("quarkus.smallrye-graphql.schema-include-directives=true"),
-                            "application.properties")
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
+    static QuarkusUnitTest test = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Person.class)
+            .addAsResource(new StringAsset("quarkus.smallrye-graphql.schema-include-directives=true"),
+                    "application.properties")
+            .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml"));
 
     @Test
     public void validateDirectivesPresentInSchema() {
-        get("/graphql/schema.graphql")
-                .then()
-                .body(containsString("input PersonInput {\n" +
-                        "  name: String @constraint(maxLength : 20, minLength : 5)\n" +
-                        "}\n"))
+        get("/graphql/schema.graphql").then()
+                .body(containsString("input PersonInput {\n"
+                        + "  name: String @constraint(maxLength : 20, minLength : 5)\n" + "}\n"))
                 .body(containsString(
                         "queryWithConstrainedArgument(constrained: String @constraint(maxLength : 123)): String"));
     }

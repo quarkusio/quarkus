@@ -25,53 +25,24 @@ public class HideCheckedExceptionMessageTest extends AbstractGraphQLTest {
 
     @RegisterExtension
     static QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(TestApi.class)
-                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml")
-                    .addAsResource(
-                            new StringAsset(
-                                    "quarkus.smallrye-graphql.hide-checked-exception-message=" +
-                                            "java.io.IOException," +
-                                            "java.lang.InterruptedException"),
+            .withApplicationRoot((jar) -> jar.addClasses(TestApi.class)
+                    .addAsManifestResource(EmptyAsset.INSTANCE, "beans.xml").addAsResource(
+                            new StringAsset("quarkus.smallrye-graphql.hide-checked-exception-message="
+                                    + "java.io.IOException," + "java.lang.InterruptedException"),
                             "application.properties"));
 
     @Test
     void testExcludeNullFieldsInResponse() {
-        given()
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(getPayload("{ something }"))
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(OK)
-                .and()
+        given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(getPayload("{ something }"))
+                .post("/graphql").then().assertThat().statusCode(OK).and()
                 .body(not(containsString(IOEXCEPTION_MESSAGE)));
 
-        given()
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(getPayload("{ somethingElse }"))
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(OK)
-                .and()
+        given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(getPayload("{ somethingElse }"))
+                .post("/graphql").then().assertThat().statusCode(OK).and()
                 .body(not(containsString(INTERRUPTED_EXCEPTION_MESSAGE)));
 
-        given()
-                .when()
-                .accept(MEDIATYPE_JSON)
-                .contentType(MEDIATYPE_JSON)
-                .body(getPayload("{ somethingElseElse }"))
-                .post("/graphql")
-                .then()
-                .assertThat()
-                .statusCode(OK)
-                .and()
-                .body(containsString(SQL_EXCEPTION_MESSAGE));
+        given().when().accept(MEDIATYPE_JSON).contentType(MEDIATYPE_JSON).body(getPayload("{ somethingElseElse }"))
+                .post("/graphql").then().assertThat().statusCode(OK).and().body(containsString(SQL_EXCEPTION_MESSAGE));
     }
 
     @GraphQLApi

@@ -14,9 +14,7 @@ public class TimezoneDefaultStorageColumnTest extends AbstractTimezoneDefaultSto
 
     @RegisterExtension
     static QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(EntityWithTimezones.class)
-                    .addClasses(SchemaUtil.class))
+            .withApplicationRoot((jar) -> jar.addClasses(EntityWithTimezones.class).addClasses(SchemaUtil.class))
             .withConfigurationResource("application.properties")
             .overrideConfigKey("quarkus.hibernate-orm.mapping.timezone.default-storage", "column");
 
@@ -34,9 +32,9 @@ public class TimezoneDefaultStorageColumnTest extends AbstractTimezoneDefaultSto
     @RunOnVertxContext
     public void persistAndLoad(UniAsserter asserter) {
         assertPersistedThenLoadedValues(asserter,
-                // Column storage preserves the offset, but not the zone ID: https://hibernate.atlassian.net/browse/HHH-16289
+                // Column storage preserves the offset, but not the zone ID:
+                // https://hibernate.atlassian.net/browse/HHH-16289
                 PERSISTED_ZONED_DATE_TIME.withZoneSameInstant(PERSISTED_ZONED_DATE_TIME.getOffset()),
-                PERSISTED_OFFSET_DATE_TIME,
-                PERSISTED_OFFSET_TIME);
+                PERSISTED_OFFSET_DATE_TIME, PERSISTED_OFFSET_TIME);
     }
 }

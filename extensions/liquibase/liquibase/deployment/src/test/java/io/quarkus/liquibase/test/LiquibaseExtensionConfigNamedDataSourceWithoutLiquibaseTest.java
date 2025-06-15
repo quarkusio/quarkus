@@ -15,8 +15,8 @@ import io.quarkus.liquibase.LiquibaseFactory;
 import io.quarkus.test.QuarkusUnitTest;
 
 /**
- * Assures, that liquibase can also be used without any configuration,
- * provided, that at least a named datasource is configured.
+ * Assures, that liquibase can also be used without any configuration, provided, that at least a named datasource is
+ * configured.
  */
 public class LiquibaseExtensionConfigNamedDataSourceWithoutLiquibaseTest {
 
@@ -32,11 +32,9 @@ public class LiquibaseExtensionConfigNamedDataSourceWithoutLiquibaseTest {
     AgroalDataSource usersDataSource;
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClass(LiquibaseExtensionConfigFixture.class)
-                    .addAsResource("db/changeLog.xml", "db/changeLog.xml")
-                    .addAsResource("config-for-named-datasource-without-liquibase.properties", "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClass(LiquibaseExtensionConfigFixture.class).addAsResource("db/changeLog.xml", "db/changeLog.xml")
+            .addAsResource("config-for-named-datasource-without-liquibase.properties", "application.properties"));
 
     @Test
     @DisplayName("Reads predefined default liquibase configuration for named datasource correctly")

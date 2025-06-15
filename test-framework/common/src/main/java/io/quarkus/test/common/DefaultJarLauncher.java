@@ -105,7 +105,8 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         if (HTTP_PRESENT) {
             args.add("-Dquarkus.http.port=" + httpPort);
             args.add("-Dquarkus.http.ssl-port=" + httpsPort);
-            // this won't be correct when using the random port but it's really only used by us for the rest client tests
+            // this won't be correct when using the random port but it's really only used by us for the rest client
+            // tests
             // in the main module, since those tests hit the application itself
             args.add("-Dtest.url=" + TestHTTPResourceManager.getUri());
         }

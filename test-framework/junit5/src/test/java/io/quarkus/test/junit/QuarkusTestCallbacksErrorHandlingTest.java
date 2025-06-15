@@ -9,12 +9,12 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.callback.QuarkusTestMethodContext;
 
 /**
- * Generally, {@link AssertionError} is thrown by testing frameworks such as JUnit. However,
- * it does not derive from {@link RuntimeException} hierarchy, and hence separate unwrapping of each type
- * must be handled in {@link io.quarkus.test.junit.AbstractTestWithCallbacksExtension}.
+ * Generally, {@link AssertionError} is thrown by testing frameworks such as JUnit. However, it does not derive from
+ * {@link RuntimeException} hierarchy, and hence separate unwrapping of each type must be handled in
+ * {@link io.quarkus.test.junit.AbstractTestWithCallbacksExtension}.
  * <p>
- * Ensuring that <code>AssertionError</code> is at the top of any stack track allows tooling to properly
- * parse and display expected vs actual diffs, etc.
+ * Ensuring that <code>AssertionError</code> is at the top of any stack track allows tooling to properly parse and
+ * display expected vs actual diffs, etc.
  *
  * @see ErrorThrowingCallback
  */

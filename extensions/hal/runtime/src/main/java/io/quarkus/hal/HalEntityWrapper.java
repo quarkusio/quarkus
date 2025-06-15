@@ -6,11 +6,9 @@ import java.util.Map;
 import jakarta.ws.rs.core.Link;
 
 /**
- * The Hal entity wrapper that includes the entity and the Hal links.
- *
- * This type is serialized into Json using:
- * - the JSON-B serializer: {@link HalEntityWrapperJsonbSerializer}
- * - the Jackson serializer: {@link HalEntityWrapperJacksonSerializer}
+ * The Hal entity wrapper that includes the entity and the Hal links. This type is serialized into Json using: - the
+ * JSON-B serializer: {@link HalEntityWrapperJsonbSerializer} - the Jackson serializer:
+ * {@link HalEntityWrapperJacksonSerializer}
  */
 public class HalEntityWrapper<T> extends HalWrapper {
 

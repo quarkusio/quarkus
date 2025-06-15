@@ -30,19 +30,13 @@ import sun.misc.Signal;
 import sun.misc.SignalHandler;
 
 /**
- * Manages the lifecycle of a Quarkus application.
- *
- * The {@link Application} class is responsible for starting and stopping the application,
- * but nothing else. This class can be used to run both persistent applications that will run
- * till they receive a signal, and command mode applications that will run until the main method
- * returns. This class registers a shutdown hook to properly shut down the application, and handles
- * exiting with the supplied exit code as well as any exception thrown when starting the application.
- *
- * This class should be used to run production and dev mode applications, while test use cases will
- * likely want to just use {@link Application} directly.
- *
- * This class is static, there can only ever be a single application instance running at any time.
- *
+ * Manages the lifecycle of a Quarkus application. The {@link Application} class is responsible for starting and
+ * stopping the application, but nothing else. This class can be used to run both persistent applications that will run
+ * till they receive a signal, and command mode applications that will run until the main method returns. This class
+ * registers a shutdown hook to properly shut down the application, and handles exiting with the supplied exit code as
+ * well as any exception thrown when starting the application. This class should be used to run production and dev mode
+ * applications, while test use cases will likely want to just use {@link Application} directly. This class is static,
+ * there can only ever be a single application instance running at any time.
  */
 public class ApplicationLifecycleManager {
 
@@ -73,7 +67,7 @@ public class ApplicationLifecycleManager {
 
     private static final String DISABLE_SIGNAL_HANDLERS = "DISABLE_SIGNAL_HANDLERS";
 
-    //guard for all state
+    // guard for all state
     private static final Lock stateLock = Locks.reentrantLock();
     private static final Condition stateCond = stateLock.newCondition();
     private static ShutdownHookThread shutdownHookThread;
@@ -84,7 +78,8 @@ public class ApplicationLifecycleManager {
     private static boolean vmShuttingDown;
     private static Consumer<Boolean> alreadyStartedCallback = NOOP_ALREADY_STARTED_CALLBACK;
 
-    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("windows");
+    private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase(Locale.ENGLISH)
+            .contains("windows");
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase(Locale.ENGLISH).contains("mac");
 
     public static final String QUARKUS_APPCDS_GENERATE_PROP = "quarkus.appcds.generate";
@@ -98,8 +93,8 @@ public class ApplicationLifecycleManager {
         boolean alreadyStarted;
         stateLock.lock();
         try {
-            //in tests, we might pass this method an already started application
-            //in this case we don't shut it down at the end
+            // in tests, we might pass this method an already started application
+            // in this case we don't shut it down at the end
             alreadyStarted = application.isStarted();
             alreadyStartedCallback.accept(alreadyStarted);
             if (shutdownHookThread == null) {
@@ -118,7 +113,8 @@ public class ApplicationLifecycleManager {
 
             application.start(args);
             // now we are started, we either run the main application or just wait to exit
-            // when we are in AppCDS generation we can't call the bean container, we just want to fall through to the exit
+            // when we are in AppCDS generation we can't call the bean container, we just want to fall through to the
+            // exit
             if (quarkusApplication != null && !isAppCDSGeneration()) {
                 BeanManager beanManager = CDI.current().getBeanManager();
                 Set<Bean<?>> beans = beanManager.getBeans(quarkusApplication, Any.Literal.INSTANCE);
@@ -138,11 +134,11 @@ public class ApplicationLifecycleManager {
                 }
                 int result = -1;
                 try {
-                    result = instance.run(args);//TODO: argument filtering?
+                    result = instance.run(args);// TODO: argument filtering?
                 } finally {
                     stateLock.lock();
                     try {
-                        //now we exit
+                        // now we exit
                         if (exitCode == -1 && result != -1) {
                             exitCode = result;
                         }
@@ -172,27 +168,31 @@ public class ApplicationLifecycleManager {
                     String host = qbe.getHost();
                     int port = qbe.getPort();
                     if (QuarkusBindException.isKnownHost(host)) {
-                        applicationLogger.errorf("Port %d seems to be in use by another process. " +
-                                "Quarkus may already be running or the port is used by another application.", port);
+                        applicationLogger.errorf(
+                                "Port %d seems to be in use by another process. "
+                                        + "Quarkus may already be running or the port is used by another application.",
+                                port);
                         if (IS_WINDOWS) {
-                            applicationLogger.warn("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
+                            applicationLogger
+                                    .warn("Use 'netstat -a -b -n -o' to identify the process occupying the port.");
                             applicationLogger
                                     .warn("You can try to kill it with 'taskkill /PID <pid>' or via the Task Manager.");
                         } else if (IS_MAC) {
-                            applicationLogger
-                                    .warnf("Use 'netstat -anv | grep %d' to identify the process occupying the port.", port);
+                            applicationLogger.warnf(
+                                    "Use 'netstat -anv | grep %d' to identify the process occupying the port.", port);
                             applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                         } else {
-                            applicationLogger
-                                    .warnf("Use 'ss -anop | grep %1$d' or 'netstat -anop | grep %1$d' to identify the process occupying the port.",
-                                            port);
+                            applicationLogger.warnf(
+                                    "Use 'ss -anop | grep %1$d' or 'netstat -anop | grep %1$d' to identify the process occupying the port.",
+                                    port);
                             applicationLogger.warn("You can try to kill it with 'kill -9 <pid>'.");
                         }
                     } else {
                         applicationLogger.errorf("Unable to bind to host: %s and port: %d.", host, port);
                     }
 
-                } else if (rootCause instanceof ConfigurationException || rootCause instanceof ConfigValidationException) {
+                } else if (rootCause instanceof ConfigurationException
+                        || rootCause instanceof ConfigValidationException) {
                     System.err.println(rootCause.getMessage());
                 } else if (rootCause instanceof PreventFurtherStepsException
                         && !StringUtil.isNullOrEmpty(rootCause.getMessage())) {
@@ -228,10 +228,16 @@ public class ApplicationLifecycleManager {
             }
         }
         if (!alreadyStarted) {
-            application.stop(); //this could have already been called
+            application.stop(); // this could have already been called
         }
         currentApplication = null;
-        (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); //this may not be called if shutdown was initiated by a signal
+        (exitCodeHandler == null ? defaultExitCodeHandler : exitCodeHandler).accept(getExitCode(), null); // this may
+                                                                                                          // not be
+                                                                                                          // called if
+                                                                                                          // shutdown
+                                                                                                          // was
+                                                                                                          // initiated
+                                                                                                          // by a signal
     }
 
     // this is needed only when async console logging is enabled
@@ -258,7 +264,8 @@ public class ApplicationLifecycleManager {
         }
         if (asyncHandler != null) {
             try {
-                // all we can do is wait because the thread that takes records off the queue is a daemon thread and there is no way to interact with its lifecycle
+                // all we can do is wait because the thread that takes records off the queue is a daemon thread and
+                // there is no way to interact with its lifecycle
                 Thread.sleep(200);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -267,8 +274,8 @@ public class ApplicationLifecycleManager {
     }
 
     /**
-     * Run some background cleanup once after the application has booted.
-     * This will not be invoked for command mode, as it's not worth it for a short-lived process.
+     * Run some background cleanup once after the application has booted. This will not be invoked for command mode, as
+     * it's not worth it for a short-lived process.
      */
     private static void longLivedPostBootCleanup() {
         final ClassLoader cl = Thread.currentThread().getContextClassLoader();
@@ -307,7 +314,6 @@ public class ApplicationLifecycleManager {
     }
 
     /**
-     *
      * @return The current exit code that would be reported if the application exits
      */
     public static int getExitCode() {
@@ -315,10 +321,8 @@ public class ApplicationLifecycleManager {
     }
 
     /**
-     * Exits without supplying an exit code.
-     *
-     * The application will exit with a code of 0 by default, however if this method is called it is still possible
-     * for a different exit code to be set.
+     * Exits without supplying an exit code. The application will exit with a code of 0 by default, however if this
+     * method is called it is still possible for a different exit code to be set.
      */
     public static void exit() {
         exit(-1);
@@ -329,7 +333,6 @@ public class ApplicationLifecycleManager {
     }
 
     /**
-     *
      * @return <code>true</code> if the VM is shutting down
      */
     public static boolean isVmShuttingDown() {
@@ -337,13 +340,11 @@ public class ApplicationLifecycleManager {
     }
 
     /**
-     * Sets the default exit code and exception handler for application run through the run method
-     * that does not take an exit handler.
+     * Sets the default exit code and exception handler for application run through the run method that does not take an
+     * exit handler. By default, this will just call {@code System.exit}, however this is not always what is wanted.
      *
-     * By default, this will just call {@code System.exit}, however this is not always
-     * what is wanted.
-     *
-     * @param defaultExitCodeHandler the new default exit handler
+     * @param defaultExitCodeHandler
+     *        the new default exit handler
      */
     public static void setDefaultExitCodeHandler(BiConsumer<Integer, Throwable> defaultExitCodeHandler) {
         if (defaultExitCodeHandler == null) {
@@ -353,13 +354,11 @@ public class ApplicationLifecycleManager {
     }
 
     /**
-     * Sets the default exit code handler for application run through the run method
-     * that does not take an exit handler.
+     * Sets the default exit code handler for application run through the run method that does not take an exit handler.
+     * By default, this will just call {@code System.exit}, however this is not always what is wanted.
      *
-     * By default, this will just call {@code System.exit}, however this is not always
-     * what is wanted.
-     *
-     * @param defaultExitCodeHandler the new default exit handler
+     * @param defaultExitCodeHandler
+     *        the new default exit handler
      */
     // Used by StartupActionImpl via reflection
     public static void setDefaultExitCodeHandler(Consumer<Integer> defaultExitCodeHandler) {
@@ -376,12 +375,11 @@ public class ApplicationLifecycleManager {
     }
 
     /**
-     * Signals that the application should exit with the given code.
+     * Signals that the application should exit with the given code. Note that the first positive exit code will 'win',
+     * so if the exit code has already been set then the exit code will be ignored.
      *
-     * Note that the first positive exit code will 'win', so if the exit code
-     * has already been set then the exit code will be ignored.
-     *
-     * @param code The exit code
+     * @param code
+     *        The exit code
      */
     public static void exit(int code) {
         stateLock.lock();
@@ -424,9 +422,9 @@ public class ApplicationLifecycleManager {
         public void run() {
             stateLock.lock();
             vmShuttingDown = true;
-            //we just request shutdown and unblock the main thread
-            //we let the application main thread take care of actually exiting
-            //TODO: if the main thread is not actively waiting to exit should we interrupt it?
+            // we just request shutdown and unblock the main thread
+            // we let the application main thread take care of actually exiting
+            // TODO: if the main thread is not actively waiting to exit should we interrupt it?
             shutdownRequested = true;
             // so long as this thread is invoked, the app shutdown is considered non-standard
             shutdownReason = ShutdownEvent.ShutdownReason.NON_STANDARD;
@@ -435,7 +433,7 @@ public class ApplicationLifecycleManager {
             } finally {
                 stateLock.unlock();
             }
-            //take a reliable reference before changing the application state:
+            // take a reliable reference before changing the application state:
             final Application app = currentApplication;
             if (app != null) {
                 if (app.isStarted()) {
@@ -466,6 +464,7 @@ public class ApplicationLifecycleManager {
     }
 
     public static boolean isAppCDSGeneration() {
-        return Boolean.parseBoolean(System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
+        return Boolean
+                .parseBoolean(System.getProperty(ApplicationLifecycleManager.QUARKUS_APPCDS_GENERATE_PROP, "false"));
     }
 }

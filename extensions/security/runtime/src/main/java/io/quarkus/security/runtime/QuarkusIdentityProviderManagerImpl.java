@@ -48,10 +48,12 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     /**
      * Attempts to create an authenticated identity for the provided {@link AuthenticationRequest}.
      * <p>
-     * If authentication succeeds the resulting identity will be augmented with any configured {@link SecurityIdentityAugmentor}
-     * instances that have been registered.
+     * If authentication succeeds the resulting identity will be augmented with any configured
+     * {@link SecurityIdentityAugmentor} instances that have been registered.
      *
-     * @param request The authentication request
+     * @param request
+     *        The authentication request
+     *
      * @return The first identity provider that was registered with this type
      */
     public Uni<SecurityIdentity> authenticate(AuthenticationRequest request) {
@@ -70,10 +72,10 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         }
     }
 
-    private <T extends AuthenticationRequest> Uni<SecurityIdentity> handleSingleProvider(IdentityProvider<T> identityProvider,
-            T request) {
-        Uni<SecurityIdentity> authenticated = identityProvider.authenticate(request, blockingRequestContext)
-                .onItem().ifNull().failWith(new Supplier<Throwable>() {
+    private <T extends AuthenticationRequest> Uni<SecurityIdentity> handleSingleProvider(
+            IdentityProvider<T> identityProvider, T request) {
+        Uni<SecurityIdentity> authenticated = identityProvider.authenticate(request, blockingRequestContext).onItem()
+                .ifNull().failWith(new Supplier<Throwable>() {
                     @Override
                     public Throwable get() {
                         // reject request with the invalid credential
@@ -81,13 +83,12 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                     }
                 });
         if (augmenters.length > 0) {
-            authenticated = authenticated
-                    .flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
-                        @Override
-                        public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
-                            return handleIdentityFromProvider(0, securityIdentity, request.getAttributes());
-                        }
-                    });
+            authenticated = authenticated.flatMap(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+                @Override
+                public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
+                    return handleIdentityFromProvider(0, securityIdentity, request.getAttributes());
+                }
+            });
         }
         return authenticated;
     }
@@ -95,10 +96,12 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
     /**
      * Attempts to create an authenticated identity for the provided {@link AuthenticationRequest} in a blocking manner
      * <p>
-     * If authentication succeeds the resulting identity will be augmented with any configured {@link SecurityIdentityAugmentor}
-     * instances that have been registered.
+     * If authentication succeeds the resulting identity will be augmented with any configured
+     * {@link SecurityIdentityAugmentor} instances that have been registered.
      *
-     * @param request The authentication request
+     * @param request
+     *        The authentication request
+     *
      * @return The first identity provider that was registered with this type
      */
     public SecurityIdentity authenticateBlocking(AuthenticationRequest request) {
@@ -110,10 +113,9 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         return handleProviders(providers, request).await().indefinitely();
     }
 
-    private Uni<SecurityIdentity> handleProviders(
-            List<IdentityProvider<? extends AuthenticationRequest>> providers, AuthenticationRequest request) {
-        return handleProvider(0, providers, request)
-                .onItem()
+    private Uni<SecurityIdentity> handleProviders(List<IdentityProvider<? extends AuthenticationRequest>> providers,
+            AuthenticationRequest request) {
+        return handleProvider(0, providers, request).onItem()
                 .transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<? extends SecurityIdentity> apply(SecurityIdentity securityIdentity) {
@@ -122,16 +124,15 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
                 });
     }
 
-    private Uni<SecurityIdentity> handleProvider(int pos, List<IdentityProvider<? extends AuthenticationRequest>> providers,
-            AuthenticationRequest request) {
+    private Uni<SecurityIdentity> handleProvider(int pos,
+            List<IdentityProvider<? extends AuthenticationRequest>> providers, AuthenticationRequest request) {
         if (pos == providers.size()) {
-            //we failed to authentication
+            // we failed to authentication
             log.debug("Authentication failed as providers would authenticate the request");
             return Uni.createFrom().failure(new AuthenticationFailedException());
         }
-        return getProvider(pos, request, providers)
-                .authenticate(request, blockingRequestContext)
-                .onItem().transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
+        return getProvider(pos, request, providers).authenticate(request, blockingRequestContext).onItem()
+                .transformToUni(new Function<SecurityIdentity, Uni<? extends SecurityIdentity>>() {
                     @Override
                     public Uni<SecurityIdentity> apply(SecurityIdentity securityIdentity) {
                         if (securityIdentity != null) {
@@ -189,7 +190,9 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         /**
          * Adds an {@link IdentityProvider} implementation to this manager
          *
-         * @param provider The provider
+         * @param provider
+         *        The provider
+         *
          * @return this builder
          */
         public Builder addProvider(IdentityProvider<? extends AuthenticationRequest> provider) {
@@ -203,7 +206,9 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         /**
          * Adds an augmentor that can modify the security identity that is provided by the identity store.
          *
-         * @param augmentor The augmentor
+         * @param augmentor
+         *        The augmentor
+         *
          * @return this builder
          */
         public Builder addSecurityIdentityAugmentor(SecurityIdentityAugmentor augmentor) {
@@ -216,7 +221,9 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         }
 
         /**
-         * @param blockingExecutor The executor to use for blocking tasks
+         * @param blockingExecutor
+         *        The executor to use for blocking tasks
+         *
          * @return this builder
          */
         public Builder setBlockingExecutor(BlockingSecurityExecutor blockingExecutor) {
@@ -225,7 +232,9 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
         }
 
         /**
-         * @param blockingExecutor The executor to use for blocking tasks
+         * @param blockingExecutor
+         *        The executor to use for blocking tasks
+         *
          * @return this builder
          */
         public Builder setBlockingExecutor(Executor blockingExecutor) {

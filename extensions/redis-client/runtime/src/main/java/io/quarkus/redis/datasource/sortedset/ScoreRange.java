@@ -43,7 +43,8 @@ public class ScoreRange<T extends Number> {
         if (this == UNBOUNDED || min == null && max == null) {
             return true;
         }
-        return min != null && Double.isInfinite(min.doubleValue()) && max != null && Double.isInfinite(max.doubleValue());
+        return min != null && Double.isInfinite(min.doubleValue()) && max != null
+                && Double.isInfinite(max.doubleValue());
     }
 
     public String getLowerBound() {

@@ -26,29 +26,27 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class SubResourceFieldInjectionTest {
     @RegisterExtension
-    static QuarkusUnitTest testExtension = new QuarkusUnitTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    JavaArchive war = ShrinkWrap.create(JavaArchive.class);
-                    war.addClasses(PortProviderUtil.class);
-                    war.addClasses(StoreResource.class);
-                    war.addClasses(OrderResource.class);
-                    war.addClasses(ContactResource.class);
-                    war.addClasses(ContactResourceImpl.class);
-                    war.addClasses(PositionResourceImpl.class);
-                    return war;
-                }
-            }).debugBytecode(true);
+    static QuarkusUnitTest testExtension = new QuarkusUnitTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            JavaArchive war = ShrinkWrap.create(JavaArchive.class);
+            war.addClasses(PortProviderUtil.class);
+            war.addClasses(StoreResource.class);
+            war.addClasses(OrderResource.class);
+            war.addClasses(ContactResource.class);
+            war.addClasses(ContactResourceImpl.class);
+            war.addClasses(PositionResourceImpl.class);
+            return war;
+        }
+    }).debugBytecode(true);
 
     @Test
     public void basicTest() {
         // Test parameter injection works for Class<SubResource> locators
         {
             Client client = ClientBuilder.newClient();
-            Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/contacts?typeFilter=SENDER",
+            Response response = client
+                    .target(PortProviderUtil.generateURL("/store/orders/orderId/contacts?typeFilter=SENDER",
                             SubResourceFieldInjectionTest.class.getSimpleName()))
                     .request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
@@ -58,11 +56,8 @@ public class SubResourceFieldInjectionTest {
         }
         {
             Client client = ClientBuilder.newClient();
-            Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/contacts",
-                            SubResourceFieldInjectionTest.class.getSimpleName()))
-                    .request().get();
+            Response response = client.target(PortProviderUtil.generateURL("/store/orders/orderId/contacts",
+                    SubResourceFieldInjectionTest.class.getSimpleName())).request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
             Assertions.assertEquals("[name1, name2]", response.readEntity(String.class), "Wrong content of response");
             response.close();
@@ -72,13 +67,11 @@ public class SubResourceFieldInjectionTest {
         // Test parameter injection works for @Inject subresources
         {
             Client client = ClientBuilder.newClient();
-            Response response = client.target(
-                    PortProviderUtil.generateURL(
-                            "/store/orders/orderId/positions/positionId",
-                            SubResourceFieldInjectionTest.class.getSimpleName()))
-                    .request().get();
+            Response response = client.target(PortProviderUtil.generateURL("/store/orders/orderId/positions/positionId",
+                    SubResourceFieldInjectionTest.class.getSimpleName())).request().get();
             Assertions.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-            Assertions.assertEquals("orderId:positionId", response.readEntity(String.class), "Wrong content of response");
+            Assertions.assertEquals("orderId:positionId", response.readEntity(String.class),
+                    "Wrong content of response");
             response.close();
             client.close();
         }

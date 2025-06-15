@@ -33,7 +33,9 @@ public final class SchedulerUtils {
     /**
      * Parse the `@Scheduled(delayed = "")` field into milliseconds.
      *
-     * @param scheduled annotation
+     * @param scheduled
+     *        annotation
+     *
      * @return returns the duration in milliseconds.
      */
     public static long parseDelayedAsMillis(Scheduled scheduled) {
@@ -44,9 +46,11 @@ public final class SchedulerUtils {
     /**
      * Parse the `@Scheduled(every = "")` field into milliseconds.
      *
-     * @param scheduled annotation
-     * @return returns the duration in milliseconds or {@link OptionalLong#empty()} if the expression evaluates to "off" or
-     *         "disabled".
+     * @param scheduled
+     *        annotation
+     *
+     * @return returns the duration in milliseconds or {@link OptionalLong#empty()} if the expression evaluates to "off"
+     *         or "disabled".
      */
     public static OptionalLong parseEveryAsMillis(Scheduled scheduled) {
         String value = lookUpPropertyValue(scheduled.every());
@@ -60,9 +64,11 @@ public final class SchedulerUtils {
     /**
      * Parse the `@Scheduled(executionMaxDelay = "")` value into milliseconds.
      *
-     * @param scheduled annotation
-     * @return returns the duration in milliseconds or {@link OptionalLong#empty()} if the expression evaluates to "off" or
-     *         "disabled".
+     * @param scheduled
+     *        annotation
+     *
+     * @return returns the duration in milliseconds or {@link OptionalLong#empty()} if the expression evaluates to "off"
+     *         or "disabled".
      */
     public static OptionalLong parseExecutionMaxDelayAsMillis(Scheduled scheduled) {
         String value = lookUpPropertyValue(scheduled.executionMaxDelay());
@@ -75,7 +81,9 @@ public final class SchedulerUtils {
     /**
      * Parse the `@Scheduled(overdueGracePeriod = "")` field into milliseconds.
      *
-     * @param scheduled annotation
+     * @param scheduled
+     *        annotation
+     *
      * @return returns the duration.
      */
     public static Duration parseOverdueGracePeriod(Scheduled scheduled, Duration defaultDuration) {
@@ -93,7 +101,9 @@ public final class SchedulerUtils {
     /**
      * Looks up the property value by checking whether the value is a configuration key and resolves it if so.
      *
-     * @param propertyValue property value to look up.
+     * @param propertyValue
+     *        property value to look up.
+     *
      * @return the resolved property value.
      */
     public static String lookUpPropertyValue(String propertyValue) {
@@ -158,8 +168,8 @@ public final class SchedulerUtils {
                 } else if (resolveContext.hasDefault()) {
                     resolveContext.expandDefault();
                 } else {
-                    throw new NoSuchElementException(String.format("Could not expand value %s in property %s",
-                            resolveContext.getKey(), expr));
+                    throw new NoSuchElementException(
+                            String.format("Could not expand value %s in property %s", resolveContext.getKey(), expr));
                 }
             }
         });

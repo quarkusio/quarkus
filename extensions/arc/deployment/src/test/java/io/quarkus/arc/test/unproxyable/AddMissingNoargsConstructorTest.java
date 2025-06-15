@@ -17,8 +17,7 @@ public class AddMissingNoargsConstructorTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(AddMissingNoargsConstructorTest.class, MyBean.class));
+            .withApplicationRoot((jar) -> jar.addClasses(AddMissingNoargsConstructorTest.class, MyBean.class));
 
     @Inject
     MyBean bean;

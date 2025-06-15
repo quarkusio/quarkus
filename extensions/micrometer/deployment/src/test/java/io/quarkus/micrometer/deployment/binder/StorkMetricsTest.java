@@ -29,8 +29,7 @@ import io.smallrye.stork.api.observability.StorkObservation;
 public class StorkMetricsTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("pingpong/mp-rest/url", "stork://pingpong-service")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.type", "static")
             .overrideConfigKey("quarkus.stork.pingpong-service.service-discovery.address-list", "${test.url}")
@@ -39,9 +38,9 @@ public class StorkMetricsTest {
             .overrideConfigKey("quarkus.stork.greeting-service.service-discovery.address-list", "${test.url}")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
             .overrideConfigKey("quarkus.log.category.\"io.micrometer.core.instrument\".level", "DEBUG")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class, GreetingResource.class,
-                            GreetingResource.GreetingRestClient.class, Util.class));
+            .withApplicationRoot(
+                    (jar) -> jar.addClasses(PingPongResource.class, PingPongResource.PingPongRestClient.class,
+                            GreetingResource.class, GreetingResource.GreetingRestClient.class, Util.class));
 
     final static SimpleMeterRegistry registry = new SimpleMeterRegistry();
 
@@ -60,7 +59,7 @@ public class StorkMetricsTest {
         when().get("/ping/one").then().statusCode(200);
         when().get("greeting/hola").then().statusCode(200);
 
-        //Stork metrics
+        // Stork metrics
         assertStorkMetrics("pingpong-service");
         assertStorkMetrics("greeting-service");
 
@@ -72,16 +71,16 @@ public class StorkMetricsTest {
 
     private void assertStorkMetricsInMicrometerRegistry(String serviceName) {
 
-        Counter instanceCounter = registry.find("stork.service-discovery.instances.count").tags("service-name", serviceName)
-                .counter();
-        Timer serviceDiscoveryDuration = registry.find("stork.service-discovery.duration").tags("service-name", serviceName)
-                .timer();
-        Timer serviceSelectionDuration = registry.find("stork.service-selection.duration").tags("service-name", serviceName)
-                .timer();
-        Counter serviceDiscoveryFailures = registry.find("stork.service-discovery.failures").tags("service-name", serviceName)
-                .counter();
-        Counter loadBalancerFailures = registry.find("stork.service-selection.failures").tags("service-name", serviceName)
-                .counter();
+        Counter instanceCounter = registry.find("stork.service-discovery.instances.count")
+                .tags("service-name", serviceName).counter();
+        Timer serviceDiscoveryDuration = registry.find("stork.service-discovery.duration")
+                .tags("service-name", serviceName).timer();
+        Timer serviceSelectionDuration = registry.find("stork.service-selection.duration")
+                .tags("service-name", serviceName).timer();
+        Counter serviceDiscoveryFailures = registry.find("stork.service-discovery.failures")
+                .tags("service-name", serviceName).counter();
+        Counter loadBalancerFailures = registry.find("stork.service-selection.failures")
+                .tags("service-name", serviceName).counter();
 
         Util.assertTags(Tag.of("service-name", serviceName), instanceCounter, serviceDiscoveryDuration,
                 serviceSelectionDuration);

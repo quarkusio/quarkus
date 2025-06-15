@@ -24,44 +24,37 @@ public class BlockingBitmapCommandsImpl<K> extends AbstractRedisCommandGroup imp
 
     @Override
     public long bitcount(K key) {
-        return reactive.bitcount(key)
-                .await().atMost(timeout);
+        return reactive.bitcount(key).await().atMost(timeout);
     }
 
     @Override
     public long bitcount(K key, long start, long end) {
-        return reactive.bitcount(key, start, end)
-                .await().atMost(timeout);
+        return reactive.bitcount(key, start, end).await().atMost(timeout);
     }
 
     @Override
     public List<Long> bitfield(K key, BitFieldArgs bitFieldArgs) {
-        return reactive.bitfield(key, bitFieldArgs)
-                .await().atMost(timeout);
+        return reactive.bitfield(key, bitFieldArgs).await().atMost(timeout);
     }
 
     @Override
     public long bitpos(K key, int bit) {
-        return reactive.bitpos(key, bit)
-                .await().atMost(timeout);
+        return reactive.bitpos(key, bit).await().atMost(timeout);
     }
 
     @Override
     public long bitpos(K key, int bit, long start) {
-        return reactive.bitpos(key, bit, start)
-                .await().atMost(timeout);
+        return reactive.bitpos(key, bit, start).await().atMost(timeout);
     }
 
     @Override
     public long bitpos(K key, int bit, long start, long end) {
-        return reactive.bitpos(key, bit, start, end)
-                .await().atMost(timeout);
+        return reactive.bitpos(key, bit, start, end).await().atMost(timeout);
     }
 
     @Override
     public long bitopAnd(K destination, K... keys) {
-        return reactive.bitopAnd(destination, keys)
-                .await().atMost(timeout);
+        return reactive.bitopAnd(destination, keys).await().atMost(timeout);
     }
 
     @Override

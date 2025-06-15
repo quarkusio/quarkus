@@ -13,9 +13,8 @@ import org.jboss.resteasy.reactive.server.spi.ServerRestHandler;
 
 /**
  * In Spring, parameters annotated with {@code @RequestParam} are required by default unless explicitly marked as
- * optional.
- * This {@link SpringRequestParamHandler} enforces the required constraint responding with a BAD_REQUEST status.
- *
+ * optional. This {@link SpringRequestParamHandler} enforces the required constraint responding with a BAD_REQUEST
+ * status.
  */
 public class SpringRequestParamHandler implements HandlerChainCustomizer {
     @Override

@@ -54,12 +54,10 @@ public class MvnpmHandler implements Handler<RoutingContext> {
                 try (InputStream is = openConnection.getInputStream()) {
                     if (is != null) {
                         byte[] contents = is.readAllBytes();
-                        event.response()
-                                .putHeader(HttpHeaders.CONTENT_TYPE, getContentType(fileName))
+                        event.response().putHeader(HttpHeaders.CONTENT_TYPE, getContentType(fileName))
                                 .putHeader(HttpHeaders.CACHE_CONTROL, "public, immutable, max-age=31536000")
                                 .putHeader(HttpHeaders.LAST_MODIFIED, formatDate(lastModified))
-                                .putHeader("date", formatDate(LocalDateTime.now()))
-                                .end(Buffer.buffer(contents));
+                                .putHeader("date", formatDate(LocalDateTime.now())).end(Buffer.buffer(contents));
                         return;
                     }
                 }
@@ -88,13 +86,12 @@ public class MvnpmHandler implements Handler<RoutingContext> {
         String[] parts = path.split(SLASH);
         List<String> modifiedParts = new ArrayList<>();
 
-        IntStream.range(0, parts.length)
-                .forEach(i -> {
-                    modifiedParts.add(parts[i]);
-                    if (i == 3) { // After the version segment
-                        modifiedParts.add("package");
-                    }
-                });
+        IntStream.range(0, parts.length).forEach(i -> {
+            modifiedParts.add(parts[i]);
+            if (i == 3) { // After the version segment
+                modifiedParts.add("package");
+            }
+        });
 
         return String.join(SLASH, modifiedParts);
     }
@@ -125,15 +122,15 @@ public class MvnpmHandler implements Handler<RoutingContext> {
         } else if (f.endsWith(DOT_XML)) {
             return CONTENT_TYPE_XML;
         }
-        // .csv 	Comma-separated values (CSV) 	text/csv
-        // .gif 	Graphics Interchange Format (GIF) 	image/gif
-        // .ico 	Icon format 	image/vnd.microsoft.icon
-        // .jpeg, .jpg 	JPEG images 	image/jpeg
-        // .png 	Portable Network Graphics 	image/png
-        // .svg 	Scalable Vector Graphics (SVG) 	image/svg+xml
-        // .ttf 	TrueType Font 	font/ttf
-        // .woff 	Web Open Font Format (WOFF) 	font/woff
-        // .woff2 	Web Open Font Format (WOFF) 	font/woff2
+        // .csv Comma-separated values (CSV) text/csv
+        // .gif Graphics Interchange Format (GIF) image/gif
+        // .ico Icon format image/vnd.microsoft.icon
+        // .jpeg, .jpg JPEG images image/jpeg
+        // .png Portable Network Graphics image/png
+        // .svg Scalable Vector Graphics (SVG) image/svg+xml
+        // .ttf TrueType Font font/ttf
+        // .woff Web Open Font Format (WOFF) font/woff
+        // .woff2 Web Open Font Format (WOFF) font/woff2
 
         return CONTENT_TYPE_JAVASCRIPT; // default
 

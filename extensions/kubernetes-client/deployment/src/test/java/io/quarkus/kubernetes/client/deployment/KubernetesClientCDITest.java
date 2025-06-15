@@ -24,9 +24,7 @@ public class KubernetesClientCDITest {
     }
 
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Customizer.class))
+    static QuarkusUnitTest runner = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Customizer.class))
             .overrideConfigKey("quarkus.kubernetes-client.devservices.enabled", "false");
 
     @Singleton

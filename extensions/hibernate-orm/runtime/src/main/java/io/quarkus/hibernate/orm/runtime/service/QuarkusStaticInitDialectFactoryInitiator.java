@@ -7,8 +7,7 @@ import org.hibernate.engine.jdbc.dialect.spi.DialectFactory;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
 
 /**
- * Copied from
- * org.hibernate.engine.jdbc.dialect.internal.DialectFactoryInitiator
+ * Copied from org.hibernate.engine.jdbc.dialect.internal.DialectFactoryInitiator
  */
 public class QuarkusStaticInitDialectFactoryInitiator implements StandardServiceInitiator<DialectFactory> {
 

@@ -12,10 +12,8 @@ import io.quarkus.devtools.testing.codestarts.QuarkusCodestartTest;
 public class ConfigYamlCodestartTest {
 
     @RegisterExtension
-    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .codestarts("config-yaml")
-            .languages(JAVA, KOTLIN)
-            .build();
+    public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder().codestarts("config-yaml")
+            .languages(JAVA, KOTLIN).build();
 
     @Test
     void testContent() throws Throwable {

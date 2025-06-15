@@ -19,12 +19,12 @@ public class HibernateSearchStandaloneDevJsonRpcService {
     public Multi<String> reindex(List<String> entityTypeNames) {
         SearchMapping mapping = HibernateSearchStandaloneDevController.get().searchMapping();
 
-        return Multi.createBy().concatenating().streams(
-                Multi.createFrom().item("started"),
-                Multi.createFrom()
-                        .completionStage(() -> mapping.scope(Object.class, entityTypeNames).massIndexer().start()
-                                .thenApply(ignored -> "success"))
-                        .onFailure().recoverWithItem(Throwable::getMessage));
+        return Multi.createBy().concatenating()
+                .streams(Multi.createFrom().item("started"),
+                        Multi.createFrom()
+                                .completionStage(() -> mapping.scope(Object.class, entityTypeNames).massIndexer()
+                                        .start().thenApply(ignored -> "success"))
+                                .onFailure().recoverWithItem(Throwable::getMessage));
     }
 
 }

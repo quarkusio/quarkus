@@ -34,8 +34,9 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
     private final boolean requestConnections;
 
     /**
-     * @param requestConnections if true, the load balancer will proactively request connections from available channels.
-     *        This leads to better load balancing at the cost of keeping active connections.
+     * @param requestConnections
+     *        if true, the load balancer will proactively request connections from available channels. This leads to
+     *        better load balancing at the cost of keeping active connections.
      */
     public GrpcLoadBalancerProvider(boolean requestConnections) {
         this.requestConnections = requestConnections;
@@ -69,8 +70,7 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
             log.error("No 'service-name' defined in the Stork for gRPC configuration: " + rawConfig);
             return NameResolver.ConfigOrError.fromError(Status.INTERNAL);
         }
-        return NameResolver.ConfigOrError
-                .fromConfig(new StorkLoadBalancerConfig(serviceName));
+        return NameResolver.ConfigOrError.fromConfig(new StorkLoadBalancerConfig(serviceName));
     }
 
     @Override
@@ -85,26 +85,27 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
 
                 Object loadBalancerConfig = resolvedAddresses.getLoadBalancingPolicyConfig();
                 if (!(loadBalancerConfig instanceof StorkLoadBalancerConfig)) {
-                    throw new IllegalStateException("invalid configuration for a Stork Load Balancer : " + loadBalancerConfig);
+                    throw new IllegalStateException(
+                            "invalid configuration for a Stork Load Balancer : " + loadBalancerConfig);
                 }
 
                 StorkLoadBalancerConfig config = (StorkLoadBalancerConfig) loadBalancerConfig;
 
-                Map<ServiceInstance, Subchannel> subChannels = new TreeMap<>(Comparator.comparingLong(ServiceInstance::getId));
+                Map<ServiceInstance, Subchannel> subChannels = new TreeMap<>(
+                        Comparator.comparingLong(ServiceInstance::getId));
                 Set<ServiceInstance> activeSubchannels = Collections.newSetFromMap(new ConcurrentHashMap<>());
                 AtomicReference<ConnectivityState> state = new AtomicReference<>(ConnectivityState.CONNECTING);
 
                 serviceName = config.serviceName;
 
-                final StorkSubchannelPicker picker = new StorkSubchannelPicker(subChannels, serviceName, activeSubchannels);
+                final StorkSubchannelPicker picker = new StorkSubchannelPicker(subChannels, serviceName,
+                        activeSubchannels);
 
                 for (EquivalentAddressGroup addressGroup : addresses) {
                     ServiceInstance serviceInstance = addressGroup.getAttributes()
                             .get(GrpcStorkServiceDiscovery.SERVICE_INSTANCE);
-                    CreateSubchannelArgs subChannelArgs = CreateSubchannelArgs.newBuilder()
-                            .setAddresses(addressGroup)
-                            .setAttributes(addressGroup.getAttributes())
-                            .build();
+                    CreateSubchannelArgs subChannelArgs = CreateSubchannelArgs.newBuilder().setAddresses(addressGroup)
+                            .setAttributes(addressGroup.getAttributes()).build();
 
                     Subchannel subchannel = helper.createSubchannel(subChannelArgs);
                     subchannel.start(new SubchannelStateListener() {
@@ -171,8 +172,8 @@ public class GrpcLoadBalancerProvider extends LoadBalancerProvider {
         private final String serviceName;
         private final Set<ServiceInstance> activeServiceInstances;
 
-        StorkSubchannelPicker(Map<ServiceInstance, LoadBalancer.Subchannel> subChannels,
-                String serviceName, Set<ServiceInstance> activeServiceInstances) {
+        StorkSubchannelPicker(Map<ServiceInstance, LoadBalancer.Subchannel> subChannels, String serviceName,
+                Set<ServiceInstance> activeServiceInstances) {
             this.subChannels = subChannels;
             this.serviceName = serviceName;
             this.activeServiceInstances = activeServiceInstances;

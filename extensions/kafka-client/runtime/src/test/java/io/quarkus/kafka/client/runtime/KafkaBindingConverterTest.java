@@ -34,7 +34,8 @@ public class KafkaBindingConverterTest {
 
     @Test
     public void testKafkaBootstrapWithCamelCaseServiceBinding() {
-        ServiceBinding kafkaServiceBinding = new ServiceBinding(rootPath.resolve(BINDING_DIRECTORY_KAFKA_BOOTSTRAP_CAMELCASE));
+        ServiceBinding kafkaServiceBinding = new ServiceBinding(
+                rootPath.resolve(BINDING_DIRECTORY_KAFKA_BOOTSTRAP_CAMELCASE));
         Optional<ServiceBindingConfigSource> configSourceOptional = converter.convert(List.of(kafkaServiceBinding));
         assertThat(configSourceOptional).isPresent();
         Map<String, String> properties = configSourceOptional.get().getProperties();
@@ -68,7 +69,8 @@ public class KafkaBindingConverterTest {
 
     @Test
     public void testKafkaSaslScram512ServiceBinding() {
-        ServiceBinding kafkaServiceBinding = new ServiceBinding(rootPath.resolve(BINDING_DIRECTORY_KAFKA_SASL_SCRAM_512));
+        ServiceBinding kafkaServiceBinding = new ServiceBinding(
+                rootPath.resolve(BINDING_DIRECTORY_KAFKA_SASL_SCRAM_512));
         Optional<ServiceBindingConfigSource> configSourceOptional = converter.convert(List.of(kafkaServiceBinding));
         assertThat(configSourceOptional).isPresent();
         Map<String, String> properties = configSourceOptional.get().getProperties();
@@ -81,7 +83,8 @@ public class KafkaBindingConverterTest {
 
     @Test
     public void testKafkaSaslScram256ServiceBinding() {
-        ServiceBinding kafkaServiceBinding = new ServiceBinding(rootPath.resolve(BINDING_DIRECTORY_KAFKA_SASL_SCRAM_256));
+        ServiceBinding kafkaServiceBinding = new ServiceBinding(
+                rootPath.resolve(BINDING_DIRECTORY_KAFKA_SASL_SCRAM_256));
         Optional<ServiceBindingConfigSource> configSourceOptional = converter.convert(List.of(kafkaServiceBinding));
         assertThat(configSourceOptional).isPresent();
         Map<String, String> properties = configSourceOptional.get().getProperties();

@@ -53,14 +53,9 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpClientResponse;
 
 /**
- * This decoder will decode response body.
- *
- * You <strong>MUST</strong> call {@link #destroy()} after completion to release all resources.
- *
- *
- * Decoder for Multipart responses based on Netty's
+ * This decoder will decode response body. You <strong>MUST</strong> call {@link #destroy()} after completion to release
+ * all resources. Decoder for Multipart responses based on Netty's
  * {@link io.netty.handler.codec.http.multipart.HttpPostMultipartRequestDecoder}
- *
  */
 public class QuarkusMultipartResponseDecoder {
 
@@ -111,8 +106,7 @@ public class QuarkusMultipartResponseDecoder {
     /**
      * HttpDatas as Map from Body
      */
-    private final Map<String, List<InterfaceHttpData>> bodyMapHttpData = new TreeMap<>(
-            CaseIgnoringComparator.INSTANCE);
+    private final Map<String, List<InterfaceHttpData>> bodyMapHttpData = new TreeMap<>(CaseIgnoringComparator.INSTANCE);
 
     /**
      * The current channelBuffer
@@ -130,8 +124,7 @@ public class QuarkusMultipartResponseDecoder {
     private final String multipartDataBoundary;
 
     /**
-     * If multipart, there could be internal multiparts (mixed) to the global
-     * multipart. Only one level is allowed.
+     * If multipart, there could be internal multiparts (mixed) to the global multipart. Only one level is allowed.
      */
     private String multipartMixedBoundary;
 
@@ -160,14 +153,13 @@ public class QuarkusMultipartResponseDecoder {
     private int discardThreshold = DEFAULT_DISCARD_THRESHOLD;
 
     /**
-     *
      * @param response
      *        the request to decode
+     *
      * @throws NullPointerException
      *         for request
      * @throws ErrorDataDecoderException
-     *         if the default charset was wrong when decoding or other
-     *         errors
+     *         if the default charset was wrong when decoding or other errors
      */
     public QuarkusMultipartResponseDecoder(HttpClientResponse response) {
         this(new QuarkusMultipartResponseDataFactory(QuarkusMultipartResponseDataFactory.MINSIZE), response,
@@ -175,34 +167,32 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     *
      * @param factory
      *        the factory used to create InterfaceHttpData
      * @param response
      *        the request to decode
+     *
      * @throws NullPointerException
      *         for request or factory
      * @throws ErrorDataDecoderException
-     *         if the default charset was wrong when decoding or other
-     *         errors
+     *         if the default charset was wrong when decoding or other errors
      */
     public QuarkusMultipartResponseDecoder(QuarkusMultipartResponseDataFactory factory, HttpClientResponse response) {
         this(factory, response, HttpConstants.DEFAULT_CHARSET);
     }
 
     /**
-     *
      * @param factory
      *        the factory used to create InterfaceHttpData
      * @param response
      *        the request to decode
      * @param charset
      *        the charset to use as default
+     *
      * @throws NullPointerException
      *         for request or charset or factory
      * @throws ErrorDataDecoderException
-     *         if the default charset was wrong when decoding or other
-     *         errors
+     *         if the default charset was wrong when decoding or other errors
      */
     public QuarkusMultipartResponseDecoder(QuarkusMultipartResponseDataFactory factory, HttpClientResponse response,
             Charset charset) {
@@ -248,8 +238,8 @@ public class QuarkusMultipartResponseDecoder {
 
     private void checkDestroyed() {
         if (destroyed) {
-            throw new IllegalStateException(QuarkusMultipartResponseDecoder.class.getSimpleName()
-                    + " was destroyed already");
+            throw new IllegalStateException(
+                    QuarkusMultipartResponseDecoder.class.getSimpleName() + " was destroyed already");
         }
     }
 
@@ -264,9 +254,8 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * Set the amount of bytes after which read bytes in the buffer should be discarded.
-     * Setting this lower gives lower memory usage but with the overhead of more memory copies.
-     * Use {@code 0} to disable it.
+     * Set the amount of bytes after which read bytes in the buffer should be discarded. Setting this lower gives lower
+     * memory usage but with the overhead of more memory copies. Use {@code 0} to disable it.
      */
     public void setDiscardThreshold(int discardThreshold) {
         this.discardThreshold = checkPositiveOrZero(discardThreshold, "discardThreshold");
@@ -281,11 +270,11 @@ public class QuarkusMultipartResponseDecoder {
 
     /**
      * This getMethod returns a List of all HttpDatas from body.<br>
-     *
-     * If chunked, all chunks must have been offered using offer() getMethod. If
-     * not, NotEnoughDataDecoderException will be raised.
+     * If chunked, all chunks must have been offered using offer() getMethod. If not, NotEnoughDataDecoderException will
+     * be raised.
      *
      * @return the list of HttpDatas from Body part for POST getMethod
+     *
      * @throws NotEnoughDataDecoderException
      *         Need more chunks
      */
@@ -299,13 +288,12 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * This getMethod returns a List of all HttpDatas with the given name from
-     * body.<br>
-     *
-     * If chunked, all chunks must have been offered using offer() getMethod. If
-     * not, NotEnoughDataDecoderException will be raised.
+     * This getMethod returns a List of all HttpDatas with the given name from body.<br>
+     * If chunked, all chunks must have been offered using offer() getMethod. If not, NotEnoughDataDecoderException will
+     * be raised.
      *
      * @return All Body HttpDatas with the given name (ignore case)
+     *
      * @throws NotEnoughDataDecoderException
      *         need more chunks
      */
@@ -319,14 +307,12 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * This getMethod returns the first InterfaceHttpData with the given name from
-     * body.<br>
+     * This getMethod returns the first InterfaceHttpData with the given name from body.<br>
+     * If chunked, all chunks must have been offered using offer() getMethod. If not, NotEnoughDataDecoderException will
+     * be raised.
      *
-     * If chunked, all chunks must have been offered using offer() getMethod. If
-     * not, NotEnoughDataDecoderException will be raised.
+     * @return The first Body InterfaceHttpData with the given name (ignore case)
      *
-     * @return The first Body InterfaceHttpData with the given name (ignore
-     *         case)
      * @throws NotEnoughDataDecoderException
      *         need more chunks
      */
@@ -352,9 +338,9 @@ public class QuarkusMultipartResponseDecoder {
      *
      * @param content
      *        the new received chunk
+     *
      * @throws ErrorDataDecoderException
-     *         if there is a problem with the charset decoding or other
-     *         errors
+     *         if there is a problem with the charset decoding or other errors
      */
     public QuarkusMultipartResponseDecoder offer(HttpContent content) {
         checkDestroyed();
@@ -392,12 +378,11 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * True if at current getStatus, there is an available decoded
-     * InterfaceHttpData from the Body.
-     *
-     * This getMethod works for chunked and not chunked request.
+     * True if at current getStatus, there is an available decoded InterfaceHttpData from the Body. This getMethod works
+     * for chunked and not chunked request.
      *
      * @return True if at current getStatus, there is a decoded InterfaceHttpData
+     *
      * @throws EndOfDataDecoderException
      *         No more data will be available
      */
@@ -414,14 +399,12 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * Returns the next available InterfaceHttpData or null if, at the time it
-     * is called, there is no more available InterfaceHttpData. A subsequent
-     * call to offer(httpChunk) could enable more data.
-     *
-     * Be sure to call {@link InterfaceHttpData#release()} after you are done
-     * with processing to make sure to not leak any resources
+     * Returns the next available InterfaceHttpData or null if, at the time it is called, there is no more available
+     * InterfaceHttpData. A subsequent call to offer(httpChunk) could enable more data. Be sure to call
+     * {@link InterfaceHttpData#release()} after you are done with processing to make sure to not leak any resources
      *
      * @return the next available InterfaceHttpData or null if none
+     *
      * @throws EndOfDataDecoderException
      *         No more data will be available
      */
@@ -446,8 +429,7 @@ public class QuarkusMultipartResponseDecoder {
      * This getMethod will parse as much as possible data and fill the list and map
      *
      * @throws ErrorDataDecoderException
-     *         if there is a problem with the charset decoding or other
-     *         errors
+     *         if there is a problem with the charset decoding or other errors
      */
     private void parseBody() {
         if (currentStatus == MultiPartStatus.PREEPILOGUE || currentStatus == MultiPartStatus.EPILOGUE) {
@@ -479,8 +461,7 @@ public class QuarkusMultipartResponseDecoder {
      * Parse the Body for multipart
      *
      * @throws ErrorDataDecoderException
-     *         if there is a problem with the charset decoding or other
-     *         errors
+     *         if there is a problem with the charset decoding or other errors
      */
     private void parseBodyMultipart() {
         if (undecodedChunk == null || undecodedChunk.readableBytes() == 0) {
@@ -506,10 +487,10 @@ public class QuarkusMultipartResponseDecoder {
      * (MIXEDDELIMITER MIXEDDISPOSITION MIXEDFILEUPLOAD)+<br>
      * MIXEDCLOSEDELIMITER)*<br>
      * CLOSEDELIMITER)+ EPILOGUE<br>
-     *
      * Inspired from HttpMessageDecoder
      *
      * @return the next decoded InterfaceHttpData or null if none until now.
+     *
      * @throws ErrorDataDecoderException
      *         if an error occurs
      */
@@ -550,12 +531,10 @@ public class QuarkusMultipartResponseDecoder {
                 }
                 Attribute nameAttribute = currentFieldAttributes.get(HttpHeaderValues.NAME);
                 if (currentAttribute == null) {
-                    Attribute lengthAttribute = currentFieldAttributes
-                            .get(HttpHeaderNames.CONTENT_LENGTH);
+                    Attribute lengthAttribute = currentFieldAttributes.get(HttpHeaderNames.CONTENT_LENGTH);
                     long size;
                     try {
-                        size = lengthAttribute != null ? Long.parseLong(lengthAttribute
-                                .getValue()) : 0L;
+                        size = lengthAttribute != null ? Long.parseLong(lengthAttribute.getValue()) : 0L;
                     } catch (IOException e) {
                         throw new ErrorDataDecoderException(e);
                     } catch (NumberFormatException ignored) {
@@ -563,11 +542,10 @@ public class QuarkusMultipartResponseDecoder {
                     }
                     try {
                         if (size > 0) {
-                            currentAttribute = factory.createAttribute(response,
-                                    cleanString(nameAttribute.getValue()), size);
+                            currentAttribute = factory.createAttribute(response, cleanString(nameAttribute.getValue()),
+                                    size);
                         } else {
-                            currentAttribute = factory.createAttribute(response,
-                                    cleanString(nameAttribute.getValue()));
+                            currentAttribute = factory.createAttribute(response, cleanString(nameAttribute.getValue()));
                         }
                     } catch (NullPointerException | IllegalArgumentException | IOException e) {
                         throw new ErrorDataDecoderException(e);
@@ -658,7 +636,9 @@ public class QuarkusMultipartResponseDecoder {
      *        the next getStatus if the delimiter is a start
      * @param closeDelimiterStatus
      *        the next getStatus if the delimiter is a close delimiter
+     *
      * @return the next InterfaceHttpData if any
+     *
      * @throws ErrorDataDecoderException
      */
     private InterfaceHttpData findMultipartDelimiter(String delimiter, MultiPartStatus dispositionStatus,
@@ -702,6 +682,7 @@ public class QuarkusMultipartResponseDecoder {
      * Find the next Disposition
      *
      * @return the next InterfaceHttpData if any
+     *
      * @throws ErrorDataDecoderException
      */
     private InterfaceHttpData findMultipartDisposition() {
@@ -787,8 +768,7 @@ public class QuarkusMultipartResponseDecoder {
                         } else {
                             Attribute attribute;
                             try {
-                                attribute = factory.createAttribute(response,
-                                        cleanString(contents[0]), contents[i]);
+                                attribute = factory.createAttribute(response, cleanString(contents[0]), contents[i]);
                             } catch (NullPointerException | IllegalArgumentException e) {
                                 throw new ErrorDataDecoderException(e);
                             }
@@ -835,9 +815,8 @@ public class QuarkusMultipartResponseDecoder {
         if (HttpHeaderValues.FILENAME.contentEquals(name)) {
             // Value is quoted or token. Strip if quoted:
             int last = value.length() - 1;
-            if (last > 0 &&
-                    value.charAt(0) == HttpConstants.DOUBLE_QUOTE &&
-                    value.charAt(last) == HttpConstants.DOUBLE_QUOTE) {
+            if (last > 0 && value.charAt(0) == HttpConstants.DOUBLE_QUOTE
+                    && value.charAt(last) == HttpConstants.DOUBLE_QUOTE) {
                 value = value.substring(1, last);
             }
         } else if (FILENAME_ENCODED.equals(name)) {
@@ -860,8 +839,11 @@ public class QuarkusMultipartResponseDecoder {
      *
      * @param delimiter
      *        the delimiter to use
+     *
      * @return the InterfaceHttpData if any
-     * @throws ErrorDataDecoderException on decoder error
+     *
+     * @throws ErrorDataDecoderException
+     *         on decoder error
      */
     protected InterfaceHttpData getFileUpload(String delimiter) {
         // eventually restart from existing FileUpload
@@ -917,10 +899,8 @@ public class QuarkusMultipartResponseDecoder {
                 } else {
                     contentType = QuarkusHttpPostBodyUtil.DEFAULT_BINARY_CONTENT_TYPE;
                 }
-                currentFileUpload = factory.createFileUpload(response,
-                        cleanString(nameAttribute.getValue()), cleanString(filenameAttribute.getValue()),
-                        contentType, mechanism.value(), localCharset,
-                        size);
+                currentFileUpload = factory.createFileUpload(response, cleanString(nameAttribute.getValue()),
+                        cleanString(filenameAttribute.getValue()), contentType, mechanism.value(), localCharset, size);
             } catch (NullPointerException | IOException | IllegalArgumentException e) {
                 throw new ErrorDataDecoderException(e);
             }
@@ -950,8 +930,8 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * Destroy the {@link QuarkusMultipartResponseDecoder} and release all it resources. After this method
-     * was called it is not possible to operate on it anymore.
+     * Destroy the {@link QuarkusMultipartResponseDecoder} and release all it resources. After this method was called it
+     * is not possible to operate on it anymore.
      */
     public void destroy() {
         // Release all data items, including those not yet pulled, only file based items
@@ -991,8 +971,7 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * Remove all Attributes that should be cleaned between two FileUpload in
-     * Mixed mode
+     * Remove all Attributes that should be cleaned between two FileUpload in Mixed mode
      */
     private void cleanMixedAttributes() {
         currentFieldAttributes.remove(HttpHeaderValues.CHARSET);
@@ -1006,9 +985,9 @@ public class QuarkusMultipartResponseDecoder {
      * Read one line up to the CRLF or LF
      *
      * @return the String from one line
+     *
      * @throws NotEnoughDataDecoderException
-     *         Need more chunks and reset the {@code readerIndex} to the previous
-     *         value
+     *         Need more chunks and reset the {@code readerIndex} to the previous value
      */
     private static String readLineOptimized(ByteBuf undecodedChunk, Charset charset) {
         int readerIndex = undecodedChunk.readerIndex();
@@ -1042,19 +1021,18 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * Read one line up to --delimiter or --delimiter-- and if existing the CRLF
-     * or LF Read one line up to --delimiter or --delimiter-- and if existing
-     * the CRLF or LF. Note that CRLF or LF are mandatory for opening delimiter
-     * (--delimiter) but not for closing delimiter (--delimiter--) since some
-     * clients does not include CRLF in this case.
+     * Read one line up to --delimiter or --delimiter-- and if existing the CRLF or LF Read one line up to --delimiter
+     * or --delimiter-- and if existing the CRLF or LF. Note that CRLF or LF are mandatory for opening delimiter
+     * (--delimiter) but not for closing delimiter (--delimiter--) since some clients does not include CRLF in this
+     * case.
      *
      * @param delimiter
      *        of the form --string, such that '--' is already included
-     * @return the String from one line as the delimiter searched (opening or
-     *         closing)
+     *
+     * @return the String from one line as the delimiter searched (opening or closing)
+     *
      * @throws NotEnoughDataDecoderException
-     *         Need more chunks and reset the {@code readerIndex} to the previous
-     *         value
+     *         Need more chunks and reset the {@code readerIndex} to the previous value
      */
     private static String readDelimiterOptimized(ByteBuf undecodedChunk, String delimiter, Charset charset) {
         final int readerIndex = undecodedChunk.readerIndex();
@@ -1133,13 +1111,14 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * Rewrite buffer in order to skip lengthToSkip bytes from current readerIndex,
-     * such that any readable bytes available after readerIndex + lengthToSkip (so before writerIndex)
-     * are moved at readerIndex position,
-     * therefore decreasing writerIndex of lengthToSkip at the end of the process.
+     * Rewrite buffer in order to skip lengthToSkip bytes from current readerIndex, such that any readable bytes
+     * available after readerIndex + lengthToSkip (so before writerIndex) are moved at readerIndex position, therefore
+     * decreasing writerIndex of lengthToSkip at the end of the process.
      *
-     * @param buffer the buffer to rewrite from current readerIndex
-     * @param lengthToSkip the size to skip from readerIndex
+     * @param buffer
+     *        the buffer to rewrite from current readerIndex
+     * @param lengthToSkip
+     *        the size to skip from readerIndex
      */
     private static void rewriteCurrentBuffer(ByteBuf buffer, int lengthToSkip) {
         if (lengthToSkip == 0) {
@@ -1161,7 +1140,9 @@ public class QuarkusMultipartResponseDecoder {
      * Load the field value or file data from a Multipart request
      *
      * @return {@code true} if the last chunk is loaded (boundary delimiter found), {@code false} if need more chunks
-     * @throws ErrorDataDecoderException on decoder error
+     *
+     * @throws ErrorDataDecoderException
+     *         on decoder error
      */
     private static boolean loadDataMultipartOptimized(ByteBuf undecodedChunk, String delimiter, HttpData httpData) {
         if (!undecodedChunk.isReadable()) {
@@ -1184,9 +1165,8 @@ public class QuarkusMultipartResponseDecoder {
             posDelimiter = QuarkusHttpPostBodyUtil.findLastLineBreak(undecodedChunk, startReaderIndex + lastPosition);
             // No LineBreak, however CR can be at the end of the buffer, LF not yet there (issue #11668)
             // Check if last CR (if any) shall not be in the content (definedLength vs actual length + buffer - 1)
-            if (posDelimiter < 0 &&
-                    httpData.definedLength() == httpData.length() + readableBytes - 1 &&
-                    undecodedChunk.getByte(readableBytes + startReaderIndex - 1) == HttpConstants.CR) {
+            if (posDelimiter < 0 && httpData.definedLength() == httpData.length() + readableBytes - 1
+                    && undecodedChunk.getByte(readableBytes + startReaderIndex - 1) == HttpConstants.CR) {
                 // Last CR shall preceed a future LF
                 lastPosition = 0;
                 posDelimiter = readableBytes - 1;
@@ -1291,8 +1271,8 @@ public class QuarkusMultipartResponseDecoder {
     /**
      * Split one header in Multipart
      *
-     * @return an array of String where rank 0 is the name of the header,
-     *         follows by several values that were separated by ';' or ','
+     * @return an array of String where rank 0 is the name of the header, follows by several values that were separated
+     *         by ';' or ','
      */
     private static String[] splitMultipartHeader(String sb) {
         ArrayList<String> headers = new ArrayList<>(1);
@@ -1370,9 +1350,8 @@ public class QuarkusMultipartResponseDecoder {
     }
 
     /**
-     * This method is package private intentionally in order to allow during tests
-     * to access to the amount of memory allocated (capacity) within the private
-     * ByteBuf undecodedChunk
+     * This method is package private intentionally in order to allow during tests to access to the amount of memory
+     * allocated (capacity) within the private ByteBuf undecodedChunk
      *
      * @return the number of bytes the internal buffer can contain
      */

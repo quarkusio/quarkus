@@ -29,12 +29,10 @@ import io.quarkus.test.QuarkusUnitTest;
 public class ListInjectionTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Foo.class, ServiceAlpha.class, ServiceBravo.class, ServiceCharlie.class, Service.class,
-                            Counter.class, Converter.class, ConverterAlpha.class, ConverterBravo.class, MyQualifier.class,
-                            Some.class, SomeInt.class, SomeString.class, SomeNumber.class, SomeObject.class, BeanA.class,
-                            BeanB.class));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar.addClasses(Foo.class,
+            ServiceAlpha.class, ServiceBravo.class, ServiceCharlie.class, Service.class, Counter.class, Converter.class,
+            ConverterAlpha.class, ConverterBravo.class, MyQualifier.class, Some.class, SomeInt.class, SomeString.class,
+            SomeNumber.class, SomeObject.class, BeanA.class, BeanB.class));
 
     @Inject
     Foo foo;
@@ -80,8 +78,7 @@ public class ListInjectionTest {
     public void testListAll() {
         List<InstanceHandle<Service>> services = Arc.container().listAll(Service.class);
         assertEquals(2, services.size());
-        assertThatExceptionOfType(UnsupportedOperationException.class)
-                .isThrownBy(() -> services.remove(0));
+        assertThatExceptionOfType(UnsupportedOperationException.class).isThrownBy(() -> services.remove(0));
         // ServiceBravo has higher priority
         InstanceHandle<Service> bravoHandle = services.get(0);
         Service bravo = bravoHandle.get();

@@ -18,13 +18,11 @@ public class LiquibaseExtensionSecureParsingEnabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource("insecure-db/changeLog.xml", "db/changeLog.xml")
+            .withApplicationRoot((jar) -> jar.addAsResource("insecure-db/changeLog.xml", "db/changeLog.xml")
                     .addAsResource("insecure-db/dbchangelog-3.8.xsd", "db/dbchangelog-3.8.xsd")
                     .addAsResource("secure-parsing-enabled.properties", "application.properties"))
             .assertException(t -> {
-                assertThat(t.getCause().getCause())
-                        .hasMessageContaining("because 'file' access is not allowed");
+                assertThat(t.getCause().getCause()).hasMessageContaining("because 'file' access is not allowed");
             });
 
     @Test

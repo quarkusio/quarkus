@@ -11,8 +11,8 @@ import io.smallrye.config.WithDefault;
 public interface VertxBuildConfig {
 
     /**
-     * If set to {@code true} then a customized current context factory (backed by a Vert.x duplicated local context) is used
-     * for normal scopes in ArC.
+     * If set to {@code true} then a customized current context factory (backed by a Vert.x duplicated local context) is
+     * used for normal scopes in ArC.
      */
     @ConfigDocIgnore
     @WithDefault("true")

@@ -21,22 +21,16 @@ import io.quarkus.test.QuarkusUnitTest;
 public class RegisterClientHeadersTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> {
-                return ShrinkWrap.create(JavaArchive.class)
-                        .addPackage(EchoClient.class.getPackage())
-                        .addClass(TestJacksonBasicMessageBodyReader.class)
-                        .addAsResource(
-                                new StringAsset(
-                                        setUrlForClass(EchoClient.class) +
-                                                setUrlForClass(HeaderSettingClient.class) +
-                                                setUrlForClass(HeaderPassingClient.class) +
-                                                setUrlForClass(HeaderNoPassingClient.class) +
-                                                setUrlForClass(MultipleHeadersBindingClient.class) +
-                                                "org.eclipse.microprofile.rest.client.propagateHeaders=" + HEADER + "\n" +
-                                                "header.value=from property file"),
-                                "application.properties");
-            });
+    static final QuarkusUnitTest config = new QuarkusUnitTest().setArchiveProducer(() -> {
+        return ShrinkWrap.create(JavaArchive.class).addPackage(EchoClient.class.getPackage())
+                .addClass(TestJacksonBasicMessageBodyReader.class)
+                .addAsResource(new StringAsset(setUrlForClass(EchoClient.class)
+                        + setUrlForClass(HeaderSettingClient.class) + setUrlForClass(HeaderPassingClient.class)
+                        + setUrlForClass(HeaderNoPassingClient.class)
+                        + setUrlForClass(MultipleHeadersBindingClient.class)
+                        + "org.eclipse.microprofile.rest.client.propagateHeaders=" + HEADER + "\n"
+                        + "header.value=from property file"), "application.properties");
+    });
 
     @RestClient
     EchoClient client;
@@ -88,8 +82,10 @@ public class RegisterClientHeadersTest {
     @Test
     public void shouldSetHeadersFromMultipleBindingsAndBody() {
         String headerValue = "my-header-value";
-        Map<String, List<String>> headers = multipleHeadersBindingClient.call(headerValue, "test", "unused-body").getHeaders();
-        Map<String, List<String>> header2 = multipleHeadersBindingClient.call2(headerValue, "test", "unused-body").getHeaders();
+        Map<String, List<String>> headers = multipleHeadersBindingClient.call(headerValue, "test", "unused-body")
+                .getHeaders();
+        Map<String, List<String>> header2 = multipleHeadersBindingClient.call2(headerValue, "test", "unused-body")
+                .getHeaders();
         assertThat(headers).isEqualTo(header2);
         // Verify: @RegisterClientHeaders(MyHeadersFactory.class)
         assertThat(headers.get("foo")).containsExactly("bar");

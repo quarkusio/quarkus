@@ -29,29 +29,29 @@ public abstract class NoAnnotationParentResourceWithoutPathImplInterface impleme
 
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnParent_NoSecurityAnnotation() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_PARENT + NO_SECURITY_ANNOTATION_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_PARENT + NO_SECURITY_ANNOTATION_PATH);
     }
 
     @PermitAll
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnParent_MethodPermitAll() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_PARENT + METHOD_PERMIT_ALL_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_PARENT + METHOD_PERMIT_ALL_PATH);
     }
 
     @DenyAll
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnParent_MethodDenyAll() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_PARENT + METHOD_DENY_ALL_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_PARENT + METHOD_DENY_ALL_PATH);
     }
 
     @RolesAllowed("admin")
     @Override
     public NoAnnotationSubResourceWithoutPath classPathOnInterface_SubDeclaredOnInterface_SubImplOnParent_MethodRolesAllowed() {
-        return new NoAnnotationSubResourceWithoutPath(CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE
-                + SUB_IMPL_ON_PARENT + METHOD_ROLES_ALLOWED_PATH);
+        return new NoAnnotationSubResourceWithoutPath(
+                CLASS_PATH_ON_INTERFACE + SUB_DECLARED_ON_INTERFACE + SUB_IMPL_ON_PARENT + METHOD_ROLES_ALLOWED_PATH);
     }
 
     @POST

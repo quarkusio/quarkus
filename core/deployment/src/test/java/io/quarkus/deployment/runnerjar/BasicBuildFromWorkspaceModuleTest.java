@@ -38,15 +38,14 @@ public class BasicBuildFromWorkspaceModuleTest extends BootstrapFromWorkspaceMod
         install(acmeBom);
 
         final WorkspaceModule module = WorkspaceModule.builder()
-                .setModuleId(WorkspaceModuleId.of("org.acme", "acme-app", "1"))
-                .setModuleDir(mkdir("app-module"))
+                .setModuleId(WorkspaceModuleId.of("org.acme", "acme-app", "1")).setModuleDir(mkdir("app-module"))
                 .setBuildDir(mkdir("target"))
-                .addArtifactSources(ArtifactSources.main(
-                        SourceDir.of(mkdir("app-module/main/java"), mkdir("main/classes")),
-                        SourceDir.of(mkdir("app-module/main/resources"), mkdir("main/classes"))))
-                .addArtifactSources(ArtifactSources.test(
-                        SourceDir.of(mkdir("app-module/test/java"), mkdir("test/classes")),
-                        SourceDir.of(mkdir("app-module/test/resources"), mkdir("test/classes"))))
+                .addArtifactSources(
+                        ArtifactSources.main(SourceDir.of(mkdir("app-module/main/java"), mkdir("main/classes")),
+                                SourceDir.of(mkdir("app-module/main/resources"), mkdir("main/classes"))))
+                .addArtifactSources(
+                        ArtifactSources.test(SourceDir.of(mkdir("app-module/test/java"), mkdir("test/classes")),
+                                SourceDir.of(mkdir("app-module/test/resources"), mkdir("test/classes"))))
                 .addDependencyConstraint(
                         Dependency.pomImport(acmeBom.getGroupId(), acmeBom.getArtifactId(), acmeBom.getVersion()))
                 .addDependency(Dependency.of(acmeExt.getRuntime().getGroupId(), acmeExt.getRuntime().getArtifactId()))
@@ -63,12 +62,13 @@ public class BasicBuildFromWorkspaceModuleTest extends BootstrapFromWorkspaceMod
         assertThat(appArtifact.getResolvedPaths().getSinglePath()).isEqualTo(workDir.resolve("main/classes"));
 
         // runtime classpath
-        assertThat(appModel.getDependencies().stream().filter(Dependency::isRuntimeCp).map(ArtifactCoords::getArtifactId)
-                .collect(Collectors.toList())).isEqualTo(List.of("acme-ext"));
+        assertThat(appModel.getDependencies().stream().filter(Dependency::isRuntimeCp)
+                .map(ArtifactCoords::getArtifactId).collect(Collectors.toList())).isEqualTo(List.of("acme-ext"));
 
         // deployment classpath
-        assertThat(appModel.getDependencies().stream().filter(Dependency::isDeploymentCp).map(ArtifactCoords::getArtifactId)
-                .collect(Collectors.toList())).isEqualTo(List.of("acme-ext", "acme-ext-deployment"));
+        assertThat(appModel.getDependencies().stream().filter(Dependency::isDeploymentCp)
+                .map(ArtifactCoords::getArtifactId).collect(Collectors.toList()))
+                .isEqualTo(List.of("acme-ext", "acme-ext-deployment"));
     }
 
     private Path mkdir(String path) throws IOException {

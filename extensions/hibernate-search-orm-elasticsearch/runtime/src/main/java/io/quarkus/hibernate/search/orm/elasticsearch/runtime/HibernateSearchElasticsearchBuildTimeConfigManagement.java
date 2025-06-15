@@ -7,8 +7,8 @@ import io.smallrye.config.WithDefault;
 public interface HibernateSearchElasticsearchBuildTimeConfigManagement {
 
     /**
-     * Root path for reindexing endpoints.
-     * This value will be resolved as a path relative to `${quarkus.management.root-path}`.
+     * Root path for reindexing endpoints. This value will be resolved as a path relative to
+     * `${quarkus.management.root-path}`.
      *
      * @asciidoclet
      */

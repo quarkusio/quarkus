@@ -14,9 +14,8 @@ import io.quarkus.test.QuarkusUnitTest;
 class GreetingLambdaTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(() -> ShrinkWrap
-            .create(JavaArchive.class)
-            .addClasses(GreetingLambda.class, InputPerson.class));
+    static final QuarkusUnitTest test = new QuarkusUnitTest().setArchiveProducer(
+            () -> ShrinkWrap.create(JavaArchive.class).addClasses(GreetingLambda.class, InputPerson.class));
 
     @Test
     public void requestHandler_InputPerson_OutputString() throws Exception {
@@ -24,14 +23,7 @@ class GreetingLambdaTest {
         // this works in dev mode too
 
         InputPerson in = new InputPerson("Stu");
-        given()
-                .contentType("application/json")
-                .accept("application/json")
-                .body(in)
-                .when()
-                .post()
-                .then()
-                .statusCode(200)
+        given().contentType("application/json").accept("application/json").body(in).when().post().then().statusCode(200)
                 .body(containsString("Hey Stu"));
     }
 

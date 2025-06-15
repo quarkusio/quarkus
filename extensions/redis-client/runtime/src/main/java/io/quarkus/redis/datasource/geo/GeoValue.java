@@ -5,10 +5,11 @@ import java.util.OptionalDouble;
 import java.util.OptionalLong;
 
 /**
- * Represents a value returned from {@code GEO} commands.
- * The fields may not be populated. It depends on the {@code GEO} commands parameters
+ * Represents a value returned from {@code GEO} commands. The fields may not be populated. It depends on the {@code GEO}
+ * commands parameters
  *
- * @param <V> the member type
+ * @param <V>
+ *        the member type
  */
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class GeoValue<V> {

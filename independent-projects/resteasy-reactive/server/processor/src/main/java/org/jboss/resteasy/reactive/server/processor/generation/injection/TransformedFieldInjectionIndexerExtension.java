@@ -19,7 +19,8 @@ public class TransformedFieldInjectionIndexerExtension implements ServerEndpoint
     private final Consumer<InjectedClassConverterField> injectedClassConverterFieldConsumer;
 
     public TransformedFieldInjectionIndexerExtension(
-            BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformations, boolean requireCreateBeanParams,
+            BiConsumer<String, BiFunction<String, ClassVisitor, ClassVisitor>> transformations,
+            boolean requireCreateBeanParams,
             Consumer<InjectedClassConverterField> injectedClassConverterFieldConsumer) {
         this.transformations = transformations;
         this.requireCreateBeanParams = requireCreateBeanParams;
@@ -31,9 +32,8 @@ public class TransformedFieldInjectionIndexerExtension implements ServerEndpoint
             boolean superTypeIsInjectable, IndexView indexView) {
         for (Map.Entry<FieldInfo, ServerIndexedParameter> entry : fieldExtractors.entrySet()) {
             if (entry.getValue().getConverter() != null) {
-                injectedClassConverterFieldConsumer
-                        .accept(new InjectedClassConverterField(
-                                ClassInjectorTransformer.INIT_CONVERTER_METHOD_NAME + entry.getKey().name(), currentTypeName));
+                injectedClassConverterFieldConsumer.accept(new InjectedClassConverterField(
+                        ClassInjectorTransformer.INIT_CONVERTER_METHOD_NAME + entry.getKey().name(), currentTypeName));
             }
         }
         transformations.accept(currentTypeName, new ClassInjectorTransformer(fieldExtractors, superTypeIsInjectable,

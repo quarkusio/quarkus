@@ -17,7 +17,8 @@ public class ResourceInfoInjectionFilter implements ContainerResponseFilter {
     private ResourceInfo resourceInfo;
 
     @Override
-    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext) throws IOException {
+    public void filter(ContainerRequestContext requestContext, ContainerResponseContext responseContext)
+            throws IOException {
         Method method = resourceInfo.getResourceMethod();
         if (method == null) {
             responseContext.setStatus(responseContext.getStatus() * 2);

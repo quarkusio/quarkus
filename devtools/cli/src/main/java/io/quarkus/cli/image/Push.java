@@ -19,20 +19,17 @@ public class Push extends BaseImageCommand {
     private static final String QUARKUS_CONTAINER_IMAGE_USERNAME = "quarkus.container-image.username";
     private static final String QUARKUS_CONTAINER_IMAGE_PASSWORD = "quarkus.container-image.password";
 
-    @CommandLine.Option(order = 8, names = {
-            "--registry-username" }, description = "The image registry username.")
+    @CommandLine.Option(order = 8, names = { "--registry-username" }, description = "The image registry username.")
     public Optional<String> registryUsername = Optional.empty();
 
-    @CommandLine.Option(order = 9, names = {
-            "--registry-password" }, description = "The image registry password.")
+    @CommandLine.Option(order = 9, names = { "--registry-password" }, description = "The image registry password.")
     public Optional<String> registryPassword = Optional.empty();
 
     @CommandLine.Option(order = 10, names = {
             "--registry-password-stdin" }, description = "Read the image registry password from stdin.")
     public boolean registryPasswordStdin;
 
-    @CommandLine.Option(order = 11, names = {
-            "--also-build" }, description = "(Re)build the image before pushing.")
+    @CommandLine.Option(order = 11, names = { "--also-build" }, description = "(Re)build the image before pushing.")
     public boolean alsoBuild;
 
     @Override

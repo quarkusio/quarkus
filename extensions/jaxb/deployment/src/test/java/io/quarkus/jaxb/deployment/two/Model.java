@@ -4,9 +4,8 @@ import jakarta.xml.bind.annotation.XmlRootElement;
 
 /**
  * This class would make the JAXBContext to fail because there is an existing class with same name and model in the
- * package `one`.
- * To address this failure, we are excluding this class using the property `quarkus.jaxb.exclude-classes` in the
- * `application.properties` file.
+ * package `one`. To address this failure, we are excluding this class using the property `quarkus.jaxb.exclude-classes`
+ * in the `application.properties` file.
  */
 @XmlRootElement
 public class Model {

@@ -14,9 +14,7 @@ public class SmallRyeGraphQLCodestartTest {
 
     @RegisterExtension
     public static QuarkusCodestartTest codestartTest = QuarkusCodestartTest.builder()
-            .extension(ArtifactKey.fromString("io.quarkus:quarkus-smallrye-graphql"))
-            .languages(JAVA, KOTLIN)
-            .build();
+            .extension(ArtifactKey.fromString("io.quarkus:quarkus-smallrye-graphql")).languages(JAVA, KOTLIN).build();
 
     @Test
     void testContent() throws Throwable {

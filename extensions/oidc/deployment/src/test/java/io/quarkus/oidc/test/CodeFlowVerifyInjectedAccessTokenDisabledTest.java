@@ -20,9 +20,8 @@ public class CodeFlowVerifyInjectedAccessTokenDisabledTest {
 
     @RegisterExtension
     static final QuarkusUnitTest test = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(ProtectedResourceWithJwtAccessToken.class)
-                    .addAsResource("application-verify-injected-access-token-disabled.properties", "application.properties"));
+            .withApplicationRoot((jar) -> jar.addClasses(ProtectedResourceWithJwtAccessToken.class).addAsResource(
+                    "application-verify-injected-access-token-disabled.properties", "application.properties"));
 
     @Test
     public void testVerifyAccessTokenDisabled() throws IOException, InterruptedException {

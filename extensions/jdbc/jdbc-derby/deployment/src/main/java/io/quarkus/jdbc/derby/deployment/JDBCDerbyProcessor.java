@@ -37,26 +37,25 @@ public class JDBCDerbyProcessor {
     }
 
     @BuildStep
-    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans,
-            Capabilities capabilities) {
+    void configureAgroalConnection(BuildProducer<AdditionalBeanBuildItem> additionalBeans, Capabilities capabilities) {
         if (capabilities.isPresent(Capability.AGROAL)) {
-            additionalBeans.produce(new AdditionalBeanBuildItem.Builder().addBeanClass(DerbyAgroalConnectionConfigurer.class)
-                    .setDefaultScope(BuiltinScope.APPLICATION.getName())
-                    .setUnremovable()
-                    .build());
+            additionalBeans
+                    .produce(new AdditionalBeanBuildItem.Builder().addBeanClass(DerbyAgroalConnectionConfigurer.class)
+                            .setDefaultScope(BuiltinScope.APPLICATION.getName()).setUnremovable().build());
         }
     }
 
     @BuildStep
     void registerDriverForReflection(BuildProducer<ReflectiveClassBuildItem> reflectiveClass,
             BuildProducer<NativeImageResourceBundleBuildItem> nativeImageResourceBundles) {
-        //Not strictly necessary when using Agroal, as it also registers
-        //any JDBC driver being configured explicitly through its configuration.
-        //We register it for the sake of people not using Agroal.
-        reflectiveClass.produce(ReflectiveClassBuildItem.builder(org.apache.derby.jdbc.ClientDriver.class.getName())
-                .build());
+        // Not strictly necessary when using Agroal, as it also registers
+        // any JDBC driver being configured explicitly through its configuration.
+        // We register it for the sake of people not using Agroal.
+        reflectiveClass
+                .produce(ReflectiveClassBuildItem.builder(org.apache.derby.jdbc.ClientDriver.class.getName()).build());
 
-        nativeImageResourceBundles.produce(new NativeImageResourceBundleBuildItem("org/apache/derby/loc/clientmessages"));
+        nativeImageResourceBundles
+                .produce(new NativeImageResourceBundleBuildItem("org/apache/derby/loc/clientmessages"));
     }
 
     @BuildStep

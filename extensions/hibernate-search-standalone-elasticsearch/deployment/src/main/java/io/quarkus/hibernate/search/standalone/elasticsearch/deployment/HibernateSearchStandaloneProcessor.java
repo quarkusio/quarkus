@@ -68,13 +68,11 @@ class HibernateSearchStandaloneProcessor {
         // add the @SearchExtension class
         // otherwise it won't be registered as qualifier
         additionalBeans.produce(AdditionalBeanBuildItem.builder()
-                .addBeanClasses(HibernateSearchTypes.SEARCH_EXTENSION.toString())
-                .build());
+                .addBeanClasses(HibernateSearchTypes.SEARCH_EXTENSION.toString()).build());
 
         // Register the default scope for @SearchExtension and make such beans unremovable by default
-        beanDefiningAnnotations
-                .produce(new BeanDefiningAnnotationBuildItem(HibernateSearchTypes.SEARCH_EXTENSION, DotNames.APPLICATION_SCOPED,
-                        false));
+        beanDefiningAnnotations.produce(new BeanDefiningAnnotationBuildItem(HibernateSearchTypes.SEARCH_EXTENSION,
+                DotNames.APPLICATION_SCOPED, false));
     }
 
     @BuildStep
@@ -114,18 +112,17 @@ class HibernateSearchStandaloneProcessor {
             // No boot
             return;
         }
-        elasticsearchEnabled.produce(new HibernateSearchBackendElasticsearchEnabledBuildItem(enabled.get().mapperContext,
-                buildTimeConfig.backends()));
+        elasticsearchEnabled.produce(new HibernateSearchBackendElasticsearchEnabledBuildItem(
+                enabled.get().mapperContext, buildTimeConfig.backends()));
     }
 
-    private static Map<String, Set<String>> collectBackendAndIndexNamesForSearchExtensions(
-            IndexView index) {
+    private static Map<String, Set<String>> collectBackendAndIndexNamesForSearchExtensions(IndexView index) {
         Map<String, Set<String>> result = new LinkedHashMap<>();
         for (AnnotationInstance annotation : index.getAnnotations(HibernateSearchTypes.SEARCH_EXTENSION)) {
             var backendName = annotation.value("backend");
             var indexName = annotation.value("index");
-            Set<String> indexNames = result
-                    .computeIfAbsent(backendName == null ? null : backendName.asString(), ignored -> new LinkedHashSet<>());
+            Set<String> indexNames = result.computeIfAbsent(backendName == null ? null : backendName.asString(),
+                    ignored -> new LinkedHashSet<>());
             if (indexName != null) {
                 indexNames.add(indexName.asString());
             }
@@ -164,41 +161,33 @@ class HibernateSearchStandaloneProcessor {
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep
     void defineSearchMappingBean(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
-            HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneRuntimeConfig runtimeConfig,
+            HibernateSearchStandaloneRecorder recorder, HibernateSearchStandaloneRuntimeConfig runtimeConfig,
             BuildProducer<SyntheticBeanBuildItem> syntheticBeanBuildItemBuildProducer) {
         if (!enabled.isPresent()) {
             // No boot
             return;
         }
-        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem
-                .configure(SearchMapping.class)
+        syntheticBeanBuildItemBuildProducer.produce(SyntheticBeanBuildItem.configure(SearchMapping.class)
                 // NOTE: this is using ApplicationScoped and not Singleton, by design, in order to be mockable
                 // See https://github.com/quarkusio/quarkus/issues/16437
-                .scope(ApplicationScoped.class)
-                .unremovable()
-                .addQualifier(Default.class)
-                .setRuntimeInit()
+                .scope(ApplicationScoped.class).unremovable().addQualifier(Default.class).setRuntimeInit()
                 .createWith(recorder.createSearchMappingFunction(enabled.get().mapperContext, runtimeConfig))
-                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class)
-                .done());
+                .destroyer(BeanDestroyer.AutoCloseableDestroyer.class).done());
     }
 
     @BuildStep
     @Record(ExecutionTime.STATIC_INIT)
     @Consume(BeanContainerBuildItem.class) // Pre-boot needs access to the CDI container
-    public void preBoot(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
-            RecorderContext recorderContext,
-            HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneBuildTimeConfig buildTimeConfig) {
+    public void preBoot(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled, RecorderContext recorderContext,
+            HibernateSearchStandaloneRecorder recorder, HibernateSearchStandaloneBuildTimeConfig buildTimeConfig) {
         if (enabled.isEmpty()) {
             // No pre-boot
             return;
         }
 
         // Make it possible to record the settings as bytecode:
-        recorderContext.registerSubstitution(ElasticsearchVersion.class,
-                String.class, ElasticsearchVersionSubstitution.class);
+        recorderContext.registerSubstitution(ElasticsearchVersion.class, String.class,
+                ElasticsearchVersionSubstitution.class);
         recorder.preBoot(enabled.get().mapperContext, buildTimeConfig,
                 enabled.get().getRootAnnotationMappedClassNames());
     }
@@ -206,10 +195,8 @@ class HibernateSearchStandaloneProcessor {
     @BuildStep
     @Record(ExecutionTime.RUNTIME_INIT)
     @Consume(BeanContainerBuildItem.class)
-    void boot(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled,
-            HibernateSearchStandaloneRecorder recorder,
-            HibernateSearchStandaloneRuntimeConfig runtimeConfig,
-            BuildProducer<ServiceStartBuildItem> serviceStart) {
+    void boot(Optional<HibernateSearchStandaloneEnabledBuildItem> enabled, HibernateSearchStandaloneRecorder recorder,
+            HibernateSearchStandaloneRuntimeConfig runtimeConfig, BuildProducer<ServiceStartBuildItem> serviceStart) {
         if (enabled.isEmpty()) {
             // No boot
             return;
@@ -235,17 +222,14 @@ class HibernateSearchStandaloneProcessor {
             // If the version is not set, the default backend is not in use.
             return;
         }
-        Optional<Boolean> active = ConfigUtils.getFirstOptionalValue(
-                mapperPropertyKeys("active"), Boolean.class);
+        Optional<Boolean> active = ConfigUtils.getFirstOptionalValue(mapperPropertyKeys("active"), Boolean.class);
         if (active.isPresent() && !active.get()) {
             // If Hibernate Search is deactivated, we don't want to trigger dev services.
             return;
         }
         ElasticsearchVersion version = defaultBackendConfig.version().get();
-        String hostsPropertyKey = backendPropertyKey(null, null,
-                "hosts");
-        buildItemBuildProducer.produce(new DevservicesElasticsearchBuildItem(hostsPropertyKey,
-                version.versionString(),
+        String hostsPropertyKey = backendPropertyKey(null, null, "hosts");
+        buildItemBuildProducer.produce(new DevservicesElasticsearchBuildItem(hostsPropertyKey, version.versionString(),
                 Distribution.valueOf(version.distribution().toString().toUpperCase())));
 
         // Force schema generation when using dev services
@@ -271,17 +255,14 @@ class HibernateSearchStandaloneProcessor {
 
     @Record(ExecutionTime.RUNTIME_INIT)
     @BuildStep(onlyIf = HibernateSearchStandaloneManagementEnabled.class)
-    void createManagementRoutes(BuildProducer<RouteBuildItem> routes,
-            HibernateSearchStandaloneRecorder recorder,
+    void createManagementRoutes(BuildProducer<RouteBuildItem> routes, HibernateSearchStandaloneRecorder recorder,
             HibernateSearchStandaloneBuildTimeConfig hibernateSearchStandaloneBuildTimeConfig) {
 
         String managementRootPath = hibernateSearchStandaloneBuildTimeConfig.management().rootPath();
 
-        routes.produce(RouteBuildItem.newManagementRoute(
-                managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
+        routes.produce(RouteBuildItem
+                .newManagementRoute(managementRootPath + (managementRootPath.endsWith("/") ? "" : "/") + "reindex")
                 .withRoutePathConfigKey("quarkus.hibernate-search-standalone.management.root-path")
-                .withRequestHandler(recorder.managementHandler())
-                .displayOnNotFoundPage()
-                .build());
+                .withRequestHandler(recorder.managementHandler()).displayOnNotFoundPage().build());
     }
 }

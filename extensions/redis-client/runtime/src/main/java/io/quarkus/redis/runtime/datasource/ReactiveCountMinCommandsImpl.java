@@ -29,14 +29,12 @@ public class ReactiveCountMinCommandsImpl<K, V> extends AbstractCountMinCommands
 
     @Override
     public Uni<Long> cmsIncrBy(K key, V value, long increment) {
-        return super._cmsIncrBy(key, value, increment)
-                .map(r -> r.get(0).toLong());
+        return super._cmsIncrBy(key, value, increment).map(r -> r.get(0).toLong());
     }
 
     @Override
     public Uni<Map<V, Long>> cmsIncrBy(K key, Map<V, Long> couples) {
-        return super._cmsIncrBy(key, couples)
-                .map(r -> decodeAsMapVL(couples, r));
+        return super._cmsIncrBy(key, couples).map(r -> decodeAsMapVL(couples, r));
     }
 
     Map<V, Long> decodeAsMapVL(Map<V, Long> couples, Response r) {
@@ -50,26 +48,22 @@ public class ReactiveCountMinCommandsImpl<K, V> extends AbstractCountMinCommands
 
     @Override
     public Uni<Void> cmsInitByDim(K key, long width, long depth) {
-        return super._cmsInitByDim(key, width, depth)
-                .replaceWithVoid();
+        return super._cmsInitByDim(key, width, depth).replaceWithVoid();
     }
 
     @Override
     public Uni<Void> cmsInitByProb(K key, double error, double probability) {
-        return super._cmsInitByProb(key, error, probability)
-                .replaceWithVoid();
+        return super._cmsInitByProb(key, error, probability).replaceWithVoid();
     }
 
     @Override
     public Uni<Long> cmsQuery(K key, V item) {
-        return super._cmsQuery(key, item)
-                .map(r -> decodeAListOfLongs(r).get(0));
+        return super._cmsQuery(key, item).map(r -> decodeAListOfLongs(r).get(0));
     }
 
     @Override
     public Uni<List<Long>> cmsQuery(K key, V... items) {
-        return super._cmsQuery(key, items)
-                .map(this::decodeAListOfLongs);
+        return super._cmsQuery(key, items).map(this::decodeAListOfLongs);
     }
 
     List<Long> decodeAListOfLongs(Response r) {
@@ -82,7 +76,6 @@ public class ReactiveCountMinCommandsImpl<K, V> extends AbstractCountMinCommands
 
     @Override
     public Uni<Void> cmsMerge(K dest, List<K> src, List<Integer> weight) {
-        return super._cmsMerge(dest, src, weight)
-                .replaceWithVoid();
+        return super._cmsMerge(dest, src, weight).replaceWithVoid();
     }
 }

@@ -92,34 +92,33 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
         }
         Class testJavaClass = testClass.get().getJavaClass();
 
-        //some TCK tests embed random libraries such as old versions of Jackson databind
-        //this breaks quarkus, so we just skip them
+        // some TCK tests embed random libraries such as old versions of Jackson databind
+        // this breaks quarkus, so we just skip them
         boolean skipLibraries = Boolean.getBoolean("io.quarkus.arquillian.skip-libraries");
         try {
             // Export the test archive
             Path tmpLocation = Files.createTempDirectory("quarkus-arquillian-test");
             deploymentLocation.set(tmpLocation);
-            archive.as(ExplodedExporter.class)
-                    .exportExplodedInto(tmpLocation.toFile());
+            archive.as(ExplodedExporter.class).exportExplodedInto(tmpLocation.toFile());
             Path appLocation;
             Set<Path> libraries = new HashSet<>();
 
             if (archive instanceof WebArchive) {
                 // Quarkus does not support the WAR layout and so adapt the layout (similarly to quarkus-war-launcher)
                 appLocation = tmpLocation.resolve("app").toAbsolutePath();
-                //WEB-INF/lib -> lib/
+                // WEB-INF/lib -> lib/
                 if (!skipLibraries) {
                     if (Files.exists(tmpLocation.resolve("WEB-INF/lib"))) {
                         Files.move(tmpLocation.resolve("WEB-INF/lib"), tmpLocation.resolve("lib"));
                     }
                 }
-                //WEB-INF/classes -> archive/
+                // WEB-INF/classes -> archive/
                 if (Files.exists(tmpLocation.resolve("WEB-INF/classes"))) {
                     Files.move(tmpLocation.resolve("WEB-INF/classes"), appLocation);
                 } else {
                     Files.createDirectory(appLocation);
                 }
-                //META-INF -> archive/META-INF/
+                // META-INF -> archive/META-INF/
                 if (Files.exists(tmpLocation.resolve("META-INF"))) {
                     if (Files.exists(appLocation.resolve("META-INF"))) {
                         // Target directory not empty.
@@ -138,7 +137,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                         Files.move(tmpLocation.resolve("META-INF"), appLocation.resolve("META-INF"));
                     }
                 }
-                //WEB-INF -> archive/WEB-INF
+                // WEB-INF -> archive/WEB-INF
                 if (Files.exists(tmpLocation.resolve("WEB-INF"))) {
                     Files.move(tmpLocation.resolve("WEB-INF"), appLocation.resolve("WEB-INF"));
                 }
@@ -166,22 +165,18 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
                         public void execute(BuildContext context) {
                             context.produce(AdditionalBeanBuildItem.unremovableOf(testJavaClass));
                         }
-                    }).produces(AdditionalBeanBuildItem.class)
-                            .build();
+                    }).produces(AdditionalBeanBuildItem.class).build();
                 }
             });
 
-            QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder()
-                    .setApplicationRoot(appLocation)
-                    .setProjectRoot(appLocation)
-                    .setIsolateDeployment(false)
-                    .setFlatClassPath(true)
+            QuarkusBootstrap.Builder bootstrapBuilder = QuarkusBootstrap.builder().setApplicationRoot(appLocation)
+                    .setProjectRoot(appLocation).setIsolateDeployment(false).setFlatClassPath(true)
                     .setMode(QuarkusBootstrap.Mode.TEST);
             for (Path i : libraries) {
                 bootstrapBuilder.addAdditionalApplicationArchive(new AdditionalDependency(i, false, true));
             }
-            //Path testLocation = PathTestHelper.getTestClassesLocation(testJavaClass);
-            //bootstrapBuilder.setProjectRoot(PathTestHelper.getTestClassesLocation(testJavaClass));
+            // Path testLocation = PathTestHelper.getTestClassesLocation(testJavaClass);
+            // bootstrapBuilder.setProjectRoot(PathTestHelper.getTestClassesLocation(testJavaClass));
 
             CuratedApplication curatedApplication = bootstrapBuilder.build().bootstrap();
             AugmentAction augmentAction = new AugmentActionImpl(curatedApplication, customizers);
@@ -192,9 +187,9 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             // Instantiate the real test instance
             testInstance = TestInstantiator.instantiateTest(testJavaClass, runningQuarkusApplication.getClassLoader());
 
-            //so this is pretty bogus, but some of the TCK tests set static's in their @Deployment methods
-            //we can probably challenge them, but for now we just copy the field values over
-            //its pretty bogus
+            // so this is pretty bogus, but some of the TCK tests set static's in their @Deployment methods
+            // we can probably challenge them, but for now we just copy the field values over
+            // its pretty bogus
             if (Boolean.getBoolean("io.quarkus.arquillian.copy-fields")) {
                 Class<?> dest = testInstance.getClass();
                 Class<?> source = testClass.get().getJavaClass();
@@ -217,7 +212,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
             }
 
         } catch (Throwable t) {
-            //clone the exception into the correct class loader
+            // clone the exception into the correct class loader
             Throwable nt;
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             try (ObjectOutputStream a = new ObjectOutputStream(out)) {
@@ -235,7 +230,7 @@ public class QuarkusDeployableContainer implements DeployableContainer<QuarkusCo
 
         ProtocolMetaData metadata = new ProtocolMetaData();
 
-        //TODO: fix this
+        // TODO: fix this
         String testUri = TestHTTPResourceManager.getUri(deployment.get().getRunningApp());
 
         System.setProperty("test.url", testUri);

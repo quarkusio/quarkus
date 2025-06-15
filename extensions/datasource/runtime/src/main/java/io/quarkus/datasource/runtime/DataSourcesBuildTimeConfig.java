@@ -41,8 +41,8 @@ public interface DataSourcesBuildTimeConfig {
      * <p>
      * This is a global setting and is not specific to a datasource.
      * <p>
-     * NOTE: This is different from the "jdbc.enable-metrics" property that needs to be set on the JDBC datasource level to
-     * enable collection of metrics for that datasource.
+     * NOTE: This is different from the "jdbc.enable-metrics" property that needs to be set on the JDBC datasource level
+     * to enable collection of metrics for that datasource.
      */
     @WithName("metrics.enabled")
     @WithDefault("false")
@@ -68,7 +68,6 @@ public interface DataSourcesBuildTimeConfig {
 
     default boolean hasNamedDataSources() {
         return dataSources().keySet().size() > 1
-                || (!dataSources().isEmpty()
-                        && !dataSources().containsKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
+                || (!dataSources().isEmpty() && !dataSources().containsKey(DataSourceUtil.DEFAULT_DATASOURCE_NAME));
     }
 }

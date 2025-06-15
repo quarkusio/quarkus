@@ -96,11 +96,8 @@ class SetConfigTest {
     private SmallRyeConfig config() throws Exception {
         PropertiesConfigSource propertiesConfigSource = new PropertiesConfigSource(
                 tempDir.resolve("src/main/resources/application.properties").toUri().toURL());
-        return new SmallRyeConfigBuilder()
-                .addDefaultInterceptors()
-                .addDiscoveredSecretKeysHandlers()
+        return new SmallRyeConfigBuilder().addDefaultInterceptors().addDiscoveredSecretKeysHandlers()
                 .withSources(propertiesConfigSource)
-                .withDefaultValue("smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key", "default")
-                .build();
+                .withDefaultValue("smallrye.config.secret-handler.aes-gcm-nopadding.encryption-key", "default").build();
     }
 }

@@ -17,8 +17,7 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class UriWithMaxTagMeterFilterTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withConfigurationResource("test-logging.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withConfigurationResource("test-logging.properties")
             .overrideConfigKey("quarkus.micrometer.binder-enabled-default", "false")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.enabled", "true")
             .overrideConfigKey("quarkus.micrometer.binder.http-client.max-uri-tags", "1")
@@ -28,8 +27,8 @@ public class UriWithMaxTagMeterFilterTest {
             .overrideConfigKey("quarkus.micrometer.binder.vertx.enabled", "true")
             .overrideConfigKey("pingpong/mp-rest/url", "${test.url}")
             .overrideConfigKey("quarkus.redis.devservices.enabled", "false")
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(HelloResource.class, PingPongResource.class, PingPongResource.PingPongRestClient.class));
+            .withApplicationRoot((jar) -> jar.addClasses(HelloResource.class, PingPongResource.class,
+                    PingPongResource.PingPongRestClient.class));
 
     @Inject
     HttpServerConfig httpServerConfig;

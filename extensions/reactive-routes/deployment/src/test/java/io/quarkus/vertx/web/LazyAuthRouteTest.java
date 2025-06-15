@@ -22,18 +22,18 @@ import io.vertx.ext.web.RoutingContext;
 public class LazyAuthRouteTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addAsResource(new StringAsset("quarkus.http.auth.proactive=false\n" +
-                            "quarkus.http.auth.permission.secured.paths=/hello-auth-app-properties\n" +
-                            "quarkus.http.auth.permission.secured.policy=authenticated\n"), "application.properties")
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot(
+            (jar) -> jar
+                    .addAsResource(
+                            new StringAsset("quarkus.http.auth.proactive=false\n"
+                                    + "quarkus.http.auth.permission.secured.paths=/hello-auth-app-properties\n"
+                                    + "quarkus.http.auth.permission.secured.policy=authenticated\n"),
+                            "application.properties")
                     .addClasses(TestIdentityProvider.class, TestIdentityController.class, HelloWorldBean.class));
 
     @BeforeAll
     public static void setupUsers() {
-        TestIdentityController.resetRoles()
-                .add("admin", "admin", "admin")
-                .add("user", "user", "user");
+        TestIdentityController.resetRoles().add("admin", "admin", "admin").add("user", "user", "user");
     }
 
     @Test
@@ -48,7 +48,8 @@ public class LazyAuthRouteTest {
 
     @Test
     public void testRolesAllowedDirectResponse() {
-        given().auth().basic("admin", "admin").when().get("/hello-ra-direct").then().statusCode(200).body(is("Hello admin"));
+        given().auth().basic("admin", "admin").when().get("/hello-ra-direct").then().statusCode(200)
+                .body(is("Hello admin"));
     }
 
     @Test

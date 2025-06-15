@@ -8,7 +8,8 @@ public class DeploymentTargetEntry {
     private final int priority;
     private final DeployStrategy deployStrategy;
 
-    public DeploymentTargetEntry(String name, DeploymentResourceKind kind, int priority, DeployStrategy deployStrategy) {
+    public DeploymentTargetEntry(String name, DeploymentResourceKind kind, int priority,
+            DeployStrategy deployStrategy) {
         this.name = name;
         this.deploymentResourceKind = kind;
         this.priority = priority;

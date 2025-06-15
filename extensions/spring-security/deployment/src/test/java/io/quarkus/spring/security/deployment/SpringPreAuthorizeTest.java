@@ -26,14 +26,8 @@ public class SpringPreAuthorizeTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Roles.class,
-                            Person.class,
-                            SpringComponent.class,
-                            SpringService.class,
-                            IdentityMock.class,
-                            AuthData.class,
-                            SecurityTestUtils.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Roles.class, Person.class, SpringComponent.class,
+                    SpringService.class, IdentityMock.class, AuthData.class, SecurityTestUtils.class));
 
     @Inject
     private SpringComponent springComponent;
@@ -71,9 +65,12 @@ public class SpringPreAuthorizeTest {
 
     @Test
     public void testAccessibleForUserAndAdminMixedTypes() {
-        assertFailureFor(() -> springService.accessibleForUserAndAdminMixedTypes(), UnauthorizedException.class, ANONYMOUS);
-        assertSuccess(() -> springService.accessibleForUserAndAdminMixedTypes(), "accessibleForUserAndAdminMixedTypes", USER);
-        assertSuccess(() -> springService.accessibleForUserAndAdminMixedTypes(), "accessibleForUserAndAdminMixedTypes", ADMIN);
+        assertFailureFor(() -> springService.accessibleForUserAndAdminMixedTypes(), UnauthorizedException.class,
+                ANONYMOUS);
+        assertSuccess(() -> springService.accessibleForUserAndAdminMixedTypes(), "accessibleForUserAndAdminMixedTypes",
+                USER);
+        assertSuccess(() -> springService.accessibleForUserAndAdminMixedTypes(), "accessibleForUserAndAdminMixedTypes",
+                ADMIN);
     }
 
     @Test
@@ -92,10 +89,12 @@ public class SpringPreAuthorizeTest {
 
     @Test
     public void testPrincipalNameIs() {
-        assertFailureFor(() -> springComponent.principalNameIs(null, "whatever", null), UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> springComponent.principalNameIs(null, "whatever", null), UnauthorizedException.class,
+                ANONYMOUS);
         assertFailureFor(() -> springComponent.principalNameIs(null, "whatever", null), ForbiddenException.class, USER);
         assertSuccess(() -> springComponent.principalNameIs(null, "user", null), "user", USER);
-        assertFailureFor(() -> springComponent.principalNameIs(null, "whatever", null), ForbiddenException.class, ADMIN);
+        assertFailureFor(() -> springComponent.principalNameIs(null, "whatever", null), ForbiddenException.class,
+                ADMIN);
         assertSuccess(() -> springComponent.principalNameIs(null, "admin", null), "admin", ADMIN);
     }
 
@@ -110,20 +109,20 @@ public class SpringPreAuthorizeTest {
 
     @Test
     public void testPrincipalNameFromObject() {
-        assertFailureFor(() -> springComponent.principalNameFromObject(new Person("whatever")), UnauthorizedException.class,
-                ANONYMOUS);
-        assertFailureFor(() -> springComponent.principalNameFromObject(new Person("whatever")), ForbiddenException.class, USER);
+        assertFailureFor(() -> springComponent.principalNameFromObject(new Person("whatever")),
+                UnauthorizedException.class, ANONYMOUS);
+        assertFailureFor(() -> springComponent.principalNameFromObject(new Person("whatever")),
+                ForbiddenException.class, USER);
         assertSuccess(() -> springComponent.principalNameFromObject(new Person("user")), "user", USER);
     }
 
     @Test
     public void testPrincipalNameFromObjectIsNot() {
         assertFailureFor(() -> springComponent.principalNameFromObjectIsNot(new Person("whatever")),
-                UnauthorizedException.class,
-                ANONYMOUS);
+                UnauthorizedException.class, ANONYMOUS);
         assertSuccess(() -> springComponent.principalNameFromObjectIsNot(new Person("whatever")), "whatever", USER);
-        assertFailureFor(() -> springComponent.principalNameFromObjectIsNot(new Person("user")), ForbiddenException.class,
-                USER);
+        assertFailureFor(() -> springComponent.principalNameFromObjectIsNot(new Person("user")),
+                ForbiddenException.class, USER);
     }
 
     @Test

@@ -27,6 +27,7 @@ public final class HttpSecurityUtils {
      * Provides all the {@link SecurityIdentity} created by the inclusive authentication.
      *
      * @return null if {@link RoutingContext} is not available or {@link #getSecurityIdentities(RoutingContext)}
+     *
      * @see #getSecurityIdentities(RoutingContext)
      */
     public static Map<String, SecurityIdentity> getSecurityIdentities(SecurityIdentity identity) {
@@ -38,9 +39,9 @@ public final class HttpSecurityUtils {
     }
 
     /**
-     * When inclusive authentication is enabled, we allow all authentication mechanisms to produce identity.
-     * However, only the first identity (provided by applicable mechanism with the highest priority) is stored
-     * in the CDI container. Therefore, we put all the identities into the RoutingContext.
+     * When inclusive authentication is enabled, we allow all authentication mechanisms to produce identity. However,
+     * only the first identity (provided by applicable mechanism with the highest priority) is stored in the CDI
+     * container. Therefore, we put all the identities into the RoutingContext.
      *
      * @return null if no identities were found or map with authentication mechanism key and security identity value
      */
@@ -48,7 +49,8 @@ public final class HttpSecurityUtils {
         return routingContext.get(SECURITY_IDENTITIES_ATTRIBUTE);
     }
 
-    public static AuthenticationRequest setRoutingContextAttribute(AuthenticationRequest request, RoutingContext context) {
+    public static AuthenticationRequest setRoutingContextAttribute(AuthenticationRequest request,
+            RoutingContext context) {
         request.setAttribute(ROUTING_CONTEXT_ATTRIBUTE, context);
         return request;
     }
@@ -92,10 +94,11 @@ public final class HttpSecurityUtils {
     }
 
     /**
-     * Adds {@link AuthenticationFailedException} failure to the current {@link RoutingContext}.
-     * Main motivation is to have {@link AuthenticationFailedException#getAttributes()} available during challenge.
+     * Adds {@link AuthenticationFailedException} failure to the current {@link RoutingContext}. Main motivation is to
+     * have {@link AuthenticationFailedException#getAttributes()} available during challenge.
      */
-    public static void addAuthenticationFailureToEvent(AuthenticationFailedException exception, RoutingContext routingContext) {
+    public static void addAuthenticationFailureToEvent(AuthenticationFailedException exception,
+            RoutingContext routingContext) {
         if (routingContext != null && exception != null) {
             routingContext.put(AUTHENTICATION_FAILURE_KEY, exception);
         }

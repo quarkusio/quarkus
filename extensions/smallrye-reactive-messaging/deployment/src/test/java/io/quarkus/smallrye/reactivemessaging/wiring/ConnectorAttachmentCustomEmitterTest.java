@@ -40,9 +40,8 @@ public class ConnectorAttachmentCustomEmitterTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(MyDummyConnector.class, MySink.class,
-                            CustomEmitter.class, CustomEmitterImpl.class, CustomEmitterFactory.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(MyDummyConnector.class,
+                    MySink.class, CustomEmitter.class, CustomEmitterImpl.class, CustomEmitterFactory.class));
 
     @Inject
     @Connector("dummy")

@@ -18,8 +18,7 @@ public class LiveReloadEndpoint {
     VertxHttpBuildTimeConfig httpBuildTimeConfig;
 
     void addConfigRoute(@Observes Router router) {
-        router.route("/test")
-                .produces("text/plain")
+        router.route("/test").produces("text/plain")
                 .handler(rc -> rc.response().end(WebClient.class.hashCode() + "-" + HttpRequest.class.hashCode()));
     }
 

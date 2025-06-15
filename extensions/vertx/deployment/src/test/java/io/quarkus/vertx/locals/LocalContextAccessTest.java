@@ -24,8 +24,7 @@ public class LocalContextAccessTest {
 
     @RegisterExtension
     static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .setArchiveProducer(() -> ShrinkWrap
-                    .create(JavaArchive.class).addClasses(BeanAccessingContext.class));
+            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class).addClasses(BeanAccessingContext.class));
 
     @Inject
     Vertx vertx;
@@ -49,7 +48,8 @@ public class LocalContextAccessTest {
             }
         });
         Throwable t = get.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.get()");
+        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("Context.get()");
 
         context.runOnContext(x -> {
             try {
@@ -60,7 +60,8 @@ public class LocalContextAccessTest {
             }
         });
         t = put.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.put()");
+        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("Context.put()");
 
         context.runOnContext(x -> {
             try {
@@ -71,7 +72,8 @@ public class LocalContextAccessTest {
             }
         });
         t = remove.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.remove()");
+        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("Context.remove()");
     }
 
     @Test
@@ -90,7 +92,8 @@ public class LocalContextAccessTest {
             }
         });
         Throwable t = get.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.getLocal()");
+        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("Context.getLocal()");
 
         context.runOnContext(x -> {
             try {
@@ -101,7 +104,8 @@ public class LocalContextAccessTest {
             }
         });
         t = put.toCompletableFuture().get(5, TimeUnit.SECONDS);
-        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class).hasMessageContaining("Context.putLocal()");
+        Assertions.assertThat(t).isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("Context.putLocal()");
 
         context.runOnContext(x -> {
             try {
@@ -117,7 +121,8 @@ public class LocalContextAccessTest {
     }
 
     @Test
-    public void testLocalAccessFromDuplicatedContext() throws ExecutionException, InterruptedException, TimeoutException {
+    public void testLocalAccessFromDuplicatedContext()
+            throws ExecutionException, InterruptedException, TimeoutException {
         ContextInternal context = (ContextInternal) vertx.getOrCreateContext();
         CompletableFuture<Void> get = new CompletableFuture<>();
         CompletableFuture<Void> put = new CompletableFuture<>();

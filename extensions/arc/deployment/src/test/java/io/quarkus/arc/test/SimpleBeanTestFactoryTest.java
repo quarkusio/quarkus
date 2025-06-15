@@ -16,22 +16,18 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class SimpleBeanTestFactoryTest {
     @RegisterExtension
-    static final QuarkusUnitTest config = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(SimpleBean.class)
-                    .addAsResource(new StringAsset("simpleBean.baz=1"), "application.properties"));
+    static final QuarkusUnitTest config = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(SimpleBean.class).addAsResource(new StringAsset("simpleBean.baz=1"), "application.properties"));
 
     @Inject
     SimpleBean simpleBean;
 
     @TestFactory
     public List<DynamicTest> testBeanInsideFactory() {
-        return List.of(
-                DynamicTest.dynamicTest("test 1", () -> {
-                    assertNotNull(simpleBean);
-                }),
-                DynamicTest.dynamicTest("test 2", () -> {
-                    assertEquals(1, 1);
-                }));
+        return List.of(DynamicTest.dynamicTest("test 1", () -> {
+            assertNotNull(simpleBean);
+        }), DynamicTest.dynamicTest("test 2", () -> {
+            assertEquals(1, 1);
+        }));
     }
 }

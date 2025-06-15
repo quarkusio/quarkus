@@ -38,10 +38,9 @@ import com.github.javaparser.ast.type.PrimitiveType;
 import io.quarkus.runtime.Application;
 
 public class GenerateLog {
-    private static final String CLASS_JAVADOC = "" +
-            "Copy of {@link org.jboss.logging.BasicLogger}.\n" +
-            "Invocations of all {@code static} methods of this class are, during build time, replaced by invocations\n" +
-            "of the same methods on a generated instance of {@link Logger}.";
+    private static final String CLASS_JAVADOC = "" + "Copy of {@link org.jboss.logging.BasicLogger}.\n"
+            + "Invocations of all {@code static} methods of this class are, during build time, replaced by invocations\n"
+            + "of the same methods on a generated instance of {@link Logger}.";
 
     public static void main(String[] args) throws Exception {
         String source = BasicLogger.class.getProtectionDomain().getCodeSource().getLocation().getPath();
@@ -50,10 +49,8 @@ public class GenerateLog {
             String version = matcher.group();
             String url = "https://raw.githubusercontent.com/jboss-logging/jboss-logging/" + version
                     + "/src/main/java/org/jboss/logging/BasicLogger.java";
-            HttpClient client = HttpClient.newBuilder()
-                    .followRedirects(HttpClient.Redirect.NORMAL)
-                    .connectTimeout(Duration.ofSeconds(10))
-                    .build();
+            HttpClient client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL)
+                    .connectTimeout(Duration.ofSeconds(10)).build();
             HttpRequest request = HttpRequest.newBuilder(new URI(url)).build();
             HttpResponse<String> response = client.send(request, BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() == 200) {
@@ -84,8 +81,8 @@ public class GenerateLog {
                 Modifier.Keyword.PRIVATE, Modifier.Keyword.STATIC, Modifier.Keyword.FINAL);
 
         clazz.addFieldWithInitializer(PrimitiveType.booleanType(), "shouldFail",
-                StaticJavaParser.parseExpression("shouldFail()"),
-                Modifier.Keyword.PRIVATE, Modifier.Keyword.STATIC, Modifier.Keyword.FINAL);
+                StaticJavaParser.parseExpression("shouldFail()"), Modifier.Keyword.PRIVATE, Modifier.Keyword.STATIC,
+                Modifier.Keyword.FINAL);
 
         {
             MethodDeclaration method = clazz.addMethod("shouldFail");
@@ -124,12 +121,9 @@ public class GenerateLog {
             method.setParameters(methodTemplate.getParameters());
             BlockStmt body = new BlockStmt();
             body.addStatement("if (shouldFail) { throw fail(); }");
-            Expression logger = StaticJavaParser
-                    .parseExpression("Logger.getLogger(stackWalker.getCallerClass())");
-            List<Expression> forwardParams = methodTemplate.getParameters()
-                    .stream()
-                    .map(NodeWithSimpleName::getNameAsExpression)
-                    .collect(Collectors.toList());
+            Expression logger = StaticJavaParser.parseExpression("Logger.getLogger(stackWalker.getCallerClass())");
+            List<Expression> forwardParams = methodTemplate.getParameters().stream()
+                    .map(NodeWithSimpleName::getNameAsExpression).collect(Collectors.toList());
             MethodCallExpr forwardCall = new MethodCallExpr(logger, methodTemplate.getName().getIdentifier(),
                     new NodeList<>(forwardParams));
             if (methodTemplate.getType().isVoidType()) {

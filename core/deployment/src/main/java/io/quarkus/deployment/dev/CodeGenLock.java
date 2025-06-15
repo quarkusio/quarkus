@@ -4,10 +4,9 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Lock that is used to prevent scanning and compiling while code generator is updating sources
- * There is a race when testing this, where you can see the intermediate empty state of the
- * file, or where the file time changes twice. Codegen hold this lock during modification
- * to avoid the race.
+ * Lock that is used to prevent scanning and compiling while code generator is updating sources There is a race when
+ * testing this, where you can see the intermediate empty state of the file, or where the file time changes twice.
+ * Codegen hold this lock during modification to avoid the race.
  */
 public class CodeGenLock {
 

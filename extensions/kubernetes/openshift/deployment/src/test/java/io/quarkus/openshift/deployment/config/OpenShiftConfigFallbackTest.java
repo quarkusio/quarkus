@@ -22,14 +22,11 @@ import io.smallrye.config.source.yaml.YamlConfigSource;
 
 public class OpenShiftConfigFallbackTest {
     @RegisterExtension
-    static final QuarkusProdModeTest TEST = new QuarkusProdModeTest()
-            .setApplicationName("config")
-            .setApplicationVersion("0.1-SNAPSHOT")
-            .overrideConfigKey("quarkus.openshift.version", "999-SNAPSHOT")
+    static final QuarkusProdModeTest TEST = new QuarkusProdModeTest().setApplicationName("config")
+            .setApplicationVersion("0.1-SNAPSHOT").overrideConfigKey("quarkus.openshift.version", "999-SNAPSHOT")
             .overrideConfigKey("quarkus.openshift.labels.app", "openshift")
             .overrideConfigKey("quarkus.openshift.route.expose", "true")
-            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue())
-            .setRun(true);
+            .setLogRecordPredicate(record -> record.getLevel().intValue() >= Level.WARNING.intValue()).setRun(true);
 
     @ProdBuildResults
     private ProdModeTestResults prodModeTestResults;
@@ -39,8 +36,7 @@ public class OpenShiftConfigFallbackTest {
         List<LogRecord> logRecords = prodModeTestResults.getRetainedBuildLogRecords();
         Set<Object> unrecognized = logRecords.stream()
                 .filter(logRecord -> logRecord.getMessage().startsWith("Unrecognized configuration key"))
-                .map(logRecord -> Optional.ofNullable(logRecord.getParameters())
-                        .map(parameters -> parameters[0])
+                .map(logRecord -> Optional.ofNullable(logRecord.getParameters()).map(parameters -> parameters[0])
                         .orElse(new Object[0]))
                 .collect(toSet());
 
@@ -51,7 +47,8 @@ public class OpenShiftConfigFallbackTest {
         YamlConfigSource openshift = new YamlConfigSource(kubernetesDir.resolve("openshift.yml").toUri().toURL());
 
         // In both, each should retain the value
-        assertEquals("0.1-SNAPSHOT", kubernetes.getValue("spec.template.metadata.labels.\"app.kubernetes.io/version\""));
+        assertEquals("0.1-SNAPSHOT",
+                kubernetes.getValue("spec.template.metadata.labels.\"app.kubernetes.io/version\""));
         assertEquals("999-SNAPSHOT", openshift.getValue("spec.template.metadata.labels.\"app.kubernetes.io/version\""));
 
         // Only in Openshift

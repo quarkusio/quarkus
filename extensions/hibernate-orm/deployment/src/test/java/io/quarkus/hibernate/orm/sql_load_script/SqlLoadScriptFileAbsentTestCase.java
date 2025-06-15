@@ -10,10 +10,8 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class SqlLoadScriptFileAbsentTestCase {
     @RegisterExtension
-    static QuarkusUnitTest runner = new QuarkusUnitTest()
-            .setExpectedException(ConfigurationException.class)
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(MyEntity.class)
+    static QuarkusUnitTest runner = new QuarkusUnitTest().setExpectedException(ConfigurationException.class)
+            .withApplicationRoot((jar) -> jar.addClasses(MyEntity.class)
                     .addAsResource("application-other-load-script-test.properties", "application.properties"));
 
     @Test

@@ -37,18 +37,15 @@ import io.restassured.RestAssured;
 
 public class OpenTelemetryMDCTest {
     @RegisterExtension
-    static final QuarkusUnitTest unitTest = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addPackage(TestSpanExporter.class.getPackage())
-                    .addClass(MdcEntry.class)
-                    .addClass(TestMdcCapturer.class)
-                    .addClass(TestResource.class)
-                    .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
-                    .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
-                            "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
+    static final QuarkusUnitTest unitTest = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addPackage(TestSpanExporter.class.getPackage()).addClass(MdcEntry.class).addClass(TestMdcCapturer.class)
+            .addClass(TestResource.class)
+            .addAsResource(new StringAsset(TestSpanExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.traces.ConfigurableSpanExporterProvider")
+            .addAsResource(new StringAsset(InMemoryMetricExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.metrics.ConfigurableMetricExporterProvider")
+            .addAsResource(new StringAsset(InMemoryLogRecordExporterProvider.class.getCanonicalName()),
+                    "META-INF/services/io.opentelemetry.sdk.autoconfigure.spi.logs.ConfigurableLogRecordExporterProvider"))
             .withConfigurationResource("application-default.properties");
 
     @Inject
@@ -66,10 +63,7 @@ public class OpenTelemetryMDCTest {
 
     @Test
     void vertx() {
-        RestAssured.when()
-                .get("/hello").then()
-                .statusCode(200)
-                .body(is("hello"));
+        RestAssured.when().get("/hello").then().statusCode(200).body(is("hello"));
 
         List<SpanData> spans = spanExporter.getFinishedSpanItems(2);
         List<MdcEntry> mdcEntries = testMdcCapturer.getCapturedMdcEntries();
@@ -116,8 +110,7 @@ public class OpenTelemetryMDCTest {
         return spans.stream()
                 .map(spanData -> new MdcEntry(spanData.getSpanContext().isSampled(),
                         spanData.getParentSpanContext().isValid() ? spanData.getParentSpanId() : "null",
-                        spanData.getSpanId(),
-                        spanData.getTraceId()))
+                        spanData.getSpanId(), spanData.getTraceId()))
                 .collect(Collectors.collectingAndThen(Collectors.toList(), l -> {
                     Collections.reverse(l);
                     return l;
@@ -158,10 +151,8 @@ public class OpenTelemetryMDCTest {
         }
 
         public void captureMdc() {
-            mdcEntries.add(new MdcEntry(
-                    Boolean.parseBoolean(String.valueOf(MDC.get("sampled"))),
-                    String.valueOf(MDC.get("parentId")),
-                    String.valueOf(MDC.get("spanId")),
+            mdcEntries.add(new MdcEntry(Boolean.parseBoolean(String.valueOf(MDC.get("sampled"))),
+                    String.valueOf(MDC.get("parentId")), String.valueOf(MDC.get("spanId")),
                     String.valueOf(MDC.get("traceId"))));
         }
 
@@ -192,10 +183,8 @@ public class OpenTelemetryMDCTest {
                 return false;
             }
             MdcEntry mdcEntry = (MdcEntry) o;
-            return isSampled == mdcEntry.isSampled &&
-                    Objects.equals(parentId, mdcEntry.parentId) &&
-                    Objects.equals(spanId, mdcEntry.spanId) &&
-                    Objects.equals(traceId, mdcEntry.traceId);
+            return isSampled == mdcEntry.isSampled && Objects.equals(parentId, mdcEntry.parentId)
+                    && Objects.equals(spanId, mdcEntry.spanId) && Objects.equals(traceId, mdcEntry.traceId);
         }
 
         @Override

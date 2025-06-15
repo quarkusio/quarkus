@@ -15,7 +15,8 @@ public class GrpcClientInterceptorContainer {
     ClientInterceptorStorage interceptorStorage;
 
     public List<ClientInterceptor> getSortedPerServiceInterceptors(Set<String> interceptorClasses) {
-        return Interceptors.getSortedPerServiceInterceptors(interceptorStorage.getPerClientInterceptors(interceptorClasses));
+        return Interceptors
+                .getSortedPerServiceInterceptors(interceptorStorage.getPerClientInterceptors(interceptorClasses));
     }
 
     public List<ClientInterceptor> getSortedGlobalInterceptors() {

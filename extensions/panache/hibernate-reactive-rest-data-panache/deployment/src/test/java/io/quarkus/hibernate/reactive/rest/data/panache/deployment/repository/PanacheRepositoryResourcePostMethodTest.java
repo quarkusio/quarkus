@@ -12,20 +12,14 @@ import io.quarkus.test.QuarkusUnitTest;
 class PanacheRepositoryResourcePostMethodTest extends AbstractPostMethodTest {
 
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class,
-                            AbstractEntity.class, AbstractItem.class, Item.class, ItemsResource.class,
-                            ItemsRepository.class)
-                    .addAsResource("application.properties")
-                    .addAsResource("import.sql"));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().withApplicationRoot((jar) -> jar
+            .addClasses(Collection.class, CollectionsResource.class, CollectionsRepository.class, AbstractEntity.class,
+                    AbstractItem.class, Item.class, ItemsResource.class, ItemsRepository.class)
+            .addAsResource("application.properties").addAsResource("import.sql"));
 
     @Test
     void shouldCopyAdditionalMethodsAsResources() {
-        given().accept("application/json")
-                .when().post("/collections/name/mycollection")
-                .then().statusCode(200)
-                .and().body("id", is("mycollection"))
-                .and().body("name", is("mycollection"));
+        given().accept("application/json").when().post("/collections/name/mycollection").then().statusCode(200).and()
+                .body("id", is("mycollection")).and().body("name", is("mycollection"));
     }
 }

@@ -43,8 +43,7 @@ public class IdVersionPK implements Serializable {
         if (o == null || getClass() != o.getClass())
             return false;
         IdVersionPK that = (IdVersionPK) o;
-        return Objects.equals(id, that.id) &&
-                Objects.equals(version, that.version);
+        return Objects.equals(id, that.id) && Objects.equals(version, that.version);
     }
 
     @Override

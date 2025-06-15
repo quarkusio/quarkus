@@ -15,26 +15,24 @@ import io.quarkus.test.QuarkusDevModeTest;
 public class KafkaDevServicesContinuousTestingWorkingAppPropsTestCase {
 
     @RegisterExtension
-    public static QuarkusDevModeTest test = new QuarkusDevModeTest()
-            .setArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class)
-                            .addClasses(PriceConverter.class, PriceResource.class, PriceGenerator.class)
-                            .addAsResource(new StringAsset(KafkaDevServicesContinuousTestingTestCase.FINAL_APP_PROPERTIES),
-                                    "application.properties");
-                }
-            }).setTestArchiveProducer(new Supplier<>() {
-                @Override
-                public JavaArchive get() {
-                    return ShrinkWrap.create(JavaArchive.class).addClass(PriceResourceET.class);
-                }
-            });
+    public static QuarkusDevModeTest test = new QuarkusDevModeTest().setArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class)
+                    .addClasses(PriceConverter.class, PriceResource.class, PriceGenerator.class)
+                    .addAsResource(new StringAsset(KafkaDevServicesContinuousTestingTestCase.FINAL_APP_PROPERTIES),
+                            "application.properties");
+        }
+    }).setTestArchiveProducer(new Supplier<>() {
+        @Override
+        public JavaArchive get() {
+            return ShrinkWrap.create(JavaArchive.class).addClass(PriceResourceET.class);
+        }
+    });
 
     /**
-     * Similar to {@link KafkaDevServicesContinuousTestingTestCase} however it starts with application.properties configured.
-     *
-     * See https://github.com/quarkusio/quarkus/issues/19180.
+     * Similar to {@link KafkaDevServicesContinuousTestingTestCase} however it starts with application.properties
+     * configured. See https://github.com/quarkusio/quarkus/issues/19180.
      */
     @Test
     public void testContinuousTestingScenario3() {

@@ -14,7 +14,8 @@ import io.quarkus.deployment.util.IoUtil;
 public class ByteArrayInputStreamSerializer extends JsonSerializer<ByteArrayInputStream> {
 
     @Override
-    public void serialize(ByteArrayInputStream value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+    public void serialize(ByteArrayInputStream value, JsonGenerator jgen, SerializerProvider provider)
+            throws IOException {
         byte[] readBytes = IoUtil.readBytes(value);
         jgen.writeString(BASE64_ENCODER.encodeToString(readBytes));
     }

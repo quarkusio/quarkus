@@ -11,8 +11,7 @@ final class CheckedFragmentValidationBuildItem extends MultiBuildItem {
     final List<Expression> fragmentExpressions;
     final CheckedTemplateBuildItem checkedTemplate;
 
-    public CheckedFragmentValidationBuildItem(String templateGeneratedId,
-            List<Expression> fragmentExpressions,
+    public CheckedFragmentValidationBuildItem(String templateGeneratedId, List<Expression> fragmentExpressions,
             CheckedTemplateBuildItem checkedTemplate) {
         this.templateGeneratedId = templateGeneratedId;
         this.fragmentExpressions = fragmentExpressions;

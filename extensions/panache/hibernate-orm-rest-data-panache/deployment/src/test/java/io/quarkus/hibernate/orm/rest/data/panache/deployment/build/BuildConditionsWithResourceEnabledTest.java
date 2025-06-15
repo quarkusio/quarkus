@@ -11,15 +11,12 @@ import io.quarkus.test.QuarkusUnitTest;
 
 public class BuildConditionsWithResourceEnabledTest {
     @RegisterExtension
-    static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .overrideConfigKey("collections.enabled", "true")
-            .setArchiveProducer(() -> ShrinkWrap.create(JavaArchive.class)
-                    .addClasses(Collection.class, CollectionsResource.class));
+    static final QuarkusUnitTest TEST = new QuarkusUnitTest().overrideConfigKey("collections.enabled", "true")
+            .setArchiveProducer(
+                    () -> ShrinkWrap.create(JavaArchive.class).addClasses(Collection.class, CollectionsResource.class));
 
     @Test
     void shouldResourceBeFound() {
-        given().accept("application/json")
-                .when().get("/collections")
-                .then().statusCode(200);
+        given().accept("application/json").when().get("/collections").then().statusCode(200);
     }
 }

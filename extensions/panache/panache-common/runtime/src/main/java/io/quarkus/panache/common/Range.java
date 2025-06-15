@@ -4,11 +4,9 @@ package io.quarkus.panache.common;
  * <p>
  * Utility class to represent ranging information. Range instances are immutable.
  * </p>
- *
  * <p>
  * Usage:
  * </p>
- *
  * <code><pre>
  * Range range = Range.of(0, 5);
  * </pre></code>

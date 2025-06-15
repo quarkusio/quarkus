@@ -5,7 +5,6 @@ import io.vertx.ext.web.RoutingContext;
 
 /**
  * The local port
- *
  */
 public class LocalPortAttribute implements ExchangeAttribute {
 

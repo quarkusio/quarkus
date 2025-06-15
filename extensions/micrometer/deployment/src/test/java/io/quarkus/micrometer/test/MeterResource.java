@@ -24,8 +24,7 @@ public class MeterResource {
     @GET
     @Path("requests")
     public List<String> requests() {
-        return registry.find("http.server.requests").meters().stream()
-                .map(x -> x.getId().getTag("uri"))
+        return registry.find("http.server.requests").meters().stream().map(x -> x.getId().getTag("uri"))
                 .collect(Collectors.toList());
     }
 }

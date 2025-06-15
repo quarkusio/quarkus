@@ -22,15 +22,11 @@ public class MultipleProvidersFromAnnotationTest {
 
     @RegisterExtension
     static final QuarkusUnitTest TEST = new QuarkusUnitTest()
-            .withApplicationRoot((jar) -> jar
-                    .addClasses(Client.class, Resource.class));
+            .withApplicationRoot((jar) -> jar.addClasses(Client.class, Resource.class));
 
     @Test
     void test() {
-        Client client = RestClientBuilder.newBuilder()
-                .baseUri(uri)
-                .followRedirects(true)
-                .build(Client.class);
+        Client client = RestClientBuilder.newBuilder().baseUri(uri).followRedirects(true).build(Client.class);
         assertThatThrownBy(() -> client.call(2)).hasMessage("dummy");
     }
 

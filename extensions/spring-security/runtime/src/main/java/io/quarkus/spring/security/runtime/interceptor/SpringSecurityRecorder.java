@@ -41,8 +41,8 @@ public class SpringSecurityRecorder {
 
     public Supplier<String[]> fromBeanField(String className, String fieldName) {
         try {
-            return new FromBeanRoleSupplier(Class.forName(className, false, Thread.currentThread().getContextClassLoader()),
-                    fieldName);
+            return new FromBeanRoleSupplier(
+                    Class.forName(className, false, Thread.currentThread().getContextClassLoader()), fieldName);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -60,7 +60,7 @@ public class SpringSecurityRecorder {
     public SecurityCheck fromGeneratedClass(String generatedClassName) {
         try {
             Class<?> type = Class.forName(generatedClassName, false, Thread.currentThread().getContextClassLoader());
-            //invoked at static init, no reflection registration required
+            // invoked at static init, no reflection registration required
             Method m = type.getDeclaredMethod("getInstance");
             return (SecurityCheck) m.invoke(null);
         } catch (Exception e) {
@@ -72,7 +72,7 @@ public class SpringSecurityRecorder {
     public SecurityCheck principalNameFromParameterObjectSecurityCheck(int index, String expectedParameterClass,
             String stringPropertyAccessorClass, String propertyName,
             PrincipalNameFromParameterObjectSecurityCheck.CheckType checkType) {
-        return PrincipalNameFromParameterObjectSecurityCheck.of(index, expectedParameterClass, stringPropertyAccessorClass,
-                propertyName, checkType);
+        return PrincipalNameFromParameterObjectSecurityCheck.of(index, expectedParameterClass,
+                stringPropertyAccessorClass, propertyName, checkType);
     }
 }

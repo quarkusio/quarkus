@@ -21,7 +21,8 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     private final Set<AnnotationInstance> bindings;
     private final String hash;
 
-    InterceptedStaticMethodBuildItem(MethodInfo method, Set<AnnotationInstance> bindings, List<InterceptorInfo> interceptors) {
+    InterceptedStaticMethodBuildItem(MethodInfo method, Set<AnnotationInstance> bindings,
+            List<InterceptorInfo> interceptors) {
         this.method = method;
         this.interceptors = interceptors;
         this.bindings = bindings;
@@ -37,7 +38,6 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the list of interceptors that should be applied
      */
     public List<InterceptorInfo> getInterceptors() {
@@ -45,7 +45,6 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the set of interceptor bindings
      */
     public Set<AnnotationInstance> getBindings() {
@@ -53,7 +52,6 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the unique hash that could be used to identify the method
      */
     public String getHash() {
@@ -61,7 +59,6 @@ public final class InterceptedStaticMethodBuildItem extends MultiBuildItem {
     }
 
     /**
-     *
      * @return the name of the generated forwarding method
      */
     public String getForwardingMethodName() {

@@ -54,11 +54,8 @@ public class TransactionalSetCommandsTest extends DatasourceTestBase {
     public void setReactive() {
         TransactionResult result = reactive.withTransaction(tx -> {
             ReactiveTransactionalSetCommands<String, String> set = tx.set(String.class);
-            return set.sadd(key, "a", "b", "c", "d")
-                    .chain(() -> set.sadd(key, "c", "1"))
-                    .chain(() -> set.spop(key))
-                    .chain(() -> set.scard(key))
-                    .chain(() -> set.sismember(key, "1"));
+            return set.sadd(key, "a", "b", "c", "d").chain(() -> set.sadd(key, "c", "1")).chain(() -> set.spop(key))
+                    .chain(() -> set.scard(key)).chain(() -> set.sismember(key, "1"));
         }).await().atMost(Duration.ofSeconds(5));
         assertThat(result.size()).isEqualTo(5);
         assertThat(result.discarded()).isFalse();

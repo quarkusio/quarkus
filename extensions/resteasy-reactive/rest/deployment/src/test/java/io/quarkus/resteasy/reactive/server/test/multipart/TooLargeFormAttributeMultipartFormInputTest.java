@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.function.Supplier;
@@ -68,7 +67,7 @@ public class TooLargeFormAttributeMultipartFormInputTest extends AbstractMultipa
 
     @Test
     public void test() throws IOException {
-        String fileContents = new String(Files.readAllBytes(FORM_ATTR_SOURCE_FILE.toPath()), StandardCharsets.UTF_8);
+        String fileContents = Files.readString(FORM_ATTR_SOURCE_FILE.toPath());
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 10; ++i) {
             sb.append(fileContents);

@@ -38,6 +38,9 @@
         <!-- These properties are used by CreateProjectMojo to add the Maven Wrapper -->
         <proposed-maven-version>3.9.9</proposed-maven-version>
         <maven-wrapper.version>3.3.2</maven-wrapper.version>
+        <!-- When updating gradle-wrapper.version, make sure to also update files in
+             independent-projects/tools/base-codestarts/src/main/resources/codestarts
+             /quarkus/tooling/gradle-wrapper/base/gradle -->
         <gradle-wrapper.version>8.14</gradle-wrapper.version>
 
         <!-- These properties are needed in order for them to be resolvable by the generated projects -->

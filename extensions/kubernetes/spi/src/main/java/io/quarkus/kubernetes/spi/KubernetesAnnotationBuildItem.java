@@ -22,6 +22,7 @@ public final class KubernetesAnnotationBuildItem extends MultiBuildItem implemen
         return value;
     }
 
+    @Override
     public String getTarget() {
         return target;
     }

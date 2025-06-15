@@ -23,6 +23,7 @@ public class ArrayCharSequence implements CharSequence {
         this.count = count;
     }
 
+    @Override
     public char charAt(int index) {
         if (index < 0 || index >= count) {
             throw new StringIndexOutOfBoundsException(index);
@@ -30,10 +31,12 @@ public class ArrayCharSequence implements CharSequence {
         return buf[offset + index];
     }
 
+    @Override
     public int length() {
         return count;
     }
 
+    @Override
     public CharSequence subSequence(int beginIndex, int endIndex) {
         if (beginIndex < 0) {
             throw new StringIndexOutOfBoundsException(beginIndex);

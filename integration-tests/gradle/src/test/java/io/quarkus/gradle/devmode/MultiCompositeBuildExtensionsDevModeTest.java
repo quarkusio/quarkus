@@ -21,6 +21,7 @@ public class MultiCompositeBuildExtensionsDevModeTest extends QuarkusDevGradleTe
         return new String[] { ":application:clean", ":application:quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse())

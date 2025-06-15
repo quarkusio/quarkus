@@ -41,6 +41,7 @@ public class WeightedLanguage implements Comparable<WeightedLanguage> {
         return locale;
     }
 
+    @Override
     public int compareTo(WeightedLanguage o) {
         WeightedLanguage type2 = this;
         WeightedLanguage type1 = o;

@@ -26,14 +26,17 @@ public class ParameterDeclarationNode implements TemplateNode, ParameterDeclarat
         return ResultNode.NOOP;
     }
 
+    @Override
     public String getTypeInfo() {
         return typeInfo;
     }
 
+    @Override
     public String getKey() {
         return key;
     }
 
+    @Override
     public Expression getDefaultValue() {
         return defaultValue;
     }

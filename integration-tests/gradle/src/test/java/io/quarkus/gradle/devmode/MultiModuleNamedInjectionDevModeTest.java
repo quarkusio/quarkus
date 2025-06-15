@@ -16,6 +16,7 @@ public class MultiModuleNamedInjectionDevModeTest extends QuarkusDevGradleTestBa
         return new String[] { "clean", "quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse("/hello")).contains("hello true true");

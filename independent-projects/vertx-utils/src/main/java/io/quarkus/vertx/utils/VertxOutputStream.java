@@ -150,6 +150,7 @@ public class VertxOutputStream extends OutputStream {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void write(final int b) throws IOException {
         write(new byte[] { (byte) b }, 0, 1);
     }
@@ -157,6 +158,7 @@ public class VertxOutputStream extends OutputStream {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void write(final byte[] b) throws IOException {
         write(b, 0, b.length);
     }
@@ -164,6 +166,7 @@ public class VertxOutputStream extends OutputStream {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void write(final byte[] b, final int off, final int len) throws IOException {
         if (len < 1) {
             return;
@@ -220,6 +223,7 @@ public class VertxOutputStream extends OutputStream {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void flush() throws IOException {
         if (closed) {
             throw new IOException("Stream is closed");
@@ -237,6 +241,7 @@ public class VertxOutputStream extends OutputStream {
     /**
      * {@inheritDoc}
      */
+    @Override
     public void close() throws IOException {
         if (closed)
             return;

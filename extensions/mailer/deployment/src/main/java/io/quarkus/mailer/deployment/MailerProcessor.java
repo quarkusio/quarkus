@@ -80,6 +80,7 @@ public class MailerProcessor {
     public static class CacheAttachmentsEnabled implements BooleanSupplier {
         MailersBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.cacheAttachments();
         }

@@ -54,6 +54,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
      * @param request The authentication request
      * @return The first identity provider that was registered with this type
      */
+    @Override
     public Uni<SecurityIdentity> authenticate(AuthenticationRequest request) {
         try {
             var providers = this.providers.get(request.getClass());
@@ -101,6 +102,7 @@ public class QuarkusIdentityProviderManagerImpl implements IdentityProviderManag
      * @param request The authentication request
      * @return The first identity provider that was registered with this type
      */
+    @Override
     public SecurityIdentity authenticateBlocking(AuthenticationRequest request) {
         var providers = this.providers.get(request.getClass());
         if (providers == null) {

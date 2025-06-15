@@ -70,6 +70,8 @@ public class SetConverter implements ParameterConverter {
             return delegate == null ? new SetConverter(null) : new SetConverter(delegate.get());
         }
 
+        @Override
+        @Override
         public ParameterConverterSupplier getDelegate() {
             return delegate;
         }

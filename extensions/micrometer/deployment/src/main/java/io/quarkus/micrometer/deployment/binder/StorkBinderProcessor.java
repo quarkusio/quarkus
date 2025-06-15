@@ -17,6 +17,7 @@ public class StorkBinderProcessor {
     static class StorkMetricsSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return OBSERVABLE_CLIENT_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().stork());
         }

@@ -84,6 +84,7 @@ public class MavenProjectImportingMultipleBomsFromSinglePlatformTest extends Mul
         enableRegistryClient();
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return MAIN_PLATFORM_KEY;
     }

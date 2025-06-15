@@ -18,6 +18,7 @@ public class AmqpBroker implements QuarkusTestResourceLifecycleManager {
     static EmbeddedActiveMQ server;
     static AmqpBroker instance;
 
+    @Override
     public Map<String, String> start() {
         instance = this;
         try {
@@ -45,6 +46,7 @@ public class AmqpBroker implements QuarkusTestResourceLifecycleManager {
         return Collections.emptyMap();
     }
 
+    @Override
     public void stop() {
         try {
             if (server != null) {

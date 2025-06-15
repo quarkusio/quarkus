@@ -153,6 +153,7 @@ public class AdditionalInterceptorBindingsPredicateTest {
     @ToBeBindingWithNonBindingField("toBeIgnored")
     @ToBeBindingWithBindingField("notIgnored-mismatched")
     static class SomeBean implements Pingable {
+        @Override
         public void ping() {
 
         }
@@ -161,6 +162,7 @@ public class AdditionalInterceptorBindingsPredicateTest {
     @ApplicationScoped
     @ToBeBindingWithBindingField("notIgnored")
     static class SomeOtherBean implements Pingable {
+        @Override
         public void ping() {
 
         }

@@ -15,6 +15,7 @@ public class AddNodeSelectorDecorator extends NamedResourceDecorator<PodSpecFlue
         this.nodeSelectorValue = nodeSelectorValue;
     }
 
+    @Override
     public void andThenVisit(PodSpecFluent<?> podSpec, ObjectMeta resourceMeta) {
         if (Strings.isNotNullOrEmpty(nodeSelectorKey) && Strings.isNotNullOrEmpty(nodeSelectorValue)) {
             podSpec.removeFromNodeSelector(nodeSelectorKey);

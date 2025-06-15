@@ -104,6 +104,7 @@ public class QuarkusPulsarKeyStoreAuthentication implements Authentication {
             this.trustStoreStream = new ByteArrayInputStream(trustStore.getBytes());
         }
 
+        @Override
         public boolean hasDataForTls() {
             return true;
         }

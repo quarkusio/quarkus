@@ -13,6 +13,7 @@ import org.jboss.resteasy.reactive.common.util.ExtendedCacheControl;
 public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<CacheControl> {
     public static final CacheControlDelegate INSTANCE = new CacheControlDelegate();
 
+    @Override
     public CacheControl fromString(String value) throws IllegalArgumentException {
         if (value == null)
             throw new IllegalArgumentException("Param was null");
@@ -79,6 +80,7 @@ public class CacheControlDelegate implements RuntimeDelegate.HeaderDelegate<Cach
         return buffer;
     }
 
+    @Override
     public String toString(CacheControl value) {
         if (value == null)
             throw new IllegalArgumentException("param was null");

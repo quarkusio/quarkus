@@ -135,10 +135,12 @@ final class QuteCodestartFileReader implements CodestartFileReader {
 
     static class MissingValueMapper implements ResultMapper {
 
+        @Override
         public boolean appliesTo(TemplateNode.Origin origin, Object result) {
             return Results.isNotFound(result);
         }
 
+        @Override
         public String map(Object result, Expression expression) {
             if (expression.toOriginalString().equals("merged-content")) {
                 return "{merged-content}";

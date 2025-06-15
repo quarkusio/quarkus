@@ -40,6 +40,7 @@ class RequestContext extends CurrentManagedContext {
         return LOG;
     }
 
+    @Override
     protected void traceActivate(ContextState initialState) {
         String stack = Arrays.stream(Thread.currentThread().getStackTrace())
                 .skip(2)
@@ -50,6 +51,7 @@ class RequestContext extends CurrentManagedContext {
                 initialState != null ? Integer.toHexString(initialState.hashCode()) : "new", stack);
     }
 
+    @Override
     protected void traceDeactivate() {
         String stack = Arrays.stream(Thread.currentThread().getStackTrace())
                 .skip(2)
@@ -59,6 +61,7 @@ class RequestContext extends CurrentManagedContext {
         LOG.tracef("Deactivate%s\n\t...", stack);
     }
 
+    @Override
     protected void traceDestroy(ContextState state) {
         String stack = Arrays.stream(Thread.currentThread().getStackTrace())
                 .skip(2)
@@ -68,6 +71,7 @@ class RequestContext extends CurrentManagedContext {
         LOG.tracef("Destroy %s%s\n\t...", state != null ? Integer.toHexString(state.hashCode()) : "", stack);
     }
 
+    @Override
     protected ContextNotActiveException notActive() {
         String msg = "Request context is not active - you can activate the request context for a specific method using the @ActivateRequestContext interceptor binding";
         return new ContextNotActiveException(msg);

@@ -20,6 +20,7 @@ public interface ResteasyReactiveAsyncExceptionMapper<E extends Throwable> exten
      */
     void asyncResponse(E exception, AsyncExceptionMapperContext context);
 
+    @Override
     default Response toResponse(E exception) {
         throw new IllegalStateException("This should never have been called");
     }

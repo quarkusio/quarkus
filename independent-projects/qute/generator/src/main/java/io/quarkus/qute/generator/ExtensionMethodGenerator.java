@@ -77,6 +77,7 @@ public class ExtensionMethodGenerator extends AbstractGenerator {
         super(index, classOutput);
     }
 
+    @Override
     public Set<String> getGeneratedTypes() {
         return generatedTypes;
     }

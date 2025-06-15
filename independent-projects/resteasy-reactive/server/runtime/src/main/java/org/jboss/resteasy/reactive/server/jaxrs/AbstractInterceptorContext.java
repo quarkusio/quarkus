@@ -32,35 +32,43 @@ public abstract class AbstractInterceptorContext implements InterceptorContext {
         this.serialisers = serialisers;
     }
 
+    @Override
     public Object getProperty(String name) {
         return context.getProperty(name);
     }
 
+    @Override
     public Collection<String> getPropertyNames() {
         return context.getPropertyNames();
     }
 
+    @Override
     public void setProperty(String name, Object object) {
         context.setProperty(name, object);
     }
 
+    @Override
     public void removeProperty(String name) {
         context.removeProperty(name);
     }
 
+    @Override
     public Annotation[] getAnnotations() {
         return annotations;
     }
 
+    @Override
     public void setAnnotations(Annotation[] annotations) {
         Objects.requireNonNull(annotations);
         this.annotations = annotations;
     }
 
+    @Override
     public Class<?> getType() {
         return type;
     }
 
+    @Override
     public void setType(Class<?> type) {
         if ((this.type != type) && (type != null)) {
             rediscoveryNeeded = true;
@@ -68,18 +76,22 @@ public abstract class AbstractInterceptorContext implements InterceptorContext {
         this.type = type;
     }
 
+    @Override
     public Type getGenericType() {
         return genericType;
     }
 
+    @Override
     public void setGenericType(Type genericType) {
         this.genericType = genericType;
     }
 
+    @Override
     public MediaType getMediaType() {
         return mediaType;
     }
 
+    @Override
     public void setMediaType(MediaType mediaType) {
         if (this.mediaType != mediaType) {
             rediscoveryNeeded = true;

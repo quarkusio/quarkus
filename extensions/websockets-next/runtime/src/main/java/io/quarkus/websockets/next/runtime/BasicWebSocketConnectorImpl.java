@@ -296,6 +296,7 @@ public class BasicWebSocketConnectorImpl extends WebSocketConnectorBase<BasicWeb
             public void handle(Void event) {
                 if (executionModel == ExecutionModel.VIRTUAL_THREAD) {
                     VirtualThreadsRecorder.getCurrent().execute(new Runnable() {
+                        @Override
                         public void run() {
                             try {
                                 consumer.accept(connection, message);

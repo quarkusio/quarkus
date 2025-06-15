@@ -198,6 +198,8 @@ public final class Expressions {
             return ',' == candidate;
         }
 
+        @Override
+        @Override
         public boolean isInfixNotationSupported() {
             return false;
         }
@@ -211,6 +213,8 @@ public final class Expressions {
             return ' ' == candidate;
         }
 
+        @Override
+        @Override
         public boolean isInfixNotationSupported() {
             return false;
         }

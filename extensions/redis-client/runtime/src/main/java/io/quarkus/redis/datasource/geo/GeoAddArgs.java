@@ -42,6 +42,7 @@ public class GeoAddArgs implements RedisCommandExtraArguments {
         return this;
     }
 
+    @Override
     public List<Object> toArgs() {
         if (xx && nx) {
             throw new IllegalArgumentException("Cannot set XX and NX together");

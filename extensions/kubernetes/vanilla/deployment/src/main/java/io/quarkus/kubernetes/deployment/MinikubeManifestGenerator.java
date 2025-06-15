@@ -62,6 +62,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
         return 210;
     }
 
+    @Override
     public void generate(KubernetesConfig config) {
         ImageConfiguration imageConfig = getImageConfiguration(getProject(), config, configurationRegistry);
 
@@ -98,6 +99,7 @@ public class MinikubeManifestGenerator extends AbstractKubernetesManifestGenerat
         resourceRegistry.decorate(MINIKUBE, new ApplyImageDecorator(config.getName(), image));
     }
 
+    @Override
     public boolean accepts(Class<? extends Configuration> type) {
         return type.equals(KubernetesConfig.class) ||
                 type.equals(EditableKubernetesConfig.class);

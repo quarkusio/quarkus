@@ -128,6 +128,7 @@ public class LockInterceptorTest {
     @Dependent
     static class SimpleDependentBean extends Ping {
 
+        @Override
         @Lock
         void ping(int idx) throws InterruptedException {
             super.ping(idx);
@@ -139,6 +140,7 @@ public class LockInterceptorTest {
     @ApplicationScoped
     static class SimpleApplicationScopedBean extends Ping {
 
+        @Override
         @Lock(Type.WRITE)
         void ping(int idx) throws InterruptedException {
             super.ping(idx);

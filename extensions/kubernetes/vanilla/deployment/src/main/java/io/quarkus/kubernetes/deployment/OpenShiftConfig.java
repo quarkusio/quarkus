@@ -148,6 +148,7 @@ public interface OpenShiftConfig extends PlatformConfiguration {
         return (flavor() == OpenshiftFlavor.v3) ? DeploymentResourceKind.DeploymentConfig : DeploymentResourceKind.Deployment;
     }
 
+    @Override
     @Deprecated
     default Map<String, ContainerConfig> getSidecars() {
         if (!containerName().isEmpty() && !sidecars().isEmpty()) {

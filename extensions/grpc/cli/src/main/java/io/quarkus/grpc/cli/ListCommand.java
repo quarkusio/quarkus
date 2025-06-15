@@ -12,6 +12,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "list", sortOptions = false, header = "gRPC list")
 public class ListCommand extends GcurlBaseCommand {
 
+    @Override
     public String getAction() {
         return "list";
     }

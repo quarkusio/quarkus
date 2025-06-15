@@ -28,6 +28,7 @@ public final class ContainerResponseFilterBuildItem extends AbstractInterceptorB
             return this;
         }
 
+        @Override
         public ContainerResponseFilterBuildItem build() {
             return new ContainerResponseFilterBuildItem(this);
         }

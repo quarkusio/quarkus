@@ -37,6 +37,7 @@ public class OidcClientRegistrationsImpl implements OidcClientRegistrations, Clo
         return staticOidcClientRegs.get(id);
     }
 
+    @Override
     public Map<String, OidcClientRegistration> getClientRegistrations() {
         return Collections.unmodifiableMap(staticOidcClientRegs);
     }

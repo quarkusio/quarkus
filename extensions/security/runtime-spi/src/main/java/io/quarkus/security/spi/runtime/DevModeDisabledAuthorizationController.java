@@ -15,6 +15,7 @@ import io.quarkus.runtime.LaunchMode;
 @Singleton
 public final class DevModeDisabledAuthorizationController extends AuthorizationController {
 
+    @Override
     public boolean isAuthorizationEnabled() {
         if (LaunchMode.current() != LaunchMode.DEVELOPMENT) {
             throw new IllegalStateException("This implementation is only available in dev mode");

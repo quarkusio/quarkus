@@ -66,10 +66,12 @@ final class ExpressionImpl implements Expression {
         return namespace != null;
     }
 
+    @Override
     public String getNamespace() {
         return namespace;
     }
 
+    @Override
     public List<Part> getParts() {
         return parts;
     }
@@ -79,6 +81,7 @@ final class ExpressionImpl implements Expression {
         return literal != null;
     }
 
+    @Override
     public CompletableFuture<Object> getLiteralValue() {
         return literal != null ? literal.toCompletableFuture() : null;
     }
@@ -96,6 +99,7 @@ final class ExpressionImpl implements Expression {
         return literal;
     }
 
+    @Override
     public Origin getOrigin() {
         return origin;
     }
@@ -135,6 +139,7 @@ final class ExpressionImpl implements Expression {
         return builder.toString();
     }
 
+    @Override
     public String toOriginalString() {
         StringBuilder builder = new StringBuilder();
         if (namespace != null) {
@@ -166,6 +171,7 @@ final class ExpressionImpl implements Expression {
             this.parameters = parameters;
         }
 
+        @Override
         public List<Expression> getParameters() {
             return parameters;
         }
@@ -238,10 +244,12 @@ final class ExpressionImpl implements Expression {
             this.typeInfo = typeInfo;
         }
 
+        @Override
         public String getName() {
             return name;
         }
 
+        @Override
         public String getTypeInfo() {
             return typeInfo;
         }

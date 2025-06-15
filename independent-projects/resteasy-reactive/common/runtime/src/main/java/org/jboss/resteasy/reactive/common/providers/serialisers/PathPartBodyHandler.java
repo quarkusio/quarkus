@@ -18,14 +18,16 @@ public class PathPartBodyHandler implements MessageBodyWriter<PathPart> {
 
     public static final int BUFFER_SIZE = 8192;
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return PathPart.class.isAssignableFrom(type);
     }
 
+    @Override
     public void writeTo(PathPart uploadFile, Class<?> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders,
-            OutputStream entityStream) throws IOException {
+                        Annotation[] annotations, MediaType mediaType,
+                        MultivaluedMap<String, Object> httpHeaders,
+                        OutputStream entityStream) throws IOException {
         httpHeaders.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(uploadFile.count));
         doWrite(uploadFile, entityStream);
     }

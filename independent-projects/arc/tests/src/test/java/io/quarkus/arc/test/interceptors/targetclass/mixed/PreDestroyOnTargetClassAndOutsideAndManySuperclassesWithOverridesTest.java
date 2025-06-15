@@ -112,6 +112,7 @@ public class PreDestroyOnTargetClassAndOutsideAndManySuperclassesWithOverridesTe
     @Interceptor
     @Priority(1)
     static class MyInterceptor extends Foxtrot {
+        @Override
         @PreDestroy
         Object intercept(InvocationContext ctx) throws Exception {
             MyBean.invocations.add(MyInterceptor.class.getSimpleName());

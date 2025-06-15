@@ -70,6 +70,7 @@ public class DecoratorsWithTypeVariablesTest {
     @ApplicationScoped
     static class StringFunction implements Function<String, String> {
 
+        @Override
         public String apply(String val) {
             return val.trim();
         }

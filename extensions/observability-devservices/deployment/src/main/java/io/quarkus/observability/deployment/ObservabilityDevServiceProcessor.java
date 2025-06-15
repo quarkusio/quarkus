@@ -64,6 +64,7 @@ class ObservabilityDevServiceProcessor {
     public static class IsEnabled implements BooleanSupplier {
         ObservabilityConfiguration config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled() && !config.devResources();
         }

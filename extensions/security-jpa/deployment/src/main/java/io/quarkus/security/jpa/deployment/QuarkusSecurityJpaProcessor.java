@@ -98,6 +98,8 @@ class QuarkusSecurityJpaProcessor {
                 return requiredType.name().equals(SESSION_FACTORY_FACTORY);
             }
 
+            @Override
+            @Override
             public void transform(TransformationContext context) {
                 if (context.getAnnotationTarget().kind() == AnnotationTarget.Kind.FIELD) {
                     var declaringClassName = context.getAnnotationTarget().asField().declaringClass().name();

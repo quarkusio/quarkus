@@ -18,6 +18,7 @@ import io.vertx.core.json.JsonObject;
 public class FindBinary extends AbstractFind {
 
     // There's no binary codec available out of the box so the codecs below are needed
+    @Override
     @OnBinaryMessage
     Item find(List<Item> items) {
         return super.find(items);

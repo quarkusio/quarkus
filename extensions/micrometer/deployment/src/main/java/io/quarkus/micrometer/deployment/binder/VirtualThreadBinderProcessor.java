@@ -22,6 +22,7 @@ public class VirtualThreadBinderProcessor {
     static class VirtualThreadSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return VIRTUAL_THREAD_BINDER_CLASS != null // The binder is in another Micrometer artifact
                     && mConfig.checkBinderEnabledWithDefault(mConfig.binder().virtualThreads());

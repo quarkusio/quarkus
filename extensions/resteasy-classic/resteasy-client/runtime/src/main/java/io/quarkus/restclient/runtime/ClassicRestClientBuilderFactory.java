@@ -8,6 +8,7 @@ import io.quarkus.restclient.config.RestClientsConfig;
 
 public class ClassicRestClientBuilderFactory implements RestClientBuilderFactory {
 
+    @Override
     public RestClientBuilder newBuilder(Class<?> proxyType, RestClientsConfig restClientsConfigRoot) {
         RegisterRestClient annotation = proxyType.getAnnotation(RegisterRestClient.class);
         String configKey = null;

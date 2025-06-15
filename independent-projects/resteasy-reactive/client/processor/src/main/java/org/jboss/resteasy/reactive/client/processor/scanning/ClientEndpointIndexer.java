@@ -200,10 +200,12 @@ public class ClientEndpointIndexer
         }
     }
 
+    @Override
     protected void addWriterForType(AdditionalWriters additionalWriters, Type paramType) {
         addReaderWriterForType(additionalWriters, paramType);
     }
 
+    @Override
     protected void addReaderForType(AdditionalReaders additionalReaders, Type paramType) {
         addReaderWriterForType(additionalReaders, paramType);
     }

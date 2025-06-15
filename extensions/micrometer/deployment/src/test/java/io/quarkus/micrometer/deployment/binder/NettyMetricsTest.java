@@ -99,6 +99,7 @@ public class NettyMetricsTest {
 
     enum AllocatorMemoryKeyNames implements KeyName {
         MEMORY_TYPE {
+            @Override
             public String asString() {
                 return "memory.type";
             }

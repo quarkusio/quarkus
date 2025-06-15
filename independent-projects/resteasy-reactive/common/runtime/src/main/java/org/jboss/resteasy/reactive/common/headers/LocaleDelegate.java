@@ -12,12 +12,14 @@ import org.jboss.resteasy.reactive.common.util.LocaleHelper;
 public class LocaleDelegate implements RuntimeDelegate.HeaderDelegate<Locale> {
     public static final LocaleDelegate INSTANCE = new LocaleDelegate();
 
+    @Override
     public Locale fromString(String value) throws IllegalArgumentException {
         if (value == null)
             throw new IllegalArgumentException("param was null");
         return LocaleHelper.extractLocale(value);
     }
 
+    @Override
     public String toString(Locale value) {
         if (value == null)
             throw new IllegalArgumentException("param was null");

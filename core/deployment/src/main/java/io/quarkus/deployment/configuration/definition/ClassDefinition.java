@@ -56,6 +56,7 @@ public abstract class ClassDefinition extends Definition {
     }
 
     public static abstract class ClassMember extends Member {
+        @Override
         public abstract ClassDefinition getEnclosingDefinition();
 
         public final String getName() {
@@ -113,18 +114,22 @@ public abstract class ClassDefinition extends Definition {
             }
         }
 
+        @Override
         public Field getField() {
             return field;
         }
 
+        @Override
         public FieldDescriptor getDescriptor() {
             return descriptor;
         }
 
+        @Override
         public ClassDefinition getEnclosingDefinition() {
             return classDefinition;
         }
 
+        @Override
         public String getPropertyName() {
             return propertyName;
         }
@@ -136,6 +141,7 @@ public abstract class ClassDefinition extends Definition {
                 this.field = Assert.checkNotNullParam("field", field);
             }
 
+            @Override
             Field getField() {
                 return field;
             }
@@ -175,6 +181,7 @@ public abstract class ClassDefinition extends Definition {
                 return optional;
             }
 
+            @Override
             ClassMember construct(final ClassDefinition enclosing) {
                 return new GroupMember(enclosing, field, groupDefinition, optional);
             }
@@ -202,6 +209,7 @@ public abstract class ClassDefinition extends Definition {
                 this.defaultValue = defaultValue;
             }
 
+            @Override
             ClassMember construct(final ClassDefinition enclosing) {
                 return new ItemMember(enclosing, field, defaultValue);
             }
@@ -219,18 +227,22 @@ public abstract class ClassDefinition extends Definition {
             return nested;
         }
 
+        @Override
         public ClassDefinition getEnclosingDefinition() {
             return nested.getEnclosingDefinition();
         }
 
+        @Override
         public Field getField() {
             return nested.getField();
         }
 
+        @Override
         public FieldDescriptor getDescriptor() {
             return nested.getDescriptor();
         }
 
+        @Override
         public String getPropertyName() {
             return nested.getPropertyName();
         }
@@ -242,10 +254,12 @@ public abstract class ClassDefinition extends Definition {
                 this.nested = Assert.checkNotNullParam("nested", nested);
             }
 
+            @Override
             Field getField() {
                 return nested.getField();
             }
 
+            @Override
             ClassMember construct(final ClassDefinition enclosing) {
                 return new MapMember(nested.construct(enclosing));
             }
@@ -273,6 +287,7 @@ public abstract class ClassDefinition extends Definition {
             members.put(spec.getField().getName(), spec);
         }
 
+        @Override
         public abstract ClassDefinition build();
     }
 }

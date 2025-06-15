@@ -35,38 +35,47 @@ public class ConnectorAttributeLiteral implements ConnectorAttribute {
                 type);
     }
 
+    @Override
     public String name() {
         return name;
     }
 
+    @Override
     public String description() {
         return description;
     }
 
+    @Override
     public boolean hiddenFromDocumentation() {
         return hidden;
     }
 
+    @Override
     public boolean mandatory() {
         return mandatory;
     }
 
+    @Override
     public Direction direction() {
         return direction;
     }
 
+    @Override
     public String defaultValue() {
         return defaultValue;
     }
 
+    @Override
     public boolean deprecated() {
         return deprecated;
     }
 
+    @Override
     public String alias() {
         return alias;
     }
 
+    @Override
     public String type() {
         return type;
     }

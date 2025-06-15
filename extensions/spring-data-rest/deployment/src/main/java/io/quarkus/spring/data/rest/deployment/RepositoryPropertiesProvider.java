@@ -26,6 +26,7 @@ public class RepositoryPropertiesProvider extends ResourcePropertiesProvider {
         super(index, paged);
     }
 
+    @Override
     protected Map<String, Predicate<MethodInfo>> getMethodPredicates() {
         Map<String, Predicate<MethodInfo>> methodPredicates = new HashMap<>();
         methodPredicates.put("list", methodInfo -> methodInfo.name().equals(LIST.getName()));

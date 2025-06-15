@@ -63,6 +63,7 @@ public class BlockingRedisDataSourceImpl implements RedisDataSource {
         this(new ReactiveRedisDataSourceImpl(vertx, redis, connection), timeout);
     }
 
+    @Override
     public TransactionResult withTransaction(Consumer<TransactionalRedisDataSource> ds) {
         RedisConnection connection = reactive.redis.connect().await().atMost(timeout);
         ReactiveRedisDataSourceImpl dataSource = new ReactiveRedisDataSourceImpl(reactive.getVertx(), reactive.redis,

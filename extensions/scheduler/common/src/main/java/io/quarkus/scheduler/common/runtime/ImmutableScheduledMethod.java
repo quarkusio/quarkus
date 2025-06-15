@@ -20,18 +20,22 @@ public final class ImmutableScheduledMethod implements ScheduledMethod {
         this.schedules = List.copyOf(schedules);
     }
 
+    @Override
     public String getInvokerClassName() {
         return invokerClassName;
     }
 
+    @Override
     public String getDeclaringClassName() {
         return declaringClassName;
     }
 
+    @Override
     public String getMethodName() {
         return methodName;
     }
 
+    @Override
     public List<Scheduled> getSchedules() {
         return schedules;
     }

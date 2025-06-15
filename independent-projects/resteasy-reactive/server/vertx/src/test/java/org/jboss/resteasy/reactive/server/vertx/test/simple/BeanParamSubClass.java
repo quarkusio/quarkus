@@ -8,6 +8,7 @@ public class BeanParamSubClass extends BeanParamSuperClass {
     @QueryParam("query")
     String queryInSubClass;
 
+    @Override
     public void check(String path) {
         super.check(path);
         Assertions.assertEquals("one-query", queryInSubClass);

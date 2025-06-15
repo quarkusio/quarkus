@@ -16,6 +16,7 @@ public class ImplementationFilesDevModeTest extends QuarkusDevGradleTestBase {
         return new String[] { "clean", ":common:build", ":application-dep:quarkusDev", "--no-build-cache" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse("/hello")).contains("hello common");

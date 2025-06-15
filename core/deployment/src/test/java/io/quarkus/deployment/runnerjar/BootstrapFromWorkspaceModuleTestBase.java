@@ -10,6 +10,7 @@ public abstract class BootstrapFromWorkspaceModuleTestBase extends PackageAppTes
 
     protected abstract WorkspaceModule composeApplication() throws Exception;
 
+    @Override
     protected QuarkusBootstrap.Builder initBootstrapBuilder()
             throws Exception {
         final ApplicationModel appModel = resolver.resolveModel(composeApplication());

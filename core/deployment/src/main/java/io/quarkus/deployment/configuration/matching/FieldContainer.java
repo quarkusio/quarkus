@@ -16,14 +16,17 @@ public final class FieldContainer extends Container {
         this.member = Assert.checkNotNullParam("member", member);
     }
 
+    @Override
     public Container getParent() {
         return parent;
     }
 
+    @Override
     public ClassDefinition.ClassMember getClassMember() {
         return member;
     }
 
+    @Override
     StringBuilder getCombinedName(final StringBuilder sb) {
         Container parent = getParent();
         if (parent != null) {
@@ -45,6 +48,7 @@ public final class FieldContainer extends Container {
         return sb;
     }
 
+    @Override
     StringBuilder getPropertyName(final StringBuilder sb) {
         Container parent = getParent();
         if (parent != null) {

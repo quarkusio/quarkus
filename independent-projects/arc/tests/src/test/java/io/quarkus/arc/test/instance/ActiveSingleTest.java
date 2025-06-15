@@ -72,6 +72,7 @@ public class ActiveSingleTest {
     }
 
     static class ServiceAlpha implements Service {
+        @Override
         public String ping() {
             return "alpha";
         }

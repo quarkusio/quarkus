@@ -53,6 +53,7 @@ public @interface GrpcClient {
         /**
          * @return the service name.
          */
+        @Override
         public String value() {
             return value;
         }

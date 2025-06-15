@@ -16,6 +16,7 @@ public class JandexKordampMultiModuleProjectDevModeTest extends QuarkusDevGradle
         return new String[] { "clean", ":application:quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() {
 
         assertThat(getHttpResponse("/hello")).contains("hello kordamp jandex common-kordamp");

@@ -125,6 +125,7 @@ public class GetExArgs implements RedisCommandExtraArguments {
         return this;
     }
 
+    @Override
     public List<Object> toArgs() {
         List<Object> args = new ArrayList<>();
         if (ex >= 0) {

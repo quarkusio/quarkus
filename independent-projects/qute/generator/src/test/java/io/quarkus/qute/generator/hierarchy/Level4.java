@@ -4,6 +4,7 @@ public class Level4 extends Level3 {
 
     public int overridenLevel = 4;
 
+    @Override
     public int getLevel4() {
         return 4;
     }

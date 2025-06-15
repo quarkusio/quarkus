@@ -101,6 +101,7 @@ public class BasicConsole extends QuarkusConsole {
         output.accept(">");
     }
 
+    @Override
     public StatusLine registerStatusLine(int priority) {
         return new StatusLine() {
 

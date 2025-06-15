@@ -40,6 +40,7 @@ public class RemoteConfig implements AnalyticsRemoteConfig, Serializable {
         this.active = active;
     }
 
+    @Override
     @JsonProperty("deny_anonymous_ids")
     public List<String> getDenyAnonymousIds() {
         return denyAnonymousIds;
@@ -49,6 +50,7 @@ public class RemoteConfig implements AnalyticsRemoteConfig, Serializable {
         this.denyAnonymousIds = denyAnonymousIds;
     }
 
+    @Override
     @JsonProperty("deny_quarkus_versions")
     public List<String> getDenyQuarkusVersions() {
         return denyQuarkusVersions;
@@ -58,6 +60,7 @@ public class RemoteConfig implements AnalyticsRemoteConfig, Serializable {
         this.denyQuarkusVersions = denyQuarkusVersions;
     }
 
+    @Override
     @JsonProperty("refresh_interval")
     public Duration getRefreshInterval() {
         return refreshInterval;

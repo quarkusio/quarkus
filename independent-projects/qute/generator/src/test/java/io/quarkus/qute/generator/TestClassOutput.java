@@ -37,6 +37,7 @@ public class TestClassOutput implements ClassOutput {
         }
     }
 
+    @Override
     public Writer getSourceWriter(final String className) {
         File dir = new File("target/generated-test-sources/gizmo/", className.substring(0, className.lastIndexOf('/')));
         dir.mkdirs();

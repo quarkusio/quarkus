@@ -52,6 +52,7 @@ public class LookupConditionsTest {
     @Singleton
     static class ServiceAlpha implements Service {
 
+        @Override
         public String ping() {
             return "alpha";
         }
@@ -62,6 +63,7 @@ public class LookupConditionsTest {
     @Singleton
     static class ServiceBravo implements Service {
 
+        @Override
         public String ping() {
             return "bravo";
         }
@@ -72,6 +74,7 @@ public class LookupConditionsTest {
     @Dependent
     static class ServiceCharlie implements Service {
 
+        @Override
         public String ping() {
             return "charlie";
         }

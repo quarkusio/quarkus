@@ -25,6 +25,7 @@ public @interface BindingTypeA {
             this.value = value;
         }
 
+        @Override
         public String value() {
             return value;
         }

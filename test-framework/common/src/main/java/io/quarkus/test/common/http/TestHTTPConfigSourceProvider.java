@@ -35,27 +35,33 @@ public class TestHTTPConfigSourceProvider implements ConfigSourceProvider {
             "%dev." + TEST_URL_KEY,
             "http://${quarkus.http.host:localhost}:${quarkus.http.test-port:8080}${quarkus.http.root-path:${quarkus.servlet.context-path:}}");
 
+    @Override
     public Iterable<ConfigSource> getConfigSources(final ClassLoader forClassLoader) {
         return Collections.singletonList(new TestURLConfigSource());
     }
 
     static class TestURLConfigSource implements ConfigSource {
+        @Override
         public Map<String, String> getProperties() {
             return entries;
         }
 
+        @Override
         public Set<String> getPropertyNames() {
             return entries.keySet();
         }
 
+        @Override
         public String getValue(final String propertyName) {
             return entries.get(propertyName);
         }
 
+        @Override
         public String getName() {
             return "test URL provider";
         }
 
+        @Override
         public int getOrdinal() {
             return Integer.MIN_VALUE + 1000;
         }

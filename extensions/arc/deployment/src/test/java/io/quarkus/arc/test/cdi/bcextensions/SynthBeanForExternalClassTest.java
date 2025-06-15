@@ -78,6 +78,7 @@ public class SynthBeanForExternalClassTest {
     public static class MySyntheticBeanCreator implements SyntheticBeanCreator<SomeClassInExternalLibrary> {
         public static boolean created;
 
+        @Override
         public SomeClassInExternalLibrary create(Instance<Object> lookup, Parameters params) {
             SomeClassInExternalLibrary result = new SomeClassInExternalLibrary();
             created = true;

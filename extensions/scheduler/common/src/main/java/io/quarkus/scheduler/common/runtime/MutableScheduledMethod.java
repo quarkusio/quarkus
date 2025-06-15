@@ -12,6 +12,7 @@ public class MutableScheduledMethod implements ScheduledMethod {
     private String methodName;
     private List<Scheduled> schedules;
 
+    @Override
     public String getInvokerClassName() {
         return invokerClassName;
     }
@@ -20,6 +21,7 @@ public class MutableScheduledMethod implements ScheduledMethod {
         this.invokerClassName = invokerClassName;
     }
 
+    @Override
     public String getDeclaringClassName() {
         return declaringClassName;
     }
@@ -28,6 +30,7 @@ public class MutableScheduledMethod implements ScheduledMethod {
         this.declaringClassName = declaringClassName;
     }
 
+    @Override
     public String getMethodName() {
         return methodName;
     }
@@ -36,6 +39,7 @@ public class MutableScheduledMethod implements ScheduledMethod {
         this.methodName = methodName;
     }
 
+    @Override
     public List<Scheduled> getSchedules() {
         return schedules;
     }

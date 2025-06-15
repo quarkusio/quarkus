@@ -26,6 +26,7 @@ public class KafkaBinderProcessor {
     static class KafkaSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return KAFKA_CONSUMER_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().kafka());
         }
@@ -34,6 +35,7 @@ public class KafkaBinderProcessor {
     static class KafkaStreamsSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return KAFKA_STREAMS_CLASS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().kafka());
         }

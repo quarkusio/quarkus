@@ -108,6 +108,7 @@ public class IdeProcessor {
         }
 
         new Thread(new Runnable() {
+            @Override
             public void run() {
                 try {
                     List<String> command = new ArrayList<>();

@@ -80,6 +80,8 @@ public class TransformerSignatureTest {
         @Channel("A")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -107,6 +109,8 @@ public class TransformerSignatureTest {
         @Channel("B")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -133,6 +137,8 @@ public class TransformerSignatureTest {
         @Channel("C")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -159,6 +165,8 @@ public class TransformerSignatureTest {
         @Channel("D")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }

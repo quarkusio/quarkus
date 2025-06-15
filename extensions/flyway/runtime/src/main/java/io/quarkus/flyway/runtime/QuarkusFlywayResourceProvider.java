@@ -41,6 +41,7 @@ public class QuarkusFlywayResourceProvider implements ResourceProvider {
      * @param suffixes The suffixes of the resource names to match.
      * @return The resources that were found.
      */
+    @Override
     public Collection<LoadableResource> getResources(String prefix, String... suffixes) {
         List<LoadableResource> result = new ArrayList<>();
         for (LoadableResource resource : resources) {

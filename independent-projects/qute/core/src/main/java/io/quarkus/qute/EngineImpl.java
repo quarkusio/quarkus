@@ -81,22 +81,27 @@ class EngineImpl implements Engine {
         return sectionHelperFunc != null ? sectionHelperFunc.apply(name) : null;
     }
 
+    @Override
     public Map<String, SectionHelperFactory<?>> getSectionHelperFactories() {
         return sectionHelperFactories;
     }
 
+    @Override
     public List<ValueResolver> getValueResolvers() {
         return valueResolvers;
     }
 
+    @Override
     public List<NamespaceResolver> getNamespaceResolvers() {
         return namespaceResolvers;
     }
 
+    @Override
     public Evaluator getEvaluator() {
         return evaluator;
     }
 
+    @Override
     public List<ResultMapper> getResultMappers() {
         return resultMappers;
     }
@@ -116,6 +121,7 @@ class EngineImpl implements Engine {
         return val;
     }
 
+    @Override
     public Template putTemplate(String id, Template template) {
         if (!Identifiers.isValid(id)) {
             throw new IllegalArgumentException("Invalid identifier found: [" + id + "]");
@@ -123,6 +129,7 @@ class EngineImpl implements Engine {
         return templates.put(id, template);
     }
 
+    @Override
     public Template getTemplate(String id) {
         return templates.computeIfAbsent(id, this::load);
     }

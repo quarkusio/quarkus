@@ -94,6 +94,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         }
     }
 
+    @Override
     public void start() throws IOException {
         start(new String[0], true);
 
@@ -267,6 +268,7 @@ public class DefaultNativeImageLauncher implements NativeImageLauncher {
         System.err.println("======================================================================================");
     }
 
+    @Override
     public boolean listensOnSsl() {
         return isSsl;
     }

@@ -16,10 +16,12 @@ public class PanacheMongoResourceProcessor extends BasePanacheMongoResourceProce
     public static final ImperativeTypeBundle IMPERATIVE_TYPE_BUNDLE = new ImperativeTypeBundle();
     public static final ReactiveTypeBundle REACTIVE_TYPE_BUNDLE = new ReactiveTypeBundle();
 
+    @Override
     protected ReactiveTypeBundle getReactiveTypeBundle() {
         return REACTIVE_TYPE_BUNDLE;
     }
 
+    @Override
     protected ImperativeTypeBundle getImperativeTypeBundle() {
         return IMPERATIVE_TYPE_BUNDLE;
     }

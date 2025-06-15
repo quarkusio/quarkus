@@ -89,14 +89,17 @@ public class PluginCatalog implements Catalog<PluginCatalog> {
         return plugins;
     }
 
+    @Override
     public Optional<Path> getCatalogLocation() {
         return catalogLocation;
     }
 
+    @Override
     public PluginCatalog withCatalogLocation(Optional<Path> catalogLocation) {
         return new PluginCatalog(version, lastUpdate, plugins, catalogLocation);
     }
 
+    @Override
     public PluginCatalog refreshLastUpdate() {
         return new PluginCatalog(version, now(), plugins, catalogLocation);
     }

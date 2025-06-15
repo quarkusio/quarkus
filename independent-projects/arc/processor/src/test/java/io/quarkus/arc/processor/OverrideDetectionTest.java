@@ -203,6 +203,8 @@ public class OverrideDetectionTest {
     }
 
     public static class SuperSuperClass<V, U> extends TheRoot<String, U, V> {
+        @Override
+        @Override
         void generic(V arg) {
         }
 

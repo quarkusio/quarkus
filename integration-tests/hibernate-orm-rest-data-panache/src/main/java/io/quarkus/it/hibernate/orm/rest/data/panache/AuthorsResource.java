@@ -11,9 +11,11 @@ import io.quarkus.rest.data.panache.ResourceProperties;
 @ResourceProperties(exposed = false)
 public interface AuthorsResource extends PanacheEntityResource<Author, Long> {
 
+    @Override
     @MethodProperties
     List<Author> list(Page page, Sort sort);
 
+    @Override
     @MethodProperties
     Author get(Long id);
 }

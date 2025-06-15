@@ -25,18 +25,23 @@ class PanacheEntityResourcePathCustomisationTest extends AbstractPathCustomisati
     @ResourceProperties(path = "custom-collections", hal = true)
     public interface CustomPathCollectionsResource extends PanacheEntityResource<Collection, String> {
 
+        @Override
         @MethodProperties(path = "api")
         List<Collection> list(Page page, Sort sort);
 
+        @Override
         @MethodProperties(path = "api")
         Collection get(String name);
 
+        @Override
         @MethodProperties(path = "api")
         Collection add(Collection collection);
 
+        @Override
         @MethodProperties(path = "api")
         Collection update(String name, Collection collection);
 
+        @Override
         @MethodProperties(path = "api")
         boolean delete(String name);
     }

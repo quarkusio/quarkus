@@ -65,10 +65,12 @@ public class PathSegmentImpl implements PathSegment {
         return original;
     }
 
+    @Override
     public String getPath() {
         return path;
     }
 
+    @Override
     public MultivaluedMap<String, String> getMatrixParameters() {
         if (matrixParameters == null) {
             matrixParameters = new QuarkusMultivaluedHashMap<String, String>();

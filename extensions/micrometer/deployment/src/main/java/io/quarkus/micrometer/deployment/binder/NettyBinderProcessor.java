@@ -49,6 +49,7 @@ public class NettyBinderProcessor {
 
         abstract Class<?> getCheckClass();
 
+        @Override
         public boolean getAsBoolean() {
             return metricsClass() != null && getCheckClass() != null
                     && getMicrometerConfig().checkBinderEnabledWithDefault(getMicrometerConfig().binder().netty());

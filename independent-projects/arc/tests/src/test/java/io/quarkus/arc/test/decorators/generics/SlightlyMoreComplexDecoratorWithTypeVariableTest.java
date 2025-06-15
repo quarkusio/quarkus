@@ -33,6 +33,7 @@ public class SlightlyMoreComplexDecoratorWithTypeVariableTest {
     @ApplicationScoped
     static class Fun implements Function<Integer, List<String>> {
 
+        @Override
         public List<String> apply(Integer val) {
             return List.of(val.toString());
         }

@@ -25,6 +25,7 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
             this.f = f;
         }
 
+        @Override
         public GaugeAdapter<Double> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
             gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), obj, f)
                     .description(metadata.getDescription())
@@ -62,6 +63,7 @@ interface GaugeAdapter<T> extends Gauge<T>, MeterHolder {
             this.f = f;
         }
 
+        @Override
         public GaugeAdapter<R> register(MpMetadata metadata, MetricDescriptor metricInfo, MeterRegistry registry) {
             gauge = io.micrometer.core.instrument.Gauge.builder(metricInfo.name(), obj, obj -> f.apply(obj).doubleValue())
                     .description(metadata.getDescription())

@@ -83,6 +83,7 @@ public class QuarkusJBangCodestartProjectInputBuilder extends CodestartProjectIn
         return noJBangWrapper;
     }
 
+    @Override
     public QuarkusJBangCodestartProjectInput build() {
         if (!this.containsData("java")) {
             this.addData(NestedMaps

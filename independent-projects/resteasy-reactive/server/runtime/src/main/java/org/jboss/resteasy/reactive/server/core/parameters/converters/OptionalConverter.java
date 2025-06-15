@@ -56,6 +56,7 @@ public class OptionalConverter implements ParameterConverter {
             return delegate == null ? new OptionalConverter(null) : new OptionalConverter(delegate.get());
         }
 
+        @Override
         public ParameterConverterSupplier getDelegate() {
             return delegate;
         }

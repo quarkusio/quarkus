@@ -5,10 +5,12 @@ import java.util.concurrent.locks.AbstractQueuedSynchronizer;
 // adapted from `AbstractQueuedSynchronizer`
 public final class Barrier {
     private static class Sync extends AbstractQueuedSynchronizer {
+        @Override
         protected int tryAcquireShared(int ignore) {
             return getState() != 0 ? 1 : -1;
         }
 
+        @Override
         protected boolean tryReleaseShared(int ignore) {
             setState(1);
             return true;

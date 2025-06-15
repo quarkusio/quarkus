@@ -28,6 +28,7 @@ public class Image implements Callable<Integer> {
     @Unmatched // avoids throwing errors for unmatched arguments
     List<String> unmatchedArgs;
 
+    @Override
     public Integer call() throws Exception {
         ParseResult result = spec.commandLine().getParseResult();
         CommandLine buildCommand = spec.subcommands().get("build");

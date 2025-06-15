@@ -157,18 +157,22 @@ public class ConfigInstantiatorTestCase {
 
     private static class TestConfigSource implements ConfigSource {
 
+        @Override
         public Map<String, String> getProperties() {
             return TEST_CONFIG_MAP;
         }
 
+        @Override
         public Set<String> getPropertyNames() {
             return TEST_CONFIG_MAP.keySet();
         }
 
+        @Override
         public String getValue(final String propertyName) {
             return TEST_CONFIG_MAP.get(propertyName);
         }
 
+        @Override
         public String getName() {
             return "ConfigInstantiatorTestCase config source";
         }

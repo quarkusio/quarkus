@@ -90,6 +90,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      *
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void update() throws LiquibaseException {
         update(createContexts(), createLabels());
     }
@@ -111,6 +112,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param output the output
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void update(String tag, Writer output) throws LiquibaseException {
         update(tag, createContexts(), createLabels(), output);
     }
@@ -144,6 +146,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param output the output
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void rollback(int changesToRollback, String rollbackScript, Writer output) throws LiquibaseException {
         rollback(changesToRollback, rollbackScript, createContexts(), createLabels(), output);
     }
@@ -155,6 +158,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param rollbackScript the rollback script
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void rollback(int changesToRollback, String rollbackScript) throws LiquibaseException {
         rollback(changesToRollback, rollbackScript, createContexts(), createLabels());
     }
@@ -167,6 +171,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param output the output
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void rollback(String tagToRollBackTo, String rollbackScript, Writer output) throws LiquibaseException {
         rollback(tagToRollBackTo, rollbackScript, createContexts(), createLabels(), output);
     }
@@ -178,6 +183,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param rollbackScript the rollback script
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void rollback(String tagToRollBackTo, String rollbackScript) throws LiquibaseException {
         rollback(tagToRollBackTo, rollbackScript, createContexts(), createLabels());
     }
@@ -190,6 +196,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param rollbackScript the rollback script
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void rollback(Date dateToRollBackTo, String rollbackScript, Writer output) throws LiquibaseException {
         rollback(dateToRollBackTo, rollbackScript, createContexts(), createLabels(), output);
     }
@@ -204,8 +211,9 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param labelExpression the label expression
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void rollback(Date dateToRollBackTo, String rollbackScript, Contexts contexts, LabelExpression labelExpression,
-            Writer output) throws LiquibaseException {
+                         Writer output) throws LiquibaseException {
         rollback(dateToRollBackTo, rollbackScript, createContexts(), createLabels());
     }
 
@@ -216,6 +224,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param rollbackScript the rollback script
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void rollback(Date dateToRollBackTo, String rollbackScript) throws LiquibaseException {
         rollback(dateToRollBackTo, rollbackScript, createContexts(), createLabels());
     }
@@ -265,6 +274,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      * @param output the output
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void futureRollbackSQL(String tag, Writer output) throws LiquibaseException {
         futureRollbackSQL(tag, createContexts(), createLabels(), output);
     }
@@ -342,6 +352,7 @@ public class LiquibaseContext extends Liquibase implements AutoCloseable {
      *
      * @throws LiquibaseException if the method fails
      */
+    @Override
     public void close() throws LiquibaseException {
         if (getDatabase() != null) {
             getDatabase().close();

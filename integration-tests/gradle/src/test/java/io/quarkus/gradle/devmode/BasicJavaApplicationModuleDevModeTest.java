@@ -22,6 +22,7 @@ public class BasicJavaApplicationModuleDevModeTest extends QuarkusDevGradleTestB
         return new String[] { "clean", "run" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
         assertThat(getHttpResponse("/hello")).contains("hello");
 

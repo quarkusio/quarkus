@@ -16,6 +16,7 @@ public class JandexVlsiMultiModuleProjectDevModeTest extends QuarkusDevGradleTes
         return new String[] { "clean", ":application:quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() {
 
         assertThat(getHttpResponse("/hello")).contains("hello vlsi jandex common-vlsi");

@@ -91,46 +91,57 @@ public class SchedulerUtilsTest {
     private Scheduled createScheduledDelayed(String delayed) {
         return new Scheduled() {
 
+            @Override
             public Class<? extends Annotation> annotationType() {
                 return null;
             }
 
+            @Override
             public long delay() {
                 return 0;
             }
 
+            @Override
             public TimeUnit delayUnit() {
                 return TimeUnit.MINUTES;
             }
 
+            @Override
             public ConcurrentExecution concurrentExecution() {
                 return ConcurrentExecution.PROCEED;
             }
 
+            @Override
             public String timeZone() {
                 return Scheduled.DEFAULT_TIMEZONE;
             }
 
+            @Override
             public String identity() {
                 return "";
             }
 
+            @Override
             public String every() {
                 return "";
             }
 
+            @Override
             public String cron() {
                 return "";
             }
 
+            @Override
             public String overdueGracePeriod() {
                 return "";
             }
 
+            @Override
             public Class<? extends SkipPredicate> skipExecutionIf() {
                 return Never.class;
             }
 
+            @Override
             public String delayed() {
                 return delayed;
             }

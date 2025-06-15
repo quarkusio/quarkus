@@ -14,6 +14,7 @@ class HelloWorldServiceVertxTest extends HelloWorldServiceTestBase {
     @Inject
     Vertx vertx;
 
+    @Override
     protected Vertx vertx() {
         return vertx;
     }

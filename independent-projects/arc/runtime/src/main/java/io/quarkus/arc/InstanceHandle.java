@@ -17,6 +17,7 @@ public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
      *
      * @return an instance of {@code T} or {@code null}
      */
+    @Override
     T get();
 
     /**
@@ -46,6 +47,7 @@ public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
      *
      * @see AlterableContext#destroy(jakarta.enterprise.context.spi.Contextual)
      */
+    @Override
     default void destroy() {
         // No-op
     }
@@ -54,6 +56,7 @@ public interface InstanceHandle<T> extends AutoCloseable, Instance.Handle<T> {
      *
      * @return the injectable bean for a CDI contextual instance or {@code null}
      */
+    @Override
     default InjectableBean<T> getBean() {
         return null;
     }

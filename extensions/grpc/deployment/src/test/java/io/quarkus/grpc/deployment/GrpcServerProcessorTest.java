@@ -82,6 +82,7 @@ public class GrpcServerProcessorTest {
     static class BlockingExtendsBlockingRoot extends BlockingRoot {
         static final Set<String> EXPECTED = ImmutableSet.of("method");
 
+        @Override
         void method() {
         }
     }
@@ -90,6 +91,7 @@ public class GrpcServerProcessorTest {
     static class NonBlockingExtendsBlockingRoot extends BlockingRoot {
         static final Set<String> EXPECTED = ImmutableSet.of();
 
+        @Override
         void method() {
         }
     }
@@ -97,6 +99,7 @@ public class GrpcServerProcessorTest {
     static class ExtendsBlockingRoot extends BlockingRoot {
         static final Set<String> EXPECTED = ImmutableSet.of();
 
+        @Override
         void method() {
         }
     }
@@ -113,6 +116,7 @@ public class GrpcServerProcessorTest {
     static class BlockingExtendsNonBlockingRoot extends NonBlockingRoot {
         static final Set<String> EXPECTED = ImmutableSet.of("method");
 
+        @Override
         void method() {
         }
     }
@@ -121,6 +125,7 @@ public class GrpcServerProcessorTest {
     static class NonBlockingExtendsNonBlockingRoot extends NonBlockingRoot {
         static final Set<String> EXPECTED = ImmutableSet.of();
 
+        @Override
         void method() {
         }
     }
@@ -128,6 +133,7 @@ public class GrpcServerProcessorTest {
     static class ExtendsNonBlockingRoot extends NonBlockingRoot {
         static final Set<String> EXPECTED = ImmutableSet.of();
 
+        @Override
         void method() {
         }
     }
@@ -177,18 +183,22 @@ public class GrpcServerProcessorTest {
     static class NoClassAnnotationsReverseMeaning extends NoClassAnnotationsRoot {
         static final Set<String> EXPECTED = ImmutableSet.of("nonBlocking", "noAnnotation");
 
+        @Override
         @Blocking
         void nonBlocking() {
         }
 
+        @Override
         @NonBlocking
         void blocking() {
         }
 
+        @Override
         @NonBlocking
         void transactional() {
         }
 
+        @Override
         @Transactional
         void noAnnotation() {
         }
@@ -207,9 +217,11 @@ public class GrpcServerProcessorTest {
     static class TransactionalOverriding extends NoClassAnnotationsRoot {
         static final Set<String> EXPECTED = ImmutableSet.of("noAnnotation", "blocking", "transactional");
 
+        @Override
         void blocking() {
         }
 
+        @Override
         void transactional() {
         }
     }
@@ -218,15 +230,19 @@ public class GrpcServerProcessorTest {
     static class ClassAnnotationsBlocking extends NoClassAnnotationsRoot {
         static final Set<String> EXPECTED = ImmutableSet.of("nonBlocking", "blocking", "transactional", "noAnnotation");
 
+        @Override
         void nonBlocking() {
         }
 
+        @Override
         void blocking() {
         }
 
+        @Override
         void transactional() {
         }
 
+        @Override
         void noAnnotation() {
         }
     }
@@ -235,15 +251,19 @@ public class GrpcServerProcessorTest {
     static class ClassAnnotationsNonBlocking extends NoClassAnnotationsRoot {
         static final Set<String> EXPECTED = ImmutableSet.of();
 
+        @Override
         void nonBlocking() {
         }
 
+        @Override
         void blocking() {
         }
 
+        @Override
         void transactional() {
         }
 
+        @Override
         void noAnnotation() {
         }
     }
@@ -265,10 +285,12 @@ public class GrpcServerProcessorTest {
     static class NonBlockingOverridingTransactional extends OverridingTransactionalRoot {
         static final Set<String> EXPECTED = ImmutableSet.of("transactional", "another");
 
+        @Override
         @NonBlocking
         void method() {
         }
 
+        @Override
         void another() {
         }
     }
@@ -276,6 +298,7 @@ public class GrpcServerProcessorTest {
     static class BlockingOverridingTransactional extends OverridingTransactionalRoot {
         static final Set<String> EXPECTED = ImmutableSet.of("method", "transactional", "another");
 
+        @Override
         @Blocking
         void method() {
         }

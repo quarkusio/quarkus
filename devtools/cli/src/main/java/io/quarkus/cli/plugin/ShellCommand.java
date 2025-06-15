@@ -34,10 +34,12 @@ public class ShellCommand implements PluginCommand, Callable<Integer> {
         this.name = name;
     }
 
+    @Override
     public List<String> getCommand() {
         return List.of(command.toString());
     }
 
+    @Override
     public List<String> getArguments() {
         return arguments;
     }
@@ -48,6 +50,7 @@ public class ShellCommand implements PluginCommand, Callable<Integer> {
         this.arguments.addAll(arguments);
     }
 
+    @Override
     public OutputOptionMixin getOutput() {
         return output;
     }

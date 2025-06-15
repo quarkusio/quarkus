@@ -105,6 +105,7 @@ public abstract class AbstractResteasyReactiveContext<T extends AbstractResteasy
         return (T) this;
     }
 
+    @Override
     public void close() {
         if (closed) {
             return;

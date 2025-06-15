@@ -56,6 +56,7 @@ public class AroundInvokeOnTargetClassAndManySuperclassesWithOverridesTest {
             return "foobar";
         }
 
+        @Override
         @AroundInvoke
         Object intercept(InvocationContext ctx) throws Exception {
             return "intercepted: " + ctx.proceed();

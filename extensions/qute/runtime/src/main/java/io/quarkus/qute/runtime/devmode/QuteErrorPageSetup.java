@@ -75,6 +75,7 @@ public class QuteErrorPageSetup implements HotReplacementSetup {
         Template problemTemplate = Engine.builder().addDefaults().addValueResolver(new ReflectionValueResolver())
                 .addValueResolver(new ValueResolver() {
 
+                    @Override
                     public boolean appliesTo(EvalContext context) {
                         return context.getName().equals("pad");
                     }

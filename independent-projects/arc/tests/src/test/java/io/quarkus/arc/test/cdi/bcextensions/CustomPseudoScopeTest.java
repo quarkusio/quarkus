@@ -156,22 +156,27 @@ public class CustomPseudoScopeTest {
     }
 
     public static class PrototypeContext implements AlterableContext {
+        @Override
         public Class<? extends Annotation> getScope() {
             return Prototype.class;
         }
 
+        @Override
         public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
             return creationalContext != null ? contextual.create(creationalContext) : null;
         }
 
+        @Override
         public <T> T get(Contextual<T> contextual) {
             return null;
         }
 
+        @Override
         public boolean isActive() {
             return true;
         }
 
+        @Override
         public void destroy(Contextual<?> contextual) {
         }
     }

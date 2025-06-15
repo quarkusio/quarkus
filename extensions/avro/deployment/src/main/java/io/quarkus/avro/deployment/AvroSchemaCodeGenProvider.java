@@ -30,6 +30,7 @@ public class AvroSchemaCodeGenProvider extends AvroCodeGenProviderBase implement
         return new String[] { "avsc" };
     }
 
+    @Override
     void init() {
         schemaParser = new Schema.Parser();
     }

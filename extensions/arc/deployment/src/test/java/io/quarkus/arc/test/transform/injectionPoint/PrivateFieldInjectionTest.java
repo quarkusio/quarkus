@@ -55,6 +55,7 @@ public class PrivateFieldInjectionTest {
     @Simple
     @Unremovable
     static class InterceptedDecoratedBean implements DecoratedBean {
+        @Override
         public String ping() {
             return InterceptedDecoratedBean.class.getSimpleName();
         }

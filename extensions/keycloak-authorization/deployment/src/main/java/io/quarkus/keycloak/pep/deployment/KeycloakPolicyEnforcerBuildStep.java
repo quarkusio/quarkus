@@ -50,6 +50,7 @@ public class KeycloakPolicyEnforcerBuildStep {
     public static class IsEnabled implements BooleanSupplier {
         KeycloakPolicyEnforcerBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.policyEnforcer().enable();
         }

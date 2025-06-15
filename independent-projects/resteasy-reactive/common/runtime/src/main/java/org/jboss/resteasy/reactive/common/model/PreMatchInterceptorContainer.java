@@ -18,6 +18,7 @@ public class PreMatchInterceptorContainer<T> extends InterceptorContainer<T> {
         return preMatchInterceptors;
     }
 
+    @Override
     public void initializeDefaultFactories(Function<String, BeanFactory<?>> factoryCreator) {
         super.initializeDefaultFactories(factoryCreator);
         for (ResourceInterceptor<T> i : preMatchInterceptors) {

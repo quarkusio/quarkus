@@ -119,6 +119,7 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
         return children.get(name);
     }
 
+    @Override
     public PatternIterator<T> iterator() {
         return new PatternIterator<T>(children, this);
     }
@@ -221,6 +222,7 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
             childMaps = children.values().iterator();
         }
 
+        @Override
         public boolean hasNext() {
             while (next == null) {
                 while (currentItr == null) {
@@ -242,6 +244,7 @@ public final class ConfigPatternMap<T> implements Iterable<T> {
             return true;
         }
 
+        @Override
         public T next() {
             return nextPattern().getMatched();
         }

@@ -59,10 +59,12 @@ public class KotlinPanacheMongoResourceProcessor extends BasePanacheMongoResourc
                 getReactiveTypeBundle());
     }
 
+    @Override
     protected KotlinImperativeTypeBundle getImperativeTypeBundle() {
         return IMPERATIVE_TYPE_BUNDLE;
     }
 
+    @Override
     protected KotlinReactiveTypeBundle getReactiveTypeBundle() {
         return REACTIVE_TYPE_BUNDLE;
     }

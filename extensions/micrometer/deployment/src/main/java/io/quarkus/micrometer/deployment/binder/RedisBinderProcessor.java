@@ -17,6 +17,7 @@ public class RedisBinderProcessor {
     static class RedisMetricsSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return OBSERVABLE_CLIENT_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().redis());
         }

@@ -9,6 +9,7 @@ import org.jboss.resteasy.reactive.server.core.ResteasyReactiveRequestContext;
 
 public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse> {
 
+    @Override
     ServerHttpResponse setStatusCode(int code);
 
     ServerHttpResponse end();
@@ -21,8 +22,10 @@ public interface ServerHttpResponse extends StreamingResponse<ServerHttpResponse
 
     ServerHttpResponse addResponseHeader(CharSequence name, CharSequence value);
 
+    @Override
     ServerHttpResponse setResponseHeader(CharSequence name, CharSequence value);
 
+    @Override
     ServerHttpResponse setResponseHeader(CharSequence name, Iterable<CharSequence> values);
 
     Iterable<Map.Entry<String, String>> getAllResponseHeaders();

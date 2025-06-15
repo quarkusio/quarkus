@@ -48,6 +48,7 @@ public @interface RegisterClientInterceptor {
             this.value = value;
         }
 
+        @Override
         public Class<? extends ClientInterceptor> value() {
             return value;
         }

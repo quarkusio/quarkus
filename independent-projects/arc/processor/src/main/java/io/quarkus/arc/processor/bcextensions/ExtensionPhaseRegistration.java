@@ -34,6 +34,7 @@ class ExtensionPhaseRegistration extends ExtensionPhaseBase {
         this.assignability = new io.quarkus.arc.processor.AssignabilityCheck(beanArchiveIndex, null);
     }
 
+    @Override
     void runExtensionMethod(ExtensionMethod method) throws ReflectiveOperationException {
         int numQueryParameters = 0;
         List<ExtensionMethodParameter> parameters = new ArrayList<>(method.parametersCount());

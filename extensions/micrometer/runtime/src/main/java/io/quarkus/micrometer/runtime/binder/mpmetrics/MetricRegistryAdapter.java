@@ -202,6 +202,7 @@ public class MetricRegistryAdapter implements MetricRegistry {
                 new MetricDescriptor(name, scopeTags()), f);
     }
 
+    @Override
     public <T extends Number> Gauge<T> gauge(String name, Supplier<T> f, Tag... tags) {
         return internalGauge(internalGetMetadata(name, MetricType.GAUGE),
                 new MetricDescriptor(name, scopeTags(tags)), f);

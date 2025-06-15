@@ -15,6 +15,7 @@ import io.quarkus.security.Authenticated;
 @Authenticated
 public class OpenApiResourceAuthenticatedInherited2 extends OpenApiResourceAuthenticatedInherited1 {
 
+    @Override
     @GET
     @Path("/test-security/classLevel/2")
     @SecurityRequirement(name = "CustomOverride")

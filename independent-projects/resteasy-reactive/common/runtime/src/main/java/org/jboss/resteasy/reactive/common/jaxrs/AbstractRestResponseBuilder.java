@@ -360,6 +360,7 @@ public abstract class AbstractRestResponseBuilder<T> extends RestResponse.Respon
         return this;
     }
 
+    @Override
     public RestResponse.ResponseBuilder<T> language(Locale language) {
         if (language == null) {
             metadata.remove(HttpHeaders.CONTENT_LANGUAGE);
@@ -369,6 +370,7 @@ public abstract class AbstractRestResponseBuilder<T> extends RestResponse.Respon
         return this;
     }
 
+    @Override
     public RestResponse.ResponseBuilder<T> expires(Date expires) {
         if (expires == null) {
             metadata.remove(HttpHeaders.EXPIRES);
@@ -378,6 +380,7 @@ public abstract class AbstractRestResponseBuilder<T> extends RestResponse.Respon
         return this;
     }
 
+    @Override
     public RestResponse.ResponseBuilder<T> allow(String... methods) {
         if (methods == null) {
             return allow((Set<String>) null);
@@ -386,6 +389,7 @@ public abstract class AbstractRestResponseBuilder<T> extends RestResponse.Respon
         return allow(set);
     }
 
+    @Override
     public RestResponse.ResponseBuilder<T> allow(Set<String> methods) {
         HeaderUtil.setAllow(this.metadata, methods);
         return this;

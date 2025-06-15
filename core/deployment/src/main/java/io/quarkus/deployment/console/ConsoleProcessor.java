@@ -178,6 +178,7 @@ public class ConsoleProcessor {
 
     protected void launchInIDE(Ide ide, List<String> args) {
         new Thread(new Runnable() {
+            @Override
             public void run() {
                 try {
                     String effectiveCommand = ide.getEffectiveCommand();

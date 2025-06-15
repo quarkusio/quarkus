@@ -56,6 +56,7 @@ public class InMemoryLogRecordExporter implements LogRecordExporter {
         this.finishedLogItems.clear();
     }
 
+    @Override
     public CompletableResultCode export(Collection<LogRecordData> logs) {
         if (this.isStopped) {
             return CompletableResultCode.ofFailure();
@@ -65,10 +66,12 @@ public class InMemoryLogRecordExporter implements LogRecordExporter {
         }
     }
 
+    @Override
     public CompletableResultCode flush() {
         return CompletableResultCode.ofSuccess();
     }
 
+    @Override
     public CompletableResultCode shutdown() {
         this.isStopped = true;
         this.finishedLogItems.clear();

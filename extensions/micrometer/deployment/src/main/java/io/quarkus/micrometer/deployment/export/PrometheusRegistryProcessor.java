@@ -40,6 +40,7 @@ public class PrometheusRegistryProcessor {
     public static class PrometheusEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return (REGISTRY_CLASS != null) && QuarkusClassLoader.isClassPresentAtRuntime(REGISTRY_CLASS_NAME)
                     && mConfig.checkRegistryEnabledWithDefault(mConfig.export().prometheus());

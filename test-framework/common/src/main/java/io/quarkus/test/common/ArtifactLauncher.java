@@ -51,6 +51,7 @@ public interface ArtifactLauncher<T extends ArtifactLauncher.InitContext> extend
 
             CuratedApplication getCuratedApplication();
 
+            @Override
             void close();
         }
     }

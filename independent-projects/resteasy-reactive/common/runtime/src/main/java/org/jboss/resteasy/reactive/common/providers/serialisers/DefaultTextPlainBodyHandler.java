@@ -22,13 +22,15 @@ import org.jboss.resteasy.reactive.common.util.TypeConverter;
  */
 public abstract class DefaultTextPlainBodyHandler implements MessageBodyReader<Object> {
 
+    @Override
     public boolean isReadable(Class type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         // StringTextStar should pick up strings
         return !String.class.equals(type) && TypeConverter.isConvertable(type);
     }
 
+    @Override
     public Object readFrom(Class type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+                           MultivaluedMap httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         return doReadFrom(type, mediaType, entityStream);
     }
 

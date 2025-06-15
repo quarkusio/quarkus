@@ -30,6 +30,7 @@ public abstract class AbstractSecurityIdentityAssociation implements CurrentIden
         this.deferredIdentity = identity;
     }
 
+    @Override
     public Uni<SecurityIdentity> getDeferredIdentity() {
         if (deferredIdentity != null) {
             return deferredIdentity;

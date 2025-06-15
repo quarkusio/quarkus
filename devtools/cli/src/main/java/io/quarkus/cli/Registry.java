@@ -26,6 +26,7 @@ public class Registry implements Callable<Integer> {
     @CommandLine.Unmatched // avoids throwing errors for unmatched arguments
     List<String> unmatchedArgs;
 
+    @Override
     public Integer call() throws Exception {
         final ParseResult result = spec.commandLine().getParseResult();
         final CommandLine appCommand = spec.subcommands().get("list");

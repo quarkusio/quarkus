@@ -8,6 +8,7 @@ import io.quarkus.opentelemetry.runtime.config.build.OTelBuildConfig;
 public class TracerEnabled implements BooleanSupplier {
     OTelBuildConfig otelConfig;
 
+    @Override
     public boolean getAsBoolean() {
         return otelConfig.traces().enabled()
                 .map(new Function<Boolean, Boolean>() {

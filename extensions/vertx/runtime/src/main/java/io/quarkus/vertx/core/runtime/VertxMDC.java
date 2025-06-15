@@ -235,6 +235,7 @@ public enum VertxMDC implements MDCProvider {
      *
      * @return {@code true} if there are no bound MDC values, or {@code false} otherwise
      */
+    @Override
     public boolean isEmpty() {
         return contextualDataMap(getContext()).isEmpty();
     }

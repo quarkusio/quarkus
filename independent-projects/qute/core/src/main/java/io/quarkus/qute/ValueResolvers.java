@@ -33,6 +33,7 @@ public final class ValueResolvers {
 
     public static final class RawResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return context.getBase() != null
                     && (context.getName().equals("raw") || context.getName().equals("safe"));
@@ -56,6 +57,7 @@ public final class ValueResolvers {
             return WithPriority.DEFAULT_PRIORITY + 1;
         }
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return ValueResolvers.matchClass(context, List.class);
         }
@@ -71,6 +73,7 @@ public final class ValueResolvers {
     }
 
     public static final class CollectionResolver implements ValueResolver {
+        @Override
         public boolean appliesTo(EvalContext context) {
             return ValueResolvers.matchClass(context, Collection.class);
         }
@@ -87,6 +90,7 @@ public final class ValueResolvers {
 
     public static final class ThisResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return context.getBase() != null && THIS.equals(context.getName());
         }
@@ -110,6 +114,7 @@ public final class ValueResolvers {
 
     public static final class OrResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             if (context.getParams().size() != 1) {
                 return false;
@@ -140,6 +145,7 @@ public final class ValueResolvers {
 
         private static final CompletionStage<Object> EMPTY = CompletedStage.of(Collections.emptyList());
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return context.getParams().isEmpty() && context.getName().equals("orEmpty");
         }
@@ -166,6 +172,7 @@ public final class ValueResolvers {
 
     public static final class TrueResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             if (context.getParams().size() != 1) {
                 return false;
@@ -189,6 +196,7 @@ public final class ValueResolvers {
 
     public static final class MapEntryResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return ValueResolvers.matchClass(context, Entry.class);
         }
@@ -206,6 +214,7 @@ public final class ValueResolvers {
 
     public static final class MapResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return ValueResolvers.matchClass(context, Map.class);
         }
@@ -222,6 +231,7 @@ public final class ValueResolvers {
 
     public static final class MapperResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             if (hasNoParams(context)
                     && matchClass(context, Mapper.class)
@@ -255,6 +265,7 @@ public final class ValueResolvers {
 
     public static final class LogicalAndResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return context.getBase() != null && context.getParams().size() == 1
                     && ("&&".equals(context.getName()));
@@ -285,6 +296,7 @@ public final class ValueResolvers {
 
     public static final class LogicalOrResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return context.getBase() != null && context.getParams().size() == 1
                     && ("||".equals(context.getName()));
@@ -310,6 +322,7 @@ public final class ValueResolvers {
 
     public static final class ArrayResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             return context.getBase() != null && context.getBase().getClass().isArray();
         }
@@ -396,6 +409,7 @@ public final class ValueResolvers {
 
     public static final class NumberValueResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             Object base = context.getBase();
             String name = context.getName();
@@ -532,6 +546,7 @@ public final class ValueResolvers {
 
     public static final class EqualsResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             if (context.getParams().size() != 1) {
                 return false;
@@ -556,6 +571,7 @@ public final class ValueResolvers {
 
     static abstract class IntArithmeticResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             Object base = context.getBase();
             return base != null

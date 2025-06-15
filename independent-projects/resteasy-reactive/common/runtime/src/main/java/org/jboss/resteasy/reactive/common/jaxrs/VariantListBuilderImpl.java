@@ -17,6 +17,7 @@ public class VariantListBuilderImpl extends Variant.VariantListBuilder {
     private final ArrayList<String> currentEncodings = new ArrayList<String>();
     private final ArrayList<MediaType> currentTypes = new ArrayList<MediaType>();
 
+    @Override
     public List<Variant> build() {
         add();
         ArrayList<Variant> copy = new ArrayList<Variant>(variants);
@@ -27,6 +28,7 @@ public class VariantListBuilderImpl extends Variant.VariantListBuilder {
         return copy;
     }
 
+    @Override
     public Variant.VariantListBuilder add() {
         int langSize = currentLanguages.size();
         int encodingSize = currentEncodings.size();
@@ -66,6 +68,7 @@ public class VariantListBuilderImpl extends Variant.VariantListBuilder {
         return this;
     }
 
+    @Override
     public Variant.VariantListBuilder languages(Locale... languages) {
         currentLanguages.addAll(Arrays.asList(languages));
         return this;

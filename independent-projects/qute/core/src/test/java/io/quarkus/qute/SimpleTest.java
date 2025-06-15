@@ -157,10 +157,14 @@ public class SimpleTest {
                 Engine.builder().strictRendering(false).addDefaultValueResolvers()
                         .addResultMapper(new ResultMapper() {
 
+                            @Override
+                            @Override
                             public int getPriority() {
                                 return 10;
                             }
 
+                            @Override
+                            @Override
                             public boolean appliesTo(Origin origin, Object val) {
                                 return Results.isNotFound(val);
                             }
@@ -174,6 +178,8 @@ public class SimpleTest {
                             }
                         }).addResultMapper(new ResultMapper() {
 
+                            @Override
+                            @Override
                             public boolean appliesTo(Origin origin, Object val) {
                                 return Results.isNotFound(val);
                             }
@@ -184,6 +190,8 @@ public class SimpleTest {
                             }
                         }).addResultMapper(new ResultMapper() {
 
+                            @Override
+                            @Override
                             public boolean appliesTo(Origin origin, Object val) {
                                 return val instanceof Collection;
                             }
@@ -205,6 +213,8 @@ public class SimpleTest {
             Engine.builder().strictRendering(false).addDefaults()
                     .addResultMapper(new ResultMapper() {
 
+                        @Override
+                        @Override
                         public boolean appliesTo(Origin origin, Object val) {
                             return Results.isNotFound(val);
                         }

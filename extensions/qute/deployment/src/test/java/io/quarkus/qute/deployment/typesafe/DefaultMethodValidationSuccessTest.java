@@ -32,6 +32,8 @@ public class DefaultMethodValidationSuccessTest {
 
     public static class Name implements Something {
 
+        @Override
+        @Override
         public String name() {
             return "Name";
         }

@@ -15,6 +15,7 @@ import io.smallrye.mutiny.Uni;
 @ResourceProperties(hal = true, paged = false, halCollectionName = "item-collections", rolesAllowed = "user")
 public interface CollectionsResource extends PanacheRepositoryResource<CollectionsRepository, Collection, String> {
 
+    @Override
     @MethodProperties(rolesAllowed = "admin")
     Uni<Boolean> delete(String name);
 

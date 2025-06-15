@@ -154,6 +154,7 @@ class BeanResolverImpl implements BeanResolver {
         return beanDeployment.getBeans();
     }
 
+    @Override
     public boolean matches(Type requiredType, Type beanType) {
         return matchesNoBoxing(Types.box(requiredType), Types.box(beanType));
     }
@@ -213,6 +214,7 @@ class BeanResolverImpl implements BeanResolver {
         return false;
     }
 
+    @Override
     public boolean matchTypeArguments(Type requiredParameter, Type beanParameter) {
         if (isActualType(requiredParameter) && isActualType(beanParameter)) {
             /*

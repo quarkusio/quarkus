@@ -34,6 +34,7 @@ public class AddClusterRoleBindingResourceDecorator extends ResourceProvidingDec
         this.subjects = subjects;
     }
 
+    @Override
     public void visit(KubernetesListBuilder list) {
         if (contains(list, RBAC_API_VERSION, CLUSTER_ROLE_BINDING, name)) {
             return;

@@ -97,6 +97,7 @@ public class ExtensionCatalogFromProvidedPlatformsTest extends MultiplePlatformB
         Files.writeString(p.getParent().resolve(jsonName), jsonContent);
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return MAIN_PLATFORM_KEY;
     }

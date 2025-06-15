@@ -24,6 +24,7 @@ final class SectionInitContextImpl implements SectionInitContext {
         this.name = name;
     }
 
+    @Override
     public String getName() {
         return name;
     }
@@ -32,14 +33,17 @@ final class SectionInitContextImpl implements SectionInitContext {
      *
      * @return the params of the main block
      */
+    @Override
     public Map<String, String> getParameters() {
         return blocks.isEmpty() ? Collections.emptyMap() : blocks.get(0).parameters;
     }
 
+    @Override
     public boolean hasParameter(String name) {
         return getParameters().containsKey(name);
     }
 
+    @Override
     public String getParameter(String name) {
         return getParameters().get(name);
     }
@@ -54,6 +58,7 @@ final class SectionInitContextImpl implements SectionInitContext {
         return ExpressionImpl.from(value);
     }
 
+    @Override
     public List<SectionBlock> getBlocks() {
         return blocks;
     }

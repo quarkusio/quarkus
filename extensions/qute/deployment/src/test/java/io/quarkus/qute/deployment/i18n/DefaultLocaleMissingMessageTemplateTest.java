@@ -48,6 +48,7 @@ public class DefaultLocaleMissingMessageTemplateTest {
     @Localized("en")
     public interface EnMessages extends Messages {
 
+        @Override
         @Message("Goodbye")
         String goodbye();
 

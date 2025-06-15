@@ -24,6 +24,8 @@ public class DefaultMethodResource {
 
     public static class Name implements Something {
 
+        @Override
+        @Override
         public String name() {
             return "M";
         }

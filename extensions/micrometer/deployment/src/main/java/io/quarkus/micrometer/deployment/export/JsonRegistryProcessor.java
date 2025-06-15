@@ -28,6 +28,7 @@ public class JsonRegistryProcessor {
     public static class JsonRegistryEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return mConfig.checkRegistryEnabledWithDefault(mConfig.export().json());
         }

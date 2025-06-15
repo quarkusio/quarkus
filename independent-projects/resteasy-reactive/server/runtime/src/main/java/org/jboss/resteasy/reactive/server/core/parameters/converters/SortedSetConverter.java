@@ -69,6 +69,8 @@ public class SortedSetConverter implements ParameterConverter {
             return delegate == null ? new SortedSetConverter(null) : new SortedSetConverter(delegate.get());
         }
 
+        @Override
+        @Override
         public ParameterConverterSupplier getDelegate() {
             return delegate;
         }

@@ -19,6 +19,7 @@ public class RemoveEnvVarDecorator extends ApplicationContainerDecorator<Contain
         this.envVarName = envVarName;
     }
 
+    @Override
     public void andThenVisit(ContainerFluent<?> container) {
         container.removeMatchingFromEnv(e -> e.getName().equals(envVarName));
     }
@@ -27,6 +28,7 @@ public class RemoveEnvVarDecorator extends ApplicationContainerDecorator<Contain
         return this.envVarName;
     }
 
+    @Override
     public Class<? extends Decorator>[] after() {
         return new Class[] { ResourceProvidingDecorator.class, AddEnvVarDecorator.class };
     }

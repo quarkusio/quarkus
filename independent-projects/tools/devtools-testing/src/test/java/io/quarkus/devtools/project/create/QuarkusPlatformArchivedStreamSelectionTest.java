@@ -70,6 +70,7 @@ public class QuarkusPlatformArchivedStreamSelectionTest extends MultiplePlatform
         enableRegistryClient();
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return ACME_PLATFORM_KEY;
     }

@@ -18,6 +18,7 @@ public class BasicJavaLibraryModuleDevModeTest extends QuarkusDevGradleTestBase 
         return new String[] { "clean", ":application:quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse())

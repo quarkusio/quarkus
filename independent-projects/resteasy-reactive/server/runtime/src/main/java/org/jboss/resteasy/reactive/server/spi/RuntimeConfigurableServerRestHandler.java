@@ -9,5 +9,6 @@ public interface RuntimeConfigurableServerRestHandler
         return RuntimeConfiguration.class;
     }
 
+    @Override
     void configure(RuntimeConfiguration configuration);
 }

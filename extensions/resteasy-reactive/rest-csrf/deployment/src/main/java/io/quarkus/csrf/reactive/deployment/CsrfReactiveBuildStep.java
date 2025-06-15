@@ -30,6 +30,7 @@ public class CsrfReactiveBuildStep {
     public static class IsEnabled implements BooleanSupplier {
         RestCsrfBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled();
         }

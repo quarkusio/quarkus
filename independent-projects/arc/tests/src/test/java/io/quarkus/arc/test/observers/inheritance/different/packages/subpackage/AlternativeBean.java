@@ -11,6 +11,7 @@ import io.quarkus.arc.test.observers.inheritance.different.packages.OriginalBean
 @Priority(1)
 public class AlternativeBean extends OriginalBean {
 
+    @Override
     public String ping() {
         return AlternativeBean.class.getSimpleName();
     }

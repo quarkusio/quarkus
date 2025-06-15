@@ -10,6 +10,7 @@ class HelloServiceImpl implements HelloService {
         this.recB = recB;
     }
 
+    @Override
     public String hello() {
         return recB.dataHello();
     }

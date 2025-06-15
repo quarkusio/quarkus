@@ -29,6 +29,7 @@ class AddRoleResourceDecorator extends ResourceProvidingDecorator<KubernetesList
         this.rules = rules;
     }
 
+    @Override
     public void visit(KubernetesListBuilder list) {
         if (contains(list, RBAC_API_VERSION, ROLE, name)) {
             return;

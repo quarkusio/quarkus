@@ -13,8 +13,10 @@ import io.smallrye.config.SmallRyeConfigBuilderCustomizer;
  * A configuration customizer to change the default packaging to legacy-jar.
  */
 public final class ConfigurationCustomizer implements SmallRyeConfigBuilderCustomizer {
+    @Override
     public void configBuilder(final SmallRyeConfigBuilder builder) {
         builder.withInterceptorFactories(new ConfigSourceInterceptorFactory() {
+            @Override
             public ConfigSourceInterceptor getInterceptor(final ConfigSourceInterceptorContext context) {
                 return (ic, name) -> switch (name) {
                     case "quarkus.package.jar.type" ->
@@ -23,6 +25,7 @@ public final class ConfigurationCustomizer implements SmallRyeConfigBuilderCusto
                 };
             }
 
+            @Override
             public OptionalInt getPriority() {
                 return OptionalInt.of(Integer.MIN_VALUE + 100);
             }

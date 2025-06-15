@@ -122,12 +122,14 @@ public class MediaTypeHeaderDelegate implements RuntimeDelegate.HeaderDelegate<M
         return false;
     }
 
+    @Override
     public MediaType fromString(String type) throws IllegalArgumentException {
         if (type == null)
             throw new IllegalArgumentException("Media type was null");
         return parse(type);
     }
 
+    @Override
     public String toString(MediaType o) {
         if (o == null)
             throw new IllegalArgumentException("Param was null");

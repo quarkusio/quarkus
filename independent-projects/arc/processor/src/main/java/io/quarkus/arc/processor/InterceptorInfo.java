@@ -191,6 +191,7 @@ public class InterceptorInfo extends BeanInfo implements Comparable<InterceptorI
      *
      * @return the interceptor methods
      */
+    @Override
     public List<MethodInfo> getAroundInvokes() {
         return aroundInvokes;
     }

@@ -81,6 +81,7 @@ public class MicrometerProcessor {
     public static class MicrometerEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return mConfig.enabled();
         }

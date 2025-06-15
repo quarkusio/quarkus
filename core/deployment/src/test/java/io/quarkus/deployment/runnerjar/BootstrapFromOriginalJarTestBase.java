@@ -62,6 +62,7 @@ public abstract class BootstrapFromOriginalJarTestBase extends PackageAppTestBas
 
     protected abstract TsArtifact composeApplication() throws Exception;
 
+    @Override
     protected QuarkusBootstrap.Builder initBootstrapBuilder() throws Exception {
         final Path ws = workDir.resolve("workspace");
         IoUtils.recursiveDelete(ws);

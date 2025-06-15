@@ -60,6 +60,7 @@ public class OidcClientRegistrationBuildStep {
     public static class IsEnabled implements BooleanSupplier {
         OidcClientRegistrationBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled();
         }

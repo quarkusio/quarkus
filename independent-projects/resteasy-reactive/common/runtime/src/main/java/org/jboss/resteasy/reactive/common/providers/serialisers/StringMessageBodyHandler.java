@@ -15,22 +15,26 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 
 public class StringMessageBodyHandler extends PrimitiveBodyHandler
         implements MessageBodyReader<String>, MessageBodyWriter<Object> {
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return true;
     }
 
+    @Override
     public void writeTo(Object o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+                        MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         // FIXME: use response encoding
         entityStream.write(o.toString().getBytes(StandardCharsets.UTF_8));
     }
 
+    @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return type.equals(String.class);
     }
 
+    @Override
     public String readFrom(Class<String> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
+                           MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException, WebApplicationException {
         return readFrom(entityStream, true);
     }
 }

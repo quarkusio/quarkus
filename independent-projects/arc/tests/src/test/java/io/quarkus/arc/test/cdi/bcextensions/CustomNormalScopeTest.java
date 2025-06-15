@@ -329,10 +329,12 @@ public class CustomNormalScopeTest {
         private final ThreadLocal<Map<Contextual<?>, ContextualInstance<?>>> currentContext = new ThreadLocal<>();
         private final ThreadLocal<CommandExecution> currentCommandExecution = new ThreadLocal<>();
 
+        @Override
         public Class<? extends Annotation> getScope() {
             return CommandScoped.class;
         }
 
+        @Override
         public <T> T get(Contextual<T> contextual, CreationalContext<T> creationalContext) {
             Map<Contextual<?>, ContextualInstance<?>> store = currentContext.get();
 
@@ -348,14 +350,17 @@ public class CustomNormalScopeTest {
             return instance != null ? instance.get() : null;
         }
 
+        @Override
         public <T> T get(Contextual<T> contextual) {
             return get(contextual, null);
         }
 
+        @Override
         public boolean isActive() {
             return currentContext.get() != null;
         }
 
+        @Override
         public void destroy(Contextual<?> contextual) {
             Map<Contextual<?>, ContextualInstance<?>> ctx = currentContext.get();
             if (ctx == null) {

@@ -81,9 +81,11 @@ public class LocalizedFileBundleLocaleMergeTest {
     @Localized("en")
     public interface EnMessages extends Messages {
 
+        @Override
         @Message("Hello world!")
         String hello_world();
 
+        @Override
         @Message
         String greetings();
 

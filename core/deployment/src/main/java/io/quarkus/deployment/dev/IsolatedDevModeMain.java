@@ -315,6 +315,7 @@ public class IsolatedDevModeMain implements BiConsumer<CuratedApplication, Map<S
         }
     }
 
+    @Override
     public void close() {
         //don't attempt to restart in the exit code handler
         restarting = true;

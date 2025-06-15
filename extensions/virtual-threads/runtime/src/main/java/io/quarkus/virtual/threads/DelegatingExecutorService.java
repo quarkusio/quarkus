@@ -21,16 +21,19 @@ class DelegatingExecutorService extends ForwardingExecutorService {
         return delegate;
     }
 
+    @Override
     public boolean isShutdown() {
         // container managed executors are never shut down from the application's perspective
         return false;
     }
 
+    @Override
     public boolean isTerminated() {
         // container managed executors are never shut down from the application's perspective
         return false;
     }
 
+    @Override
     public boolean awaitTermination(final long timeout, final TimeUnit unit) {
         return false;
     }
@@ -39,6 +42,7 @@ class DelegatingExecutorService extends ForwardingExecutorService {
         throw new UnsupportedOperationException("shutdown not allowed on managed executor service");
     }
 
+    @Override
     public List<Runnable> shutdownNow() {
         throw new UnsupportedOperationException("shutdownNow not allowed on managed executor service");
     }

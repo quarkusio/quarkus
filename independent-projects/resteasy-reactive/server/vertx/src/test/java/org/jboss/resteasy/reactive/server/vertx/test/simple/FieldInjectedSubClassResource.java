@@ -23,6 +23,7 @@ public class FieldInjectedSubClassResource extends FieldInjectedResource {
     @BeanParam
     BeanParamSubClass beanParamSubClass;
 
+    @Override
     @Path("field2")
     @GET
     public String field() {

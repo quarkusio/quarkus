@@ -49,6 +49,7 @@ public interface AnnotatedGaugeAdapter extends org.eclipse.microprofile.metrics.
         }
 
         /** Called by MpRegistryAdapter to register the gauge */
+        @Override
         public GaugeAdapterImpl register(MetricDescriptor id, MeterRegistry registry) {
             this.id = id;
             if (gauge == null || metadata.cleanDirtyMetadata()) {
@@ -62,38 +63,49 @@ public interface AnnotatedGaugeAdapter extends org.eclipse.microprofile.metrics.
             return this;
         }
 
+        @Override
         public String name() {
             return metadata.name;
         }
 
+        @Override
         public String description() {
             return metadata.description;
         }
 
+        @Override
         public String baseUnit() {
             return metadata.unit;
         }
 
+        @Override
         public String[] tags() {
             return tags;
         }
 
+        @Override
+        @Override
         public Meter getMeter() {
             return gauge;
         }
 
+        @Override
         public MetricDescriptor getId() {
             return id;
         }
 
+        @Override
         public MpMetadata getMetadata() {
             return metadata;
         }
 
+        @Override
+        @Override
         public MetricType getType() {
             return MetricType.GAUGE;
         }
 
+        @Override
         public String getTargetName() {
             return targetName;
         }

@@ -61,6 +61,7 @@ public class UpstreamStreamCoordsWithNullPlatformKeyTest extends MultiplePlatfor
         enableRegistryClient();
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return UPSTREAM_PLATFORM_KEY;
     }

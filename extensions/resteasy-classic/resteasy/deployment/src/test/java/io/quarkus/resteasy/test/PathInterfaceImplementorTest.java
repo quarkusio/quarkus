@@ -40,6 +40,7 @@ public class PathInterfaceImplementorTest {
         @Inject
         TestService service;
 
+        @Override
         public String get() {
             return service.ping();
         }
@@ -60,6 +61,7 @@ public class PathInterfaceImplementorTest {
         @Inject
         TestService service;
 
+        @Override
         public String get() {
             return service.ping();
         }

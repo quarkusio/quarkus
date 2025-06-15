@@ -124,10 +124,12 @@ public final class ConfigCompatibility {
             this.logging = logging;
         }
 
+        @Override
         public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
             return context.proceed(name);
         }
 
+        @Override
         public Iterator<String> iterateNames(final ConfigSourceInterceptorContext context) {
             Iterator<String> nextIter = context.iterateNames();
             return new Iterator<String>() {
@@ -140,6 +142,7 @@ public final class ConfigCompatibility {
                  */
                 String next;
 
+                @Override
                 public boolean hasNext() {
                     while (next == null) {
                         if (subIter.hasNext()) {
@@ -172,6 +175,7 @@ public final class ConfigCompatibility {
                     return true;
                 }
 
+                @Override
                 public String next() {
                     if (!hasNext()) {
                         throw new NoSuchElementException();
@@ -205,6 +209,7 @@ public final class ConfigCompatibility {
         private BackEnd() {
         }
 
+        @Override
         public ConfigValue getValue(final ConfigSourceInterceptorContext context, final String name) {
             NameIterator ni = new NameIterator(name);
             BiFunction<ConfigSourceInterceptorContext, NameIterator, ConfigValue> function = newNames.findRootValue(ni);

@@ -94,6 +94,7 @@ public class InheritedModelWithBuilder extends InheritedModelWithBuilderBase {
             return this;
         }
 
+        @Override
         public InheritedModelWithBuilder build() {
             return new InheritedModelWithBuilder(this);
         }

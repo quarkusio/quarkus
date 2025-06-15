@@ -5,6 +5,7 @@ import org.jboss.resteasy.reactive.spi.RestHandler;
 
 public interface ServerRestHandler extends RestHandler<ResteasyReactiveRequestContext> {
 
+    @Override
     void handle(ResteasyReactiveRequestContext requestContext) throws Exception;
 
 }

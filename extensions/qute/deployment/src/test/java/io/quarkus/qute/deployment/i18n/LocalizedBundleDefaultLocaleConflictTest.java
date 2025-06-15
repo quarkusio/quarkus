@@ -47,6 +47,7 @@ public class LocalizedBundleDefaultLocaleConflictTest {
     @Localized("en")
     public interface EnMessages extends Messages {
 
+        @Override
         @Message("Hello world!")
         String helloWorld();
 

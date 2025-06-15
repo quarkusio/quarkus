@@ -224,6 +224,7 @@ public class QuarkusDevModeTest
         return this;
     }
 
+    @Override
     public Object createTestInstance(TestInstanceFactoryContext factoryContext, ExtensionContext extensionContext)
             throws TestInstantiationException {
         try {

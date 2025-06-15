@@ -11,8 +11,9 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
 public class BooleanMessageBodyHandler extends PrimitiveBodyHandler implements MessageBodyReader<Boolean> {
+    @Override
     public Boolean readFrom(Class<Boolean> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+                            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
         return Boolean.valueOf(readFrom(entityStream, false));
     }

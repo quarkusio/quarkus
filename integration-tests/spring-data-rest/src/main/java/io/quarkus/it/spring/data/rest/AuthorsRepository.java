@@ -13,10 +13,12 @@ public interface AuthorsRepository extends CrudRepository<Author, Long> {
     @RolesAllowed("user")
     Iterable<Author> findAll();
 
+    @Override
     @RestResource(exported = false)
     @RolesAllowed("superuser")
     <S extends Author> S save(S author);
 
+    @Override
     @RestResource(exported = false)
     void deleteById(Long id);
 }

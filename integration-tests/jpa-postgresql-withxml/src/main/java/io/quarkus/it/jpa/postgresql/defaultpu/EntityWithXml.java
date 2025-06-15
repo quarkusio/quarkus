@@ -63,10 +63,12 @@ public class EntityWithXml {
 
     @RegisterForReflection
     public static class LocalDateXmlAdapter extends XmlAdapter<String, LocalDate> {
+        @Override
         public LocalDate unmarshal(String string) {
             return string == null ? null : LocalDate.parse(string);
         }
 
+        @Override
         public String marshal(LocalDate localDate) {
             return localDate == null ? null : localDate.toString();
         }

@@ -14,6 +14,7 @@ public class AddEnvironmentVariablesDevModeTest extends QuarkusDevGradleTestBase
         return new String[] { "clean", "quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
         assertThat(getHttpResponse("/hello")).contains("abcdef");
     }

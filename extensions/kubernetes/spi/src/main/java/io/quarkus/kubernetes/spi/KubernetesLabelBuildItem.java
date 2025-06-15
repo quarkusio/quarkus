@@ -22,6 +22,7 @@ public final class KubernetesLabelBuildItem extends MultiBuildItem implements Ta
         return value;
     }
 
+    @Override
     public String getTarget() {
         return this.target;
     }

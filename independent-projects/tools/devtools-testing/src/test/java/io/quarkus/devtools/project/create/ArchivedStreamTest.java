@@ -46,6 +46,7 @@ public class ArchivedStreamTest extends MultiplePlatformBomsTestBase {
         enableRegistryClient();
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return PLATFORM_KEY;
     }

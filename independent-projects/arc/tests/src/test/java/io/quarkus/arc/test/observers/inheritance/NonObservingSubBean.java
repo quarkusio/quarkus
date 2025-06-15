@@ -10,6 +10,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 @ApplicationScoped
 public class NonObservingSubBean extends ObservingBean {
 
+    @Override
     public void watchFor(SimpleEvent event) {
         value = event.content;
     }

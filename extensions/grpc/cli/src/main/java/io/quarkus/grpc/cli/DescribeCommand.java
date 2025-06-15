@@ -15,6 +15,7 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "describe", sortOptions = false, header = "gRPC describe")
 public class DescribeCommand extends GcurlBaseCommand {
 
+    @Override
     public String getAction() {
         return "describe";
     }

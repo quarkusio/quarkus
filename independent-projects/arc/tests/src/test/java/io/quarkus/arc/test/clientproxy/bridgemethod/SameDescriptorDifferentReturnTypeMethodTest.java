@@ -62,6 +62,8 @@ public class SameDescriptorDifferentReturnTypeMethodTest {
     interface Loop extends SuperLoop {
 
         // Since JDK8+ a "Serializable next()" bridge method is also generated
+        @Override
+        @Override
         Integer next();
     }
 

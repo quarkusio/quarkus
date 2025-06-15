@@ -155,6 +155,8 @@ public class IfSectionHelper implements SectionHelper {
                     .build();
         }
 
+        @Override
+        @Override
         public List<String> getBlockLabels() {
             return ImmutableList.of(ELSE);
         }

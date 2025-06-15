@@ -83,6 +83,7 @@ public class IsolatedTestModeMain extends IsolatedDevModeMain {
     void regenerateApplication(Set<String> ignore, ClassScanResult ignore2) {
     }
 
+    @Override
     public void close() {
         try {
             try {

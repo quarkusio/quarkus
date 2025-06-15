@@ -28,6 +28,7 @@ public class ServerReaderBodyHandler extends ReaderBodyHandler implements Server
         return new InputStreamReader(context.getInputStream(), MessageReaderUtil.charsetFromMediaType(mediaType));
     }
 
+    @Override
     public long getSize(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return -1;
     }

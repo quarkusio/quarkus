@@ -12,14 +12,17 @@ import org.eclipse.microprofile.context.spi.ThreadContextSnapshot;
  */
 public class CustomContextProvider implements ThreadContextProvider {
 
+    @Override
     public ThreadContextSnapshot clearedContext(Map<String, String> props) {
         return snapshot("");
     }
 
+    @Override
     public ThreadContextSnapshot currentContext(Map<String, String> props) {
         return snapshot(CustomContext.get());
     }
 
+    @Override
     public String getThreadContextType() {
         return CustomContext.NAME;
     }

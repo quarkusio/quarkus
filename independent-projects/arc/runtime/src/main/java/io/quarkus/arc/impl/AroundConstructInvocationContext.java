@@ -21,6 +21,7 @@ class AroundConstructInvocationContext extends LifecycleCallbackInvocationContex
         this.constructor = constructor;
     }
 
+    @Override
     protected void interceptorChainCompleted() {
         target = forward.apply(parameters);
     }

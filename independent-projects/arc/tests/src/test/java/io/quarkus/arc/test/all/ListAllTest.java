@@ -109,6 +109,7 @@ public class ListAllTest {
     @Singleton
     static class ServiceAlpha implements Service {
 
+        @Override
         public String ping() {
             return "alpha";
         }
@@ -124,6 +125,7 @@ public class ListAllTest {
         @Inject
         InjectionPoint injectionPoint;
 
+        @Override
         public String ping() {
             return "bravo";
         }

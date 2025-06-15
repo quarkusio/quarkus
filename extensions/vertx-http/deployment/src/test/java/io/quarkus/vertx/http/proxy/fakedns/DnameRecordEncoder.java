@@ -7,6 +7,7 @@ import org.apache.mina.core.buffer.IoBuffer;
 
 public class DnameRecordEncoder extends ResourceRecordEncoder {
 
+    @Override
     protected void putResourceRecordData(IoBuffer byteBuffer, ResourceRecord record) {
         String domainName = record.get(DnsAttribute.DOMAIN_NAME);
         putDomainName(byteBuffer, domainName);

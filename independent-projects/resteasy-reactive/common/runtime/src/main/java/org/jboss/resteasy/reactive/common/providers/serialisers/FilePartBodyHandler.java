@@ -16,14 +16,16 @@ import org.jboss.resteasy.reactive.FilePart;
 
 public class FilePartBodyHandler implements MessageBodyWriter<FilePart> {
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return FilePart.class.isAssignableFrom(type);
     }
 
+    @Override
     public void writeTo(FilePart uploadFile, Class<?> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders,
-            OutputStream entityStream) throws IOException {
+                        Annotation[] annotations, MediaType mediaType,
+                        MultivaluedMap<String, Object> httpHeaders,
+                        OutputStream entityStream) throws IOException {
         httpHeaders.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(uploadFile.count));
         doWrite(uploadFile, entityStream);
     }

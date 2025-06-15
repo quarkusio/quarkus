@@ -54,40 +54,55 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
     @Singleton
     public static class PermissionsAllowedNameOnlyBean implements PermissionsAllowedNameOnlyBeanI {
 
+        @Override
         @PermissionsAllowed(WRITE_PERMISSION)
         public final String write() {
             return WRITE_PERMISSION;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed(READ_PERMISSION)
         public final String read() {
             return READ_PERMISSION;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed(WRITE_PERMISSION)
         public final Uni<String> writeNonBlocking() {
             return Uni.createFrom().item(WRITE_PERMISSION);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed(READ_PERMISSION)
         public final Uni<String> readNonBlocking() {
             return Uni.createFrom().item(READ_PERMISSION);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed("prohibited")
         public final void prohibited() {
         }
 
+        @Override
+        @Override
         @PermissionsAllowed("prohibited")
         public final Uni<Void> prohibitedNonBlocking() {
             return Uni.createFrom().nullItem();
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one", "two", "three", READ_PERMISSION })
         public final String multiple() {
             return MULTIPLE_PERMISSION;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one", "two", "three", READ_PERMISSION })
         public final Uni<String> multipleNonBlocking() {
             return Uni.createFrom().item(MULTIPLE_PERMISSION);
@@ -98,70 +113,97 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
     @Singleton
     public static class PermissionsAllowedNameAndActionsOnlyBean implements PermissionsAllowedNameAndActionsOnlyBeanI {
 
+        @Override
         @PermissionsAllowed(WRITE_PERMISSION_BEAN)
         public final String write() {
             return WRITE_PERMISSION_BEAN;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed(READ_PERMISSION_BEAN)
         public final String read() {
             return READ_PERMISSION_BEAN;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed(WRITE_PERMISSION_BEAN)
         public final Uni<String> writeNonBlocking() {
             return Uni.createFrom().item(WRITE_PERMISSION_BEAN);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed(READ_PERMISSION_BEAN)
         public final Uni<String> readNonBlocking() {
             return Uni.createFrom().item(READ_PERMISSION_BEAN);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed("prohibited:bean")
         public final void prohibited() {
         }
 
+        @Override
+        @Override
         @PermissionsAllowed("prohibited:bean")
         public final Uni<Void> prohibitedNonBlocking() {
             return Uni.createFrom().nullItem();
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one:a", "two:b", "three:c", READ_PERMISSION_BEAN })
         public final String multiple() {
             return MULTIPLE_BEAN;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one:a", "two:b", "three:c", READ_PERMISSION_BEAN })
         public final Uni<String> multipleNonBlocking() {
             return Uni.createFrom().item(MULTIPLE_BEAN);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one:a", "two:b", "three:c", "one:b", "two:a", "three:a", READ_PERMISSION_BEAN, "read:meal" })
         public final String multipleActions() {
             return MULTIPLE_BEAN;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one:a", "two:b", "three:c", "one:b", "two:a", "three:a", READ_PERMISSION_BEAN, "read:meal" })
         public final Uni<String> multipleNonBlockingActions() {
             return Uni.createFrom().item(MULTIPLE_BEAN);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one", "two", "three:c", "three", READ_PERMISSION })
         public final String combination() {
             return MULTIPLE_BEAN;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one", "two", "three:c", "three", READ_PERMISSION })
         public final Uni<String> combinationNonBlockingActions() {
             return Uni.createFrom().item(MULTIPLE_BEAN);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one", "two", "three:c", "three", "read:bread", "read:meal" })
         public final String combination2() {
             return "combination2";
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "one", "two", "three:c", "three", "read:bread", "read:meal" })
         public final Uni<String> combination2NonBlockingActions() {
             return Uni.createFrom().item("combination2");
@@ -184,30 +226,40 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
     @Singleton
     public static class MultiplePermissionsAllowedBean implements MultiplePermissionsAllowedBeanI {
 
+        @Override
+        @Override
         @PermissionsAllowed("update")
         @PermissionsAllowed("create")
         public String createOrUpdate() {
             return "create_or_update";
         }
 
+        @Override
+        @Override
         @PermissionsAllowed("create")
         @PermissionsAllowed("update")
         public Uni<String> createOrUpdateNonBlocking() {
             return Uni.createFrom().item("create_or_update");
         }
 
+        @Override
+        @Override
         @PermissionsAllowed("see")
         @PermissionsAllowed("view")
         public String getOne() {
             return "see_or_view_detail";
         }
 
+        @Override
+        @Override
         @PermissionsAllowed("view")
         @PermissionsAllowed("see")
         public Uni<String> getOneNonBlocking() {
             return Uni.createFrom().item("see_or_view_detail");
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "operand1", "operand2", "operand3" })
         @PermissionsAllowed({ "operand4", "operand5" })
         @PermissionsAllowed({ "operand6", "operand7" })
@@ -217,6 +269,8 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
             return Uni.createFrom().item(PREDICATE);
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "operand1", "operand2", "operand3" })
         @PermissionsAllowed({ "operand4", "operand5" })
         @PermissionsAllowed({ "operand6", "operand7" })
@@ -226,6 +280,8 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
             return PREDICATE;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "permission1:action1", "permission2:action2" })
         @PermissionsAllowed({ "permission1:action2", "permission2:action1" })
         public String actionsPredicate() {
@@ -233,6 +289,8 @@ public class MethodLevelStringPermissionsAllowedTest extends AbstractMethodLevel
             return PREDICATE;
         }
 
+        @Override
+        @Override
         @PermissionsAllowed({ "permission1:action1", "permission2:action2" })
         @PermissionsAllowed({ "permission1:action2", "permission2:action1" })
         public Uni<String> actionsPredicateNonBlocking() {

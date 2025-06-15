@@ -44,6 +44,7 @@ public class HttpRequestMetric extends RequestMetricInfo {
         return super.getNormalizedUriPath(matchPatterns, ignorePatterns, initialPath);
     }
 
+    @Override
     public String applyTemplateMatching(String path) {
         // JAX-RS: UrlPathTemplate set in the
         String urlTemplatePath = getUrlTemplatePath();

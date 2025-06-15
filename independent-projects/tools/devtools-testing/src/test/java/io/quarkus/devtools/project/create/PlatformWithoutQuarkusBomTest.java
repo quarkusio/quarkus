@@ -131,6 +131,7 @@ public class PlatformWithoutQuarkusBomTest extends MultiplePlatformBomsTestBase 
         }
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return "org.quarkus.platform";
     }

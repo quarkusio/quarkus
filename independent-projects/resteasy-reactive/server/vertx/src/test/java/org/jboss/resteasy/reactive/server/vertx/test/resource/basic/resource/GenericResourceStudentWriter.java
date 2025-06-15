@@ -17,17 +17,20 @@ import jakarta.ws.rs.ext.Provider;
 @Produces("application/student")
 public class GenericResourceStudentWriter implements MessageBodyWriter<GenericResourceStudent> {
 
+    @Override
     public long getSize(GenericResourceStudent t, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType) {
+                        MediaType mediaType) {
         return t.getName().length();
     }
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return true;
     }
 
+    @Override
     public void writeTo(GenericResourceStudent t, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+                        MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
         OutputStreamWriter writer = new OutputStreamWriter(entityStream);
         writer.write(t.getName());

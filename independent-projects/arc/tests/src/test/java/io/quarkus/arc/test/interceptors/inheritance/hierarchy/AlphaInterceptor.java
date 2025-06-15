@@ -24,12 +24,14 @@ public class AlphaInterceptor extends Bravo {
         ctx.proceed();
     }
 
+    @Override
     @PreDestroy
     void destroy(InvocationContext ctx) throws Exception {
         SuperclassInterceptorMethodsTest.LIFECYCLE_CALLBACKS.add("a");
         ctx.proceed();
     }
 
+    @Override
     @AroundConstruct
     public void construct(InvocationContext ctx) throws Exception {
         SuperclassInterceptorMethodsTest.LIFECYCLE_CALLBACKS.add("A");
@@ -37,6 +39,7 @@ public class AlphaInterceptor extends Bravo {
     }
 
     // "If an interceptor method is overridden by another method (regardless whether that method is itself an interceptor method), it will not be invoked."
+    @Override
     void alphaDummyInit(InvocationContext ctx) throws Exception {
     }
 

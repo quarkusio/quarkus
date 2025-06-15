@@ -55,6 +55,7 @@ public class ExpireArgs implements RedisCommandExtraArguments {
         return this;
     }
 
+    @Override
     public List<Object> toArgs() {
         List<Object> args = new ArrayList<>();
 

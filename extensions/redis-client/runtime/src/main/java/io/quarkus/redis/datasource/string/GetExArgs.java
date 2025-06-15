@@ -27,6 +27,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timeout expire time in seconds.
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs ex(long timeout) {
         this.ex = timeout;
         return this;
@@ -38,6 +39,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timeout expire time in seconds.
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs ex(Duration timeout) {
         if (timeout == null) {
             throw new IllegalArgumentException("`timeout` must not be `null`");
@@ -51,6 +53,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timestamp the timestamp
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs exAt(long timestamp) {
         this.exAt = timestamp;
         return this;
@@ -62,6 +65,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timestamp the timestamp type: posix time in seconds.
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs exAt(Instant timestamp) {
         if (timestamp == null) {
             throw new IllegalArgumentException("`timestamp` must not be `null`");
@@ -76,6 +80,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timeout expire time in milliseconds.
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs px(long timeout) {
         this.px = timeout;
         return this;
@@ -87,6 +92,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timeout expire time in milliseconds.
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs px(Duration timeout) {
         if (timeout == null) {
             throw new IllegalArgumentException("`timeout` must not be `null`");
@@ -100,6 +106,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timestamp the timestamp
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs pxAt(long timestamp) {
         this.pxAt = timestamp;
         return this;
@@ -111,6 +118,7 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      * @param timestamp the timestamp
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs pxAt(Instant timestamp) {
         if (timestamp == null) {
             throw new IllegalArgumentException("`timestamp` must not be `null`");
@@ -123,11 +131,13 @@ public class GetExArgs extends io.quarkus.redis.datasource.value.GetExArgs imple
      *
      * @return the current {@code GetExArgs}
      */
+    @Override
     public GetExArgs persist() {
         this.persist = true;
         return this;
     }
 
+    @Override
     public List<Object> toArgs() {
         List<Object> args = new ArrayList<>();
         if (ex >= 0) {

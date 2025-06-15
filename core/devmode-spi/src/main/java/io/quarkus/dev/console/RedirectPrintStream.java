@@ -30,11 +30,13 @@ public class RedirectPrintStream extends PrintStream {
     }
 
     //@Override
+    @Override
     public void write(byte[] buf) {
         write(buf, 0, buf.length);
     }
 
     //@Override
+    @Override
     public void writeBytes(byte[] buf) {
         write(buf, 0, buf.length);
     }

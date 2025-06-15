@@ -19,6 +19,7 @@ public class ClientResponseImpl extends ResponseImpl {
 
     RestClientRequestContext restClientRequestContext;
 
+    @Override
     @SuppressWarnings({ "unchecked" })
     protected <T> T readEntity(Class<T> entityType, Type genericType, Annotation[] annotations) {
         // TODO: we probably need better state handling

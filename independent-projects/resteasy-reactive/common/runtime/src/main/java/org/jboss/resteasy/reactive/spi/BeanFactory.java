@@ -15,6 +15,7 @@ public interface BeanFactory<T> {
 
         T getInstance();
 
+        @Override
         void close();
 
         class ClosingTask<T> implements Closeable {

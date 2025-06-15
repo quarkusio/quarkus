@@ -230,6 +230,7 @@ public class TestResourceManager implements Closeable {
         }
     }
 
+    @Override
     public void close() {
         if (!started) {
             return;

@@ -117,6 +117,7 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
                     "This method is not supported using this builder. Use #routeFunction(String, Consumer<Route>)");
         }
 
+        @Override
         public Builder orderedRoute(String route, Integer order) {
             route = super.absolutePath = buildItem.resolvePath(route);
 
@@ -136,6 +137,7 @@ public final class HttpRootPathBuildItem extends SimpleBuildItem {
             return this;
         }
 
+        @Override
         public Builder routeFunction(String route, Consumer<Route> routeFunction) {
             route = super.absolutePath = buildItem.resolvePath(route);
 

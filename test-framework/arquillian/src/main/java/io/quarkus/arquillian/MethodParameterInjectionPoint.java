@@ -25,14 +25,17 @@ public class MethodParameterInjectionPoint<T> implements InjectionPoint {
         this.position = position;
     }
 
+    @Override
     public Bean<?> getBean() {
         return null;
     }
 
+    @Override
     public Member getMember() {
         return method;
     }
 
+    @Override
     public Set<Annotation> getQualifiers() {
         Set<Annotation> qualifiers = new HashSet<>();
         for (Annotation potentialQualifier : method.getParameterAnnotations()[position]) {
@@ -46,18 +49,22 @@ public class MethodParameterInjectionPoint<T> implements InjectionPoint {
         return qualifiers;
     }
 
+    @Override
     public Type getType() {
         return findTypeOrGenericType();
     }
 
+    @Override
     public boolean isDelegate() {
         return false;
     }
 
+    @Override
     public boolean isTransient() {
         return false;
     }
 
+    @Override
     public Annotated getAnnotated() {
         return new ArgumentAnnotated<T>();
     }
@@ -72,14 +79,17 @@ public class MethodParameterInjectionPoint<T> implements InjectionPoint {
 
     private class ArgumentAnnotated<X> implements AnnotatedParameter<X> {
 
+        @Override
         public AnnotatedCallable<X> getDeclaringCallable() {
             return null;
         }
 
+        @Override
         public int getPosition() {
             return position;
         }
 
+        @Override
         public <Y extends Annotation> Y getAnnotation(Class<Y> annotationType) {
             for (Annotation annotation : method.getParameterAnnotations()[position]) {
                 if (annotation.annotationType() == annotationType) {
@@ -89,14 +99,17 @@ public class MethodParameterInjectionPoint<T> implements InjectionPoint {
             return null;
         }
 
+        @Override
         public Set<Annotation> getAnnotations() {
             return new HashSet<>(Arrays.asList(method.getParameterAnnotations()[position]));
         }
 
+        @Override
         public Type getBaseType() {
             return getType();
         }
 
+        @Override
         public Set<Type> getTypeClosure() {
             Set<Type> types = new HashSet<>();
             types.add(findTypeOrGenericType());
@@ -104,6 +117,7 @@ public class MethodParameterInjectionPoint<T> implements InjectionPoint {
             return types;
         }
 
+        @Override
         public boolean isAnnotationPresent(Class<? extends Annotation> annotationType) {
             return getAnnotation(annotationType) != null;
         }

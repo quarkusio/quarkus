@@ -51,6 +51,7 @@ public class FileLocationsImpl implements FileLocations {
         return LOCAL_CONFIG_FILE;
     }
 
+    @Override
     public String lastTrackFileName() {
         return BUILD_ANALYTICS_EVENT_FILE_NAME;
     }

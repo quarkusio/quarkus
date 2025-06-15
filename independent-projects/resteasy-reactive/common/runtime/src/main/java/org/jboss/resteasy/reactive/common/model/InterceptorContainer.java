@@ -56,6 +56,7 @@ public class InterceptorContainer<T> {
 
     public static class Reversed<T> extends InterceptorContainer<T> {
 
+        @Override
         public ResourceInterceptor<T> create() {
             return new ResourceInterceptor.Reversed();
         }

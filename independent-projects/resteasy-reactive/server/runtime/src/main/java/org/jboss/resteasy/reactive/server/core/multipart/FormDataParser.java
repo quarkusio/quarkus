@@ -35,6 +35,7 @@ public interface FormDataParser extends Closeable {
      *
      * @throws IOException
      */
+    @Override
     void close() throws IOException;
 
     /**

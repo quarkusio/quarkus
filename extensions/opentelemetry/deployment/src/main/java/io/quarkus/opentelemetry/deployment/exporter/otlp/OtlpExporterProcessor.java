@@ -45,6 +45,7 @@ public class OtlpExporterProcessor {
         OtlpExporterBuildConfig exportBuildConfig;
         OTelBuildConfig otelBuildConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.traces().enabled().orElse(Boolean.TRUE) &&
@@ -57,6 +58,7 @@ public class OtlpExporterProcessor {
         OtlpExporterBuildConfig exportBuildConfig;
         OTelBuildConfig otelBuildConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE) &&
@@ -69,6 +71,7 @@ public class OtlpExporterProcessor {
         OtlpExporterBuildConfig exportBuildConfig;
         OTelBuildConfig otelBuildConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return otelBuildConfig.enabled() &&
                     otelBuildConfig.logs().enabled().orElse(Boolean.TRUE) &&

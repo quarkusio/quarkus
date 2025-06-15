@@ -271,10 +271,14 @@ public class ConfigBuildStep {
     @BuildStep
     AnnotationsTransformerBuildItem vetoMPConfigProperties() {
         return new AnnotationsTransformerBuildItem(new AnnotationsTransformer() {
+            @Override
+            @Override
             public boolean appliesTo(org.jboss.jandex.AnnotationTarget.Kind kind) {
                 return CLASS.equals(kind);
             }
 
+            @Override
+            @Override
             public void transform(TransformationContext context) {
                 if (context.getAnnotations().stream()
                         .anyMatch(annotation -> annotation.name().equals(MP_CONFIG_PROPERTIES_NAME))) {

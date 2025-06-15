@@ -31,41 +31,49 @@ abstract class AbstractAnnotationsTransformation<T extends AnnotationsTransforma
         this.modifiedAnnotations = annotations;
     }
 
+    @Override
     public T add(AnnotationInstance annotation) {
         modifiedAnnotations.add(annotation);
         return self();
     }
 
+    @Override
     public T addAll(Collection<AnnotationInstance> annotations) {
         modifiedAnnotations.addAll(annotations);
         return self();
     }
 
+    @Override
     public T addAll(AnnotationInstance... annotations) {
         Collections.addAll(modifiedAnnotations, annotations);
         return self();
     }
 
+    @Override
     public T add(Class<? extends Annotation> annotationType, AnnotationValue... values) {
         add(DotName.createSimple(annotationType.getName()), values);
         return self();
     }
 
+    @Override
     public T add(DotName name, AnnotationValue... values) {
         add(AnnotationInstance.create(name, target, values));
         return self();
     }
 
+    @Override
     public T remove(Predicate<AnnotationInstance> predicate) {
         modifiedAnnotations.removeIf(predicate);
         return self();
     }
 
+    @Override
     public T removeAll() {
         modifiedAnnotations.clear();
         return self();
     }
 
+    @Override
     public void done() {
         resultConsumer.accept(modifiedAnnotations);
     }

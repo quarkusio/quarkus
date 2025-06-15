@@ -112,6 +112,7 @@ public class CustomConfiguration {
     @Singleton
     public MeterFilter enableHistogram() {
         return new MeterFilter() {
+            @Override
             public DistributionStatisticConfig configure(Meter.Id id, DistributionStatisticConfig config) {
                 if (id.getName().equals("prime.number.test")) {
                     return DistributionStatisticConfig.builder()

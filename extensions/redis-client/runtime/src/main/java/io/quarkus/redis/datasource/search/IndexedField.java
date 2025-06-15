@@ -40,6 +40,7 @@ public class IndexedField implements RedisCommandExtraArguments {
         this.options = options;
     }
 
+    @Override
     public List<Object> toArgs() {
         List<Object> list = new ArrayList<>();
         list.add(field);

@@ -12,6 +12,7 @@ public final class ReaderInterceptorBuildItem extends AbstractInterceptorBuildIt
             super(className);
         }
 
+        @Override
         public ReaderInterceptorBuildItem build() {
             return new ReaderInterceptorBuildItem(this);
         }

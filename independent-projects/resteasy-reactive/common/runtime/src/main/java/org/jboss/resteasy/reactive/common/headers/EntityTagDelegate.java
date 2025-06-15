@@ -9,6 +9,7 @@ import jakarta.ws.rs.ext.RuntimeDelegate;
 public class EntityTagDelegate implements RuntimeDelegate.HeaderDelegate<EntityTag> {
     public static final EntityTagDelegate INSTANCE = new EntityTagDelegate();
 
+    @Override
     public EntityTag fromString(String value) throws IllegalArgumentException {
         if (value == null)
             throw new IllegalArgumentException("param was null");
@@ -26,6 +27,7 @@ public class EntityTagDelegate implements RuntimeDelegate.HeaderDelegate<EntityT
         return new EntityTag(value, weakTag);
     }
 
+    @Override
     public String toString(EntityTag value) {
         String weak = value.isWeak() ? "W/" : "";
         return weak + '"' + value.getValue() + '"';

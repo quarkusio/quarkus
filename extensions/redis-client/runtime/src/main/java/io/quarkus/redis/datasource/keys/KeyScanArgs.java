@@ -30,6 +30,7 @@ public class KeyScanArgs extends ScanArgs {
      * @param count the number of item, must be strictly positive
      * @return the current {@code ScanArgs}
      */
+    @Override
     public KeyScanArgs count(long count) {
         super.count(count);
         return this;
@@ -41,11 +42,13 @@ public class KeyScanArgs extends ScanArgs {
      * @param pattern the pattern, must not be {@code null}
      * @return the current {@code ScanArgs}
      */
+    @Override
     public KeyScanArgs match(String pattern) {
         super.match(pattern);
         return this;
     }
 
+    @Override
     public List<String> toArgs() {
         List<String> list = super.toArgs();
         if (type != null) {

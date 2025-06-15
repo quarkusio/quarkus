@@ -59,6 +59,7 @@ public class SectionNode implements TemplateNode {
         return resolve(context, null);
     }
 
+    @Override
     public Origin getOrigin() {
         return origin;
     }
@@ -99,6 +100,7 @@ public class SectionNode implements TemplateNode {
         return builder.toString();
     }
 
+    @Override
     public List<Expression> getExpressions() {
         List<Expression> expressions = new ArrayList<>();
         for (SectionBlock block : blocks) {

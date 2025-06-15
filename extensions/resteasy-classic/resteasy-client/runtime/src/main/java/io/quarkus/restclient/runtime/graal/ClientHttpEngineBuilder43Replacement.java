@@ -23,6 +23,7 @@ public final class ClientHttpEngineBuilder43Replacement implements ClientHttpEng
     @Alias
     private ResteasyClientBuilder that;
 
+    @Override
     @Substitute
     public ClientHttpEngineBuilder resteasyClientBuilder(ResteasyClientBuilder resteasyClientBuilder) {
         that = resteasyClientBuilder;
@@ -40,6 +41,7 @@ public final class ClientHttpEngineBuilder43Replacement implements ClientHttpEng
     /**
      * Unused alias to implement the {@link ClientHttpEngineBuilder} interface
      */
+    @Override
     @Alias
     public native ClientHttpEngine build();
 }

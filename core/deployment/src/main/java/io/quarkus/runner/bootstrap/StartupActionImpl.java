@@ -98,6 +98,7 @@ public class StartupActionImpl implements StartupAction {
      * be set in {@link io.quarkus.runtime.ApplicationLifecycleManager#setDefaultExitCodeHandler(Consumer)}
      * of the JVM will exit when the app stops.
      */
+    @Override
     public RunningQuarkusApplication runMainClass(String... args) throws Exception {
 
         //first we hack around class loading in the fork join pool
@@ -279,6 +280,7 @@ public class StartupActionImpl implements StartupAction {
     /**
      * Runs the application, and returns a handle that can be used to shut it down.
      */
+    @Override
     public RunningQuarkusApplication run(String... args) throws Exception {
         //first we hack around class loading in the fork join pool
         ForkJoinClassLoading.setForkJoinClassLoader(runtimeClassLoader);

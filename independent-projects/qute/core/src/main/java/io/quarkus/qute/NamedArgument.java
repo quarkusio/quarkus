@@ -62,6 +62,7 @@ public final class NamedArgument {
 
     public static final class SetValueResolver implements ValueResolver {
 
+        @Override
         public boolean appliesTo(EvalContext context) {
             if (context.getParams().size() != 1) {
                 return false;

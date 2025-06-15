@@ -127,6 +127,8 @@ public class ProcessorSignatureTest {
         @Channel("A")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -153,6 +155,8 @@ public class ProcessorSignatureTest {
         @Channel("B")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -178,6 +182,8 @@ public class ProcessorSignatureTest {
         @Channel("C")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -204,6 +210,8 @@ public class ProcessorSignatureTest {
         @Channel("D")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -229,6 +237,8 @@ public class ProcessorSignatureTest {
         @Channel("E")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -253,6 +263,8 @@ public class ProcessorSignatureTest {
         @Channel("F")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -279,6 +291,8 @@ public class ProcessorSignatureTest {
         @Channel("G")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -304,6 +318,8 @@ public class ProcessorSignatureTest {
         @Channel("H")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -328,6 +344,8 @@ public class ProcessorSignatureTest {
         @Channel("I")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -352,6 +370,8 @@ public class ProcessorSignatureTest {
         @Channel("J")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -376,6 +396,8 @@ public class ProcessorSignatureTest {
         @Channel("K")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }
@@ -400,6 +422,8 @@ public class ProcessorSignatureTest {
         @Channel("L")
         Emitter<Integer> emitter;
 
+        @Override
+        @Override
         public Emitter<Integer> getEmitter() {
             return emitter;
         }

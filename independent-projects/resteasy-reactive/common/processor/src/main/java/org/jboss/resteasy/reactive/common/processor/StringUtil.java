@@ -10,10 +10,12 @@ public class StringUtil {
         return new Iterator<String>() {
             int idx;
 
+            @Override
             public boolean hasNext() {
                 return idx < str.length();
             }
 
+            @Override
             public String next() {
                 if (idx == str.length())
                     throw new NoSuchElementException();

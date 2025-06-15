@@ -145,6 +145,7 @@ public class TemplateGlobalGenerator extends AbstractGenerator {
         return generatedClassName;
     }
 
+    @Override
     public Set<String> getGeneratedTypes() {
         return generatedTypes;
     }

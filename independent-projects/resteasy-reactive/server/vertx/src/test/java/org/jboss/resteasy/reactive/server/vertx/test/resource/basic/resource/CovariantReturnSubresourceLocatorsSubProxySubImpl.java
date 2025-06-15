@@ -7,6 +7,7 @@ public class CovariantReturnSubresourceLocatorsSubProxySubImpl implements Covari
         this.path = path;
     }
 
+    @Override
     public String get() {
         return "Boo! - " + path;
     }

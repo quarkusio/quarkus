@@ -25,6 +25,7 @@ public class GrpcBinderProcessor {
     static class GrpcClientSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(CLIENT_INTERCEPTOR)
                     && mConfig.checkBinderEnabledWithDefault(mConfig.binder().grpcClient());
@@ -34,6 +35,7 @@ public class GrpcBinderProcessor {
     static class GrpcServerSupportEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(SERVER_INTERCEPTOR)
                     && mConfig.checkBinderEnabledWithDefault(mConfig.binder().grpcServer());

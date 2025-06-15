@@ -235,6 +235,7 @@ class SmallRyeJwtProcessor {
     public static class IsEnabled implements BooleanSupplier {
         SmallRyeJwtBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled();
         }

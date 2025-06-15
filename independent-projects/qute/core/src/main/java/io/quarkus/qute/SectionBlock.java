@@ -300,6 +300,7 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
             return expression;
         }
 
+        @Override
         public Map<String, String> getParameters() {
             return parameters == null ? Collections.emptyMap() : Collections.unmodifiableMap(parameters);
         }
@@ -309,6 +310,7 @@ public final class SectionBlock implements WithOrigin, ErrorInitializer {
             return parametersPositions.get(position);
         }
 
+        @Override
         public String getLabel() {
             return label;
         }

@@ -41,6 +41,7 @@ public class HttpBinderProcessor {
     static class HttpServerBinderEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return mConfig.checkBinderEnabledWithDefault(mConfig.binder().vertx())
                     && mConfig.checkBinderEnabledWithDefault(mConfig.binder().httpServer());
@@ -50,6 +51,7 @@ public class HttpBinderProcessor {
     static class HttpClientBinderEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return QuarkusClassLoader.isClassPresentAtRuntime(REST_CLIENT_REQUEST_FILTER)
                     && mConfig.checkBinderEnabledWithDefault(mConfig.binder().httpClient());

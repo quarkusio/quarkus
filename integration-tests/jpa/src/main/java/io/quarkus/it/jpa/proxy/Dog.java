@@ -19,10 +19,12 @@ public class Dog extends Pet implements DogProxy {
         return "Woof";
     }
 
+    @Override
     public String getFavoriteToy() {
         return favoriteToy;
     }
 
+    @Override
     public void setFavoriteToy(String favoriteToy) {
         this.favoriteToy = favoriteToy;
     }

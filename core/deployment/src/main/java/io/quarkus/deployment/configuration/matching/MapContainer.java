@@ -15,14 +15,17 @@ public final class MapContainer extends Container {
         this.mapMember = mapMember;
     }
 
+    @Override
     public ClassDefinition.ClassMember getClassMember() {
         return mapMember;
     }
 
+    @Override
     public Container getParent() {
         return parent;
     }
 
+    @Override
     StringBuilder getCombinedName(final StringBuilder sb) {
         // maps always have a parent
         getParent().getCombinedName(sb);
@@ -33,6 +36,7 @@ public final class MapContainer extends Container {
         return sb;
     }
 
+    @Override
     StringBuilder getPropertyName(final StringBuilder sb) {
         // maps always have a parent
         getParent().getPropertyName(sb);

@@ -8,6 +8,7 @@ import org.springframework.security.access.annotation.Secured;
 @Secured("admin")
 public class BeanWithSpringSecurityAnnotations extends BeanWithSpringSecurityMethodAnnotations {
 
+    @Override
     public String restricted() {
         return "accessibleForAdminOnly";
     }

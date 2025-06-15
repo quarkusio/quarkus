@@ -20,6 +20,7 @@ public class BaseImageCommand extends BuildToolDelegatingCommand implements Call
     @CommandLine.ArgGroup(order = 2, exclusive = false, validate = false, heading = "%nImage options:%n")
     ImageOptions imageOptions = new ImageOptions();
 
+    @Override
     public void populateContext(BuildToolContext context) {
         super.populateContext(context);
         Map<String, String> properties = context.getPropertiesOptions().properties;

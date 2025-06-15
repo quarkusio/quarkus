@@ -12,12 +12,14 @@ import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.ext.MessageBodyReader;
 
 public class CharacterMessageBodyHandler extends PrimitiveBodyHandler implements MessageBodyReader<Character> {
+    @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return type == Character.class;
     }
 
+    @Override
     public Character readFrom(Class<Character> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+                              MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
         return doReadFrom(entityStream);
     }

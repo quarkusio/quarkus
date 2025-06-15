@@ -81,6 +81,7 @@ public class MicrometerOtelBridgeProcessor {
     static class OtlpMetricsExporterEnabled implements BooleanSupplier {
         OTelBuildConfig otelBuildConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return otelBuildConfig.metrics().enabled().orElse(Boolean.TRUE) &&
                     !otelBuildConfig.metrics().exporter().stream()

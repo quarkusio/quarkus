@@ -660,6 +660,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
         }
     }
 
+    @Override
     public TemplateException.Builder error(String message) {
         return error(ParserError.GENERAL_ERROR, message, null);
     }
@@ -1273,6 +1274,7 @@ class Parser implements ParserHelper, ParserDelegate, WithOrigin, ErrorInitializ
             return templateGeneratedId;
         }
 
+        @Override
         public Optional<Variant> getVariant() {
             return variant;
         }

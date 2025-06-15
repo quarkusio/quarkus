@@ -137,6 +137,7 @@ public class VertxResteasyReactiveRequestContext extends ResteasyReactiveRequest
         return ((ConnectionBase) context.request().connection()).channel().eventLoop();
     }
 
+    @Override
     public Executor getContextExecutor() {
         return contextExecutor;
     }

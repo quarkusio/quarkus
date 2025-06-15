@@ -22,6 +22,7 @@ public class BasicCompositeBuildProjectDevModeTest extends QuarkusDevGradleTestB
         return new String[] { ":application:clean", ":application:quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse())

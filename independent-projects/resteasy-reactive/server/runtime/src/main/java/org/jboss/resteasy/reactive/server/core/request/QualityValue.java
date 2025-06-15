@@ -41,6 +41,7 @@ public final class QualityValue extends Number implements Comparable<QualityValu
         return WEIGHT != NOT_ACCEPTABLE.WEIGHT;
     }
 
+    @Override
     public int compareTo(QualityValue o) {
         return WEIGHT - o.WEIGHT;
     }

@@ -15,6 +15,7 @@ import io.vertx.core.json.JsonObject;
 public class FindOutputCodec extends AbstractFind {
 
     // The codec is only used for output
+    @Override
     @OnTextMessage(outputCodec = MyOutputCodec.class)
     Item find(List<Item> items) {
         return super.find(items);

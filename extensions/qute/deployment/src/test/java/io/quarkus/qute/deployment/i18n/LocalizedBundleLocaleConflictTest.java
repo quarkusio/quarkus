@@ -45,6 +45,7 @@ public class LocalizedBundleLocaleConflictTest {
     @Localized("en")
     public interface EnMessages extends Messages {
 
+        @Override
         @Message("Hello world!")
         String helloWorld();
 
@@ -53,6 +54,7 @@ public class LocalizedBundleLocaleConflictTest {
     @Localized("en")
     public interface AnotherEnMessages extends Messages {
 
+        @Override
         @Message("Hello world!")
         String helloWorld();
 

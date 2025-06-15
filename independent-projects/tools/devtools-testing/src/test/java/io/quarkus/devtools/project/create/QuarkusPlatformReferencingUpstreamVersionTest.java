@@ -78,6 +78,7 @@ public class QuarkusPlatformReferencingUpstreamVersionTest extends MultiplePlatf
         enableRegistryClient();
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return DOWNSTREAM_PLATFORM_KEY;
     }

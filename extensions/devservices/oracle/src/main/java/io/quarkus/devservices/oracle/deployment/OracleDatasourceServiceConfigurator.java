@@ -35,6 +35,7 @@ public class OracleDatasourceServiceConfigurator implements DatasourceServiceCon
                 null);
     }
 
+    @Override
     public String getJdbcUrl(ContainerAddress containerAddress, String databaseName) {
         return "jdbc:%s:@%s:%d/%s%s".formatted(
                 getJdbcPrefix(),

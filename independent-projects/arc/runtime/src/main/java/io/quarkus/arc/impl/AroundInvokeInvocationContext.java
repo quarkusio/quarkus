@@ -42,6 +42,7 @@ class AroundInvokeInvocationContext extends AbstractInvocationContext {
         return metadata.bindings;
     }
 
+    @Override
     public Method getMethod() {
         return metadata.method;
     }

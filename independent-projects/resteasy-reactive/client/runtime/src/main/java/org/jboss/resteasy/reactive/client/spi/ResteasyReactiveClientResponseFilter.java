@@ -16,6 +16,7 @@ public interface ResteasyReactiveClientResponseFilter extends ClientResponseFilt
      * @param requestContext the request context.
      * @param responseContext the response context.
      */
+    @Override
     default void filter(ClientRequestContext requestContext, ClientResponseContext responseContext) {
         filter((ResteasyReactiveClientRequestContext) requestContext, responseContext);
     }

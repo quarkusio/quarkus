@@ -60,6 +60,7 @@ public class Post extends AbstractPost implements ByPassHolder {
         this.comments = comments;
     }
 
+    @Override
     public boolean isBypass() {
         return bypass;
     }

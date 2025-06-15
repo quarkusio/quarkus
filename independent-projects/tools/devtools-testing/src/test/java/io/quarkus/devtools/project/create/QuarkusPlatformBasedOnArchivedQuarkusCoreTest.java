@@ -61,6 +61,7 @@ public class QuarkusPlatformBasedOnArchivedQuarkusCoreTest extends MultiplePlatf
         enableRegistryClient();
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return OTHER_PLATFORM_KEY;
     }

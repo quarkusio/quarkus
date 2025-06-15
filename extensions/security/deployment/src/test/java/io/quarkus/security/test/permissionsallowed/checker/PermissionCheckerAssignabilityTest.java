@@ -154,6 +154,7 @@ public class PermissionCheckerAssignabilityTest {
             this.value = value;
         }
 
+        @Override
         public String value() {
             return value;
         }

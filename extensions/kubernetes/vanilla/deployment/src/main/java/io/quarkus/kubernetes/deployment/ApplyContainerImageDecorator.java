@@ -31,6 +31,7 @@ public class ApplyContainerImageDecorator extends ApplicationContainerDecorator<
         this.image = image;
     }
 
+    @Override
     public void andThenVisit(ContainerFluent container) {
         container.withImage(this.image);
     }

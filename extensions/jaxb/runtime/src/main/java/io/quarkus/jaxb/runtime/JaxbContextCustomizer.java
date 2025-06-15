@@ -39,6 +39,7 @@ public interface JaxbContextCustomizer extends Comparable<JaxbContextCustomizer>
         return DEFAULT_PRIORITY;
     }
 
+    @Override
     default int compareTo(JaxbContextCustomizer o) {
         return Integer.compare(o.priority(), priority());
     }

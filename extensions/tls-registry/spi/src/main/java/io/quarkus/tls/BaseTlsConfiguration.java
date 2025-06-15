@@ -19,6 +19,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return the key store if configured.
      */
+    @Override
     public KeyStore getKeyStore() {
         return null;
     }
@@ -28,6 +29,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return the key store options if configured.
      */
+    @Override
     public KeyCertOptions getKeyStoreOptions() {
         return null;
     }
@@ -37,6 +39,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return the trust store if configured.
      */
+    @Override
     public KeyStore getTrustStore() {
         return null;
     }
@@ -46,6 +49,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return the trust store options if configured.
      */
+    @Override
     public TrustOptions getTrustStoreOptions() {
         return null;
     }
@@ -55,6 +59,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return the {@link SSLOptions}, {@code null} if not configured.
      */
+    @Override
     public SSLOptions getSSLOptions() {
         return null;
     }
@@ -64,6 +69,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return the {@link SSLContext}, {@code null} if not configured.
      */
+    @Override
     public SSLContext createSSLContext() throws Exception {
         return null;
     }
@@ -74,6 +80,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return the hostname verification algorithm.
      */
+    @Override
     public Optional<String> getHostnameVerificationAlgorithm() {
         return Optional.empty();
     }
@@ -85,6 +92,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return {@code true} if the key store is configured to use SNI, {@code false} otherwise.
      */
+    @Override
     public boolean usesSni() {
         return false;
     }
@@ -95,6 +103,7 @@ public abstract class BaseTlsConfiguration implements TlsConfiguration {
      *
      * @return {@code true} if the configuration has been reloaded, {@code false} otherwise.
      */
+    @Override
     public boolean reload() {
         return false;
     }

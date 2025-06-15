@@ -32,6 +32,7 @@ public class VertxBinderProcessor {
     static class VertxBinderEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return METRIC_OPTIONS_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().vertx());
         }

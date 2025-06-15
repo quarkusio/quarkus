@@ -37,6 +37,7 @@ public class AddRoleBindingResourceDecorator extends ResourceProvidingDecorator<
         this.namespace = namespace;
     }
 
+    @Override
     public void visit(KubernetesListBuilder list) {
         if (contains(list, RBAC_API_VERSION, ROLE_BINDING, name)) {
             return;

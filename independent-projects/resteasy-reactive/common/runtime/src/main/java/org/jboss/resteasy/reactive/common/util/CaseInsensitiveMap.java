@@ -11,6 +11,7 @@ public class CaseInsensitiveMap<V> extends MultivaluedTreeMap<String, V> {
     private static class CaseInsensitiveComparator
             implements Comparator<String>, java.io.Serializable {
 
+        @Override
         public int compare(String s1, String s2) {
             if (s1 == s2)
                 return 0;

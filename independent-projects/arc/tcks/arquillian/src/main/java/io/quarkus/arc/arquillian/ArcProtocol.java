@@ -179,10 +179,12 @@ public class ArcProtocol implements Protocol<ArcProtocolConfiguration> {
             this.beanManager = beanManager;
         }
 
+        @Override
         public Type getType() {
             return parameter.getParameterizedType();
         }
 
+        @Override
         public Set<Annotation> getQualifiers() {
             Set<Annotation> qualifiers = new HashSet<>();
             for (Annotation annotation : parameter.getAnnotations()) {
@@ -193,23 +195,28 @@ public class ArcProtocol implements Protocol<ArcProtocolConfiguration> {
             return qualifiers;
         }
 
+        @Override
         public Bean<?> getBean() {
             Set<Bean<?>> beans = beanManager.getBeans(getType(), getQualifiers().toArray(new Annotation[0]));
             return beanManager.resolve(beans);
         }
 
+        @Override
         public Member getMember() {
             return parameter.getDeclaringExecutable();
         }
 
+        @Override
         public Annotated getAnnotated() {
             return new FakeAnnotatedParameter<T>();
         }
 
+        @Override
         public boolean isDelegate() {
             return false;
         }
 
+        @Override
         public boolean isTransient() {
             return false;
         }

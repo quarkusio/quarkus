@@ -50,6 +50,7 @@ public class RepeatingQualifierClassTest {
     @NotAQualifier("ignored")
     public static class Home implements SomePlace {
 
+        @Override
         public String ping() {
             return "home";
         }
@@ -61,6 +62,7 @@ public class RepeatingQualifierClassTest {
     @NotAQualifier("ignored")
     public static class FarAway implements SomePlace {
 
+        @Override
         public String ping() {
             return "farAway";
         }
@@ -72,6 +74,7 @@ public class RepeatingQualifierClassTest {
     @NotAQualifier("ignored")
     public static class Work implements SomePlace {
 
+        @Override
         public String ping() {
             return "work";
         }

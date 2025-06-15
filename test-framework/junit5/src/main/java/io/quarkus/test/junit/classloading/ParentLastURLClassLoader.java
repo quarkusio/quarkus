@@ -17,6 +17,7 @@ public class ParentLastURLClassLoader extends URLClassLoader {
         this.fallbackParent = parent;
     }
 
+    @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
         // Do parent last
         try {

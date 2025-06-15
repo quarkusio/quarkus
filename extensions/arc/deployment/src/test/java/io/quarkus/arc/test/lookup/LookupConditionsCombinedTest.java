@@ -51,6 +51,7 @@ public class LookupConditionsCombinedTest {
     @Singleton
     static class ServiceAlpha implements Service {
 
+        @Override
         public String ping() {
             return "alpha";
         }
@@ -59,6 +60,7 @@ public class LookupConditionsCombinedTest {
     @Singleton
     static class ServiceBravo implements Service {
 
+        @Override
         public String ping() {
             return "bravo";
         }

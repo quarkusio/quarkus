@@ -20,12 +20,14 @@ import org.jboss.resteasy.reactive.common.util.Encode;
 import org.jboss.resteasy.reactive.common.util.QuarkusMultivaluedHashMap;
 
 public class MapAsFormUrlEncodedProvider implements MessageBodyWriter<MultivaluedMap>, MessageBodyReader<MultivaluedMap> {
+    @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return MultivaluedMap.class.equals(type);
     }
 
+    @Override
     public MultivaluedMap readFrom(Class<MultivaluedMap> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
+                                   MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
         return doReadFrom(mediaType, entityStream);
     }
 
@@ -34,12 +36,14 @@ public class MapAsFormUrlEncodedProvider implements MessageBodyWriter<Multivalue
         return Encode.decode(MapAsFormUrlEncodedProvider.parseForm(entityStream, mediaType), charset);
     }
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return MultivaluedMap.class.isAssignableFrom(type);
     }
 
+    @Override
     public void writeTo(MultivaluedMap multivaluedMap, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+                        MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
         String chartSet = MessageReaderUtil.charsetFromMediaType(mediaType);
         entityStream.write(multiValuedMapToString(multivaluedMap, chartSet).getBytes(chartSet));

@@ -50,6 +50,7 @@ public final class KubernetesJobBuildItem extends MultiBuildItem implements Targ
                 sharedFilesystem);
     }
 
+    @Override
     public String getTarget() {
         return target;
     }

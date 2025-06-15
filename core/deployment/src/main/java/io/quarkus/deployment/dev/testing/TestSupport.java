@@ -335,6 +335,7 @@ public class TestSupport implements TestController {
         runTests(null);
     }
 
+    @Override
     public void runFailedTests() {
         runTests(null, true, false);
     }

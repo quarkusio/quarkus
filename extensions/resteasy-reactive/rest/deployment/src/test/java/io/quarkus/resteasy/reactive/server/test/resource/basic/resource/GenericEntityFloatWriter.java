@@ -22,6 +22,7 @@ public class GenericEntityFloatWriter implements MessageBodyWriter<List<Float>> 
 
     private static final Logger LOG = Logger.getLogger(GenericEntityFloatWriter.class);
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         if (!List.class.isAssignableFrom(type)) {
             return false;
@@ -35,13 +36,15 @@ public class GenericEntityFloatWriter implements MessageBodyWriter<List<Float>> 
         return result;
     }
 
+    @Override
     public long getSize(List<Float> floats, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType) {
+                        MediaType mediaType) {
         return -1;
     }
 
+    @Override
     public void writeTo(List<Float> floats, Class<?> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
+                        MediaType mediaType, MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream)
             throws IOException, WebApplicationException {
         StringBuilder buf = new StringBuilder();
         for (Float f : floats) {

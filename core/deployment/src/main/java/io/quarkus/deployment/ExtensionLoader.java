@@ -198,10 +198,12 @@ public final class ExtensionLoader {
                 bc.produce(new RunTimeConfigurationProxyBuildItem(proxies));
 
                 ObjectLoader rootLoader = new ObjectLoader() {
+                    @Override
                     public ResultHandle load(final BytecodeCreator body, final Object obj, final boolean staticInit) {
                         return body.readStaticField(rootFields.get(obj));
                     }
 
+                    @Override
                     public boolean canHandleObject(final Object obj, final boolean staticInit) {
                         return rootFields.containsKey(obj);
                     }

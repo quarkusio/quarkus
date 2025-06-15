@@ -91,6 +91,7 @@ public class OidcTokenPropagationBuildStep {
     public static class IsEnabled implements BooleanSupplier {
         OidcTokenPropagationBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled();
         }
@@ -99,6 +100,7 @@ public class OidcTokenPropagationBuildStep {
     public static class IsEnabledDuringAuth implements BooleanSupplier {
         OidcTokenPropagationBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabledDuringAuthentication();
         }

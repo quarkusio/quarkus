@@ -25,6 +25,7 @@ public interface MeterRegistryCustomizer extends Comparable<MeterRegistryCustomi
         return DEFAULT_PRIORITY;
     }
 
+    @Override
     default int compareTo(MeterRegistryCustomizer o) {
         return Integer.compare(o.priority(), priority());
     }

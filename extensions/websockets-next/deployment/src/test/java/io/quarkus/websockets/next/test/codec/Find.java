@@ -8,6 +8,7 @@ import io.quarkus.websockets.next.WebSocket;
 @WebSocket(path = "/find")
 public class Find extends AbstractFind {
 
+    @Override
     @OnTextMessage
     Item find(List<Item> items) {
         return super.find(items);

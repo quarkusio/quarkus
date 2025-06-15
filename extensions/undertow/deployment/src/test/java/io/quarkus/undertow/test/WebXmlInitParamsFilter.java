@@ -12,6 +12,7 @@ import jakarta.servlet.ServletResponse;
 public class WebXmlInitParamsFilter implements Filter {
     private FilterConfig filterConfig;
 
+    @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         this.filterConfig = filterConfig;
     }

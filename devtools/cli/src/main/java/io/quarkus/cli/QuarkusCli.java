@@ -242,6 +242,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
     }
 
     class ShortErrorMessageHandler implements IParameterExceptionHandler {
+        @Override
         public int handleParseException(ParameterException ex, String[] args) {
             CommandLine cmd = ex.getCommandLine();
             CommandSpec spec = cmd.getCommandSpec();
@@ -265,6 +266,7 @@ public class QuarkusCli implements QuarkusApplication, Callable<Integer> {
 
     class SubCommandListRenderer implements IHelpSectionRenderer {
         // @Override
+        @Override
         public String render(Help help) {
             CommandSpec spec = help.commandSpec();
             if (spec.subcommands().isEmpty()) {

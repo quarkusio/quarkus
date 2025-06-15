@@ -51,6 +51,7 @@ public class MavenProjectImportingMultipleBomsFromMultiplePlatformsTest extends 
         enableRegistryClient();
     }
 
+    @Override
     protected String getMainPlatformKey() {
         return "io.other.platform";
     }

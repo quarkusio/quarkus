@@ -32,6 +32,7 @@ class TargetAroundInvokeInvocationContext extends InnerInvocationContext {
         this.aroundInvokeForward = aroundInvokeForward;
     }
 
+    @Override
     protected Object proceed(int currentPosition) throws Exception {
         try {
             if (currentPosition < methods.size()) {

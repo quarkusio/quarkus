@@ -13,14 +13,16 @@ import jakarta.ws.rs.ext.MessageBodyWriter;
 
 public class PathBodyHandler implements MessageBodyWriter<java.nio.file.Path> {
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return java.nio.file.Path.class.isAssignableFrom(type);
     }
 
+    @Override
     public void writeTo(java.nio.file.Path uploadFile, Class<?> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders,
-            OutputStream entityStream) throws IOException {
+                        Annotation[] annotations, MediaType mediaType,
+                        MultivaluedMap<String, Object> httpHeaders,
+                        OutputStream entityStream) throws IOException {
         httpHeaders.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(Files.size(uploadFile)));
         doWrite(uploadFile, entityStream);
     }

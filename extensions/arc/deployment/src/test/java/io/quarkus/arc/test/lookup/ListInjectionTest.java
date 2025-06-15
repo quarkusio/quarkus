@@ -162,6 +162,7 @@ public class ListInjectionTest {
     @Singleton
     static class ServiceAlpha implements Service {
 
+        @Override
         public String ping() {
             return "alpha";
         }
@@ -174,6 +175,7 @@ public class ListInjectionTest {
         @Inject
         InjectionPoint injectionPoint;
 
+        @Override
         public String ping() {
             return "bravo";
         }
@@ -189,6 +191,7 @@ public class ListInjectionTest {
     @Alternative // -> not enabled
     static class ServiceCharlie implements Service {
 
+        @Override
         public String ping() {
             return "charlie";
         }

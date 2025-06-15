@@ -33,11 +33,13 @@ final class AsciidocFormatter extends AbstractFormatter {
         return JavadocFormat.ASCIIDOC;
     }
 
+    @Override
     protected String moreInformationAboutType(Context context, String anchorRoot, String type) {
         return String.format(MORE_INFO_ABOUT_TYPE_FORMAT, anchorRoot + "-" + (context != null ? context.summaryTableId() : ""),
                 type);
     }
 
+    @Override
     protected String tooltip(String value, String javadocDescription) {
         return String.format(TOOLTIP_MACRO, value, cleanTooltipContent(javadocDescription));
     }
@@ -53,6 +55,7 @@ final class AsciidocFormatter extends AbstractFormatter {
                 .replace(":", "\\:").replace("[", "\\]").replace("]", "\\]");
     }
 
+    @Override
     protected String link(String href, String description) {
         return String.format("link:%s[%s]", href, description);
     }

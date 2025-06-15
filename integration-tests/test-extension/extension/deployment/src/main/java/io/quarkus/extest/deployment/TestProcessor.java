@@ -508,6 +508,7 @@ public final class TestProcessor {
     public static final class Never implements BooleanSupplier {
         TestBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             if (config == null) {
                 throw new IllegalStateException("Expected config");

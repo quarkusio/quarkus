@@ -298,6 +298,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return this;
     }
 
+    @Override
     public Response.ResponseBuilder language(Locale language) {
         if (language == null) {
             metadata.remove(HttpHeaders.CONTENT_LANGUAGE);
@@ -307,6 +308,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return this;
     }
 
+    @Override
     public Response.ResponseBuilder expires(Date expires) {
         if (expires == null) {
             metadata.remove(HttpHeaders.EXPIRES);
@@ -316,6 +318,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return this;
     }
 
+    @Override
     public Response.ResponseBuilder allow(String... methods) {
         if (methods == null) {
             return allow((Set<String>) null);
@@ -324,6 +327,7 @@ public abstract class AbstractResponseBuilder extends Response.ResponseBuilder {
         return allow(set);
     }
 
+    @Override
     public Response.ResponseBuilder allow(Set<String> methods) {
         HeaderUtil.setAllow(this.metadata, methods);
         return this;

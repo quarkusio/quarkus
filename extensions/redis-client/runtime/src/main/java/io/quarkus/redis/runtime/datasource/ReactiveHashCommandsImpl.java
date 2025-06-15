@@ -137,12 +137,14 @@ public class ReactiveHashCommandsImpl<K, F, V> extends AbstractHashCommands<K, F
                 .map(this::decodeListOfValue);
     }
 
+    @Override
     public ReactiveHashScanCursor<F, V> hscan(K key) {
         nonNull(key, "key");
         return new HScanReactiveCursorImpl<>(redis, key,
                 marshaller, typeOfField, typeOfValue, Collections.emptyList());
     }
 
+    @Override
     public ReactiveHashScanCursor<F, V> hscan(K key, ScanArgs scanArgs) {
         nonNull(key, "key");
         nonNull(scanArgs, "scanArgs");

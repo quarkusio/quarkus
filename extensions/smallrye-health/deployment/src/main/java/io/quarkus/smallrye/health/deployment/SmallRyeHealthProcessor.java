@@ -121,6 +121,7 @@ class SmallRyeHealthProcessor {
     static class OpenAPIIncluded implements BooleanSupplier {
         SmallRyeHealthBuildTimeConfig smallryeHealthBuildTimeConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return smallryeHealthBuildTimeConfig.openapiIncluded();
         }

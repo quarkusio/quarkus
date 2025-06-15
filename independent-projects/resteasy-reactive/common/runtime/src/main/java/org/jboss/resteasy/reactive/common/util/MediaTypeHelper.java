@@ -90,6 +90,7 @@ public class MediaTypeHelper {
             this.parameterName = parameterName;
         }
 
+        @Override
         public int compare(MediaType mediaType2, MediaType mediaType) {
             float q = getQTypeWithParamInfo(mediaType, parameterName);
             boolean wasQ = q != 2.0f;

@@ -37,6 +37,7 @@ public class AuthExceptionHandler<ReqT, RespT> extends ExceptionHandler<ReqT, Re
      * @param serverCall server call to close with error
      * @param metadata call metadata
      */
+    @Override
     protected void handleException(Throwable exception, ServerCall<ReqT, RespT> serverCall, Metadata metadata) {
         if (exception instanceof AuthenticationException || exception instanceof SecurityException) {
             serverCall.close(transformToStatusException(addStatusDescription, exception), metadata);

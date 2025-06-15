@@ -26,6 +26,7 @@ public class InvokeCommand extends GcurlBaseCommand {
     @CommandLine.Option(names = { "-d" }, description = "Request input")
     Optional<String> content;
 
+    @Override
     public String getAction() {
         return "invoke";
     }

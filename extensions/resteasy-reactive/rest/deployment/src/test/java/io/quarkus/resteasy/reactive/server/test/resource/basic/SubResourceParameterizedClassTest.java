@@ -77,6 +77,7 @@ class SubResourceParameterizedClassTest {
 
     @RequestScoped
     public static class EnglishGreeterResource implements GreeterResource<String> {
+        @Override
         @GET
         public String greeting() {
             return "hello";

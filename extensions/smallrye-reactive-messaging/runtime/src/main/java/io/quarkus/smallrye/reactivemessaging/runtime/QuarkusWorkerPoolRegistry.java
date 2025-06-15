@@ -57,6 +57,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         return set;
     }
 
+    @Override
     public void terminate(
             @Observes(notifyObserver = Reception.IF_EXISTS) @Priority(100) @BeforeDestroyed(ApplicationScoped.class) Object event) {
         if (!workerExecutors.isEmpty()) {
@@ -70,6 +71,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         }
     }
 
+    @Override
     public <T> Uni<T> executeWork(Context msgContext, Uni<T> uni, String workerName, boolean ordered) {
         Objects.requireNonNull(uni, "Action to execute not provided");
         if (workerName == null) {
@@ -162,6 +164,7 @@ public class QuarkusWorkerPoolRegistry extends WorkerPoolRegistry {
         }
     }
 
+    @Override
     public WorkerExecutor getWorker(String workerName) {
         Objects.requireNonNull(workerName, "Worker Name not specified");
 

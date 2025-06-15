@@ -428,6 +428,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             return last != null ? last.toInstant() : null;
         }
 
+        @Override
+        @Override
         public String getId() {
             return id;
         }
@@ -440,6 +442,8 @@ public class SimpleScheduler extends BaseScheduler implements Scheduler {
             this.running = running;
         }
 
+        @Override
+        @Override
         public String getMethodDescription() {
             return methodDescription;
         }

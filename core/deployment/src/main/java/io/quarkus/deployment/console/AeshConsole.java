@@ -386,6 +386,7 @@ public class AeshConsole extends QuarkusConsole {
         return lines;
     }
 
+    @Override
     public void write(boolean errorStream, String s) {
         if (IN_WRITE.get()) {
             return;
@@ -482,6 +483,7 @@ public class AeshConsole extends QuarkusConsole {
         deadlockSafeWrite();
     }
 
+    @Override
     public void write(boolean errorStream, byte[] buf, int off, int len) {
         write(errorStream, new String(buf, off, len, connection.outputEncoding()));
     }
@@ -635,6 +637,7 @@ public class AeshConsole extends QuarkusConsole {
         }
     }
 
+    @Override
     public void exitCliMode() {
         if (aeshConsole == null || delegateConnection == null) {
             return;

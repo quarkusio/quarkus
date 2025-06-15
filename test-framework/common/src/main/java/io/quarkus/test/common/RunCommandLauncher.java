@@ -148,10 +148,12 @@ public class RunCommandLauncher implements ArtifactLauncher<ArtifactLauncher.Ini
         }
     }
 
+    @Override
     public boolean listensOnSsl() {
         return false;
     }
 
+    @Override
     public void includeAsSysProps(Map<String, String> systemProps) {
         this.systemProps.putAll(systemProps);
     }

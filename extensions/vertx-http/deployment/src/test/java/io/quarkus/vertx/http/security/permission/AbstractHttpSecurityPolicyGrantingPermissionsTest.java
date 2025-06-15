@@ -316,10 +316,12 @@ public abstract class AbstractHttpSecurityPolicyGrantingPermissionsTest {
             this.authenticate = authenticate;
         }
 
+        @Override
         public void authenticate() {
             authenticate.run();
         }
 
+        @Override
         public String role() {
             return this.toString().toLowerCase();
         }

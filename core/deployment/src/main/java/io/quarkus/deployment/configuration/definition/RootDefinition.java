@@ -131,6 +131,7 @@ public final class RootDefinition extends ClassDefinition {
             return this;
         }
 
+        @Override
         public RootDefinition build() {
             return new RootDefinition(this);
         }

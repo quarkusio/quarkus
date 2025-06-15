@@ -14,18 +14,21 @@ public interface LgtmConfig extends GrafanaConfig {
     /**
      * The name of the Grafana LGTM Docker image.
      */
+    @Override
     @WithDefault(ContainerConstants.LGTM)
     String imageName();
 
     /**
      * The Docker network aliases.
      */
+    @Override
     @WithDefault("lgtm,lgtm.testcontainer.docker")
     Optional<Set<String>> networkAliases();
 
     /**
      * The label of the container.
      */
+    @Override
     @WithDefault("quarkus-dev-service-lgtm")
     String label();
 
@@ -33,6 +36,7 @@ public interface LgtmConfig extends GrafanaConfig {
      * The value of the {@code quarkus-dev-service} label attached to the started container.
      * This property is used when {@code shared} is set to {@code true}.
      */
+    @Override
     @WithDefault("lgtm")
     String serviceName();
 

@@ -23,6 +23,7 @@ public interface PluginCommand extends Callable<Integer> {
         return Paths.get(System.getProperty("user.dir"));
     }
 
+    @Override
     default Integer call() throws Exception {
         try {
             List<String> commandWithArgs = new ArrayList<>();

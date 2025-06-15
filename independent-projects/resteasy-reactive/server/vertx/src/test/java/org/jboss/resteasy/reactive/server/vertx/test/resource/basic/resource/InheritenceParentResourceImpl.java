@@ -5,6 +5,7 @@ import jakarta.ws.rs.Path;
 @Path(value = "/InheritanceTest")
 public class InheritenceParentResourceImpl implements InheritenceParentResource {
 
+    @Override
     public String firstest() {
         return "First";
     }

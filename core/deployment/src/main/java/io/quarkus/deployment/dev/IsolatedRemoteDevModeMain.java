@@ -170,6 +170,7 @@ public class IsolatedRemoteDevModeMain implements BiConsumer<CuratedApplication,
         generateApplication();
     }
 
+    @Override
     public void close() {
         try {
             try {

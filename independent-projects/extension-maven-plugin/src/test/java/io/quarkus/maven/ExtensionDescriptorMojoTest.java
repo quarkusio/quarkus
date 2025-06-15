@@ -58,6 +58,7 @@ class ExtensionDescriptorMojoTest extends AbstractMojoTestCase {
         environment.set("GITHUB_REPOSITORY", null);
     }
 
+    @Override
     @AfterEach
     public void tearDown() throws Exception {
         super.tearDown();

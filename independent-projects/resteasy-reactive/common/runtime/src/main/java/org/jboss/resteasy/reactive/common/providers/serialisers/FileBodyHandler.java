@@ -49,14 +49,16 @@ public class FileBodyHandler implements MessageBodyReader<File>, MessageBodyWrit
         return file;
     }
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return File.class.isAssignableFrom(type);
     }
 
+    @Override
     public void writeTo(File uploadFile, Class<?> type, Type genericType,
-            Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders,
-            OutputStream entityStream) throws IOException {
+                        Annotation[] annotations, MediaType mediaType,
+                        MultivaluedMap<String, Object> httpHeaders,
+                        OutputStream entityStream) throws IOException {
         httpHeaders.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(uploadFile.length()));
         doWrite(uploadFile, entityStream);
     }

@@ -39,6 +39,7 @@ public final class OptionalOf extends ConverterType {
         return this == obj || obj != null && type.equals(obj.type);
     }
 
+    @Override
     public Class<?> getLeafType() {
         return type.getLeafType();
     }

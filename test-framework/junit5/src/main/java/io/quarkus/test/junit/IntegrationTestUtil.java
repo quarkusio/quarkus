@@ -363,10 +363,14 @@ public final class IntegrationTestUtil {
             this.curatedApplication = curatedApplication;
         }
 
+        @Override
+        @Override
         public Map<String, String> properties() {
             return properties;
         }
 
+        @Override
+        @Override
         public String networkId() {
             return networkId;
         }

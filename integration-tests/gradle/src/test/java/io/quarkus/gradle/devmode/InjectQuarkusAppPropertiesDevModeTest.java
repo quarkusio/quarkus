@@ -14,6 +14,7 @@ public class InjectQuarkusAppPropertiesDevModeTest extends QuarkusDevGradleTestB
         return new String[] { "clean", "quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
 
         assertThat(getHttpResponse("/hello")).contains("code-with-quarkus 1.0.0-SNAPSHOT");

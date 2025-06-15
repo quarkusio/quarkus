@@ -516,6 +516,7 @@ public class OidcBuildStep {
     public static class IsEnabled implements BooleanSupplier {
         OidcBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled();
         }
@@ -524,6 +525,7 @@ public class OidcBuildStep {
     public static class IsCacheEnabled implements BooleanSupplier {
         OidcBuildTimeConfig config;
 
+        @Override
         public boolean getAsBoolean() {
             return config.enabled() && config.defaultTokenCacheEnabled();
         }

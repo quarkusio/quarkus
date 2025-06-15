@@ -60,6 +60,7 @@ public class QuarkusExtensionCodestartProjectInputBuilder extends CodestartProje
         return this;
     }
 
+    @Override
     public QuarkusExtensionCodestartProjectInput build() {
         return new QuarkusExtensionCodestartProjectInput(this);
     }

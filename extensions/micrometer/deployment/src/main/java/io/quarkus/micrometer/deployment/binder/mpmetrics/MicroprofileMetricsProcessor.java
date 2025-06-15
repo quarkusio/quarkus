@@ -52,6 +52,7 @@ public class MicroprofileMetricsProcessor {
     static class MicroprofileMetricsEnabled implements BooleanSupplier {
         MicrometerConfig mConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return METRIC_ANNOTATION_CLASS != null && mConfig.checkBinderEnabledWithDefault(mConfig.binder().mpMetrics());
         }

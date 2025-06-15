@@ -20,6 +20,7 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
     public static final NewCookieHeaderDelegate INSTANCE = new NewCookieHeaderDelegate();
     private static final String OLD_COOKIE_PATTERN = "EEE, dd-MMM-yyyy HH:mm:ss z";
 
+    @Override
     public Object fromString(String newCookie) throws IllegalArgumentException {
         if (newCookie == null)
             throw new IllegalArgumentException("param was null");
@@ -100,6 +101,7 @@ public class NewCookieHeaderDelegate implements RuntimeDelegate.HeaderDelegate {
         }
     }
 
+    @Override
     public String toString(Object value) {
         if (value == null)
             throw new IllegalArgumentException("param was null");

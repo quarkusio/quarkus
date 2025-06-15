@@ -15,12 +15,14 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 
 public class JsonObjectHandler implements MessageBodyReader<JsonObject>, MessageBodyWriter<JsonObject> {
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return JsonObject.class.isAssignableFrom(type);
     }
 
+    @Override
     public void writeTo(JsonObject o, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
+                        MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException, WebApplicationException {
         try (JsonWriter writer = JsonpUtil.writer(entityStream, mediaType)) {
             writer.writeObject(o);
         }

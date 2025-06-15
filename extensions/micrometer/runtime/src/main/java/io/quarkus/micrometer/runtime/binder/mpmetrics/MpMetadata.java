@@ -105,10 +105,12 @@ public class MpMetadata implements Metadata {
         return this;
     }
 
+    @Override
     public Optional<String> description() {
         return Optional.ofNullable(description);
     }
 
+    @Override
     public Optional<String> unit() {
         return Optional.ofNullable(unit);
     }

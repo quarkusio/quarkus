@@ -43,6 +43,7 @@ public class HttpUpgradePermitAllAnnotationTest extends SecurityTestBase {
                 .add("user", "user", "user");
     }
 
+    @Override
     @Test
     public void testEndpoint() {
         try (WSClient client = new WSClient(vertx)) {

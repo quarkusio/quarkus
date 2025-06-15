@@ -19,26 +19,32 @@ public class VertxLogDelegate implements LogDelegate {
         return logger.isLoggable(Level.WARN);
     }
 
+    @Override
     public boolean isInfoEnabled() {
         return logger.isLoggable(Level.INFO);
     }
 
+    @Override
     public boolean isDebugEnabled() {
         return logger.isLoggable(Level.DEBUG);
     }
 
+    @Override
     public boolean isTraceEnabled() {
         return logger.isLoggable(Level.TRACE);
     }
 
+    @Override
     public void fatal(final Object message) {
         log(Level.FATAL, message);
     }
 
+    @Override
     public void fatal(final Object message, final Throwable t) {
         log(Level.FATAL, message, t);
     }
 
+    @Override
     public void error(final Object message) {
         log(Level.ERROR, message);
     }
@@ -48,6 +54,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.ERROR, message, null, params);
     }
 
+    @Override
     public void error(final Object message, final Throwable t) {
         log(Level.ERROR, message, t);
     }
@@ -57,6 +64,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.ERROR, message, t, params);
     }
 
+    @Override
     public void warn(final Object message) {
         log(Level.WARN, message);
     }
@@ -66,6 +74,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.WARN, message, null, params);
     }
 
+    @Override
     public void warn(final Object message, final Throwable t) {
         log(Level.WARN, message, t);
     }
@@ -75,6 +84,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.WARN, message, t, params);
     }
 
+    @Override
     public void info(final Object message) {
         log(Level.INFO, message);
     }
@@ -84,6 +94,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.INFO, message, null, params);
     }
 
+    @Override
     public void info(final Object message, final Throwable t) {
         log(Level.INFO, message, t);
     }
@@ -93,6 +104,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.INFO, message, t, params);
     }
 
+    @Override
     public void debug(final Object message) {
         log(Level.DEBUG, message);
     }
@@ -102,6 +114,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.DEBUG, message, null, params);
     }
 
+    @Override
     public void debug(final Object message, final Throwable t) {
         log(Level.DEBUG, message, t);
     }
@@ -111,6 +124,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.DEBUG, message, t, params);
     }
 
+    @Override
     public void trace(final Object message) {
         log(Level.TRACE, message);
     }
@@ -120,6 +134,7 @@ public class VertxLogDelegate implements LogDelegate {
         log(Level.TRACE, message, null, params);
     }
 
+    @Override
     public void trace(final Object message, final Throwable t) {
         log(Level.TRACE, message, t);
     }

@@ -48,6 +48,7 @@ public class HScanReactiveCursorImpl<F, V> extends AbstractRedisCommands impleme
                 .map(response -> decode(response.get(1)));
     }
 
+    @Override
     public Multi<Map.Entry<F, V>> toMulti() {
         return Multi.createBy().repeating()
                 .uni(this::next)

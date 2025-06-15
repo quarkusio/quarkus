@@ -351,6 +351,7 @@ public class BitFieldArgs implements RedisCommandExtraArguments {
         }
     }
 
+    @Override
     public List<Object> toArgs() {
         return commands;
     }

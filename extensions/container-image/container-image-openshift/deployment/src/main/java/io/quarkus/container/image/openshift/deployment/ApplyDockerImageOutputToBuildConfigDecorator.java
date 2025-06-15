@@ -16,6 +16,7 @@ public class ApplyDockerImageOutputToBuildConfigDecorator extends NamedResourceD
         this.pushSecret = pushSecret;
     }
 
+    @Override
     public void andThenVisit(BuildOutputFluent<?> output, ObjectMeta objectMeta) {
         output.withPushSecret(new LocalObjectReference(pushSecret));
         output.withNewTo()

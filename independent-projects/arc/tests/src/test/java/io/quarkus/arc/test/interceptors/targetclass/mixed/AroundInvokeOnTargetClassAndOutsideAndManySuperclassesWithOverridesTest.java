@@ -110,6 +110,7 @@ public class AroundInvokeOnTargetClassAndOutsideAndManySuperclassesWithOverrides
     @Interceptor
     @Priority(1)
     static class MyInterceptor extends Foxtrot {
+        @Override
         @AroundInvoke
         Object intercept(InvocationContext ctx) throws Exception {
             return "outside: " + ctx.proceed();

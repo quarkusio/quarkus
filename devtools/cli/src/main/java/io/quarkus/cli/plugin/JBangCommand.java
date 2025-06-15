@@ -46,6 +46,7 @@ public class JBangCommand implements PluginCommand {
         return arguments;
     }
 
+    @Override
     public OutputOptionMixin getOutput() {
         return output;
     }

@@ -7,12 +7,15 @@ import io.quarkus.rest.data.panache.MethodProperties;
 
 public interface AuthorsResource extends PanacheMongoEntityResource<Author, ObjectId> {
 
+    @Override
     @MethodProperties(exposed = false)
     Author add(Author entity);
 
+    @Override
     @MethodProperties(exposed = false)
     Author update(ObjectId id, Author entity);
 
+    @Override
     @MethodProperties(exposed = false)
     boolean delete(ObjectId id);
 }

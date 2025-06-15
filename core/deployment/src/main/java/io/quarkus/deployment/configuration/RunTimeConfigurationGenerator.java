@@ -1268,6 +1268,7 @@ public final class RunTimeConfigurationGenerator {
             bc.invokeVirtualMethod(HS_ADD, unknown, property);
         }
 
+        @Override
         public void close() {
             try {
                 clinit.close();

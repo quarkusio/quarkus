@@ -27,6 +27,7 @@ class AddClusterRoleResourceDecorator extends ResourceProvidingDecorator<Kuberne
         this.rules = rules;
     }
 
+    @Override
     public void visit(KubernetesListBuilder list) {
         if (contains(list, RBAC_API_VERSION, CLUSTER_ROLE, name)) {
             return;

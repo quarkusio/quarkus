@@ -50,6 +50,7 @@ public class ExcludeTypesTest {
     @ApplicationScoped
     static class Alpha implements Pong {
 
+        @Override
         public String ping() {
             return "alpga";
         }
@@ -59,6 +60,7 @@ public class ExcludeTypesTest {
     @ApplicationScoped
     static class Charlie implements Pong {
 
+        @Override
         @Magic
         public String ping() {
             return "charlie";

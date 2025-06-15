@@ -60,6 +60,7 @@ public class DefaultJarLauncher implements JarArtifactLauncher {
         this.jarPath = initContext.jarPath();
     }
 
+    @Override
     public void start() throws IOException {
         start(new String[0], true);
         Function<IntegrationTestStartedNotifier.Context, IntegrationTestStartedNotifier.Result> startedFunction = createStartedFunction();

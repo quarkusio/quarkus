@@ -69,6 +69,7 @@ public final class KubernetesInitContainerBuildItem extends MultiBuildItem imple
                 sharedEnvironment, sharedFilesystem);
     }
 
+    @Override
     public String getTarget() {
         return target;
     }

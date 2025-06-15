@@ -21,6 +21,7 @@ public class HtmlAnsiOutputStream extends AnsiOutputStream {
                 StandardCharsets.UTF_8, null, null, true);
     }
 
+    @Override
     public void write(int data) throws IOException {
         switch (data) {
             case 34: // "

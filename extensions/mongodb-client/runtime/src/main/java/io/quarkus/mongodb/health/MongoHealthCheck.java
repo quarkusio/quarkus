@@ -177,6 +177,7 @@ public class MongoHealthCheck implements HealthCheck {
             this.config = config;
         }
 
+        @Override
         public Uni<Tuple2<String, String>> get() {
             return Uni.createFrom().item(new Supplier<Document>() {
                 @Override
@@ -201,6 +202,7 @@ public class MongoHealthCheck implements HealthCheck {
             this.config = config;
         }
 
+        @Override
         public Uni<Tuple2<String, String>> get() {
             return client.getDatabase(config.healthDatabase()).runCommand(COMMAND)
                     .ifNoItem().after(config.readTimeout().orElse(DEFAULT_TIMEOUT)).fail()

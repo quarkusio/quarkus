@@ -16,29 +16,34 @@ import jakarta.ws.rs.core.MediaType;
 @Path("/users")
 public interface SubResourceLocatorUserResource extends SubResourceLocatorBaseService {
 
+    @Override
     @GET
     @Path("/content/{id}")
     @Produces(MediaType.APPLICATION_JSON)
     SubResourceLocatorOhaUserModel getContent(
             @PathParam("id") String id);
 
+    @Override
     @POST
     @Path("/add")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     SubResourceLocatorOhaUserModel add(SubResourceLocatorOhaUserModel object);
 
+    @Override
     @GET
     @Path("/all")
     @Produces(MediaType.APPLICATION_JSON)
     List<SubResourceLocatorOhaUserModel> get();
 
+    @Override
     @PUT
     @Path("/update")
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
     SubResourceLocatorOhaUserModel update(SubResourceLocatorOhaUserModel object);
 
+    @Override
     @DELETE
     @Path("/delete/{id}")
     @Produces(MediaType.TEXT_PLAIN)

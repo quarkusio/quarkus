@@ -55,6 +55,7 @@ class LogHandlerProcessor {
     public static class LogsEnabled implements BooleanSupplier {
         OTelBuildConfig otelBuildConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return otelBuildConfig.logs().enabled()
                     .map(new Function<Boolean, Boolean>() {

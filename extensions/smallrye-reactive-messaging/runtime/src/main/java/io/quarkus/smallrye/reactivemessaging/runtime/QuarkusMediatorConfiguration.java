@@ -192,6 +192,7 @@ public class QuarkusMediatorConfiguration implements MediatorConfiguration {
         return useBuilderTypes;
     }
 
+    @Override
     public Merge.Mode getMerge() {
         return merge;
     }

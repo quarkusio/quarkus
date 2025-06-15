@@ -105,6 +105,7 @@ public interface BeanContainer {
         /**
          * releases the underlying instance
          */
+        @Override
         default void close() {
         };
     }

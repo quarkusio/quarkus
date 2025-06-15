@@ -12,6 +12,7 @@ public final class GroupDefinition extends ClassDefinition {
         public Builder() {
         }
 
+        @Override
         public GroupDefinition build() {
             return new GroupDefinition(this);
         }

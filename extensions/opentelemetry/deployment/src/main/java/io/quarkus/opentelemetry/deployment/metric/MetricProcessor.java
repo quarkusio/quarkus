@@ -108,6 +108,7 @@ public class MetricProcessor {
     public static class MetricEnabled implements BooleanSupplier {
         OTelBuildConfig otelBuildConfig;
 
+        @Override
         public boolean getAsBoolean() {
             return otelBuildConfig.metrics().enabled()
                     .map(new Function<Boolean, Boolean>() {

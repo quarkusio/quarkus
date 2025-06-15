@@ -89,6 +89,7 @@ public class InfinispanHealthCheck implements HealthCheck {
             this.config = config;
         }
 
+        @Override
         public Uni<Tuple2<String, HealthInfo>> get() {
             return Uni.createFrom().item(new Supplier<HealthInfo>() {
                 @Override

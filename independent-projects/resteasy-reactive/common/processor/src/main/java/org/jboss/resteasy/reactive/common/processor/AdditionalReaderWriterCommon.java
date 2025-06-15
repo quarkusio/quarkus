@@ -10,8 +10,9 @@ abstract class AdditionalReaderWriterCommon implements AdditionalReaderWriter {
 
     private final List<Entry> entries = new ArrayList<>();
 
+    @Override
     public void add(String handlerClass, String mediaType, String entityClass,
-            RuntimeType constraint) {
+                    RuntimeType constraint) {
 
         Entry newEntry = new Entry(handlerClass, mediaType, entityClass, constraint);
 

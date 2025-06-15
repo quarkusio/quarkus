@@ -31,6 +31,7 @@ abstract class InnerInvocationContext implements ArcInvocationContext {
         return delegate.getInterceptorBindings();
     }
 
+    @Override
     public Method getMethod() {
         return delegate.getMethod();
     }

@@ -32,6 +32,7 @@ class SuperclassInvocationContext extends InnerInvocationContext {
         this.interceptorInstance = interceptorInstance;
     }
 
+    @Override
     protected Object proceed(int currentPosition) throws Exception {
         try {
             if (currentPosition < methods.size()) {

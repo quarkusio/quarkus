@@ -20,14 +20,17 @@ public class DefaultValuesConfigurationSource implements ConfigSource {
         this.leafs = leafs;
     }
 
+    @Override
     public Map<String, String> getProperties() {
         return Collections.emptyMap();
     }
 
+    @Override
     public Set<String> getPropertyNames() {
         return Collections.emptySet();
     }
 
+    @Override
     public String getValue(final String propertyName) {
         final Container match = leafs.match(propertyName);
         if (match == null) {
@@ -41,10 +44,12 @@ public class DefaultValuesConfigurationSource implements ConfigSource {
         return null;
     }
 
+    @Override
     public String getName() {
         return "default values";
     }
 
+    @Override
     public int getOrdinal() {
         return Integer.MIN_VALUE;
     }

@@ -313,10 +313,12 @@ public class DefaultDockerContainerLauncher implements DockerContainerArtifactLa
         }
     }
 
+    @Override
     public boolean listensOnSsl() {
         return isSsl;
     }
 
+    @Override
     public void includeAsSysProps(Map<String, String> systemProps) {
         this.systemProps.putAll(systemProps);
     }

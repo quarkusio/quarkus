@@ -18,12 +18,14 @@ import jakarta.ws.rs.ext.Provider;
 @Consumes("application/student")
 public class GenericResourceStudentReader implements MessageBodyReader<GenericResourceStudent> {
 
+    @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return true;
     }
 
+    @Override
     public GenericResourceStudent readFrom(Class<GenericResourceStudent> type, Type genericType, Annotation[] annotations,
-            MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
+                                           MediaType mediaType, MultivaluedMap<String, String> httpHeaders, InputStream entityStream)
             throws IOException, WebApplicationException {
         BufferedReader br = null;
         try {

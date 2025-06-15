@@ -26,6 +26,7 @@ public class ApplyServiceAccountNameToRevisionSpecDecorator extends NamedResourc
         this.serviceAccountName = serviceAccountName;
     }
 
+    @Override
     public void andThenVisit(RevisionSpecFluent<?> spec, ObjectMeta resourceMeta) {
         if (Strings.isNotNullOrEmpty(this.serviceAccountName)) {
             spec.withServiceAccountName(this.serviceAccountName);
@@ -35,6 +36,7 @@ public class ApplyServiceAccountNameToRevisionSpecDecorator extends NamedResourc
 
     }
 
+    @Override
     public Class<? extends Decorator>[] after() {
         return new Class[] { ResourceProvidingDecorator.class };
     }

@@ -283,6 +283,7 @@ public final class NonApplicationRootPathBuildItem extends SimpleBuildItem {
                     "This method is not supported using this builder. Use #routeFunction(String, Consumer<Route>)");
         }
 
+        @Override
         public Builder routeFunction(String route, Consumer<Route> routeFunction) {
             return orderedRoute(route, null, routeFunction);
         }

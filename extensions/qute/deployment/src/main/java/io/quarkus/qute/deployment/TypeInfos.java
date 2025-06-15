@@ -216,6 +216,8 @@ final class TypeInfos {
             return ',' == candidate;
         }
 
+        @Override
+        @Override
         public boolean isInfixNotationSupported() {
             return false;
         }
@@ -305,6 +307,7 @@ final class TypeInfos {
             }
         }
 
+        @Override
         boolean hasHints() {
             return !hints.isEmpty();
         }

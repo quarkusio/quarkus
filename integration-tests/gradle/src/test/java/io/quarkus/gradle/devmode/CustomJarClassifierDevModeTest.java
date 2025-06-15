@@ -14,6 +14,7 @@ public class CustomJarClassifierDevModeTest extends QuarkusDevGradleTestBase {
         return new String[] { "clean", "quarkusDev" };
     }
 
+    @Override
     protected void testDevMode() throws Exception {
         assertThat(getHttpResponse("/hello")).contains("Hello from Quarkus REST");
     }

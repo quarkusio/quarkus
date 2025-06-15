@@ -14,21 +14,25 @@ import jakarta.ws.rs.ext.MessageBodyReader;
 import jakarta.ws.rs.ext.MessageBodyWriter;
 
 public class ReaderBodyHandler implements MessageBodyWriter<Reader>, MessageBodyReader<Reader> {
+    @Override
     public boolean isReadable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return type.equals(Reader.class);
     }
 
+    @Override
     public Reader readFrom(Class<Reader> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
+                           MultivaluedMap<String, String> httpHeaders, InputStream entityStream) throws IOException {
         return new InputStreamReader(entityStream, MessageReaderUtil.charsetFromMediaType(mediaType));
     }
 
+    @Override
     public boolean isWriteable(Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType) {
         return Reader.class.isAssignableFrom(type);
     }
 
+    @Override
     public void writeTo(Reader inputStream, Class<?> type, Type genericType, Annotation[] annotations, MediaType mediaType,
-            MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException {
+                        MultivaluedMap<String, Object> httpHeaders, OutputStream entityStream) throws IOException {
         try {
             int c;
             while ((c = inputStream.read()) != -1) {

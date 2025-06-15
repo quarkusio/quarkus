@@ -98,6 +98,7 @@ public class DefaultFileBundleLocaleMergeTest {
     @Localized("en")
     public interface EnMessages extends Messages {
 
+        @Override
         @Message
         String greetings();
 

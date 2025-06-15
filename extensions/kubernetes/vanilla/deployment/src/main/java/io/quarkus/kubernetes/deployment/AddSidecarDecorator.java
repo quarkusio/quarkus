@@ -35,6 +35,7 @@ class AddSidecarDecorator extends NamedResourceDecorator<PodSpecBuilder> {
         podSpec.addToContainers(sidecarContainer);
     }
 
+    @Override
     public Class<? extends Decorator>[] after() {
         return new Class[] { ResourceProvidingDecorator.class };
     }

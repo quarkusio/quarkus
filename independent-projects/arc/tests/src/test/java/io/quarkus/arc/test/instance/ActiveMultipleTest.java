@@ -115,6 +115,7 @@ public class ActiveMultipleTest {
     }
 
     static class ServiceAlpha implements Service {
+        @Override
         public String ping() {
             return "alpha";
         }
@@ -134,6 +135,7 @@ public class ActiveMultipleTest {
             this.injectionPoint = injectionPoint;
         }
 
+        @Override
         public String ping() {
             return "bravo";
         }

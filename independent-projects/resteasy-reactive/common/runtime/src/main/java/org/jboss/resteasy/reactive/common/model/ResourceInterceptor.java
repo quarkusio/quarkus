@@ -30,6 +30,7 @@ public class ResourceInterceptor<T>
 
     private RuntimeType runtimeType;
 
+    @Override
     public void setFactory(BeanFactory<T> factory) {
         this.factory = factory;
     }
@@ -42,10 +43,12 @@ public class ResourceInterceptor<T>
         return priority;
     }
 
+    @Override
     public Integer priority() {
         return priority;
     }
 
+    @Override
     public void setPriority(Integer priority) {
         if (priority == null) {
             this.priority = Priorities.USER;
@@ -58,6 +61,7 @@ public class ResourceInterceptor<T>
         return nameBindingNames;
     }
 
+    @Override
     public void setNameBindingNames(Set<String> nameBindingNames) {
         this.nameBindingNames = nameBindingNames;
     }

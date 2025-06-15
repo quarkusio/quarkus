@@ -59,6 +59,7 @@ public final class CompletedStage<T> implements CompletionStage<T>, Supplier<T> 
         return exception != null;
     }
 
+    @Override
     public T get() {
         if (exception != null) {
             // Always wrap the original exception if completed exceptionally
